@@ -21,8 +21,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
-- Gradle Wrapper: `9.5.1`; Kotlin plugin: `2.3.21`; Android Gradle Plugin: `9.2.1`;
-  Compose runtime: `1.11.2`; Ktor: `3.5.0`.
+- Gradle Wrapper: `9.5.1`; Kotlin plugin: `2.4.0`; Android Gradle Plugin: `9.2.1`;
+  Compose runtime: `1.11.3`; Ktor: `3.5.0`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
@@ -68,7 +68,7 @@ Use `~/.gradle/gradle.properties` (preferred) or `local.properties` for local-on
 org.gradle.java.home=/path/to/your/jdk
 
 # Optional: pin another Miuix version locally
-miuix.version=0.9.1-fb3d442d-SNAPSHOT
+miuix.version=0.9.2-94c98f3e-SNAPSHOT
 ```
 
 JDK fallback examples:

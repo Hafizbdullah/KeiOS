@@ -21,7 +21,7 @@
 [16 KB page-size 支持](https://developer.android.com/guide/practices/page-sizes)。
 
 - [x] 构建基线为 `minSdk=35`、`compileSdk=37`、`targetSdk=37`，Java 21、Gradle Wrapper
-  `9.5.1`、Kotlin `2.3.21`、Compose `1.11.2`、Android Gradle Plugin `9.2.1`。
+  `9.5.1`、Kotlin `2.4.0`、Compose `1.11.3`、Android Gradle Plugin `9.2.1`。
 - [x] Manifest 已声明 `NEARBY_WIFI_DEVICES(maxSdk=36)`、`ACCESS_LOCAL_NETWORK`、`USE_LOOPBACK_INTERFACE`、`POST_PROMOTED_NOTIFICATIONS`、`FOREGROUND_SERVICE_SPECIAL_USE`。
 - [x] 主 Activity 已启用 `enableEdgeToEdge()`，启动图标已提供 monochrome 资源，主导航与图鉴全屏图已接入预测返回路径，并显式开启 `OnBackInvokedCallback`。
 - [x] 源码搜索当前未命中 Contacts、Bluetooth、Health Connect / sensor 权限、`READ_MEDIA*`、自定义 RemoteViews、`MediaStore#getVersion()`、`scheduleAtFixedRate`、WorkManager、JobScheduler、`announceForAccessibility` / `TYPE_ANNOUNCEMENT`、项目 JNI、`System.load*` 直接适配面。
@@ -88,7 +88,7 @@
 - [x] 将 GitHub 分享链接、GitHub 下载器入口、GameKee / BA 图鉴资源链接里的 `http://` 规范化到 `https://`，并限制 DownloadManager 只接收 HTTPS 外部下载 URL。
 - [x] 审计 MCP loopback HTTP 端点：API 37 AVD 开启本地网络 compat flag 后合法端口可达，未发现需要 Network Security Config 的拦截。
 - [x] 继续审计 MCP 局域网 HTTP 端点；证据目录：`artifacts/api37-p1/p1a-network-security-20260429-1/`。API 37 AVD 本机 MCP loopback 监听 `127.0.0.1:38888` 并对未鉴权 `/mcp` 返回 `401 Unauthorized`；API 36 真机局域网模式监听 `[::]:38888`，设备本机与同网段主机访问 `http://192.168.31.209:38888/mcp` 均返回 `401 Unauthorized`。当前落地范围保持 Manifest 权限 + runtime permission + bearer-token 拦截，Network Security Config 保持空白；OEM Beta 同网段矩阵归入 P1-F。
-- [x] 评估 OkHttp HTTPS 加固准备度，覆盖 Android 17 CT 默认行为、Certificate Transparency opt-in 缺口、ECH 兼容性，并结合 GitHub、GitHub 下载跳转、GameKee、BA 媒体 CDN、MCP loopback 实测决定落地范围；证据目录：`artifacts/api37-p1/p1a-network-security-20260429-1/`。GitHub API、GitHub release 跳转、GameKee 页面、BA 媒体 CDN 探针均通过 TLS 校验，GitHub / GameKee 证书链包含 CT SCT；OkHttp 5.3.2 源码探针覆盖 `NetworkSecurityPolicy` / Conscrypt / `ConnectionSpec`，当前无 ECH 专用调用面。落地范围为继续依赖 Android 17 默认 CT 与现有 HTTPS 规范化，暂缓 certificate pinning、CT 例外配置和 `domainEncryption` 强制配置，等待 OkHttp / 平台 ECH 集成成熟后再接入。
+- [x] 评估 OkHttp HTTPS 加固准备度，覆盖 Android 17 CT 默认行为、Certificate Transparency opt-in 缺口、ECH 兼容性，并结合 GitHub、GitHub 下载跳转、GameKee、BA 媒体 CDN、MCP loopback 实测决定落地范围；证据目录：`artifacts/api37-p1/p1a-network-security-20260429-1/`。GitHub API、GitHub release 跳转、GameKee 页面、BA 媒体 CDN 探针均通过 TLS 校验，GitHub / GameKee 证书链包含 CT SCT；OkHttp 5.x 源码探针覆盖 `NetworkSecurityPolicy` / Conscrypt / `ConnectionSpec`，当前无 ECH 专用调用面。落地范围为继续依赖 Android 17 默认 CT 与现有 HTTPS 规范化，暂缓 certificate pinning、CT 例外配置和 `domainEncryption` 强制配置，等待 OkHttp / 平台 ECH 集成成熟后再接入。
 
 ### P1-B 后台调度、资源画像、退出信号
 

@@ -2,7 +2,7 @@ plugins {
     id("com.android.library")
 }
 
-val composeVersion = "1.11.2"
+val composeVersion = "1.11.3"
 
 android {
     namespace = "os.kei.feature.home"
@@ -30,6 +30,6 @@ dependencies {
     implementation("androidx.compose.runtime:runtime:$composeVersion")
     implementation("com.tencent:mmkv:2.4.0")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("junit:junit:4.13.2")
 }

@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-val okhttpVersion = "5.3.2"
+val okhttpVersion = "5.4.0"
 
 android {
     namespace = "os.kei.feature.mcp"
@@ -34,7 +34,7 @@ dependencies {
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
 
-    implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.core:core-ktx:1.19.0")
     implementation("com.tencent:mmkv:2.4.0")
     implementation("dev.rikka.shizuku:api:13.1.5")
     implementation("dev.rikka.shizuku:provider:13.1.5")
@@ -44,7 +44,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.xzakota.hyper.notification:focus-api:1.4")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.7.0")

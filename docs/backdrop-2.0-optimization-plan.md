@@ -47,7 +47,7 @@
 
 注意：「Add common RuntimeShader / runtimeShaderEffect」「Remove Android related effects」是相对 **1.x** 而言的变更，在我们用的 alpha03 里早已落地。所以对本项目而言，从 alpha03 跨到 2.0.0 是零迁移成本。`LayoutCoordinates` 泄漏修复（rc01）是我们白拿的稳定性收益。
 
-**对依赖抬升的唯一提醒**：项目 compose 编译器插件为 2.3.21（build.gradle.kts:4），composeVersion=1.11.2，与 backdrop 要求的 foundation/ui 1.11.0 兼容，无冲突。
+**对依赖抬升的唯一提醒**：项目 compose 编译器插件为 2.4.0（build.gradle.kts:4），composeVersion=1.11.3，与 backdrop 要求的 foundation/ui 1.11.0 兼容，无冲突。
 
 ---
 

@@ -212,14 +212,14 @@ val preReleaseVersionCode =
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
-        ?: "0.9.1"
-val coreKtxVersion = "1.18.0"
+        ?: "0.9.2"
+val coreKtxVersion = "1.19.0"
 val activityComposeVersion = "1.13.0"
 val materialVersion = "1.14.0"
-val composeVersion = "1.11.2"
+val composeVersion = "1.11.3"
 val constraintLayoutComposeVersion = "1.1.1"
-val navigation3Version = "1.1.2"
-val navigationEventVersion = "1.1.1"
+val navigation3Version = "1.1.3"
+val navigationEventVersion = "1.1.2"
 val navigationCommonVersion = "2.9.8"
 val backdropVersion = "2.0.0"
 val capsuleVersion = "2.1.3"
@@ -238,13 +238,13 @@ val hiddenApiBypassVersion = "6.1"
 val mmkvVersion = "2.4.0"
 val mcpKotlinSdkVersion = "0.13.0"
 val ktorVersion = "3.5.0"
-val okhttpVersion = "5.3.2"
+val okhttpVersion = "5.4.0"
 val kotlinxSerializationJsonVersion = "1.11.0"
 val jsonVersion = "20260522"
 val xmlPullVersion = "1.1.3.4d_b4_min"
 val kxml2Version = "2.3.0"
 val media3Version = "1.10.1"
-val coil3Version = "3.4.0"
+val coil3Version = "3.5.0"
 val zoomImageVersion = "1.4.0"
 val lucideIconsVersion = "2.2.1"
 val documentFileVersion = "1.1.0"
@@ -252,10 +252,10 @@ val uCropVersion = "2.2.11"
 val focusApiVersion = "1.4"
 val metricsPerformanceVersion = "1.0.0"
 val profileInstallerVersion = "1.4.1"
-val lifecycleViewModelComposeVersion = "2.10.0"
+val lifecycleViewModelComposeVersion = "2.11.0"
 val robolectricVersion = "4.16.1"
 val androidTestExtJunitVersion = "1.3.0"
-val roborazziVersion = "1.63.0"
+val roborazziVersion = "1.64.0"
 val projectCompileSdk = 37
 val projectMinSdk = 35
 val projectTargetSdk = 37
@@ -598,7 +598,7 @@ dependencies {
     implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
 
     // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     testImplementation("androidx.test.ext:junit:$androidTestExtJunitVersion")
