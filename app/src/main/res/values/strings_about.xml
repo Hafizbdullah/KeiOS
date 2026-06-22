@@ -6,7 +6,7 @@
     <string name="about_value_version_format">%1$s (%2$d)</string>
     <string name="about_value_ui_framework">Miuix UI %1$s</string>
     <string name="about_value_declarative_ui">Jetpack Compose %1$s</string>
-    <string name="about_value_navigation">Navigation3 %1$s</string>
+    <string name="about_value_navigation">Miuix Nav %1$s</string>
     <string name="about_value_ui_state_holder">Lifecycle ViewModel Compose %1$s</string>
     <string name="about_value_glass_material">Backdrop %1$s · Capsule %2$s · Shapes %3$s</string>
     <string name="about_value_permission_bridge">Shizuku SDK %1$s · API %2$s</string>
@@ -312,7 +312,7 @@
     <string name="about_license_row_material_components">Material Components</string>
     <string name="about_license_value_material_components">Material %1$s · Apache-2.0</string>
     <string name="about_license_row_androidx_stack">AndroidX / Compose</string>
-    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation3 %2$s · Navigation Common %3$s · Lifecycle %4$s · DocumentFile %5$s · Metrics %6$s · ConstraintLayout Compose %7$s · ProfileInstaller %8$s · Apache-2.0</string>
+    <string name="about_license_value_androidx_stack">Compose %1$s · Navigation Event %2$s · Lifecycle %3$s · DocumentFile %4$s · Metrics %5$s · ConstraintLayout Compose %6$s · ProfileInstaller %7$s · Apache-2.0</string>
     <string name="about_license_row_lucide">Lucide Icons</string>
     <string name="about_license_value_lucide">v%1$s · MIT</string>
     <string name="about_license_row_blue_archive_logos">Blue Archive Logos</string>

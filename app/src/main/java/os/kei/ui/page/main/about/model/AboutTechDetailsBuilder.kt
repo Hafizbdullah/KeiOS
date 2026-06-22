@@ -144,7 +144,7 @@ private fun buildAboutUiRows(context: Context): List<AboutInfoRowModel> =
         ),
         AboutInfoRowModel(
             R.string.about_row_navigation,
-            context.getString(R.string.about_value_navigation, BuildConfig.NAVIGATION3_VERSION),
+            context.getString(R.string.about_value_navigation, BuildConfig.MIUIX_NAV_VERSION),
             AboutInfoIcon.List,
         ),
         AboutInfoRowModel(

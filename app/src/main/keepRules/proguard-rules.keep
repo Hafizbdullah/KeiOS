@@ -48,7 +48,7 @@
 -keepnames class os.kei.** extends android.content.BroadcastReceiver
 -keepnames class os.kei.** extends android.content.ContentProvider
 
-# Keep Navigation3 route key type and Kotlin serialization entry points.
+# Keep Miuix Nav route key type and Kotlin serialization entry points.
 # Route classes are referenced directly by entry<T>; keep only restore/serializer anchors.
 -keep,allowoptimization,allowobfuscation interface os.kei.ui.navigation.KeiosRoute
 -keep,allowoptimization,allowobfuscation class os.kei.ui.navigation.KeiosRoute$*$$serializer { *; }

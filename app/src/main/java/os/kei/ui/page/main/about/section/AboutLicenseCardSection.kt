@@ -71,8 +71,7 @@ fun AboutLicenseCardSection(
                     stringResource(
                         R.string.about_license_value_androidx_stack,
                         BuildConfig.COMPOSE_VERSION,
-                        BuildConfig.NAVIGATION3_VERSION,
-                        BuildConfig.NAVIGATION_COMMON_VERSION,
+                        BuildConfig.NAVIGATION_EVENT_VERSION,
                         BuildConfig.LIFECYCLE_VIEWMODEL_COMPOSE_VERSION,
                         BuildConfig.DOCUMENTFILE_VERSION,
                         BuildConfig.METRICS_PERFORMANCE_VERSION,
