@@ -221,9 +221,17 @@ fun AppFloatingVerticalSearchActionDock(
     showAddAction: Boolean = true,
     refreshEnabled: Boolean = true,
     refreshStatus: AppFloatingRefreshStatus = AppFloatingRefreshStatus.Idle,
+    refreshBadgeLabel: String? = null,
+    refreshBadgeColor: Color? = null,
+    refreshBadgeContentColor: Color? = null,
+    refreshTooltipText: String? = null,
     compact: Boolean = false,
     compactIcon: ImageVector = searchIcon,
     compactContentDescription: String = searchContentDescription,
+    compactBadgeLabel: String? = null,
+    compactBadgeColor: Color? = null,
+    compactBadgeContentColor: Color? = null,
+    compactTooltipText: String? = compactContentDescription,
     onCompactClick: (() -> Unit)? = null,
     horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
@@ -357,6 +365,10 @@ fun AppFloatingVerticalSearchActionDock(
                     iconTint = refreshTint,
                     enabled = refreshEnabled && refreshStatus != AppFloatingRefreshStatus.Refreshing,
                     rotating = refreshStatus == AppFloatingRefreshStatus.Refreshing,
+                    badgeLabel = refreshBadgeLabel,
+                    badgeColor = refreshBadgeColor,
+                    badgeContentColor = refreshBadgeContentColor,
+                    tooltipText = refreshTooltipText,
                 )
                 AppFloatingVerticalDockAction(
                     icon = searchIcon,
@@ -378,6 +390,10 @@ fun AppFloatingVerticalSearchActionDock(
             size = size,
             iconSize = iconSize,
             iconTint = accent,
+            tooltipText = compactTooltipText,
+            badgeLabel = compactBadgeLabel,
+            badgeColor = compactBadgeColor,
+            badgeContentColor = compactBadgeContentColor,
         )
     }
     val compactSearchContent: @Composable () -> Unit = {
@@ -518,6 +534,10 @@ fun AppFloatingVerticalActionDock(
                 size = size,
                 iconSize = iconSize,
                 iconTint = firstAction.iconTint,
+                tooltipText = firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
+                badgeLabel = firstAction.badgeLabel,
+                badgeColor = firstAction.badgeColor,
+                badgeContentColor = firstAction.badgeContentColor,
                 modifier =
                     compactMotion.compactModifier
                         .align(Alignment.BottomCenter),

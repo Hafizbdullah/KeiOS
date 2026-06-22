@@ -54,6 +54,8 @@ import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
+import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
@@ -110,6 +112,9 @@ fun AppLiquidIconButton(
     enabled: Boolean = true,
     onPressedChange: ((Boolean) -> Unit)? = null,
     tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
+    badgeLabel: String? = null,
+    badgeColor: Color? = null,
+    badgeContentColor: Color? = null,
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -134,11 +139,14 @@ fun AppLiquidIconButton(
             enabled = enabled,
             onPressedChange = onPressedChange,
         ) {
-            Icon(
-                imageVector = icon,
+            AppLiquidIconButtonIcon(
+                icon = icon,
                 contentDescription = contentDescription,
-                modifier = iconModifier,
-                tint = iconTint,
+                iconModifier = iconModifier,
+                iconTint = iconTint,
+                badgeLabel = badgeLabel,
+                badgeColor = badgeColor,
+                badgeContentColor = badgeContentColor,
             )
         }
     }
@@ -193,6 +201,43 @@ fun AppLiquidIconButton(
                 modifier = iconModifier,
                 tint = iconTint,
             )
+        }
+    }
+}
+
+@Composable
+private fun AppLiquidIconButtonIcon(
+    icon: ImageVector,
+    contentDescription: String,
+    iconModifier: Modifier,
+    iconTint: Color,
+    badgeLabel: String?,
+    badgeColor: Color?,
+    badgeContentColor: Color?,
+) {
+    val iconContent: @Composable () -> Unit = {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = iconModifier,
+            tint = iconTint,
+        )
+    }
+    val label = badgeLabel?.takeIf { it.isNotBlank() }
+    if (label == null) {
+        iconContent()
+    } else {
+        BadgedBox(
+            badge = {
+                Badge(
+                    containerColor = badgeColor ?: MiuixTheme.colorScheme.error,
+                    contentColor = badgeContentColor ?: MiuixTheme.colorScheme.onError,
+                ) {
+                    Text(text = label)
+                }
+            },
+        ) {
+            iconContent()
         }
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -88,6 +89,33 @@ internal fun GitHubMainContent(
     val actionsHistoryDescription = stringResource(R.string.github_actions_history_cd_open)
     val expandDockDescription = stringResource(R.string.common_expand)
     val actionsHistoryTint = MiuixTheme.colorScheme.primary
+    val refreshBadgeCount =
+        if (overview.metrics.failedCount > 0) {
+            overview.metrics.failedCount
+        } else {
+            overview.metrics.totalUpdatableCount
+        }
+    val refreshBadgeLabel = githubDockBadgeLabel(refreshBadgeCount)
+    val refreshBadgeColor: Color? =
+        when {
+            overview.metrics.failedCount > 0 -> MiuixTheme.colorScheme.error
+            overview.metrics.totalUpdatableCount > 0 -> MiuixTheme.colorScheme.primary
+            else -> null
+        }
+    val refreshBadgeContentColor: Color? =
+        when {
+            overview.metrics.failedCount > 0 -> MiuixTheme.colorScheme.onError
+            overview.metrics.totalUpdatableCount > 0 -> MiuixTheme.colorScheme.onPrimary
+            else -> null
+        }
+    val refreshBadgeTooltip =
+        when {
+            overview.metrics.failedCount > 0 ->
+                stringResource(R.string.github_refresh_badge_failed_tooltip, overview.metrics.failedCount)
+            overview.metrics.totalUpdatableCount > 0 ->
+                stringResource(R.string.github_refresh_badge_updates_tooltip, overview.metrics.totalUpdatableCount)
+            else -> null
+        }
     val dockExtraActions =
         remember(
             actionsHistoryIcon,
@@ -295,9 +323,17 @@ internal fun GitHubMainContent(
                     showAddAction = true,
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
+                    refreshBadgeLabel = refreshBadgeLabel,
+                    refreshBadgeColor = refreshBadgeColor,
+                    refreshBadgeContentColor = refreshBadgeContentColor,
+                    refreshTooltipText = refreshBadgeTooltip,
                     compact = !layout.bottomBarVisible,
                     compactIcon = moreIcon,
                     compactContentDescription = expandDockDescription,
+                    compactBadgeLabel = refreshBadgeLabel,
+                    compactBadgeColor = refreshBadgeColor,
+                    compactBadgeContentColor = refreshBadgeContentColor,
+                    compactTooltipText = refreshBadgeTooltip ?: expandDockDescription,
                     onCompactClick = layout.onExpandFloatingDock,
                     extraActions = dockExtraActions,
                     dockSide = layout.floatingDockSide,
@@ -343,3 +379,12 @@ internal fun GitHubMainContent(
         }
     }
 }
+
+private const val GitHubDockBadgeMaxCount = 99
+
+private fun githubDockBadgeLabel(count: Int): String? =
+    when {
+        count <= 0 -> null
+        count > GitHubDockBadgeMaxCount -> "$GitHubDockBadgeMaxCount+"
+        else -> count.toString()
+    }

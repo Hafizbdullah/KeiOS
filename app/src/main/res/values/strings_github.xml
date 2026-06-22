@@ -32,6 +32,8 @@
     <string name="github_refresh_island_cancelled">已取消</string>
     <string name="github_refresh_island_completed">已完成</string>
     <string name="github_refresh_failed_short_with_count">失败 %1$d</string>
+    <string name="github_refresh_badge_failed_tooltip">检查失败 %1$d 项</string>
+    <string name="github_refresh_badge_updates_tooltip">可更新 %1$d 项</string>
     <string name="github_actions_update_notification_title">GitHub Actions 有新构建</string>
     <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
     <string name="github_actions_update_island_content">Actions</string>

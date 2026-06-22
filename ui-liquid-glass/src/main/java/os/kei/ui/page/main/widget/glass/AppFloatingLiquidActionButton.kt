@@ -22,7 +22,11 @@ fun AppFloatingLiquidActionButton(
     iconSize: Dp = 27.dp,
     iconTint: Color = MiuixTheme.colorScheme.primary,
     enabled: Boolean = true,
-    iconModifier: Modifier = Modifier
+    iconModifier: Modifier = Modifier,
+    tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
+    badgeLabel: String? = null,
+    badgeColor: Color? = null,
+    badgeContentColor: Color? = null,
 ) {
     AppLiquidIconButton(
         backdrop = backdrop,
@@ -35,6 +39,10 @@ fun AppFloatingLiquidActionButton(
         variant = GlassVariant.Bar,
         iconTint = iconTint,
         iconModifier = iconModifier.then(Modifier.size(iconSize)),
-        enabled = enabled
+        enabled = enabled,
+        tooltipText = tooltipText,
+        badgeLabel = badgeLabel,
+        badgeColor = badgeColor,
+        badgeContentColor = badgeContentColor,
     )
 }
