@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -15,13 +14,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavKey
 import os.kei.R
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
+import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
 
 @Composable
 fun MainScreen(
@@ -31,8 +30,8 @@ fun MainScreen(
     shizukuApiUtils: ShizukuApiUtils,
     mcpServerManager: McpServerManager
 ) {
-    val backStack = remember { mutableStateListOf<NavKey>().apply { add(KeiosRoute.Main) } }
-    val navigator = remember { Navigator(backStack) }
+    val backStack = rememberNavBackStack<KeiosRoute>(KeiosRoute.Main)
+    val navigator = remember(backStack) { Navigator(backStack) }
     val context = LocalContext.current
     val appContext = context.applicationContext
     val view = LocalView.current
