@@ -58,7 +58,12 @@ import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
+import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -72,6 +77,10 @@ data class LiquidActionItem(
     val testTag: String? = null,
     val iconRotationDegrees: Float = 0f,
     val iconTint: Color? = null,
+    val badgeLabel: String? = null,
+    val badgeColor: Color? = null,
+    val badgeContentColor: Color? = null,
+    val tooltipText: String? = null,
 )
 
 @Composable
@@ -174,6 +183,50 @@ internal fun RowScope.LiquidActionItemSlot(
                     colorFilter = ColorFilter.tint(item.iconTint ?: tint())
                 },
         contentAlignment = Alignment.Center,
+    ) {
+        LiquidActionItemTooltip(item = item) {
+            LiquidActionItemIcon(item = item)
+        }
+    }
+}
+
+@Composable
+private fun LiquidActionItemTooltip(
+    item: LiquidActionItem,
+    content: @Composable () -> Unit,
+) {
+    val tooltipText = (item.tooltipText ?: item.contentDescription).takeIf { it.isNotBlank() }
+    if (tooltipText == null || !item.enabled) {
+        content()
+        return
+    }
+    TooltipBox(
+        text = tooltipText,
+        positioning = TooltipAnchorPosition.Above,
+        content = content,
+    )
+}
+
+@Composable
+private fun LiquidActionItemIcon(item: LiquidActionItem) {
+    val badgeLabel = item.badgeLabel?.takeIf { it.isNotBlank() }
+    if (badgeLabel == null) {
+        Icon(
+            imageVector = item.icon,
+            contentDescription = item.contentDescription,
+            tint = Color.White,
+        )
+        return
+    }
+    BadgedBox(
+        badge = {
+            Badge(
+                containerColor = item.badgeColor ?: MiuixTheme.colorScheme.error,
+                contentColor = item.badgeContentColor ?: MiuixTheme.colorScheme.onError,
+            ) {
+                Text(text = badgeLabel)
+            }
+        },
     ) {
         Icon(
             imageVector = item.icon,

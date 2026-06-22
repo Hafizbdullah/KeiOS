@@ -56,6 +56,8 @@ import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -107,32 +109,38 @@ fun AppLiquidIconButton(
     containerColor: Color? = null,
     enabled: Boolean = true,
     onPressedChange: ((Boolean) -> Unit)? = null,
+    tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
     val resolvedHeight = if (height == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else height
-    AppLiquidIconButtonContainer(
-        backdrop = backdrop,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        modifier = modifier,
-        width = resolvedWidth,
-        height = resolvedHeight,
-        shape = shape,
-        blurRadius = blurRadius,
-        variant = variant,
-        isDark = isDark,
-        containerColor = containerColor,
-        contentTint = iconTint,
-        enabled = enabled,
-        onPressedChange = onPressedChange,
+    AppLiquidIconButtonTooltip(
+        tooltipText = tooltipText,
+        enabled = enabled && onLongClick == null,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = iconModifier,
-            tint = iconTint,
-        )
+        AppLiquidIconButtonContainer(
+            backdrop = backdrop,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            modifier = modifier,
+            width = resolvedWidth,
+            height = resolvedHeight,
+            shape = shape,
+            blurRadius = blurRadius,
+            variant = variant,
+            isDark = isDark,
+            containerColor = containerColor,
+            contentTint = iconTint,
+            enabled = enabled,
+            onPressedChange = onPressedChange,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = iconModifier,
+                tint = iconTint,
+            )
+        }
     }
 }
 
@@ -154,33 +162,57 @@ fun AppLiquidIconButton(
     containerColor: Color? = null,
     enabled: Boolean = true,
     onPressedChange: ((Boolean) -> Unit)? = null,
+    tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
 ) {
     val isDark = isSystemInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
     val resolvedHeight = if (height == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else height
-    AppLiquidIconButtonContainer(
-        backdrop = backdrop,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        modifier = modifier,
-        width = resolvedWidth,
-        height = resolvedHeight,
-        shape = shape,
-        blurRadius = blurRadius,
-        variant = variant,
-        isDark = isDark,
-        containerColor = containerColor,
-        contentTint = iconTint,
-        enabled = enabled,
-        onPressedChange = onPressedChange,
+    AppLiquidIconButtonTooltip(
+        tooltipText = tooltipText,
+        enabled = enabled && onLongClick == null,
     ) {
-        Icon(
-            painter = painter,
-            contentDescription = contentDescription,
-            modifier = iconModifier,
-            tint = iconTint,
-        )
+        AppLiquidIconButtonContainer(
+            backdrop = backdrop,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            modifier = modifier,
+            width = resolvedWidth,
+            height = resolvedHeight,
+            shape = shape,
+            blurRadius = blurRadius,
+            variant = variant,
+            isDark = isDark,
+            containerColor = containerColor,
+            contentTint = iconTint,
+            enabled = enabled,
+            onPressedChange = onPressedChange,
+        ) {
+            Icon(
+                painter = painter,
+                contentDescription = contentDescription,
+                modifier = iconModifier,
+                tint = iconTint,
+            )
+        }
     }
+}
+
+@Composable
+private fun AppLiquidIconButtonTooltip(
+    tooltipText: String?,
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val resolvedText = tooltipText?.takeIf { it.isNotBlank() }
+    if (resolvedText == null || !enabled) {
+        content()
+        return
+    }
+    TooltipBox(
+        text = resolvedText,
+        positioning = TooltipAnchorPosition.Above,
+        content = content,
+    )
 }
 
 @Composable

@@ -53,7 +53,12 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
+import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
+import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 enum class AppFloatingRefreshStatus {
@@ -71,6 +76,10 @@ data class AppFloatingDockAction(
     val enabled: Boolean = true,
     val rotating: Boolean = false,
     val testTag: String = "",
+    val badgeLabel: String? = null,
+    val badgeColor: Color? = null,
+    val badgeContentColor: Color? = null,
+    val tooltipText: String? = null,
     val onClick: () -> Unit,
 )
 
@@ -333,6 +342,10 @@ fun AppFloatingVerticalSearchActionDock(
                         enabled = action.enabled,
                         rotating = action.rotating,
                         testTag = action.testTag,
+                        badgeLabel = action.badgeLabel,
+                        badgeColor = action.badgeColor,
+                        badgeContentColor = action.badgeContentColor,
+                        tooltipText = action.tooltipText,
                     )
                 }
                 AppFloatingVerticalDockAction(
@@ -487,6 +500,10 @@ fun AppFloatingVerticalActionDock(
                             enabled = action.enabled,
                             rotating = action.rotating,
                             testTag = action.testTag,
+                            badgeLabel = action.badgeLabel,
+                            badgeColor = action.badgeColor,
+                            badgeContentColor = action.badgeContentColor,
+                            tooltipText = action.tooltipText,
                         )
                     }
                 }
@@ -611,6 +628,10 @@ private fun AppFloatingVerticalDockAction(
     enabled: Boolean = true,
     rotating: Boolean = false,
     testTag: String = "",
+    badgeLabel: String? = null,
+    badgeColor: Color? = null,
+    badgeContentColor: Color? = null,
+    tooltipText: String? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -630,42 +651,95 @@ private fun AppFloatingVerticalDockAction(
     val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val rotationProvider = rememberFloatingDockActionRotationProvider(rotating)
 
-    Box(
-        modifier =
-            Modifier
-                .size(size)
-                .then(
-                    if (testTag.isBlank()) {
-                        Modifier
-                    } else {
-                        Modifier.testTag(testTag)
-                    },
-                )
-                .graphicsLayer {
-                    alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
-                }.clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = enabled,
-                    onClick = onClick,
-                ),
-        contentAlignment = Alignment.Center,
-    ) {
+    val actionContent: @Composable () -> Unit = {
+        Box(
+            modifier =
+                Modifier
+                    .size(size)
+                    .then(
+                        if (testTag.isBlank()) {
+                            Modifier
+                        } else {
+                            Modifier.testTag(testTag)
+                        },
+                    )
+                    .graphicsLayer {
+                        alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
+                    }.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = enabled,
+                        onClick = onClick,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppFloatingVerticalDockActionIcon(
+                icon = icon,
+                contentDescription = contentDescription,
+                iconSize = iconSize,
+                badgeLabel = badgeLabel,
+                badgeColor = badgeColor,
+                badgeContentColor = badgeContentColor,
+                modifier =
+                    Modifier
+                        .graphicsLayer {
+                            val pressedScale = pressedScaleProvider()
+                            scaleX = pressedScale
+                            scaleY = pressedScale
+                            rotationZ = if (rotating) rotationProvider() else 0f
+                            colorFilter = ColorFilter.tint(animatedTintProvider())
+                        },
+            )
+        }
+    }
+    val resolvedTooltipText = (tooltipText ?: contentDescription).takeIf { it.isNotBlank() }
+    if (resolvedTooltipText != null && enabled) {
+        TooltipBox(
+            text = resolvedTooltipText,
+            positioning = TooltipAnchorPosition.Above,
+            content = actionContent,
+        )
+    } else {
+        actionContent()
+    }
+}
+
+@Composable
+private fun AppFloatingVerticalDockActionIcon(
+    icon: ImageVector,
+    contentDescription: String,
+    iconSize: Dp,
+    badgeLabel: String?,
+    badgeColor: Color?,
+    badgeContentColor: Color?,
+    modifier: Modifier = Modifier,
+) {
+    val iconContent: @Composable () -> Unit = {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier =
-                Modifier
-                    .size(iconSize)
-                    .graphicsLayer {
-                        val pressedScale = pressedScaleProvider()
-                        scaleX = pressedScale
-                        scaleY = pressedScale
-                        rotationZ = if (rotating) rotationProvider() else 0f
-                        colorFilter = ColorFilter.tint(animatedTintProvider())
-                    },
+            modifier = Modifier.size(iconSize),
             tint = Color.White,
         )
+    }
+    val label = badgeLabel?.takeIf { it.isNotBlank() }
+    Box(modifier = modifier) {
+        if (label == null) {
+            iconContent()
+        } else {
+            BadgedBox(
+                badge = {
+                    Badge(
+                        containerColor = badgeColor ?: MiuixTheme.colorScheme.error,
+                        contentColor = badgeContentColor ?: MiuixTheme.colorScheme.onError,
+                    ) {
+                        Text(text = label)
+                    }
+                },
+            ) {
+                iconContent()
+            }
+        }
     }
 }
 

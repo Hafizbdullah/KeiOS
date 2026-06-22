@@ -111,6 +111,7 @@ fun AppStandaloneLiquidIconButton(
     containerColor: Color? = null,
     enabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
+    tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -137,6 +138,7 @@ fun AppStandaloneLiquidIconButton(
             iconTint = iconTint,
             containerColor = containerColor,
             enabled = enabled,
+            tooltipText = tooltipText,
         )
     }
 }
@@ -159,6 +161,7 @@ fun AppStandaloneLiquidIconButton(
     containerColor: Color? = null,
     enabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
+    tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -186,6 +189,7 @@ fun AppStandaloneLiquidIconButton(
             iconModifier = iconModifier,
             containerColor = containerColor,
             enabled = enabled,
+            tooltipText = tooltipText,
         )
     }
 }
