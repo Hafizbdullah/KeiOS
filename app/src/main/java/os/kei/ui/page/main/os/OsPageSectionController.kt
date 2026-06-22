@@ -318,7 +318,6 @@ internal class OsPageSectionController(
             }
 
             OsSectionCard.GOOGLE_SYSTEM_SERVICE -> {
-                Unit
             }
 
             OsSectionCard.SYSTEM -> {

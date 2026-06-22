@@ -230,7 +230,6 @@ private fun rememberOsShellRunnerPageActionsInternal(
                         stopCommand(false)
                         when (settings.exitCleanupMode) {
                             OsShellRunnerExitCleanupMode.KeepAll -> {
-                                Unit
                             }
 
                             OsShellRunnerExitCleanupMode.ClearInput -> {

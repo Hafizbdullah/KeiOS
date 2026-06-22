@@ -421,7 +421,6 @@ private fun buildOemAutoStartLaunchPlan(context: Context): SettingsOemAutoStartL
                 }
 
                 OemAutoStartVendor.Unknown -> {
-                    Unit
                 }
             }
         }

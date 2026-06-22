@@ -67,9 +67,7 @@ private suspend fun awaitGitHubShareImportPendingResolution(
     when (val result = windowCoordinator.awaitPendingResolution(context, armedAtMillis)) {
         is ShareImportCoordinatorResult.Pending,
         ShareImportCoordinatorResult.None,
-        -> {
-            Unit
-        }
+        -> {}
 
         else -> {
             flowState.applyCoordinatorResult(result)
@@ -142,9 +140,7 @@ private suspend fun collectGitHubShareImportPackageEvents(
         when (val result = GitHubShareImportFlowCoordinator.refreshPendingInstall(context, event)) {
             is ShareImportCoordinatorResult.Pending,
             ShareImportCoordinatorResult.None,
-            -> {
-                Unit
-            }
+            -> {}
 
             else -> {
                 flowState.applyCoordinatorResult(result)

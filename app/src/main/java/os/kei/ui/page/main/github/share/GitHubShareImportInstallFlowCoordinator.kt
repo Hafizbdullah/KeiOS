@@ -65,7 +65,6 @@ internal class GitHubShareImportInstallFlowCoordinator(
             }
 
             GitHubShareImportSelectedAssetDeliveryPlan.DirectDelivery -> {
-                Unit
             }
         }
         val result =

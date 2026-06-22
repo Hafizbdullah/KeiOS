@@ -57,7 +57,6 @@ internal class GitHubShareImportDeliveryCoordinator(
             }
 
             is GitHubShareImportActivePreviewDeliveryPlan.Ready -> {
-                Unit
             }
         }
         val lookupConfig =

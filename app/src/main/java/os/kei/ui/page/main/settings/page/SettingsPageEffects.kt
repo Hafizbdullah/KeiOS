@@ -85,7 +85,6 @@ internal fun BindSettingsPageEffects(
                     }
 
                     else -> {
-                        Unit
                     }
                 }
             }

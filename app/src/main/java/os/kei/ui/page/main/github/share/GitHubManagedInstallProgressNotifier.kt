@@ -109,9 +109,7 @@ internal class GitHubManagedInstallProgressNotifier {
             GitHubApkInstallStage.Succeeded,
             GitHubApkInstallStage.Failed,
             GitHubApkInstallStage.Cancelled,
-            -> {
-                Unit
-            }
+            -> {}
         }
     }
 }

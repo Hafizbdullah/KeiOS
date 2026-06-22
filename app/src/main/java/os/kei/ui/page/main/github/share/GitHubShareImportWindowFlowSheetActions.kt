@@ -152,9 +152,7 @@ internal class GitHubShareImportWindowFlowSheetActions(
             ShareImportDeliveryCoordinatorResult.Cancelled,
             is ShareImportDeliveryCoordinatorResult.InstallDetected,
             is ShareImportDeliveryCoordinatorResult.InstallReady,
-            -> {
-                Unit
-            }
+            -> {}
         }
     }
 
@@ -165,9 +163,7 @@ internal class GitHubShareImportWindowFlowSheetActions(
             is ShareImportCoordinatorResult.Pending,
             is ShareImportCoordinatorResult.Detected,
             is ShareImportCoordinatorResult.Cancelled,
-            -> {
-                Unit
-            }
+            -> {}
 
             is ShareImportCoordinatorResult.AlreadyTracked -> {
                 toast(context, R.string.github_toast_share_import_track_exists)

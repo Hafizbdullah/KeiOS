@@ -129,9 +129,7 @@ class GitHubShareImportActivity : ComponentActivity() {
                                 GitHubShareImportActivityDisplayState.Hidden,
                                 GitHubShareImportActivityDisplayState.SendingInstall,
                                 GitHubShareImportActivityDisplayState.Finish,
-                                -> {
-                                    Unit
-                                }
+                                -> {}
                             }
                         }
                     }
@@ -221,7 +219,6 @@ class GitHubShareImportActivity : ComponentActivity() {
             }
 
             GitHubShareImportActivityDisplayState.SendingInstall -> {
-                Unit
             }
         }
     }

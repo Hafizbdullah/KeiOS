@@ -278,6 +278,7 @@ internal fun parseGuideDetailFromArrayContentJson(raw: String, sourceUrl: String
                             addAll(extractWebUrlsFromAny(sourceUrl, content))
                         }
 
+                        null -> {}
                         else -> addAll(extractWebUrlsFromAny(sourceUrl, content))
                     }
                 }.distinct()

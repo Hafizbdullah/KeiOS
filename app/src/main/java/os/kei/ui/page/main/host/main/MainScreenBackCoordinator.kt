@@ -33,9 +33,7 @@ internal class MainScreenBackCoordinator(
 ) {
     fun onRouteBack() {
         when (resolveMainRouteBackAction(backStack.size, backStack.lastOrNull())) {
-            MainRouteBackAction.None -> {
-                Unit
-            }
+            MainRouteBackAction.None -> {}
 
             MainRouteBackAction.PopRoute -> {
                 navigator.pop()
