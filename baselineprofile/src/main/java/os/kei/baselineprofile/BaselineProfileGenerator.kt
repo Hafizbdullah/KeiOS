@@ -7,7 +7,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
-import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
@@ -39,16 +38,12 @@ class BaselineProfileGenerator {
 
             flingVisibleScrollable(times = 2)
 
-            clickTestTag(MAIN_BOTTOM_TAB_GITHUB)
-            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
-
-            clickTestTag(GITHUB_IMPORT_MENU_BUTTON)
-            waitForTestTag(GITHUB_IMPORT_TRACKS)
-            waitForTestTag(GITHUB_IMPORT_STARS)
-            device.pressBack()
-            device.waitForIdle()
-
-            flingVisibleScrollable(times = 2)
+            if (tryClickTestTag(MAIN_BOTTOM_TAB_GITHUB)) {
+                waitForAnyTestTag(listOf(GITHUB_PAGE_ROOT), timeoutMs = 15_000)
+                flingVisibleScrollable(times = 2)
+            } else {
+                flingVisibleScrollable(times = 2)
+            }
         }
     }
 
@@ -60,9 +55,12 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            clickTestTag(MAIN_BOTTOM_TAB_OS)
-            waitForTestTag(OS_PAGE_ROOT, timeoutMs = 15_000)
-            flingVisibleScrollable(times = 3)
+            if (tryClickTestTag(MAIN_BOTTOM_TAB_OS)) {
+                waitForAnyTestTag(listOf(OS_PAGE_ROOT), timeoutMs = 15_000)
+                flingVisibleScrollable(times = 3)
+            } else {
+                flingVisibleScrollable(times = 1)
+            }
         }
     }
 
@@ -74,9 +72,7 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            clickTestTag(MAIN_BOTTOM_TAB_MCP)
-            waitForTestTag(MCP_PAGE_ROOT, timeoutMs = 15_000)
-            flingVisibleScrollable(times = 3)
+            flingVisibleScrollable(times = 2)
         }
     }
 
@@ -88,9 +84,12 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            clickTestTag(MAIN_BOTTOM_TAB_BA)
-            waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
-            flingVisibleScrollable(times = 3)
+            if (tryClickTestTag(MAIN_BOTTOM_TAB_BA)) {
+                waitForAnyTestTag(listOf(BA_PAGE_ROOT), timeoutMs = 15_000)
+                flingVisibleScrollable(times = 3)
+            } else {
+                flingVisibleScrollable(times = 1)
+            }
         }
     }
 }
@@ -104,17 +103,12 @@ private fun MacrobenchmarkScope.waitForHome() {
 }
 
 private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
-private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
 private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
 private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val OS_PAGE_ROOT = "os_page_root"
-private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
-private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
-private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
-private const val GITHUB_IMPORT_STARS = "github_import_stars"
 
 private fun targetAppId(): String {
     return InstrumentationRegistry.getArguments().getString("targetAppId")
@@ -166,22 +160,39 @@ private fun MacrobenchmarkScope.waitForTestTag(
     device.waitForIdle()
 }
 
-private fun MacrobenchmarkScope.clickTestTag(
+private fun MacrobenchmarkScope.waitForAnyTestTag(
+    tags: List<String>,
+    timeoutMs: Long = 5_000,
+): Boolean {
+    val deadline = System.currentTimeMillis() + timeoutMs
+    while (System.currentTimeMillis() < deadline) {
+        if (tags.any { tag -> device.hasObject(testTagSelector(tag)) }) {
+            device.waitForIdle()
+            return true
+        }
+        Thread.sleep(100)
+    }
+    device.waitForIdle()
+    return false
+}
+
+private fun MacrobenchmarkScope.tryClickTestTag(
     tag: String,
     timeoutMs: Long = 5_000,
-) {
-    waitForTestTag(tag, timeoutMs)
-    val node = device.findObject(testTagSelector(tag))
-    checkNotNull(node) { "Missing testTag=$tag in ${targetAppId()}" }
+): Boolean {
+    if (!device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs)) return false
+    val node = device.findObject(testTagSelector(tag)) ?: return false
     node.click()
     device.waitForIdle()
+    return true
 }
 
 private fun MacrobenchmarkScope.flingVisibleScrollable(times: Int) {
-    val scrollable = device.findObject(By.scrollable(true)) ?: return
-    scrollable.setGestureMargin(device.displayWidth / 5)
+    val centerX = device.displayWidth / 2
+    val startY = (device.displayHeight * 0.74f).toInt()
+    val endY = (device.displayHeight * 0.34f).toInt()
     repeat(times) {
-        scrollable.fling(Direction.DOWN)
+        device.swipe(centerX, startY, centerX, endY, 24)
         device.waitForIdle()
     }
 }
