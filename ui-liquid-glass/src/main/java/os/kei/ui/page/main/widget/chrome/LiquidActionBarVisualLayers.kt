@@ -119,7 +119,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             items.forEach { item ->
-                LiquidActionItemSlot(item = item, tint = { accentColor })
+                LiquidActionItemVisualSlot(item = item, tint = { accentColor })
             }
         }
 

@@ -168,9 +168,9 @@ internal fun RowScope.LiquidActionItemSlot(
         modifier =
             Modifier
                 .then(item.testTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier)
-                .then(clickModifier)
                 .fillMaxHeight()
                 .weight(1f)
+                .then(clickModifier)
                 .graphicsLayer {
                     val scale = iconScale()
                     scaleX = scale
@@ -183,6 +183,30 @@ internal fun RowScope.LiquidActionItemSlot(
         LiquidActionItemTooltip(item = item) {
             LiquidActionItemIcon(item = item)
         }
+    }
+}
+
+@Composable
+internal fun RowScope.LiquidActionItemVisualSlot(
+    item: LiquidActionItem,
+    tint: () -> Color,
+    iconScale: () -> Float = { 1f },
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxHeight()
+                .weight(1f)
+                .graphicsLayer {
+                    val scale = iconScale()
+                    scaleX = scale
+                    scaleY = scale
+                    rotationZ = item.iconRotationDegrees
+                    colorFilter = ColorFilter.tint(item.iconTint ?: tint())
+                },
+        contentAlignment = Alignment.Center,
+    ) {
+        LiquidActionItemIcon(item = item)
     }
 }
 
