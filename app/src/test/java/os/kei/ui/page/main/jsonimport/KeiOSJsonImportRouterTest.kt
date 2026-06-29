@@ -26,7 +26,23 @@ class KeiOSJsonImportRouterTest {
     }
 
     @Test
-    fun `detects current github tracked v3`() {
+    fun `detects current github tracked v4`() {
+        val header = KeiOSJsonImportRouter.inspect(
+            """
+            {
+              "format": "keios.github.tracked/v4",
+              "schemaVersion": 4,
+              "items": []
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(KeiOSJsonImportKind.GitHubTracked, header.kind)
+        assertFalse(header.highVersion)
+    }
+
+    @Test
+    fun `detects legacy github tracked v3 after schema bump`() {
         val header = KeiOSJsonImportRouter.inspect(
             """
             {
@@ -38,7 +54,25 @@ class KeiOSJsonImportRouterTest {
         )
 
         assertEquals(KeiOSJsonImportKind.GitHubTracked, header.kind)
+        assertEquals(3, header.version)
         assertFalse(header.highVersion)
+    }
+
+    @Test
+    fun `marks future github tracked schema as high version`() {
+        val header = KeiOSJsonImportRouter.inspect(
+            """
+            {
+              "format": "keios.github.tracked/v5",
+              "schemaVersion": 5,
+              "items": []
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(KeiOSJsonImportKind.GitHubTracked, header.kind)
+        assertEquals(5, header.version)
+        assertTrue(header.highVersion)
     }
 
     @Test

@@ -178,6 +178,10 @@ class GitHubLookupModelsTest {
             GitHubTrackedUpdateIntervalMode.fromStorageId("6h")
         )
         assertEquals(
+            GitHubTrackedUpdateIntervalMode.Hours24,
+            GitHubTrackedUpdateIntervalMode.fromStorageId("24h")
+        )
+        assertEquals(
             GitHubTrackedUpdateIntervalMode.FollowGlobal,
             GitHubTrackedUpdateIntervalMode.fromStorageId("missing")
         )
@@ -197,6 +201,48 @@ class GitHubLookupModelsTest {
         assertEquals(3L * 60L * 60L * 1000L, global.updateIntervalMs(3))
         assertEquals(12L * 60L * 60L * 1000L, global.updateIntervalMs(12))
         assertEquals(1L * 60L * 60L * 1000L, custom.updateIntervalMs(3))
+    }
+
+    @Test
+    fun `fdroid tracked update interval uses source default and supports daily override`() {
+        val global = GitHubTrackedApp(
+            repoUrl = "https://f-droid.org/repo",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository
+        )
+        val daily = global.copy(updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours24)
+
+        assertEquals(12, global.updateIntervalHours(3))
+        assertEquals(12L * 60L * 60L * 1000L, global.updateIntervalMs(3))
+        assertEquals(24, daily.updateIntervalHours(3))
+        assertEquals(24L * 60L * 60L * 1000L, daily.updateIntervalMs(3))
+    }
+
+    @Test
+    fun `source constraints keep daily update interval scoped to fdroid`() {
+        val githubItem = GitHubTrackedApp(
+            repoUrl = "https://github.com/owner/repo",
+            owner = "owner",
+            repo = "repo",
+            packageName = "com.example.app",
+            appLabel = "Example",
+            updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours24,
+        ).withSourceModeConstraints()
+        val fdroidItem = GitHubTrackedApp(
+            repoUrl = "https://f-droid.org/repo",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+            updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours24,
+        ).withSourceModeConstraints()
+
+        assertEquals(GitHubTrackedUpdateIntervalMode.FollowGlobal, githubItem.updateIntervalMode)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hours24, fdroidItem.updateIntervalMode)
     }
 
     @Test

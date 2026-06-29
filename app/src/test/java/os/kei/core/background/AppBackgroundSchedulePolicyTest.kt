@@ -6,6 +6,7 @@ import os.kei.feature.github.domain.GitHubBackgroundScheduleSnapshot
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
@@ -191,6 +192,36 @@ class AppBackgroundSchedulePolicyTest {
 
         assertNotNull(schedule)
         assertEquals(itemDueAtMs, schedule.triggerAtMillis)
+        assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
+        assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
+    }
+
+    @Test
+    fun `github scheduler follows fdroid source interval instead of global fallback`() {
+        val item = trackedApp(checkActionsUpdates = false).copy(
+            repoUrl = "https://f-droid.org/repo",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+        )
+        val schedule = AppBackgroundScheduler.buildGitHubRefreshSchedule(
+            scheduleSnapshot =
+                GitHubBackgroundScheduleSnapshot(
+                    trackSnapshot =
+                        GitHubTrackSnapshot(
+                            items = listOf(item),
+                            lastRefreshMs = NOW_MS,
+                            refreshIntervalHours = 3,
+                        ),
+                    actionsRecommendedRunsByTrackId = emptyMap(),
+                ),
+            nowMs = NOW_MS,
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS + 12L * 60L * 60L * 1000L, schedule.triggerAtMillis)
         assertEquals(BackgroundAlarmWorkload.RoutineSync, schedule.workload)
         assertEquals(BackgroundAlarmPrecision.Windowed, schedule.precision)
     }

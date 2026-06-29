@@ -40,12 +40,12 @@ internal object AppBackgroundSchedulePolicy {
         } else {
             nowMs + GITHUB_FIRST_TICK_DELAY_MS
         }
-        val dueAtMs = listOfNotNull(
+        val explicitDueAtMs = listOfNotNull(
             nextTrackedUpdateDueAtMs,
-            versionDueAtMs,
             nextActionsUpdateDueAtMs
         )
             .minOrNull()
+        val dueAtMs = explicitDueAtMs
             ?: versionDueAtMs
         val triggerAtMs = dueAtMs.coerceAtLeast(nowMs + MIN_ALARM_DELAY_MS)
         val precision = if (triggerAtMs <= nowMs + 60_000L) {

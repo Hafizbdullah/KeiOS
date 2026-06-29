@@ -34,6 +34,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
+import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.githubProfileSourceSignature
@@ -105,8 +106,8 @@ data class GitHubAppPickerPreferences(
 )
 
 object GitHubTrackStore {
-    private const val TRACK_EXPORT_SCHEMA_VERSION = 3
-    private const val TRACK_EXPORT_FORMAT = "keios.github.tracked/v3"
+    private const val TRACK_EXPORT_SCHEMA_VERSION = 4
+    private const val TRACK_EXPORT_FORMAT = "keios.github.tracked/v4"
     private const val KV_ID = "github_track_store"
     private const val KEY_ITEMS = "tracked_items"
     private const val KEY_CHECK_CACHE = "tracked_check_cache"
@@ -342,6 +343,7 @@ object GitHubTrackStore {
         val payload = buildJsonObject {
             put("format", TRACK_EXPORT_FORMAT)
             put("schemaVersion", TRACK_EXPORT_SCHEMA_VERSION)
+            put("schemaFeatures", trackedItemsExportSchemaFeatures())
             put("exportedAtMillis", exportedAtMillis)
             put("itemCount", normalizedItems.size)
             put("sourceCounts", sourceCounts.toJson())
@@ -350,6 +352,14 @@ object GitHubTrackStore {
         }
         return KeiJson.pretty.encodeToString(JsonObject.serializer(), payload)
     }
+
+    private fun trackedItemsExportSchemaFeatures(): JsonObject =
+        buildJsonObject {
+            put("fdroidRepositorySource", true)
+            put("fdroidDefaultUpdateIntervalHours", GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS)
+            put("fdroidCustomUpdateIntervalMaxHours", 24)
+            put("webDavMergeCompatible", true)
+        }
 
     fun parseTrackedItemsImport(raw: String): GitHubTrackedItemsImportPayload {
         val normalized = raw.trim()

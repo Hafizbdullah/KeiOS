@@ -2,6 +2,7 @@ package os.kei.feature.github.data.local
 
 import org.junit.Test
 import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
@@ -48,8 +49,8 @@ class GitHubTrackStoreTrackedItemJsonTest {
         val payload = GitHubTrackStore.parseTrackedItemsImport(exported)
         val imported = payload.items.single()
 
-        assertEquals(3, payload.schemaVersion)
-        assertEquals("keios.github.tracked/v3", payload.format)
+        assertEquals(4, payload.schemaVersion)
+        assertEquals("keios.github.tracked/v4", payload.format)
         assertEquals(1000L, payload.exportedAtMillis)
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
@@ -286,6 +287,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
             packageName = "org.fdroid.fdroid",
             appLabel = "F-Droid",
             sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+            updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours24,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
@@ -312,13 +314,20 @@ class GitHubTrackStoreTrackedItemJsonTest {
             ?: error("exported item should exist")
         val source = exportedItem.optObject("source") ?: error("source should exist")
         val fdroid = source.optObject("fdroid") ?: error("fdroid source config should exist")
+        val schemaFeatures = root.optObject("schemaFeatures")
+            ?: error("schema features should exist")
         val sourceCounts = root.optObject("sourceCounts")
             ?: error("source counts should exist")
         val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
 
+        assertEquals(true, schemaFeatures.optBoolean("fdroidRepositorySource"))
+        assertEquals(12, schemaFeatures.optInt("fdroidDefaultUpdateIntervalHours"))
+        assertEquals(24, schemaFeatures.optInt("fdroidCustomUpdateIntervalMaxHours"))
+        assertEquals(true, schemaFeatures.optBoolean("webDavMergeCompatible"))
         assertEquals("fdroid_repository", source.optString("mode"))
         assertEquals("https://f-droid.org/repo", source.optString("url"))
         assertEquals("org.fdroid.fdroid", source.optString("packageName"))
+        assertEquals("24h", exportedItem.optObject("settings")?.optString("updateIntervalMode"))
         assertEquals("highest_compatible_version_code", fdroid.optString("selectionMode"))
         assertEquals("require_apk_hash", fdroid.optString("trustPolicy"))
         assertEquals("custom", fdroid.optString("antiFeaturePolicy"))
@@ -333,6 +342,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals("repo", imported.repo)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(GitHubTrackedUpdateIntervalMode.Hours24, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             imported.actionsUpdateIntervalMode

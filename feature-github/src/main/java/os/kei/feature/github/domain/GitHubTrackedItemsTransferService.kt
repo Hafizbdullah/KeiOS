@@ -23,6 +23,7 @@ data class GitHubTrackedItemsImportPreview(
     val preferPreReleaseCount: Int = 0,
     val latestReleaseDownloadCount: Int = 0,
     val actionsUpdateCount: Int = 0,
+    val updateIntervalOverrideCount: Int = 0,
     val preciseApkVersionOverrideCount: Int = 0,
 ) {
     val canImport: Boolean
@@ -85,6 +86,7 @@ object GitHubTrackedItemsTransferService {
             preferPreReleaseCount = optionCounts.preferPreReleaseCount,
             latestReleaseDownloadCount = optionCounts.latestReleaseDownloadCount,
             actionsUpdateCount = optionCounts.actionsUpdateCount,
+            updateIntervalOverrideCount = optionCounts.updateIntervalOverrideCount,
             preciseApkVersionOverrideCount = optionCounts.preciseApkVersionOverrideCount,
         )
     }

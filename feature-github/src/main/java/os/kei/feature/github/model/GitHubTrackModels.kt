@@ -8,6 +8,7 @@ private const val keiOsTrackRepo = "KeiOS"
 private const val keiOsTrackRepoUrl = "https://github.com/$keiOsTrackOwner/$keiOsTrackRepo"
 private const val keiOsTrackAppLabel = "KeiOS"
 const val KEI_OS_RELEASE_PACKAGE_NAME = "os.kei"
+const val GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS = 12
 
 data class GitHubTrackedApp(
     val repoUrl: String,
@@ -120,22 +121,29 @@ fun GitHubTrackedApp.isFdroidRepositoryTrack(): Boolean {
 fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
     return when (sourceMode) {
         GitHubTrackedSourceMode.GitHubRepository -> {
+            val constrainedUpdateIntervalMode =
+                updateIntervalMode.coerceForSource(sourceMode)
             if (checkActionsUpdates) {
-                this
+                copy(updateIntervalMode = constrainedUpdateIntervalMode)
             } else {
-                copy(actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal)
+                copy(
+                    updateIntervalMode = constrainedUpdateIntervalMode,
+                    actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+                )
             }
         }
 
         GitHubTrackedSourceMode.GitRepository -> copy(
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
+            updateIntervalMode = updateIntervalMode.coerceForSource(sourceMode),
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         )
 
         GitHubTrackedSourceMode.DirectApk -> copy(
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
+            updateIntervalMode = updateIntervalMode.coerceForSource(sourceMode),
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         )
 
@@ -144,6 +152,19 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
             checkActionsUpdates = false,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         )
+    }
+}
+
+fun GitHubTrackedUpdateIntervalMode.coerceForSource(
+    sourceMode: GitHubTrackedSourceMode
+): GitHubTrackedUpdateIntervalMode {
+    return if (
+        sourceMode == GitHubTrackedSourceMode.FdroidRepository ||
+        this != GitHubTrackedUpdateIntervalMode.Hours24
+    ) {
+        this
+    } else {
+        GitHubTrackedUpdateIntervalMode.FollowGlobal
     }
 }
 
@@ -407,7 +428,8 @@ enum class GitHubTrackedUpdateIntervalMode(
     Hour1("1h", 1),
     Hours3("3h", 3),
     Hours6("6h", 6),
-    Hours12("12h", 12);
+    Hours12("12h", 12),
+    Hours24("24h", 24);
 
     companion object {
         fun fromStorageId(value: String?): GitHubTrackedUpdateIntervalMode {
@@ -441,12 +463,28 @@ enum class GitHubTrackedActionsUpdateIntervalMode(
 fun GitHubTrackedUpdateIntervalMode.effectiveIntervalMs(
     globalRefreshIntervalHours: Int
 ): Long {
+    return effectiveIntervalHours(globalRefreshIntervalHours) * 60L * 60L * 1000L
+}
+
+fun GitHubTrackedUpdateIntervalMode.effectiveIntervalHours(
+    globalRefreshIntervalHours: Int
+): Int {
     val hours = intervalHours ?: globalRefreshIntervalHours.coerceIn(1, 12)
-    return hours.coerceIn(1, 12) * 60L * 60L * 1000L
+    return hours.coerceIn(1, 24)
 }
 
 fun GitHubTrackedApp.updateIntervalMs(globalRefreshIntervalHours: Int): Long {
-    return updateIntervalMode.effectiveIntervalMs(globalRefreshIntervalHours)
+    return updateIntervalHours(globalRefreshIntervalHours) * 60L * 60L * 1000L
+}
+
+fun GitHubTrackedApp.updateIntervalHours(globalRefreshIntervalHours: Int): Int {
+    val sourceDefaultHours =
+        if (isFdroidRepositoryTrack()) {
+            GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
+        } else {
+            globalRefreshIntervalHours
+        }
+    return updateIntervalMode.effectiveIntervalHours(sourceDefaultHours)
 }
 
 fun GitHubTrackedActionsUpdateIntervalMode.effectiveIntervalMs(
