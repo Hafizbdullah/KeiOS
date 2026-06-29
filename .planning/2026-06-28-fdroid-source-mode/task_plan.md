@@ -24,7 +24,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | P6 Source capability refinement | Done | Added source capability matrix, F-Droid detail/menu plan, top-bar/MCP plan |
 | P7 Source parity and acceptance refinement | Done | Added source-surface parity, metadata priority, notification/deep-link plan, and first-release acceptance criteria |
 | P8 Backend P1 model/store/cache foundation | Done | Added F-Droid source mode, identity normalization, config models, JSON round-trip, source counts, cache signature, tests |
-| P9 Backend P2 data source foundation | In Progress | Add F-Droid repo URL normalizer, package API client, v2 index parser/adapter spike, repo/package cache, candidate selector |
+| P9 Backend P2 data source foundation | In Progress | Package API client and candidate selector done; v2 index parser/adapter and repo/package cache remain |
 | P10 Backend P3 release-check bridge | Pending | Dispatch F-Droid tracks through release-check service and map selected candidates into existing check models |
 | P11 Backend P4 metadata sidecar | Pending | Persist package/version/repo/trust/Anti-Feature summary data for UI/detail sheets |
 | P12 UI P5 sheet bridge | Pending | Add source dropdown option, repo probe state, F-Droid field visibility, localized labels |
@@ -63,6 +63,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 |---|---|---|
 | `GitHubTrackStoreSerializersTest.kt` lookup failed because the serializer tests live in `GitHubTrackStoreTrackedItemJsonTest.kt`. | Initial source exploration | Used `find` to locate existing test files and added serializer coverage in the correct test file. |
 | `app:compileDebugKotlin` reported a missing `FdroidRepository` branch in Home overview source counts. | P8 app compile verification | Added `fdroidRepositoryCount` to `HomeGitHubOverview` and Home overview derivation. |
+| First P9 package API test had an unclosed `server.enqueue(...)` call. | Initial red test run | Closed the test fixture call and reran; remaining failures were the expected missing implementation types. |
 
 ## Verification Checklist
 

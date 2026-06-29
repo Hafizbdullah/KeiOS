@@ -56,3 +56,9 @@
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.model.GitHubTrackModelsTest --tests os.kei.feature.github.model.GitHubCheckCachePolicyTest --tests os.kei.feature.github.data.local.GitHubTrackStoreTrackedItemJsonTest`
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :feature-github:testDebugUnitTest`
+- Started Backend P2 data source foundation with a narrow package API and selection slice:
+  - Added lightweight F-Droid package/version/anti-feature snapshot models.
+  - Added package API client fast path for official and repo-scoped API-compatible hosts.
+  - Added candidate selection by suggested version, highest compatible versionCode, highest versionCode, version regex, APK regex, SDK compatibility, and basic Anti-Feature policy.
+- Verification:
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest`
