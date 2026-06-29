@@ -2,10 +2,13 @@ package os.kei.feature.github.data.local
 
 import com.tencent.mmkv.MMKV
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import os.kei.core.json.encodeCompact
+import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
@@ -165,6 +168,14 @@ object GitHubReleaseAssetCacheStore {
                                 put("contentType", asset.contentType)
                                 put("updatedAtMillis", asset.updatedAtMillis ?: 0L)
                                 put("digest", asset.digest)
+                                put(
+                                    "signerSha256",
+                                    buildJsonArray {
+                                        asset.signerSha256.forEach { signer ->
+                                            add(JsonPrimitive(signer))
+                                        }
+                                    }
+                                )
                             }
                         )
                     }
@@ -194,7 +205,14 @@ object GitHubReleaseAssetCacheStore {
                         contentType = assetObj.optString("contentType").trim(),
                         updatedAtMillis = assetObj.optLong("updatedAtMillis", 0L)
                             .takeIf { it > 0L },
-                        digest = assetObj.optString("digest").trim()
+                        digest = assetObj.optString("digest").trim(),
+                        signerSha256 = assetObj.optArray("signerSha256")
+                            ?.mapNotNull { element ->
+                                element.jsonPrimitiveOrNull()
+                                    ?.contentOrNull
+                                    ?.trim()
+                                    ?.takeIf { it.isNotBlank() }
+                            }.orEmpty()
                     )
                 )
             }

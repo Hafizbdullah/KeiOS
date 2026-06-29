@@ -16,6 +16,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -64,7 +65,7 @@ internal fun GitHubTrackedItemHeaderActions(
         onClick = {
             if (actionState.canToggleDirectApkAssets) {
                 assetState.apkAssetExpanded[item.id] = !actionState.assetPanelExpanded
-            } else if (actionState.canLoadRepositoryApkAssets) {
+            } else if (actionState.canLoadRepositoryApkAssets || actionState.canLoadFdroidApkAssets) {
                 if (actionState.assetPanelExpanded) {
                     actions.onCollapseApkAssetPanel(item, state)
                 } else {
@@ -165,8 +166,18 @@ private fun gitHubTrackedItemHeaderActionState(
                             ) != null
                     )
             )
+    val canLoadFdroidApkAssets =
+        item.isFdroidRepositoryTrack() &&
+            (
+                state.latestStableApkVersion != null ||
+                    state.latestPreApkVersion != null ||
+                    state.hasUpdate == true ||
+                    state.recommendsPreRelease ||
+                    state.hasPreReleaseUpdate ||
+                    localAppUninstalled
+            )
     val canToggleDirectApkAssets = item.isDirectApkTrack() && directAssetPanelData != null
-    val canLoadApkAssets = canLoadRepositoryApkAssets || canToggleDirectApkAssets
+    val canLoadApkAssets = canLoadRepositoryApkAssets || canLoadFdroidApkAssets || canToggleDirectApkAssets
     val assetPanelExpanded = assetState.apkAssetExpanded[item.id] == true
     val assetPanelLoading = assetState.apkAssetLoading[item.id] == true
     val icon =
@@ -187,6 +198,7 @@ private fun gitHubTrackedItemHeaderActionState(
         itemRefreshLoading = itemRefreshLoading,
         canToggleDirectApkAssets = canToggleDirectApkAssets,
         canLoadRepositoryApkAssets = canLoadRepositoryApkAssets,
+        canLoadFdroidApkAssets = canLoadFdroidApkAssets,
         assetPanelExpanded = assetPanelExpanded,
         localAppUninstalled = localAppUninstalled,
         statusReleaseUrl = statusReleaseUrl,
@@ -208,6 +220,7 @@ private data class GitHubTrackedItemHeaderActionState(
     val itemRefreshLoading: Boolean,
     val canToggleDirectApkAssets: Boolean,
     val canLoadRepositoryApkAssets: Boolean,
+    val canLoadFdroidApkAssets: Boolean,
     val assetPanelExpanded: Boolean,
     val localAppUninstalled: Boolean,
     val statusReleaseUrl: String,

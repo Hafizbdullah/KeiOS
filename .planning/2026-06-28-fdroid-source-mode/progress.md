@@ -106,3 +106,14 @@
   - `./gradlew :app:testDebugUnitTest --tests os.kei.ui.page.main.github.page.GitHubPageRepositoryTrackEditorTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
   - `git diff --check`
+- Completed P7 asset/install bridge:
+  - Added a F-Droid asset conversion helper that maps the selected sidecar APK into the existing `GitHubReleaseAssetBundle` path.
+  - Resolved repo-relative, root-relative, and absolute F-Droid APK URLs.
+  - Preserved APK SHA-256 as asset digest and signer SHA-256 fingerprints as asset metadata.
+  - Let the tracked-card header and asset panel load F-Droid APK assets through the existing download/share/managed-install surface.
+  - Added F-Droid asset target, source, cache-missing, candidate-missing, SHA-256, and signer UI labels across locales.
+  - Persisted signer metadata in the asset cache JSON.
+- Verification:
+  - `./gradlew :app:testDebugUnitTest --tests os.kei.ui.page.main.github.asset.GitHubFdroidInstallAssetsTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.GitHubReleaseAssetJsonMapperTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
+  - `git diff --check`

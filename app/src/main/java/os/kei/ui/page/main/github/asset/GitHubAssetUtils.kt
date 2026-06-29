@@ -169,6 +169,10 @@ internal fun bundleTransportLabel(
             context.getString(R.string.github_asset_fetch_source_html)
         }
 
+        GITHUB_FDROID_ASSET_FETCH_SOURCE -> {
+            context.getString(R.string.github_asset_fetch_source_fdroid)
+        }
+
         else -> {
             if (bundle.assets.any { prefersApiAssetTransport(it) }) {
                 context.getString(R.string.github_asset_fetch_source_api)

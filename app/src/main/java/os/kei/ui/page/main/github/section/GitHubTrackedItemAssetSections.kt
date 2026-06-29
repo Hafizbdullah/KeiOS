@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.buildGitHubRepositoryHealth
@@ -41,6 +42,29 @@ internal fun GitHubTrackedItemAssetSections(
         )
     }
     if (item.isGitHubRepositoryTrack()) {
+        GitHubTrackedItemAssetPanel(
+            item = item,
+            state = state,
+            lookupConfig = itemLookupConfig,
+            isDark = surfaces.isDark,
+            assetBundle = assetBundle,
+            assetLoading = assetLoading,
+            assetError = assetError,
+            assetExpanded = assetExpanded,
+            managedInstallLoading = assetState.managedInstallLoading,
+            onOpenExternalUrl = actions.onOpenExternalUrl,
+            onLoadApkAssets = actions.onLoadApkAssets,
+            onRefreshTrackedItem = actions.onRefreshTrackedItem,
+            onOpenApkInfo = actions.onOpenApkInfo,
+            onInstallApk = actions.onInstallApk,
+            onOpenApkInDownloader = actions.onOpenApkInDownloader,
+            onShareApkLink = actions.onShareApkLink,
+            context = runtime.context,
+            supportedAbis = runtime.supportedAbis,
+            relativeTimeNowMillis = runtime.relativeTimeNowMillis,
+        )
+    }
+    if (item.isFdroidRepositoryTrack()) {
         GitHubTrackedItemAssetPanel(
             item = item,
             state = state,

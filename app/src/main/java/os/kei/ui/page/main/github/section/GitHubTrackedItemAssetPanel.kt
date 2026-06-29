@@ -18,6 +18,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.GitHubDirectApkAssetAccentKind
@@ -123,16 +124,19 @@ internal fun GitHubTrackedItemAssetPanel(
                     directPanelData?.let { stringResource(it.targetLabelRes) }
                         ?: target?.label
                         ?: stringResource(
-                            if (installFallbackMode) {
+                            if (item.isFdroidRepositoryTrack()) {
+                                R.string.github_asset_target_fdroid
+                            } else if (installFallbackMode) {
                                 R.string.github_asset_target_install
                             } else {
                                 R.string.github_item_label_update_assets
                             },
                         ),
-                targetRawTag = directPanelData?.targetRawTag ?: target?.rawTag.orEmpty(),
+                targetRawTag = directPanelData?.targetRawTag ?: target?.rawTag ?: renderedAssetBundle?.tagName.orEmpty(),
                 preciseApkVersionEnabled = lookupConfig.preciseApkVersionEnabled,
                 fallbackReleaseUrl =
                     directPanelData?.bundle?.htmlUrl
+                        ?: renderedAssetBundle?.htmlUrl
                         ?: target?.releaseUrl.orEmpty(),
                 targetAccent = targetAccent,
                 summaryContainerColor = summaryContainerColor,

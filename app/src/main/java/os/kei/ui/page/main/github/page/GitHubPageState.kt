@@ -497,6 +497,7 @@ internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetF
         asset.apiAssetUrl,
         asset.sizeBytes.toString(),
         asset.digest,
+        asset.signerSha256.joinToString(","),
     ).joinToString("|")
 
 internal enum class GitHubDecisionAssistDetailType {

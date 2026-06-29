@@ -419,8 +419,10 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_asset_target_stable">Stable</string>
     <string name="github_asset_target_latest">Latest</string>
     <string name="github_asset_target_install">インストール</string>
+    <string name="github_asset_target_fdroid">F-Droid APK</string>
     <string name="github_asset_fetch_source_api">API</string>
     <string name="github_asset_fetch_source_html">Atom</string>
+    <string name="github_asset_fetch_source_fdroid">F-Droid</string>
     <string name="github_asset_transport_direct">直接リンク</string>
     <string name="github_asset_relative_just_now">たった今</string>
     <string name="github_asset_relative_min_ago">%1$d 分前</string>
@@ -993,6 +995,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_short_cancelled">取消済み</string>
     <string name="github_asset_badge_recommended">この端末に推奨</string>
     <string name="github_asset_badge_incompatible">互換性に注意</string>
+    <string name="github_asset_badge_signer">署名</string>
     <string name="github_cd_install_tracked_item">%1$s をインストール</string>
     <string name="github_cd_install_asset">%1$s をインストールまたは更新</string>
     <string name="github_cd_install_asset_running">%1$s をインストール中</string>
@@ -1360,6 +1363,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_detail_title">F-Droid 詳細</string>
     <string name="github_fdroid_detail_no_cache_title">F-Droid キャッシュはまだありません</string>
     <string name="github_fdroid_detail_no_cache_summary">この追跡項目を更新すると、リポジトリ index または package API を読み取り、パッケージ情報、候補バージョン、信頼要約、Anti-Feature 要約をキャッシュします。</string>
+    <string name="github_fdroid_asset_error_no_cache">F-Droid バージョンキャッシュはまだありません。先にこの追跡項目を更新してください。</string>
+    <string name="github_fdroid_asset_error_no_selected_version">現在の F-Droid キャッシュにインストール可能な候補 APK がありません。更新してから再試行してください。</string>
     <string name="github_fdroid_detail_section_package">パッケージ</string>
     <string name="github_fdroid_detail_section_version">バージョンと APK</string>
     <string name="github_fdroid_detail_section_repository">リポジトリ</string>

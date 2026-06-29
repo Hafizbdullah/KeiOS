@@ -420,8 +420,10 @@
     <string name="github_asset_target_stable">Stable</string>
     <string name="github_asset_target_latest">Latest</string>
     <string name="github_asset_target_install">Install</string>
+    <string name="github_asset_target_fdroid">F-Droid APK</string>
     <string name="github_asset_fetch_source_api">API</string>
     <string name="github_asset_fetch_source_html">Atom</string>
+    <string name="github_asset_fetch_source_fdroid">F-Droid</string>
     <string name="github_asset_transport_direct">Direct link</string>
     <string name="github_asset_relative_just_now">just now</string>
     <string name="github_asset_relative_min_ago">%1$d min ago</string>
@@ -1034,6 +1036,7 @@
     <string name="github_share_import_notify_short_cancelled">Cancelled</string>
     <string name="github_asset_badge_recommended">Recommended for this device</string>
     <string name="github_asset_badge_incompatible">May be incompatible</string>
+    <string name="github_asset_badge_signer">Signer</string>
     <string name="github_cd_install_tracked_item">Install %1$s</string>
     <string name="github_cd_install_asset">Install or update %1$s</string>
     <string name="github_cd_install_asset_running">Installing %1$s</string>
@@ -1359,6 +1362,8 @@
     <string name="github_fdroid_detail_title">F-Droid details</string>
     <string name="github_fdroid_detail_no_cache_title">No F-Droid cache yet</string>
     <string name="github_fdroid_detail_no_cache_summary">Refresh this tracked item to read the repository index or package API and cache package info, candidate versions, trust summary, and Anti-Feature summary.</string>
+    <string name="github_fdroid_asset_error_no_cache">No F-Droid version cache yet. Refresh this tracked item first.</string>
+    <string name="github_fdroid_asset_error_no_selected_version">The current F-Droid cache has no installable candidate APK. Refresh and try again.</string>
     <string name="github_fdroid_detail_section_package">Package</string>
     <string name="github_fdroid_detail_section_version">Version and APK</string>
     <string name="github_fdroid_detail_section_repository">Repository</string>

@@ -26,7 +26,8 @@ data class GitHubReleaseAssetFile(
     val downloadCount: Int,
     val contentType: String = "",
     val updatedAtMillis: Long? = null,
-    val digest: String = ""
+    val digest: String = "",
+    val signerSha256: List<String> = emptyList()
 )
 
 const val GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE =

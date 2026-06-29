@@ -423,8 +423,10 @@
     <string name="github_asset_target_stable">稳定</string>
     <string name="github_asset_target_latest">最新</string>
     <string name="github_asset_target_install">安装</string>
+    <string name="github_asset_target_fdroid">F-Droid APK</string>
     <string name="github_asset_fetch_source_api">API</string>
     <string name="github_asset_fetch_source_html">Atom</string>
+    <string name="github_asset_fetch_source_fdroid">F-Droid</string>
     <string name="github_asset_transport_direct">直链</string>
     <string name="github_asset_relative_just_now">just now</string>
     <string name="github_asset_relative_min_ago">%1$d min ago</string>
@@ -1019,6 +1021,7 @@
     <string name="github_share_import_notify_short_cancelled">已取消</string>
     <string name="github_asset_badge_recommended">推荐本机</string>
     <string name="github_asset_badge_incompatible">可能不兼容</string>
+    <string name="github_asset_badge_signer">签名</string>
     <string name="github_cd_install_tracked_item">安装 %1$s</string>
     <string name="github_cd_install_asset">安装或更新 %1$s</string>
     <string name="github_cd_install_asset_running">正在安装 %1$s</string>
@@ -1359,6 +1362,8 @@
     <string name="github_fdroid_detail_title">F-Droid 详情</string>
     <string name="github_fdroid_detail_no_cache_title">还没有 F-Droid 缓存</string>
     <string name="github_fdroid_detail_no_cache_summary">刷新此追踪项后会读取仓库 index 或 package API，并缓存包信息、候选版本、信任摘要和反特性摘要。</string>
+    <string name="github_fdroid_asset_error_no_cache">还没有 F-Droid 版本缓存，请先刷新此追踪项。</string>
+    <string name="github_fdroid_asset_error_no_selected_version">当前 F-Droid 缓存没有可安装的候选 APK，请刷新后重试。</string>
     <string name="github_fdroid_detail_section_package">包信息</string>
     <string name="github_fdroid_detail_section_version">版本与 APK</string>
     <string name="github_fdroid_detail_section_repository">仓库</string>

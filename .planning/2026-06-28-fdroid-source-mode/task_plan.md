@@ -29,7 +29,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | P11 Backend P4 metadata sidecar | Done | Persisted package/version/repo/trust/Anti-Feature summary sidecar data for UI/detail sheets |
 | P12 UI P5 sheet bridge | Done | Added source dropdown option, F-Droid config controls, field visibility, package-page URL normalization, and localized labels |
 | P13 UI P6 card/menu/detail bridge | Done | Added compact card metadata, F-Droid detail entry, localized detail sheet, source filter, and import preview count |
-| P14 P7 asset/install bridge | Pending | Feed selected F-Droid APK into existing asset/install path with hash/signer checks |
+| P14 P7 asset/install bridge | Done | Feed selected F-Droid APK into existing asset/install path with hash/signer checks |
 | P15 P8 transfer/WebDAV/MCP bridge | Pending | Extend import/export, WebDAV payload, MCP aliases/counts/filters |
 | P16 P9 verification | Pending | Unit tests, compile, release build/R8, AVD smoke, baseline-profile review when affected |
 
