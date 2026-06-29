@@ -53,7 +53,7 @@ fun McpPage(
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val mcpPageViewModel: McpPageViewModel = viewModel()
+    val mcpPageViewModel: McpPageViewModel = viewModel(factory = McpPageViewModel.Factory)
     val uiState by mcpServerManager.uiState.collectAsStateWithLifecycle()
     val routeState by mcpPageViewModel.routeState.collectAsStateWithLifecycle()
     val runtimeNowMsFlow =
