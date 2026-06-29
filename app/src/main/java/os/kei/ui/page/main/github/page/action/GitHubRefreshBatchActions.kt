@@ -15,9 +15,11 @@ import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import java.util.concurrent.atomic.AtomicInteger
@@ -124,6 +126,9 @@ internal class GitHubRefreshBatchActions(
                     val concurrency = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(snapshot.size)
                     val directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
                     val directApkSemaphore = Semaphore(directApkConcurrency)
+                    val fdroidConcurrency = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency)
+                    val fdroidSemaphore = Semaphore(fdroidConcurrency)
+                    val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(snapshot)
                     val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(snapshot)
                     val nextWorkIndex = AtomicInteger(0)
                     var lastProgressNotifyAtMs = clock.nowMs()
@@ -139,18 +144,34 @@ internal class GitHubRefreshBatchActions(
                                     val itemStartNs = System.nanoTime()
                                     val resolved =
                                         runCatching {
-                                            if (item.isDirectApkTrack()) {
-                                                directApkSemaphore.withPermit {
+                                            when {
+                                                item.isDirectApkTrack() -> {
+                                                    directApkSemaphore.withPermit {
+                                                        owner.resolveItemState(
+                                                            item = item,
+                                                            forceRefresh = forceRefresh,
+                                                            batchEvaluator = batchEvaluator,
+                                                        )
+                                                    }
+                                                }
+
+                                                item.isFdroidRepositoryTrack() -> {
+                                                    fdroidSemaphore.withPermit {
+                                                        owner.resolveItemState(
+                                                            item = item,
+                                                            forceRefresh = forceRefresh,
+                                                            batchEvaluator = batchEvaluator,
+                                                        )
+                                                    }
+                                                }
+
+                                                else -> {
                                                     owner.resolveItemState(
                                                         item = item,
                                                         forceRefresh = forceRefresh,
+                                                        batchEvaluator = batchEvaluator,
                                                     )
                                                 }
-                                            } else {
-                                                owner.resolveItemState(
-                                                    item = item,
-                                                    forceRefresh = forceRefresh,
-                                                )
                                             }
                                         }.getOrElse { throwable ->
                                             if (throwable is CancellationException) throw throwable
@@ -317,6 +338,7 @@ internal class GitHubRefreshBatchActions(
                         "github page refresh completed target=$totalCount/${state.trackedItems.size} " +
                             "elapsed=${elapsedMsSince(refreshStartNs)}ms " +
                             "concurrency=$concurrency directConcurrency=$directApkConcurrency " +
+                            "fdroidConcurrency=$fdroidConcurrency " +
                             "updatable=$updatableCount prerelease=$preReleaseUpdateCount failed=$failedCount",
                     )
                     logTrackedRefreshFailures(failureSummaries)

@@ -390,6 +390,15 @@ Performance guardrails:
 - Keep UI state flowing through repositories into ViewModels as immutable snapshots.
 - Extend fair refresh scheduling with an F-Droid lane grouped by repo URL. Repository refresh should run at low bounded concurrency, while per-package fan-out can run in memory after the repo snapshot lands.
 
+Current refresh-chain implementation:
+
+- Batch refresh scheduling has separate repository, Direct APK, and F-Droid lanes, then round-robins them before fallback items.
+- F-Droid refresh work has its own low bounded concurrency lane capped at 2 active checks.
+- A batch-scoped evaluator owns one F-Droid snapshot provider per refresh batch, shared by background refresh, shortcut refresh, Page batch refresh, requested-track refresh, and missing-cache refresh.
+- F-Droid items sharing a repo URL can load one repository snapshot and fan out package checks from that snapshot when the batch size reaches the repo-mode threshold.
+- Small F-Droid repo groups still use the package API fast path, with single-flight protection for repeated package lookups and repo-index fallback when a third-party repo does not expose that API.
+- F-Droid metadata sidecars now receive repository snapshots when the batch provider loaded one, so detail surfaces can show repo name, format, timestamp, mirrors, and package count from the same refresh.
+
 ## Security And Trust
 
 Trust levels:
@@ -545,6 +554,9 @@ Integration / AVD after implementation:
 Implemented verification on 2026-06-29:
 
 - Targeted app and `feature-github` unit tests passed for editor state, asset bridge, MCP registration, release-check dispatch, F-Droid source evaluation, candidate selection, package API, index v2 parsing, repo cache models, sidecar JSON, and tracked-item JSON.
+- Follow-up F-Droid refresh fairness tests passed for repo/API single-flight, repository snapshot sidecar propagation, F-Droid lane scheduling, and Direct APK/F-Droid lane concurrency caps.
+- `:feature-github:testDebugUnitTest --tests '*Fdroid*' --tests '*GitHubTrackedRefresh*'` passed.
+- `:feature-github:compileDebugKotlin :app:compileDebugKotlin` passed after wiring the shared batch evaluator into feature-github and the Page refresh actions.
 - `:app:assembleRelease` passed with `minifyReleaseWithR8`, `lintVitalRelease`, `optimizeReleaseResources`, `packageRelease`, and `assembleRelease`.
 - `:app:assembleDebug` passed and the current debug APK was installed on `Pixel_10_Pro`.
 - AVD smoke covered GitHub page entry, `新增跟踪`, source dropdown exposure, selecting `F-Droid 仓库`, and F-Droid field rendering.

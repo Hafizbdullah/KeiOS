@@ -17,11 +17,13 @@ import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
 import java.util.concurrent.ConcurrentHashMap
@@ -32,7 +34,8 @@ private const val GITHUB_MISSING_CHECK_STATE_REFRESH_PARALLELISM = 4
 internal data class GitHubItemRefreshRequest(
     val item: GitHubTrackedApp,
     val forceRefresh: Boolean = false,
-    val profilePurposeOverride: GitHubRepositoryProfilePurpose? = null
+    val profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
+    val batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null
 )
 
 internal class GitHubBackgroundRefreshCoordinator(
@@ -124,6 +127,10 @@ internal class GitHubBackgroundRefreshCoordinator(
             val directApkSemaphore = Semaphore(
                 GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
             )
+            val fdroidSemaphore = Semaphore(
+                GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency)
+            )
+            val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
             val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(items)
             val nextWorkIndex = AtomicInteger(0)
             val progressMutex = Mutex()
@@ -143,16 +150,27 @@ internal class GitHubBackgroundRefreshCoordinator(
                             val request = GitHubItemRefreshRequest(
                                 item = item,
                                 forceRefresh = forceRefresh,
-                                profilePurposeOverride = profilePurposeOverride
+                                profilePurposeOverride = profilePurposeOverride,
+                                batchEvaluator = batchEvaluator
                             )
                             val failureState =
                                 runCatching {
-                                    if (item.isDirectApkTrack()) {
-                                        directApkSemaphore.withPermit {
+                                    when {
+                                        item.isDirectApkTrack() -> {
+                                            directApkSemaphore.withPermit {
+                                                refreshItem(request)
+                                            }
+                                        }
+
+                                        item.isFdroidRepositoryTrack() -> {
+                                            fdroidSemaphore.withPermit {
+                                                refreshItem(request)
+                                            }
+                                        }
+
+                                        else -> {
                                             refreshItem(request)
                                         }
-                                    } else {
-                                        refreshItem(request)
                                     }
                                 }.exceptionOrNull()
                                     ?.let { error ->

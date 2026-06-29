@@ -50,6 +50,7 @@ internal class GitHubRefreshActions(
                     forceRefresh = request.forceRefresh,
                     persistAfterUpdate = false,
                     refreshActionsAfterUpdate = false,
+                    batchEvaluator = request.batchEvaluator,
                 )
             },
             persistCheckCache = { targetIds -> mergeCheckCacheNow(targetIds) },

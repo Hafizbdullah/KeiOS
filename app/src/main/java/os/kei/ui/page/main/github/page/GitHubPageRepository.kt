@@ -44,6 +44,7 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.domain.GitHubReleaseAssetService
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
@@ -373,12 +374,14 @@ internal class GitHubPageRepository(
         item: GitHubTrackedApp,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
+        batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null,
     ): VersionCheckUi =
         refreshRepository.evaluateTrackedApp(
             context = context,
             item = item,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh,
+            batchEvaluator = batchEvaluator,
         )
 
     suspend fun notifyRefreshProgress(

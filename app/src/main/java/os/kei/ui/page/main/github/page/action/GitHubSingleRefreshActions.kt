@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -45,6 +46,7 @@ internal class GitHubSingleRefreshActions(
         forceRefresh: Boolean = false,
         persistAfterUpdate: Boolean = true,
         refreshActionsAfterUpdate: Boolean = true,
+        batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null,
         onUpdated: ((VersionCheckUi) -> Unit)? = null,
     ) {
         val previousState = state.checkStates[item.id] ?: VersionCheckUi()
@@ -72,6 +74,7 @@ internal class GitHubSingleRefreshActions(
                             item = item,
                             profilePurposeOverride = profilePurposeOverride,
                             forceRefresh = forceRefresh,
+                            batchEvaluator = batchEvaluator,
                         ),
                     previousState = previousState,
                 ).copy(checkedAtMillis = clock.nowMs())

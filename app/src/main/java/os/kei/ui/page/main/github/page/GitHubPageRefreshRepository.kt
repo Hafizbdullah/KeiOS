@@ -4,10 +4,11 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.domain.GitHubRefreshScope
-import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -22,15 +23,23 @@ internal class GitHubPageRefreshRepository(
         context: Context,
         item: GitHubTrackedApp,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
+        batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null
     ): VersionCheckUi {
         return withContext(ioDispatcher) {
-            GitHubReleaseCheckService.evaluateTrackedApp(
-                context = context,
-                item = item,
-                profilePurposeOverride = profilePurposeOverride,
-                forceRefresh = forceRefresh
-            ).toUi()
+            val check =
+                batchEvaluator?.evaluateTrackedApp(
+                    context = context,
+                    item = item,
+                    profilePurposeOverride = profilePurposeOverride,
+                    forceRefresh = forceRefresh
+                ) ?: GitHubReleaseCheckService.evaluateTrackedApp(
+                    context = context,
+                    item = item,
+                    profilePurposeOverride = profilePurposeOverride,
+                    forceRefresh = forceRefresh
+                )
+            check.toUi()
         }
     }
 
