@@ -30,6 +30,7 @@ internal data class GitHubTrackImportPreview(
     val preferPreReleaseCount: Int = 0,
     val latestReleaseDownloadCount: Int = 0,
     val actionsUpdateCount: Int = 0,
+    val updateIntervalOverrideCount: Int = 0,
     val preciseApkVersionOverrideCount: Int = 0
 ) {
     val canImport: Boolean
@@ -39,6 +40,7 @@ internal data class GitHubTrackImportPreview(
         get() = preferPreReleaseCount +
                 latestReleaseDownloadCount +
                 actionsUpdateCount +
+                updateIntervalOverrideCount +
                 preciseApkVersionOverrideCount
 
     val hasImportedProjectOptions: Boolean

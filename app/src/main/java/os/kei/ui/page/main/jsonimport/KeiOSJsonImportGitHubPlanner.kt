@@ -105,9 +105,29 @@ internal class KeiOSJsonImportGitHubPlanner(
                     preview.actionsUpdateCount.toString()
                 ),
                 KeiOSJsonImportStat(
+                    context.getString(R.string.github_import_dialog_label_update_interval_items),
+                    preview.updateIntervalOverrideCount.toString()
+                ),
+                KeiOSJsonImportStat(
                     context.getString(R.string.json_import_stat_precise_version),
                     preview.preciseApkVersionOverrideCount.toString()
-                )
+                ),
+                KeiOSJsonImportStat(
+                    context.getString(R.string.github_import_dialog_label_github_items),
+                    preview.githubRepositoryCount.toString()
+                ),
+                KeiOSJsonImportStat(
+                    context.getString(R.string.github_import_dialog_label_git_items),
+                    preview.gitRepositoryCount.toString()
+                ),
+                KeiOSJsonImportStat(
+                    context.getString(R.string.github_import_dialog_label_direct_apk_items),
+                    preview.directApkCount.toString()
+                ),
+                KeiOSJsonImportStat(
+                    context.getString(R.string.github_import_dialog_label_fdroid_items),
+                    preview.fdroidRepositoryCount.toString()
+                ),
             ),
             samples = payload.items.take(KEIOS_JSON_IMPORT_SAMPLE_LIMIT).map {
                 KeiOSJsonImportSample(

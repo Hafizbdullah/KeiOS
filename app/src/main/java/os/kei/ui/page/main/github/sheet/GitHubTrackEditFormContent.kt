@@ -17,6 +17,7 @@ import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
+import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -136,12 +137,19 @@ internal fun GitHubTrackEditFormContent(
     val gitRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitRepository
     val githubRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitHubRepository
     val fdroidRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.FdroidRepository
-    val updateIntervalModes = GitHubTrackedUpdateIntervalMode.entries
+    val updateIntervalModes =
+        if (fdroidRepositoryMode) {
+            GitHubTrackedUpdateIntervalMode.entries
+        } else {
+            GitHubTrackedUpdateIntervalMode.entries
+                .filter { mode -> mode != GitHubTrackedUpdateIntervalMode.Hours24 }
+        }
     val updateIntervalOptions =
         updateIntervalModes.map { mode ->
             updateIntervalModeLabel(
                 mode = mode,
                 globalRefreshIntervalHours = globalRefreshIntervalHours,
+                sourceMode = sourceModeInput,
             )
         }
     val updateIntervalIndex = updateIntervalModes.indexOf(updateIntervalModeInput).coerceAtLeast(0)
@@ -153,10 +161,17 @@ internal fun GitHubTrackEditFormContent(
         updateIntervalModeInput == GitHubTrackedUpdateIntervalMode.FollowGlobal
     val updateIntervalSummary =
         if (updateIntervalFollowsGlobal) {
-            stringResource(
-                R.string.github_track_sheet_summary_update_interval_follow_global,
-                refreshIntervalLabel(globalRefreshIntervalHours),
-            )
+            if (fdroidRepositoryMode) {
+                stringResource(
+                    R.string.github_track_sheet_summary_update_interval_fdroid_default,
+                    refreshIntervalLabel(GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS),
+                )
+            } else {
+                stringResource(
+                    R.string.github_track_sheet_summary_update_interval_follow_global,
+                    refreshIntervalLabel(globalRefreshIntervalHours),
+                )
+            }
         } else {
             stringResource(R.string.github_track_sheet_summary_update_interval_custom)
         }

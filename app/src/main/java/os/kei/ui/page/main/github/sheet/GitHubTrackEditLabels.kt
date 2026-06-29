@@ -6,6 +6,7 @@ import os.kei.R
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
+import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -52,13 +53,21 @@ internal fun preciseApkVersionModeLabel(mode: GitHubTrackedPreciseApkVersionMode
 internal fun updateIntervalModeLabel(
     mode: GitHubTrackedUpdateIntervalMode,
     globalRefreshIntervalHours: Int,
+    sourceMode: GitHubTrackedSourceMode? = null,
 ): String =
     when (mode) {
         GitHubTrackedUpdateIntervalMode.FollowGlobal -> {
-            stringResource(
-                R.string.github_track_sheet_update_interval_follow_global_format,
-                refreshIntervalLabel(globalRefreshIntervalHours),
-            )
+            if (sourceMode == GitHubTrackedSourceMode.FdroidRepository) {
+                stringResource(
+                    R.string.github_track_sheet_update_interval_fdroid_default_format,
+                    refreshIntervalLabel(GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS),
+                )
+            } else {
+                stringResource(
+                    R.string.github_track_sheet_update_interval_follow_global_format,
+                    refreshIntervalLabel(globalRefreshIntervalHours),
+                )
+            }
         }
 
         GitHubTrackedUpdateIntervalMode.Hour1 -> {
@@ -75,6 +84,10 @@ internal fun updateIntervalModeLabel(
 
         GitHubTrackedUpdateIntervalMode.Hours12 -> {
             stringResource(R.string.github_refresh_interval_12h)
+        }
+
+        GitHubTrackedUpdateIntervalMode.Hours24 -> {
+            stringResource(R.string.github_refresh_interval_24h)
         }
     }
 
@@ -287,5 +300,6 @@ internal fun refreshIntervalLabel(hours: Int): String =
         3 -> stringResource(R.string.github_refresh_interval_3h)
         6 -> stringResource(R.string.github_refresh_interval_6h)
         12 -> stringResource(R.string.github_refresh_interval_12h)
+        24 -> stringResource(R.string.github_refresh_interval_24h)
         else -> stringResource(R.string.github_refresh_interval_3h)
     }

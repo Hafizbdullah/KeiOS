@@ -23,7 +23,11 @@ import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.local.fdroid.FdroidVersionMetadataSummary
 import os.kei.feature.github.data.remote.fdroid.FdroidAntiFeatureSnapshot
 import os.kei.feature.github.model.FdroidIndexFormat
+import os.kei.feature.github.model.FdroidRepositoryPresets
+import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.asset.formatAssetSize
@@ -87,7 +91,11 @@ internal fun GitHubFdroidDetailSheet(
                 }
 
                 detail.sidecar == null -> {
-                    FdroidMissingCacheDetail(item)
+                    FdroidMissingCacheDetail(
+                        item = item,
+                        backdrop = backdrop,
+                        onOpenExternalUrl = onOpenExternalUrl,
+                    )
                 }
 
                 else -> {
@@ -115,7 +123,11 @@ private fun FdroidLoadingDetail(item: GitHubTrackedApp) {
 }
 
 @Composable
-private fun FdroidMissingCacheDetail(item: GitHubTrackedApp) {
+private fun FdroidMissingCacheDetail(
+    item: GitHubTrackedApp,
+    backdrop: LayerBackdrop,
+    onOpenExternalUrl: (String) -> Unit,
+) {
     SheetSummaryCard(
         title = item.fdroidDisplayTitle(),
         badgeLabel = stringResource(R.string.github_track_sheet_source_mode_fdroid),
@@ -130,6 +142,11 @@ private fun FdroidMissingCacheDetail(item: GitHubTrackedApp) {
             maxLines = 4,
         )
     }
+    FdroidTrackingConfigSection(
+        item = item,
+        backdrop = backdrop,
+        onOpenExternalUrl = onOpenExternalUrl,
+    )
 }
 
 @Composable
@@ -179,6 +196,11 @@ private fun FdroidCachedDetail(
         )
     }
 
+    FdroidTrackingConfigSection(
+        item = item,
+        backdrop = backdrop,
+        onOpenExternalUrl = onOpenExternalUrl,
+    )
     FdroidPackageSection(
         sidecar = sidecar,
         backdrop = backdrop,
@@ -198,56 +220,164 @@ private fun FdroidCachedDetail(
 }
 
 @Composable
+private fun FdroidTrackingConfigSection(
+    item: GitHubTrackedApp,
+    backdrop: LayerBackdrop,
+    onOpenExternalUrl: (String) -> Unit,
+) {
+    val identity = buildFdroidRepositoryTrackIdentity(item.repoUrl, item.packageName)
+    val config = item.fdroidConfig
+    val sourceScope = config.fdroidTrackingSourceScopeLabel(
+        item = item,
+        matchedRepoName =
+            FdroidRepositoryPresets.presetForRepoUrl(item.repoUrl)?.displayName
+                ?: identity?.repoDisplayName
+                ?: item.repoUrl,
+    )
+    val packagePageUrl =
+        config.packagePageUrl
+            .ifBlank { identity?.packagePageUrl.orEmpty() }
+    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_tracking))
+    SheetSectionCard(verticalSpacing = 6.dp) {
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_source_scope),
+            value = sourceScope,
+        )
+        FdroidLinkRow(
+            label = stringResource(R.string.github_fdroid_detail_label_package_page),
+            url = packagePageUrl,
+            backdrop = backdrop,
+            onOpenExternalUrl = onOpenExternalUrl,
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_update_interval),
+            value =
+                updateIntervalModeLabel(
+                    mode = item.updateIntervalMode,
+                    globalRefreshIntervalHours = GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS,
+                    sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+                ),
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_version_selection),
+            value = fdroidVersionSelectionModeLabel(config.selectionMode),
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_version_regex),
+            value = config.versionNameRegex.ifBlank { stringResource(R.string.common_not_used) },
+            valueMaxLines = 2,
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_apk_regex),
+            value = config.apkNameRegex.ifBlank { stringResource(R.string.common_not_used) },
+            valueMaxLines = 2,
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_anti_feature_policy),
+            value = fdroidAntiFeaturePolicyLabel(config.antiFeaturePolicy),
+        )
+        FdroidInfoRow(
+            label = stringResource(R.string.github_fdroid_detail_label_blocked_anti_features),
+            value =
+                config.blockedAntiFeatures
+                    .joinToString(", ")
+                    .ifBlank { stringResource(R.string.common_not_used) },
+            valueMaxLines = 3,
+        )
+        SheetDescriptionText(stringResource(R.string.github_fdroid_detail_value_sync_schema))
+    }
+}
+
+@Composable
+private fun FdroidTrackedAppConfig.fdroidTrackingSourceScopeLabel(
+    item: GitHubTrackedApp,
+    matchedRepoName: String,
+): String {
+    val fallbackRepoName =
+        matchedRepoName.ifBlank { item.repoUrl }.ifBlank { stringResource(R.string.common_unknown) }
+    return when (repoPresetId.trim().lowercase(Locale.ROOT)) {
+        FdroidRepositoryPresets.COMMON_ID ->
+            stringResource(
+                R.string.github_fdroid_detail_value_source_scope_common_format,
+                fallbackRepoName,
+            )
+
+        FdroidRepositoryPresets.CUSTOM_ID ->
+            stringResource(
+                R.string.github_fdroid_detail_value_source_scope_custom_format,
+                fallbackRepoName,
+            )
+
+        else ->
+            FdroidRepositoryPresets.presetForId(repoPresetId)?.displayName ?: fallbackRepoName
+    }
+}
+
+@Composable
 private fun FdroidPackageSection(
     sidecar: FdroidMetadataSidecar,
     backdrop: LayerBackdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
+    val packageInfo = sidecar.packageInfo
+    val hasPackageDetails =
+        packageInfo.summary.isNotBlank() ||
+            packageInfo.description.isNotBlank() ||
+            packageInfo.license.isNotBlank() ||
+            packageInfo.categories.isNotEmpty() ||
+            packageInfo.sourceCodeUrl.isNotBlank() ||
+            packageInfo.webSiteUrl.isNotBlank() ||
+            packageInfo.issueTrackerUrl.isNotBlank() ||
+            packageInfo.changelogUrl.isNotBlank()
     SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_package))
     SheetSectionCard(verticalSpacing = 6.dp) {
-        FdroidInfoRow(
-            label = stringResource(R.string.github_fdroid_detail_label_summary),
-            value = sidecar.packageInfo.summary,
-            valueMaxLines = 3,
-        )
-        FdroidInfoRow(
-            label = stringResource(R.string.github_fdroid_detail_label_description),
-            value = sidecar.packageInfo.description,
-            valueMaxLines = 4,
-        )
-        FdroidInfoRow(
-            label = stringResource(R.string.github_fdroid_detail_label_license),
-            value = sidecar.packageInfo.license,
-        )
-        FdroidInfoRow(
-            label = stringResource(R.string.github_fdroid_detail_label_categories),
-            value = sidecar.packageInfo.categories.joinToString(", "),
-            valueMaxLines = 2,
-        )
-        FdroidLinkRow(
-            label = stringResource(R.string.github_fdroid_detail_label_source_code),
-            url = sidecar.packageInfo.sourceCodeUrl,
-            backdrop = backdrop,
-            onOpenExternalUrl = onOpenExternalUrl,
-        )
-        FdroidLinkRow(
-            label = stringResource(R.string.github_fdroid_detail_label_website),
-            url = sidecar.packageInfo.webSiteUrl,
-            backdrop = backdrop,
-            onOpenExternalUrl = onOpenExternalUrl,
-        )
-        FdroidLinkRow(
-            label = stringResource(R.string.github_fdroid_detail_label_issue_tracker),
-            url = sidecar.packageInfo.issueTrackerUrl,
-            backdrop = backdrop,
-            onOpenExternalUrl = onOpenExternalUrl,
-        )
-        FdroidLinkRow(
-            label = stringResource(R.string.github_fdroid_detail_label_changelog),
-            url = sidecar.packageInfo.changelogUrl,
-            backdrop = backdrop,
-            onOpenExternalUrl = onOpenExternalUrl,
-        )
+        if (hasPackageDetails) {
+            FdroidInfoRow(
+                label = stringResource(R.string.github_fdroid_detail_label_summary),
+                value = packageInfo.summary,
+                valueMaxLines = 3,
+            )
+            FdroidInfoRow(
+                label = stringResource(R.string.github_fdroid_detail_label_description),
+                value = packageInfo.description,
+                valueMaxLines = 4,
+            )
+            FdroidInfoRow(
+                label = stringResource(R.string.github_fdroid_detail_label_license),
+                value = packageInfo.license,
+            )
+            FdroidInfoRow(
+                label = stringResource(R.string.github_fdroid_detail_label_categories),
+                value = packageInfo.categories.joinToString(", "),
+                valueMaxLines = 2,
+            )
+            FdroidLinkRow(
+                label = stringResource(R.string.github_fdroid_detail_label_source_code),
+                url = packageInfo.sourceCodeUrl,
+                backdrop = backdrop,
+                onOpenExternalUrl = onOpenExternalUrl,
+            )
+            FdroidLinkRow(
+                label = stringResource(R.string.github_fdroid_detail_label_website),
+                url = packageInfo.webSiteUrl,
+                backdrop = backdrop,
+                onOpenExternalUrl = onOpenExternalUrl,
+            )
+            FdroidLinkRow(
+                label = stringResource(R.string.github_fdroid_detail_label_issue_tracker),
+                url = packageInfo.issueTrackerUrl,
+                backdrop = backdrop,
+                onOpenExternalUrl = onOpenExternalUrl,
+            )
+            FdroidLinkRow(
+                label = stringResource(R.string.github_fdroid_detail_label_changelog),
+                url = packageInfo.changelogUrl,
+                backdrop = backdrop,
+                onOpenExternalUrl = onOpenExternalUrl,
+            )
+        } else {
+            SheetDescriptionText(stringResource(R.string.github_fdroid_detail_package_empty))
+        }
     }
 }
 

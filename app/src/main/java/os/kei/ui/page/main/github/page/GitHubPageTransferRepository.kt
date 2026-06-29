@@ -91,5 +91,6 @@ private fun GitHubTrackedItemsImportPreview.toPagePreview(): GitHubTrackImportPr
         preferPreReleaseCount = preferPreReleaseCount,
         latestReleaseDownloadCount = latestReleaseDownloadCount,
         actionsUpdateCount = actionsUpdateCount,
+        updateIntervalOverrideCount = updateIntervalOverrideCount,
         preciseApkVersionOverrideCount = preciseApkVersionOverrideCount,
     )

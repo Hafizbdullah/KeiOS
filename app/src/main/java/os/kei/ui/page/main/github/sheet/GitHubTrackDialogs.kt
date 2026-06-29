@@ -230,6 +230,14 @@ internal fun GitHubTrackImportDialog(
                         valueColor = GitHubStatusPalette.Cache
                     )
                     MiuixInfoItem(
+                        key = stringResource(R.string.github_import_dialog_label_update_interval_items),
+                        value = stringResource(
+                            R.string.github_check_sheet_value_track_count,
+                            preview.updateIntervalOverrideCount
+                        ),
+                        valueColor = GitHubStatusPalette.Stable
+                    )
+                    MiuixInfoItem(
                         key = stringResource(R.string.github_import_dialog_label_precise_items),
                         value = stringResource(
                             R.string.github_check_sheet_value_track_count,

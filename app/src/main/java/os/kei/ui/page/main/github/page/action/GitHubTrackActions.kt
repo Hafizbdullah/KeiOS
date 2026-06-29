@@ -25,6 +25,7 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
+import os.kei.feature.github.model.coerceForSource
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 import os.kei.feature.github.model.withReleaseIgnoreMode
@@ -65,7 +66,7 @@ internal class GitHubTrackActions(
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.checkActionsUpdatesInput = item.checkActionsUpdates
-        state.updateIntervalModeInput = item.updateIntervalMode
+        state.updateIntervalModeInput = item.updateIntervalMode.coerceForSource(item.sourceMode)
         state.actionsUpdateIntervalModeInput = item.actionsUpdateIntervalMode
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
         state.ignoreModeInput = item.ignoreMode
@@ -113,6 +114,7 @@ internal class GitHubTrackActions(
 
     fun setTrackSourceModeInput(value: GitHubTrackedSourceMode) {
         state.trackSourceModeInput = value
+        state.updateIntervalModeInput = state.updateIntervalModeInput.coerceForSource(value)
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
         state.fdroidAppSearchCandidates = emptyList()
@@ -215,7 +217,7 @@ internal class GitHubTrackActions(
     }
 
     fun setUpdateIntervalModeInput(value: GitHubTrackedUpdateIntervalMode) {
-        state.updateIntervalModeInput = value
+        state.updateIntervalModeInput = value.coerceForSource(state.trackSourceModeInput)
     }
 
     fun setActionsUpdateIntervalModeInput(value: GitHubTrackedActionsUpdateIntervalMode) {
