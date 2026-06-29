@@ -90,5 +90,5 @@ a task fires.
   `update_available`, `installed`, `failed_checks`, or `actions_check_enabled`.
 - GitHub tracking `sortMode` accepts `update`, `name`, `pre_release`, `changed`, or `added`;
   `sortDirection` accepts `forward` or `reverse`.
-- GitHub tracked export uses `keios.github.tracked/v3`.
+- GitHub tracked export uses `keios.github.tracked/v4`.
 - `actionsUpdateIntervalMode` accepts `follow_global`, `15m`, `30m`, `1h`, `2h`, or `3h`.

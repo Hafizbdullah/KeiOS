@@ -86,5 +86,5 @@
   `installed`、`failed_checks`、`actions_check_enabled`。
 - GitHub 追踪工具的 `sortMode` 支持 `update`、`name`、`pre_release`、`changed`、`added`；`sortDirection`
   支持 `forward`、`reverse`。
-- GitHub 追踪导出格式为 `keios.github.tracked/v3`。
+- GitHub 追踪导出格式为 `keios.github.tracked/v4`。
 - `actionsUpdateIntervalMode` 支持 `follow_global`、`15m`、`30m`、`1h`、`2h`、`3h`。

@@ -104,7 +104,7 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains("pre_release"))
         assertTrue(markdown.contains("git_repository"))
         assertTrue(markdown.contains("fdroid_repository"))
-        assertTrue(markdown.contains("keios.github.tracked/v3"))
+        assertTrue(markdown.contains("keios.github.tracked/v4"))
         assertTrue(markdown.contains("actionsUpdateIntervalMode"))
         assertTrue(markdown.contains("follow_global"))
         assertTrue(markdown.contains("3h"))

@@ -88,7 +88,7 @@ class McpToolCatalogLocalizationTest {
             "keios.github.tracks.export",
             Locale.SIMPLIFIED_CHINESE
         )
-        assertEquals(true, chinese.contains("keios.github.tracked/v3"))
+        assertEquals(true, chinese.contains("keios.github.tracked/v4"))
         assertEquals(true, chinese.contains("订阅项目"))
     }
 }
