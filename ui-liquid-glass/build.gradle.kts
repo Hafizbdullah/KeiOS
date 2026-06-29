@@ -158,7 +158,7 @@ val projectMinSdk = 35
 val projectJavaVersion = JavaVersion.VERSION_21
 val projectJvmTarget = JvmTarget.JVM_21
 
-val bakeAppSquircleSdf by tasks.registering(BakeAppSquircleSdfTask::class) {
+val bakeAppSquircleSdf = tasks.register<BakeAppSquircleSdfTask>("bakeAppSquircleSdf") {
     description = "Bake KeiOS AppSquircle SDF bytes into generated source."
     control.set(0.63f)
     size.set(256)
