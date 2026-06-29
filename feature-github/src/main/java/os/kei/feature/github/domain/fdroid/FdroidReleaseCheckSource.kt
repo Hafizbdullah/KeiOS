@@ -1,0 +1,276 @@
+package os.kei.feature.github.domain.fdroid
+
+import android.os.Build
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClient
+import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
+import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
+import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
+import os.kei.feature.github.model.GitHubAtomFeed
+import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.GitHubReleaseSignalSource
+import os.kei.feature.github.model.GitHubReleaseVersionSignals
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
+import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedReleaseCheck
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.model.GitHubVersionCandidateSource
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
+import os.kei.feature.github.model.fdroidRepositoryCheckSourceSignature
+import java.util.Locale
+
+fun interface FdroidReleaseCheckEvaluator {
+    suspend fun evaluate(
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        localVersion: String,
+        localVersionCode: Long,
+        forceRefresh: Boolean
+    ): GitHubTrackedReleaseCheck
+}
+
+fun interface FdroidPackageSnapshotProvider {
+    fun loadPackageSnapshot(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean
+    ): Result<FdroidPackageSnapshot>
+}
+
+class FdroidPackageApiSnapshotProvider(
+    private val client: FdroidPackageApiClient = FdroidPackageApiClient()
+) : FdroidPackageSnapshotProvider {
+    override fun loadPackageSnapshot(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean
+    ): Result<FdroidPackageSnapshot> {
+        val identity = buildFdroidRepositoryTrackIdentity(item.repoUrl, item.packageName)
+            ?: return Result.failure(IllegalArgumentException("invalid F-Droid repository URL or package"))
+        return client.fetchPackage(
+            repoBaseUrl = identity.normalizedRepoUrl,
+            packageName = identity.packageName
+        )
+    }
+}
+
+class FdroidReleaseCheckSource(
+    private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidPackageApiSnapshotProvider(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val deviceSdkProvider: () -> Int = { Build.VERSION.SDK_INT }
+) : FdroidReleaseCheckEvaluator {
+    override suspend fun evaluate(
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        localVersion: String,
+        localVersionCode: Long,
+        forceRefresh: Boolean
+    ): GitHubTrackedReleaseCheck = withContext(ioDispatcher) {
+        val sourceConfigSignature = item.fdroidRepositoryCheckSourceSignature()
+        val identity = buildFdroidRepositoryTrackIdentity(item.repoUrl, item.packageName)
+            ?: return@withContext failedCheck(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
+                detail = "invalid F-Droid repository URL or package"
+            )
+        val packageSnapshot = snapshotProvider
+            .loadPackageSnapshot(item, forceRefresh)
+            .getOrElse { error ->
+                return@withContext failedCheck(
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    sourceConfigSignature = sourceConfigSignature,
+                    detail = error.message.orEmpty().ifBlank { "F-Droid package lookup failed" }
+                )
+            }
+        val remotePackage = packageSnapshot.packageName.trim()
+        if (remotePackage.isNotBlank() && !remotePackage.equals(identity.packageName, ignoreCase = true)) {
+            return@withContext failedCheck(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
+                detail = "remote package $remotePackage does not match ${identity.packageName}"
+            )
+        }
+        val deviceSdk = deviceSdkProvider()
+        val stableVersion = packageSnapshot
+            .withVersions(packageSnapshot.versions.filter { !it.releaseChannel().isPreRelease })
+            .selectCandidate(item, deviceSdk)
+        val shouldInspectPreRelease = lookupConfig.checkAllTrackedPreReleases ||
+            item.preferPreRelease ||
+            GitHubVersionUtils.classifyVersionChannel(localVersion)?.isPreRelease == true
+        val preReleaseVersion = if (shouldInspectPreRelease) {
+            packageSnapshot
+                .withVersions(packageSnapshot.versions.filter { it.releaseChannel().isPreRelease })
+                .selectCandidate(item, deviceSdk)
+        } else {
+            null
+        }
+        if (stableVersion == null && preReleaseVersion == null) {
+            return@withContext failedCheck(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
+                detail = "no compatible F-Droid version found"
+            )
+        }
+        val link = item.fdroidConfig.packagePageUrl
+            .ifBlank { identity.packagePageUrl }
+            .ifBlank { item.repoUrl }
+        val stablePreciseInfo = stableVersion?.toRemoteApkVersionInfo(item, packageSnapshot, link)
+        val preReleasePreciseInfo = preReleaseVersion?.toRemoteApkVersionInfo(item, packageSnapshot, link)
+        val stableSignal = stableVersion?.toReleaseSignal(
+            item = item,
+            packageSnapshot = packageSnapshot,
+            preciseInfo = requireNotNull(stablePreciseInfo),
+            link = link,
+            channel = GitHubReleaseChannel.STABLE
+        )
+        val preReleaseSignal = preReleaseVersion?.toReleaseSignal(
+            item = item,
+            packageSnapshot = packageSnapshot,
+            preciseInfo = requireNotNull(preReleasePreciseInfo),
+            link = link,
+            channel = preReleaseVersion.releaseChannel()
+        )
+        val fallbackSignal = stableSignal ?: requireNotNull(preReleaseSignal)
+        val snapshot = GitHubRepositoryReleaseSnapshot(
+            strategyId = GITHUB_FDROID_STRATEGY_ID,
+            feed = GitHubAtomFeed(
+                title = packageSnapshot.appName.ifBlank { item.appLabel },
+                feedUrl = item.repoUrl,
+                updatedAtMillis = packageSnapshot.versions.firstNotNullOfOrNull { it.addedAtMillis },
+                entries = listOfNotNull(
+                    stableSignal?.toAtomEntry(stableSignal.channel),
+                    preReleaseSignal?.toAtomEntry(preReleaseSignal.channel)
+                )
+            ),
+            latestStable = fallbackSignal,
+            hasStableRelease = stableSignal != null,
+            latestPreRelease = preReleaseSignal
+        )
+        GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            snapshot = snapshot,
+            checkAllTrackedPreReleases = shouldInspectPreRelease,
+            preciseStableApkVersion = stablePreciseInfo,
+            precisePreReleaseApkVersion = preReleasePreciseInfo,
+            sourceConfigSignature = sourceConfigSignature
+        )
+    }
+
+    private fun FdroidPackageSnapshot.selectCandidate(
+        item: GitHubTrackedApp,
+        deviceSdk: Int
+    ): FdroidVersionSnapshot? {
+        if (versions.isEmpty()) return null
+        return FdroidCandidateSelector.select(
+            snapshot = this,
+            config = item.fdroidConfig,
+            deviceSdk = deviceSdk
+        )
+    }
+
+    private fun FdroidPackageSnapshot.withVersions(
+        filteredVersions: List<FdroidVersionSnapshot>
+    ): FdroidPackageSnapshot {
+        return copy(versions = filteredVersions)
+    }
+
+    private fun FdroidVersionSnapshot.toRemoteApkVersionInfo(
+        item: GitHubTrackedApp,
+        packageSnapshot: FdroidPackageSnapshot,
+        link: String
+    ): GitHubRemoteApkVersionInfo {
+        return GitHubRemoteApkVersionInfo(
+            releaseName = packageSnapshot.appName.ifBlank { item.appLabel },
+            releaseTag = versionName.ifBlank { versionCode.toString() },
+            releaseUrl = link,
+            assetName = apkName,
+            packageName = packageSnapshot.packageName.ifBlank { item.packageName },
+            versionName = versionName,
+            versionCode = versionCode.toString(),
+            fetchSource = apkPath.ifBlank { link },
+            releaseNotes = whatsNew
+        )
+    }
+
+    private fun FdroidVersionSnapshot.toReleaseSignal(
+        item: GitHubTrackedApp,
+        packageSnapshot: FdroidPackageSnapshot,
+        preciseInfo: GitHubRemoteApkVersionInfo,
+        link: String,
+        channel: GitHubReleaseChannel
+    ): GitHubReleaseVersionSignals {
+        val displayVersion = preciseInfo.versionLabel()
+            .ifBlank { preciseInfo.releaseLabel() }
+            .ifBlank { apkName }
+        return GitHubReleaseVersionSignals(
+            displayVersion = displayVersion,
+            rawTag = versionName.ifBlank { versionCode.toString() },
+            rawName = packageSnapshot.appName.ifBlank { item.appLabel },
+            link = link,
+            updatedAtMillis = addedAtMillis,
+            versionCandidates = GitHubVersionUtils.buildVersionCandidates(
+                GitHubVersionCandidateSource.Tag to versionName,
+                GitHubVersionCandidateSource.Title to versionCode.toString(),
+                GitHubVersionCandidateSource.Link to apkPath
+            ),
+            source = GitHubReleaseSignalSource.AtomFallback,
+            channel = channel
+        )
+    }
+
+    private fun GitHubReleaseVersionSignals.toAtomEntry(
+        channel: GitHubReleaseChannel
+    ): GitHubAtomReleaseEntry {
+        return GitHubAtomReleaseEntry(
+            entryId = link.ifBlank { rawTag },
+            tag = rawTag,
+            title = displayVersion,
+            link = link,
+            updatedAtMillis = updatedAtMillis,
+            versionCandidates = versionCandidates,
+            channel = channel,
+            isLikelyPreRelease = channel.isPreRelease
+        )
+    }
+
+    private fun FdroidVersionSnapshot.releaseChannel(): GitHubReleaseChannel {
+        val text = (releaseChannels + versionName)
+            .joinToString(" ")
+            .lowercase(Locale.ROOT)
+        return when {
+            "dev" in text || "snapshot" in text -> GitHubReleaseChannel.DEV
+            "alpha" in text -> GitHubReleaseChannel.ALPHA
+            "beta" in text -> GitHubReleaseChannel.BETA
+            Regex("""\brc\b|release candidate""").containsMatchIn(text) -> GitHubReleaseChannel.RC
+            "preview" in text -> GitHubReleaseChannel.PREVIEW
+            else -> GitHubReleaseChannel.STABLE
+        }
+    }
+
+    private fun failedCheck(
+        localVersion: String,
+        localVersionCode: Long,
+        sourceConfigSignature: String,
+        detail: String
+    ): GitHubTrackedReleaseCheck {
+        return GitHubTrackedReleaseCheck(
+            strategyId = GITHUB_FDROID_STRATEGY_ID,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            sourceConfigSignature = sourceConfigSignature,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+        )
+    }
+}

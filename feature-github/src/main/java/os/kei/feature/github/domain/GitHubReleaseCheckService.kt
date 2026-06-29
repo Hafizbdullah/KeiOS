@@ -10,6 +10,8 @@ import os.kei.feature.github.data.remote.GitHubRepositoryProfileRepository
 import os.kei.feature.github.data.remote.GitHubRepositoryProfileRequest
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.data.remote.GitRepositoryReleaseStrategy
+import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckEvaluator
+import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSource
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -33,6 +35,7 @@ import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubReleaseIgnoreKeyMatches
 import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.suppressesAllReleaseUpdates
 import java.io.IOException
@@ -52,6 +55,8 @@ object GitHubReleaseCheckService {
             item = item,
             strategy = strategy,
             preciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
+            fdroidReleaseCheckSource = FdroidReleaseCheckSource(),
+            lookupConfigOverride = null,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh
         )
@@ -63,6 +68,8 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
         preciseApkVersionResolver: GitHubPreciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
+        fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator = FdroidReleaseCheckSource(),
+        lookupConfigOverride: GitHubLookupConfig? = null,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false
     ): GitHubTrackedReleaseCheck {
@@ -71,6 +78,8 @@ object GitHubReleaseCheckService {
             item = item,
             strategy = strategy,
             preciseApkVersionResolver = preciseApkVersionResolver,
+            fdroidReleaseCheckSource = fdroidReleaseCheckSource,
+            lookupConfigOverride = lookupConfigOverride,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh
         )
@@ -81,10 +90,13 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy?,
         preciseApkVersionResolver: GitHubPreciseApkVersionResolver,
+        fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator,
+        lookupConfigOverride: GitHubLookupConfig?,
         profilePurposeOverride: GitHubRepositoryProfilePurpose?,
         forceRefresh: Boolean
     ): GitHubTrackedReleaseCheck {
-        val lookupConfig = GitHubReleaseStrategyRegistry.loadLookupConfig().forTrackedItem(item)
+        val lookupConfig = (lookupConfigOverride ?: GitHubReleaseStrategyRegistry.loadLookupConfig())
+            .forTrackedItem(item)
         val sourceConfigSignature = item.checkSourceSignature(lookupConfig)
         val localVersionInfo = runCatching {
             GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)
@@ -93,6 +105,15 @@ object GitHubReleaseCheckService {
         val localVersionCode = localVersionInfo?.versionCode ?: -1L
         if (item.isDirectApkTrack()) {
             return GitHubDirectApkReleaseCheckSource().evaluate(
+                item = item,
+                lookupConfig = lookupConfig,
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                forceRefresh = forceRefresh
+            )
+        }
+        if (item.isFdroidRepositoryTrack()) {
+            return fdroidReleaseCheckSource.evaluate(
                 item = item,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,

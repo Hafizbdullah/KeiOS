@@ -25,7 +25,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | P7 Source parity and acceptance refinement | Done | Added source-surface parity, metadata priority, notification/deep-link plan, and first-release acceptance criteria |
 | P8 Backend P1 model/store/cache foundation | Done | Added F-Droid source mode, identity normalization, config models, JSON round-trip, source counts, cache signature, tests |
 | P9 Backend P2 data source foundation | Done | Added package API client, v2 index parser, repo cache models, package snapshots, and candidate selector tests |
-| P10 Backend P3 release-check bridge | Pending | Dispatch F-Droid tracks through release-check service and map selected candidates into existing check models |
+| P10 Backend P3 release-check bridge | Done | Dispatches F-Droid tracks through a source evaluator and maps selected candidates into existing release-check models |
 | P11 Backend P4 metadata sidecar | Pending | Persist package/version/repo/trust/Anti-Feature summary data for UI/detail sheets |
 | P12 UI P5 sheet bridge | Pending | Add source dropdown option, repo probe state, F-Droid field visibility, localized labels |
 | P13 UI P6 card/menu/detail bridge | Pending | Add compact card metadata, F-Droid detail entry, detail sheets, source filter |
@@ -65,6 +65,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | `GitHubTrackStoreSerializersTest.kt` lookup failed because the serializer tests live in `GitHubTrackStoreTrackedItemJsonTest.kt`. | Initial source exploration | Used `find` to locate existing test files and added serializer coverage in the correct test file. |
 | `app:compileDebugKotlin` reported a missing `FdroidRepository` branch in Home overview source counts. | P8 app compile verification | Added `fdroidRepositoryCount` to `HomeGitHubOverview` and Home overview derivation. |
 | First P9 package API test had an unclosed `server.enqueue(...)` call. | Initial red test run | Closed the test fixture call and reran; remaining failures were the expected missing implementation types. |
+| P10 service dispatch test read global lookup config and hit uninitialized MMKV. | First service-dispatch test run | Added a test-only lookup config override to `evaluateTrackedAppForTest`; production entry still loads config through the existing store. |
 
 ## Verification Checklist
 

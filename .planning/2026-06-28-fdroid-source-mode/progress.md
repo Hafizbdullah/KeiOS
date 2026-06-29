@@ -69,3 +69,12 @@
 - Verification:
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
+- Completed Backend P3 release-check bridge:
+  - Added `FdroidReleaseCheckEvaluator` and `FdroidReleaseCheckSource`.
+  - Added package API snapshot provider as the first release-check data source.
+  - Mapped selected F-Droid candidates into existing `GitHubTrackedReleaseCheck`, `GitHubReleaseVersionSignals`, and `GitHubRemoteApkVersionInfo` payloads.
+  - Added F-Droid dispatch inside `GitHubReleaseCheckService` while keeping existing GitHub/Git/Direct APK branches unchanged.
+  - Added a test-only lookup config override to avoid global MMKV setup in service dispatch tests.
+- Verification:
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
