@@ -1,0 +1,48 @@
+# F-Droid Source Mode Progress
+
+## 2026-06-28
+
+- Read planning-with-files and Android UX design skill guidance.
+- Searched official F-Droid documentation for repo APIs, v2 index, metadata, update processing, and custom repo setup.
+- Probed live F-Droid main repo `entry.json`, package API, and v2 index package structure.
+- Checked Maven Central metadata for `org.fdroid:index` and `org.fdroid:index-android`; latest observed version is `0.2.0`.
+- Reviewed third-party clients:
+  - Droid-ify
+  - Neo Store
+  - AuroraDroid
+  - Foxy Droid
+  - Obtainium
+- Scanned existing KeiOS GitHub tracking source-mode, release-check, cache, serializer, and edit sheet touch points.
+- Created `docs/fdroid-source-mode-plan.md`.
+- Compared existing GitHub/Git/Direct APK feature surfaces:
+  - tracked card more menu
+  - header asset action
+  - asset panel and APK trust pills
+  - Direct APK health card
+  - top-bar filter/sort/import menu
+  - content filtering
+  - MCP tracking filters
+- Expanded `docs/fdroid-source-mode-plan.md` with:
+  - existing source capability matrix
+  - F-Droid-specific card/menu/detail sheet plan
+  - data/cache/trust model refinements
+  - top-bar and MCP integration plan
+  - revised implementation phases
+- Refined `docs/fdroid-source-mode-plan.md` with:
+  - source surface parity across GitHub/Git/Direct APK/F-Droid
+  - compact top-level F-Droid menu strategy
+  - F-Droid metadata priority and warning severity
+  - notification, history, and deep-link behavior
+  - first-release acceptance criteria
+
+## Next Verification
+
+- `git diff --check` passed.
+- New planning files passed trailing-whitespace scan.
+- Only planning/docs files changed.
+
+## 2026-06-29
+
+- Started implementation on branch `codex/fdroid-source-mode`.
+- Switched planning scope from research-only to backend-first implementation.
+- Marked Backend P1 model/store/cache foundation as in progress.
