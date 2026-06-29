@@ -4,6 +4,7 @@ plugins {
 }
 
 val okhttpVersion = "5.4.0"
+val ktorVersion = "3.5.1"
 
 android {
     namespace = "os.kei.feature.mcp"
@@ -40,7 +41,8 @@ dependencies {
     implementation("dev.rikka.shizuku:provider:13.1.5")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
     api("io.modelcontextprotocol:kotlin-sdk:0.13.0")
-    implementation("io.ktor:ktor-server-cio:3.5.0")
+    implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
+    implementation("io.ktor:ktor-server-cio")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.xzakota.hyper.notification:focus-api:1.4")
 

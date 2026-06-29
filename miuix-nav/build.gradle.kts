@@ -25,7 +25,7 @@ val miuixVersion =
 val composeVersion = "1.11.3"
 val navigationEventVersion = "1.1.2"
 val kotlinxSerializationJsonVersion = "1.11.0"
-val kotlinxCollectionsImmutableVersion = "0.4.0"
+val kotlinxCollectionsImmutableVersion = "0.5.0"
 val lifecycleViewModelComposeVersion = "2.11.0"
 
 android {
