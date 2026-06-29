@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
+import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.FdroidTrustPolicy
@@ -77,6 +78,11 @@ internal fun GitHubTrackEditSheet(
     fdroidApkNameRegexInput: String,
     fdroidTrustPolicyInput: FdroidTrustPolicy,
     fdroidAntiFeaturePolicyInput: FdroidAntiFeaturePolicy,
+    fdroidRepoScopeIdInput: String,
+    fdroidAppSearchQueryInput: String,
+    fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
+    fdroidSelectedCandidate: FdroidAppSearchCandidate?,
+    fdroidAppSearchRunning: Boolean,
     sourceModeDropdownExpanded: Boolean,
     sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
@@ -93,6 +99,8 @@ internal fun GitHubTrackEditSheet(
     fdroidTrustPolicyDropdownAnchorBounds: IntRect?,
     fdroidAntiFeaturePolicyDropdownExpanded: Boolean,
     fdroidAntiFeaturePolicyDropdownAnchorBounds: IntRect?,
+    fdroidRepoScopeDropdownExpanded: Boolean,
+    fdroidRepoScopeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onDismissRequest: () -> Unit,
@@ -122,6 +130,11 @@ internal fun GitHubTrackEditSheet(
     onFdroidApkNameRegexInputChange: (String) -> Unit,
     onFdroidTrustPolicyInputChange: (FdroidTrustPolicy) -> Unit,
     onFdroidAntiFeaturePolicyInputChange: (FdroidAntiFeaturePolicy) -> Unit,
+    onFdroidRepoScopeIdInputChange: (String) -> Unit,
+    onFdroidAppSearchQueryInputChange: (String) -> Unit,
+    onSearchFdroidAppsByName: () -> Unit,
+    onScanFdroidReposFromPackage: () -> Unit,
+    onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
@@ -138,6 +151,8 @@ internal fun GitHubTrackEditSheet(
     onFdroidTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
     onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onFdroidRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
+    onFdroidRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val editingFdroidConfig = editingTrackedItem?.fdroidConfig ?: FdroidTrackedAppConfig()
     val fdroidConfigChanged =
@@ -285,6 +300,11 @@ internal fun GitHubTrackEditSheet(
                     fdroidApkNameRegexInput = fdroidApkNameRegexInput,
                     fdroidTrustPolicyInput = fdroidTrustPolicyInput,
                     fdroidAntiFeaturePolicyInput = fdroidAntiFeaturePolicyInput,
+                    fdroidRepoScopeIdInput = fdroidRepoScopeIdInput,
+                    fdroidAppSearchQueryInput = fdroidAppSearchQueryInput,
+                    fdroidAppSearchCandidates = fdroidAppSearchCandidates,
+                    fdroidSelectedCandidate = fdroidSelectedCandidate,
+                    fdroidAppSearchRunning = fdroidAppSearchRunning,
                     fdroidVersionSelectionDropdownExpanded =
                     fdroidVersionSelectionDropdownExpanded,
                     fdroidVersionSelectionDropdownAnchorBounds =
@@ -295,6 +315,8 @@ internal fun GitHubTrackEditSheet(
                     fdroidAntiFeaturePolicyDropdownExpanded,
                     fdroidAntiFeaturePolicyDropdownAnchorBounds =
                     fdroidAntiFeaturePolicyDropdownAnchorBounds,
+                    fdroidRepoScopeDropdownExpanded = fdroidRepoScopeDropdownExpanded,
+                    fdroidRepoScopeDropdownAnchorBounds = fdroidRepoScopeDropdownAnchorBounds,
                     globalRefreshIntervalHours = globalRefreshIntervalHours,
                     globalPreciseApkVersionEnabled = globalPreciseApkVersionEnabled,
                     onRepoUrlInputChange = onRepoUrlInputChange,
@@ -319,6 +341,11 @@ internal fun GitHubTrackEditSheet(
                     onFdroidApkNameRegexInputChange = onFdroidApkNameRegexInputChange,
                     onFdroidTrustPolicyInputChange = onFdroidTrustPolicyInputChange,
                     onFdroidAntiFeaturePolicyInputChange = onFdroidAntiFeaturePolicyInputChange,
+                    onFdroidRepoScopeIdInputChange = onFdroidRepoScopeIdInputChange,
+                    onFdroidAppSearchQueryInputChange = onFdroidAppSearchQueryInputChange,
+                    onSearchFdroidAppsByName = onSearchFdroidAppsByName,
+                    onScanFdroidReposFromPackage = onScanFdroidReposFromPackage,
+                    onFdroidAppSearchCandidateSelected = onFdroidAppSearchCandidateSelected,
                     onSourceModeDropdownExpandedChange = onSourceModeDropdownExpandedChange,
                     onSourceModeDropdownAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
                     onUpdateIntervalDropdownExpandedChange = onUpdateIntervalDropdownExpandedChange,
@@ -342,6 +369,10 @@ internal fun GitHubTrackEditSheet(
                     onFdroidAntiFeaturePolicyDropdownExpandedChange,
                     onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange =
                     onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange,
+                    onFdroidRepoScopeDropdownExpandedChange =
+                    onFdroidRepoScopeDropdownExpandedChange,
+                    onFdroidRepoScopeDropdownAnchorBoundsChange =
+                    onFdroidRepoScopeDropdownAnchorBoundsChange,
                 )
             }
         }

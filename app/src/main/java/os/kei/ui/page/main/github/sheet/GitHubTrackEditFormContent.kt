@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
@@ -70,12 +71,19 @@ internal fun GitHubTrackEditFormContent(
     fdroidApkNameRegexInput: String,
     fdroidTrustPolicyInput: FdroidTrustPolicy,
     fdroidAntiFeaturePolicyInput: FdroidAntiFeaturePolicy,
+    fdroidRepoScopeIdInput: String,
+    fdroidAppSearchQueryInput: String,
+    fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
+    fdroidSelectedCandidate: FdroidAppSearchCandidate?,
+    fdroidAppSearchRunning: Boolean,
     fdroidVersionSelectionDropdownExpanded: Boolean,
     fdroidVersionSelectionDropdownAnchorBounds: IntRect?,
     fdroidTrustPolicyDropdownExpanded: Boolean,
     fdroidTrustPolicyDropdownAnchorBounds: IntRect?,
     fdroidAntiFeaturePolicyDropdownExpanded: Boolean,
     fdroidAntiFeaturePolicyDropdownAnchorBounds: IntRect?,
+    fdroidRepoScopeDropdownExpanded: Boolean,
+    fdroidRepoScopeDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -97,6 +105,11 @@ internal fun GitHubTrackEditFormContent(
     onFdroidApkNameRegexInputChange: (String) -> Unit,
     onFdroidTrustPolicyInputChange: (FdroidTrustPolicy) -> Unit,
     onFdroidAntiFeaturePolicyInputChange: (FdroidAntiFeaturePolicy) -> Unit,
+    onFdroidRepoScopeIdInputChange: (String) -> Unit,
+    onFdroidAppSearchQueryInputChange: (String) -> Unit,
+    onSearchFdroidAppsByName: () -> Unit,
+    onScanFdroidReposFromPackage: () -> Unit,
+    onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
@@ -113,6 +126,8 @@ internal fun GitHubTrackEditFormContent(
     onFdroidTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onFdroidAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
     onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onFdroidRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
+    onFdroidRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val sourceModes = GitHubTrackedSourceMode.entries
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
@@ -268,108 +283,134 @@ internal fun GitHubTrackEditFormContent(
                 backdrop = backdrop,
             )
         }
-        SheetSectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SheetInputTitle(repoInputLabel)
-                if (githubRepositoryMode) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetAction,
-                        text =
-                            if (repoUrlScanRunning) {
-                                stringResource(R.string.github_track_sheet_btn_scan_repo_running)
-                            } else {
-                                stringResource(R.string.github_track_sheet_btn_scan_repo)
-                            },
-                        enabled = canScanRepoUrl,
-                        onClick = onScanRepoUrl,
-                        minHeight = 30.dp,
-                        horizontalPadding = 10.dp,
-                        verticalPadding = 4.dp,
-                        textMaxLines = 1,
-                    )
-                }
-            }
-            AppLiquidSearchField(
-                value = repoUrlInput,
-                onValueChange = onRepoUrlInputChange,
-                label = repoInputLabel,
+        if (fdroidRepositoryMode) {
+            GitHubTrackEditFdroidDiscoverySection(
                 backdrop = backdrop,
-                variant = GlassVariant.SheetInput,
-                singleLine = true,
+                repoUrlInput = repoUrlInput,
+                repoScopeId = fdroidRepoScopeIdInput,
+                appSearchQuery = fdroidAppSearchQueryInput,
+                packageNameInput = packageNameInput,
+                selectedApp = selectedApp,
+                candidates = fdroidAppSearchCandidates,
+                selectedCandidate = fdroidSelectedCandidate,
+                searching = fdroidAppSearchRunning,
+                repoScopeDropdownExpanded = fdroidRepoScopeDropdownExpanded,
+                repoScopeDropdownAnchorBounds = fdroidRepoScopeDropdownAnchorBounds,
+                onRepoUrlInputChange = onRepoUrlInputChange,
+                onRepoScopeIdChange = onFdroidRepoScopeIdInputChange,
+                onAppSearchQueryChange = onFdroidAppSearchQueryInputChange,
+                onPackageNameInputChange = onPackageNameInputChange,
+                onSearchByName = onSearchFdroidAppsByName,
+                onScanFromPackage = onScanFdroidReposFromPackage,
+                onCandidateSelected = onFdroidAppSearchCandidateSelected,
+                onPickerExpandedChange = onPickerExpandedChange,
+                onRepoScopeDropdownExpandedChange = onFdroidRepoScopeDropdownExpandedChange,
+                onRepoScopeDropdownAnchorBoundsChange = onFdroidRepoScopeDropdownAnchorBoundsChange,
             )
-            SheetDescriptionText(
-                text = repoSummary,
-            )
-            if (!directApkMode && repoScanCandidates.isNotEmpty()) {
-                RepositoryScanCandidateList(
-                    candidates = repoScanCandidates,
-                    selectedRepoUrl = repoUrlInput,
-                    onCandidateClick = onRepoScanCandidateSelected,
-                )
-            }
-        }
-
-        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
-        SheetSectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
-                if (!gitRepositoryMode && !fdroidRepositoryMode) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetAction,
-                        text =
-                            if (packageNameScanRunning) {
-                                stringResource(R.string.github_track_sheet_btn_scan_package_running)
-                            } else {
-                                stringResource(R.string.github_track_sheet_btn_scan_package)
-                            },
-                        enabled = canScanPackageName,
-                        onClick = onScanPackageName,
-                        minHeight = 30.dp,
-                        horizontalPadding = 10.dp,
-                        verticalPadding = 4.dp,
-                        textMaxLines = 1,
-                    )
+        } else {
+            SheetSectionCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SheetInputTitle(repoInputLabel)
+                    if (githubRepositoryMode) {
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            variant = GlassVariant.SheetAction,
+                            text =
+                                if (repoUrlScanRunning) {
+                                    stringResource(R.string.github_track_sheet_btn_scan_repo_running)
+                                } else {
+                                    stringResource(R.string.github_track_sheet_btn_scan_repo)
+                                },
+                            enabled = canScanRepoUrl,
+                            onClick = onScanRepoUrl,
+                            minHeight = 30.dp,
+                            horizontalPadding = 10.dp,
+                            verticalPadding = 4.dp,
+                            textMaxLines = 1,
+                        )
+                    }
                 }
-            }
-            AppLiquidSearchField(
-                value = packageNameInput,
-                onValueChange = onPackageNameInputChange,
-                label = stringResource(R.string.github_track_sheet_input_package),
-                backdrop = backdrop,
-                variant = GlassVariant.SheetInput,
-                singleLine = true,
-            )
-            SheetDescriptionText(
-                text = packageSummary,
-            )
-            SheetControlRow(
-                label = stringResource(R.string.github_track_sheet_label_selected_app),
-                summary =
-                    if (selectedApp == null) {
-                        stringResource(R.string.github_track_sheet_summary_app_binding_none)
-                    } else {
-                        null
-                    },
-            ) {
-                AppLiquidTextButton(
+                AppLiquidSearchField(
+                    value = repoUrlInput,
+                    onValueChange = onRepoUrlInputChange,
+                    label = repoInputLabel,
                     backdrop = backdrop,
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.github_track_sheet_btn_select_app),
-                    onClick = { onPickerExpandedChange(true) },
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true,
                 )
+                SheetDescriptionText(
+                    text = repoSummary,
+                )
+                if (!directApkMode && repoScanCandidates.isNotEmpty()) {
+                    RepositoryScanCandidateList(
+                        candidates = repoScanCandidates,
+                        selectedRepoUrl = repoUrlInput,
+                        onCandidateClick = onRepoScanCandidateSelected,
+                    )
+                }
             }
-            selectedApp?.let { app ->
-                GitHubSelectedAppCard(selectedApp = app)
+
+            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
+            SheetSectionCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
+                    if (!gitRepositoryMode) {
+                        AppLiquidTextButton(
+                            backdrop = backdrop,
+                            variant = GlassVariant.SheetAction,
+                            text =
+                                if (packageNameScanRunning) {
+                                    stringResource(R.string.github_track_sheet_btn_scan_package_running)
+                                } else {
+                                    stringResource(R.string.github_track_sheet_btn_scan_package)
+                                },
+                            enabled = canScanPackageName,
+                            onClick = onScanPackageName,
+                            minHeight = 30.dp,
+                            horizontalPadding = 10.dp,
+                            verticalPadding = 4.dp,
+                            textMaxLines = 1,
+                        )
+                    }
+                }
+                AppLiquidSearchField(
+                    value = packageNameInput,
+                    onValueChange = onPackageNameInputChange,
+                    label = stringResource(R.string.github_track_sheet_input_package),
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true,
+                )
+                SheetDescriptionText(
+                    text = packageSummary,
+                )
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_label_selected_app),
+                    summary =
+                        if (selectedApp == null) {
+                            stringResource(R.string.github_track_sheet_summary_app_binding_none)
+                        } else {
+                            null
+                        },
+                ) {
+                    AppLiquidTextButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        text = stringResource(R.string.github_track_sheet_btn_select_app),
+                        onClick = { onPickerExpandedChange(true) },
+                    )
+                }
+                selectedApp?.let { app ->
+                    GitHubSelectedAppCard(selectedApp = app)
+                }
             }
         }
 

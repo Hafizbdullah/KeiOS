@@ -260,6 +260,11 @@ internal fun GitHubPageSheetHost(
         fdroidApkNameRegexInput = state.fdroidApkNameRegexInput,
         fdroidTrustPolicyInput = state.fdroidTrustPolicyInput,
         fdroidAntiFeaturePolicyInput = state.fdroidAntiFeaturePolicyInput,
+        fdroidRepoScopeIdInput = state.fdroidRepoScopeIdInput,
+        fdroidAppSearchQueryInput = state.fdroidAppSearchQueryInput,
+        fdroidAppSearchCandidates = state.fdroidAppSearchCandidates,
+        fdroidSelectedCandidate = state.fdroidSelectedCandidate,
+        fdroidAppSearchRunning = state.fdroidAppSearchRunning,
         sourceModeDropdownExpanded = state.sourceModeDropdownExpanded,
         sourceModeDropdownAnchorBounds = state.sourceModeDropdownAnchorBounds,
         updateIntervalDropdownExpanded = state.updateIntervalDropdownExpanded,
@@ -278,6 +283,8 @@ internal fun GitHubPageSheetHost(
         fdroidAntiFeaturePolicyDropdownExpanded = state.fdroidAntiFeaturePolicyDropdownExpanded,
         fdroidAntiFeaturePolicyDropdownAnchorBounds =
             state.fdroidAntiFeaturePolicyDropdownAnchorBounds,
+        fdroidRepoScopeDropdownExpanded = state.fdroidRepoScopeDropdownExpanded,
+        fdroidRepoScopeDropdownAnchorBounds = state.fdroidRepoScopeDropdownAnchorBounds,
         globalRefreshIntervalHours = state.refreshIntervalHours,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
@@ -309,6 +316,11 @@ internal fun GitHubPageSheetHost(
         onFdroidApkNameRegexInputChange = actions::setTrackFdroidApkNameRegexInput,
         onFdroidTrustPolicyInputChange = actions::setTrackFdroidTrustPolicyInput,
         onFdroidAntiFeaturePolicyInputChange = actions::setTrackFdroidAntiFeaturePolicyInput,
+        onFdroidRepoScopeIdInputChange = actions::setTrackFdroidRepoScopeIdInput,
+        onFdroidAppSearchQueryInputChange = actions::setTrackFdroidAppSearchQueryInput,
+        onSearchFdroidAppsByName = actions::searchTrackFdroidAppsByName,
+        onScanFdroidReposFromPackage = actions::scanTrackFdroidReposFromPackage,
+        onFdroidAppSearchCandidateSelected = actions::selectTrackFdroidAppSearchCandidate,
         onSourceModeDropdownExpandedChange = actions::setTrackSourceModeDropdownExpanded,
         onSourceModeDropdownAnchorBoundsChange = actions::setTrackSourceModeDropdownAnchorBounds,
         onUpdateIntervalDropdownExpandedChange = actions::setTrackUpdateIntervalDropdownExpanded,
@@ -331,6 +343,10 @@ internal fun GitHubPageSheetHost(
             actions::setTrackFdroidAntiFeaturePolicyDropdownExpanded,
         onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange =
             actions::setTrackFdroidAntiFeaturePolicyDropdownAnchorBounds,
+        onFdroidRepoScopeDropdownExpandedChange =
+            actions::setTrackFdroidRepoScopeDropdownExpanded,
+        onFdroidRepoScopeDropdownAnchorBoundsChange =
+            actions::setTrackFdroidRepoScopeDropdownAnchorBounds,
     )
 
     GitHubDeleteTrackDialog(

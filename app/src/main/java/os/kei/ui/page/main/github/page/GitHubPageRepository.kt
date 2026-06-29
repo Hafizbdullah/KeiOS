@@ -17,6 +17,8 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
+import os.kei.feature.github.model.FdroidAppSearchRequest
+import os.kei.feature.github.model.FdroidAppSearchResult
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
@@ -82,6 +84,7 @@ internal data class GitHubTrackEditorDraft(
     val sourceMode: GitHubTrackedSourceMode,
     val repoUrl: String,
     val packageName: String,
+    val appLabelOverride: String = "",
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
     val checkActionsUpdates: Boolean,
@@ -504,6 +507,9 @@ internal class GitHubPageRepository(
 
     suspend fun scanRepositoryFromPackage(request: GitHubPackageRepositoryScanRequest): Result<GitHubPackageRepositoryScanResult> =
         discoveryRepository.scanRepositoryFromPackage(request)
+
+    suspend fun searchFdroidApps(request: FdroidAppSearchRequest): Result<FdroidAppSearchResult> =
+        discoveryRepository.searchFdroidApps(request)
 
     fun buildReleaseUrl(
         owner: String,

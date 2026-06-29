@@ -6,7 +6,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
+import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
@@ -42,6 +44,11 @@ internal class GitHubTrackEditorPageStateHolder {
     var fdroidApkNameRegexInput by mutableStateOf("")
     var fdroidTrustPolicyInput by mutableStateOf(FdroidTrustPolicy.TrackOnlyWarn)
     var fdroidAntiFeaturePolicyInput by mutableStateOf(FdroidAntiFeaturePolicy.ShowAndWarn)
+    var fdroidRepoScopeIdInput by mutableStateOf(FdroidRepositoryPresets.COMMON_ID)
+    var fdroidAppSearchQueryInput by mutableStateOf("")
+    var fdroidAppSearchCandidates by mutableStateOf<List<FdroidAppSearchCandidate>>(emptyList())
+    var fdroidSelectedCandidate by mutableStateOf<FdroidAppSearchCandidate?>(null)
+    var fdroidAppSearchRunning by mutableStateOf(false)
     var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
@@ -65,6 +72,8 @@ internal class GitHubTrackEditorPageStateHolder {
     var fdroidTrustPolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var fdroidAntiFeaturePolicyDropdownExpanded by mutableStateOf(false)
     var fdroidAntiFeaturePolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var fdroidRepoScopeDropdownExpanded by mutableStateOf(false)
+    var fdroidRepoScopeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
 
     fun reset() {
         repoUrlInput = ""
@@ -87,6 +96,11 @@ internal class GitHubTrackEditorPageStateHolder {
         fdroidApkNameRegexInput = ""
         fdroidTrustPolicyInput = FdroidTrustPolicy.TrackOnlyWarn
         fdroidAntiFeaturePolicyInput = FdroidAntiFeaturePolicy.ShowAndWarn
+        fdroidRepoScopeIdInput = FdroidRepositoryPresets.COMMON_ID
+        fdroidAppSearchQueryInput = ""
+        fdroidAppSearchCandidates = emptyList()
+        fdroidSelectedCandidate = null
+        fdroidAppSearchRunning = false
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false
         packageNameScanRunning = false
@@ -110,5 +124,7 @@ internal class GitHubTrackEditorPageStateHolder {
         fdroidTrustPolicyDropdownAnchorBounds = null
         fdroidAntiFeaturePolicyDropdownExpanded = false
         fdroidAntiFeaturePolicyDropdownAnchorBounds = null
+        fdroidRepoScopeDropdownExpanded = false
+        fdroidRepoScopeDropdownAnchorBounds = null
     }
 }

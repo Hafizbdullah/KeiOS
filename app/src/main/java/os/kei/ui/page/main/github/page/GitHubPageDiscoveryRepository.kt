@@ -4,6 +4,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryFacade
+import os.kei.feature.github.domain.fdroid.FdroidAppSearchService
+import os.kei.feature.github.model.FdroidAppSearchRequest
+import os.kei.feature.github.model.FdroidAppSearchResult
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
@@ -36,6 +39,10 @@ internal class GitHubPageDiscoveryRepository(
         GitHubRepositoryDiscoveryFacade(
             ioDispatcher = ioDispatcher,
             defaultDispatcher = defaultDispatcher,
+        )
+    private val fdroidAppSearchService =
+        FdroidAppSearchService(
+            dispatcher = ioDispatcher
         )
 
     suspend fun buildStrategyBenchmarkTargets(
@@ -125,6 +132,7 @@ internal class GitHubPageDiscoveryRepository(
                 }
             val resolvedAppLabel = when {
                 matchedInstalledApp != null -> matchedInstalledApp.label
+                draft.appLabelOverride.trim().isNotBlank() -> draft.appLabelOverride.trim()
                 resolvedPackageName.isNotBlank() -> resolvedPackageName
                 else -> sourceIdentity.fallbackLabel
             }
@@ -223,6 +231,11 @@ internal class GitHubPageDiscoveryRepository(
         request: GitHubPackageRepositoryScanRequest
     ): Result<GitHubPackageRepositoryScanResult> =
         discoveryFacade.scanRepositoryFromPackage(request)
+
+    suspend fun searchFdroidApps(
+        request: FdroidAppSearchRequest
+    ): Result<FdroidAppSearchResult> =
+        fdroidAppSearchService.search(request)
 }
 
 private data class GitHubTrackEditorSourceIdentity(

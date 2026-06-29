@@ -8,6 +8,7 @@ import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.domain.GitHubRefreshRuntimeState
+import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
@@ -640,6 +641,25 @@ internal class GitHubPageActions(
 
     fun setTrackFdroidAntiFeaturePolicyInput(value: FdroidAntiFeaturePolicy) =
         trackActions.setFdroidAntiFeaturePolicyInput(value)
+
+    fun setTrackFdroidRepoScopeIdInput(value: String) =
+        trackActions.setFdroidRepoScopeIdInput(value)
+
+    fun setTrackFdroidAppSearchQueryInput(value: String) =
+        trackActions.setFdroidAppSearchQueryInput(value)
+
+    fun setTrackFdroidRepoScopeDropdownExpanded(value: Boolean) =
+        trackActions.setFdroidRepoScopeDropdownExpanded(value)
+
+    fun setTrackFdroidRepoScopeDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setFdroidRepoScopeDropdownAnchorBounds(value)
+
+    fun searchTrackFdroidAppsByName() = trackActions.searchFdroidAppsByName()
+
+    fun scanTrackFdroidReposFromPackage() = trackActions.scanFdroidReposFromPackage()
+
+    fun selectTrackFdroidAppSearchCandidate(candidate: FdroidAppSearchCandidate) =
+        trackActions.selectFdroidAppSearchCandidate(candidate)
 
     fun setTrackFdroidVersionSelectionDropdownExpanded(value: Boolean) =
         trackActions.setFdroidVersionSelectionDropdownExpanded(value)

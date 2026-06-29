@@ -99,6 +99,11 @@ internal class GitHubPageState(
     var fdroidApkNameRegexInput by trackEditorState::fdroidApkNameRegexInput
     var fdroidTrustPolicyInput by trackEditorState::fdroidTrustPolicyInput
     var fdroidAntiFeaturePolicyInput by trackEditorState::fdroidAntiFeaturePolicyInput
+    var fdroidRepoScopeIdInput by trackEditorState::fdroidRepoScopeIdInput
+    var fdroidAppSearchQueryInput by trackEditorState::fdroidAppSearchQueryInput
+    var fdroidAppSearchCandidates by trackEditorState::fdroidAppSearchCandidates
+    var fdroidSelectedCandidate by trackEditorState::fdroidSelectedCandidate
+    var fdroidAppSearchRunning by trackEditorState::fdroidAppSearchRunning
     var trackSourceModeInput by trackEditorState::trackSourceModeInput
     var sourceModeDropdownExpanded by trackEditorState::sourceModeDropdownExpanded
     var sourceModeDropdownAnchorBounds by trackEditorState::sourceModeDropdownAnchorBounds
@@ -116,6 +121,8 @@ internal class GitHubPageState(
     var fdroidTrustPolicyDropdownAnchorBounds by trackEditorState::fdroidTrustPolicyDropdownAnchorBounds
     var fdroidAntiFeaturePolicyDropdownExpanded by trackEditorState::fdroidAntiFeaturePolicyDropdownExpanded
     var fdroidAntiFeaturePolicyDropdownAnchorBounds by trackEditorState::fdroidAntiFeaturePolicyDropdownAnchorBounds
+    var fdroidRepoScopeDropdownExpanded by trackEditorState::fdroidRepoScopeDropdownExpanded
+    var fdroidRepoScopeDropdownAnchorBounds by trackEditorState::fdroidRepoScopeDropdownAnchorBounds
     var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
     var packageNameScanRunning by trackEditorState::packageNameScanRunning
     var selectedApp by trackEditorState::selectedApp
