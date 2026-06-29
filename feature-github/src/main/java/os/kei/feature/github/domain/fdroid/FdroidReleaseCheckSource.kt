@@ -4,6 +4,9 @@ import android.os.Build
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarWriter
+import os.kei.feature.github.data.local.fdroid.buildFdroidMetadataSidecar
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClient
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
@@ -61,8 +64,10 @@ class FdroidPackageApiSnapshotProvider(
 
 class FdroidReleaseCheckSource(
     private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidPackageApiSnapshotProvider(),
+    private val metadataWriter: FdroidMetadataSidecarWriter = FdroidMetadataSidecarStore,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val deviceSdkProvider: () -> Int = { Build.VERSION.SDK_INT }
+    private val deviceSdkProvider: () -> Int = { Build.VERSION.SDK_INT },
+    private val clock: () -> Long = { System.currentTimeMillis() }
 ) : FdroidReleaseCheckEvaluator {
     override suspend fun evaluate(
         item: GitHubTrackedApp,
@@ -140,6 +145,21 @@ class FdroidReleaseCheckSource(
             channel = preReleaseVersion.releaseChannel()
         )
         val fallbackSignal = stableSignal ?: requireNotNull(preReleaseSignal)
+        val selectedVersion = stableVersion ?: preReleaseVersion
+        selectedVersion?.let { version ->
+            metadataWriter.save(
+                buildFdroidMetadataSidecar(
+                    trackId = item.id,
+                    sourceConfigSignature = sourceConfigSignature,
+                    fetchedAtMillis = clock(),
+                    repositorySnapshot = null,
+                    packageSnapshot = packageSnapshot,
+                    selectedVersion = version,
+                    trustPolicy = item.fdroidConfig.trustPolicy,
+                    repoFingerprint = item.fdroidConfig.repoFingerprint
+                )
+            )
+        }
         val snapshot = GitHubRepositoryReleaseSnapshot(
             strategyId = GITHUB_FDROID_STRATEGY_ID,
             feed = GitHubAtomFeed(

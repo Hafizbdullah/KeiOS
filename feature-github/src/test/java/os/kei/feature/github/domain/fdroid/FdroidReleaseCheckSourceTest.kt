@@ -3,6 +3,7 @@ package os.kei.feature.github.domain.fdroid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
@@ -16,6 +17,7 @@ import kotlin.test.assertTrue
 class FdroidReleaseCheckSourceTest {
     @Test
     fun `evaluate maps selected fdroid candidate to update check`() = runBlocking {
+        var savedSidecar: FdroidMetadataSidecar? = null
         val source = FdroidReleaseCheckSource(
             snapshotProvider = staticSnapshotProvider(
                 FdroidPackageSnapshot(
@@ -29,6 +31,7 @@ class FdroidReleaseCheckSourceTest {
                     )
                 )
             ),
+            metadataWriter = { sidecar -> savedSidecar = sidecar },
             ioDispatcher = Dispatchers.Unconfined,
             deviceSdkProvider = { 37 }
         )
@@ -48,6 +51,8 @@ class FdroidReleaseCheckSourceTest {
         assertEquals("102", result.preciseStableApkVersion?.versionCode)
         assertEquals("org.fdroid.fdroid_102.apk", result.preciseStableApkVersion?.assetName)
         assertEquals("fdroid_repository-v1", result.sourceConfigSignature.substringBefore('|'))
+        assertEquals("1.2.0", savedSidecar?.selectedVersion?.versionName)
+        assertEquals("sha256-102", savedSidecar?.trust?.apkSha256)
     }
 
     @Test
@@ -56,6 +61,7 @@ class FdroidReleaseCheckSourceTest {
             snapshotProvider = staticSnapshotProvider(
                 Result.failure(IllegalStateException("package missing"))
             ),
+            metadataWriter = { },
             ioDispatcher = Dispatchers.Unconfined,
             deviceSdkProvider = { 37 }
         )

@@ -78,3 +78,11 @@
 - Verification:
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
+- Completed Backend P4 metadata sidecar:
+  - Added a compact F-Droid sidecar model for repo, package, selected version, candidate versions, trust, and Anti-Features.
+  - Added JSON round-trip and freshness checks so UI/detail surfaces can consume cached summaries without reading a full repo index.
+  - Added MMKV-backed sidecar storage keyed by tracked item id.
+  - Wrote the sidecar from the F-Droid release-check source after a candidate version is selected.
+- Verification:
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
