@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.share
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
@@ -82,6 +83,8 @@ internal class GitHubShareImportEntryCoordinator(
                 notificationFirst = notificationFirstFlow,
                 sendInstallActionEnabled = sendInstallActionEnabled,
             )
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Throwable) {
             failureHandler.handleIncomingFailure(
                 context = appContext,

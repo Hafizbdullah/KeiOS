@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -46,6 +47,7 @@ internal class GitHubActionsRunStatusDelegate(
         val currentSnapshot = state.actionsSnapshot ?: return
         if (state.actionsStatusRefreshingRunIds[runId] == true) return
         state.actionsStatusRefreshingRunIds[runId] = true
+        var shouldRescheduleWatch = false
         try {
             val statusTrace =
                 actionsRepository.fetchGitHubActionsRunStatusSnapshot(
@@ -90,10 +92,14 @@ internal class GitHubActionsRunStatusDelegate(
                     ?.runArtifacts
                     ?.run
                     ?.id
+            shouldRescheduleWatch = true
             if (showToast) {
                 env.toast(R.string.common_refreshed)
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Throwable) {
+            shouldRescheduleWatch = true
             if (showToast) {
                 env.toast(
                     context.getString(
@@ -107,7 +113,9 @@ internal class GitHubActionsRunStatusDelegate(
             }
         } finally {
             state.actionsStatusRefreshingRunIds.remove(runId)
-            scheduleSelectedRunWatch()
+            if (shouldRescheduleWatch) {
+                scheduleSelectedRunWatch()
+            }
         }
     }
 

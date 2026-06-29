@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import android.content.Intent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -117,6 +118,8 @@ internal class GitHubActionsArtifactActions(
                 } else {
                     artifactPackageNameDeferred?.cancel()
                 }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 env.toast(
                     context.getString(
@@ -170,6 +173,8 @@ internal class GitHubActionsArtifactActions(
                 if (shareResolvedArtifactDownloadUrl(resolvedUrl, artifact.name)) {
                     env.toast(R.string.github_actions_toast_share_started)
                 }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 env.toast(
                     context.getString(

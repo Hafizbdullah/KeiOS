@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -107,6 +108,8 @@ internal class GitHubActionsSheetLoader(
                     preferredRunId = null,
                 )
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Throwable) {
             if (isCurrentTarget(item)) {
                 state.actionsError = error.message ?: error.javaClass.simpleName
@@ -197,6 +200,8 @@ internal class GitHubActionsSheetLoader(
                     runId = runId,
                 )
             }
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: Throwable) {
             if (isCurrentSnapshotRequest(item, workflow, branch)) {
                 requestHandled = true
