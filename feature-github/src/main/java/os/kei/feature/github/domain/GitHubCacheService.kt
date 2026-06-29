@@ -5,6 +5,7 @@ import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 
 data class GitHubCacheSummaryData(
@@ -36,6 +37,7 @@ object GitHubCacheService {
         GitHubTrackStore.clearCheckCache()
         GitHubTrackStoreSignals.notifyChanged()
         GitHubReleaseAssetCacheStore.clearAll()
+        FdroidMetadataSidecarStore.clearAll()
     }
 
     fun clearGitHubMcpCaches() {

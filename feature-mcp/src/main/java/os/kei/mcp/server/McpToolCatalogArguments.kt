@@ -258,7 +258,7 @@ internal object McpToolCatalogArguments {
         return McpSchema.string(
             name = "sourceMode",
             description = "Tracked source filter.",
-            enumValues = listOf("github_repository", "git_repository", "direct_apk")
+            enumValues = listOf("github_repository", "git_repository", "direct_apk", "fdroid_repository")
         )
     }
 
@@ -271,6 +271,7 @@ internal object McpToolCatalogArguments {
                 "github_repository",
                 "git_repository",
                 "direct_apk",
+                "fdroid_repository",
                 "pre_release_tracked",
                 "update_available",
                 "installed",

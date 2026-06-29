@@ -10,6 +10,7 @@ import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
@@ -248,6 +249,7 @@ class GitHubBackgroundRefreshService(
             GitHubReleaseStrategyRegistry.clearAllCaches()
             GitHubTrackStore.clearCheckCache()
             GitHubReleaseAssetCacheStore.clearAll()
+            FdroidMetadataSidecarStore.clearAll()
         }
     }
 

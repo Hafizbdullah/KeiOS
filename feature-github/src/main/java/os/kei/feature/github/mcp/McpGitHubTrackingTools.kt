@@ -9,6 +9,7 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
@@ -117,7 +118,7 @@ internal class McpGitHubTrackingTools(
                     val repo = "${row.item.owner}/${row.item.repo}"
                     val pre =
                         if (row.preReleaseVersion.isNotBlank()) " | pre=${row.preReleaseVersion}" else ""
-                    "$repo | local=${row.localVersion} | stable=${row.stableVersion}$pre | status=${row.status} | update=${row.hasUpdate}"
+                    "$repo | source=${row.item.sourceMode.storageId} | local=${row.localVersion} | stable=${row.stableVersion}$pre | status=${row.status} | update=${row.hasUpdate}"
                 }
             }
             text
@@ -155,7 +156,7 @@ internal class McpGitHubTrackingTools(
 
         server.addMcpTextTool(environment, name = "keios.github.cache.clear") { _ ->
             GitHubCacheService.clearGitHubMcpCaches()
-            "cleared=github_check_cache,github_release_asset_cache,github_star_import_apk_verification_cache"
+            "cleared=github_check_cache,github_release_asset_cache,github_fdroid_metadata_sidecar,github_star_import_apk_verification_cache"
         }
 
         server.addMcpTextTool(environment, name = "keios.github.link.parse") { request ->
@@ -195,6 +196,7 @@ internal class McpGitHubTrackingTools(
             appendLine("githubRepositoryCount=${sourceCounts.githubRepositoryCount}")
             appendLine("gitRepositoryCount=${sourceCounts.gitRepositoryCount}")
             appendLine("directApkCount=${sourceCounts.directApkCount}")
+            appendLine("fdroidRepositoryCount=${sourceCounts.fdroidRepositoryCount}")
             appendLine("cachedCheckCount=${snapshot.checkCache.size}")
             appendLine("cachedHasUpdateCount=$cachedUpdateCount")
             appendLine("cachedFailedCount=$cachedFailedCount")
@@ -302,11 +304,39 @@ internal class McpGitHubTrackingTools(
         return items.joinToString("\n") { item ->
             "${item.owner}/${item.repo} | label=${item.appLabel} | package=${item.packageName} | " +
                     "sourceMode=${item.sourceMode.storageId} | url=${item.repoUrl} | " +
+                    "sourceDetail=${item.mcpSourceDetail()} | " +
                     "preferPreRelease=${item.preferPreRelease} | " +
                     "checkActionsUpdates=${item.checkActionsUpdates} | " +
                     "actionsUpdateIntervalMode=${item.actionsUpdateIntervalMode.storageId} | " +
                     "preciseApkVersionMode=${item.preciseApkVersionMode.storageId} | " +
                     "latestDownload=${item.alwaysShowLatestReleaseDownloadButton}"
+        }
+    }
+
+    private fun GitHubTrackedApp.mcpSourceDetail(): String {
+        return when {
+            isFdroidRepositoryTrack() -> {
+                val identity = buildFdroidRepositoryTrackIdentity(repoUrl, packageName)
+                val config = fdroidConfig
+                buildList {
+                    add("repo=${identity?.normalizedRepoUrl ?: repoUrl}")
+                    add("repoName=${identity?.repoDisplayName.orEmpty()}")
+                    add("package=${identity?.packageName?.ifBlank { packageName } ?: packageName}")
+                    config.packagePageUrl.takeIf { it.isNotBlank() }?.let { add("packagePage=$it") }
+                    add("selection=${config.selectionMode.storageId}")
+                    add("trust=${config.trustPolicy.storageId}")
+                    add("antiFeature=${config.antiFeaturePolicy.storageId}")
+                    config.versionNameRegex.takeIf { it.isNotBlank() }?.let { add("versionRegex=$it") }
+                    config.apkNameRegex.takeIf { it.isNotBlank() }?.let { add("apkRegex=$it") }
+                    config.blockedAntiFeatures.takeIf { it.isNotEmpty() }?.let {
+                        add("blockedAntiFeatures=${it.joinToString(",")}")
+                    }
+                }.joinToString(";")
+            }
+
+            isGitRepositoryTrack() -> "gitUrl=$repoUrl"
+            isDirectApkTrack() -> "apkUrl=$repoUrl"
+            else -> "repo=$owner/$repo"
         }
     }
 
@@ -341,6 +371,7 @@ internal class McpGitHubTrackingTools(
             existingItems = existing,
         )
         val optionCounts = GitHubTrackedItemsTransferService.calculateOptionCounts(payload.items)
+        val sourceCounts = GitHubTrackedItemsTransferService.calculateSourceCounts(payload.items)
         val hasChanges = preview.newCount > 0 || preview.updatedCount > 0
         val applyResult =
             if (apply && hasChanges) {
@@ -367,6 +398,10 @@ internal class McpGitHubTrackingTools(
             appendLine("validCount=${payload.items.size}")
             appendLine("invalidCount=${payload.invalidCount}")
             appendLine("duplicateCount=${payload.duplicateCount}")
+            appendLine("githubRepositoryCount=${sourceCounts.githubRepositoryCount}")
+            appendLine("gitRepositoryCount=${sourceCounts.gitRepositoryCount}")
+            appendLine("directApkCount=${sourceCounts.directApkCount}")
+            appendLine("fdroidRepositoryCount=${sourceCounts.fdroidRepositoryCount}")
             appendLine("preferPreReleaseCount=${optionCounts.preferPreReleaseCount}")
             appendLine("actionsUpdateCount=${optionCounts.actionsUpdateCount}")
             appendLine(
@@ -425,7 +460,9 @@ internal class McpGitHubTrackingTools(
             appendLine("tracked=${snapshot.items.size}")
             appendLine("matched=${tracked.size}")
             appendLine("githubRepository=${tracked.count { it.isGitHubRepositoryTrack() }}")
+            appendLine("gitRepository=${tracked.count { it.isGitRepositoryTrack() }}")
             appendLine("directApk=${tracked.count { it.isDirectApkTrack() }}")
+            appendLine("fdroidRepository=${tracked.count { it.isFdroidRepositoryTrack() }}")
             appendLine("cacheHit=${cacheHit.size}")
             appendLine("hasUpdate=$hasUpdate")
             appendLine("unknown=$unknown")
@@ -462,7 +499,9 @@ internal class McpGitHubTrackingTools(
             appendLine("mode=network")
             appendLine("matched=${rows.size}")
             appendLine("githubRepository=${rows.count { it.item.isGitHubRepositoryTrack() }}")
+            appendLine("gitRepository=${rows.count { it.item.isGitRepositoryTrack() }}")
             appendLine("directApk=${rows.count { it.item.isDirectApkTrack() }}")
+            appendLine("fdroidRepository=${rows.count { it.item.isFdroidRepositoryTrack() }}")
             appendLine("hasUpdate=$hasUpdate")
             appendLine("preReleaseState=$preRelease")
             rows.take(20)

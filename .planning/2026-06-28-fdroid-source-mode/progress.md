@@ -117,3 +117,13 @@
   - `./gradlew :app:testDebugUnitTest --tests os.kei.ui.page.main.github.asset.GitHubFdroidInstallAssetsTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.GitHubReleaseAssetJsonMapperTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
   - `git diff --check`
+- Completed P8 transfer/WebDAV/MCP bridge:
+  - Confirmed import/export and WebDAV share the existing tracked-items JSON transfer service, so F-Droid source config rides the same payload as local import/export.
+  - Added F-Droid source counts to MCP snapshot, import preview output, cache summary, and network summary.
+  - Added F-Droid source details to MCP track list output, including repo, package, selection, trust, Anti-Feature policy, and regex filters.
+  - Added `fdroid_repository` to MCP tool argument schemas and Skill markdown descriptions across locales.
+  - Cleared F-Droid metadata sidecars when GitHub/MCP caches are cleared, shortcut refresh clears caches, or import changes tracked source config.
+- Verification:
+  - `./gradlew :app:testDebugUnitTest --tests os.kei.mcp.server.McpToolRegistrationTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest`
+  - `rg --pcre2 -n "sourceMode=github_repository\\|git_repository\\|direct_apk(?!\\|fdroid_repository)|filterMode=all\\|github_repository\\|git_repository\\|direct_apk\\|pre_release" feature-mcp/src/main/java app/src/test/java feature-github/src/main/java -g '*.kt'`
