@@ -33,9 +33,7 @@ class BackgroundAsyncReceiverRunnerTest {
             finishPending = { finishCount.incrementAndGet() },
             runnerScope = this,
             onTimeout = { timeoutCount.incrementAndGet() }
-        ) {
-            Unit
-        }
+        ) {}
         job.join()
         advanceTimeBy(5_000L)
         runCurrent()
