@@ -4,6 +4,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -141,6 +145,53 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode
+        )
+    }
+
+    @Test
+    fun `fdroid source builds normalized track and preserves fdroid config`() = runBlocking {
+        val result = repository.buildTrackedItem(
+            GitHubTrackEditorDraft(
+                sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+                repoUrl = "https://f-droid.org/packages/org.fdroid.fdroid/",
+                packageName = "",
+                preferPreRelease = true,
+                alwaysShowLatestReleaseDownloadButton = true,
+                checkActionsUpdates = true,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours12,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
+                fdroidConfig = FdroidTrackedAppConfig(
+                    selectionMode = FdroidVersionSelectionMode.HighestVersionCode,
+                    apkNameRegex = "universal",
+                    trustPolicy = FdroidTrustPolicy.RequireApkHash,
+                    antiFeaturePolicy = FdroidAntiFeaturePolicy.HideTracking,
+                ),
+                appList = emptyList()
+            )
+        )
+
+        val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
+
+        assertEquals(GitHubTrackedSourceMode.FdroidRepository, item.sourceMode)
+        assertEquals("https://f-droid.org/repo", item.repoUrl)
+        assertEquals("f-droid.org", item.owner)
+        assertEquals("repo", item.repo)
+        assertEquals("org.fdroid.fdroid", item.packageName)
+        assertEquals("org.fdroid.fdroid", item.appLabel)
+        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, item.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
+        assertEquals(FdroidVersionSelectionMode.HighestVersionCode, item.fdroidConfig.selectionMode)
+        assertEquals("universal", item.fdroidConfig.apkNameRegex)
+        assertEquals(FdroidTrustPolicy.RequireApkHash, item.fdroidConfig.trustPolicy)
+        assertEquals(FdroidAntiFeaturePolicy.HideTracking, item.fdroidConfig.antiFeaturePolicy)
+        assertEquals(
+            "https://f-droid.org/packages/org.fdroid.fdroid/",
+            item.fdroidConfig.packagePageUrl
         )
     }
 

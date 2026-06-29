@@ -8,6 +8,9 @@ import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.domain.GitHubRefreshRuntimeState
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -569,6 +572,39 @@ internal class GitHubPageActions(
     fun setTrackIgnoreModeDropdownExpanded(value: Boolean) = trackActions.setIgnoreModeDropdownExpanded(value)
 
     fun setTrackIgnoreModeDropdownAnchorBounds(value: IntRect?) = trackActions.setIgnoreModeDropdownAnchorBounds(value)
+
+    fun setTrackFdroidVersionSelectionModeInput(value: FdroidVersionSelectionMode) =
+        trackActions.setFdroidVersionSelectionModeInput(value)
+
+    fun setTrackFdroidVersionNameRegexInput(value: String) =
+        trackActions.setFdroidVersionNameRegexInput(value)
+
+    fun setTrackFdroidApkNameRegexInput(value: String) =
+        trackActions.setFdroidApkNameRegexInput(value)
+
+    fun setTrackFdroidTrustPolicyInput(value: FdroidTrustPolicy) =
+        trackActions.setFdroidTrustPolicyInput(value)
+
+    fun setTrackFdroidAntiFeaturePolicyInput(value: FdroidAntiFeaturePolicy) =
+        trackActions.setFdroidAntiFeaturePolicyInput(value)
+
+    fun setTrackFdroidVersionSelectionDropdownExpanded(value: Boolean) =
+        trackActions.setFdroidVersionSelectionDropdownExpanded(value)
+
+    fun setTrackFdroidVersionSelectionDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setFdroidVersionSelectionDropdownAnchorBounds(value)
+
+    fun setTrackFdroidTrustPolicyDropdownExpanded(value: Boolean) =
+        trackActions.setFdroidTrustPolicyDropdownExpanded(value)
+
+    fun setTrackFdroidTrustPolicyDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setFdroidTrustPolicyDropdownAnchorBounds(value)
+
+    fun setTrackFdroidAntiFeaturePolicyDropdownExpanded(value: Boolean) =
+        trackActions.setFdroidAntiFeaturePolicyDropdownExpanded(value)
+
+    fun setTrackFdroidAntiFeaturePolicyDropdownAnchorBounds(value: IntRect?) =
+        trackActions.setFdroidAntiFeaturePolicyDropdownAnchorBounds(value)
 
     fun refreshTrackAppList() = trackActions.refreshAppListForTrackSheet()
 

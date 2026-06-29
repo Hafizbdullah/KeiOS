@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -90,6 +93,11 @@ internal class GitHubPageState(
     var ignoreModeInput by trackEditorState::ignoreModeInput
     var ignoredStableReleaseKeyInput by trackEditorState::ignoredStableReleaseKeyInput
     var ignoredPreReleaseKeyInput by trackEditorState::ignoredPreReleaseKeyInput
+    var fdroidVersionSelectionModeInput by trackEditorState::fdroidVersionSelectionModeInput
+    var fdroidVersionNameRegexInput by trackEditorState::fdroidVersionNameRegexInput
+    var fdroidApkNameRegexInput by trackEditorState::fdroidApkNameRegexInput
+    var fdroidTrustPolicyInput by trackEditorState::fdroidTrustPolicyInput
+    var fdroidAntiFeaturePolicyInput by trackEditorState::fdroidAntiFeaturePolicyInput
     var trackSourceModeInput by trackEditorState::trackSourceModeInput
     var sourceModeDropdownExpanded by trackEditorState::sourceModeDropdownExpanded
     var sourceModeDropdownAnchorBounds by trackEditorState::sourceModeDropdownAnchorBounds
@@ -101,6 +109,12 @@ internal class GitHubPageState(
     var preciseModeDropdownAnchorBounds by trackEditorState::preciseModeDropdownAnchorBounds
     var ignoreModeDropdownExpanded by trackEditorState::ignoreModeDropdownExpanded
     var ignoreModeDropdownAnchorBounds by trackEditorState::ignoreModeDropdownAnchorBounds
+    var fdroidVersionSelectionDropdownExpanded by trackEditorState::fdroidVersionSelectionDropdownExpanded
+    var fdroidVersionSelectionDropdownAnchorBounds by trackEditorState::fdroidVersionSelectionDropdownAnchorBounds
+    var fdroidTrustPolicyDropdownExpanded by trackEditorState::fdroidTrustPolicyDropdownExpanded
+    var fdroidTrustPolicyDropdownAnchorBounds by trackEditorState::fdroidTrustPolicyDropdownAnchorBounds
+    var fdroidAntiFeaturePolicyDropdownExpanded by trackEditorState::fdroidAntiFeaturePolicyDropdownExpanded
+    var fdroidAntiFeaturePolicyDropdownAnchorBounds by trackEditorState::fdroidAntiFeaturePolicyDropdownAnchorBounds
     var repoUrlScanRunning by trackEditorState::repoUrlScanRunning
     var packageNameScanRunning by trackEditorState::packageNameScanRunning
     var selectedApp by trackEditorState::selectedApp
@@ -238,6 +252,10 @@ internal class GitHubPageState(
                 trackId = normalizedTrackId,
                 version = nextTrackCardFocusRequestVersion,
             )
+    }
+
+    fun resetTrackEditorDropdownState() {
+        trackEditorState.resetDropdownState()
     }
 
     fun consumeTrackCardFocus(request: GitHubTrackCardFocusRequest) {

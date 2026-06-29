@@ -244,6 +244,11 @@ internal fun GitHubPageSheetHost(
         ignoreModeInput = state.ignoreModeInput,
         ignoredStableReleaseKeyInput = state.ignoredStableReleaseKeyInput,
         ignoredPreReleaseKeyInput = state.ignoredPreReleaseKeyInput,
+        fdroidVersionSelectionModeInput = state.fdroidVersionSelectionModeInput,
+        fdroidVersionNameRegexInput = state.fdroidVersionNameRegexInput,
+        fdroidApkNameRegexInput = state.fdroidApkNameRegexInput,
+        fdroidTrustPolicyInput = state.fdroidTrustPolicyInput,
+        fdroidAntiFeaturePolicyInput = state.fdroidAntiFeaturePolicyInput,
         sourceModeDropdownExpanded = state.sourceModeDropdownExpanded,
         sourceModeDropdownAnchorBounds = state.sourceModeDropdownAnchorBounds,
         updateIntervalDropdownExpanded = state.updateIntervalDropdownExpanded,
@@ -254,6 +259,14 @@ internal fun GitHubPageSheetHost(
         preciseModeDropdownAnchorBounds = state.preciseModeDropdownAnchorBounds,
         ignoreModeDropdownExpanded = state.ignoreModeDropdownExpanded,
         ignoreModeDropdownAnchorBounds = state.ignoreModeDropdownAnchorBounds,
+        fdroidVersionSelectionDropdownExpanded = state.fdroidVersionSelectionDropdownExpanded,
+        fdroidVersionSelectionDropdownAnchorBounds =
+            state.fdroidVersionSelectionDropdownAnchorBounds,
+        fdroidTrustPolicyDropdownExpanded = state.fdroidTrustPolicyDropdownExpanded,
+        fdroidTrustPolicyDropdownAnchorBounds = state.fdroidTrustPolicyDropdownAnchorBounds,
+        fdroidAntiFeaturePolicyDropdownExpanded = state.fdroidAntiFeaturePolicyDropdownExpanded,
+        fdroidAntiFeaturePolicyDropdownAnchorBounds =
+            state.fdroidAntiFeaturePolicyDropdownAnchorBounds,
         globalRefreshIntervalHours = state.refreshIntervalHours,
         globalPreciseApkVersionEnabled = state.lookupConfig.preciseApkVersionEnabled,
         onDismissRequest = actions::dismissTrackSheet,
@@ -279,6 +292,12 @@ internal fun GitHubPageSheetHost(
         onActionsUpdateIntervalModeInputChange = actions::setTrackActionsUpdateIntervalModeInput,
         onPreciseApkVersionModeInputChange = actions::setTrackPreciseApkVersionModeInput,
         onIgnoreModeInputChange = actions::setTrackIgnoreModeInput,
+        onFdroidVersionSelectionModeInputChange =
+            actions::setTrackFdroidVersionSelectionModeInput,
+        onFdroidVersionNameRegexInputChange = actions::setTrackFdroidVersionNameRegexInput,
+        onFdroidApkNameRegexInputChange = actions::setTrackFdroidApkNameRegexInput,
+        onFdroidTrustPolicyInputChange = actions::setTrackFdroidTrustPolicyInput,
+        onFdroidAntiFeaturePolicyInputChange = actions::setTrackFdroidAntiFeaturePolicyInput,
         onSourceModeDropdownExpandedChange = actions::setTrackSourceModeDropdownExpanded,
         onSourceModeDropdownAnchorBoundsChange = actions::setTrackSourceModeDropdownAnchorBounds,
         onUpdateIntervalDropdownExpandedChange = actions::setTrackUpdateIntervalDropdownExpanded,
@@ -289,6 +308,18 @@ internal fun GitHubPageSheetHost(
         onPreciseModeDropdownAnchorBoundsChange = actions::setTrackPreciseModeDropdownAnchorBounds,
         onIgnoreModeDropdownExpandedChange = actions::setTrackIgnoreModeDropdownExpanded,
         onIgnoreModeDropdownAnchorBoundsChange = actions::setTrackIgnoreModeDropdownAnchorBounds,
+        onFdroidVersionSelectionDropdownExpandedChange =
+            actions::setTrackFdroidVersionSelectionDropdownExpanded,
+        onFdroidVersionSelectionDropdownAnchorBoundsChange =
+            actions::setTrackFdroidVersionSelectionDropdownAnchorBounds,
+        onFdroidTrustPolicyDropdownExpandedChange =
+            actions::setTrackFdroidTrustPolicyDropdownExpanded,
+        onFdroidTrustPolicyDropdownAnchorBoundsChange =
+            actions::setTrackFdroidTrustPolicyDropdownAnchorBounds,
+        onFdroidAntiFeaturePolicyDropdownExpandedChange =
+            actions::setTrackFdroidAntiFeaturePolicyDropdownExpanded,
+        onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange =
+            actions::setTrackFdroidAntiFeaturePolicyDropdownAnchorBounds,
     )
 
     GitHubDeleteTrackDialog(

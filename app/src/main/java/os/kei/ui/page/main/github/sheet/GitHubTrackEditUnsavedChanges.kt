@@ -26,7 +26,8 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
     ignoreModeInput: GitHubTrackedIgnoreMode,
     ignoredStableReleaseKeyInput: String,
-    ignoredPreReleaseKeyInput: String
+    ignoredPreReleaseKeyInput: String,
+    fdroidConfigChanged: Boolean = false
 ): Boolean {
     val repoUrl = repoUrlInput.trim()
     val packageName = packageNameInput.trim()
@@ -42,7 +43,8 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                 preciseApkVersionModeInput != item.preciseApkVersionMode ||
                 ignoreModeInput != item.ignoreMode ||
                 ignoredStableReleaseKeyInput.trim() != item.ignoredStableReleaseKey.trim() ||
-                ignoredPreReleaseKeyInput.trim() != item.ignoredPreReleaseKey.trim()
+                ignoredPreReleaseKeyInput.trim() != item.ignoredPreReleaseKey.trim() ||
+                fdroidConfigChanged
     } ?: (
             repoUrl.isNotBlank() ||
                     packageName.isNotBlank() ||
@@ -60,6 +62,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                     preciseApkVersionModeInput != GitHubTrackedPreciseApkVersionMode.FollowGlobal ||
                     ignoreModeInput != GitHubTrackedIgnoreMode.None ||
                     ignoredStableReleaseKeyInput.trim().isNotBlank() ||
-                    ignoredPreReleaseKeyInput.trim().isNotBlank()
+                    ignoredPreReleaseKeyInput.trim().isNotBlank() ||
+                    fdroidConfigChanged
             )
 }

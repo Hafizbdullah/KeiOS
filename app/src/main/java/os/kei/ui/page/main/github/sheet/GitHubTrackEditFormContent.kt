@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -62,6 +65,17 @@ internal fun GitHubTrackEditFormContent(
     preciseModeDropdownAnchorBounds: IntRect?,
     ignoreModeDropdownExpanded: Boolean,
     ignoreModeDropdownAnchorBounds: IntRect?,
+    fdroidVersionSelectionModeInput: FdroidVersionSelectionMode,
+    fdroidVersionNameRegexInput: String,
+    fdroidApkNameRegexInput: String,
+    fdroidTrustPolicyInput: FdroidTrustPolicy,
+    fdroidAntiFeaturePolicyInput: FdroidAntiFeaturePolicy,
+    fdroidVersionSelectionDropdownExpanded: Boolean,
+    fdroidVersionSelectionDropdownAnchorBounds: IntRect?,
+    fdroidTrustPolicyDropdownExpanded: Boolean,
+    fdroidTrustPolicyDropdownAnchorBounds: IntRect?,
+    fdroidAntiFeaturePolicyDropdownExpanded: Boolean,
+    fdroidAntiFeaturePolicyDropdownAnchorBounds: IntRect?,
     globalRefreshIntervalHours: Int,
     globalPreciseApkVersionEnabled: Boolean,
     onRepoUrlInputChange: (String) -> Unit,
@@ -78,6 +92,11 @@ internal fun GitHubTrackEditFormContent(
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
     onIgnoreModeInputChange: (GitHubTrackedIgnoreMode) -> Unit,
+    onFdroidVersionSelectionModeInputChange: (FdroidVersionSelectionMode) -> Unit,
+    onFdroidVersionNameRegexInputChange: (String) -> Unit,
+    onFdroidApkNameRegexInputChange: (String) -> Unit,
+    onFdroidTrustPolicyInputChange: (FdroidTrustPolicy) -> Unit,
+    onFdroidAntiFeaturePolicyInputChange: (FdroidAntiFeaturePolicy) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onUpdateIntervalDropdownExpandedChange: (Boolean) -> Unit,
@@ -88,14 +107,20 @@ internal fun GitHubTrackEditFormContent(
     onPreciseModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
     onIgnoreModeDropdownExpandedChange: (Boolean) -> Unit,
     onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onFdroidVersionSelectionDropdownExpandedChange: (Boolean) -> Unit,
+    onFdroidVersionSelectionDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onFdroidTrustPolicyDropdownExpandedChange: (Boolean) -> Unit,
+    onFdroidTrustPolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
+    onFdroidAntiFeaturePolicyDropdownExpandedChange: (Boolean) -> Unit,
+    onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val sourceModes = GitHubTrackedSourceMode.entries
-        .filterNot { it == GitHubTrackedSourceMode.FdroidRepository }
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
     val directApkMode = sourceModeInput == GitHubTrackedSourceMode.DirectApk
     val gitRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitRepository
     val githubRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.GitHubRepository
+    val fdroidRepositoryMode = sourceModeInput == GitHubTrackedSourceMode.FdroidRepository
     val updateIntervalModes = GitHubTrackedUpdateIntervalMode.entries
     val updateIntervalOptions =
         updateIntervalModes.map { mode ->
@@ -162,11 +187,13 @@ internal fun GitHubTrackEditFormContent(
             )
         } else {
             stringResource(
-                if (gitRepositoryMode) {
-                    R.string.github_track_sheet_summary_precise_apk_version_git
-                } else {
-                    R.string.github_track_sheet_summary_precise_apk_version
-                },
+            if (gitRepositoryMode) {
+                R.string.github_track_sheet_summary_precise_apk_version_git
+            } else if (fdroidRepositoryMode) {
+                R.string.github_track_sheet_summary_precise_apk_version_fdroid
+            } else {
+                R.string.github_track_sheet_summary_precise_apk_version
+            },
             )
         }
     val preciseModeSummaryColor =
@@ -176,13 +203,14 @@ internal fun GitHubTrackEditFormContent(
             MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
         }
     val canScanRepoUrl =
-        !repoUrlScanRunning &&
+            !repoUrlScanRunning &&
             !packageNameScanRunning &&
             githubRepositoryMode &&
             (packageNameInput.isNotBlank() || selectedApp != null)
     val canScanPackageName =
         !repoUrlScanRunning &&
             !packageNameScanRunning &&
+            !fdroidRepositoryMode &&
             !gitRepositoryMode &&
             repoUrlInput.isNotBlank()
     val repoInputLabel =
@@ -190,6 +218,7 @@ internal fun GitHubTrackEditFormContent(
             when {
                 directApkMode -> R.string.github_track_sheet_input_direct_apk
                 gitRepositoryMode -> R.string.github_track_sheet_input_git
+                fdroidRepositoryMode -> R.string.github_track_sheet_input_fdroid_repo
                 else -> R.string.github_track_sheet_input_repo
             },
         )
@@ -198,6 +227,7 @@ internal fun GitHubTrackEditFormContent(
             when {
                 directApkMode -> R.string.github_track_sheet_summary_direct_apk
                 gitRepositoryMode -> R.string.github_track_sheet_summary_git
+                fdroidRepositoryMode -> R.string.github_track_sheet_summary_fdroid_repo
                 else -> R.string.github_track_sheet_summary_repo
             },
         )
@@ -206,6 +236,7 @@ internal fun GitHubTrackEditFormContent(
             when {
                 directApkMode -> R.string.github_track_sheet_summary_package_direct_apk
                 gitRepositoryMode -> R.string.github_track_sheet_summary_package_git
+                fdroidRepositoryMode -> R.string.github_track_sheet_summary_package_fdroid
                 else -> R.string.github_track_sheet_summary_package_link
             },
         )
@@ -291,7 +322,7 @@ internal fun GitHubTrackEditFormContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
-                if (!gitRepositoryMode) {
+                if (!gitRepositoryMode && !fdroidRepositoryMode) {
                     AppLiquidTextButton(
                         backdrop = backdrop,
                         variant = GlassVariant.SheetAction,
@@ -340,6 +371,39 @@ internal fun GitHubTrackEditFormContent(
             selectedApp?.let { app ->
                 GitHubSelectedAppCard(selectedApp = app)
             }
+        }
+
+        if (fdroidRepositoryMode) {
+            GitHubTrackEditFdroidOptions(
+                backdrop = backdrop,
+                versionSelectionMode = fdroidVersionSelectionModeInput,
+                versionNameRegex = fdroidVersionNameRegexInput,
+                apkNameRegex = fdroidApkNameRegexInput,
+                trustPolicy = fdroidTrustPolicyInput,
+                antiFeaturePolicy = fdroidAntiFeaturePolicyInput,
+                versionSelectionDropdownExpanded = fdroidVersionSelectionDropdownExpanded,
+                versionSelectionDropdownAnchorBounds = fdroidVersionSelectionDropdownAnchorBounds,
+                trustPolicyDropdownExpanded = fdroidTrustPolicyDropdownExpanded,
+                trustPolicyDropdownAnchorBounds = fdroidTrustPolicyDropdownAnchorBounds,
+                antiFeaturePolicyDropdownExpanded = fdroidAntiFeaturePolicyDropdownExpanded,
+                antiFeaturePolicyDropdownAnchorBounds = fdroidAntiFeaturePolicyDropdownAnchorBounds,
+                onVersionSelectionModeChange = onFdroidVersionSelectionModeInputChange,
+                onVersionNameRegexChange = onFdroidVersionNameRegexInputChange,
+                onApkNameRegexChange = onFdroidApkNameRegexInputChange,
+                onTrustPolicyChange = onFdroidTrustPolicyInputChange,
+                onAntiFeaturePolicyChange = onFdroidAntiFeaturePolicyInputChange,
+                onVersionSelectionDropdownExpandedChange =
+                onFdroidVersionSelectionDropdownExpandedChange,
+                onVersionSelectionDropdownAnchorBoundsChange =
+                onFdroidVersionSelectionDropdownAnchorBoundsChange,
+                onTrustPolicyDropdownExpandedChange = onFdroidTrustPolicyDropdownExpandedChange,
+                onTrustPolicyDropdownAnchorBoundsChange =
+                onFdroidTrustPolicyDropdownAnchorBoundsChange,
+                onAntiFeaturePolicyDropdownExpandedChange =
+                onFdroidAntiFeaturePolicyDropdownExpandedChange,
+                onAntiFeaturePolicyDropdownAnchorBoundsChange =
+                onFdroidAntiFeaturePolicyDropdownAnchorBoundsChange,
+            )
         }
 
         SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
@@ -405,7 +469,13 @@ internal fun GitHubTrackEditFormContent(
             } else {
                 SheetControlRow(
                     label = stringResource(R.string.github_track_sheet_label_prefer_prerelease),
-                    summary = stringResource(R.string.github_track_sheet_summary_prefer_prerelease),
+                    summary = stringResource(
+                        if (fdroidRepositoryMode) {
+                            R.string.github_track_sheet_summary_prefer_prerelease_fdroid
+                        } else {
+                            R.string.github_track_sheet_summary_prefer_prerelease
+                        },
+                    ),
                 ) {
                     AppSwitch(
                         checked = preferPreReleaseInput,
@@ -463,31 +533,41 @@ internal fun GitHubTrackEditFormContent(
                         }
                     }
                 }
-                SheetControlRow(
-                    label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
-                    summary = preciseModeSummary,
-                    summaryColor = preciseModeSummaryColor,
-                ) {
-                    AppDropdownSelector(
-                        selectedText =
-                            preciseModeOptions.getOrElse(preciseModeIndex) {
-                                stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
-                            },
-                        options = preciseModeOptions,
-                        selectedIndex = preciseModeIndex,
-                        expanded = preciseModeDropdownExpanded,
-                        anchorBounds = preciseModeDropdownAnchorBounds,
-                        onExpandedChange = onPreciseModeDropdownExpandedChange,
-                        onSelectedIndexChange = { index ->
-                            preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
-                        },
-                        onAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
-                        backdrop = backdrop,
+                if (fdroidRepositoryMode) {
+                    SheetDescriptionText(
+                        text = preciseModeSummary,
                     )
+                } else {
+                    SheetControlRow(
+                        label = stringResource(R.string.github_track_sheet_label_precise_apk_version),
+                        summary = preciseModeSummary,
+                        summaryColor = preciseModeSummaryColor,
+                    ) {
+                        AppDropdownSelector(
+                            selectedText =
+                                preciseModeOptions.getOrElse(preciseModeIndex) {
+                                    stringResource(R.string.github_track_sheet_precise_apk_version_follow_global)
+                                },
+                            options = preciseModeOptions,
+                            selectedIndex = preciseModeIndex,
+                            expanded = preciseModeDropdownExpanded,
+                            anchorBounds = preciseModeDropdownAnchorBounds,
+                            onExpandedChange = onPreciseModeDropdownExpandedChange,
+                            onSelectedIndexChange = { index ->
+                                preciseModes.getOrNull(index)?.let(onPreciseApkVersionModeInputChange)
+                            },
+                            onAnchorBoundsChange = onPreciseModeDropdownAnchorBoundsChange,
+                            backdrop = backdrop,
+                        )
+                    }
                 }
                 if (gitRepositoryMode) {
                     SheetDescriptionText(
                         text = stringResource(R.string.github_track_sheet_summary_git_check_options),
+                    )
+                } else if (fdroidRepositoryMode) {
+                    SheetDescriptionText(
+                        text = stringResource(R.string.github_track_sheet_summary_fdroid_check_options),
                     )
                 }
             }

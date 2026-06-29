@@ -86,3 +86,12 @@
 - Verification:
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
+- Completed UI P5 sheet bridge:
+  - Exposed `F-Droid repository` in the add/edit tracking source dropdown.
+  - Added F-Droid-specific repository and package copy, hiding GitHub-only scan and Actions controls.
+  - Added version selection, optional versionName regex, optional APK filename regex, trust policy, and Anti-Feature policy controls.
+  - Wired F-Droid config through editor state, sheet callbacks, draft building, save logic, unsaved-change detection, and localized resources.
+  - Allowed F-Droid package page URLs to normalize the repository URL and fill package identity during save.
+  - Kept live repo/detail probing for the P6 card/menu/detail bridge where the sidecar can drive a richer read-only state.
+- Verification:
+  - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests os.kei.ui.page.main.github.page.GitHubPageRepositoryTrackEditorTest`

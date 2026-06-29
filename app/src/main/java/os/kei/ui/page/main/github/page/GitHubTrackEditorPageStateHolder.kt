@@ -6,6 +6,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -34,6 +37,11 @@ internal class GitHubTrackEditorPageStateHolder {
     var ignoreModeInput by mutableStateOf(GitHubTrackedIgnoreMode.None)
     var ignoredStableReleaseKeyInput by mutableStateOf("")
     var ignoredPreReleaseKeyInput by mutableStateOf("")
+    var fdroidVersionSelectionModeInput by mutableStateOf(FdroidVersionSelectionMode.SuggestedVersionCode)
+    var fdroidVersionNameRegexInput by mutableStateOf("")
+    var fdroidApkNameRegexInput by mutableStateOf("")
+    var fdroidTrustPolicyInput by mutableStateOf(FdroidTrustPolicy.TrackOnlyWarn)
+    var fdroidAntiFeaturePolicyInput by mutableStateOf(FdroidAntiFeaturePolicy.ShowAndWarn)
     var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
     var repoUrlScanRunning by mutableStateOf(false)
     var packageNameScanRunning by mutableStateOf(false)
@@ -51,6 +59,12 @@ internal class GitHubTrackEditorPageStateHolder {
     var preciseModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
     var ignoreModeDropdownExpanded by mutableStateOf(false)
     var ignoreModeDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var fdroidVersionSelectionDropdownExpanded by mutableStateOf(false)
+    var fdroidVersionSelectionDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var fdroidTrustPolicyDropdownExpanded by mutableStateOf(false)
+    var fdroidTrustPolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
+    var fdroidAntiFeaturePolicyDropdownExpanded by mutableStateOf(false)
+    var fdroidAntiFeaturePolicyDropdownAnchorBounds by mutableStateOf<IntRect?>(null)
 
     fun reset() {
         repoUrlInput = ""
@@ -68,6 +82,11 @@ internal class GitHubTrackEditorPageStateHolder {
         ignoreModeInput = GitHubTrackedIgnoreMode.None
         ignoredStableReleaseKeyInput = ""
         ignoredPreReleaseKeyInput = ""
+        fdroidVersionSelectionModeInput = FdroidVersionSelectionMode.SuggestedVersionCode
+        fdroidVersionNameRegexInput = ""
+        fdroidApkNameRegexInput = ""
+        fdroidTrustPolicyInput = FdroidTrustPolicy.TrackOnlyWarn
+        fdroidAntiFeaturePolicyInput = FdroidAntiFeaturePolicy.ShowAndWarn
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository
         repoUrlScanRunning = false
         packageNameScanRunning = false
@@ -85,5 +104,11 @@ internal class GitHubTrackEditorPageStateHolder {
         preciseModeDropdownAnchorBounds = null
         ignoreModeDropdownExpanded = false
         ignoreModeDropdownAnchorBounds = null
+        fdroidVersionSelectionDropdownExpanded = false
+        fdroidVersionSelectionDropdownAnchorBounds = null
+        fdroidTrustPolicyDropdownExpanded = false
+        fdroidTrustPolicyDropdownAnchorBounds = null
+        fdroidAntiFeaturePolicyDropdownExpanded = false
+        fdroidAntiFeaturePolicyDropdownAnchorBounds = null
     }
 }

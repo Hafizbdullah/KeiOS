@@ -100,11 +100,19 @@ internal class GitHubPageDiscoveryRepository(
                         owner = identity.owner,
                         repo = identity.repo,
                         fallbackLabel = identity.repoDisplayName,
-                        normalizedRepoUrl = identity.normalizedRepoUrl
+                        normalizedRepoUrl = identity.normalizedRepoUrl,
+                        sourcePackageName = identity.packageName,
+                        packagePageUrl = identity.packagePageUrl
                     )
                 }
             }
             val resolvedPackageName = draft.packageName.trim()
+                .ifBlank { sourceIdentity.sourcePackageName.trim() }
+            if (draft.sourceMode == GitHubTrackedSourceMode.FdroidRepository &&
+                resolvedPackageName.isBlank()
+            ) {
+                return@withContext GitHubTrackEditorResult.InvalidPackageName
+            }
             if (resolvedPackageName.isNotBlank() && !packageNamePattern.matches(resolvedPackageName)) {
                 return@withContext GitHubTrackEditorResult.InvalidPackageName
             }
@@ -158,7 +166,16 @@ internal class GitHubPageDiscoveryRepository(
                     ignoredPreReleaseKey = draft.ignoredPreReleaseKey.trim(),
                     localAppType = GitHubTrackedLocalAppType.fromSystemFlag(
                         matchedInstalledApp?.isSystemApp
-                    )
+                    ),
+                    fdroidConfig =
+                        if (draft.sourceMode == GitHubTrackedSourceMode.FdroidRepository) {
+                            draft.fdroidConfig.copy(
+                                packagePageUrl = draft.fdroidConfig.packagePageUrl
+                                    .ifBlank { sourceIdentity.packagePageUrl }
+                            )
+                        } else {
+                            draft.fdroidConfig
+                        }
                 ).withReleaseIgnoreMode(
                     mode = draft.ignoreMode,
                     stableReleaseKey = draft.ignoredStableReleaseKey,
@@ -212,5 +229,7 @@ private data class GitHubTrackEditorSourceIdentity(
     val owner: String,
     val repo: String,
     val fallbackLabel: String,
-    val normalizedRepoUrl: String
+    val normalizedRepoUrl: String,
+    val sourcePackageName: String = "",
+    val packagePageUrl: String = ""
 )

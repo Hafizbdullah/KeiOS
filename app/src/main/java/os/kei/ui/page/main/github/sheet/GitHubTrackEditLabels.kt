@@ -3,6 +3,9 @@ package os.kei.ui.page.main.github.sheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import os.kei.R
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
@@ -120,6 +123,126 @@ internal fun trackedIgnoreModeSummary(mode: GitHubTrackedIgnoreMode): String =
 
         GitHubTrackedIgnoreMode.CurrentPreRelease -> {
             stringResource(R.string.github_track_sheet_summary_ignore_current_prerelease)
+        }
+    }
+
+@Composable
+internal fun fdroidVersionSelectionModeLabel(mode: FdroidVersionSelectionMode): String =
+    when (mode) {
+        FdroidVersionSelectionMode.SuggestedVersionCode -> {
+            stringResource(R.string.github_track_sheet_fdroid_version_selection_suggested)
+        }
+
+        FdroidVersionSelectionMode.HighestCompatibleVersionCode -> {
+            stringResource(R.string.github_track_sheet_fdroid_version_selection_highest_compatible)
+        }
+
+        FdroidVersionSelectionMode.HighestVersionCode -> {
+            stringResource(R.string.github_track_sheet_fdroid_version_selection_highest)
+        }
+
+        FdroidVersionSelectionMode.VersionNameRegex -> {
+            stringResource(R.string.github_track_sheet_fdroid_version_selection_regex)
+        }
+    }
+
+@Composable
+internal fun fdroidVersionSelectionModeSummary(mode: FdroidVersionSelectionMode): String =
+    when (mode) {
+        FdroidVersionSelectionMode.SuggestedVersionCode -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_version_selection_suggested)
+        }
+
+        FdroidVersionSelectionMode.HighestCompatibleVersionCode -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_version_selection_highest_compatible)
+        }
+
+        FdroidVersionSelectionMode.HighestVersionCode -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_version_selection_highest)
+        }
+
+        FdroidVersionSelectionMode.VersionNameRegex -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_version_selection_regex)
+        }
+    }
+
+@Composable
+internal fun fdroidTrustPolicyLabel(policy: FdroidTrustPolicy): String =
+    when (policy) {
+        FdroidTrustPolicy.TrackOnlyWarn -> {
+            stringResource(R.string.github_track_sheet_fdroid_trust_track_warn)
+        }
+
+        FdroidTrustPolicy.RequireRepoFingerprint -> {
+            stringResource(R.string.github_track_sheet_fdroid_trust_repo_fingerprint)
+        }
+
+        FdroidTrustPolicy.RequireApkHash -> {
+            stringResource(R.string.github_track_sheet_fdroid_trust_apk_hash)
+        }
+
+        FdroidTrustPolicy.RequireOfficialSignerIndex -> {
+            stringResource(R.string.github_track_sheet_fdroid_trust_official_signer)
+        }
+    }
+
+@Composable
+internal fun fdroidTrustPolicySummary(policy: FdroidTrustPolicy): String =
+    when (policy) {
+        FdroidTrustPolicy.TrackOnlyWarn -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_trust_track_warn)
+        }
+
+        FdroidTrustPolicy.RequireRepoFingerprint -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_trust_repo_fingerprint)
+        }
+
+        FdroidTrustPolicy.RequireApkHash -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_trust_apk_hash)
+        }
+
+        FdroidTrustPolicy.RequireOfficialSignerIndex -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_trust_official_signer)
+        }
+    }
+
+@Composable
+internal fun fdroidAntiFeaturePolicyLabel(policy: FdroidAntiFeaturePolicy): String =
+    when (policy) {
+        FdroidAntiFeaturePolicy.ShowAndWarn -> {
+            stringResource(R.string.github_track_sheet_fdroid_antifeature_show_warn)
+        }
+
+        FdroidAntiFeaturePolicy.HideTracking -> {
+            stringResource(R.string.github_track_sheet_fdroid_antifeature_hide_tracking)
+        }
+
+        FdroidAntiFeaturePolicy.HideSecurityRisk -> {
+            stringResource(R.string.github_track_sheet_fdroid_antifeature_hide_security)
+        }
+
+        FdroidAntiFeaturePolicy.Custom -> {
+            stringResource(R.string.github_track_sheet_fdroid_antifeature_custom)
+        }
+    }
+
+@Composable
+internal fun fdroidAntiFeaturePolicySummary(policy: FdroidAntiFeaturePolicy): String =
+    when (policy) {
+        FdroidAntiFeaturePolicy.ShowAndWarn -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_antifeature_show_warn)
+        }
+
+        FdroidAntiFeaturePolicy.HideTracking -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_antifeature_hide_tracking)
+        }
+
+        FdroidAntiFeaturePolicy.HideSecurityRisk -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_antifeature_hide_security)
+        }
+
+        FdroidAntiFeaturePolicy.Custom -> {
+            stringResource(R.string.github_track_sheet_summary_fdroid_antifeature_custom)
         }
     }
 

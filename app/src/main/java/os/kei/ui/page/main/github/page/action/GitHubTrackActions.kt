@@ -5,6 +5,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
 import os.kei.R
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
@@ -64,6 +68,11 @@ internal class GitHubTrackActions(
         state.ignoreModeInput = item.ignoreMode
         state.ignoredStableReleaseKeyInput = item.ignoredStableReleaseKey
         state.ignoredPreReleaseKeyInput = item.ignoredPreReleaseKey
+        state.fdroidVersionSelectionModeInput = item.fdroidConfig.selectionMode
+        state.fdroidVersionNameRegexInput = item.fdroidConfig.versionNameRegex
+        state.fdroidApkNameRegexInput = item.fdroidConfig.apkNameRegex
+        state.fdroidTrustPolicyInput = item.fdroidConfig.trustPolicy
+        state.fdroidAntiFeaturePolicyInput = item.fdroidConfig.antiFeaturePolicy
         state.showAddSheet = true
         refreshAppListForTrackSheet()
     }
@@ -87,6 +96,10 @@ internal class GitHubTrackActions(
     fun setTrackSourceModeInput(value: GitHubTrackedSourceMode) {
         state.trackSourceModeInput = value
         state.repoScanCandidates = emptyList()
+        state.resetTrackEditorDropdownState()
+        if (value == GitHubTrackedSourceMode.FdroidRepository && state.repoUrlInput.isBlank()) {
+            state.repoUrlInput = DEFAULT_FDROID_REPO_URL
+        }
         if (value != GitHubTrackedSourceMode.GitHubRepository) {
             state.alwaysShowLatestReleaseDownloadButtonInput = false
             state.checkActionsUpdatesInput = false
@@ -217,6 +230,53 @@ internal class GitHubTrackActions(
 
     fun setIgnoreModeDropdownAnchorBounds(value: IntRect?) {
         state.ignoreModeDropdownAnchorBounds = value
+    }
+
+    fun setFdroidVersionSelectionModeInput(value: FdroidVersionSelectionMode) {
+        state.fdroidVersionSelectionModeInput = value
+        if (value != FdroidVersionSelectionMode.VersionNameRegex) {
+            state.fdroidVersionNameRegexInput = ""
+        }
+    }
+
+    fun setFdroidVersionNameRegexInput(value: String) {
+        state.fdroidVersionNameRegexInput = value
+    }
+
+    fun setFdroidApkNameRegexInput(value: String) {
+        state.fdroidApkNameRegexInput = value
+    }
+
+    fun setFdroidTrustPolicyInput(value: FdroidTrustPolicy) {
+        state.fdroidTrustPolicyInput = value
+    }
+
+    fun setFdroidAntiFeaturePolicyInput(value: FdroidAntiFeaturePolicy) {
+        state.fdroidAntiFeaturePolicyInput = value
+    }
+
+    fun setFdroidVersionSelectionDropdownExpanded(value: Boolean) {
+        state.fdroidVersionSelectionDropdownExpanded = value
+    }
+
+    fun setFdroidVersionSelectionDropdownAnchorBounds(value: IntRect?) {
+        state.fdroidVersionSelectionDropdownAnchorBounds = value
+    }
+
+    fun setFdroidTrustPolicyDropdownExpanded(value: Boolean) {
+        state.fdroidTrustPolicyDropdownExpanded = value
+    }
+
+    fun setFdroidTrustPolicyDropdownAnchorBounds(value: IntRect?) {
+        state.fdroidTrustPolicyDropdownAnchorBounds = value
+    }
+
+    fun setFdroidAntiFeaturePolicyDropdownExpanded(value: Boolean) {
+        state.fdroidAntiFeaturePolicyDropdownExpanded = value
+    }
+
+    fun setFdroidAntiFeaturePolicyDropdownAnchorBounds(value: IntRect?) {
+        state.fdroidAntiFeaturePolicyDropdownAnchorBounds = value
     }
 
     fun refreshAppListForTrackSheet() {
@@ -443,6 +503,25 @@ internal class GitHubTrackActions(
                 ignoreMode = state.ignoreModeInput,
                 ignoredStableReleaseKey = state.ignoredStableReleaseKeyInput,
                 ignoredPreReleaseKey = state.ignoredPreReleaseKeyInput,
+                fdroidConfig =
+                    if (state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository) {
+                        FdroidTrackedAppConfig(
+                            selectionMode = state.fdroidVersionSelectionModeInput,
+                            versionNameRegex =
+                                if (state.fdroidVersionSelectionModeInput ==
+                                    FdroidVersionSelectionMode.VersionNameRegex
+                                ) {
+                                    state.fdroidVersionNameRegexInput.trim()
+                                } else {
+                                    ""
+                                },
+                            apkNameRegex = state.fdroidApkNameRegexInput.trim(),
+                            trustPolicy = state.fdroidTrustPolicyInput,
+                            antiFeaturePolicy = state.fdroidAntiFeaturePolicyInput
+                        )
+                    } else {
+                        FdroidTrackedAppConfig()
+                    },
                 appList = state.appList,
             )
         scope.launch {
@@ -640,6 +719,10 @@ internal class GitHubTrackActions(
             GitHubReleaseIgnoreChannel.Stable -> editingItem.ignoredStableReleaseKey
             GitHubReleaseIgnoreChannel.PreRelease -> editingItem.ignoredPreReleaseKey
         }
+    }
+
+    private companion object {
+        const val DEFAULT_FDROID_REPO_URL = "https://f-droid.org/repo"
     }
 }
 

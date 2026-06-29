@@ -21,6 +21,7 @@ import os.kei.feature.github.model.GitHubApkPackageNameScanResult
 import os.kei.feature.github.model.GitHubAppRepositorySearchRequest
 import os.kei.feature.github.model.GitHubAppRepositorySearchResult
 import os.kei.feature.github.model.GitHubCheckCacheEntry
+import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
@@ -87,6 +88,7 @@ internal data class GitHubTrackEditorDraft(
     val ignoreMode: GitHubTrackedIgnoreMode = GitHubTrackedIgnoreMode.None,
     val ignoredStableReleaseKey: String = "",
     val ignoredPreReleaseKey: String = "",
+    val fdroidConfig: FdroidTrackedAppConfig = FdroidTrackedAppConfig(),
     val appList: List<InstalledAppItem>,
 )
 
