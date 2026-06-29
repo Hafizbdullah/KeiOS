@@ -24,7 +24,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | P6 Source capability refinement | Done | Added source capability matrix, F-Droid detail/menu plan, top-bar/MCP plan |
 | P7 Source parity and acceptance refinement | Done | Added source-surface parity, metadata priority, notification/deep-link plan, and first-release acceptance criteria |
 | P8 Backend P1 model/store/cache foundation | Done | Added F-Droid source mode, identity normalization, config models, JSON round-trip, source counts, cache signature, tests |
-| P9 Backend P2 data source foundation | In Progress | Package API client and candidate selector done; v2 index parser/adapter and repo/package cache remain |
+| P9 Backend P2 data source foundation | Done | Added package API client, v2 index parser, repo cache models, package snapshots, and candidate selector tests |
 | P10 Backend P3 release-check bridge | Pending | Dispatch F-Droid tracks through release-check service and map selected candidates into existing check models |
 | P11 Backend P4 metadata sidecar | Pending | Persist package/version/repo/trust/Anti-Feature summary data for UI/detail sheets |
 | P12 UI P5 sheet bridge | Pending | Add source dropdown option, repo probe state, F-Droid field visibility, localized labels |
@@ -45,6 +45,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | Give F-Droid its own details instead of treating it as Direct APK | F-Droid has Anti-Features, signer index, repo mirrors, release channels, fdroiddata metadata, APK hashes, and localized `whatsNew`. |
 | Keep F-Droid source UX close to current GitHub card/menu rhythm | Existing tracked cards already handle source-specific Actions, release notes, health, asset panel, ignore current version, and delete actions. |
 | Keep F-Droid top-level menu compact | Package, repo, trust, and Anti-Feature data are too dense for a narrow dropdown; one `F-Droid 详情` entry with internal tabs keeps the card/menu readable. |
+| Start P2 with local structured v2 JSON parsing | It keeps the first tracking path small and avoids dependency/R8 risk; official index libraries can be revisited for signature and diff support. |
 
 ## Risks
 

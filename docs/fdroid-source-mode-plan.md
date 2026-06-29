@@ -574,13 +574,16 @@ Integration / AVD after implementation:
 
 ## Open Decisions Before Coding
 
-1. Dependency choice: adopt `org.fdroid:index-android:0.2.0` directly, wrap it behind `FdroidIndexReader`, or start with local kotlinx.serialization models and add the library after API review.
-2. Trust depth for first release: tracking-only warning state, full entry signature verification, or install-gated verification first.
-3. Package API fast path scope: official F-Droid only, official plus IzzyOnDroid, or user-configurable API template.
-4. Built-in repo presets: official repo only in P1, with IzzyOnDroid as P2.
-5. Archive handling: separate source mode/option for F-Droid archive repo, or treat archive as a normal repo URL.
-6. Anti-Feature policy scope: display-only first, or display plus filter controls in the first release.
-7. Detail sheet layout: one top-level `F-Droid 详情` entry with internal tabs by default; final tab order should follow the rendered AVD layout.
+1. Trust depth for first release: tracking-only warning state, full entry signature verification, or install-gated verification first.
+2. Package API fast path scope: official F-Droid only, official plus IzzyOnDroid, or user-configurable API template.
+3. Built-in repo presets: official repo only in P1, with IzzyOnDroid as P2.
+4. Archive handling: separate source mode/option for F-Droid archive repo, or treat archive as a normal repo URL.
+5. Anti-Feature policy scope: display-only first, or display plus filter controls in the first release.
+6. Detail sheet layout: one top-level `F-Droid 详情` entry with internal tabs by default; final tab order should follow the rendered AVD layout.
+
+Resolved during P2:
+
+- Start with local kotlinx.serialization JSON models and defer `org.fdroid:index-android:0.2.0` until signature and diff support need a deeper library spike.
 
 ## Recommended First Cut
 

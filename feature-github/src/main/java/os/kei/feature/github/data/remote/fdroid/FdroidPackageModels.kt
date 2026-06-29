@@ -4,7 +4,17 @@ data class FdroidPackageSnapshot(
     val repoUrl: String,
     val packageName: String,
     val suggestedVersionCode: Long?,
-    val versions: List<FdroidVersionSnapshot>
+    val versions: List<FdroidVersionSnapshot>,
+    val appName: String = "",
+    val summary: String = "",
+    val description: String = "",
+    val license: String = "",
+    val sourceCodeUrl: String = "",
+    val webSiteUrl: String = "",
+    val issueTrackerUrl: String = "",
+    val changelogUrl: String = "",
+    val categories: List<String> = emptyList(),
+    val antiFeatures: List<FdroidAntiFeatureSnapshot> = emptyList()
 ) {
     val selectedSuggestedVersion: FdroidVersionSnapshot?
         get() = suggestedVersionCode?.let { code ->
@@ -34,3 +44,22 @@ data class FdroidAntiFeatureSnapshot(
     val label: String = "",
     val description: String = ""
 )
+
+data class FdroidRepositorySnapshot(
+    val repoUrl: String,
+    val format: os.kei.feature.github.model.FdroidIndexFormat,
+    val repoName: String,
+    val repoDescription: String,
+    val timestampMillis: Long?,
+    val mirrors: List<String>,
+    val packages: Map<String, FdroidPackageSnapshot>
+) {
+    val packageCount: Int
+        get() = packages.size
+
+    fun packageSnapshot(packageName: String): FdroidPackageSnapshot? {
+        val key = packageName.trim()
+        if (key.isBlank()) return null
+        return packages[key] ?: packages[key.lowercase()]
+    }
+}

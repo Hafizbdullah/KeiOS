@@ -62,3 +62,10 @@
   - Added candidate selection by suggested version, highest compatible versionCode, highest versionCode, version regex, APK regex, SDK compatibility, and basic Anti-Feature policy.
 - Verification:
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest`
+- Completed Backend P2 data source foundation:
+  - Added v2 index parser for repo metadata, mirrors, package metadata, version manifest, APK file metadata, localized release notes, release channels, signer SHA-256, and Anti-Features.
+  - Added `FdroidRepositorySnapshot`, package lookup, repo cache key, and repo cache record freshness model.
+  - Chose local structured v2 JSON parsing for the first cut; official F-Droid index libraries remain a later option for signature and diff support.
+- Verification:
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest`
