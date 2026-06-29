@@ -53,8 +53,6 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
-import top.yukonga.miuix.kmp.basic.Badge
-import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
@@ -734,32 +732,16 @@ private fun AppFloatingVerticalDockActionIcon(
     badgeContentColor: Color?,
     modifier: Modifier = Modifier,
 ) {
-    val iconContent: @Composable () -> Unit = {
-        Icon(
-            imageVector = icon,
+    Box(modifier = modifier) {
+        AppLiquidBadgedIcon(
+            icon = icon,
             contentDescription = contentDescription,
             modifier = Modifier.size(iconSize),
             tint = Color.White,
+            badgeLabel = badgeLabel,
+            badgeColor = badgeColor,
+            badgeContentColor = badgeContentColor,
         )
-    }
-    val label = badgeLabel?.takeIf { it.isNotBlank() }
-    Box(modifier = modifier) {
-        if (label == null) {
-            iconContent()
-        } else {
-            BadgedBox(
-                badge = {
-                    Badge(
-                        containerColor = badgeColor ?: MiuixTheme.colorScheme.error,
-                        contentColor = badgeContentColor ?: MiuixTheme.colorScheme.onError,
-                    ) {
-                        Text(text = label)
-                    }
-                },
-            ) {
-                iconContent()
-            }
-        }
     }
 }
 

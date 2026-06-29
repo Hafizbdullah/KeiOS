@@ -54,13 +54,10 @@ import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
-import top.yukonga.miuix.kmp.basic.Badge
-import top.yukonga.miuix.kmp.basic.BadgedBox
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -208,31 +205,14 @@ private fun LiquidActionItemTooltip(
 
 @Composable
 private fun LiquidActionItemIcon(item: LiquidActionItem) {
-    val badgeLabel = item.badgeLabel?.takeIf { it.isNotBlank() }
-    if (badgeLabel == null) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.contentDescription,
-            tint = Color.White,
-        )
-        return
-    }
-    BadgedBox(
-        badge = {
-            Badge(
-                containerColor = item.badgeColor ?: MiuixTheme.colorScheme.error,
-                contentColor = item.badgeContentColor ?: MiuixTheme.colorScheme.onError,
-            ) {
-                Text(text = badgeLabel)
-            }
-        },
-    ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.contentDescription,
-            tint = Color.White,
-        )
-    }
+    AppLiquidBadgedIcon(
+        icon = item.icon,
+        contentDescription = item.contentDescription,
+        tint = Color.White,
+        badgeLabel = item.badgeLabel,
+        badgeColor = item.badgeColor,
+        badgeContentColor = item.badgeContentColor,
+    )
 }
 
 @Composable

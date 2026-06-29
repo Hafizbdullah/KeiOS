@@ -54,8 +54,6 @@ import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
-import top.yukonga.miuix.kmp.basic.Badge
-import top.yukonga.miuix.kmp.basic.BadgedBox
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
@@ -215,31 +213,15 @@ private fun AppLiquidIconButtonIcon(
     badgeColor: Color?,
     badgeContentColor: Color?,
 ) {
-    val iconContent: @Composable () -> Unit = {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = iconModifier,
-            tint = iconTint,
-        )
-    }
-    val label = badgeLabel?.takeIf { it.isNotBlank() }
-    if (label == null) {
-        iconContent()
-    } else {
-        BadgedBox(
-            badge = {
-                Badge(
-                    containerColor = badgeColor ?: MiuixTheme.colorScheme.error,
-                    contentColor = badgeContentColor ?: MiuixTheme.colorScheme.onError,
-                ) {
-                    Text(text = label)
-                }
-            },
-        ) {
-            iconContent()
-        }
-    }
+    AppLiquidBadgedIcon(
+        icon = icon,
+        contentDescription = contentDescription,
+        modifier = iconModifier,
+        tint = iconTint,
+        badgeLabel = badgeLabel,
+        badgeColor = badgeColor,
+        badgeContentColor = badgeContentColor,
+    )
 }
 
 @Composable
