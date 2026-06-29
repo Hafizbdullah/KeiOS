@@ -134,10 +134,13 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                             } else {
                                 contentWidthPx - (dampedDragAnimation.value + 1f) * slotWidthPx
                             }
-                        translationX = horizontalPaddingPx -
-                            breakoutPaddingPx +
-                            slotOffsetPx +
-                            effectivePanelOffset()
+                        translationX =
+                            snapChromeTranslationPx(
+                                horizontalPaddingPx -
+                                    breakoutPaddingPx +
+                                    slotOffsetPx +
+                                    effectivePanelOffset(),
+                            )
                         clip = false
                     }.then(if (isBlurEnabled && interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
                     .then(dampedDragAnimation.modifier)

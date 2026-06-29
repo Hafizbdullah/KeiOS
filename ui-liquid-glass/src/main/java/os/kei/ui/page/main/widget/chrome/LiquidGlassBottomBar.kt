@@ -44,7 +44,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
@@ -181,6 +180,9 @@ fun LiquidGlassBottomBar(
 
     val safeTabsCount = tabsCount.coerceAtLeast(1)
     val horizontalPadding = AppChromeTokens.floatingBottomBarHorizontalPadding
+    val horizontalPaddingPx = with(density) { horizontalPadding.toPx() }
+    val pressLiftPx = with(density) { 1.25.dp.toPx() }
+    val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
 
     val palette =
         rememberLiquidBottomBarPalette(
@@ -198,12 +200,12 @@ fun LiquidGlassBottomBar(
 
     val offsetAnimation = remember { Animatable(0f) }
     val panelOffsetProvider =
-        remember(density, offsetAnimation) {
+        remember(panelMaxOffsetPx, offsetAnimation) {
             {
                 liquidBottomBarPanelOffset(
                     rawOffsetPx = offsetAnimation.value,
                     totalWidthPx = totalWidthPx,
-                    density = density,
+                    maxOffsetPx = panelMaxOffsetPx,
                 )
             }
         }
@@ -420,9 +422,7 @@ fun LiquidGlassBottomBar(
                             }
                             val contentWidthPx =
                                 measuredTotalWidthPx -
-                                    with(density) {
-                                        (horizontalPadding * 2).toPx()
-                                    }
+                                    horizontalPaddingPx * 2f
                             val measuredTabWidthPx = (contentWidthPx / safeTabsCount).coerceAtLeast(0f)
                             if (abs(tabWidthPx - measuredTabWidthPx) > 0.5f) {
                                 tabWidthPx = measuredTabWidthPx
@@ -430,7 +430,7 @@ fun LiquidGlassBottomBar(
                         }.graphicsLayer {
                             translationX = panelOffsetProvider()
                             val combinedPressProgress = combinedPressProgressProvider()
-                            translationY = -with(density) { 1.25.dp.toPx() } * combinedPressProgress
+                            translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                         }.then(
                             if (useLightweightBackdrop) {
                                 Modifier
@@ -488,7 +488,7 @@ fun LiquidGlassBottomBar(
                         ).graphicsLayer {
                             val combinedPressProgress = combinedPressProgressProvider()
                             translationX = panelOffsetProvider()
-                            translationY = -with(density) { 1.25.dp.toPx() } * combinedPressProgress
+                            translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                             scaleX = lerp(1f, 1.006f, combinedPressProgress)
                             scaleY = lerp(1f, 0.996f, combinedPressProgress)
                         }.then(
@@ -530,19 +530,19 @@ fun LiquidGlassBottomBar(
                             val combinedPressProgress = combinedPressProgressProvider()
                             val contentWidth =
                                 totalWidthPx -
-                                    with(density) {
-                                        (horizontalPadding * 2).toPx()
-                                    }
+                                    horizontalPaddingPx * 2f
                             val singleTabWidth = contentWidth / safeTabsCount
                             val progressOffset = displaySelectionValueProvider() * singleTabWidth
                             val panelOffset = panelOffsetProvider()
                             translationX =
-                                if (isLtr) {
-                                    progressOffset + panelOffset
-                                } else {
-                                    -progressOffset + panelOffset
-                                }
-                            translationY = -with(density) { 1.25.dp.toPx() } * combinedPressProgress
+                                snapChromeTranslationPx(
+                                    if (isLtr) {
+                                        progressOffset + panelOffset
+                                    } else {
+                                        -progressOffset + panelOffset
+                                    },
+                                )
+                            translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                             scaleX = lerp(1f, 1.006f, combinedPressProgress)
                             scaleY = lerp(1f, 0.996f, combinedPressProgress)
                         }.then(if (interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
@@ -649,13 +649,11 @@ fun LiquidGlassBottomBar(
 private fun liquidBottomBarPanelOffset(
     rawOffsetPx: Float,
     totalWidthPx: Float,
-    density: Density,
+    maxOffsetPx: Float,
 ): Float {
     if (totalWidthPx == 0f) return 0f
     val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
-    return with(density) {
-        4f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-    }
+    return snapChromeTranslationPx(maxOffsetPx * fraction.sign * EaseOut.transform(abs(fraction)))
 }
 
 @Composable

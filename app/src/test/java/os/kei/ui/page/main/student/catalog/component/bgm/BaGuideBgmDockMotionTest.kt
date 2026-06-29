@@ -18,7 +18,7 @@ class BaGuideBgmDockMotionTest {
                 baGuideBgmDockPanelOffset(
                     rawOffsetPx = 200f,
                     totalWidthPx = 100f,
-                    density = density,
+                    maxOffsetPx = maxOffset,
                 ),
             absoluteTolerance = 0.001f,
         )
@@ -28,7 +28,7 @@ class BaGuideBgmDockMotionTest {
                 baGuideBgmDockPanelOffset(
                     rawOffsetPx = -200f,
                     totalWidthPx = 100f,
-                    density = density,
+                    maxOffsetPx = maxOffset,
                 ),
             absoluteTolerance = 0.001f,
         )
@@ -42,7 +42,7 @@ class BaGuideBgmDockMotionTest {
             baGuideBgmDockPanelOffset(
                 rawOffsetPx = 18f,
                 totalWidthPx = 120f,
-                density = density,
+                maxOffsetPx = maxOffset,
             )
 
         assertTrue(offset > 0f)
@@ -51,15 +51,13 @@ class BaGuideBgmDockMotionTest {
 
     @Test
     fun panelOffsetFallsBackToZeroBeforeMeasurement() {
-        val density = Density(density = 2f)
-
         assertEquals(
             expected = 0f,
             actual =
                 baGuideBgmDockPanelOffset(
                     rawOffsetPx = 32f,
                     totalWidthPx = 0f,
-                    density = density,
+                    maxOffsetPx = 8f,
                 ),
         )
     }

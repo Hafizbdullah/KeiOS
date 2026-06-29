@@ -3,22 +3,19 @@
 package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.animation.core.EaseOut
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
+import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import kotlin.math.abs
 import kotlin.math.sign
 
 internal fun baGuideBgmDockPanelOffset(
     rawOffsetPx: Float,
     totalWidthPx: Float,
-    density: Density,
+    maxOffsetPx: Float,
 ): Float {
     if (totalWidthPx <= 0f) return 0f
     val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
-    return with(density) {
-        4.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-    }
+    return snapChromeTranslationPx(maxOffsetPx * fraction.sign * EaseOut.transform(abs(fraction)))
 }
 
 internal const val BaGuideBgmDockSelectionWidthFraction = 1f

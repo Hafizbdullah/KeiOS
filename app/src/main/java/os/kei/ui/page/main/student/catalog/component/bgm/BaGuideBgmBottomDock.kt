@@ -57,6 +57,7 @@ import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 import kotlin.math.abs
@@ -86,6 +87,8 @@ internal fun BaGuideBgmDockGroupContent(
     val currentAnimationsEnabled by rememberUpdatedState(animationsEnabled)
     val animationScope = rememberCoroutineScope()
     val density = LocalDensity.current
+    val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
+    val pressLiftPx = with(density) { 1.25.dp.toPx() }
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val isDark = isSystemInDarkTheme()
     val tabsBackdrop = rememberLayerBackdrop()
@@ -94,12 +97,12 @@ internal fun BaGuideBgmDockGroupContent(
     var tabWidthPx by remember { mutableFloatStateOf(0f) }
     var totalWidthPx by remember { mutableFloatStateOf(0f) }
     val panelOffsetProvider =
-        remember(density, offsetAnimation) {
+        remember(panelMaxOffsetPx, offsetAnimation) {
             {
                 baGuideBgmDockPanelOffset(
                     rawOffsetPx = offsetAnimation.value,
                     totalWidthPx = totalWidthPx,
-                    density = density,
+                    maxOffsetPx = panelMaxOffsetPx,
                 )
             }
         }
@@ -296,7 +299,7 @@ internal fun BaGuideBgmDockGroupContent(
                         val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
-                        translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
+                        translationY = snapChromeTranslationPx(-pressLiftPx * interactionProgress)
                         scaleX =
                             (0.96f + 0.04f * expanded) *
                             lerpFloat(1f, 1.006f, interactionProgress)
@@ -348,7 +351,7 @@ internal fun BaGuideBgmDockGroupContent(
                         val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
-                        translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
+                        translationY = snapChromeTranslationPx(-pressLiftPx * interactionProgress)
                         scaleX =
                             (0.96f + 0.04f * expanded) *
                             lerpFloat(1f, 1.006f, interactionProgress)
@@ -401,7 +404,7 @@ internal fun BaGuideBgmDockGroupContent(
                         val expanded = expandedProgress().coerceIn(0f, 1f)
                         alpha = expanded
                         translationX = panelOffsetProvider()
-                        translationY = -with(density) { 1.25.dp.toPx() } * interactionProgress
+                        translationY = snapChromeTranslationPx(-pressLiftPx * interactionProgress)
                         scaleX =
                             (0.96f + 0.04f * expanded) *
                             lerpFloat(1f, 1.006f, interactionProgress)

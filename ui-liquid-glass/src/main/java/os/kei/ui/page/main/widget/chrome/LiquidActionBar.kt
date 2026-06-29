@@ -37,7 +37,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
@@ -269,6 +268,7 @@ fun LiquidActionBar(
         with(density) {
             AppChromeTokens.liquidActionBarHorizontalPadding.toPx()
         }
+    val panelMaxOffsetPx = with(density) { 3.dp.toPx() }
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val animationScope = rememberCoroutineScope()
     val onInteractionChangedState = rememberUpdatedState(onInteractionChanged)
@@ -283,13 +283,13 @@ fun LiquidActionBar(
 
     val offsetAnimation = remember { Animatable(0f) }
     val effectivePanelOffsetProvider =
-        remember(density, offsetAnimation, layeredStyleEnabled) {
+        remember(panelMaxOffsetPx, offsetAnimation, layeredStyleEnabled) {
             {
                 if (layeredStyleEnabled) {
                     liquidActionBarPanelOffset(
                         rawOffsetPx = offsetAnimation.value,
                         totalWidthPx = totalWidthPx,
-                        density = density,
+                        maxOffsetPx = panelMaxOffsetPx,
                     )
                 } else {
                     0f
@@ -639,13 +639,11 @@ fun LiquidActionBar(
 private fun liquidActionBarPanelOffset(
     rawOffsetPx: Float,
     totalWidthPx: Float,
-    density: Density,
+    maxOffsetPx: Float,
 ): Float {
     if (totalWidthPx == 0f) return 0f
     val fraction = (rawOffsetPx / totalWidthPx).fastCoerceIn(-1f, 1f)
-    return with(density) {
-        3f.dp.toPx() * fraction.sign * EaseOut.transform(abs(fraction))
-    }
+    return snapChromeTranslationPx(maxOffsetPx * fraction.sign * EaseOut.transform(abs(fraction)))
 }
 
 private fun liquidActionBarMinimumWidth(

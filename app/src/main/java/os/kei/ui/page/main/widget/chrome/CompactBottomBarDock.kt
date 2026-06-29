@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -50,6 +51,7 @@ internal fun AnimatedCompactBottomBar(
     compactContent: @Composable BoxScope.(Modifier) -> Unit,
 ) {
     val density = LocalDensity.current
+    val slideOffsetPx = with(density) { 16.dp.toPx() }
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val transition =
         updateTransition(
@@ -83,7 +85,7 @@ internal fun AnimatedCompactBottomBar(
                     val progress = expandedProgress.value
                     alpha = progress
                     transformOrigin = TransformOrigin(0f, 0.5f)
-                    translationX = -with(density) { 16.dp.toPx() } * (1f - progress)
+                    translationX = snapChromeTranslationPx(-slideOffsetPx * (1f - progress))
                     scaleX = 0.86f + 0.14f * progress
                     scaleY = 0.94f + 0.06f * progress
                 },
@@ -95,7 +97,7 @@ internal fun AnimatedCompactBottomBar(
                     val progress = compactProgress.value
                     alpha = progress
                     transformOrigin = TransformOrigin(0f, 0.5f)
-                    translationX = with(density) { 16.dp.toPx() } * (1f - progress)
+                    translationX = snapChromeTranslationPx(slideOffsetPx * (1f - progress))
                     scaleX = 0.88f + 0.12f * progress
                     scaleY = 0.88f + 0.12f * progress
                 },

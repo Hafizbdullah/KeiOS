@@ -47,6 +47,7 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -279,6 +280,7 @@ fun AppLiquidFloatingSurface(
         )
     val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
     val density = LocalDensity.current
+    val pressLiftPx = with(density) { 1.25.dp.toPx() }
     val isDark = isSystemInDarkTheme()
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.20f else 0.40f)
     val overlayColor =
@@ -314,7 +316,7 @@ fun AppLiquidFloatingSurface(
                 .padding(resolvedPressSafePadding)
                 .graphicsLayer {
                     val pressProgress = pressProgressProvider()
-                    translationY = -with(density) { 1.25.dp.toPx() } * pressProgress
+                    translationY = snapChromeTranslationPx(-pressLiftPx * pressProgress)
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)
                     clip = false
