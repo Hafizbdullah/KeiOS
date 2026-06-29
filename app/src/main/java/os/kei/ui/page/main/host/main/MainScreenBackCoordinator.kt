@@ -3,9 +3,9 @@ package os.kei.ui.page.main.host.main
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.navigation3.runtime.NavKey
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
-import top.yukonga.miuix.kmp.nav.core.NavKey
 
 internal enum class MainRouteBackAction {
     None,

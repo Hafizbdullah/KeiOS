@@ -8,8 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.navigation3.runtime.NavKey
 import os.kei.ui.navigation.KeiosRoute
-import top.yukonga.miuix.kmp.nav.core.NavKey
 
 internal data class MainScreenReturnState(
     val settingsReturnToken: Int
