@@ -31,7 +31,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 | P13 UI P6 card/menu/detail bridge | Done | Added compact card metadata, F-Droid detail entry, localized detail sheet, source filter, and import preview count |
 | P14 P7 asset/install bridge | Done | Feed selected F-Droid APK into existing asset/install path with hash/signer checks |
 | P15 P8 transfer/WebDAV/MCP bridge | Done | Extend import/export, WebDAV payload, MCP aliases/counts/filters |
-| P16 P9 verification | Pending | Unit tests, compile, release build/R8, AVD smoke, baseline-profile review when affected |
+| P16 P9 verification | Done | Targeted app and feature tests, debug/release builds, R8/lintVital, AVD add-sheet smoke, diff check; baseline profile refresh left to a future run when F-Droid enters startup/profile journeys |
 
 ## Decisions
 
@@ -71,6 +71,12 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 
 - `docs/fdroid-source-mode-plan.md` exists.
 - Planning files capture sources, findings, and progress.
-- Production source files remain unchanged.
-- `git diff --check` passes.
-- New planning files pass trailing-whitespace scan.
+- F-Droid source mode is represented in model/store/cache signatures and JSON transfer.
+- F-Droid package API, v2 index parsing, repo cache models, candidate selection, and sidecar JSON have targeted tests.
+- F-Droid release checks dispatch through the existing tracking service without changing GitHub Atom/API selection behavior.
+- Add/edit sheet exposes `F-Droid 仓库`, source-specific fields, version selection, APK filename filtering, trust policy, and Anti-Feature policy.
+- Card/detail/asset/install/transfer/WebDAV/MCP bridges have targeted coverage.
+- `:app:compileDebugKotlin`, targeted app tests, targeted `feature-github` tests, `:app:assembleDebug`, and `:app:assembleRelease` pass.
+- Release build runs `minifyReleaseWithR8`, `lintVitalRelease`, and `packageRelease`.
+- AVD smoke on `Pixel_10_Pro` confirms GitHub page entry, add-sheet opening, source dropdown, and F-Droid field rendering.
+- `git diff --check` passes after documentation updates.

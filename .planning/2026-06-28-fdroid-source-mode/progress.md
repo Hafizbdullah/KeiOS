@@ -127,3 +127,23 @@
   - `./gradlew :app:testDebugUnitTest --tests os.kei.mcp.server.McpToolRegistrationTest`
   - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest`
   - `rg --pcre2 -n "sourceMode=github_repository\\|git_repository\\|direct_apk(?!\\|fdroid_repository)|filterMode=all\\|github_repository\\|git_repository\\|direct_apk\\|pre_release" feature-mcp/src/main/java app/src/test/java feature-github/src/main/java -g '*.kt'`
+- Completed P9 verification:
+  - App compile, editor sheet test, F-Droid install asset test, and MCP registration test passed:
+    - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests os.kei.ui.page.main.github.page.GitHubPageRepositoryTrackEditorTest --tests os.kei.ui.page.main.github.asset.GitHubFdroidInstallAssetsTest --tests os.kei.mcp.server.McpToolRegistrationTest`
+  - Feature backend tests passed:
+    - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.domain.fdroid.FdroidCandidateSelectorTest --tests os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClientTest --tests os.kei.feature.github.data.remote.fdroid.FdroidIndexV2ParserTest --tests os.kei.feature.github.data.local.fdroid.FdroidRepoCacheModelsTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest --tests os.kei.feature.github.data.local.GitHubTrackStoreTrackedItemJsonTest`
+  - Release build passed:
+    - `./gradlew :app:assembleRelease`
+    - Observed `minifyReleaseWithR8`, `lintVitalRelease`, `optimizeReleaseResources`, `packageRelease`, and `assembleRelease`.
+  - Debug APK build passed:
+    - `./gradlew :app:assembleDebug`
+  - AVD smoke passed on `Pixel_10_Pro` / `emulator-5554`:
+    - Installed `app/build/outputs/apk/debug/app-debug.apk`.
+    - Launched `os.kei.debug/os.kei.LauncherAndroidDesigns`.
+    - Opened `github_page_root` from the bottom GitHub tab.
+    - Opened `新增跟踪`.
+    - Confirmed source dropdown options: `GitHub 项目`, `Git 项目`, `订阅项目`, `F-Droid 仓库`.
+    - Selected `F-Droid 仓库`.
+    - Confirmed `F-Droid 仓库地址`, default `https://f-droid.org/repo`, package field, `F-Droid 选项`, `版本选择`, and `APK 文件过滤（可选）`.
+  - AVD existing app data was preserved. One earlier add-sheet smoke may have left an extra tracked item in the emulator data.
+  - Baseline profile refresh was reviewed and left for a future pass because this slice adds GitHub-page source-mode UI and backend tracking checks outside current startup/profile journeys.

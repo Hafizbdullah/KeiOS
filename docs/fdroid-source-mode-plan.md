@@ -542,6 +542,14 @@ Integration / AVD after implementation:
 - Kill/reopen app and verify cache age and tracked cards.
 - Run release build/R8 and targeted baseline profile refresh if UI or startup path changes.
 
+Implemented verification on 2026-06-29:
+
+- Targeted app and `feature-github` unit tests passed for editor state, asset bridge, MCP registration, release-check dispatch, F-Droid source evaluation, candidate selection, package API, index v2 parsing, repo cache models, sidecar JSON, and tracked-item JSON.
+- `:app:assembleRelease` passed with `minifyReleaseWithR8`, `lintVitalRelease`, `optimizeReleaseResources`, `packageRelease`, and `assembleRelease`.
+- `:app:assembleDebug` passed and the current debug APK was installed on `Pixel_10_Pro`.
+- AVD smoke covered GitHub page entry, `新增跟踪`, source dropdown exposure, selecting `F-Droid 仓库`, and F-Droid field rendering.
+- Longer AVD/manual QA remains useful for live repo refresh, card detail sheet, notification deep link, and cold-start cache display with real F-Droid tracks.
+
 ## Phased Implementation
 
 | Phase | Scope | Files |
@@ -554,7 +562,7 @@ Integration / AVD after implementation:
 | P6 Card/menu/detail bridge | Show metadata, source-specific more menu, package/repo/trust/Anti-Feature detail sheets. | tracked card, more menu, detail sheets |
 | P7 Asset and install bridge | Feed selected F-Droid APK into existing asset/install confirmation path with hash/signer gates. | asset panel, managed install prep |
 | P8 Import/export/WebDAV/MCP | Extend transfer payloads, source filters, MCP tracking tools, and share import parser. | stores, MCP helpers, share import |
-| P9 Verification | Unit tests, compile, release build/R8, AVD smoke, baseline profile if affected. | tests and verification scripts |
+| P9 Verification | Unit tests, compile, release build/R8, AVD add-sheet smoke, baseline profile review. | tests and verification scripts |
 
 ## First Release Acceptance Criteria
 
