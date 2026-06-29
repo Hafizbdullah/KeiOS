@@ -117,11 +117,56 @@ class GitHubTrackModelsTest {
     }
 
     @Test
+    fun `fdroid package urls normalize to repository identity`() {
+        val official =
+            buildFdroidRepositoryTrackIdentity(
+                rawUrl = "https://f-droid.org/packages/org.fdroid.fdroid/",
+                rawPackageName = ""
+            )
+        val izzy =
+            buildFdroidRepositoryTrackIdentity(
+                rawUrl = "https://apt.izzysoft.de/fdroid/index/apk/dev.imranr.obtainium",
+                rawPackageName = ""
+            )
+
+        assertEquals("https://f-droid.org/repo", official?.normalizedRepoUrl)
+        assertEquals("f-droid.org", official?.host)
+        assertEquals("repo", official?.repo)
+        assertEquals("F-Droid", official?.repoDisplayName)
+        assertEquals("org.fdroid.fdroid", official?.packageName)
+        assertEquals("https://apt.izzysoft.de/fdroid/repo", izzy?.normalizedRepoUrl)
+        assertEquals("IzzyOnDroid", izzy?.repoDisplayName)
+        assertEquals("dev.imranr.obtainium", izzy?.packageName)
+    }
+
+    @Test
+    fun `fdroid track id uses normalized repository url and package`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://f-droid.org/repo",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository
+        )
+
+        assertEquals(
+            "fdroid_repository|https://f-droid.org/repo|org.fdroid.fdroid",
+            item.id
+        )
+    }
+
+    @Test
     fun `source mode aliases parse git platforms`() {
         assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("git"))
         assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitee"))
         assertEquals(GitHubTrackedSourceMode.GitRepository, GitHubTrackedSourceMode.fromStorageId("gitlab"))
         assertEquals(GitHubTrackedSourceMode.DirectApk, GitHubTrackedSourceMode.fromStorageId("subscription"))
+        assertEquals(GitHubTrackedSourceMode.FdroidRepository, GitHubTrackedSourceMode.fromStorageId("fdroid"))
+        assertEquals(
+            GitHubTrackedSourceMode.FdroidRepository,
+            GitHubTrackedSourceMode.fromStorageId("izzyondroid")
+        )
     }
 
     @Test
@@ -159,6 +204,28 @@ class GitHubTrackModelsTest {
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15
         ).withSourceModeConstraints()
 
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode
+        )
+    }
+
+    @Test
+    fun `fdroid source constraints clear github only options`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://f-droid.org/repo",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+            alwaysShowLatestReleaseDownloadButton = true,
+            checkActionsUpdates = true,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15
+        ).withSourceModeConstraints()
+
+        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, item.checkActionsUpdates)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode

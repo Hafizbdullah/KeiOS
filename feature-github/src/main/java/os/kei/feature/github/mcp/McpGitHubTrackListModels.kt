@@ -24,6 +24,7 @@ internal enum class GitHubTrackedFilterMode(
     GitHubRepository("github_repository"),
     GitRepository("git_repository"),
     DirectApk("direct_apk"),
+    FdroidRepository("fdroid_repository"),
     PreReleaseTracked("pre_release_tracked"),
     UpdateAvailable("update_available"),
     Installed("installed"),

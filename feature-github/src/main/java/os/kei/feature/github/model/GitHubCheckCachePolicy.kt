@@ -3,6 +3,7 @@ package os.kei.feature.github.model
 import java.util.Locale
 
 const val GITHUB_DIRECT_APK_STRATEGY_ID = "direct_apk"
+const val GITHUB_FDROID_STRATEGY_ID = "fdroid_repository"
 
 fun GitHubTrackedApp.checkSourceSignature(
     lookupConfig: GitHubLookupConfig
@@ -11,6 +12,7 @@ fun GitHubTrackedApp.checkSourceSignature(
         GitHubTrackedSourceMode.DirectApk ->
             directApkCheckSourceSignature(lookupConfig.checkAllTrackedPreReleases)
         GitHubTrackedSourceMode.GitRepository -> gitRepositoryCheckSourceSignature(lookupConfig)
+        GitHubTrackedSourceMode.FdroidRepository -> fdroidRepositoryCheckSourceSignature()
         GitHubTrackedSourceMode.GitHubRepository -> lookupConfig.githubCheckSourceSignature()
     }
 }
@@ -42,6 +44,30 @@ fun GitHubTrackedApp.directApkCheckSourceSignature(
     ).joinToString("|")
 }
 
+fun GitHubTrackedApp.fdroidRepositoryCheckSourceSignature(): String {
+    val identity = buildFdroidRepositoryTrackIdentity(repoUrl, packageName)
+    val config = fdroidConfig
+    return listOf(
+        "fdroid_repository-v1",
+        identity?.normalizedRepoUrl ?: repoUrl.trim().lowercase(Locale.ROOT),
+        identity?.packageName?.lowercase(Locale.ROOT)
+            ?: packageName.trim().lowercase(Locale.ROOT),
+        config.selectionMode.storageId,
+        config.versionNameRegex.trim(),
+        config.apkNameRegex.trim(),
+        config.repoFingerprint.trim().lowercase(Locale.ROOT),
+        config.indexFormat.storageId,
+        config.trustPolicy.storageId,
+        config.antiFeaturePolicy.storageId,
+        config.blockedAntiFeatures
+            .map { it.trim().lowercase(Locale.ROOT) }
+            .filter { it.isNotBlank() }
+            .sorted()
+            .joinToString(","),
+        if (preferPreRelease) "pre" else "stable"
+    ).joinToString("|")
+}
+
 fun GitHubCheckCacheEntry.isValidForTrackedItem(
     item: GitHubTrackedApp,
     lookupConfig: GitHubLookupConfig,
@@ -58,6 +84,7 @@ fun GitHubCheckCacheEntry.isValidForTrackedItem(
             sourceId == GITHUB_DIRECT_APK_STRATEGY_ID &&
                     !item.preferPreRelease &&
                     !lookupConfig.checkAllTrackedPreReleases
+        item.isFdroidRepositoryTrack() -> false
         item.isGitRepositoryTrack() -> false
         lookupConfig.preciseApkVersionEnabled -> false
         else -> sourceId == activeStrategyId

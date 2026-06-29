@@ -292,6 +292,7 @@ internal fun loadHomeGitHubOverview(
     var githubRepositoryCount = 0
     var gitRepositoryCount = 0
     var directApkCount = 0
+    var fdroidRepositoryCount = 0
     var actionsTrackedCount = 0
     var preciseApkVersionCount = 0
     var cacheHitCount = 0
@@ -303,6 +304,7 @@ internal fun loadHomeGitHubOverview(
             GitHubTrackedSourceMode.GitHubRepository -> githubRepositoryCount += 1
             GitHubTrackedSourceMode.GitRepository -> gitRepositoryCount += 1
             GitHubTrackedSourceMode.DirectApk -> directApkCount += 1
+            GitHubTrackedSourceMode.FdroidRepository -> fdroidRepositoryCount += 1
         }
         if (item.checkActionsUpdates) actionsTrackedCount += 1
         val itemLookupConfig = snapshot.lookupConfig.forTrackedItem(item)
@@ -330,6 +332,7 @@ internal fun loadHomeGitHubOverview(
         githubRepositoryCount = githubRepositoryCount,
         gitRepositoryCount = gitRepositoryCount,
         directApkCount = directApkCount,
+        fdroidRepositoryCount = fdroidRepositoryCount,
         actionsTrackedCount = actionsTrackedCount,
         preciseApkVersionCount = preciseApkVersionCount,
         cacheHitCount = cacheHitCount,

@@ -22,6 +22,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.parseGithubOwnerRepoStrict
 import os.kei.feature.github.model.withReleaseIgnoreMode
@@ -63,7 +64,8 @@ internal class GitHubPageDiscoveryRepository(
                     GitHubTrackEditorSourceIdentity(
                         owner = parsed.first,
                         repo = parsed.second,
-                        fallbackLabel = "${parsed.first}/${parsed.second}"
+                        fallbackLabel = "${parsed.first}/${parsed.second}",
+                        normalizedRepoUrl = draft.repoUrl.trim()
                     )
                 }
 
@@ -73,7 +75,8 @@ internal class GitHubPageDiscoveryRepository(
                     GitHubTrackEditorSourceIdentity(
                         owner = identity.owner,
                         repo = identity.repo,
-                        fallbackLabel = identity.displayName
+                        fallbackLabel = identity.displayName,
+                        normalizedRepoUrl = draft.repoUrl.trim()
                     )
                 }
 
@@ -83,7 +86,21 @@ internal class GitHubPageDiscoveryRepository(
                     GitHubTrackEditorSourceIdentity(
                         owner = identity.owner,
                         repo = identity.repo,
-                        fallbackLabel = identity.displayName
+                        fallbackLabel = identity.displayName,
+                        normalizedRepoUrl = draft.repoUrl.trim()
+                    )
+                }
+
+                GitHubTrackedSourceMode.FdroidRepository -> {
+                    val identity = buildFdroidRepositoryTrackIdentity(
+                        rawUrl = draft.repoUrl,
+                        rawPackageName = draft.packageName
+                    ) ?: return@withContext GitHubTrackEditorResult.InvalidRepository
+                    GitHubTrackEditorSourceIdentity(
+                        owner = identity.owner,
+                        repo = identity.repo,
+                        fallbackLabel = identity.repoDisplayName,
+                        normalizedRepoUrl = identity.normalizedRepoUrl
                     )
                 }
             }
@@ -104,7 +121,7 @@ internal class GitHubPageDiscoveryRepository(
                 else -> sourceIdentity.fallbackLabel
             }
             val trackedApp = GitHubTrackedApp(
-                    repoUrl = draft.repoUrl.trim(),
+                    repoUrl = sourceIdentity.normalizedRepoUrl,
                     owner = sourceIdentity.owner,
                     repo = sourceIdentity.repo,
                     packageName = resolvedPackageName,
@@ -117,18 +134,22 @@ internal class GitHubPageDiscoveryRepository(
 
                         GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
+                        GitHubTrackedSourceMode.FdroidRepository -> false
                     },
                     updateIntervalMode = draft.updateIntervalMode,
                     checkActionsUpdates = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.checkActionsUpdates
                         GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
+                        GitHubTrackedSourceMode.FdroidRepository -> false
                     },
                     actionsUpdateIntervalMode = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.actionsUpdateIntervalMode
                         GitHubTrackedSourceMode.GitRepository ->
                             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                         GitHubTrackedSourceMode.DirectApk ->
+                            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+                        GitHubTrackedSourceMode.FdroidRepository ->
                             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
                     },
                     preciseApkVersionMode = draft.preciseApkVersionMode,
@@ -190,5 +211,6 @@ internal class GitHubPageDiscoveryRepository(
 private data class GitHubTrackEditorSourceIdentity(
     val owner: String,
     val repo: String,
-    val fallbackLabel: String
+    val fallbackLabel: String,
+    val normalizedRepoUrl: String
 )

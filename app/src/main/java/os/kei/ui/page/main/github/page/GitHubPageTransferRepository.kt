@@ -87,6 +87,7 @@ private fun GitHubTrackedItemsImportPreview.toPagePreview(): GitHubTrackImportPr
         githubRepositoryCount = githubRepositoryCount,
         gitRepositoryCount = gitRepositoryCount,
         directApkCount = directApkCount,
+        fdroidRepositoryCount = fdroidRepositoryCount,
         preferPreReleaseCount = preferPreReleaseCount,
         latestReleaseDownloadCount = latestReleaseDownloadCount,
         actionsUpdateCount = actionsUpdateCount,

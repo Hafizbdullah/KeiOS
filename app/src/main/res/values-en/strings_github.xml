@@ -749,6 +749,7 @@
     <string name="github_track_sheet_source_mode_github">GitHub project</string>
     <string name="github_track_sheet_source_mode_git">Git project</string>
     <string name="github_track_sheet_source_mode_direct_apk">Subscription project</string>
+    <string name="github_track_sheet_source_mode_fdroid">F-Droid repository</string>
     <string name="github_track_sheet_input_repo">GitHub project URL</string>
     <string name="github_track_sheet_input_git">Git project URL</string>
     <string name="github_track_sheet_input_direct_apk">Subscription URL</string>

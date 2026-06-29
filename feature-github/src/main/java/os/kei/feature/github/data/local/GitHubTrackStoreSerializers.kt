@@ -1,12 +1,20 @@
 package os.kei.feature.github.data.local
 
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.put
 import os.kei.core.json.hasNonNull
+import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidIndexFormat
+import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
@@ -16,6 +24,7 @@ import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.GitHubTrackedPreciseApkVersionMode
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.withReleaseIgnoreMode
@@ -39,12 +48,24 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
     } else {
         null
     }
+    val sourcePackageName = source?.optString("packageName").orEmpty().trim()
+    val fdroidIdentity = if (sourceMode == GitHubTrackedSourceMode.FdroidRepository) {
+        buildFdroidRepositoryTrackIdentity(
+            rawUrl = repoUrl,
+            rawPackageName = obj.optString("packageName").trim().ifBlank { sourcePackageName }
+        )
+    } else {
+        null
+    }
+    val normalizedRepoUrl = fdroidIdentity?.normalizedRepoUrl ?: repoUrl
     val owner = obj.optString("owner").trim().ifBlank {
         source?.optString("owner").orEmpty().trim()
     }.ifBlank {
         gitIdentity?.owner.orEmpty()
     }.ifBlank {
         directIdentity?.owner.orEmpty()
+    }.ifBlank {
+        fdroidIdentity?.owner.orEmpty()
     }
     val repo = obj.optString("repo").trim().ifBlank {
         source?.optString("repo").orEmpty().trim()
@@ -52,14 +73,21 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         gitIdentity?.repo.orEmpty()
     }.ifBlank {
         directIdentity?.repo.orEmpty()
+    }.ifBlank {
+        fdroidIdentity?.repo.orEmpty()
     }
     val packageName = obj.optString("packageName").trim()
+        .ifBlank { sourcePackageName }
+        .ifBlank { fdroidIdentity?.packageName.orEmpty() }
     val appLabel = obj.optString("appLabel").trim()
     if (repoUrl.isBlank() || owner.isBlank() || repo.isBlank()) {
         return null
     }
     val fallbackLabel = packageName.ifBlank {
-        directIdentity?.displayName ?: gitIdentity?.displayName ?: "$owner/$repo"
+        directIdentity?.displayName
+            ?: gitIdentity?.displayName
+            ?: fdroidIdentity?.repoDisplayName
+            ?: "$owner/$repo"
     }
     val preferPreRelease = when {
         settings?.hasNonNull("preferPreRelease") == true ->
@@ -74,7 +102,8 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
     }
     val alwaysShowLatestReleaseDownloadButton = when {
         sourceMode == GitHubTrackedSourceMode.DirectApk ||
-                sourceMode == GitHubTrackedSourceMode.GitRepository -> false
+                sourceMode == GitHubTrackedSourceMode.GitRepository ||
+                sourceMode == GitHubTrackedSourceMode.FdroidRepository -> false
         settings?.hasNonNull("alwaysShowLatestReleaseDownloadButton") == true ->
             settings.optBoolean("alwaysShowLatestReleaseDownloadButton", false)
 
@@ -91,7 +120,8 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
     }
     val checkActionsUpdates = when {
         sourceMode == GitHubTrackedSourceMode.DirectApk ||
-                sourceMode == GitHubTrackedSourceMode.GitRepository -> false
+                sourceMode == GitHubTrackedSourceMode.GitRepository ||
+                sourceMode == GitHubTrackedSourceMode.FdroidRepository -> false
         settings?.hasNonNull("checkActionsUpdates") == true ->
             settings.optBoolean("checkActionsUpdates", false)
 
@@ -99,7 +129,7 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         else -> false
     }
     val parsedItem = GitHubTrackedApp(
-        repoUrl = repoUrl,
+        repoUrl = normalizedRepoUrl,
         owner = owner,
         repo = repo,
         packageName = packageName,
@@ -124,12 +154,46 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
             obj.hasNonNull("repositoryFork") -> obj.optBoolean("repositoryFork", false)
             else -> false
         },
-        localAppType = parseTrackedLocalAppType(obj)
+        localAppType = parseTrackedLocalAppType(obj),
+        fdroidConfig = parseFdroidTrackedAppConfig(obj, fdroidIdentity?.packagePageUrl.orEmpty())
     ).withSourceModeConstraints()
     return parsedItem.withReleaseIgnoreMode(
         mode = parsedItem.ignoreMode,
         stableReleaseKey = parsedItem.ignoredStableReleaseKey,
         preReleaseKey = parsedItem.ignoredPreReleaseKey
+    )
+}
+
+fun parseFdroidTrackedAppConfig(
+    obj: JsonObject,
+    fallbackPackagePageUrl: String = ""
+): FdroidTrackedAppConfig {
+    val source = obj.optObject("source")
+    val fdroid = source?.optObject("fdroid") ?: obj.optObject("fdroid")
+    val blockedArray = fdroid?.optArray("blockedAntiFeatures")
+    val blockedAntiFeatures =
+        blockedArray
+            ?.indices
+            ?.mapNotNull { index -> blockedArray.optString(index).trim() }
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
+    return FdroidTrackedAppConfig(
+        selectionMode = FdroidVersionSelectionMode.fromStorageId(
+            fdroid?.optString("selectionMode")
+                ?: fdroid?.optString("versionSelectionMode")
+        ),
+        versionNameRegex = fdroid?.optString("versionNameRegex").orEmpty().trim(),
+        apkNameRegex = fdroid?.optString("apkNameRegex").orEmpty().trim(),
+        repoFingerprint = fdroid?.optString("repoFingerprint").orEmpty().trim(),
+        indexFormat = FdroidIndexFormat.fromStorageId(fdroid?.optString("indexFormat")),
+        trustPolicy = FdroidTrustPolicy.fromStorageId(fdroid?.optString("trustPolicy")),
+        antiFeaturePolicy = FdroidAntiFeaturePolicy.fromStorageId(
+            fdroid?.optString("antiFeaturePolicy")
+        ),
+        blockedAntiFeatures = blockedAntiFeatures,
+        packagePageUrl = fdroid?.optString("packagePageUrl").orEmpty().trim()
+            .ifBlank { fallbackPackagePageUrl },
+        repoPresetId = fdroid?.optString("repoPresetId").orEmpty().trim()
     )
 }
 
@@ -297,7 +361,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
         mode = constrainedItem.ignoreMode,
         stableReleaseKey = constrainedItem.ignoredStableReleaseKey,
         preReleaseKey = constrainedItem.ignoredPreReleaseKey
-    )
+    ).withFdroidStorageIdentity()
     val settings = buildJsonObject {
         put("sourceMode", normalizedItem.sourceMode.storageId)
         put("preferPreRelease", normalizedItem.preferPreRelease)
@@ -319,6 +383,10 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
         put("url", normalizedItem.repoUrl)
         put("owner", normalizedItem.owner)
         put("repo", normalizedItem.repo)
+        put("packageName", normalizedItem.packageName)
+        if (normalizedItem.sourceMode == GitHubTrackedSourceMode.FdroidRepository) {
+            put("fdroid", fdroidTrackedAppConfigToJson(normalizedItem.fdroidConfig))
+        }
     }
     val repository = buildJsonObject {
         put("archived", normalizedItem.repositoryArchived)
@@ -364,6 +432,41 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
     }
 }
 
+private fun GitHubTrackedApp.withFdroidStorageIdentity(): GitHubTrackedApp {
+    if (sourceMode != GitHubTrackedSourceMode.FdroidRepository) return this
+    val identity = buildFdroidRepositoryTrackIdentity(
+        rawUrl = repoUrl,
+        rawPackageName = packageName
+    ) ?: return this
+    return copy(
+        repoUrl = identity.normalizedRepoUrl,
+        owner = identity.owner,
+        repo = identity.repo,
+        packageName = packageName.ifBlank { identity.packageName },
+        appLabel = appLabel.ifBlank { identity.repoDisplayName },
+        fdroidConfig = fdroidConfig.copy(
+            packagePageUrl = fdroidConfig.packagePageUrl.ifBlank { identity.packagePageUrl }
+        )
+    )
+}
+
+fun fdroidTrackedAppConfigToJson(config: FdroidTrackedAppConfig): JsonObject {
+    return buildJsonObject {
+        put("selectionMode", config.selectionMode.storageId)
+        put("versionNameRegex", config.versionNameRegex)
+        put("apkNameRegex", config.apkNameRegex)
+        put("repoFingerprint", config.repoFingerprint)
+        put("indexFormat", config.indexFormat.storageId)
+        put("trustPolicy", config.trustPolicy.storageId)
+        put("antiFeaturePolicy", config.antiFeaturePolicy.storageId)
+        putJsonArray("blockedAntiFeatures") {
+            config.blockedAntiFeatures.forEach { feature -> add(JsonPrimitive(feature)) }
+        }
+        put("packagePageUrl", config.packagePageUrl)
+        put("repoPresetId", config.repoPresetId)
+    }
+}
+
 fun GitHubTrackedItemsOptionCounts.toJson(): JsonObject {
     return buildJsonObject {
         put("preferPreRelease", preferPreReleaseCount)
@@ -380,6 +483,7 @@ fun GitHubTrackedItemsSourceCounts.toJson(): JsonObject {
         put("githubRepository", githubRepositoryCount)
         put("gitRepository", gitRepositoryCount)
         put("directApk", directApkCount)
+        put("fdroidRepository", fdroidRepositoryCount)
     }
 }
 

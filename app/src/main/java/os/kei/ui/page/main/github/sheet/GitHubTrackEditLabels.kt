@@ -23,6 +23,10 @@ internal fun trackedSourceModeLabel(mode: GitHubTrackedSourceMode): String =
         GitHubTrackedSourceMode.DirectApk -> {
             stringResource(R.string.github_track_sheet_source_mode_direct_apk)
         }
+
+        GitHubTrackedSourceMode.FdroidRepository -> {
+            stringResource(R.string.github_track_sheet_source_mode_fdroid)
+        }
     }
 
 @Composable

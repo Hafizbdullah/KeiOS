@@ -46,3 +46,13 @@
 - Started implementation on branch `codex/fdroid-source-mode`.
 - Switched planning scope from research-only to backend-first implementation.
 - Marked Backend P1 model/store/cache foundation as in progress.
+- Completed Backend P1 model/store/cache foundation:
+  - Added `GitHubTrackedSourceMode.FdroidRepository`.
+  - Added F-Droid identity normalization and config models.
+  - Added F-Droid source constraints, track ids, source counts, JSON round-trip, and cache signatures.
+  - Added MCP source aliases/filter model support at the backend layer.
+  - Kept add/edit dropdown from exposing F-Droid until the planned UI sheet bridge.
+- Verification:
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.model.GitHubTrackModelsTest --tests os.kei.feature.github.model.GitHubCheckCachePolicyTest --tests os.kei.feature.github.data.local.GitHubTrackStoreTrackedItemJsonTest`
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :feature-github:testDebugUnitTest`

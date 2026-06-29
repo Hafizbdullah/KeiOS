@@ -30,7 +30,8 @@ data class GitHubTrackedApp(
     val ignoredPreReleaseKey: String = "",
     val repositoryArchived: Boolean = false,
     val repositoryFork: Boolean = false,
-    val localAppType: GitHubTrackedLocalAppType = GitHubTrackedLocalAppType.Unknown
+    val localAppType: GitHubTrackedLocalAppType = GitHubTrackedLocalAppType.Unknown,
+    val fdroidConfig: FdroidTrackedAppConfig = FdroidTrackedAppConfig()
 ) {
     val id: String
         get() {
@@ -39,6 +40,11 @@ data class GitHubTrackedApp(
                 GitHubTrackedSourceMode.GitHubRepository -> base
                 GitHubTrackedSourceMode.GitRepository -> "${sourceMode.storageId}|$base"
                 GitHubTrackedSourceMode.DirectApk -> "${sourceMode.storageId}|$base"
+                GitHubTrackedSourceMode.FdroidRepository -> {
+                    val identity = buildFdroidRepositoryTrackIdentity(repoUrl, packageName)
+                    val repoKey = identity?.normalizedRepoUrl ?: repoUrl.trim().lowercase(Locale.ROOT)
+                    "${sourceMode.storageId}|$repoKey|${packageName.trim().lowercase(Locale.ROOT)}"
+                }
             }
         }
 }
@@ -46,7 +52,8 @@ data class GitHubTrackedApp(
 enum class GitHubTrackedSourceMode(val storageId: String) {
     GitHubRepository("github_repository"),
     GitRepository("git_repository"),
-    DirectApk("direct_apk");
+    DirectApk("direct_apk"),
+    FdroidRepository("fdroid_repository");
 
     companion object {
         fun fromStorageId(value: String?): GitHubTrackedSourceMode {
@@ -56,6 +63,8 @@ enum class GitHubTrackedSourceMode(val storageId: String) {
                     "git", "gitee", "gitlab" -> GitRepository
                     "github", "repo", "repository" -> GitHubRepository
                     "direct", "apk", "subscription", "subscription_project" -> DirectApk
+                    "fdroid", "f-droid", "f_droid", "fdroid_repository",
+                    "izzy", "izzyondroid", "izzy_on_droid" -> FdroidRepository
                     else -> GitHubRepository
                 }
         }
@@ -104,6 +113,10 @@ fun GitHubTrackedApp.isDirectApkTrack(): Boolean {
     return sourceMode == GitHubTrackedSourceMode.DirectApk
 }
 
+fun GitHubTrackedApp.isFdroidRepositoryTrack(): Boolean {
+    return sourceMode == GitHubTrackedSourceMode.FdroidRepository
+}
+
 fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
     return when (sourceMode) {
         GitHubTrackedSourceMode.GitHubRepository -> {
@@ -121,6 +134,12 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
         )
 
         GitHubTrackedSourceMode.DirectApk -> copy(
+            alwaysShowLatestReleaseDownloadButton = false,
+            checkActionsUpdates = false,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
+        )
+
+        GitHubTrackedSourceMode.FdroidRepository -> copy(
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
@@ -486,6 +505,11 @@ fun GitHubLookupConfig.forTrackedItem(item: GitHubTrackedApp): GitHubLookupConfi
     if (item.isDirectApkTrack()) {
         return copy(
             checkAllTrackedPreReleases = checkAllDirectApkPreReleases,
+            preciseApkVersionEnabled = true
+        )
+    }
+    if (item.isFdroidRepositoryTrack()) {
+        return copy(
             preciseApkVersionEnabled = true
         )
     }

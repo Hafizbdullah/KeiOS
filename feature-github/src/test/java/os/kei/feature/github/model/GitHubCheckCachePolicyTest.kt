@@ -163,6 +163,50 @@ class GitHubCheckCachePolicyTest {
         )
     }
 
+    @Test
+    fun `fdroid repository cache uses fdroid source signature`() {
+        val item = tracked(sourceMode = GitHubTrackedSourceMode.FdroidRepository).copy(
+            fdroidConfig = FdroidTrackedAppConfig(
+                selectionMode = FdroidVersionSelectionMode.HighestCompatibleVersionCode,
+                versionNameRegex = "^1\\.",
+                apkNameRegex = "arm64",
+                repoFingerprint = "AA:BB",
+                indexFormat = FdroidIndexFormat.V2,
+                trustPolicy = FdroidTrustPolicy.RequireApkHash,
+                antiFeaturePolicy = FdroidAntiFeaturePolicy.Custom,
+                blockedAntiFeatures = listOf("Tracking", "KnownVuln")
+            )
+        )
+        val lookupConfig = GitHubLookupConfig().forTrackedItem(item)
+        val signature = item.fdroidRepositoryCheckSourceSignature()
+
+        assertEquals(signature, item.checkSourceSignature(lookupConfig))
+        assertTrue(signature.contains("fdroid_repository-v1|https://f-droid.org/repo|demo.app|"))
+        assertTrue(signature.contains("|highest_compatible_version_code|"))
+        assertTrue(signature.contains("|aa:bb|v2|require_apk_hash|custom|knownvuln,tracking|"))
+        assertTrue(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = GITHUB_FDROID_STRATEGY_ID,
+                sourceConfigSignature = signature,
+                latestStableRawTag = "1.0.0"
+            ).isValidForTrackedItem(
+                item = item,
+                lookupConfig = lookupConfig,
+                activeStrategyId = GitHubLookupConfig().selectedStrategy.storageId
+            )
+        )
+        assertFalse(
+            GitHubCheckCacheEntry(
+                sourceStrategyId = GITHUB_FDROID_STRATEGY_ID,
+                latestStableRawTag = "1.0.0"
+            ).isValidForTrackedItem(
+                item = item,
+                lookupConfig = lookupConfig,
+                activeStrategyId = GitHubLookupConfig().selectedStrategy.storageId
+            )
+        )
+    }
+
     private fun tracked(
         sourceMode: GitHubTrackedSourceMode,
         preferPreRelease: Boolean = false
@@ -172,6 +216,7 @@ class GitHubCheckCachePolicyTest {
                 GitHubTrackedSourceMode.GitHubRepository -> "https://github.com/demo/repo"
                 GitHubTrackedSourceMode.GitRepository -> "https://gitee.com/demo/repo"
                 GitHubTrackedSourceMode.DirectApk -> "https://example.com/download/app.apk"
+                GitHubTrackedSourceMode.FdroidRepository -> "https://f-droid.org/repo"
             },
             owner = "demo",
             repo = "repo",

@@ -729,6 +729,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_source_mode_github">GitHub プロジェクト</string>
     <string name="github_track_sheet_source_mode_git">Git プロジェクト</string>
     <string name="github_track_sheet_source_mode_direct_apk">購読プロジェクト</string>
+    <string name="github_track_sheet_source_mode_fdroid">F-Droid リポジトリ</string>
     <string name="github_track_sheet_input_repo">GitHub プロジェクト URL</string>
     <string name="github_track_sheet_input_git">Git プロジェクト URL</string>
     <string name="github_track_sheet_input_direct_apk">購読 URL</string>

@@ -84,6 +84,7 @@ internal fun filterCheckRows(
             GitHubTrackedFilterMode.GitHubRepository,
             GitHubTrackedFilterMode.GitRepository,
             GitHubTrackedFilterMode.DirectApk,
+            GitHubTrackedFilterMode.FdroidRepository,
             GitHubTrackedFilterMode.Installed,
             GitHubTrackedFilterMode.ActionsCheckEnabled -> true
 
@@ -104,6 +105,8 @@ internal fun parseTrackedSourceModeFilter(raw: String): GitHubTrackedSourceMode?
 
         "git", "git_repository", "gitee", "gitlab" -> GitHubTrackedSourceMode.GitRepository
         "direct", "apk", "direct_apk" -> GitHubTrackedSourceMode.DirectApk
+        "fdroid", "f_droid", "f-droid", "fdroid_repository", "izzy", "izzyondroid" ->
+            GitHubTrackedSourceMode.FdroidRepository
         else -> null
     }
 }
@@ -139,6 +142,8 @@ internal fun parseGitHubTrackedFilterMode(raw: String): GitHubTrackedFilterMode 
         "git", "git_repository", "gitee", "gitlab" -> GitHubTrackedFilterMode.GitRepository
         "direct", "apk", "subscription", "subscription_project" ->
             GitHubTrackedFilterMode.DirectApk
+        "fdroid", "f_droid", "f-droid", "fdroid_repository", "izzy", "izzyondroid" ->
+            GitHubTrackedFilterMode.FdroidRepository
 
         "pre_release", "pre-release", "prerelease" ->
             GitHubTrackedFilterMode.PreReleaseTracked

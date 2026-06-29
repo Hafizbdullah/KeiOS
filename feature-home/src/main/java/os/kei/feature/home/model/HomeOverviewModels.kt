@@ -25,6 +25,7 @@ data class HomeGitHubOverview(
     val githubRepositoryCount: Int = 0,
     val gitRepositoryCount: Int = 0,
     val directApkCount: Int = 0,
+    val fdroidRepositoryCount: Int = 0,
     val actionsTrackedCount: Int = 0,
     val preciseApkVersionCount: Int = 0,
     val cacheHitCount: Int = 0,

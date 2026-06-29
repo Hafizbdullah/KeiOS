@@ -90,6 +90,7 @@ internal fun GitHubTrackEditFormContent(
     onIgnoreModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
     val sourceModes = GitHubTrackedSourceMode.entries
+        .filterNot { it == GitHubTrackedSourceMode.FdroidRepository }
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
     val directApkMode = sourceModeInput == GitHubTrackedSourceMode.DirectApk

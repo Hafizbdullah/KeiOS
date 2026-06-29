@@ -776,6 +776,7 @@
     <string name="github_track_sheet_source_mode_github">GitHub 项目</string>
     <string name="github_track_sheet_source_mode_git">Git 项目</string>
     <string name="github_track_sheet_source_mode_direct_apk">订阅项目</string>
+    <string name="github_track_sheet_source_mode_fdroid">F-Droid 仓库</string>
     <string name="github_track_sheet_input_repo">GitHub 项目地址</string>
     <string name="github_track_sheet_input_git">Git 项目地址</string>
     <string name="github_track_sheet_input_direct_apk">订阅地址</string>

@@ -283,6 +283,10 @@ internal class GitHubTrackActions(
                         GitHubTrackedSourceMode.GitRepository -> {
                             Result.failure(IllegalStateException("Git repository package scanning is unavailable"))
                         }
+
+                        GitHubTrackedSourceMode.FdroidRepository -> {
+                            Result.failure(IllegalStateException("F-Droid package scanning is unavailable"))
+                        }
                     }.getOrElse { error ->
                         env.toast(
                             R.string.github_toast_package_scan_failed,
@@ -408,12 +412,17 @@ internal class GitHubTrackActions(
                         GitHubTrackedSourceMode.DirectApk -> {
                             false
                         }
+
+                        GitHubTrackedSourceMode.FdroidRepository -> {
+                            false
+                        }
                     },
                 checkActionsUpdates =
                     when (state.trackSourceModeInput) {
                         GitHubTrackedSourceMode.GitHubRepository -> state.checkActionsUpdatesInput
                         GitHubTrackedSourceMode.GitRepository -> false
                         GitHubTrackedSourceMode.DirectApk -> false
+                        GitHubTrackedSourceMode.FdroidRepository -> false
                     },
                 updateIntervalMode = state.updateIntervalModeInput,
                 actionsUpdateIntervalMode =

@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.mcp.server.DEFAULT_ENTRY_LIMIT
@@ -240,6 +241,7 @@ internal class McpGitHubTrackingTools(
                 GitHubTrackedSourceMode.GitHubRepository -> item.isGitHubRepositoryTrack()
                 GitHubTrackedSourceMode.GitRepository -> item.isGitRepositoryTrack()
                 GitHubTrackedSourceMode.DirectApk -> item.isDirectApkTrack()
+                GitHubTrackedSourceMode.FdroidRepository -> item.isFdroidRepositoryTrack()
             }
             if (!sourceMatches) return@filter false
             val filterMatches = when (filterMode) {
@@ -247,6 +249,7 @@ internal class McpGitHubTrackingTools(
                 GitHubTrackedFilterMode.GitHubRepository -> item.isGitHubRepositoryTrack()
                 GitHubTrackedFilterMode.GitRepository -> item.isGitRepositoryTrack()
                 GitHubTrackedFilterMode.DirectApk -> item.isDirectApkTrack()
+                GitHubTrackedFilterMode.FdroidRepository -> item.isFdroidRepositoryTrack()
                 GitHubTrackedFilterMode.Installed -> item.packageName.trim() in installedPackageNames
                 GitHubTrackedFilterMode.ActionsCheckEnabled -> item.checkActionsUpdates
                 GitHubTrackedFilterMode.PreReleaseTracked -> {

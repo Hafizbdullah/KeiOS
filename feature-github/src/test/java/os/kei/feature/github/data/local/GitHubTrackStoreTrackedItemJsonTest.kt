@@ -6,6 +6,11 @@ import os.kei.core.json.optInt
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidIndexFormat
+import os.kei.feature.github.model.FdroidTrackedAppConfig
+import os.kei.feature.github.model.FdroidTrustPolicy
+import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -273,6 +278,76 @@ class GitHubTrackStoreTrackedItemJsonTest {
     }
 
     @Test
+    fun `fdroid tracking round trips source config and counts`() {
+        val item = GitHubTrackedApp(
+            repoUrl = "https://f-droid.org/packages/org.fdroid.fdroid/",
+            owner = "f-droid.org",
+            repo = "repo",
+            packageName = "org.fdroid.fdroid",
+            appLabel = "F-Droid",
+            sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+            alwaysShowLatestReleaseDownloadButton = true,
+            checkActionsUpdates = true,
+            actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+            fdroidConfig = FdroidTrackedAppConfig(
+                selectionMode = FdroidVersionSelectionMode.HighestCompatibleVersionCode,
+                versionNameRegex = "^1\\.",
+                apkNameRegex = "arm64",
+                repoFingerprint = "AA:BB",
+                indexFormat = FdroidIndexFormat.V2,
+                trustPolicy = FdroidTrustPolicy.RequireApkHash,
+                antiFeaturePolicy = FdroidAntiFeaturePolicy.Custom,
+                blockedAntiFeatures = listOf("Tracking", "KnownVuln"),
+                packagePageUrl = "https://f-droid.org/packages/org.fdroid.fdroid/",
+                repoPresetId = "fdroid"
+            )
+        )
+
+        val exported = GitHubTrackStore.buildTrackedItemsExportJson(
+            listOf(item),
+            exportedAtMillis = 5000L
+        )
+        val root = exported.parseJsonObjectOrNull() ?: error("export json should parse")
+        val exportedItem = root.optArray("items")?.optObject(0)
+            ?: error("exported item should exist")
+        val source = exportedItem.optObject("source") ?: error("source should exist")
+        val fdroid = source.optObject("fdroid") ?: error("fdroid source config should exist")
+        val sourceCounts = root.optObject("sourceCounts")
+            ?: error("source counts should exist")
+        val imported = GitHubTrackStore.parseTrackedItemsImport(exported).items.single()
+
+        assertEquals("fdroid_repository", source.optString("mode"))
+        assertEquals("https://f-droid.org/repo", source.optString("url"))
+        assertEquals("org.fdroid.fdroid", source.optString("packageName"))
+        assertEquals("highest_compatible_version_code", fdroid.optString("selectionMode"))
+        assertEquals("require_apk_hash", fdroid.optString("trustPolicy"))
+        assertEquals("custom", fdroid.optString("antiFeaturePolicy"))
+        assertEquals("Tracking", fdroid.optArray("blockedAntiFeatures")?.optString(0))
+        assertEquals(0, sourceCounts.optInt("githubRepository"))
+        assertEquals(0, sourceCounts.optInt("gitRepository"))
+        assertEquals(0, sourceCounts.optInt("directApk"))
+        assertEquals(1, sourceCounts.optInt("fdroidRepository"))
+        assertEquals(GitHubTrackedSourceMode.FdroidRepository, imported.sourceMode)
+        assertEquals("https://f-droid.org/repo", imported.repoUrl)
+        assertEquals("f-droid.org", imported.owner)
+        assertEquals("repo", imported.repo)
+        assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            imported.actionsUpdateIntervalMode
+        )
+        assertEquals(
+            FdroidVersionSelectionMode.HighestCompatibleVersionCode,
+            imported.fdroidConfig.selectionMode
+        )
+        assertEquals(FdroidTrustPolicy.RequireApkHash, imported.fdroidConfig.trustPolicy)
+        assertEquals(FdroidAntiFeaturePolicy.Custom, imported.fdroidConfig.antiFeaturePolicy)
+        assertEquals(listOf("Tracking", "KnownVuln"), imported.fdroidConfig.blockedAntiFeatures)
+        assertEquals("fdroid", imported.fdroidConfig.repoPresetId)
+    }
+
+    @Test
     fun `nested v2 settings import as project options`() {
         val payload = GitHubTrackStore.parseTrackedItemsImport(
             """
@@ -386,6 +461,14 @@ class GitHubTrackStoreTrackedItemJsonTest {
                     packageName = "com.demo.git",
                     appLabel = "Git",
                     sourceMode = GitHubTrackedSourceMode.GitRepository
+                ),
+                GitHubTrackedApp(
+                    repoUrl = "https://f-droid.org/repo",
+                    owner = "f-droid.org",
+                    repo = "repo",
+                    packageName = "org.fdroid.fdroid",
+                    appLabel = "F-Droid",
+                    sourceMode = GitHubTrackedSourceMode.FdroidRepository
                 )
             )
         )
@@ -393,5 +476,6 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(1, counts.githubRepositoryCount)
         assertEquals(1, counts.gitRepositoryCount)
         assertEquals(1, counts.directApkCount)
+        assertEquals(1, counts.fdroidRepositoryCount)
     }
 }
