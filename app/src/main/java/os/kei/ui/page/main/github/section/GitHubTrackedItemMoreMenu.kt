@@ -19,6 +19,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -28,6 +29,7 @@ import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -63,10 +65,12 @@ internal fun GitHubTrackedItemMoreActions(
     onOpenReleaseNotes: () -> Unit,
     onIgnoreCurrentVersion: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
+    onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
 ) {
     var menuExpanded by remember(item.id) { mutableStateOf(false) }
     var menuAnchorBounds by remember(item.id) { mutableStateOf<IntRect?>(null) }
     val showActionsAction = item.isGitHubRepositoryTrack()
+    val showFdroidDetailAction = item.isFdroidRepositoryTrack()
     val gitRepositoryReleaseNotesSupported =
         item.isGitRepositoryTrack() &&
             buildGitRepositoryTrackIdentity(item.repoUrl)?.platform in releaseNotesSupportedGitPlatforms
@@ -77,6 +81,17 @@ internal fun GitHubTrackedItemMoreActions(
             }
 
             item.isDirectApkTrack() -> {
+                state.latestStableApkVersion
+                    ?.releaseNotes
+                    .orEmpty()
+                    .isNotBlank() ||
+                    state.latestPreApkVersion
+                        ?.releaseNotes
+                        .orEmpty()
+                        .isNotBlank()
+            }
+
+            item.isFdroidRepositoryTrack() -> {
                 state.latestStableApkVersion
                     ?.releaseNotes
                     .orEmpty()
@@ -98,10 +113,12 @@ internal fun GitHubTrackedItemMoreActions(
     val optionSize =
         2 +
             (if (showActionsAction) 1 else 0) +
+            (if (showFdroidDetailAction) 1 else 0) +
             (if (normalizedShowReleaseNotesAction) 1 else 0) +
             (if (showIgnoreCurrentVersionAction) 1 else 0)
     val refreshIcon = appLucideRefreshIcon()
     val actionsIcon = appLucideBranchIcon()
+    val detailIcon = appLucideInfoIcon()
     val releaseNotesIcon = appLucideNotesIcon()
     val ignoreIcon = appLucidePauseIcon()
     val deleteIcon = appLucideTrashIcon()
@@ -159,6 +176,18 @@ internal fun GitHubTrackedItemMoreActions(
                             onClick = {
                                 menuExpanded = false
                                 onOpenActionsSheet(item)
+                            },
+                        )
+                    }
+                    if (showFdroidDetailAction) {
+                        GitHubTrackedItemMenuAction(
+                            text = stringResource(R.string.github_fdroid_detail_title),
+                            leadingIcon = detailIcon,
+                            index = optionIndex++,
+                            optionSize = optionSize,
+                            onClick = {
+                                menuExpanded = false
+                                onOpenFdroidDetail(item)
                             },
                         )
                     }

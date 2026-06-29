@@ -60,6 +60,7 @@ internal data class GitHubTrackedItemsActions(
     val onOpenTrackSheetForEdit: (GitHubTrackedApp) -> Unit,
     val onIgnoreCurrentTrackedVersion: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onRequestDeleteTrackedItem: (GitHubTrackedApp) -> Unit,
+    val onOpenFdroidDetail: (GitHubTrackedApp) -> Unit,
     val onTrackedCardExpandedChange: (String, Boolean) -> Unit,
     val onCollapseTrackedCard: (GitHubTrackedApp, VersionCheckUi) -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,

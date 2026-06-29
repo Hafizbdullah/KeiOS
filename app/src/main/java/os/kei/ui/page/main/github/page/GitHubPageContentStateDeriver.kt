@@ -7,6 +7,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isKeiOsSelfTrack
@@ -69,6 +70,9 @@ internal class GitHubPageContentStateDeriver(
 
                 GitHubTrackedFilterMode.DirectApk ->
                     searchedTracked.filter { item -> item.isDirectApkTrack() }
+
+                GitHubTrackedFilterMode.FdroidRepository ->
+                    searchedTracked.filter { item -> item.isFdroidRepositoryTrack() }
 
                 GitHubTrackedFilterMode.PreReleaseTracked ->
                     searchedTracked.filter { item -> input.checkStates[item.id]?.isPreRelease == true }

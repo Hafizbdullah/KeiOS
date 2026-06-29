@@ -28,6 +28,7 @@ internal class GitHubPageSheetStateHolder {
     var pendingShareImportAttachCandidate by mutableStateOf<GitHubPendingShareImportAttachCandidate?>(null)
     var pendingShareImportResult by mutableStateOf<GitHubShareImportResult?>(null)
     var decisionAssistDetailRequest by mutableStateOf<GitHubDecisionAssistDetailRequest?>(null)
+    var fdroidDetailRequest by mutableStateOf<GitHubFdroidDetailRequest?>(null)
     var actionsArtifactDetailRequest by mutableStateOf<GitHubActionsArtifactDetailRequest?>(null)
     var apkInfoDetailRequest by mutableStateOf<GitHubApkInfoDetailRequest?>(null)
     var managedInstallConfirmRequest by mutableStateOf<GitHubManagedInstallConfirmRequest?>(null)

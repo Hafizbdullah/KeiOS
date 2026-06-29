@@ -26,7 +26,9 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.buildDirectApkTrackIdentity
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
@@ -50,6 +52,8 @@ internal fun GitHubRepositoryLinkCard(
         ?.let { buildDirectApkTrackIdentity(it.repoUrl) }
     val gitIdentity = item.takeIf { it.isGitRepositoryTrack() }
         ?.let { buildGitRepositoryTrackIdentity(it.repoUrl) }
+    val fdroidIdentity = item.takeIf { it.isFdroidRepositoryTrack() }
+        ?.let { buildFdroidRepositoryTrackIdentity(it.repoUrl, it.packageName) }
     val repoUrl = if (item.isGitHubRepositoryTrack()) {
         GitHubVersionUtils.buildRepositoryUrl(item.owner, item.repo)
     } else {
@@ -61,17 +65,22 @@ internal fun GitHubRepositoryLinkCard(
                 when {
                     item.isGitHubRepositoryTrack() -> R.string.github_item_label_repo
                     item.isGitRepositoryTrack() -> R.string.github_item_label_git_repo
+                    item.isFdroidRepositoryTrack() -> R.string.github_item_label_fdroid_repo
                     else -> R.string.github_item_label_direct_apk
                 },
             ),
-        value = gitIdentity?.displayName ?: directIdentity?.displayName ?: "${item.owner}/${item.repo}",
+        value =
+            fdroidIdentity?.repoDisplayName
+                ?: gitIdentity?.displayName
+                ?: directIdentity?.displayName
+                ?: "${item.owner}/${item.repo}",
         valueColor = MiuixTheme.colorScheme.onBackground,
         onClick = { onOpenExternalUrl(repoUrl) },
     )
 }
 
 private fun GitHubTrackedApp.isDirectApkDisplaySource(): Boolean {
-    return !isGitHubRepositoryTrack() && !isGitRepositoryTrack()
+    return !isGitHubRepositoryTrack() && !isGitRepositoryTrack() && !isFdroidRepositoryTrack()
 }
 
 @Suppress("FunctionName")

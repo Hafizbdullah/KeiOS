@@ -95,3 +95,14 @@
   - Kept live repo/detail probing for the P6 card/menu/detail bridge where the sidecar can drive a richer read-only state.
 - Verification:
   - `./gradlew :app:compileDebugKotlin :app:testDebugUnitTest --tests os.kei.ui.page.main.github.page.GitHubPageRepositoryTrackEditorTest`
+- Completed UI P6 card/menu/detail bridge:
+  - Added the F-Droid source filter and included F-Droid tracks in filtered tracked-item derivation.
+  - Added F-Droid repository labels on tracked cards and kept Direct APK display handling separate.
+  - Added an F-Droid details entry to the tracked-card more menu.
+  - Added a localized F-Droid detail sheet backed by the metadata sidecar, covering package metadata, selected version, repository metadata, trust summary, Anti-Features, copy/open link actions, and refresh-to-reload behavior.
+  - Added F-Droid import preview counts to the import confirmation dialog.
+- Verification:
+  - `./gradlew :app:compileDebugKotlin`
+  - `./gradlew :app:testDebugUnitTest --tests os.kei.ui.page.main.github.page.GitHubPageRepositoryTrackEditorTest`
+  - `./gradlew :feature-github:testDebugUnitTest --tests os.kei.feature.github.domain.GitHubReleaseCheckServiceFdroidTest --tests os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSourceTest --tests os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarJsonTest`
+  - `git diff --check`

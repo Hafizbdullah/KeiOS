@@ -15,6 +15,8 @@ import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubApkPackageNameScanRequest
 import os.kei.feature.github.model.GitHubApkPackageNameScanResult
@@ -280,6 +282,11 @@ internal class GitHubPageRepository(
     suspend fun saveLookupConfig(config: GitHubLookupConfig) = trackRepository.saveLookupConfig(config)
 
     suspend fun loadRefreshIntervalHours(): Int = trackRepository.loadRefreshIntervalHours()
+
+    suspend fun loadFdroidMetadataSidecar(trackId: String): FdroidMetadataSidecar? =
+        withContext(localDispatcher) {
+            FdroidMetadataSidecarStore.load(trackId)
+        }
 
     suspend fun saveRefreshIntervalHours(hours: Int) = trackRepository.saveRefreshIntervalHours(hours)
 

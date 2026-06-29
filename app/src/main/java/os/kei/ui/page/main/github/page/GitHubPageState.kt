@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
+import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
@@ -139,6 +140,7 @@ internal class GitHubPageState(
     var trackCardFocusRequest by mutableStateOf<GitHubTrackCardFocusRequest?>(null)
     private var nextTrackCardFocusRequestVersion by mutableIntStateOf(0)
     var decisionAssistDetailRequest by sheetState::decisionAssistDetailRequest
+    var fdroidDetailRequest by sheetState::fdroidDetailRequest
     var actionsArtifactDetailRequest by sheetState::actionsArtifactDetailRequest
     var apkInfoDetailRequest by sheetState::apkInfoDetailRequest
     var managedInstallConfirmRequest by sheetState::managedInstallConfirmRequest
@@ -477,6 +479,12 @@ internal data class GitHubApkInfoDetailRequest(
 internal data class GitHubManagedInstallConfirmRequest(
     val item: GitHubTrackedApp,
     val asset: GitHubReleaseAssetFile,
+)
+
+internal data class GitHubFdroidDetailRequest(
+    val item: GitHubTrackedApp,
+    val sidecar: FdroidMetadataSidecar? = null,
+    val loading: Boolean = true,
 )
 
 internal fun GitHubTrackedApp.githubManagedInstallKey(asset: GitHubReleaseAssetFile): String =

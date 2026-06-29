@@ -288,6 +288,7 @@ internal fun GitHubMainContent(
                                 onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
                                 onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
                                 onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                                onOpenFdroidDetail = actions.onOpenFdroidDetail,
                                 onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
                                 onCollapseTrackedCard = actions.onCollapseTrackedCard,
                                 onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,

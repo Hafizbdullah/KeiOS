@@ -127,6 +127,7 @@ internal enum class GitHubTrackedFilterMode(
     GitHubRepository("github_repository", R.string.github_filter_github_repository),
     GitRepository("git_repository", R.string.github_filter_git_repository),
     DirectApk("direct_apk", R.string.github_filter_direct_apk),
+    FdroidRepository("fdroid_repository", R.string.github_filter_fdroid_repository),
     PreReleaseTracked("pre_release_tracked", R.string.github_filter_prerelease_tracked),
     UpdateAvailable("update_available", R.string.github_filter_update_available),
     Installed("installed", R.string.github_filter_installed),

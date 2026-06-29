@@ -342,6 +342,59 @@ internal class GitHubPageActions(
         env.state.decisionAssistDetailRequest = null
     }
 
+    fun openFdroidDetail(item: GitHubTrackedApp) {
+        env.state.fdroidDetailRequest =
+            GitHubFdroidDetailRequest(
+                item = item,
+                loading = true,
+            )
+        env.scope.launch {
+            val sidecar = env.repository.loadFdroidMetadataSidecar(item.id)
+            val activeRequest = env.state.fdroidDetailRequest
+            if (activeRequest?.item?.id == item.id) {
+                env.state.fdroidDetailRequest =
+                    activeRequest.copy(
+                        sidecar = sidecar,
+                        loading = false,
+                    )
+            }
+        }
+    }
+
+    fun dismissFdroidDetail() {
+        env.state.fdroidDetailRequest = null
+    }
+
+    fun refreshFdroidDetail(item: GitHubTrackedApp) {
+        val activeRequest = env.state.fdroidDetailRequest
+        if (activeRequest?.item?.id == item.id) {
+            env.state.fdroidDetailRequest = activeRequest.copy(loading = true)
+        } else {
+            env.state.fdroidDetailRequest =
+                GitHubFdroidDetailRequest(
+                    item = item,
+                    loading = true,
+                )
+        }
+        env.scope.launch {
+            trackedRefreshActions.refreshTrackedItemNow(
+                item = item,
+                showToastOnError = true,
+                forceRefresh = true,
+                reloadAppsBeforeRefresh = true,
+            )
+            val sidecar = env.repository.loadFdroidMetadataSidecar(item.id)
+            val currentRequest = env.state.fdroidDetailRequest
+            if (currentRequest?.item?.id == item.id) {
+                env.state.fdroidDetailRequest =
+                    currentRequest.copy(
+                        sidecar = sidecar,
+                        loading = false,
+                    )
+            }
+        }
+    }
+
     private fun refreshRepositoryHealthDetailIfNeeded(
         item: GitHubTrackedApp,
         itemState: VersionCheckUi,

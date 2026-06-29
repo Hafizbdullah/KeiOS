@@ -397,6 +397,7 @@ fun GitHubPage(
                     onOpenTrackSheetForEdit = actions::openTrackSheetForEdit,
                     onIgnoreCurrentTrackedVersion = actions::ignoreCurrentTrackedVersion,
                     onRequestDeleteTrackedItem = actions::requestDeleteTrackedItem,
+                    onOpenFdroidDetail = actions::openFdroidDetail,
                     onTrackedCardExpandedChange = actions::setTrackedCardExpanded,
                     onCollapseTrackedCard = actions::collapseTrackedCard,
                     onCollapseApkAssetPanel = actions::collapseApkAssetPanel,

@@ -16,6 +16,7 @@ import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
+import os.kei.ui.page.main.github.sheet.GitHubFdroidDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
@@ -212,6 +213,16 @@ internal fun GitHubPageSheetHost(
         sheetState = managedInstallConfirmSheetState,
         onRequestSheetState = onRequestManagedInstallConfirmSheetState,
         onClearSheetState = onClearManagedInstallConfirmSheetState,
+    )
+
+    GitHubFdroidDetailSheet(
+        request = state.fdroidDetailRequest,
+        backdrop = backdrops.sheet,
+        onDismissRequest = actions::dismissFdroidDetail,
+        onRefresh = actions::refreshFdroidDetail,
+        onOpenExternalUrl = { url ->
+            actions.openExternalUrl(url = url)
+        },
     )
 
     GitHubTrackEditSheet(
