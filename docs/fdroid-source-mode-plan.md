@@ -557,6 +557,7 @@ Implemented verification on 2026-06-29:
 - Follow-up F-Droid refresh fairness tests passed for repo/API single-flight, repository snapshot sidecar propagation, F-Droid lane scheduling, and Direct APK/F-Droid lane concurrency caps.
 - `:feature-github:testDebugUnitTest --tests '*Fdroid*' --tests '*GitHubTrackedRefresh*'` passed.
 - `:feature-github:compileDebugKotlin :app:compileDebugKotlin` passed after wiring the shared batch evaluator into feature-github and the Page refresh actions.
+- `:app:assembleDebug` passed, debug APK installed on `emulator-5554`, launcher smoke started `os.kei.debug`, and strict logcat fatal/ANR filtering returned no matches.
 - `:app:assembleRelease` passed with `minifyReleaseWithR8`, `lintVitalRelease`, `optimizeReleaseResources`, `packageRelease`, and `assembleRelease`.
 - `:app:assembleDebug` passed and the current debug APK was installed on `Pixel_10_Pro`.
 - AVD smoke covered GitHub page entry, `新增跟踪`, source dropdown exposure, selecting `F-Droid 仓库`, and F-Droid field rendering.
