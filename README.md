@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.9.0`                                             |
+| Latest stable tag | `v1.9.2`                                             |
 
 ## Quick Links
 
@@ -84,20 +84,19 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.9.0 Highlights
+## v1.9.2 Highlights
 
-- GitHub tracking now covers GitHub, Gitee, generic Git release sources, release ignore modes,
-  Actions artifacts, managed installs, notification history, and clearer cache/refresh state.
-- WebDAV sync has a safer page flow with remote refresh, change plans, upload/sync confirmation,
-  and broader data coverage for app settings, BA accounts, GitHub tracking, OS cards, and favorites.
-- BA helpers now support a multi-account office model, account-aware reminders, account-targeted
-  notification entry points, cleaner AP/cafe/calendar cards, and improved Super Island/Live Update
-  presentation.
-- MCP was split into feature modules and polished for Claw onboarding, sub-agent setup, workflow
-  resources, runtime logs, and lower background service overhead.
-- Liquid-glass sheets, floating docks, action bars, predictive back, Home cards, and settings were
-  tuned across the app. Liquid-glass bottom sheets now start disabled by default while the visual
-  system continues to receive performance work.
+- GitHub tracking now adds first-class F-Droid repository sources, including official F-Droid,
+  IzzyOnDroid, package-name search, installed-app reverse scan, index-native versionCode tracking,
+  Anti-Feature metadata, and F-Droid detail sheets.
+- Import/export, WebDAV sync, MCP tools, and preview summaries understand the v4 tracked-item schema
+  with F-Droid source data.
+- Main navigation moved to the Miuix Nav path, with refreshed predictive-back behavior and baseline
+  profile coverage.
+- Refresh scheduling and cache handling were tuned for grouped F-Droid repositories, GitHub
+  cancellation safety, Direct APK work, and smoother chrome motion.
+- Build tooling moved forward with Gradle Wrapper 9.6.1, Android Gradle Plugin 9.3.0-rc01, Ktor
+  3.5.1, refreshed Miuix dependencies, and Gradle 10 compatibility cleanup.
 
 Read the full feature tour:
 
@@ -107,16 +106,16 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.9.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.0).
+- Current stable tag: [v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
-- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.5.1`, Kotlin `2.4.0`,
-  Compose `1.11.3`, Android Gradle Plugin `9.2.1`, Ktor `3.5.0`.
+- Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.6.1`, Kotlin `2.4.0`,
+  Compose `1.11.3`, Android Gradle Plugin `9.3.0-rc01`, Ktor `3.5.1`.
 - App language resources currently cover Simplified Chinese, English, and Japanese.
 
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.9.0](readme/RELEASE_V1.9.0.md)
+- [Release Notes v1.9.2](readme/RELEASE_V1.9.2.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)

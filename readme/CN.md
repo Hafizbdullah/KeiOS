@@ -39,7 +39,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 | UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
 | 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
 | 语言资源       | 简体中文、English、日本語                               |
-| 最新稳定标签     | `v1.9.0`                                       |
+| 最新稳定标签     | `v1.9.2`                                       |
 
 ## 常用入口
 
@@ -71,15 +71,13 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 - 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
   dock、背景图、应用语言、权限、缓存诊断、结构化日志、本地 GitHub Issue 反馈、无遥测诊断与通知兼容配置。
 
-## v1.9.0 重点变化
+## v1.9.2 重点变化
 
-- GitHub 追踪现在覆盖 GitHub、Gitee、通用 Git 发行源、版本忽略策略、Actions artifacts、
-  托管安装、通知历史，以及更清楚的缓存 / 刷新状态。
-- WebDAV 同步改为更安全的页面流程，提供远端刷新、变更预览、上传 / 同步确认，并覆盖设置、BA
-  账号、GitHub 追踪、OS 卡片和收藏等更多数据。
-- BA 办公室重构为多账号模型，提醒、通知跳转、AP / 咖啡厅 / 活动日历 / 卡池信息和超级岛展示都能按账号工作。
-- MCP 拆分为独立 feature module，并完善 Claw 接入引导、子 Agent、工作流资源、运行日志和后台服务性能。
-- 液态玻璃 sheet、悬浮 dock、action bar、预测式返回、Home 卡片和设置页继续打磨。液态玻璃弹出面板现在默认关闭，后续会继续优化性能。
+- GitHub 追踪新增一等 F-Droid 仓库来源，覆盖官方 F-Droid、IzzyOnDroid、按名称搜索、已安装应用反扫、index 原生 versionCode、Anti-Feature 元数据和 F-Droid 详情页。
+- 导入导出、WebDAV 同步、MCP tools 和预览摘要已理解 v4 追踪数据结构，并能保存 F-Droid 来源配置。
+- 主导航迁移到 Miuix Nav 路径，预测式返回体验和 Baseline Profile 覆盖同步刷新。
+- 刷新调度和缓存链路针对 F-Droid 同仓库分组、GitHub 协程取消、Direct APK 工作和 chrome 动画做了收敛。
+- 构建链路升级到 Gradle Wrapper 9.6.1、Android Gradle Plugin 9.3.0-rc01、Ktor 3.5.1，并完成一轮 Gradle 10 兼容清理。
 
 完整功能介绍：
 
@@ -89,16 +87,16 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.9.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.0)。
+- 当前稳定标签：[v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
-- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.5.1`、Kotlin `2.4.0`、
-  Compose `1.11.3`、Android Gradle Plugin `9.2.1`、Ktor `3.5.0`。
+- 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.6.1`、Kotlin `2.4.0`、
+  Compose `1.11.3`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档
 
 - [文档索引](INDEX.md)
-- [Release Notes v1.9.0](RELEASE_V1.9.0.md)
+- [Release Notes v1.9.2](RELEASE_V1.9.2.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)

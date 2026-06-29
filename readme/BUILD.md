@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.9.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.0).
-- `master` is the v1.9.0 release baseline for GitHub/Git tracking, WebDAV sync, MCP service
-  modules, BA multi-account helpers, Actions history, and UI/performance polish.
+  is [KeiOS v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2).
+- `master` is the v1.9.2 release baseline for GitHub/Git/F-Droid tracking, WebDAV sync,
+  MCP service modules, BA multi-account helpers, Actions history, and UI/performance polish.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
@@ -21,8 +21,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Gradle daemon + Java compile + Kotlin JVM target are all aligned to Java 21.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
-- Gradle Wrapper: `9.5.1`; Kotlin plugin: `2.4.0`; Android Gradle Plugin: `9.2.1`;
-  Compose runtime: `1.11.3`; Ktor: `3.5.0`.
+- Gradle Wrapper: `9.6.1`; Kotlin plugin: `2.4.0`; Android Gradle Plugin: `9.3.0-rc01`;
+  Compose runtime: `1.11.3`; Ktor: `3.5.1`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
@@ -33,8 +33,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - CI injects version metadata through Gradle properties generated from the latest merged semver tag.
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
-- Release builds use the semver base, for example `1.9.0`.
-- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.9.1+12.gabcdef0`.
+- Release builds use the semver base, for example `1.9.2`.
+- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.9.3+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, keeping versionName and
   versionCode aligned with the same commit-count suffix.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -89,7 +89,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.9.0 Release Gate
+### v1.9.2 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -102,13 +102,13 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- GitHub, Gitee, generic Git, Actions, ignore-version, and managed-install flows open correctly.
+- GitHub, Gitee, generic Git, F-Droid, Actions, ignore-version, and managed-install flows open correctly.
 - WebDAV sync shows remote refresh and change-plan confirmation before sync or upload.
 - BA account reminders and AP/cafe/calendar/pool notification entry points route to the right account.
 - MCP local server starts, rejects unauthorized requests, serves Claw setup resources, and keeps logs responsive.
 - Liquid-glass bottom sheets default to the standard Miuix sheet path until the user enables them.
 - Release APK signing, version metadata, R8/minify output, and startup are verified.
-- GitHub release upload notes copied from [Release Notes v1.9.0](RELEASE_V1.9.0.md).
+- GitHub release upload notes copied from [Release Notes v1.9.2](RELEASE_V1.9.2.md).
 
 ### Screenshot Baseline
 

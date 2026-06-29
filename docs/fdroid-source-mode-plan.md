@@ -563,6 +563,14 @@ Implemented verification on 2026-06-29:
 - AVD smoke covered GitHub page entry, `新增跟踪`, source dropdown exposure, selecting `F-Droid 仓库`, and F-Droid field rendering.
 - Longer AVD/manual QA remains useful for live repo refresh, card detail sheet, notification deep link, and cold-start cache display with real F-Droid tracks.
 
+v1.9.2 close-out on 2026-06-30:
+
+- First-class F-Droid tracking is complete enough for v1.9.2: source selection, built-in repository presets, custom repositories, name/package search, installed-app reverse scan, detail sheet, card metadata, source filtering, refresh dispatch, and source-aware persistence are in place.
+- Transfer paths are covered through import/export schema v4, WebDAV merge previews, MCP source aliases, and F-Droid source summaries.
+- Refresh behavior follows the same fairness goal as the rest of GitHub tracking: same-repository F-Droid tracks share repository snapshots before fan-out, while GitHub/F-Droid/Direct APK lanes keep bounded concurrency.
+- AVD regression after the Miuix Nav migration found an MCP page ViewModel creation crash. The MCP page now supplies an explicit factory for its SavedState-backed ViewModel, matching Miuix Nav entry-scoped ViewModelStore behavior without requiring SavedStateRegistry extras.
+- Additional F-Droid work should move to backlog after v1.9.2: disk-backed bounded repo index cache with ETag/Last-Modified and v2 diffs, a dedicated repository health/management page, stricter install-time trust enforcement for signer continuity, and richer localized Anti-Feature taxonomy mapping.
+
 ## Phased Implementation
 
 | Phase | Scope | Files |
