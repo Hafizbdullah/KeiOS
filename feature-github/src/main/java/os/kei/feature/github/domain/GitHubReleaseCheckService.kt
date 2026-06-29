@@ -48,14 +48,15 @@ object GitHubReleaseCheckService {
         item: GitHubTrackedApp,
         strategy: GitHubReleaseLookupStrategy? = null,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
+        fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator = FdroidReleaseCheckSource()
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
             item = item,
             strategy = strategy,
             preciseApkVersionResolver = GitHubPreciseApkVersionResolver(),
-            fdroidReleaseCheckSource = FdroidReleaseCheckSource(),
+            fdroidReleaseCheckSource = fdroidReleaseCheckSource,
             lookupConfigOverride = null,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh

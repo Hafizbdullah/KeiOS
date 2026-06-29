@@ -1,5 +1,8 @@
 package os.kei.feature.github.data.remote.fdroid
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -21,32 +24,35 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 
 class FdroidPackageApiClient(
-    private val client: OkHttpClient = defaultClient
+    private val client: OkHttpClient = defaultClient,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    fun fetchPackage(
+    suspend fun fetchPackage(
         repoBaseUrl: String,
         packageName: String
-    ): Result<FdroidPackageSnapshot> = runCatching {
-        val normalizedRepoUrl = repoBaseUrl.trim().trimEnd('/')
-        require(normalizedRepoUrl.isNotBlank()) { "F-Droid repository URL is blank" }
-        val normalizedPackageName = packageName.trim()
-        require(normalizedPackageName.isNotBlank()) { "F-Droid package name is blank" }
-        val request = Request.Builder()
-            .url(packageApiUrl(normalizedRepoUrl, normalizedPackageName))
-            .get()
-            .header("User-Agent", USER_AGENT)
-            .header("Accept", "application/json,*/*")
-            .build()
-        client.newCall(request).execute().use { response ->
-            check(response.isSuccessful) {
-                "F-Droid package API failed (HTTP ${response.code})"
+    ): Result<FdroidPackageSnapshot> = withContext(ioDispatcher) {
+        runCatching {
+            val normalizedRepoUrl = repoBaseUrl.trim().trimEnd('/')
+            require(normalizedRepoUrl.isNotBlank()) { "F-Droid repository URL is blank" }
+            val normalizedPackageName = packageName.trim()
+            require(normalizedPackageName.isNotBlank()) { "F-Droid package name is blank" }
+            val request = Request.Builder()
+                .url(packageApiUrl(normalizedRepoUrl, normalizedPackageName))
+                .get()
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "application/json,*/*")
+                .build()
+            client.newCall(request).execute().use { response ->
+                check(response.isSuccessful) {
+                    "F-Droid package API failed (HTTP ${response.code})"
+                }
+                val root = response.body.string().parseJsonObjectOrNull()
+                    ?: error("F-Droid package API returned invalid JSON")
+                root.toPackageSnapshot(
+                    fallbackRepoUrl = normalizedRepoUrl,
+                    fallbackPackageName = normalizedPackageName
+                )
             }
-            val root = response.body.string().parseJsonObjectOrNull()
-                ?: error("F-Droid package API returned invalid JSON")
-            root.toPackageSnapshot(
-                fallbackRepoUrl = normalizedRepoUrl,
-                fallbackPackageName = normalizedPackageName
-            )
         }
     }
 

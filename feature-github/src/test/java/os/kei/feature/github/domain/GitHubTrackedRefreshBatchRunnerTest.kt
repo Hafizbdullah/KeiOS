@@ -7,6 +7,8 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
+import os.kei.feature.github.model.isFdroidRepositoryTrack
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -84,7 +86,9 @@ class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `run emits progress as each item finishes`() = runBlocking {
         val items = (1..4).map { index -> tracked(index) }
-        val progressEvents = mutableListOf<GitHubTrackedRefreshBatchProgress>()
+        val progressEvents = Collections.synchronizedList(
+            mutableListOf<GitHubTrackedRefreshBatchProgress>()
+        )
 
         val result = GitHubTrackedRefreshBatchRunner.run(
             trackedItems = items,
@@ -110,11 +114,12 @@ class GitHubTrackedRefreshBatchRunnerTest {
             }
         }
 
-        assertEquals(listOf(1, 2, 3, 4), progressEvents.map { it.current })
+        assertEquals(listOf(1, 2, 3, 4), progressEvents.map { it.current }.sorted())
         assertTrue(progressEvents.all { it.total == items.size })
-        assertEquals(result.updatableCount, progressEvents.last().updatableCount)
-        assertEquals(result.preReleaseUpdateCount, progressEvents.last().preReleaseUpdateCount)
-        assertEquals(result.failedCount, progressEvents.last().failedCount)
+        val finalProgress = progressEvents.maxBy { progress -> progress.current }
+        assertEquals(result.updatableCount, finalProgress.updatableCount)
+        assertEquals(result.preReleaseUpdateCount, finalProgress.preReleaseUpdateCount)
+        assertEquals(result.failedCount, finalProgress.failedCount)
     }
 
     @Test
@@ -188,6 +193,27 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `scheduler interleaves github direct apk and fdroid sources fairly`() {
+        val items = listOf(
+            tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(2, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+            tracked(3),
+            tracked(4, sourceMode = GitHubTrackedSourceMode.DirectApk),
+            tracked(5, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+            tracked(6)
+        )
+
+        val order = GitHubTrackedRefreshBatchScheduler
+            .buildFairRefreshOrder(items)
+            .map { it.item.packageName }
+
+        assertEquals(
+            listOf("demo.repo3", "demo.repo1", "demo.repo2", "demo.repo6", "demo.repo4", "demo.repo5"),
+            order
+        )
+    }
+
+    @Test
     fun `scheduler increases refresh concurrency for larger batches`() {
         assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1))
         assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
@@ -228,6 +254,41 @@ class GitHubTrackedRefreshBatchRunnerTest {
         }
 
         assertTrue(maxDirectActive.get() <= 2)
+    }
+
+    @Test
+    fun `run limits fdroid checks inside mixed refresh batches`() = runBlocking {
+        val fdroidActive = AtomicInteger(0)
+        val maxFdroidActive = AtomicInteger(0)
+        val items = (1..8).map { index ->
+            tracked(
+                index = index,
+                sourceMode = if (index % 2 == 0) {
+                    GitHubTrackedSourceMode.FdroidRepository
+                } else {
+                    GitHubTrackedSourceMode.GitHubRepository
+                }
+            )
+        }
+
+        GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = items,
+            maxConcurrency = 4,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS
+        ) { item ->
+            if (item.isFdroidRepositoryTrack()) {
+                val current = fdroidActive.incrementAndGet()
+                maxFdroidActive.updateAndGet { old -> maxOf(old, current) }
+                Thread.sleep(30)
+                fdroidActive.decrementAndGet()
+            } else {
+                Thread.sleep(5)
+            }
+            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+        }
+
+        assertTrue(maxFdroidActive.get() <= 2)
     }
 
     private fun tracked(

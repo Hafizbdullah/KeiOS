@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote.fdroid
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
@@ -8,7 +9,7 @@ import kotlin.test.assertTrue
 
 class FdroidPackageApiClientTest {
     @Test
-    fun `fetchPackage reads package API versions and suggested version`() {
+    fun `fetchPackage reads package API versions and suggested version`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -67,7 +68,7 @@ class FdroidPackageApiClientTest {
     }
 
     @Test
-    fun `fetchPackage falls back to repo scoped api path for third party hosts`() {
+    fun `fetchPackage falls back to repo scoped api path for third party hosts`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -102,7 +103,7 @@ class FdroidPackageApiClientTest {
     }
 
     @Test
-    fun `fetchPackage returns failure when api response is not successful`() {
+    fun `fetchPackage returns failure when api response is not successful`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(404).setBody("{}"))
 

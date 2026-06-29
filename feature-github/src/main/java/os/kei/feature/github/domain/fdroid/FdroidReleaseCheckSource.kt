@@ -10,6 +10,7 @@ import os.kei.feature.github.data.local.fdroid.buildFdroidMetadataSidecar
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClient
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
+import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
@@ -40,16 +41,28 @@ fun interface FdroidReleaseCheckEvaluator {
 }
 
 fun interface FdroidPackageSnapshotProvider {
-    fun loadPackageSnapshot(
+    suspend fun loadPackageSnapshot(
         item: GitHubTrackedApp,
         forceRefresh: Boolean
     ): Result<FdroidPackageSnapshot>
 }
 
+data class FdroidPackageLookupSnapshot(
+    val packageSnapshot: FdroidPackageSnapshot,
+    val repositorySnapshot: FdroidRepositorySnapshot? = null
+)
+
+fun interface FdroidPackageLookupSnapshotProvider {
+    suspend fun loadPackageLookupSnapshot(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean
+    ): Result<FdroidPackageLookupSnapshot>
+}
+
 class FdroidPackageApiSnapshotProvider(
     private val client: FdroidPackageApiClient = FdroidPackageApiClient()
 ) : FdroidPackageSnapshotProvider {
-    override fun loadPackageSnapshot(
+    override suspend fun loadPackageSnapshot(
         item: GitHubTrackedApp,
         forceRefresh: Boolean
     ): Result<FdroidPackageSnapshot> {
@@ -84,8 +97,8 @@ class FdroidReleaseCheckSource(
                 sourceConfigSignature = sourceConfigSignature,
                 detail = "invalid F-Droid repository URL or package"
             )
-        val packageSnapshot = snapshotProvider
-            .loadPackageSnapshot(item, forceRefresh)
+        val lookupSnapshot = snapshotProvider
+            .loadLookupSnapshot(item, forceRefresh)
             .getOrElse { error ->
                 return@withContext failedCheck(
                     localVersion = localVersion,
@@ -94,6 +107,8 @@ class FdroidReleaseCheckSource(
                     detail = error.message.orEmpty().ifBlank { "F-Droid package lookup failed" }
                 )
             }
+        val repositorySnapshot = lookupSnapshot.repositorySnapshot
+        val packageSnapshot = lookupSnapshot.packageSnapshot
         val remotePackage = packageSnapshot.packageName.trim()
         if (remotePackage.isNotBlank() && !remotePackage.equals(identity.packageName, ignoreCase = true)) {
             return@withContext failedCheck(
@@ -152,7 +167,7 @@ class FdroidReleaseCheckSource(
                     trackId = item.id,
                     sourceConfigSignature = sourceConfigSignature,
                     fetchedAtMillis = clock(),
-                    repositorySnapshot = null,
+                    repositorySnapshot = repositorySnapshot,
                     packageSnapshot = packageSnapshot,
                     selectedVersion = version,
                     trustPolicy = item.fdroidConfig.trustPolicy,
@@ -185,6 +200,19 @@ class FdroidReleaseCheckSource(
             precisePreReleaseApkVersion = preReleasePreciseInfo,
             sourceConfigSignature = sourceConfigSignature
         )
+    }
+
+    private suspend fun FdroidPackageSnapshotProvider.loadLookupSnapshot(
+        item: GitHubTrackedApp,
+        forceRefresh: Boolean
+    ): Result<FdroidPackageLookupSnapshot> {
+        return if (this is FdroidPackageLookupSnapshotProvider) {
+            loadPackageLookupSnapshot(item, forceRefresh)
+        } else {
+            loadPackageSnapshot(item, forceRefresh).map { snapshot ->
+                FdroidPackageLookupSnapshot(packageSnapshot = snapshot)
+            }
+        }
     }
 
     private fun FdroidPackageSnapshot.selectCandidate(

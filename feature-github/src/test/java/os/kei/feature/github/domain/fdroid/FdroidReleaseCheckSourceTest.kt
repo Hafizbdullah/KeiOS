@@ -5,7 +5,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
+import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
+import os.kei.feature.github.model.FdroidIndexFormat
 import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -18,18 +20,20 @@ class FdroidReleaseCheckSourceTest {
     @Test
     fun `evaluate maps selected fdroid candidate to update check`() = runBlocking {
         var savedSidecar: FdroidMetadataSidecar? = null
+        val packageSnapshot = FdroidPackageSnapshot(
+            repoUrl = "https://f-droid.org/repo",
+            packageName = "org.fdroid.fdroid",
+            suggestedVersionCode = 102,
+            appName = "F-Droid",
+            versions = listOf(
+                version(versionCode = 102, versionName = "1.2.0"),
+                version(versionCode = 100, versionName = "1.0.0")
+            )
+        )
         val source = FdroidReleaseCheckSource(
-            snapshotProvider = staticSnapshotProvider(
-                FdroidPackageSnapshot(
-                    repoUrl = "https://f-droid.org/repo",
-                    packageName = "org.fdroid.fdroid",
-                    suggestedVersionCode = 102,
-                    appName = "F-Droid",
-                    versions = listOf(
-                        version(versionCode = 102, versionName = "1.2.0"),
-                        version(versionCode = 100, versionName = "1.0.0")
-                    )
-                )
+            snapshotProvider = staticLookupSnapshotProvider(
+                packageSnapshot = packageSnapshot,
+                repositorySnapshot = repositorySnapshot(packageSnapshot)
             ),
             metadataWriter = { sidecar -> savedSidecar = sidecar },
             ioDispatcher = Dispatchers.Unconfined,
@@ -53,6 +57,8 @@ class FdroidReleaseCheckSourceTest {
         assertEquals("fdroid_repository-v1", result.sourceConfigSignature.substringBefore('|'))
         assertEquals("1.2.0", savedSidecar?.selectedVersion?.versionName)
         assertEquals("sha256-102", savedSidecar?.trust?.apkSha256)
+        assertEquals("F-Droid", savedSidecar?.repo?.repoName)
+        assertEquals(1, savedSidecar?.repo?.packageCount)
     }
 
     @Test
@@ -90,6 +96,32 @@ class FdroidReleaseCheckSourceTest {
         return FdroidPackageSnapshotProvider { _, _ -> result }
     }
 
+    private fun staticLookupSnapshotProvider(
+        packageSnapshot: FdroidPackageSnapshot,
+        repositorySnapshot: FdroidRepositorySnapshot
+    ): FdroidPackageSnapshotProvider {
+        return object : FdroidPackageSnapshotProvider, FdroidPackageLookupSnapshotProvider {
+            override suspend fun loadPackageSnapshot(
+                item: GitHubTrackedApp,
+                forceRefresh: Boolean
+            ): Result<FdroidPackageSnapshot> {
+                return Result.success(packageSnapshot)
+            }
+
+            override suspend fun loadPackageLookupSnapshot(
+                item: GitHubTrackedApp,
+                forceRefresh: Boolean
+            ): Result<FdroidPackageLookupSnapshot> {
+                return Result.success(
+                    FdroidPackageLookupSnapshot(
+                        packageSnapshot = packageSnapshot,
+                        repositorySnapshot = repositorySnapshot
+                    )
+                )
+            }
+        }
+    }
+
     private fun fdroidItem(): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://f-droid.org/repo",
@@ -120,6 +152,18 @@ class FdroidReleaseCheckSourceTest {
             releaseChannels = emptyList(),
             whatsNew = "notes $versionCode",
             antiFeatures = emptyList()
+        )
+    }
+
+    private fun repositorySnapshot(packageSnapshot: FdroidPackageSnapshot): FdroidRepositorySnapshot {
+        return FdroidRepositorySnapshot(
+            repoUrl = "https://f-droid.org/repo",
+            format = FdroidIndexFormat.V2,
+            repoName = "F-Droid",
+            repoDescription = "Official repository",
+            timestampMillis = 1_777_392_000_000L,
+            mirrors = emptyList(),
+            packages = mapOf(packageSnapshot.packageName to packageSnapshot)
         )
     }
 }

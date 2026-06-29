@@ -19,6 +19,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
+import os.kei.feature.github.model.isFdroidRepositoryTrack
 
 data class GitHubTrackedRefreshBatchResult(
     val totalCount: Int,
@@ -57,16 +58,19 @@ object GitHubTrackedRefreshBatchRunner {
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
-        evaluator: suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck =
-            GitHubReleaseCheckService::evaluateTrackedApp
+        evaluator: (suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck)? = null
     ): GitHubTrackedRefreshBatchResult {
+        val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
         return run(
             trackedItems = items,
             refreshTimestampMs = refreshTimestampMs,
             maxConcurrency = maxConcurrency,
             dispatcher = dispatcher,
             onProgress = onProgress,
-            evaluator = { item -> evaluator(context, item) }
+            evaluator = { item ->
+                evaluator?.invoke(context, item)
+                    ?: batchEvaluator.evaluateTrackedApp(context, item)
+            }
         )
     }
 
@@ -97,6 +101,9 @@ object GitHubTrackedRefreshBatchRunner {
         val directApkPermits = Semaphore(
             permits = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
         )
+        val fdroidPermits = Semaphore(
+            permits = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency)
+        )
         val nextIndex = AtomicInteger(0)
         val progressMutex = Mutex()
         var completedCount = 0
@@ -115,10 +122,18 @@ object GitHubTrackedRefreshBatchRunner {
                         val item = workItem.item
                         val itemStartNs = System.nanoTime()
                         val check = runCatching {
-                            if (item.isDirectApkTrack()) {
-                                directApkPermits.withPermit { evaluator(item) }
-                            } else {
-                                evaluator(item)
+                            when {
+                                item.isDirectApkTrack() -> {
+                                    directApkPermits.withPermit { evaluator(item) }
+                                }
+
+                                item.isFdroidRepositoryTrack() -> {
+                                    fdroidPermits.withPermit { evaluator(item) }
+                                }
+
+                                else -> {
+                                    evaluator(item)
+                                }
                             }
                         }.getOrElse { error ->
                             if (error is CancellationException) throw error
