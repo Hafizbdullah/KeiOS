@@ -5,6 +5,7 @@ package os.kei.ui.page.main.widget.chrome
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -86,6 +88,7 @@ private val LocalLiquidGlassBottomBarItemPressHandler =
     staticCompositionLocalOf<(Int, Boolean) -> Unit> {
         { _, _ -> }
     }
+private val BottomBarSystemGestureExclusionEdgeExtension = 24.dp
 
 @Composable
 fun liquidGlassBottomBarItemSelectionProgress(tabIndex: Int): Float = LocalLiquidGlassBottomBarSelectionProgress.current(tabIndex)
@@ -181,6 +184,7 @@ fun LiquidGlassBottomBar(
     val safeTabsCount = tabsCount.coerceAtLeast(1)
     val horizontalPadding = AppChromeTokens.floatingBottomBarHorizontalPadding
     val horizontalPaddingPx = with(density) { horizontalPadding.toPx() }
+    val gestureExclusionEdgeExtensionPx = with(density) { BottomBarSystemGestureExclusionEdgeExtension.toPx() }
     val pressLiftPx = with(density) { 1.25.dp.toPx() }
     val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
 
@@ -407,9 +411,18 @@ fun LiquidGlassBottomBar(
     ) {
         Box(
             modifier =
-                modifier.then(
-                    if (expandToMaxWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min),
-                ),
+                modifier
+                    .then(
+                        if (expandToMaxWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min),
+                    )
+                    .systemGestureExclusion { coordinates ->
+                        Rect(
+                            left = -gestureExclusionEdgeExtensionPx,
+                            top = 0f,
+                            right = coordinates.size.width + gestureExclusionEdgeExtensionPx,
+                            bottom = coordinates.size.height.toFloat(),
+                        )
+                    },
             contentAlignment = Alignment.CenterStart,
         ) {
             Row(

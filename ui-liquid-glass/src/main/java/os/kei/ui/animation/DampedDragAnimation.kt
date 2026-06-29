@@ -3,6 +3,7 @@ package os.kei.ui.animation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -28,6 +29,7 @@ class DampedDragAnimation(
     val gestureKey: Any? = Unit,
     val canDrag: (Offset) -> Boolean = { true },
     val consumeDragChanges: Boolean = false,
+    val excludeFromSystemGestures: Boolean = true,
     val onDragStarted: DampedDragAnimation.(position: Offset) -> Unit,
     val onDragStopped: DampedDragAnimation.() -> Unit,
     val onDrag: DampedDragAnimation.(size: IntSize, dragAmount: Offset) -> Unit,
@@ -59,31 +61,34 @@ class DampedDragAnimation(
     val scaleY: Float get() = scaleYAnimation.value
     val velocity: Float get() = velocityAnimation.value
 
-    val modifier: Modifier = Modifier.pointerInput(gestureKey) {
-        inspectDragGestures(
-            onDragStart = { down ->
-                onDragStarted(down.position)
-                press()
-            },
-            onDragEnd = {
-                onDragStopped()
-                release()
-            },
-            onDragCancel = {
-                onDragStopped()
-                release()
-            }
-        ) { change, dragAmount ->
-            val position = change.position
-            val previousPosition = change.previousPosition
-            if (canDrag(position) && canDrag(previousPosition)) {
-                onDrag(size, dragAmount)
-                if (consumeDragChanges) {
-                    change.consume()
+    val modifier: Modifier =
+        Modifier
+            .then(if (excludeFromSystemGestures) Modifier.systemGestureExclusion() else Modifier)
+            .pointerInput(gestureKey) {
+                inspectDragGestures(
+                    onDragStart = { down ->
+                        onDragStarted(down.position)
+                        press()
+                    },
+                    onDragEnd = {
+                        onDragStopped()
+                        release()
+                    },
+                    onDragCancel = {
+                        onDragStopped()
+                        release()
+                    }
+                ) { change, dragAmount ->
+                    val position = change.position
+                    val previousPosition = change.previousPosition
+                    if (canDrag(position) && canDrag(previousPosition)) {
+                        onDrag(size, dragAmount)
+                        if (consumeDragChanges) {
+                            change.consume()
+                        }
+                    }
                 }
             }
-        }
-    }
 
     fun press() {
         velocityTracker.resetTracking()
