@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -242,6 +243,9 @@ fun AppManagedBackgroundImage(
     modifier: Modifier = Modifier,
     contentScale: NonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
     alignment: NonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
+    motionScale: Float = 1f,
+    motionTranslationXProvider: (() -> Float)? = null,
+    motionTranslationYProvider: (() -> Float)? = null,
 ) {
     if (!enabled || imageUri.isBlank()) return
     val context = LocalContext.current
@@ -272,13 +276,30 @@ fun AppManagedBackgroundImage(
                 .diskCachePolicy(CachePolicy.DISABLED)
                 .build()
         }
+    val safeMotionScale = motionScale.coerceAtLeast(1f)
     AsyncImage(
         model = request,
         contentDescription = null,
         contentScale = contentScale.toComposeContentScale(),
         alignment = alignment.toComposeAlignment(),
         alpha = opacity.coerceIn(0f, 1f),
-        modifier = modifier,
+        modifier =
+            modifier.then(
+                if (
+                    safeMotionScale != 1f ||
+                    motionTranslationXProvider != null ||
+                    motionTranslationYProvider != null
+                ) {
+                    Modifier.graphicsLayer {
+                        scaleX = safeMotionScale
+                        scaleY = safeMotionScale
+                        translationX = motionTranslationXProvider?.invoke() ?: 0f
+                        translationY = motionTranslationYProvider?.invoke() ?: 0f
+                    }
+                } else {
+                    Modifier
+                },
+            ),
     )
 }
 

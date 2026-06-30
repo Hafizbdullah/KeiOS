@@ -43,6 +43,7 @@ internal class MainScreenUiPrefsState(
     val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment get() = snapshot.nonHomeBackgroundAlignment
     val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle get() = snapshot.nonHomeBackgroundPageStyle
     val nonHomeBackgroundScrim: Float get() = snapshot.nonHomeBackgroundScrim
+    val nonHomeBackgroundDepthEnabled: Boolean get() = snapshot.nonHomeBackgroundDepthEnabled
     val superIslandNotificationEnabled: Boolean get() = snapshot.superIslandNotificationEnabled
     val superIslandBypassRestrictionEnabled: Boolean get() = snapshot.superIslandBypassRestrictionEnabled
     val superIslandRestoreDelayMs: Int get() = snapshot.superIslandRestoreDelayMs
@@ -136,6 +137,10 @@ internal class MainScreenUiPrefsState(
 
     fun updateNonHomeBackgroundScrim(value: Float) {
         viewModel.updateNonHomeBackgroundScrim(value)
+    }
+
+    fun updateNonHomeBackgroundDepthEnabled(value: Boolean) {
+        viewModel.updateNonHomeBackgroundDepthEnabled(value)
     }
 
     fun resetNonHomeBackgroundRendering() {

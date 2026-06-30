@@ -161,6 +161,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateNonHomeBackgroundDepthEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundDepthEnabled(value)
+        }
+    }
+
     fun resetNonHomeBackgroundRendering() {
         launchRepositoryUpdate {
             resetNonHomeBackgroundRendering()

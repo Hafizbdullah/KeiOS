@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ internal fun MainPagerLayout(
     nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
     nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     nonHomeBackgroundScrim: Float,
+    nonHomeBackgroundDepthEnabled: Boolean,
     visibleBottomPageNames: Set<String>,
     onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
     shizukuStatus: String,
@@ -82,6 +84,7 @@ internal fun MainPagerLayout(
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val backNavigationRuntime = LocalBackNavigationRuntimeState.current
+    val density = LocalDensity.current
     val insets = rememberMainPagerInsets()
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
     val floatingDockSide =
@@ -218,12 +221,35 @@ internal fun MainPagerLayout(
                     }
                 val baseColor = MiuixTheme.colorScheme.background
                 val darkBase = baseColor.luminance() < 0.5f
+                val backgroundDepthTranslationPx =
+                    remember(density) {
+                        with(density) { 18.dp.toPx() }
+                    }
+                val backgroundDepthPositionProvider =
+                    remember(
+                        coordinator.pagerState,
+                        backgroundDepthTranslationPx,
+                        nonHomeBackgroundDepthEnabled,
+                    ) {
+                        if (nonHomeBackgroundDepthEnabled) {
+                            {
+                                val relativePageOffset =
+                                    (coordinator.pagerState.pagePosition - coordinator.pagerState.settledPage)
+                                        .coerceIn(-1f, 1f)
+                                -relativePageOffset * backgroundDepthTranslationPx
+                            }
+                        } else {
+                            null
+                        }
+                    }
                 AppManagedBackgroundImage(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
                     opacity = nonHomeBackgroundOpacity * backgroundStyle.opacityMultiplier,
                     contentScale = nonHomeBackgroundContentScale,
                     alignment = nonHomeBackgroundAlignment,
+                    motionScale = if (nonHomeBackgroundDepthEnabled) 1.022f else 1f,
+                    motionTranslationXProvider = backgroundDepthPositionProvider,
                     modifier = Modifier.fillMaxSize(),
                 )
                 AppManagedBackgroundOverlay(

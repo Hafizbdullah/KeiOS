@@ -109,6 +109,10 @@
     <string name="settings_non_home_background_style_summary_readable">稍微压低图片存在感并增加页面蒙层，适合文字密集页面。</string>
     <string name="settings_non_home_background_style_summary_soft">轻微柔化背景存在感，适合希望保留氛围的页面。</string>
     <string name="settings_non_home_background_style_summary_focused">更重视内容可读性，适合输入、反馈和 Shell 页面。</string>
+    <string name="settings_non_home_background_depth_title">背景动态深度</string>
+    <string name="settings_non_home_background_depth_summary_enabled">主分页切换时背景会轻微跟随位移，增强层次感。</string>
+    <string name="settings_non_home_background_depth_summary_disabled">背景保持静止，优先控制切页时的瞬时渲染负载。</string>
+    <string name="settings_non_home_background_depth_scope">仅影响 OS / MCP / GitHub / BA 等主分页横向切换；设置、关于等独立页面保持静态背景。</string>
     <string name="settings_non_home_background_action_preview">预览</string>
     <string name="settings_non_home_background_action_suggest">建议</string>
     <string name="settings_non_home_background_preview_title">背景预览</string>

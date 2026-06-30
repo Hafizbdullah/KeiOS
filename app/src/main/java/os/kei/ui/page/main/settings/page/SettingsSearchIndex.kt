@@ -81,6 +81,7 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val nonHomeBackgroundStyleReadableLabel = resolveString(R.string.settings_non_home_background_style_readable)
     val nonHomeBackgroundStyleSoftLabel = resolveString(R.string.settings_non_home_background_style_soft)
     val nonHomeBackgroundStyleFocusedLabel = resolveString(R.string.settings_non_home_background_style_focused)
+    val nonHomeBackgroundDepthLabel = resolveString(R.string.settings_non_home_background_depth_title)
     val nonHomeBackgroundOpacityLabel = resolveString(R.string.settings_non_home_background_opacity_title)
     val nonHomeBackgroundScrimLabel = resolveString(R.string.settings_non_home_background_scrim_title)
     val nonHomeBackgroundCropLabel = resolveString(R.string.settings_non_home_background_crop_title)
@@ -190,6 +191,7 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     nonHomeBackgroundStyleReadableLabel,
                     nonHomeBackgroundStyleSoftLabel,
                     nonHomeBackgroundStyleFocusedLabel,
+                    nonHomeBackgroundDepthLabel,
                     nonHomeBackgroundOpacityLabel,
                     nonHomeBackgroundScrimLabel,
                     nonHomeBackgroundCropLabel,

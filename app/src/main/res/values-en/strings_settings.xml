@@ -113,6 +113,10 @@
     <string name="settings_non_home_background_style_summary_readable">Lowers image presence and adds a page overlay for text-heavy pages.</string>
     <string name="settings_non_home_background_style_summary_soft">Gently softens the background while preserving the mood.</string>
     <string name="settings_non_home_background_style_summary_focused">Prioritizes content readability for input, feedback, and Shell pages.</string>
+    <string name="settings_non_home_background_depth_title">Background depth motion</string>
+    <string name="settings_non_home_background_depth_summary_enabled">Moves the background slightly while switching main pages for extra depth.</string>
+    <string name="settings_non_home_background_depth_summary_disabled">Keeps the background static to control burst rendering cost while paging.</string>
+    <string name="settings_non_home_background_depth_scope">Affects horizontal switching on OS / MCP / GitHub / BA main pages. Standalone pages such as Settings and About keep a static background.</string>
     <string name="settings_non_home_background_action_preview">Preview</string>
     <string name="settings_non_home_background_action_suggest">Suggest</string>
     <string name="settings_non_home_background_preview_title">Background preview</string>

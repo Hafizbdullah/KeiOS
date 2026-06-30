@@ -24,6 +24,7 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
     val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     val nonHomeBackgroundScrim: Float,
+    val nonHomeBackgroundDepthEnabled: Boolean,
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
@@ -102,6 +103,7 @@ object UiPrefs {
     private const val KEY_NON_HOME_BACKGROUND_ALIGNMENT = "non_home_background_alignment"
     private const val KEY_NON_HOME_BACKGROUND_PAGE_STYLE = "non_home_background_page_style"
     private const val KEY_NON_HOME_BACKGROUND_SCRIM = "non_home_background_scrim"
+    private const val KEY_NON_HOME_BACKGROUND_DEPTH = "non_home_background_depth"
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
@@ -297,6 +299,13 @@ object UiPrefs {
         )
     }
 
+    fun isNonHomeBackgroundDepthEnabled(defaultValue: Boolean = false): Boolean =
+        kv().decodeBool(KEY_NON_HOME_BACKGROUND_DEPTH, defaultValue)
+
+    fun setNonHomeBackgroundDepthEnabled(value: Boolean) {
+        kv().encode(KEY_NON_HOME_BACKGROUND_DEPTH, value)
+    }
+
     fun isSuperIslandNotificationEnabled(defaultValue: Boolean = false): Boolean =
         kv().decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, defaultValue)
 
@@ -457,6 +466,7 @@ object UiPrefs {
             nonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
             nonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
             nonHomeBackgroundScrim = NON_HOME_BACKGROUND_SCRIM_DEFAULT,
+            nonHomeBackgroundDepthEnabled = false,
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
@@ -496,6 +506,7 @@ object UiPrefs {
             nonHomeBackgroundAlignment = getNonHomeBackgroundAlignment(),
             nonHomeBackgroundPageStyle = getNonHomeBackgroundPageStyle(),
             nonHomeBackgroundScrim = getNonHomeBackgroundScrim(),
+            nonHomeBackgroundDepthEnabled = isNonHomeBackgroundDepthEnabled(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),

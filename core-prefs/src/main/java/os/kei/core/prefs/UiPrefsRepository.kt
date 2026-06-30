@@ -150,6 +150,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setNonHomeBackgroundDepthEnabled(value: Boolean) {
+        updateAndPersist({ copy(nonHomeBackgroundDepthEnabled = value) }) {
+            UiPrefs.setNonHomeBackgroundDepthEnabled(value)
+        }
+    }
+
     suspend fun resetNonHomeBackgroundRendering() {
         val defaults = UiPrefs.defaultSnapshot()
         updateAndPersist(
@@ -160,6 +166,7 @@ class UiPrefsRepository(
                     nonHomeBackgroundAlignment = defaults.nonHomeBackgroundAlignment,
                     nonHomeBackgroundPageStyle = defaults.nonHomeBackgroundPageStyle,
                     nonHomeBackgroundScrim = defaults.nonHomeBackgroundScrim,
+                    nonHomeBackgroundDepthEnabled = defaults.nonHomeBackgroundDepthEnabled,
                 )
             },
         ) {
@@ -168,6 +175,7 @@ class UiPrefsRepository(
             UiPrefs.setNonHomeBackgroundAlignment(defaults.nonHomeBackgroundAlignment)
             UiPrefs.setNonHomeBackgroundPageStyle(defaults.nonHomeBackgroundPageStyle)
             UiPrefs.setNonHomeBackgroundScrim(defaults.nonHomeBackgroundScrim)
+            UiPrefs.setNonHomeBackgroundDepthEnabled(defaults.nonHomeBackgroundDepthEnabled)
         }
     }
 

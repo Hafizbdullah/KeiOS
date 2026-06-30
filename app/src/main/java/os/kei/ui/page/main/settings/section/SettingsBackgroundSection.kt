@@ -72,6 +72,8 @@ internal fun SettingsBackgroundSection(
     onNonHomeBackgroundPageStyleChanged: (NonHomeBackgroundPageStyle) -> Unit,
     nonHomeBackgroundScrim: Float,
     onNonHomeBackgroundScrimChanged: (Float) -> Unit,
+    nonHomeBackgroundDepthEnabled: Boolean,
+    onNonHomeBackgroundDepthEnabledChanged: (Boolean) -> Unit,
     onResetNonHomeBackgroundRendering: () -> Unit,
     onApplyNonHomeBackgroundReadableSuggestion: (Boolean) -> Unit,
     backgroundPickerLauncher: ActivityResultLauncher<Array<String>>,
@@ -284,6 +286,20 @@ internal fun SettingsBackgroundSection(
                 popupMatchAnchorWidth = true,
             )
         }
+        SettingsToggleItem(
+            title = stringResource(R.string.settings_non_home_background_depth_title),
+            summary =
+                if (nonHomeBackgroundDepthEnabled) {
+                    stringResource(R.string.settings_non_home_background_depth_summary_enabled)
+                } else {
+                    stringResource(R.string.settings_non_home_background_depth_summary_disabled)
+                },
+            checked = nonHomeBackgroundDepthEnabled,
+            onCheckedChange = onNonHomeBackgroundDepthEnabledChanged,
+            enabled = nonHomeBackgroundEnabled,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_non_home_background_depth_scope),
+        )
         val opacityTitle = stringResource(R.string.settings_non_home_background_opacity_title)
         SettingsValueItem(
             title = opacityTitle,
