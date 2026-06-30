@@ -49,16 +49,28 @@ Use the most conservative age signal available from `createdAtSec`, `releaseDate
 
 Add a lightweight metadata index beside the detail payload. This index supports policy decisions and settings diagnostics without decoding every large detail payload.
 
-Storage decision after dependency audit:
+Dependency and storage audit:
+
+| Existing Dependency / Store Pattern | Current Use | Student Detail Cache Fit |
+| --- | --- | --- |
+| `MMKV` through `core-prefs` | Small settings, guide current URL, favorites, catalog bundles, bounded GitHub/F-Droid sidecars | Good for small state, indexes, compatibility, and fast key-value reads. Large long-lived payloads need byte-count guardrails. |
+| App-private `filesDir` file stores | App logs and the new detail metadata store use versioned private files with atomic writes | Best current fit for long-lived structured metadata, diagnostics, and future payload migration. |
+| `cacheDir` file stores | Coil disk cache, GameKee HTTP cache, temp guide media, regenerable media cache | Best fit for thumbnails/media/downloads that can be rebuilt and trimmed. |
+| `kotlinx.serialization-json` via `core-json` | MCP JSON, F-Droid cache models, typed detail metadata | Best fit for new typed cache models and schema migration. |
+| `org.json` legacy usage | Older guide catalog/detail import/export and some MMKV payload encoding | Keep for compatibility while new cache metadata uses `kotlinx.serialization-json`. |
+| OkHttp/Ktor/dav4jvm | Network fetches, MCP server, WebDAV sync | Useful around refresh/sync, not a persistence layer. |
+| Coil 3 / Media3 | Image and audio loading/caching/playback | Keep media cache responsibility in media-specific stores. |
+| Room / SQLDelight / DataStore | Not present in the project baseline | Candidate only if P2+ requires complex cross-entry queries, relational cleanup, or transactional multi-table metadata. |
 
 | Data Type | Storage | Reason |
 | --- | --- | --- |
 | Current selected guide URL, small settings, favorites | Existing MMKV stores | Small key-value state, existing sync/import code already uses this model. |
-| Implemented student detail payload | App-private files under `filesDir` | Long-term cache can grow across many students; file IO avoids large MMKV values and keeps payload reads on demand. |
-| Implemented student detail metadata/index | File-backed JSON index plus per-entry meta file | Structured scans, cache diagnostics, and future migration to SQLite/Room can sit behind one store interface. |
+| Implemented student detail payload, P0-P2 | Existing V2 split MMKV payload | Preserves current migration path and keeps UI/cache behavior stable while metadata policy lands. Track byte growth before moving payload storage. |
+| Implemented student detail payload, P2+ migration target | App-private files under `filesDir` behind a payload-store interface | Long-term cache can grow across many students; file IO keeps large values out of MMKV and supports on-demand reads. |
+| Implemented student detail metadata/index | File-backed JSON index plus per-entry meta file | Structured scans, cache diagnostics, and future migration to file-backed payloads or SQLite/Room can sit behind one store interface. |
 | Temporary media files | Existing cache-dir file store plus index | Regenerable media belongs in cache storage and can be trimmed independently. |
 
-No new database dependency is planned for P0-P2. The current dependency set already includes `kotlinx.serialization-json` through `core-json` and the app module, and has no Room/SQLDelight/DataStore baseline. A file-backed repository keeps the dependency surface small while fitting this cache size. If metadata queries become complex after P2, the same store interface can move to Room/SQLite.
+No new database dependency is planned for P0-P2. The current dependency set already includes `kotlinx.serialization-json` through `core-json` and the app module, and has no Room/SQLDelight/DataStore baseline. A file-backed metadata repository keeps the dependency surface small while fitting the current cache size. If detail payload bytes or metadata queries grow past the P2 thresholds, the same store interface can move payloads to `filesDir` and metadata to SQLite/Room.
 
 ```kotlin
 data class BaGuideStudentDetailCacheMeta(
@@ -194,6 +206,7 @@ Extend the BA Guide cache summary.
 | P2 | S11 | Planned | Add orphan Student detail cache detection and cleanup. | Store tests for URL changes and orphan cleanup. |
 | P2 | S12 | Planned | Add optional low-priority validation for favorites and recently viewed implemented students. | Scheduler tests for bounded concurrency and cancellation. |
 | P2 | S13 | Planned | Run AVD validation: cached old student, hot-update student, manual refresh failure, offline opening. | AVD log, screenshot, and no app error logs. |
+| P2 | S16 | Planned | Measure implemented-student detail payload growth in MMKV and add a guarded file-backed payload migration path when byte/count thresholds justify it. | Unit tests for payload migration plus settings diagnostics showing MMKV/file payload bytes. |
 | P3 | S14 | Planned | Consider offline cache pack or pre-cache for selected favorites. | Product review after P0-P2 land. |
 | P3 | S15 | Planned | Consider WebDAV/import-export coverage for detail cache metadata. | Sync design review after metadata stabilizes. |
 
@@ -225,7 +238,7 @@ Extend the BA Guide cache summary.
 | Date | Status | Notes |
 | --- | --- | --- |
 | 2026-07-01 | Planned | Initial plan written. Scope is limited to implemented students. Hot-update period uses cache as first-screen fallback and runs background validation. |
-| 2026-07-01 | Storage refined | Dependency audit found MMKV, app-private file IO, `kotlinx.serialization-json`, Coil 3, OkHttp/Ktor, and existing cache-dir media stores. Long-term implemented-student details should use app-private files with file-backed metadata/index; MMKV stays for small settings and existing lightweight stores. |
+| 2026-07-01 | Storage refined | Dependency audit found MMKV, app-private file IO, `kotlinx.serialization-json`, Coil 3, OkHttp/Ktor, and existing cache-dir media stores. P0-P2 uses file-backed metadata/index with the existing V2 split MMKV detail payload for compatibility. P2 adds payload byte/count measurement and a guarded migration path to file-backed payload storage if growth justifies it. |
 | 2026-07-01 | P0 S0 done, S1 started | Added Student-only detail freshness policy, file-backed metadata store, content hash, and storage tests. Targeted unit tests passed: `BaGuideStudentDetailCachePolicyTest`, `BaStudentGuideStoreDetailMetaTest`. |
 | 2026-07-01 | P0 S1-S3 done | `BaStudentGuideRepository.loadGuide()` now resolves catalog context, lazily writes Student metadata from existing cache, keeps NPC/satellite on legacy cadence, returns cached Student first paint when validation is due, and lets ViewModel run silent background validation. Targeted unit tests passed with `:app:compileDebugKotlin`. |
 | 2026-07-01 | P0 S4 done | Added structured cache status UI state for current student detail: cached time, validation time, next auto-refresh, freshness tier, background validation flag, and retry/failure metadata. |
@@ -241,3 +254,4 @@ Extend the BA Guide cache summary.
 | Archived tier threshold | 180 days and multiple unchanged validations | Decide exact unchanged count, likely 3. |
 | Detail status placement | Action sheet | Confirm visual fit after first UI pass. |
 | Meta storage location | `filesDir/ba_student_guide_detail_cache/v1` | Use versioned file-backed JSON index and per-entry `meta.json`; keep MMKV only for existing small guide settings/current URL. |
+| Payload storage migration | Keep current V2 split MMKV payload until byte/count measurements show pressure | Add a payload-store interface before moving large detail payloads to `filesDir`, so existing callers stay stable. |
