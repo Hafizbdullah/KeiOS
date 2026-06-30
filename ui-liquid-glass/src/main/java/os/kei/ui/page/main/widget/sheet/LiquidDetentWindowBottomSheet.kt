@@ -6,6 +6,7 @@
 
 package os.kei.ui.page.main.widget.sheet
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -82,6 +83,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -148,6 +150,7 @@ internal fun LiquidDetentWindowBottomSheet(
     val requestDismiss: () -> Unit = {
         currentOnDismissRequest?.invoke()
     }
+    val navigationEventDispatcherOwner = LocalNavigationEventDispatcherOwner.current
 
     LiquidDetentBottomSheetContentLayout(
         show = show,
@@ -170,7 +173,15 @@ internal fun LiquidDetentWindowBottomSheet(
                     properties = platformDialogProperties(),
                 ) {
                     RemovePlatformDialogDefaultEffects()
-                    hostContent()
+                    if (navigationEventDispatcherOwner != null) {
+                        CompositionLocalProvider(
+                            LocalNavigationEventDispatcherOwner provides navigationEventDispatcherOwner,
+                        ) {
+                            hostContent()
+                        }
+                    } else {
+                        hostContent()
+                    }
                 }
             }
         },
@@ -375,55 +386,60 @@ private fun LiquidDetentBottomSheetContentLayout(
     }
 
     popupHost(internalVisible.value) {
-        val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
-        NavigationBackHandler(
-            state = navigationEventState,
-            isBackEnabled = show,
-            onBackCancelled = {
+        val completeBack: () -> Unit = {
+            if (allowDismiss) {
+                coroutineScope.launch {
+                    animateDismissOffScreen(
+                        dismissOffsetY = dismissOffsetY,
+                        visibleHeightPx = visibleHeightPx(),
+                        windowHeightPx = windowHeightPx(),
+                        dimAlpha = dimAlpha,
+                    ) {
+                        currentOnDismissRequest?.invoke()
+                    }
+                }
+            } else {
+                onBlockedDismissRequest?.invoke()
                 coroutineScope.launch { resetGesture() }
-            },
-            onBackCompleted = {
-                if (allowDismiss) {
-                    coroutineScope.launch {
-                        animateDismissOffScreen(
-                            dismissOffsetY = dismissOffsetY,
-                            visibleHeightPx = visibleHeightPx(),
-                            windowHeightPx = windowHeightPx(),
-                            dimAlpha = dimAlpha,
+            }
+        }
+        if (LocalNavigationEventDispatcherOwner.current != null) {
+            val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+            NavigationBackHandler(
+                state = navigationEventState,
+                isBackEnabled = show,
+                onBackCancelled = {
+                    coroutineScope.launch { resetGesture() }
+                },
+                onBackCompleted = completeBack,
+            )
+
+            LaunchedEffect(navigationEventState, allowDismiss) {
+                snapshotFlow { navigationEventState.transitionState }
+                    .collect { transitionState ->
+                        if (
+                            transitionState is NavigationEventTransitionState.InProgress &&
+                            transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
                         ) {
-                            currentOnDismissRequest?.invoke()
+                            val progress = transitionState.latestEvent.progress.coerceIn(0f, 1f)
+                            val baseOffset = visibleHeightPx().coerceAtLeast(500f)
+                            dismissOffsetY.floatValue =
+                                if (allowDismiss) {
+                                    progress * baseOffset
+                                } else {
+                                    progress * baseOffset * LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE
+                                }
+                            dimAlpha.floatValue =
+                                if (allowDismiss) {
+                                    1f - progress
+                                } else {
+                                    1f
+                                }
                         }
                     }
-                } else {
-                    onBlockedDismissRequest?.invoke()
-                    coroutineScope.launch { resetGesture() }
-                }
-            },
-        )
-
-        LaunchedEffect(navigationEventState, allowDismiss) {
-            snapshotFlow { navigationEventState.transitionState }
-                .collect { transitionState ->
-                    if (
-                        transitionState is NavigationEventTransitionState.InProgress &&
-                        transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
-                    ) {
-                        val progress = transitionState.latestEvent.progress.coerceIn(0f, 1f)
-                        val baseOffset = visibleHeightPx().coerceAtLeast(500f)
-                        dismissOffsetY.floatValue =
-                            if (allowDismiss) {
-                                progress * baseOffset
-                            } else {
-                                progress * baseOffset * LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE
-                            }
-                        dimAlpha.floatValue =
-                            if (allowDismiss) {
-                                1f - progress
-                            } else {
-                                1f
-                            }
-                    }
-                }
+            }
+        } else {
+            BackHandler(enabled = show, onBack = completeBack)
         }
 
         if (enableWindowDim) {

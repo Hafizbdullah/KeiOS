@@ -4,6 +4,7 @@ package os.kei.ui.page.main.widget.sheet
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,6 +55,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import os.kei.ui.page.main.widget.chrome.appWindowHeightPx
@@ -188,6 +191,7 @@ fun SnapshotWindowListPopup(
     val coroutineScope = rememberCoroutineScope()
     var wasVisible by remember { mutableStateOf(show) }
     var popupRender by remember { mutableStateOf(show) }
+    val navigationEventDispatcherOwner = LocalNavigationEventDispatcherOwner.current
     val composePopupPositionProvider =
         remember(
             density,
@@ -295,51 +299,82 @@ fun SnapshotWindowListPopup(
                     clippingEnabled = false,
                 ),
         ) {
-            val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
-            NavigationBackHandler(
-                state = navigationEventState,
-                isBackEnabled = show,
-                onBackCancelled = {
-                    coroutineScope.launch {
-                        launch { fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec) }
-                        alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
-                    }
-                },
-                onBackCompleted = {
-                    onDismissRequest?.invoke()
-                },
-            )
-            LaunchedEffect(navigationEventState) {
-                snapshotFlow { navigationEventState.transitionState }
-                    .collect { transitionState ->
-                        if (
-                            transitionState is NavigationEventTransitionState.InProgress &&
-                            transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
-                        ) {
-                            val progress = 1f - transitionState.latestEvent.progress.coerceIn(0f, 1f)
-                            fractionProgress.snapTo(progress)
-                            alphaProgress.snapTo(progress)
-                        }
-                    }
+            val popupContent: @Composable () -> Unit = {
+                SnapshotPopupBackHandler(
+                    show = show,
+                    fractionProgress = fractionProgress,
+                    alphaProgress = alphaProgress,
+                    onDismissRequest = onDismissRequest,
+                )
+                val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
+                Box(
+                    modifier =
+                        popupModifier
+                            .defaultMinSize(minWidth = popupMinWidth)
+                            .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
+                            .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
+                            .snapshotPopupReveal(
+                                fractionProgress = fractionProgressProvider,
+                                alphaProgress = alphaProgressProvider,
+                                transformOrigin = popupTransformOrigin,
+                                showBelow = popupShowBelow,
+                                showAbove = popupShowAbove,
+                                translationOffsetPx = translationOffsetPx,
+                            ),
+                ) {
+                    content()
+                }
             }
-            val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
-            Box(
-                modifier =
-                    popupModifier
-                        .defaultMinSize(minWidth = popupMinWidth)
-                        .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
-                        .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
-                        .snapshotPopupReveal(
-                            fractionProgress = fractionProgressProvider,
-                            alphaProgress = alphaProgressProvider,
-                            transformOrigin = popupTransformOrigin,
-                            showBelow = popupShowBelow,
-                            showAbove = popupShowAbove,
-                            translationOffsetPx = translationOffsetPx,
-                        ),
-            ) {
-                content()
+            if (navigationEventDispatcherOwner != null) {
+                CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides navigationEventDispatcherOwner) {
+                    popupContent()
+                }
+            } else {
+                popupContent()
             }
+        }
+    }
+}
+
+@Composable
+private fun SnapshotPopupBackHandler(
+    show: Boolean,
+    fractionProgress: Animatable<Float, AnimationVector1D>,
+    alphaProgress: Animatable<Float, AnimationVector1D>,
+    onDismissRequest: (() -> Unit)?,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    if (LocalNavigationEventDispatcherOwner.current != null) {
+        val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+        NavigationBackHandler(
+            state = navigationEventState,
+            isBackEnabled = show,
+            onBackCancelled = {
+                coroutineScope.launch {
+                    launch { fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec) }
+                    alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
+                }
+            },
+            onBackCompleted = {
+                onDismissRequest?.invoke()
+            },
+        )
+        LaunchedEffect(navigationEventState) {
+            snapshotFlow { navigationEventState.transitionState }
+                .collect { transitionState ->
+                    if (
+                        transitionState is NavigationEventTransitionState.InProgress &&
+                        transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
+                    ) {
+                        val progress = 1f - transitionState.latestEvent.progress.coerceIn(0f, 1f)
+                        fractionProgress.snapTo(progress)
+                        alphaProgress.snapTo(progress)
+                    }
+                }
+        }
+    } else {
+        BackHandler(enabled = show) {
+            onDismissRequest?.invoke()
         }
     }
 }
