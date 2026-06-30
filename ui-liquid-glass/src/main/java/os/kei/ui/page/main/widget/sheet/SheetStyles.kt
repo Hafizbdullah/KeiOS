@@ -2,9 +2,6 @@ package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,13 +16,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -52,15 +45,12 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val DefaultSelectedLabelSentinel = "\u0000default-selected-label"
@@ -155,101 +145,19 @@ fun SheetSurfaceCard(
             SheetVisualMode.Liquid -> rawContainerColor
             SheetVisualMode.Miuix -> rawContainerColor.opaqueCompositeOver(sheetBaseColor)
         }
-    val resolvedBorderColor = borderColor ?: sheetCardBorderColor(surfaceTone)
-    when (visualMode) {
-        SheetVisualMode.Liquid -> {
-            AppSurfaceCard(
-                modifier = modifier,
-                containerColor = resolvedContainerColor,
-                borderColor = resolvedBorderColor,
-                contentColor = contentColor,
-                captureLocalBackdrop = false,
-                pressSafePadding = pressSafePadding,
-                onClick = onClick
-            ) {
-                AppCardBodyColumn(
-                    contentPadding = contentPadding,
-                    verticalSpacing = verticalSpacing,
-                    content = content
-                )
-            }
-        }
-
-        SheetVisualMode.Miuix -> {
-            MiuixSheetSurfaceCard(
-                modifier = modifier,
-                containerColor = resolvedContainerColor,
-                borderColor = resolvedBorderColor,
-                contentColor = contentColor,
-                pressSafePadding = pressSafePadding,
-                onClick = onClick,
-            ) {
-                AppCardBodyColumn(
-                    contentPadding = contentPadding,
-                    verticalSpacing = verticalSpacing,
-                    content = content
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MiuixSheetSurfaceCard(
-    modifier: Modifier,
-    containerColor: Color,
-    borderColor: Color,
-    contentColor: Color,
-    pressSafePadding: Dp,
-    onClick: (() -> Unit)?,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val clickable = onClick != null
-    val clickModifier =
-        if (clickable) {
-            Modifier.combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = { onClick() },
-            )
-        } else {
-            Modifier
-        }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val resolvedPressSafePadding =
-        if (pressSafePadding == Dp.Unspecified) {
-            if (clickable) AppInteractiveTokens.compactLiquidPressSafePadding else 0.dp
-        } else {
-            pressSafePadding
-        }
-    val pressedScale by appMotionFloatState(
-        targetValue = if (clickable && isPressed) 0.992f else 1f,
-        durationMillis = 120,
-        label = "miuix_sheet_surface_card_press_scale",
-    )
-    CompositionLocalProvider(LocalContentColor provides contentColor) {
-        Column(
-            modifier =
-                modifier
-                    .fillMaxWidth()
-                    .padding(resolvedPressSafePadding)
-                    .graphicsLayer {
-                        scaleX = pressedScale
-                        scaleY = pressedScale
-                    }
-                    .appSquircleBackground(
-                        color = containerColor,
-                        cornerRadius = CardLayoutRhythm.cardCornerRadius,
-                    )
-                    .appSquircleBorder(
-                        width = 1.dp,
-                        color = borderColor,
-                        cornerRadius = CardLayoutRhythm.cardCornerRadius,
-                    )
-                    .then(clickModifier),
-            content = content,
+    AppSurfaceCard(
+        modifier = modifier,
+        containerColor = resolvedContainerColor,
+        borderColor = borderColor ?: sheetCardBorderColor(surfaceTone),
+        contentColor = contentColor,
+        captureLocalBackdrop = false,
+        pressSafePadding = pressSafePadding,
+        onClick = onClick
+    ) {
+        AppCardBodyColumn(
+            contentPadding = contentPadding,
+            verticalSpacing = verticalSpacing,
+            content = content
         )
     }
 }

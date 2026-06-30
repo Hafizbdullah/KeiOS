@@ -19,6 +19,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 
+private val SheetContentShadowEdgePadding = 8.dp
+private val SheetContentBottomPadding = 12.dp
+
 @Composable
 fun SheetContentColumn(
     modifier: Modifier = Modifier,
@@ -58,7 +61,10 @@ fun SheetContentColumn(
                 .then(scrollModifier)
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(bottom = 12.dp),
+                .padding(
+                    top = SheetContentShadowEdgePadding,
+                    bottom = SheetContentBottomPadding + SheetContentShadowEdgePadding,
+                ),
         verticalArrangement = Arrangement.spacedBy(verticalSpacing),
     ) {
         content()
