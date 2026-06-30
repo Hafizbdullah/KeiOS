@@ -305,6 +305,9 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_toast_fdroid_search_failed">F-Droid 検索に失敗しました: %1$s</string>
     <string name="github_toast_fdroid_candidate_selected">%1$s · %2$s を選択しました</string>
     <string name="github_toast_fdroid_search_candidates_found">%1$d 件の F-Droid 候補を検出しました</string>
+    <string name="github_toast_fdroid_sources_saved">Droid ソース設定を保存しました</string>
+    <string name="github_toast_fdroid_sources_unchanged">Droid ソース設定に変更はありません</string>
+    <string name="github_toast_fdroid_common_repo_requires_one">よく使うソースは少なくとも 1 つ有効にしてください</string>
     <string name="github_toast_repo_message">%1$s/%2$s: %3$s</string>
     <string name="github_cd_add_track">追跡を追加</string>
     <string name="github_cd_status">状態</string>
@@ -316,6 +319,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_topbar_cd_sort_direction">順序</string>
     <string name="github_topbar_cd_filter">フィルター</string>
     <string name="github_topbar_cd_check">確認</string>
+    <string name="github_topbar_droid_sources">Droid ソース</string>
+    <string name="github_topbar_droid_sources_count">%1$d 件有効</string>
     <string name="github_topbar_search_label">追跡プロジェクトを検索（リポジトリ / アプリ / パッケージ）</string>
     <string name="github_overview_title">プロジェクトバージョン追跡</string>
     <string name="github_overview_label_strategy">方式</string>
@@ -327,10 +332,17 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_overview_label_stable_latest">Stable 最新</string>
     <string name="github_overview_label_prerelease_tracked">Pre-release 追跡</string>
     <string name="github_overview_label_prerelease_update">Pre-release 更新</string>
+    <string name="github_overview_label_oldest_checked">最古の確認</string>
     <string name="github_overview_label_check_failed">確認失敗</string>
     <string name="github_overview_action_show_failed">失敗項目を表示</string>
     <string name="github_overview_action_clear_failed_filter">すべて表示</string>
     <string name="github_overview_action_retry_failed">失敗項目を再試行</string>
+    <string name="github_droid_sources_sheet_title">Droid ソース</string>
+    <string name="github_droid_sources_sheet_cd_save">Droid ソースを保存</string>
+    <string name="github_droid_sources_section_common">よく使うソース</string>
+    <string name="github_droid_sources_summary_common">現在 %1$d 件のよく使うソースが有効です。F-Droid 追跡の追加 / 編集で「よく使うソース」を選ぶと、これらのリポジトリを並行検索します。既定では F-Droid と IzzyOnDroid が有効です。</string>
+    <string name="github_droid_sources_summary_scope">個別ソース、カスタムリポジトリ、F-Droid Archive は引き続き利用できます。ここでの切り替えは「よく使うソース」の範囲だけに影響します。</string>
+    <string name="github_droid_sources_repo_summary_format">リポジトリ URL: %1$s</string>
     <string name="github_overview_entry_sheet_title">概覧項目を編集</string>
     <string name="github_overview_entry_sheet_desc">概覧カードを長押しすると、展開時に表示する項目を調整できます。折りたたみ時は主要な要約を保ちます。</string>
     <string name="github_overview_entry_sheet_section">展開時の項目</string>
@@ -779,6 +791,9 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_fdroid_candidate_versions_name_format">バージョン %1$s · 全 %2$d 件</string>
     <string name="github_track_sheet_fdroid_candidate_antifeatures_format">Anti-Feature %1$d</string>
     <string name="github_track_sheet_fdroid_candidates_summary">候補を選択すると、リポジトリ、パッケージ、アプリ名を入力します。保存時はその候補のリポジトリを追跡します。</string>
+    <string name="github_track_sheet_fdroid_search_partial_failure">一部の Droid ソース検索に失敗: %1$d 件</string>
+    <string name="github_track_sheet_fdroid_search_partial_failure_detail_format">%1$s: %2$s</string>
+    <string name="github_track_sheet_fdroid_search_partial_failure_more_format">ほか %1$d 件のソースが失敗しました</string>
     <string name="github_track_sheet_section_repo_candidates">プロジェクト候補</string>
     <string name="github_track_sheet_repo_candidates_summary">同じパッケージ名で確認できたリポジトリです。選択すると下書きに反映します。</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d 件</string>
@@ -808,7 +823,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_badge_current_app">このアプリ</string>
     <string name="github_track_sheet_section_check_option">確認オプション</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid オプション</string>
-    <string name="github_track_sheet_summary_fdroid_probe">保存後の更新で package API またはリポジトリ index を読み取り、パッケージ、バージョン、信頼、Anti-Feature の要約をキャッシュします。</string>
+    <string name="github_track_sheet_summary_fdroid_probe">保存後の更新で package API またはリポジトリ index を読み取り、更新間隔とリモート検証情報に基づいてキャッシュを再利用し、パッケージ、バージョン、信頼、Anti-Feature の要約を記録します。</string>
     <string name="github_track_sheet_label_fdroid_version_selection">バージョン選択</string>
     <string name="github_track_sheet_fdroid_version_selection_suggested">推奨バージョン優先</string>
     <string name="github_track_sheet_fdroid_version_selection_highest_compatible">最高互換 versionCode</string>
@@ -1427,7 +1442,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_detail_label_blocked_anti_features">ブロックリスト</string>
     <string name="github_fdroid_detail_value_source_scope_common_format">よく使うソース · %1$s</string>
     <string name="github_fdroid_detail_value_source_scope_custom_format">カスタム · %1$s</string>
-    <string name="github_fdroid_detail_value_sync_schema">インポート / エクスポートと WebDAV はこの F-Droid 追跡設定を同期します。パッケージキャッシュとリポジトリ index は更新後に再生成されます。</string>
+    <string name="github_fdroid_detail_value_sync_schema">インポート / エクスポートと WebDAV はこの F-Droid 追跡設定を同期します。パッケージキャッシュとリポジトリ index キャッシュは、更新間隔とリモート検証情報に基づいて再利用または更新されます。</string>
     <string name="github_fdroid_detail_label_summary">要約</string>
     <string name="github_fdroid_detail_label_description">説明</string>
     <string name="github_fdroid_detail_label_license">ライセンス</string>
@@ -1450,7 +1465,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_fdroid_detail_version_empty">選択済み候補バージョンのキャッシュはありません</string>
     <string name="github_fdroid_detail_label_repo_name">リポジトリ名</string>
     <string name="github_fdroid_detail_label_repo_description">リポジトリ説明</string>
-    <string name="github_fdroid_detail_label_format">形式</string>
+    <string name="github_fdroid_detail_label_format">読み取り形式</string>
     <string name="github_fdroid_detail_format_v2">Index v2</string>
     <string name="github_fdroid_detail_format_v1">Index v1</string>
     <string name="github_fdroid_detail_format_package_api">Package API</string>

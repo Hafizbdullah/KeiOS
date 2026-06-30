@@ -227,9 +227,18 @@ internal class GitHubPageContentStateDeriver(
         var totalUpdatableCount = 0
         var failedCount = 0
         var stableLatestCount = 0
+        var oldestCheckedAtMillis = Long.MAX_VALUE
+        var latestCheckedAtMillis = 0L
+        var checkedCount = 0
 
         input.trackedItems.forEach { item ->
             val itemState = input.checkStates[item.id] ?: return@forEach
+            val checkedAtMillis = itemState.checkedAtMillis
+            if (checkedAtMillis > 0L) {
+                checkedCount++
+                oldestCheckedAtMillis = minOf(oldestCheckedAtMillis, checkedAtMillis)
+                latestCheckedAtMillis = maxOf(latestCheckedAtMillis, checkedAtMillis)
+            }
             if (itemState.hasUpdate == true) stableUpdateCount++
             if (itemState.isPreRelease) preReleaseCount++
             if (itemState.hasPreReleaseUpdate) preReleaseUpdateCount++
@@ -249,7 +258,9 @@ internal class GitHubPageContentStateDeriver(
             stableLatestCount = stableLatestCount,
             preReleaseCount = preReleaseCount,
             preReleaseUpdateCount = preReleaseUpdateCount,
-            failedCount = failedCount
+            failedCount = failedCount,
+            oldestCheckedAtMillis = if (checkedCount > 0) oldestCheckedAtMillis else 0L,
+            latestCheckedAtMillis = latestCheckedAtMillis
         )
     }
 

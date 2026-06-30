@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
+import os.kei.feature.github.model.FdroidAppSearchFailure
 import os.kei.feature.github.model.FdroidAppSearchSource
 import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidRepositoryPresets
@@ -74,6 +75,7 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     packageNameInput: String,
     selectedApp: InstalledAppItem?,
     candidates: List<FdroidAppSearchCandidate>,
+    searchFailures: List<FdroidAppSearchFailure>,
     selectedCandidate: FdroidAppSearchCandidate?,
     searching: Boolean,
     enabledCommonRepos: List<FdroidRepositoryPreset>,
@@ -271,6 +273,63 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
             selectedCandidate = selectedCandidate,
             onCandidateSelected = onCandidateSelected,
         )
+    }
+    if (searchFailures.isNotEmpty()) {
+        FdroidSearchFailureNotice(failures = searchFailures)
+    }
+}
+
+@Composable
+private fun FdroidSearchFailureNotice(
+    failures: List<FdroidAppSearchFailure>,
+) {
+    val visibleFailures = failures.take(2)
+    SheetSectionCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SheetInputTitle(
+                stringResource(
+                    R.string.github_track_sheet_fdroid_search_partial_failure,
+                    failures.size,
+                ),
+            )
+            StatusPill(
+                label = stringResource(R.string.common_status_failed),
+                color = GitHubStatusPalette.PreRelease,
+                size = AppStatusPillSize.Compact,
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val fallbackMessage = stringResource(R.string.github_error_fdroid_search_failed)
+            visibleFailures.forEach { failure ->
+                Text(
+                    text =
+                        stringResource(
+                            R.string.github_track_sheet_fdroid_search_partial_failure_detail_format,
+                            failure.repoFailureDisplayName(),
+                            failure.message.ifBlank { fallbackMessage },
+                        ),
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            val hiddenCount = failures.size - visibleFailures.size
+            if (hiddenCount > 0) {
+                SheetDescriptionText(
+                    text =
+                        stringResource(
+                            R.string.github_track_sheet_fdroid_search_partial_failure_more_format,
+                            hiddenCount,
+                        ),
+                )
+            }
+        }
     }
 }
 
@@ -526,3 +585,15 @@ private fun FdroidAppSearchCandidate.fdroidCandidateMetaText(): String {
 
 private fun FdroidAppSearchCandidate.fdroidCandidateStableId(): String =
     repoUrl.trim().trimEnd('/') + "|" + packageName.lowercase()
+
+private fun FdroidAppSearchFailure.repoFailureDisplayName(): String {
+    FdroidRepositoryPresets.presetForRepoUrl(repoUrl)?.displayName?.let { displayName ->
+        if (displayName.isNotBlank()) return displayName
+    }
+    return repoUrl
+        .trim()
+        .removePrefix("https://")
+        .removePrefix("http://")
+        .substringBefore('/')
+        .ifBlank { repoUrl }
+}

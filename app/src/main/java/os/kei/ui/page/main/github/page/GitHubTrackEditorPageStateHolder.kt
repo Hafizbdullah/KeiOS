@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
 import os.kei.feature.github.model.FdroidAppSearchCandidate
+import os.kei.feature.github.model.FdroidAppSearchFailure
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.FdroidTrustPolicy
@@ -47,6 +48,7 @@ internal class GitHubTrackEditorPageStateHolder {
     var fdroidRepoScopeIdInput by mutableStateOf(FdroidRepositoryPresets.COMMON_ID)
     var fdroidAppSearchQueryInput by mutableStateOf("")
     var fdroidAppSearchCandidates by mutableStateOf<List<FdroidAppSearchCandidate>>(emptyList())
+    var fdroidAppSearchFailures by mutableStateOf<List<FdroidAppSearchFailure>>(emptyList())
     var fdroidSelectedCandidate by mutableStateOf<FdroidAppSearchCandidate?>(null)
     var fdroidAppSearchRunning by mutableStateOf(false)
     var trackSourceModeInput by mutableStateOf(GitHubTrackedSourceMode.GitHubRepository)
@@ -99,6 +101,7 @@ internal class GitHubTrackEditorPageStateHolder {
         fdroidRepoScopeIdInput = FdroidRepositoryPresets.COMMON_ID
         fdroidAppSearchQueryInput = ""
         fdroidAppSearchCandidates = emptyList()
+        fdroidAppSearchFailures = emptyList()
         fdroidSelectedCandidate = null
         fdroidAppSearchRunning = false
         trackSourceModeInput = GitHubTrackedSourceMode.GitHubRepository

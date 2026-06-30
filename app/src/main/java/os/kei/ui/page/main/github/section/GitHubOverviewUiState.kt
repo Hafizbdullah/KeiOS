@@ -23,6 +23,7 @@ internal enum class GitHubOverviewEntry(
     StableLatest("stable_latest", R.string.github_overview_label_stable_latest),
     PreReleaseTracked("pre_release_tracked", R.string.github_overview_label_prerelease_tracked),
     PreReleaseUpdate("pre_release_update", R.string.github_overview_label_prerelease_update),
+    OldestChecked("oldest_checked", R.string.github_overview_label_oldest_checked),
     CheckFailed("check_failed", R.string.github_overview_label_check_failed);
 
     companion object {

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
+import os.kei.feature.github.model.FdroidAppSearchFailure
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidTrustPolicy
@@ -76,6 +77,7 @@ internal fun GitHubTrackEditFormContent(
     fdroidRepoScopeIdInput: String,
     fdroidAppSearchQueryInput: String,
     fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
+    fdroidAppSearchFailures: List<FdroidAppSearchFailure>,
     fdroidSelectedCandidate: FdroidAppSearchCandidate?,
     fdroidAppSearchRunning: Boolean,
     enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
@@ -309,6 +311,7 @@ internal fun GitHubTrackEditFormContent(
                 packageNameInput = packageNameInput,
                 selectedApp = selectedApp,
                 candidates = fdroidAppSearchCandidates,
+                searchFailures = fdroidAppSearchFailures,
                 selectedCandidate = fdroidSelectedCandidate,
                 searching = fdroidAppSearchRunning,
                 enabledCommonRepos = enabledFdroidCommonRepos,

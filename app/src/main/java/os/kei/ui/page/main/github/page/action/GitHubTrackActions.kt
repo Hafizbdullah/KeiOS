@@ -86,6 +86,7 @@ internal class GitHubTrackActions(
             .ifBlank { FdroidRepositoryPresets.CUSTOM_ID }
         state.fdroidAppSearchQueryInput = item.appLabel
         state.fdroidAppSearchCandidates = emptyList()
+        state.fdroidAppSearchFailures = emptyList()
         state.fdroidSelectedCandidate = null
         state.fdroidAppSearchRunning = false
         state.showAddSheet = true
@@ -109,6 +110,7 @@ internal class GitHubTrackActions(
         state.repoUrlInput = value
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
+        state.fdroidAppSearchFailures = emptyList()
         if (state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository) {
             state.fdroidRepoScopeIdInput =
                 FdroidRepositoryPresets.presetForRepoUrl(value)?.id
@@ -123,6 +125,7 @@ internal class GitHubTrackActions(
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
         state.fdroidAppSearchCandidates = emptyList()
+        state.fdroidAppSearchFailures = emptyList()
         state.resetTrackEditorDropdownState()
         if (value == GitHubTrackedSourceMode.FdroidRepository && state.repoUrlInput.isBlank()) {
             state.repoUrlInput = FdroidRepositoryPresets.Main.repoUrl
@@ -143,6 +146,7 @@ internal class GitHubTrackActions(
         fdroidSearchActions.cancel()
         state.packageNameInput = value
         state.repoScanCandidates = emptyList()
+        state.fdroidAppSearchFailures = emptyList()
         val selectedCandidate = state.fdroidSelectedCandidate
         if (selectedCandidate != null &&
             !selectedCandidate.packageName.equals(value.trim(), ignoreCase = true)
@@ -173,6 +177,7 @@ internal class GitHubTrackActions(
         state.selectedApp = value
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
+        state.fdroidAppSearchFailures = emptyList()
         if (value != null) {
             state.packageNameInput = value.packageName
             if (state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository) {
@@ -187,6 +192,7 @@ internal class GitHubTrackActions(
         state.fdroidRepoScopeIdInput = normalized
         state.fdroidSelectedCandidate = null
         state.fdroidAppSearchCandidates = emptyList()
+        state.fdroidAppSearchFailures = emptyList()
         if (normalized != FdroidRepositoryPresets.COMMON_ID &&
             normalized != FdroidRepositoryPresets.CUSTOM_ID
         ) {
@@ -200,6 +206,7 @@ internal class GitHubTrackActions(
         fdroidSearchActions.cancel()
         state.fdroidAppSearchQueryInput = value
         state.fdroidSelectedCandidate = null
+        state.fdroidAppSearchFailures = emptyList()
     }
 
     fun setFdroidRepoScopeDropdownExpanded(value: Boolean) {

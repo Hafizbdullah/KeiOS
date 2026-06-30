@@ -54,7 +54,9 @@ internal data class GitHubOverviewMetrics(
     val stableLatestCount: Int,
     val preReleaseCount: Int,
     val preReleaseUpdateCount: Int,
-    val failedCount: Int
+    val failedCount: Int,
+    val oldestCheckedAtMillis: Long = 0L,
+    val latestCheckedAtMillis: Long = 0L
 )
 
 private fun overviewMetricColor(
@@ -246,6 +248,7 @@ private fun GitHubOverviewExpandedContent(
     onRetryFailedTracked: () -> Unit,
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
     val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     val tiles = buildList {
         add(
@@ -331,6 +334,23 @@ private fun GitHubOverviewExpandedContent(
                     emphasized = metrics.preReleaseUpdateCount > 0,
                     isDark = isDark
                 )
+            )
+        )
+        add(
+            GitHubOverviewTile(
+                entry = GitHubOverviewEntry.OldestChecked,
+                value =
+                    formatRefreshAgo(
+                        context = context,
+                        lastRefreshMs = metrics.oldestCheckedAtMillis,
+                    ),
+                color = overviewMetricColor(
+                    color = GitHubStatusPalette.Cache,
+                    emphasized = metrics.oldestCheckedAtMillis > 0L,
+                    isDark = isDark
+                ),
+                labelWeight = 0.44f,
+                valueWeight = 0.56f
             )
         )
         add(
@@ -500,7 +520,9 @@ private fun GitHubOverviewCardPreview() {
                 stableLatestCount = 11,
                 preReleaseCount = 3,
                 preReleaseUpdateCount = 2,
-                failedCount = 1
+                failedCount = 1,
+                oldestCheckedAtMillis = System.currentTimeMillis() - 7_200_000L,
+                latestCheckedAtMillis = System.currentTimeMillis() - 180_000L
             ),
             failedFilterActive = false,
             onEditVisibleEntries = {},

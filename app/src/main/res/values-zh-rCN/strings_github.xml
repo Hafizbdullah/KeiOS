@@ -325,6 +325,7 @@
     <string name="github_overview_label_stable_latest">稳定已最新</string>
     <string name="github_overview_label_prerelease_tracked">预发跟踪</string>
     <string name="github_overview_label_prerelease_update">预发可更新</string>
+    <string name="github_overview_label_oldest_checked">最旧检查</string>
     <string name="github_overview_label_check_failed">检查失败</string>
     <string name="github_overview_action_show_failed">查看失败项</string>
     <string name="github_overview_action_clear_failed_filter">显示全部</string>
@@ -332,8 +333,8 @@
     <string name="github_droid_sources_sheet_title">Droid 源管理</string>
     <string name="github_droid_sources_sheet_cd_save">保存 Droid 源</string>
     <string name="github_droid_sources_section_common">常用源</string>
-    <string name="github_droid_sources_summary_common">当前启用 %1$d 个常用源。新增/编辑追踪时选择“常用源”，会按这里启用的 F-Droid 兼容仓库搜索。</string>
-    <string name="github_droid_sources_summary_scope">单独选择某个源、自定义仓库、F-Droid Archive 入口会保持独立可用。</string>
+    <string name="github_droid_sources_summary_common">当前启用 %1$d 个常用源。新增/编辑 F-Droid 追踪时选择“常用源”，会并发搜索这些仓库；默认启用官方源和 IzzyOnDroid。</string>
+    <string name="github_droid_sources_summary_scope">单独选择某个源、自定义仓库、F-Droid Archive 入口依旧可用；这里的开关只影响“常用源”范围。</string>
     <string name="github_droid_sources_repo_summary_format">仓库地址：%1$s</string>
     <string name="github_overview_entry_sheet_title">编辑概览条目</string>
     <string name="github_overview_entry_sheet_desc">长按概览卡可调整展开态显示的条目；折叠态保持关键摘要。</string>
@@ -797,7 +798,7 @@
     <string name="github_track_badge_current_app">本应用</string>
     <string name="github_track_sheet_section_check_option">检查选项</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid 选项</string>
-    <string name="github_track_sheet_summary_fdroid_probe">保存后刷新会读取 package API 或仓库 index，并缓存包信息、版本、信任摘要和反特性摘要。</string>
+    <string name="github_track_sheet_summary_fdroid_probe">保存后刷新会读取 package API 或仓库 index，并按刷新间隔和远端校验信息复用缓存，记录包信息、版本、信任摘要和反特性摘要。</string>
     <string name="github_track_sheet_label_fdroid_version_selection">版本选择</string>
     <string name="github_track_sheet_fdroid_version_selection_suggested">推荐版本优先</string>
     <string name="github_track_sheet_fdroid_version_selection_highest_compatible">最高兼容 versionCode</string>
@@ -1399,7 +1400,7 @@
     <string name="github_fdroid_detail_label_blocked_anti_features">过滤列表</string>
     <string name="github_fdroid_detail_value_source_scope_common_format">常用源 · %1$s</string>
     <string name="github_fdroid_detail_value_source_scope_custom_format">自定义 · %1$s</string>
-    <string name="github_fdroid_detail_value_sync_schema">导入导出/WebDAV 会同步此 F-Droid 追踪配置；包缓存和仓库索引会在刷新后重新生成。</string>
+    <string name="github_fdroid_detail_value_sync_schema">导入导出/WebDAV 会同步此 F-Droid 追踪配置；包缓存与仓库索引缓存会按刷新间隔和远端校验信息复用或更新。</string>
     <string name="github_fdroid_detail_label_summary">摘要</string>
     <string name="github_fdroid_detail_label_description">描述</string>
     <string name="github_fdroid_detail_label_license">许可证</string>
@@ -1422,7 +1423,7 @@
     <string name="github_fdroid_detail_version_empty">当前缓存没有选中的候选版本</string>
     <string name="github_fdroid_detail_label_repo_name">仓库名称</string>
     <string name="github_fdroid_detail_label_repo_description">仓库描述</string>
-    <string name="github_fdroid_detail_label_format">格式</string>
+    <string name="github_fdroid_detail_label_format">读取格式</string>
     <string name="github_fdroid_detail_format_v2">Index v2</string>
     <string name="github_fdroid_detail_format_v1">Index v1</string>
     <string name="github_fdroid_detail_format_package_api">Package API</string>

@@ -103,6 +103,7 @@ internal class GitHubPageState(
     var fdroidRepoScopeIdInput by trackEditorState::fdroidRepoScopeIdInput
     var fdroidAppSearchQueryInput by trackEditorState::fdroidAppSearchQueryInput
     var fdroidAppSearchCandidates by trackEditorState::fdroidAppSearchCandidates
+    var fdroidAppSearchFailures by trackEditorState::fdroidAppSearchFailures
     var fdroidSelectedCandidate by trackEditorState::fdroidSelectedCandidate
     var fdroidAppSearchRunning by trackEditorState::fdroidAppSearchRunning
     var trackSourceModeInput by trackEditorState::trackSourceModeInput

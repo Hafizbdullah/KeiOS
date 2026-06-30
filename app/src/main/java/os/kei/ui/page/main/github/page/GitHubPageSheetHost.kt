@@ -281,6 +281,7 @@ internal fun GitHubPageSheetHost(
         fdroidRepoScopeIdInput = state.fdroidRepoScopeIdInput,
         fdroidAppSearchQueryInput = state.fdroidAppSearchQueryInput,
         fdroidAppSearchCandidates = state.fdroidAppSearchCandidates,
+        fdroidAppSearchFailures = state.fdroidAppSearchFailures,
         fdroidSelectedCandidate = state.fdroidSelectedCandidate,
         fdroidAppSearchRunning = state.fdroidAppSearchRunning,
         enabledFdroidCommonRepos = enabledFdroidCommonRepos,
