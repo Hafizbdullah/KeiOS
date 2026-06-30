@@ -354,6 +354,10 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(FdroidTrustPolicy.RequireApkHash, imported.fdroidConfig.trustPolicy)
         assertEquals(FdroidAntiFeaturePolicy.Custom, imported.fdroidConfig.antiFeaturePolicy)
         assertEquals(listOf("Tracking", "KnownVuln"), imported.fdroidConfig.blockedAntiFeatures)
+        assertEquals(
+            "https://f-droid.org/packages/org.fdroid.fdroid/",
+            imported.fdroidConfig.packagePageUrl
+        )
         assertEquals("fdroid", imported.fdroidConfig.repoPresetId)
     }
 

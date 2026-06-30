@@ -148,6 +148,7 @@ internal class GitHubTrackedRefreshActionFacade(
                                     refreshTrackedItemNow(
                                         item = item,
                                         showToastOnError = showToast,
+                                        forceRefresh = true,
                                         reloadAppsBeforeRefresh = false,
                                     )
                                 }

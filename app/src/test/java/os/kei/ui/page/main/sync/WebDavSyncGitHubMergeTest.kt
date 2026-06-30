@@ -67,6 +67,7 @@ class WebDavSyncGitHubMergeTest {
                 versionNameRegex = "^2\\.",
                 antiFeaturePolicy = FdroidAntiFeaturePolicy.Custom,
                 blockedAntiFeatures = listOf("Tracking"),
+                packagePageUrl = "https://apt.izzysoft.de/fdroid/index/apk/com.example.fdroid",
                 repoPresetId = FdroidRepositoryPresets.IZZY_ID,
             ),
         )
@@ -86,6 +87,10 @@ class WebDavSyncGitHubMergeTest {
         assertEquals("^2\\.", imported.fdroidConfig.versionNameRegex)
         assertEquals(FdroidAntiFeaturePolicy.Custom, imported.fdroidConfig.antiFeaturePolicy)
         assertEquals(listOf("Tracking"), imported.fdroidConfig.blockedAntiFeatures)
+        assertEquals(
+            "https://apt.izzysoft.de/fdroid/index/apk/com.example.fdroid",
+            imported.fdroidConfig.packagePageUrl,
+        )
         assertEquals(FdroidRepositoryPresets.IZZY_ID, imported.fdroidConfig.repoPresetId)
     }
 }
