@@ -6,6 +6,7 @@ import os.kei.ui.page.main.ba.BaCalendarPoolImageCache
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaStudentGuideStore
+import os.kei.ui.page.main.student.baGuideStudentDetailCacheStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.clearBaGuideCatalogCache
@@ -28,6 +29,7 @@ internal fun baStudentGuideCacheEntryProvider(): CacheEntryProvider =
         summary = ::baStudentGuideSummary,
         clear = { context ->
             BaStudentGuideStore.clearAllCachedInfo()
+            baGuideStudentDetailCacheStore(context).clear()
             clearBaGuideCatalogCache(context)
         },
     )
@@ -100,16 +102,27 @@ private fun baCalendarSummary(context: Context): CacheEntrySummary {
 
 private fun baStudentGuideSummary(context: Context): CacheEntrySummary {
     val detailCount = BaStudentGuideStore.cachedEntryCount()
+    val studentDetailCacheStore = baGuideStudentDetailCacheStore(context)
+    val studentDetailStats = studentDetailCacheStore.stats()
+    val studentDetailFileBytes = studentDetailCacheStore.storageBytes()
     val catalogCounts = BaGuideCatalogStore.cachedEntryCounts()
     val studentCount = catalogCounts[BaGuideCatalogTab.Student] ?: 0
     val npcSatelliteCount = catalogCounts[BaGuideCatalogTab.NpcSatellite] ?: 0
-    val cacheBytes = BaStudentGuideStore.cacheBytesEstimated() + BaGuideCatalogStore.cacheBytesEstimated()
+    val cacheBytes =
+        BaStudentGuideStore.cacheBytesEstimated() +
+            BaGuideCatalogStore.cacheBytesEstimated() +
+            studentDetailFileBytes
     val configBytes = BaStudentGuideStore.configBytesEstimated() + BaGuideCatalogStore.configBytesEstimated()
-    val diskBytes = BaStudentGuideStore.actualDataBytes() + BaGuideCatalogStore.actualDataBytes()
+    val diskBytes =
+        BaStudentGuideStore.actualDataBytes() +
+            BaGuideCatalogStore.actualDataBytes() +
+            studentDetailFileBytes
     val updatedAtMs =
         maxOf(
             BaStudentGuideStore.latestSyncedAtMs(),
             BaGuideCatalogStore.latestSyncedAtMs(),
+            studentDetailStats.latestCachedAtMs,
+            studentDetailStats.latestValidatedAtMs,
         ).takeIf { it > 0L }
             ?: maxOf(
                 mmkvLastModified(context, "ba_student_guide"),
@@ -124,16 +137,21 @@ private fun baStudentGuideSummary(context: Context): CacheEntrySummary {
             context.getString(
                 R.string.settings_cache_entry_ba_guide_detail,
                 detailCount,
+                studentDetailStats.studentCount,
+                studentDetailStats.hotUpdateCount,
+                studentDetailStats.longTermCount,
+                studentDetailStats.archivedCount,
                 studentCount,
                 npcSatelliteCount,
             ),
         activity = formatActivity(context, updatedAtMs, clearedAtMs),
         storage =
             context.getString(
-                R.string.settings_cache_storage_cache_config_mmkv,
+                R.string.settings_cache_storage_cache_config_mmkv_disk,
                 formatBytes(cacheBytes),
                 formatBytes(configBytes),
                 formatBytes(diskBytes),
+                formatBytes(studentDetailFileBytes),
             ),
         clearLabel = context.getString(R.string.common_clear),
         cacheBytes = cacheBytes,

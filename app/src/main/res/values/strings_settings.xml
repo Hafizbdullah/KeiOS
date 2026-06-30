@@ -249,6 +249,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_icon">缓存估算 %1$s · 配置估算 %2$s · MMKV 已用 %3$s · 图标内存 %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_media">缓存估算 %1$s · 配置估算 %2$s · MMKV 已用 %3$s · 媒体磁盘 %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">缓存估算 %1$s · 配置估算 %2$s · MMKV 已用 %3$s</string>
+    <string name="settings_cache_storage_cache_config_mmkv_disk">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 文件缓存 %4$s</string>
     <string name="settings_cache_storage_cache_config_memory">缓存估算 %1$s · 配置估算 %2$s · 内存占用 %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s</string>
     <string name="settings_cache_storage_ba_playback">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 累计扫描 %4$d 项 · 累计命中 %5$d 项/%6$d 片段/%7$s</string>
@@ -264,7 +265,7 @@
     <string name="settings_cache_entry_ba_page_detail">当前服区 %1$d · 日程缓存 %2$s · 卡池缓存 %3$s · 图片 %4$d 张</string>
     <string name="settings_cache_entry_ba_guide_title">BA 图鉴页</string>
     <string name="settings_cache_entry_ba_guide_summary">角色图鉴详情与图鉴总览列表缓存</string>
-    <string name="settings_cache_entry_ba_guide_detail">详情缓存 %1$d 条 · 总览 实装 %2$d 条 / NPC及卫星 %3$d 条</string>
+    <string name="settings_cache_entry_ba_guide_detail">详情缓存 %1$d 条 · 实装详情 %2$d 条（热更新 %3$d / 长期 %4$d / 归档 %5$d）· 总览 实装 %6$d 条 / NPC及卫星 %7$d 条</string>
     <string name="settings_cache_entry_os_title">系统页面</string>
     <string name="settings_cache_entry_os_summary">各类系统表与属性缓存</string>
     <string name="settings_cache_entry_os_detail">显示卡片 %1$d 张 · 已缓存分区 %2$d 个</string>

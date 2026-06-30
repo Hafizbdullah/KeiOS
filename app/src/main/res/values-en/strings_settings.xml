@@ -245,6 +245,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_icon">Cache estimate %1$s · Config estimate %2$s · MMKV used %3$s · Icon memory %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_media">Cache estimate %1$s · Config estimate %2$s · MMKV used %3$s · Media disk %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">Cache estimate %1$s · Config estimate %2$s · MMKV used %3$s</string>
+    <string name="settings_cache_storage_cache_config_mmkv_disk">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · File cache %4$s</string>
     <string name="settings_cache_storage_cache_config_memory">Cache estimate %1$s · Config estimate %2$s · Memory %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">Cache estimate %1$s · Config estimate %2$s · Disk %3$s</string>
     <string name="settings_cache_storage_ba_playback">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · Scanned %4$d items · Hits %5$d items/%6$d spans/%7$s</string>
@@ -260,7 +261,7 @@
     <string name="settings_cache_entry_ba_page_detail">Server %1$d · Schedule cache %2$s · Recruitment cache %3$s · Images %4$d</string>
     <string name="settings_cache_entry_ba_guide_title">Blue Archive guide</string>
     <string name="settings_cache_entry_ba_guide_summary">Student guide details and archive catalog cache.</string>
-    <string name="settings_cache_entry_ba_guide_detail">Detail cache %1$d items · Catalog Released Students %2$d / NPC &amp; Upcoming %3$d</string>
+    <string name="settings_cache_entry_ba_guide_detail">Detail cache %1$d items · Implemented details %2$d (hot %3$d / long-term %4$d / archived %5$d) · Catalog Released Students %6$d / NPC &amp; Upcoming %7$d</string>
     <string name="settings_cache_entry_os_title">System page</string>
     <string name="settings_cache_entry_os_summary">System table and property cache.</string>
     <string name="settings_cache_entry_os_detail">Visible cards %1$d · Cached sections %2$d</string>

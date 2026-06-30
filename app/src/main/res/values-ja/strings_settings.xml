@@ -245,6 +245,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_icon">キャッシュ推定 %1$s · 設定推定 %2$s · MMKV 使用 %3$s · アイコンメモリ %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_media">キャッシュ推定 %1$s · 設定推定 %2$s · MMKV 使用 %3$s · メディアディスク %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">キャッシュ推定 %1$s · 設定推定 %2$s · MMKV 使用 %3$s</string>
+    <string name="settings_cache_storage_cache_config_mmkv_disk">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · ファイルキャッシュ %4$s</string>
     <string name="settings_cache_storage_cache_config_memory">キャッシュ推定 %1$s · 設定推定 %2$s · メモリ %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s</string>
     <string name="settings_cache_storage_ba_playback">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · 走査 %4$d 件 · ヒット %5$d 件/%6$d 区間/%7$s</string>
@@ -260,7 +261,7 @@
     <string name="settings_cache_entry_ba_page_detail">サーバー %1$d · 予定キャッシュ %2$s · 募集キャッシュ %3$s · 画像 %4$d</string>
     <string name="settings_cache_entry_ba_guide_title">ブルーアーカイブ生徒情報</string>
     <string name="settings_cache_entry_ba_guide_summary">生徒詳細と名簿カタログのキャッシュ。</string>
-    <string name="settings_cache_entry_ba_guide_detail">詳細キャッシュ %1$d 件 · 名簿 実装済み生徒 %2$d / NPC・未実装 %3$d</string>
+    <string name="settings_cache_entry_ba_guide_detail">詳細キャッシュ %1$d 件 · 実装済み詳細 %2$d 件（ホット %3$d / 長期 %4$d / アーカイブ %5$d）· 名簿 実装済み生徒 %6$d / NPC・未実装 %7$d</string>
     <string name="settings_cache_entry_os_title">System ページ</string>
     <string name="settings_cache_entry_os_summary">System テーブルとプロパティキャッシュ。</string>
     <string name="settings_cache_entry_os_detail">表示カード %1$d · キャッシュ区分 %2$d</string>
