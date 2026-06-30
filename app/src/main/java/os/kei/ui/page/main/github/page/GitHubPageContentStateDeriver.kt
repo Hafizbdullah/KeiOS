@@ -201,7 +201,10 @@ internal class GitHubPageContentStateDeriver(
                 trackedUi = GitHubPageDerivedState(
                     filteredTracked = filteredTracked,
                     sortedTracked = sortedTracked,
-                    overviewMetrics = buildOverviewMetrics(input)
+                    overviewMetrics = buildOverviewMetrics(
+                        input = input,
+                        checkedTimeSource = filteredTracked.ifEmpty { input.trackedItems }
+                    )
                 ),
                 appLastUpdatedAtByTrackId = buildAppLastUpdatedAtByTrackId(input),
                 installedAppLabelsByPackage = buildInstalledAppLabelsByPackage(input),
@@ -220,7 +223,10 @@ internal class GitHubPageContentStateDeriver(
         }
     }
 
-    private fun buildOverviewMetrics(input: GitHubPageContentInput): GitHubOverviewMetrics {
+    private fun buildOverviewMetrics(
+        input: GitHubPageContentInput,
+        checkedTimeSource: List<GitHubTrackedApp>
+    ): GitHubOverviewMetrics {
         var stableUpdateCount = 0
         var preReleaseCount = 0
         var preReleaseUpdateCount = 0
@@ -231,7 +237,7 @@ internal class GitHubPageContentStateDeriver(
         var latestCheckedAtMillis = 0L
         var checkedCount = 0
 
-        input.trackedItems.forEach { item ->
+        checkedTimeSource.forEach { item ->
             val itemState = input.checkStates[item.id] ?: return@forEach
             val checkedAtMillis = itemState.checkedAtMillis
             if (checkedAtMillis > 0L) {
@@ -239,6 +245,10 @@ internal class GitHubPageContentStateDeriver(
                 oldestCheckedAtMillis = minOf(oldestCheckedAtMillis, checkedAtMillis)
                 latestCheckedAtMillis = maxOf(latestCheckedAtMillis, checkedAtMillis)
             }
+        }
+
+        input.trackedItems.forEach { item ->
+            val itemState = input.checkStates[item.id] ?: return@forEach
             if (itemState.hasUpdate == true) stableUpdateCount++
             if (itemState.isPreRelease) preReleaseCount++
             if (itemState.hasPreReleaseUpdate) preReleaseUpdateCount++
