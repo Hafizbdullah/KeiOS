@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.settings.section
 
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,6 +44,7 @@ import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.settings.support.formatOpacityPercent
 import os.kei.ui.page.main.widget.core.AppDualActionRow
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
@@ -485,29 +485,33 @@ private fun BackgroundPreviewSampleCard(
     title: String,
     body: String,
 ) {
-    Column(
+    AppSurfaceCard(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.74f),
-                    shape = RoundedCornerShape(18.dp),
-                ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+            Modifier.fillMaxWidth(),
+        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.42f),
+        showIndication = false,
     ) {
-        Text(
-            text = title,
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.CompactTitle.fontSize,
-            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
-            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-        )
-        Text(
-            text = body,
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
+        ) {
+            Text(
+                text = title,
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.CompactTitle.fontSize,
+                lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+                fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+            )
+            Text(
+                text = body,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
     }
 }
 
@@ -516,16 +520,18 @@ private fun BackgroundPreviewChip(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        text = text,
-        color = MiuixTheme.colorScheme.onBackground,
-        fontSize = AppTypographyTokens.Supporting.fontSize,
-        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        modifier =
-            modifier
-                .background(
-                    color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.68f),
-                    shape = RoundedCornerShape(999.dp),
-                ).padding(horizontal = 12.dp, vertical = 8.dp),
-    )
+    AppSurfaceCard(
+        modifier = modifier,
+        containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.36f),
+        showIndication = false,
+        pressSafePadding = 0.dp,
+    ) {
+        Text(
+            text = text,
+            color = MiuixTheme.colorScheme.onBackground,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        )
+    }
 }

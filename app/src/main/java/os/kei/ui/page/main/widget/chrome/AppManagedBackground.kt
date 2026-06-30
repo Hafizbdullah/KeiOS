@@ -11,6 +11,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -31,33 +33,59 @@ data class AppManagedBackgroundStyle(
     val opacityMultiplier: Float = 1f,
     val lightOverlayAlpha: Float = 0f,
     val darkOverlayAlpha: Float = 0f,
+    val lightEdgeGradientAlpha: Float = 0f,
+    val darkEdgeGradientAlpha: Float = 0f,
+    val lightSideGradientAlpha: Float = 0f,
+    val darkSideGradientAlpha: Float = 0f,
 )
 
 object AppManagedBackgroundStyles {
-    val Standard = AppManagedBackgroundStyle()
+    val Standard =
+        AppManagedBackgroundStyle(
+            lightEdgeGradientAlpha = 0.04f,
+            darkEdgeGradientAlpha = 0.05f,
+            lightSideGradientAlpha = 0.018f,
+            darkSideGradientAlpha = 0.024f,
+        )
     val Soft =
         AppManagedBackgroundStyle(
             opacityMultiplier = 0.82f,
             lightOverlayAlpha = 0.04f,
             darkOverlayAlpha = 0.06f,
+            lightEdgeGradientAlpha = 0.07f,
+            darkEdgeGradientAlpha = 0.09f,
+            lightSideGradientAlpha = 0.028f,
+            darkSideGradientAlpha = 0.036f,
         )
     val Readable =
         AppManagedBackgroundStyle(
             opacityMultiplier = 0.75f,
             lightOverlayAlpha = 0.08f,
             darkOverlayAlpha = 0.12f,
+            lightEdgeGradientAlpha = 0.12f,
+            darkEdgeGradientAlpha = 0.16f,
+            lightSideGradientAlpha = 0.048f,
+            darkSideGradientAlpha = 0.064f,
         )
     val Focused =
         AppManagedBackgroundStyle(
             opacityMultiplier = 0.62f,
             lightOverlayAlpha = 0.14f,
             darkOverlayAlpha = 0.18f,
+            lightEdgeGradientAlpha = 0.18f,
+            darkEdgeGradientAlpha = 0.22f,
+            lightSideGradientAlpha = 0.072f,
+            darkSideGradientAlpha = 0.088f,
         )
     val FocusedTask =
         AppManagedBackgroundStyle(
             opacityMultiplier = 0.58f,
             lightOverlayAlpha = 0.18f,
             darkOverlayAlpha = 0.24f,
+            lightEdgeGradientAlpha = 0.22f,
+            darkEdgeGradientAlpha = 0.28f,
+            lightSideGradientAlpha = 0.088f,
+            darkSideGradientAlpha = 0.112f,
         )
 
     fun forPageStyle(pageStyle: NonHomeBackgroundPageStyle): AppManagedBackgroundStyle =
@@ -77,6 +105,10 @@ object AppManagedBackgroundStyles {
             opacityMultiplier = minOf(preset.opacityMultiplier, sceneStyle.opacityMultiplier),
             lightOverlayAlpha = maxOf(preset.lightOverlayAlpha, sceneStyle.lightOverlayAlpha),
             darkOverlayAlpha = maxOf(preset.darkOverlayAlpha, sceneStyle.darkOverlayAlpha),
+            lightEdgeGradientAlpha = maxOf(preset.lightEdgeGradientAlpha, sceneStyle.lightEdgeGradientAlpha),
+            darkEdgeGradientAlpha = maxOf(preset.darkEdgeGradientAlpha, sceneStyle.darkEdgeGradientAlpha),
+            lightSideGradientAlpha = maxOf(preset.lightSideGradientAlpha, sceneStyle.lightSideGradientAlpha),
+            darkSideGradientAlpha = maxOf(preset.darkSideGradientAlpha, sceneStyle.darkSideGradientAlpha),
         )
     }
 }
@@ -105,12 +137,6 @@ fun AppManagedBackgroundHost(
                 sceneStyle = style,
             )
         }
-    val overlayAlpha =
-        (if (darkBase) {
-            resolvedStyle.darkOverlayAlpha
-        } else {
-            resolvedStyle.lightOverlayAlpha
-        } + scrim).coerceIn(0f, 1f)
 
     Box(
         modifier =
@@ -127,14 +153,13 @@ fun AppManagedBackgroundHost(
                 alignment = alignment,
                 modifier = Modifier.fillMaxSize(),
             )
-            if (overlayAlpha > 0f) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(baseColor.copy(alpha = overlayAlpha)),
-                )
-            }
+            AppManagedBackgroundOverlay(
+                baseColor = baseColor,
+                darkBase = darkBase,
+                style = resolvedStyle,
+                scrim = scrim,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
         CompositionLocalProvider(
             LocalAppScaffoldContainerColor provides if (active) Color.Transparent else null,
@@ -142,6 +167,71 @@ fun AppManagedBackgroundHost(
             content()
         }
     }
+}
+
+@Composable
+fun AppManagedBackgroundOverlay(
+    baseColor: Color,
+    style: AppManagedBackgroundStyle,
+    scrim: Float,
+    modifier: Modifier = Modifier,
+    darkBase: Boolean = baseColor.luminance() < 0.5f,
+) {
+    val overlayAlpha =
+        (if (darkBase) {
+            style.darkOverlayAlpha
+        } else {
+            style.lightOverlayAlpha
+        } + scrim).coerceIn(0f, 1f)
+    val edgeGradientAlpha =
+        (if (darkBase) {
+            style.darkEdgeGradientAlpha
+        } else {
+            style.lightEdgeGradientAlpha
+        } + scrim * 0.42f).coerceIn(0f, 1f)
+    val sideGradientAlpha =
+        (if (darkBase) {
+            style.darkSideGradientAlpha
+        } else {
+            style.lightSideGradientAlpha
+        } + scrim * 0.18f).coerceIn(0f, 1f)
+
+    if (overlayAlpha <= 0f && edgeGradientAlpha <= 0f && sideGradientAlpha <= 0f) return
+
+    Box(
+        modifier =
+            modifier
+                .background(baseColor.copy(alpha = overlayAlpha))
+                .drawWithCache {
+                    val transparent = baseColor.copy(alpha = 0f)
+                    val edgeColor = baseColor.copy(alpha = edgeGradientAlpha)
+                    val sideColor = baseColor.copy(alpha = sideGradientAlpha)
+                    val verticalMask =
+                        Brush.verticalGradient(
+                            colorStops =
+                                arrayOf(
+                                    0f to edgeColor,
+                                    0.30f to transparent,
+                                    0.68f to transparent,
+                                    1f to edgeColor,
+                                ),
+                        )
+                    val horizontalMask =
+                        Brush.horizontalGradient(
+                            colorStops =
+                                arrayOf(
+                                    0f to sideColor,
+                                    0.18f to transparent,
+                                    0.82f to transparent,
+                                    1f to sideColor,
+                                ),
+                        )
+                    onDrawBehind {
+                        drawRect(verticalMask)
+                        drawRect(horizontalMask)
+                    }
+                },
+    )
 }
 
 @Composable

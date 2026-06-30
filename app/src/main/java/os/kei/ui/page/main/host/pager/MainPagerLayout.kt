@@ -37,6 +37,7 @@ import os.kei.ui.page.main.back.MainBackNavigationAction
 import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundImage
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundOverlay
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
@@ -225,23 +226,13 @@ internal fun MainPagerLayout(
                     alignment = nonHomeBackgroundAlignment,
                     modifier = Modifier.fillMaxSize(),
                 )
-                val backgroundScrim =
-                    (
-                        nonHomeBackgroundScrim +
-                            if (darkBase) {
-                                backgroundStyle.darkOverlayAlpha
-                            } else {
-                                backgroundStyle.lightOverlayAlpha
-                            }
-                    ).coerceIn(0f, 1f)
-                if (backgroundScrim > 0f) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(baseColor.copy(alpha = backgroundScrim)),
-                    )
-                }
+                AppManagedBackgroundOverlay(
+                    baseColor = baseColor,
+                    darkBase = darkBase,
+                    style = backgroundStyle,
+                    scrim = nonHomeBackgroundScrim,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
             val pagerModifier =
                 Modifier
