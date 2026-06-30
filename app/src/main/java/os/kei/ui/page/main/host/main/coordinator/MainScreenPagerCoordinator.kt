@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.host.main
 
 import androidx.compose.runtime.Stable
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 
@@ -15,6 +16,8 @@ internal data class MainScreenPagerCoordinator(
     val nonHomeBackgroundEnabled: Boolean,
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
+    val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    val nonHomeBackgroundScrim: Float,
     val visibleBottomPageNames: Set<String>,
     val onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
     val shizukuStatus: String,
@@ -61,6 +64,8 @@ internal fun buildMainScreenPagerCoordinator(
         nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
         nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
         nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
+        nonHomeBackgroundContentScale = prefsState.nonHomeBackgroundContentScale,
+        nonHomeBackgroundScrim = prefsState.nonHomeBackgroundScrim,
         visibleBottomPageNames = prefsState.visibleBottomPageNames,
         onVisibleBottomPageNamesChange = prefsState::updateVisibleBottomPageNames,
         shizukuStatus = shizukuStatus,

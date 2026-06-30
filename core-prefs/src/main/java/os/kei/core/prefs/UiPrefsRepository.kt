@@ -126,6 +126,18 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setNonHomeBackgroundContentScale(value: NonHomeBackgroundContentScale) {
+        updateAndPersist({ copy(nonHomeBackgroundContentScale = value) }) {
+            UiPrefs.setNonHomeBackgroundContentScale(value)
+        }
+    }
+
+    suspend fun setNonHomeBackgroundScrim(value: Float) {
+        updateAndPersist({ copy(nonHomeBackgroundScrim = value) }) {
+            UiPrefs.setNonHomeBackgroundScrim(value)
+        }
+    }
+
     suspend fun setSuperIslandNotificationEnabled(value: Boolean) {
         updateAndPersist({ copy(superIslandNotificationEnabled = value) }) {
             UiPrefs.setSuperIslandNotificationEnabled(value)

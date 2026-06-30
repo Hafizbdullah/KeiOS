@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
@@ -131,6 +132,18 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updateNonHomeBackgroundOpacity(value: Float) {
         launchRepositoryUpdate {
             setNonHomeBackgroundOpacity(value)
+        }
+    }
+
+    fun updateNonHomeBackgroundContentScale(value: NonHomeBackgroundContentScale) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundContentScale(value)
+        }
+    }
+
+    fun updateNonHomeBackgroundScrim(value: Float) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundScrim(value)
         }
     }
 

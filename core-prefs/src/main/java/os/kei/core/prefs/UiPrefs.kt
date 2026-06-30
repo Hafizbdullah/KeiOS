@@ -20,6 +20,8 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundEnabled: Boolean,
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
+    val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    val nonHomeBackgroundScrim: Float,
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
@@ -33,6 +35,20 @@ data class UiPrefsSnapshot(
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>,
 )
+
+enum class NonHomeBackgroundContentScale(
+    val storageId: String,
+) {
+    Crop("crop"),
+    Fit("fit"),
+    FillBounds("fill_bounds"),
+    ;
+
+    companion object {
+        fun fromStorageId(raw: String?): NonHomeBackgroundContentScale =
+            entries.firstOrNull { it.storageId == raw } ?: Crop
+    }
+}
 
 object UiPrefs {
     private const val KV_ID = "ui_prefs"
@@ -49,6 +65,8 @@ object UiPrefs {
     private const val KEY_NON_HOME_BACKGROUND_ENABLED = "non_home_background_enabled"
     private const val KEY_NON_HOME_BACKGROUND_URI = "non_home_background_uri"
     private const val KEY_NON_HOME_BACKGROUND_OPACITY = "non_home_background_opacity"
+    private const val KEY_NON_HOME_BACKGROUND_CONTENT_SCALE = "non_home_background_content_scale"
+    private const val KEY_NON_HOME_BACKGROUND_SCRIM = "non_home_background_scrim"
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
@@ -65,6 +83,9 @@ object UiPrefs {
     private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
     private const val NON_HOME_BACKGROUND_OPACITY_MIN = 0.06f
     private const val NON_HOME_BACKGROUND_OPACITY_MAX = 0.40f
+    private const val NON_HOME_BACKGROUND_SCRIM_DEFAULT = 0.00f
+    private const val NON_HOME_BACKGROUND_SCRIM_MIN = 0.00f
+    private const val NON_HOME_BACKGROUND_SCRIM_MAX = 0.40f
     const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100
     const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
@@ -186,6 +207,36 @@ object UiPrefs {
         kv().encode(
             KEY_NON_HOME_BACKGROUND_OPACITY,
             value.coerceIn(NON_HOME_BACKGROUND_OPACITY_MIN, NON_HOME_BACKGROUND_OPACITY_MAX),
+        )
+    }
+
+    fun getNonHomeBackgroundContentScale(
+        defaultValue: NonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
+    ): NonHomeBackgroundContentScale =
+        NonHomeBackgroundContentScale.fromStorageId(
+            kv().decodeString(KEY_NON_HOME_BACKGROUND_CONTENT_SCALE, defaultValue.storageId),
+        )
+
+    fun setNonHomeBackgroundContentScale(value: NonHomeBackgroundContentScale) {
+        kv().encode(KEY_NON_HOME_BACKGROUND_CONTENT_SCALE, value.storageId)
+    }
+
+    fun getNonHomeBackgroundScrim(defaultValue: Float = NON_HOME_BACKGROUND_SCRIM_DEFAULT): Float {
+        val fallback =
+            defaultValue.coerceIn(
+                NON_HOME_BACKGROUND_SCRIM_MIN,
+                NON_HOME_BACKGROUND_SCRIM_MAX,
+            )
+        return kv().decodeFloat(KEY_NON_HOME_BACKGROUND_SCRIM, fallback).coerceIn(
+            NON_HOME_BACKGROUND_SCRIM_MIN,
+            NON_HOME_BACKGROUND_SCRIM_MAX,
+        )
+    }
+
+    fun setNonHomeBackgroundScrim(value: Float) {
+        kv().encode(
+            KEY_NON_HOME_BACKGROUND_SCRIM,
+            value.coerceIn(NON_HOME_BACKGROUND_SCRIM_MIN, NON_HOME_BACKGROUND_SCRIM_MAX),
         )
     }
 
@@ -345,6 +396,8 @@ object UiPrefs {
             nonHomeBackgroundEnabled = false,
             nonHomeBackgroundUri = "",
             nonHomeBackgroundOpacity = NON_HOME_BACKGROUND_OPACITY_DEFAULT,
+            nonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
+            nonHomeBackgroundScrim = NON_HOME_BACKGROUND_SCRIM_DEFAULT,
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
@@ -380,6 +433,8 @@ object UiPrefs {
                         KEY_NON_HOME_BACKGROUND_OPACITY,
                         NON_HOME_BACKGROUND_OPACITY_DEFAULT,
                     ).coerceIn(NON_HOME_BACKGROUND_OPACITY_MIN, NON_HOME_BACKGROUND_OPACITY_MAX),
+            nonHomeBackgroundContentScale = getNonHomeBackgroundContentScale(),
+            nonHomeBackgroundScrim = getNonHomeBackgroundScrim(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),

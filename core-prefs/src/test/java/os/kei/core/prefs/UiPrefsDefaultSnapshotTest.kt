@@ -12,6 +12,14 @@ class UiPrefsDefaultSnapshotTest {
     }
 
     @Test
+    fun `non home background customization keeps legacy default rendering`() {
+        val snapshot = UiPrefs.defaultSnapshot()
+
+        assertEquals(NonHomeBackgroundContentScale.Crop, snapshot.nonHomeBackgroundContentScale)
+        assertEquals(0f, snapshot.nonHomeBackgroundScrim)
+    }
+
+    @Test
     fun `runtime defaults feed default snapshot log level`() {
         UiPrefs.configureRuntimeDefaults(
             buildType = "debug",

@@ -69,7 +69,12 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val backgroundGroupLabel = resolveString(R.string.settings_group_background_title)
     val nonHomeBackgroundLabel = resolveString(R.string.settings_non_home_background_title)
     val nonHomeBackgroundImageLabel = resolveString(R.string.settings_non_home_background_image_title)
+    val nonHomeBackgroundScaleLabel = resolveString(R.string.settings_non_home_background_scale_title)
+    val nonHomeBackgroundScaleCropLabel = resolveString(R.string.settings_non_home_background_scale_crop)
+    val nonHomeBackgroundScaleFitLabel = resolveString(R.string.settings_non_home_background_scale_fit)
+    val nonHomeBackgroundScaleFillBoundsLabel = resolveString(R.string.settings_non_home_background_scale_fill_bounds)
     val nonHomeBackgroundOpacityLabel = resolveString(R.string.settings_non_home_background_opacity_title)
+    val nonHomeBackgroundScrimLabel = resolveString(R.string.settings_non_home_background_scrim_title)
     val nonHomeBackgroundCropLabel = resolveString(R.string.settings_non_home_background_crop_title)
 
     val notifyGroupLabel = resolveString(R.string.settings_group_notify_title)
@@ -163,7 +168,12 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     backgroundGroupLabel,
                     nonHomeBackgroundLabel,
                     nonHomeBackgroundImageLabel,
+                    nonHomeBackgroundScaleLabel,
+                    nonHomeBackgroundScaleCropLabel,
+                    nonHomeBackgroundScaleFitLabel,
+                    nonHomeBackgroundScaleFillBoundsLabel,
                     nonHomeBackgroundOpacityLabel,
+                    nonHomeBackgroundScrimLabel,
                     nonHomeBackgroundCropLabel,
                 ),
         ),

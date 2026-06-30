@@ -30,6 +30,7 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -89,6 +90,10 @@ fun SettingsPage(
     onNonHomeBackgroundUriChanged: (String) -> Unit,
     nonHomeBackgroundOpacity: Float,
     onNonHomeBackgroundOpacityChanged: (Float) -> Unit,
+    nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    onNonHomeBackgroundContentScaleChanged: (NonHomeBackgroundContentScale) -> Unit,
+    nonHomeBackgroundScrim: Float,
+    onNonHomeBackgroundScrimChanged: (Float) -> Unit,
     superIslandNotificationEnabled: Boolean,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     superIslandBypassRestrictionEnabled: Boolean,
@@ -391,6 +396,10 @@ fun SettingsPage(
             nonHomeBackgroundUri = nonHomeBackgroundUri,
             nonHomeBackgroundOpacity = nonHomeBackgroundOpacity,
             onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
+            nonHomeBackgroundContentScale = nonHomeBackgroundContentScale,
+            onNonHomeBackgroundContentScaleChanged = onNonHomeBackgroundContentScaleChanged,
+            nonHomeBackgroundScrim = nonHomeBackgroundScrim,
+            onNonHomeBackgroundScrimChanged = onNonHomeBackgroundScrimChanged,
             enabledCardColor = enabledCardColor,
             disabledCardColor = disabledCardColor,
             onSliderInteractionChanged = settingsPageViewModel::updateSliderInteractionActive,

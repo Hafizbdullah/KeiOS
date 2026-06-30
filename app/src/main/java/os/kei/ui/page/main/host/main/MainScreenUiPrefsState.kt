@@ -8,6 +8,7 @@ import os.kei.core.icon.LauncherIconController
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
@@ -36,6 +37,8 @@ internal class MainScreenUiPrefsState(
     val nonHomeBackgroundEnabled: Boolean get() = snapshot.nonHomeBackgroundEnabled
     val nonHomeBackgroundUri: String get() = snapshot.nonHomeBackgroundUri
     val nonHomeBackgroundOpacity: Float get() = snapshot.nonHomeBackgroundOpacity
+    val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale get() = snapshot.nonHomeBackgroundContentScale
+    val nonHomeBackgroundScrim: Float get() = snapshot.nonHomeBackgroundScrim
     val superIslandNotificationEnabled: Boolean get() = snapshot.superIslandNotificationEnabled
     val superIslandBypassRestrictionEnabled: Boolean get() = snapshot.superIslandBypassRestrictionEnabled
     val superIslandRestoreDelayMs: Int get() = snapshot.superIslandRestoreDelayMs
@@ -113,6 +116,14 @@ internal class MainScreenUiPrefsState(
 
     fun updateNonHomeBackgroundOpacity(value: Float) {
         viewModel.updateNonHomeBackgroundOpacity(value)
+    }
+
+    fun updateNonHomeBackgroundContentScale(value: NonHomeBackgroundContentScale) {
+        viewModel.updateNonHomeBackgroundContentScale(value)
+    }
+
+    fun updateNonHomeBackgroundScrim(value: Float) {
+        viewModel.updateNonHomeBackgroundScrim(value)
     }
 
     fun updateSuperIslandNotificationEnabled(value: Boolean) {

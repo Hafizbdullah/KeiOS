@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
@@ -53,6 +54,8 @@ internal fun MainPagerLayout(
     nonHomeBackgroundEnabled: Boolean,
     nonHomeBackgroundUri: String,
     nonHomeBackgroundOpacity: Float,
+    nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    nonHomeBackgroundScrim: Float,
     visibleBottomPageNames: Set<String>,
     onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
     shizukuStatus: String,
@@ -206,8 +209,18 @@ internal fun MainPagerLayout(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
                     opacity = nonHomeBackgroundOpacity,
+                    contentScale = nonHomeBackgroundContentScale,
                     modifier = Modifier.fillMaxSize(),
                 )
+                val backgroundScrim = nonHomeBackgroundScrim.coerceIn(0f, 1f)
+                if (backgroundScrim > 0f) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(MiuixTheme.colorScheme.background.copy(alpha = backgroundScrim)),
+                    )
+                }
             }
             val pagerModifier =
                 Modifier

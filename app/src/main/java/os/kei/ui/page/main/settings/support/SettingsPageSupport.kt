@@ -361,6 +361,19 @@ internal val NON_HOME_BACKGROUND_OPACITY_KEY_POINTS =
         0.33f,
         NON_HOME_BACKGROUND_OPACITY_MAX,
     )
+internal const val NON_HOME_BACKGROUND_SCRIM_DEFAULT = 0.00f
+internal const val NON_HOME_BACKGROUND_SCRIM_MIN = 0.00f
+internal const val NON_HOME_BACKGROUND_SCRIM_MAX = 0.40f
+internal const val NON_HOME_BACKGROUND_SCRIM_MAGNET_THRESHOLD = 0.03f
+internal val NON_HOME_BACKGROUND_SCRIM_KEY_POINTS =
+    listOf(
+        NON_HOME_BACKGROUND_SCRIM_MIN,
+        0.08f,
+        0.14f,
+        0.20f,
+        0.28f,
+        NON_HOME_BACKGROUND_SCRIM_MAX,
+    )
 internal const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100f
 internal const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50f
 internal const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350f

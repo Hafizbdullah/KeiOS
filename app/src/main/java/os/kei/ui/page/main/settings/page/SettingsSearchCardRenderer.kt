@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
 import os.kei.core.log.AppLogLevel
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.ui.page.main.feedback.FeedbackIssueActivity
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
 import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
@@ -75,6 +76,10 @@ internal fun LazyListScope.settingsCardItem(
                     nonHomeBackgroundUri = input.nonHomeBackgroundUri,
                     nonHomeBackgroundOpacity = input.nonHomeBackgroundOpacity,
                     onNonHomeBackgroundOpacityChanged = input.onNonHomeBackgroundOpacityChanged,
+                    nonHomeBackgroundContentScale = input.nonHomeBackgroundContentScale,
+                    onNonHomeBackgroundContentScaleChanged = input.onNonHomeBackgroundContentScaleChanged,
+                    nonHomeBackgroundScrim = input.nonHomeBackgroundScrim,
+                    onNonHomeBackgroundScrimChanged = input.onNonHomeBackgroundScrimChanged,
                     backgroundPickerLauncher = input.backgroundController.backgroundPickerLauncher,
                     onClearBackground = input.backgroundController.clearBackground,
                     enabledCardColor = input.enabledCardColor,
@@ -208,6 +213,10 @@ internal data class SettingsSearchCardRenderInput(
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
     val onNonHomeBackgroundOpacityChanged: (Float) -> Unit,
+    val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    val onNonHomeBackgroundContentScaleChanged: (NonHomeBackgroundContentScale) -> Unit,
+    val nonHomeBackgroundScrim: Float,
+    val onNonHomeBackgroundScrimChanged: (Float) -> Unit,
     val enabledCardColor: Color,
     val disabledCardColor: Color,
     val onSliderInteractionChanged: (Boolean) -> Unit,

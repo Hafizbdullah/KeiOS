@@ -104,6 +104,8 @@ class FeedbackIssueActivity : ComponentActivity() {
                             enabled = initialPrefsSnapshot.nonHomeBackgroundEnabled,
                             imageUri = initialPrefsSnapshot.nonHomeBackgroundUri,
                             opacity = initialPrefsSnapshot.nonHomeBackgroundOpacity,
+                            contentScale = initialPrefsSnapshot.nonHomeBackgroundContentScale,
+                            scrim = initialPrefsSnapshot.nonHomeBackgroundScrim,
                             style = AppManagedBackgroundStyles.FocusedTask,
                         ) {
                             FeedbackIssuePage(

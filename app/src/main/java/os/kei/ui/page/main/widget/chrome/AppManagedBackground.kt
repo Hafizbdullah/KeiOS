@@ -20,6 +20,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import os.kei.core.prefs.NonHomeBackgroundContentScale
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Immutable
@@ -44,6 +45,8 @@ fun AppManagedBackgroundHost(
     enabled: Boolean,
     imageUri: String,
     opacity: Float,
+    contentScale: NonHomeBackgroundContentScale,
+    scrim: Float,
     modifier: Modifier = Modifier,
     style: AppManagedBackgroundStyle = AppManagedBackgroundStyles.Standard,
     content: @Composable () -> Unit,
@@ -53,11 +56,11 @@ fun AppManagedBackgroundHost(
     val baseColor = MiuixTheme.colorScheme.background
     val darkBase = baseColor.luminance() < 0.5f
     val overlayAlpha =
-        if (darkBase) {
+        (if (darkBase) {
             style.darkOverlayAlpha
         } else {
             style.lightOverlayAlpha
-        }.coerceIn(0f, 1f)
+        } + scrim).coerceIn(0f, 1f)
 
     Box(
         modifier =
@@ -70,6 +73,7 @@ fun AppManagedBackgroundHost(
                 enabled = true,
                 imageUri = trimmedUri,
                 opacity = opacity * style.opacityMultiplier,
+                contentScale = contentScale,
                 modifier = Modifier.fillMaxSize(),
             )
             if (overlayAlpha > 0f) {
@@ -94,6 +98,7 @@ fun AppManagedBackgroundImage(
     enabled: Boolean,
     imageUri: String,
     opacity: Float,
+    contentScale: NonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
     modifier: Modifier = Modifier,
 ) {
     if (!enabled || imageUri.isBlank()) return
@@ -128,8 +133,15 @@ fun AppManagedBackgroundImage(
     AsyncImage(
         model = request,
         contentDescription = null,
-        contentScale = ContentScale.Crop,
+        contentScale = contentScale.toComposeContentScale(),
         alpha = opacity.coerceIn(0f, 1f),
         modifier = modifier,
     )
 }
+
+private fun NonHomeBackgroundContentScale.toComposeContentScale(): ContentScale =
+    when (this) {
+        NonHomeBackgroundContentScale.Crop -> ContentScale.Crop
+        NonHomeBackgroundContentScale.Fit -> ContentScale.Fit
+        NonHomeBackgroundContentScale.FillBounds -> ContentScale.FillBounds
+    }
