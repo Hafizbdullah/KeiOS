@@ -296,6 +296,9 @@ class WebDavSyncEngineTest {
     @Test
     fun `auto local change upload reports conflict without mutating local when remote etag changed`() = runBlocking {
         val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"value":"remote-new"}""", "etag-new"),
+            ),
             uploadResults = mutableListOf(WebDavUploadResult.Conflict),
         )
         val metadata = FakeWebDavSyncMetadataStore()
@@ -322,6 +325,47 @@ class WebDavSyncEngineTest {
         assertTrue(port.mergeCalls.isEmpty())
         assertTrue(metadata.hashes.isEmpty())
         assertEquals(WebDavSyncPendingState.RemoteConflict, metadata.pendingStates[WebDavSyncItem.BaAccounts])
+    }
+
+    @Test
+    fun `auto local change upload refreshes etag when conflict keeps the same remote hash`() = runBlocking {
+        val remoteFingerprint = """{"value":"remote-old"}"""
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"value":"remote-old","exportedAtMs":1}""", "etag-refreshed"),
+            ),
+            uploadResults = mutableListOf(
+                WebDavUploadResult.Conflict,
+                WebDavUploadResult.Success("etag-new"),
+            ),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 23_000L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"local-new","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"local-new"}""",
+            remoteFingerprintJson = { remoteFingerprint },
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = "etag-stale",
+                expectedRemoteHash = WebDavSyncEngine.contentHash(remoteFingerprint),
+            )
+
+        assertEquals(WebDavItemStatus.Uploaded, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertEquals(listOf("etag-stale", "etag-refreshed"), client.uploadCalls.map { it.etag })
+        assertEquals("etag-new", metadata.etags[WebDavSyncItem.BaAccounts])
+        assertEquals(WebDavSyncEngine.contentHash("""{"value":"local-new"}"""), metadata.hashes[WebDavSyncItem.BaAccounts])
+        assertTrue(metadata.pendingStates.isEmpty())
     }
 
     @Test

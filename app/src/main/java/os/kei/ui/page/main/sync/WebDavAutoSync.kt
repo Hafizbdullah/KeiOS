@@ -4,11 +4,14 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -79,10 +82,12 @@ internal object WebDavAutoSync {
     }
 
     private suspend fun runAutoSync(config: WebDavConfig, reason: String) = mutex.withLock {
-        runCatching {
+        try {
+            val coroutineContext = currentCoroutineContext()
             val ports = buildWebDavSyncDataPorts(appContext)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             for (item in targets) {
+                coroutineContext.ensureActive()
                 val port = ports[item] ?: continue
                 val outcome = reconcileItem(config, item, port)
                 if (!outcome.isSuccess) {
@@ -90,14 +95,20 @@ internal object WebDavAutoSync {
                 }
             }
             WebDavSyncStore.setLastFullSyncTime(System.currentTimeMillis())
-        }.onFailure { AppLogger.w(TAG, "auto-sync ($reason) failed", it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "auto-sync ($reason) failed", e)
+        }
     }
 
     private suspend fun pushChangedItems(config: WebDavConfig) = mutex.withLock {
-        runCatching {
+        try {
+            val coroutineContext = currentCoroutineContext()
             val ports = buildWebDavSyncDataPorts(appContext)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             for (item in targets) {
+                coroutineContext.ensureActive()
                 val port = ports[item] ?: continue
                 val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                 val storedHash = WebDavSyncStore.getItemContentHash(item)
@@ -113,7 +124,11 @@ internal object WebDavAutoSync {
                     AppLogger.w(TAG, "auto-push ${item.name} → ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
             }
-        }.onFailure { AppLogger.w(TAG, "auto-push failed", it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "auto-push failed", e)
+        }
     }
 
     private suspend fun reconcileItem(

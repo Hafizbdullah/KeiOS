@@ -300,7 +300,14 @@ internal class WebDavSyncEngine(
                     recordSynced(item, upload.etag, port.fingerprintJson())
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
                 }
-                WebDavUploadResult.Conflict -> conflictOutcome(item)
+                WebDavUploadResult.Conflict ->
+                    retryUploadLocalChangeAfterConflict(
+                        c = c,
+                        item = item,
+                        port = port,
+                        local = local,
+                        expectedRemoteHash = expectedRemoteHash,
+                    )
                 is WebDavUploadResult.Error -> errorOutcome(upload.error)
             }
         } catch (e: CancellationException) {
@@ -332,6 +339,31 @@ internal class WebDavSyncEngine(
             is WebDavDownloadResult.Error -> WebDavUploadResult.Error(remote.error)
         }
     }
+
+    private suspend fun retryUploadLocalChangeAfterConflict(
+        c: WebDavSyncClientBridge,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        local: String,
+        expectedRemoteHash: String?,
+    ): WebDavItemOutcome =
+        when (
+            val retryUpload =
+                uploadLocalChangeWithoutEtag(
+                    c = c,
+                    item = item,
+                    port = port,
+                    local = local,
+                    expectedRemoteHash = expectedRemoteHash,
+                )
+        ) {
+            is WebDavUploadResult.Success -> {
+                recordSynced(item, retryUpload.etag, port.fingerprintJson())
+                WebDavItemOutcome(WebDavItemStatus.Uploaded)
+            }
+            WebDavUploadResult.Conflict -> conflictOutcome(item)
+            is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
+        }
 
     // ── Manual upload (push local → remote, overwrite) ─────────────────
 
