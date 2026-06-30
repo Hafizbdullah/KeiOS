@@ -39,6 +39,7 @@ internal data class BaStudentGuideDataUiState(
     val info: BaStudentGuideInfo? = null,
     val loading: Boolean = false,
     val error: String? = null,
+    val cacheStatus: BaStudentGuideCacheStatusUiState = BaStudentGuideCacheStatusUiState.Empty,
 )
 
 internal data class BaStudentGuidePrefetchUiState(
@@ -84,6 +85,7 @@ internal class BaStudentGuideViewModel(
     private val profileLinkTitleLoader = GuideProfileLinkTitleLoader(viewModelScope)
     private var binding: BaStudentGuideBinding? = null
     private var loadJob: Job? = null
+    private var backgroundValidationJob: Job? = null
     private var currentUrlLoadJob: Job? = null
     private var currentUrlSaveJob: Job? = null
     private var npcSatelliteResolveJob: Job? = null
@@ -255,6 +257,7 @@ internal class BaStudentGuideViewModel(
             BaStudentGuideDataUiState(
                 sourceUrl = target,
                 loading = true,
+                cacheStatus = BaStudentGuideCacheStatusUiState.Empty,
             )
         loadGuide(
             sourceUrl = target,
@@ -316,6 +319,7 @@ internal class BaStudentGuideViewModel(
                     BaStudentGuideDataUiState(
                         sourceUrl = storedSourceUrl,
                         loading = true,
+                        cacheStatus = BaStudentGuideCacheStatusUiState.Empty,
                     )
                 _isNpcSatelliteGuide.value = false
                 lastLoadedSourceUrl = ""
@@ -470,6 +474,7 @@ internal class BaStudentGuideViewModel(
     ) {
         val currentBinding = binding ?: return
         loadJob?.cancel()
+        backgroundValidationJob?.cancel()
         loadJob =
             viewModelScope.launch {
                 if (
@@ -503,12 +508,67 @@ internal class BaStudentGuideViewModel(
                                 info = result.info,
                                 loading = false,
                                 error = result.error,
+                                cacheStatus =
+                                    result.cacheMeta.toCacheStatusUiState(
+                                        validatingInBackground = result.validateInBackground,
+                                    ),
                             )
                         resolveNpcSatelliteGuideFor(sourceUrl, result.info)
                         nextState
                     } else {
                         state
                     }
+                }
+                if (result.validateInBackground) {
+                    startBackgroundGuideValidation(
+                        sourceUrl = sourceUrl,
+                        binding = currentBinding,
+                    )
+                }
+            }
+    }
+
+    private fun startBackgroundGuideValidation(
+        sourceUrl: String,
+        binding: BaStudentGuideBinding,
+    ) {
+        backgroundValidationJob?.cancel()
+        backgroundValidationJob =
+            viewModelScope.launch {
+                val result =
+                    repository.loadGuide(
+                        context = appContext,
+                        sourceUrl = sourceUrl,
+                        currentInfo = _dataState.value.info,
+                        manualRefresh = false,
+                        forceValidation = true,
+                        loadFailedText = binding.loadFailedText,
+                        refreshFailedKeepCacheText = binding.refreshFailedKeepCacheText,
+                    )
+                val latest = result.info ?: return@launch
+                var updated = false
+                _dataState.update { state ->
+                    if (state.sourceUrl == sourceUrl) {
+                        val latestStatus = result.cacheMeta.toCacheStatusUiState()
+                        val latestInfo =
+                            if (state.info?.syncedAtMs != latest.syncedAtMs) {
+                                updated = true
+                                latest
+                            } else {
+                                state.info
+                            }
+                        state.copy(
+                            info = latestInfo,
+                            error = null,
+                            cacheStatus = latestStatus,
+                        )
+                    } else {
+                        state
+                    }
+                }
+                if (updated && _dataState.value.sourceUrl == sourceUrl) {
+                    lastLoadedSourceUrl = sourceUrl
+                    resolveNpcSatelliteGuideFor(sourceUrl, latest)
                 }
             }
     }
@@ -549,6 +609,7 @@ internal class BaStudentGuideViewModel(
     }
 
     private fun resetGuideRuntimeState() {
+        backgroundValidationJob?.cancel()
         chromeController.resetForNewSource()
         prefetchController.resetForSource(
             sourceUrl = _dataState.value.sourceUrl,
@@ -558,6 +619,7 @@ internal class BaStudentGuideViewModel(
 
     override fun onCleared() {
         loadJob?.cancel()
+        backgroundValidationJob?.cancel()
         currentUrlLoadJob?.cancel()
         currentUrlSaveJob?.cancel()
         npcSatelliteResolveJob?.cancel()
