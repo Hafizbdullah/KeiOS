@@ -8,7 +8,9 @@ import os.kei.core.icon.LauncherIconController
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
@@ -38,6 +40,8 @@ internal class MainScreenUiPrefsState(
     val nonHomeBackgroundUri: String get() = snapshot.nonHomeBackgroundUri
     val nonHomeBackgroundOpacity: Float get() = snapshot.nonHomeBackgroundOpacity
     val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale get() = snapshot.nonHomeBackgroundContentScale
+    val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment get() = snapshot.nonHomeBackgroundAlignment
+    val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle get() = snapshot.nonHomeBackgroundPageStyle
     val nonHomeBackgroundScrim: Float get() = snapshot.nonHomeBackgroundScrim
     val superIslandNotificationEnabled: Boolean get() = snapshot.superIslandNotificationEnabled
     val superIslandBypassRestrictionEnabled: Boolean get() = snapshot.superIslandBypassRestrictionEnabled
@@ -122,8 +126,24 @@ internal class MainScreenUiPrefsState(
         viewModel.updateNonHomeBackgroundContentScale(value)
     }
 
+    fun updateNonHomeBackgroundAlignment(value: NonHomeBackgroundAlignment) {
+        viewModel.updateNonHomeBackgroundAlignment(value)
+    }
+
+    fun updateNonHomeBackgroundPageStyle(value: NonHomeBackgroundPageStyle) {
+        viewModel.updateNonHomeBackgroundPageStyle(value)
+    }
+
     fun updateNonHomeBackgroundScrim(value: Float) {
         viewModel.updateNonHomeBackgroundScrim(value)
+    }
+
+    fun resetNonHomeBackgroundRendering() {
+        viewModel.resetNonHomeBackgroundRendering()
+    }
+
+    fun applyNonHomeBackgroundReadableSuggestion(isDarkTheme: Boolean) {
+        viewModel.applyNonHomeBackgroundReadableSuggestion(isDarkTheme)
     }
 
     fun updateSuperIslandNotificationEnabled(value: Boolean) {

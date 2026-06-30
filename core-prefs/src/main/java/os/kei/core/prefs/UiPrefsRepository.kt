@@ -132,9 +132,69 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setNonHomeBackgroundAlignment(value: NonHomeBackgroundAlignment) {
+        updateAndPersist({ copy(nonHomeBackgroundAlignment = value) }) {
+            UiPrefs.setNonHomeBackgroundAlignment(value)
+        }
+    }
+
+    suspend fun setNonHomeBackgroundPageStyle(value: NonHomeBackgroundPageStyle) {
+        updateAndPersist({ copy(nonHomeBackgroundPageStyle = value) }) {
+            UiPrefs.setNonHomeBackgroundPageStyle(value)
+        }
+    }
+
     suspend fun setNonHomeBackgroundScrim(value: Float) {
         updateAndPersist({ copy(nonHomeBackgroundScrim = value) }) {
             UiPrefs.setNonHomeBackgroundScrim(value)
+        }
+    }
+
+    suspend fun resetNonHomeBackgroundRendering() {
+        val defaults = UiPrefs.defaultSnapshot()
+        updateAndPersist(
+            reducer = {
+                copy(
+                    nonHomeBackgroundOpacity = defaults.nonHomeBackgroundOpacity,
+                    nonHomeBackgroundContentScale = defaults.nonHomeBackgroundContentScale,
+                    nonHomeBackgroundAlignment = defaults.nonHomeBackgroundAlignment,
+                    nonHomeBackgroundPageStyle = defaults.nonHomeBackgroundPageStyle,
+                    nonHomeBackgroundScrim = defaults.nonHomeBackgroundScrim,
+                )
+            },
+        ) {
+            UiPrefs.setNonHomeBackgroundOpacity(defaults.nonHomeBackgroundOpacity)
+            UiPrefs.setNonHomeBackgroundContentScale(defaults.nonHomeBackgroundContentScale)
+            UiPrefs.setNonHomeBackgroundAlignment(defaults.nonHomeBackgroundAlignment)
+            UiPrefs.setNonHomeBackgroundPageStyle(defaults.nonHomeBackgroundPageStyle)
+            UiPrefs.setNonHomeBackgroundScrim(defaults.nonHomeBackgroundScrim)
+        }
+    }
+
+    suspend fun applyNonHomeBackgroundReadableSuggestion(isDarkTheme: Boolean) {
+        val opacity = if (isDarkTheme) 0.18f else 0.14f
+        val scrim = if (isDarkTheme) 0.18f else 0.20f
+        updateAndPersist(
+            reducer = {
+                copy(
+                    nonHomeBackgroundOpacity = opacity,
+                    nonHomeBackgroundAlignment =
+                        if (nonHomeBackgroundContentScale == NonHomeBackgroundContentScale.Fit) {
+                            NonHomeBackgroundAlignment.Center
+                        } else {
+                            nonHomeBackgroundAlignment
+                        },
+                    nonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Readable,
+                    nonHomeBackgroundScrim = scrim,
+                )
+            },
+        ) {
+            UiPrefs.setNonHomeBackgroundOpacity(opacity)
+            if (UiPrefs.getNonHomeBackgroundContentScale() == NonHomeBackgroundContentScale.Fit) {
+                UiPrefs.setNonHomeBackgroundAlignment(NonHomeBackgroundAlignment.Center)
+            }
+            UiPrefs.setNonHomeBackgroundPageStyle(NonHomeBackgroundPageStyle.Readable)
+            UiPrefs.setNonHomeBackgroundScrim(scrim)
         }
     }
 

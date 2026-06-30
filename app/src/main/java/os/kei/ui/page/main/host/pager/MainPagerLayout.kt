@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -24,7 +25,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
@@ -34,6 +37,7 @@ import os.kei.ui.page.main.back.MainBackNavigationAction
 import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundImage
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
@@ -55,6 +59,8 @@ internal fun MainPagerLayout(
     nonHomeBackgroundUri: String,
     nonHomeBackgroundOpacity: Float,
     nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
+    nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     nonHomeBackgroundScrim: Float,
     visibleBottomPageNames: Set<String>,
     onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
@@ -205,20 +211,35 @@ internal fun MainPagerLayout(
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
+                val backgroundStyle =
+                    remember(nonHomeBackgroundPageStyle) {
+                        AppManagedBackgroundStyles.forPageStyle(nonHomeBackgroundPageStyle)
+                    }
+                val baseColor = MiuixTheme.colorScheme.background
+                val darkBase = baseColor.luminance() < 0.5f
                 AppManagedBackgroundImage(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
-                    opacity = nonHomeBackgroundOpacity,
+                    opacity = nonHomeBackgroundOpacity * backgroundStyle.opacityMultiplier,
                     contentScale = nonHomeBackgroundContentScale,
+                    alignment = nonHomeBackgroundAlignment,
                     modifier = Modifier.fillMaxSize(),
                 )
-                val backgroundScrim = nonHomeBackgroundScrim.coerceIn(0f, 1f)
+                val backgroundScrim =
+                    (
+                        nonHomeBackgroundScrim +
+                            if (darkBase) {
+                                backgroundStyle.darkOverlayAlpha
+                            } else {
+                                backgroundStyle.lightOverlayAlpha
+                            }
+                    ).coerceIn(0f, 1f)
                 if (backgroundScrim > 0f) {
                     Box(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.background.copy(alpha = backgroundScrim)),
+                                .background(baseColor.copy(alpha = backgroundScrim)),
                     )
                 }
             }

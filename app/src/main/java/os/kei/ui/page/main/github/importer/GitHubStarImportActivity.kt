@@ -148,6 +148,8 @@ private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
                     imageUri = prefsSnapshot.nonHomeBackgroundUri,
                     opacity = prefsSnapshot.nonHomeBackgroundOpacity,
                     contentScale = prefsSnapshot.nonHomeBackgroundContentScale,
+                    alignment = prefsSnapshot.nonHomeBackgroundAlignment,
+                    pageStyle = prefsSnapshot.nonHomeBackgroundPageStyle,
                     scrim = prefsSnapshot.nonHomeBackgroundScrim,
                     style = AppManagedBackgroundStyles.FocusedTask,
                     content = content,

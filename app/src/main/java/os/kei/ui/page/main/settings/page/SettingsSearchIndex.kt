@@ -73,9 +73,19 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val nonHomeBackgroundScaleCropLabel = resolveString(R.string.settings_non_home_background_scale_crop)
     val nonHomeBackgroundScaleFitLabel = resolveString(R.string.settings_non_home_background_scale_fit)
     val nonHomeBackgroundScaleFillBoundsLabel = resolveString(R.string.settings_non_home_background_scale_fill_bounds)
+    val nonHomeBackgroundAlignmentLabel = resolveString(R.string.settings_non_home_background_alignment_title)
+    val nonHomeBackgroundAlignmentTopLabel = resolveString(R.string.settings_non_home_background_alignment_top)
+    val nonHomeBackgroundAlignmentCenterLabel = resolveString(R.string.settings_non_home_background_alignment_center)
+    val nonHomeBackgroundAlignmentBottomLabel = resolveString(R.string.settings_non_home_background_alignment_bottom)
+    val nonHomeBackgroundStyleLabel = resolveString(R.string.settings_non_home_background_style_title)
+    val nonHomeBackgroundStyleReadableLabel = resolveString(R.string.settings_non_home_background_style_readable)
+    val nonHomeBackgroundStyleSoftLabel = resolveString(R.string.settings_non_home_background_style_soft)
+    val nonHomeBackgroundStyleFocusedLabel = resolveString(R.string.settings_non_home_background_style_focused)
     val nonHomeBackgroundOpacityLabel = resolveString(R.string.settings_non_home_background_opacity_title)
     val nonHomeBackgroundScrimLabel = resolveString(R.string.settings_non_home_background_scrim_title)
     val nonHomeBackgroundCropLabel = resolveString(R.string.settings_non_home_background_crop_title)
+    val nonHomeBackgroundPreviewLabel = resolveString(R.string.settings_non_home_background_action_preview)
+    val nonHomeBackgroundSuggestLabel = resolveString(R.string.settings_non_home_background_action_suggest)
 
     val notifyGroupLabel = resolveString(R.string.settings_group_notify_title)
     val superIslandStyleLabel = resolveString(R.string.settings_super_island_style_title)
@@ -172,9 +182,19 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     nonHomeBackgroundScaleCropLabel,
                     nonHomeBackgroundScaleFitLabel,
                     nonHomeBackgroundScaleFillBoundsLabel,
+                    nonHomeBackgroundAlignmentLabel,
+                    nonHomeBackgroundAlignmentTopLabel,
+                    nonHomeBackgroundAlignmentCenterLabel,
+                    nonHomeBackgroundAlignmentBottomLabel,
+                    nonHomeBackgroundStyleLabel,
+                    nonHomeBackgroundStyleReadableLabel,
+                    nonHomeBackgroundStyleSoftLabel,
+                    nonHomeBackgroundStyleFocusedLabel,
                     nonHomeBackgroundOpacityLabel,
                     nonHomeBackgroundScrimLabel,
                     nonHomeBackgroundCropLabel,
+                    nonHomeBackgroundPreviewLabel,
+                    nonHomeBackgroundSuggestLabel,
                 ),
         ),
         SettingsSearchTarget(

@@ -30,7 +30,9 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -92,8 +94,14 @@ fun SettingsPage(
     onNonHomeBackgroundOpacityChanged: (Float) -> Unit,
     nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
     onNonHomeBackgroundContentScaleChanged: (NonHomeBackgroundContentScale) -> Unit,
+    nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
+    onNonHomeBackgroundAlignmentChanged: (NonHomeBackgroundAlignment) -> Unit,
+    nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
+    onNonHomeBackgroundPageStyleChanged: (NonHomeBackgroundPageStyle) -> Unit,
     nonHomeBackgroundScrim: Float,
     onNonHomeBackgroundScrimChanged: (Float) -> Unit,
+    onResetNonHomeBackgroundRendering: () -> Unit,
+    onApplyNonHomeBackgroundReadableSuggestion: (Boolean) -> Unit,
     superIslandNotificationEnabled: Boolean,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
     superIslandBypassRestrictionEnabled: Boolean,
@@ -398,8 +406,14 @@ fun SettingsPage(
             onNonHomeBackgroundOpacityChanged = onNonHomeBackgroundOpacityChanged,
             nonHomeBackgroundContentScale = nonHomeBackgroundContentScale,
             onNonHomeBackgroundContentScaleChanged = onNonHomeBackgroundContentScaleChanged,
+            nonHomeBackgroundAlignment = nonHomeBackgroundAlignment,
+            onNonHomeBackgroundAlignmentChanged = onNonHomeBackgroundAlignmentChanged,
+            nonHomeBackgroundPageStyle = nonHomeBackgroundPageStyle,
+            onNonHomeBackgroundPageStyleChanged = onNonHomeBackgroundPageStyleChanged,
             nonHomeBackgroundScrim = nonHomeBackgroundScrim,
             onNonHomeBackgroundScrimChanged = onNonHomeBackgroundScrimChanged,
+            onResetNonHomeBackgroundRendering = onResetNonHomeBackgroundRendering,
+            onApplyNonHomeBackgroundReadableSuggestion = onApplyNonHomeBackgroundReadableSuggestion,
             enabledCardColor = enabledCardColor,
             disabledCardColor = disabledCardColor,
             onSliderInteractionChanged = settingsPageViewModel::updateSliderInteractionActive,

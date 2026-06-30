@@ -7,7 +7,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputState
 import os.kei.ui.page.main.os.shell.state.appendShellRunnerOutput
@@ -28,6 +30,8 @@ internal data class OsShellRunnerChromePrefs(
     val nonHomeBackgroundUri: String = "",
     val nonHomeBackgroundOpacity: Float = 0.16f,
     val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
+    val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
+    val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
     val nonHomeBackgroundScrim: Float = 0f,
 )
 
@@ -99,6 +103,8 @@ internal class OsShellRunnerRepository(
                 nonHomeBackgroundUri = UiPrefs.getNonHomeBackgroundUri(),
                 nonHomeBackgroundOpacity = UiPrefs.getNonHomeBackgroundOpacity(),
                 nonHomeBackgroundContentScale = UiPrefs.getNonHomeBackgroundContentScale(),
+                nonHomeBackgroundAlignment = UiPrefs.getNonHomeBackgroundAlignment(),
+                nonHomeBackgroundPageStyle = UiPrefs.getNonHomeBackgroundPageStyle(),
                 nonHomeBackgroundScrim = UiPrefs.getNonHomeBackgroundScrim(),
             )
         }

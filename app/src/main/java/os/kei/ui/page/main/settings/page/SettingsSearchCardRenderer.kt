@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
 import os.kei.core.log.AppLogLevel
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.ui.page.main.feedback.FeedbackIssueActivity
 import os.kei.ui.page.main.settings.section.SettingsAnimationSection
 import os.kei.ui.page.main.settings.section.SettingsBackgroundSection
@@ -78,8 +80,14 @@ internal fun LazyListScope.settingsCardItem(
                     onNonHomeBackgroundOpacityChanged = input.onNonHomeBackgroundOpacityChanged,
                     nonHomeBackgroundContentScale = input.nonHomeBackgroundContentScale,
                     onNonHomeBackgroundContentScaleChanged = input.onNonHomeBackgroundContentScaleChanged,
+                    nonHomeBackgroundAlignment = input.nonHomeBackgroundAlignment,
+                    onNonHomeBackgroundAlignmentChanged = input.onNonHomeBackgroundAlignmentChanged,
+                    nonHomeBackgroundPageStyle = input.nonHomeBackgroundPageStyle,
+                    onNonHomeBackgroundPageStyleChanged = input.onNonHomeBackgroundPageStyleChanged,
                     nonHomeBackgroundScrim = input.nonHomeBackgroundScrim,
                     onNonHomeBackgroundScrimChanged = input.onNonHomeBackgroundScrimChanged,
+                    onResetNonHomeBackgroundRendering = input.onResetNonHomeBackgroundRendering,
+                    onApplyNonHomeBackgroundReadableSuggestion = input.onApplyNonHomeBackgroundReadableSuggestion,
                     backgroundPickerLauncher = input.backgroundController.backgroundPickerLauncher,
                     onClearBackground = input.backgroundController.clearBackground,
                     enabledCardColor = input.enabledCardColor,
@@ -215,8 +223,14 @@ internal data class SettingsSearchCardRenderInput(
     val onNonHomeBackgroundOpacityChanged: (Float) -> Unit,
     val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
     val onNonHomeBackgroundContentScaleChanged: (NonHomeBackgroundContentScale) -> Unit,
+    val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
+    val onNonHomeBackgroundAlignmentChanged: (NonHomeBackgroundAlignment) -> Unit,
+    val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
+    val onNonHomeBackgroundPageStyleChanged: (NonHomeBackgroundPageStyle) -> Unit,
     val nonHomeBackgroundScrim: Float,
     val onNonHomeBackgroundScrimChanged: (Float) -> Unit,
+    val onResetNonHomeBackgroundRendering: () -> Unit,
+    val onApplyNonHomeBackgroundReadableSuggestion: (Boolean) -> Unit,
     val enabledCardColor: Color,
     val disabledCardColor: Color,
     val onSliderInteractionChanged: (Boolean) -> Unit,

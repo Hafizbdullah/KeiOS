@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.log.AppLogLevel
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
@@ -141,9 +143,33 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateNonHomeBackgroundAlignment(value: NonHomeBackgroundAlignment) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundAlignment(value)
+        }
+    }
+
+    fun updateNonHomeBackgroundPageStyle(value: NonHomeBackgroundPageStyle) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundPageStyle(value)
+        }
+    }
+
     fun updateNonHomeBackgroundScrim(value: Float) {
         launchRepositoryUpdate {
             setNonHomeBackgroundScrim(value)
+        }
+    }
+
+    fun resetNonHomeBackgroundRendering() {
+        launchRepositoryUpdate {
+            resetNonHomeBackgroundRendering()
+        }
+    }
+
+    fun applyNonHomeBackgroundReadableSuggestion(isDarkTheme: Boolean) {
+        launchRepositoryUpdate {
+            applyNonHomeBackgroundReadableSuggestion(isDarkTheme)
         }
     }
 

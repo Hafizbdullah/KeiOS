@@ -21,6 +21,8 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
     val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
+    val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     val nonHomeBackgroundScrim: Float,
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
@@ -50,6 +52,37 @@ enum class NonHomeBackgroundContentScale(
     }
 }
 
+enum class NonHomeBackgroundAlignment(
+    val storageId: String,
+) {
+    Top("top"),
+    Center("center"),
+    Bottom("bottom"),
+    Start("start"),
+    End("end"),
+    ;
+
+    companion object {
+        fun fromStorageId(raw: String?): NonHomeBackgroundAlignment =
+            entries.firstOrNull { it.storageId == raw } ?: Center
+    }
+}
+
+enum class NonHomeBackgroundPageStyle(
+    val storageId: String,
+) {
+    Standard("standard"),
+    Readable("readable"),
+    Soft("soft"),
+    Focused("focused"),
+    ;
+
+    companion object {
+        fun fromStorageId(raw: String?): NonHomeBackgroundPageStyle =
+            entries.firstOrNull { it.storageId == raw } ?: Standard
+    }
+}
+
 object UiPrefs {
     private const val KV_ID = "ui_prefs"
     private const val KEY_LIQUID_ACTION_BAR_LAYERED_STYLE = "liquid_action_bar_layered_style"
@@ -66,6 +99,8 @@ object UiPrefs {
     private const val KEY_NON_HOME_BACKGROUND_URI = "non_home_background_uri"
     private const val KEY_NON_HOME_BACKGROUND_OPACITY = "non_home_background_opacity"
     private const val KEY_NON_HOME_BACKGROUND_CONTENT_SCALE = "non_home_background_content_scale"
+    private const val KEY_NON_HOME_BACKGROUND_ALIGNMENT = "non_home_background_alignment"
+    private const val KEY_NON_HOME_BACKGROUND_PAGE_STYLE = "non_home_background_page_style"
     private const val KEY_NON_HOME_BACKGROUND_SCRIM = "non_home_background_scrim"
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
@@ -219,6 +254,28 @@ object UiPrefs {
 
     fun setNonHomeBackgroundContentScale(value: NonHomeBackgroundContentScale) {
         kv().encode(KEY_NON_HOME_BACKGROUND_CONTENT_SCALE, value.storageId)
+    }
+
+    fun getNonHomeBackgroundAlignment(
+        defaultValue: NonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
+    ): NonHomeBackgroundAlignment =
+        NonHomeBackgroundAlignment.fromStorageId(
+            kv().decodeString(KEY_NON_HOME_BACKGROUND_ALIGNMENT, defaultValue.storageId),
+        )
+
+    fun setNonHomeBackgroundAlignment(value: NonHomeBackgroundAlignment) {
+        kv().encode(KEY_NON_HOME_BACKGROUND_ALIGNMENT, value.storageId)
+    }
+
+    fun getNonHomeBackgroundPageStyle(
+        defaultValue: NonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
+    ): NonHomeBackgroundPageStyle =
+        NonHomeBackgroundPageStyle.fromStorageId(
+            kv().decodeString(KEY_NON_HOME_BACKGROUND_PAGE_STYLE, defaultValue.storageId),
+        )
+
+    fun setNonHomeBackgroundPageStyle(value: NonHomeBackgroundPageStyle) {
+        kv().encode(KEY_NON_HOME_BACKGROUND_PAGE_STYLE, value.storageId)
     }
 
     fun getNonHomeBackgroundScrim(defaultValue: Float = NON_HOME_BACKGROUND_SCRIM_DEFAULT): Float {
@@ -397,6 +454,8 @@ object UiPrefs {
             nonHomeBackgroundUri = "",
             nonHomeBackgroundOpacity = NON_HOME_BACKGROUND_OPACITY_DEFAULT,
             nonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
+            nonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
+            nonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
             nonHomeBackgroundScrim = NON_HOME_BACKGROUND_SCRIM_DEFAULT,
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
@@ -434,6 +493,8 @@ object UiPrefs {
                         NON_HOME_BACKGROUND_OPACITY_DEFAULT,
                     ).coerceIn(NON_HOME_BACKGROUND_OPACITY_MIN, NON_HOME_BACKGROUND_OPACITY_MAX),
             nonHomeBackgroundContentScale = getNonHomeBackgroundContentScale(),
+            nonHomeBackgroundAlignment = getNonHomeBackgroundAlignment(),
+            nonHomeBackgroundPageStyle = getNonHomeBackgroundPageStyle(),
             nonHomeBackgroundScrim = getNonHomeBackgroundScrim(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),

@@ -65,6 +65,8 @@ class OsShellRunnerActivity : ComponentActivity() {
                             imageUri = chromePrefs.nonHomeBackgroundUri,
                             opacity = chromePrefs.nonHomeBackgroundOpacity,
                             contentScale = chromePrefs.nonHomeBackgroundContentScale,
+                            alignment = chromePrefs.nonHomeBackgroundAlignment,
+                            pageStyle = chromePrefs.nonHomeBackgroundPageStyle,
                             scrim = chromePrefs.nonHomeBackgroundScrim,
                             style = AppManagedBackgroundStyles.FocusedTask,
                         ) {

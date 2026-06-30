@@ -1,7 +1,9 @@
 package os.kei.ui.page.main.host.main
 
 import androidx.compose.runtime.Stable
+import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
+import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 
@@ -17,6 +19,8 @@ internal data class MainScreenPagerCoordinator(
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
     val nonHomeBackgroundContentScale: NonHomeBackgroundContentScale,
+    val nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
+    val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     val nonHomeBackgroundScrim: Float,
     val visibleBottomPageNames: Set<String>,
     val onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
@@ -65,6 +69,8 @@ internal fun buildMainScreenPagerCoordinator(
         nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
         nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
         nonHomeBackgroundContentScale = prefsState.nonHomeBackgroundContentScale,
+        nonHomeBackgroundAlignment = prefsState.nonHomeBackgroundAlignment,
+        nonHomeBackgroundPageStyle = prefsState.nonHomeBackgroundPageStyle,
         nonHomeBackgroundScrim = prefsState.nonHomeBackgroundScrim,
         visibleBottomPageNames = prefsState.visibleBottomPageNames,
         onVisibleBottomPageNamesChange = prefsState::updateVisibleBottomPageNames,

@@ -16,6 +16,8 @@ class UiPrefsDefaultSnapshotTest {
         val snapshot = UiPrefs.defaultSnapshot()
 
         assertEquals(NonHomeBackgroundContentScale.Crop, snapshot.nonHomeBackgroundContentScale)
+        assertEquals(NonHomeBackgroundAlignment.Center, snapshot.nonHomeBackgroundAlignment)
+        assertEquals(NonHomeBackgroundPageStyle.Standard, snapshot.nonHomeBackgroundPageStyle)
         assertEquals(0f, snapshot.nonHomeBackgroundScrim)
     }
 
