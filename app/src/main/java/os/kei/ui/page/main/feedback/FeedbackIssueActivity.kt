@@ -25,6 +25,8 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.common.applicationViewModel
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -36,12 +38,13 @@ class FeedbackIssueActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val initialThemeMode = UiPrefs.getAppThemeMode()
-        val initialTransitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+        val initialPrefsSnapshot = UiPrefs.loadSnapshot()
+        val initialThemeMode = initialPrefsSnapshot.appThemeMode
+        val initialTransitionAnimationsEnabled = initialPrefsSnapshot.transitionAnimationsEnabled
         val initialPredictiveBackPolicy =
             PredictiveBackOemCompat.currentPolicy(
                 transitionAnimationsEnabled = initialTransitionAnimationsEnabled,
-                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+                predictiveBackAnimationsEnabled = initialPrefsSnapshot.predictiveBackAnimationsEnabled,
             )
         val initialColorSchemeMode =
             when (initialThemeMode) {
@@ -97,19 +100,26 @@ class FeedbackIssueActivity : ComponentActivity() {
                             }
                         }
 
-                        FeedbackIssuePage(
-                            state = uiState,
-                            onTitleChange = viewModel::updateTitle,
-                            onBodyChange = viewModel::updateBody,
-                            onRefresh = viewModel::refresh,
-                            onExportZip = viewModel::requestLogExport,
-                            onClearLogs = viewModel::clearLogs,
-                            onRequestSubmit = viewModel::requestSubmit,
-                            onDismissSubmit = viewModel::dismissSubmitConfirmation,
-                            onConfirmBrowserSubmit = viewModel::submitViaBrowser,
-                            onConfirmApiSubmit = viewModel::submitViaApi,
-                            onClose = { finish() },
-                        )
+                        AppManagedBackgroundHost(
+                            enabled = initialPrefsSnapshot.nonHomeBackgroundEnabled,
+                            imageUri = initialPrefsSnapshot.nonHomeBackgroundUri,
+                            opacity = initialPrefsSnapshot.nonHomeBackgroundOpacity,
+                            style = AppManagedBackgroundStyles.FocusedTask,
+                        ) {
+                            FeedbackIssuePage(
+                                state = uiState,
+                                onTitleChange = viewModel::updateTitle,
+                                onBodyChange = viewModel::updateBody,
+                                onRefresh = viewModel::refresh,
+                                onExportZip = viewModel::requestLogExport,
+                                onClearLogs = viewModel::clearLogs,
+                                onRequestSubmit = viewModel::requestSubmit,
+                                onDismissSubmit = viewModel::dismissSubmitConfirmation,
+                                onConfirmBrowserSubmit = viewModel::submitViaBrowser,
+                                onConfirmApiSubmit = viewModel::submitViaApi,
+                                onClose = { finish() },
+                            )
+                        }
                     }
                 }
             }

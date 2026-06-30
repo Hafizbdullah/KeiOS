@@ -22,7 +22,10 @@ internal data class OsShellRunnerChromePrefs(
     val liquidActionBarLayeredStyleEnabled: Boolean = true,
     val liquidSwitchEnabled: Boolean = true,
     val transitionAnimationsEnabled: Boolean = true,
-    val predictiveBackAnimationsEnabled: Boolean = true
+    val predictiveBackAnimationsEnabled: Boolean = true,
+    val nonHomeBackgroundEnabled: Boolean = false,
+    val nonHomeBackgroundUri: String = "",
+    val nonHomeBackgroundOpacity: Float = 0.16f,
 )
 
 internal data class OsShellRunnerPersistentState(
@@ -88,7 +91,10 @@ internal class OsShellRunnerRepository(
                 liquidActionBarLayeredStyleEnabled = UiPrefs.isLiquidActionBarLayeredStyleEnabled(),
                 liquidSwitchEnabled = UiPrefs.isLiquidSwitchEnabled(),
                 transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled(),
-                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+                predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+                nonHomeBackgroundEnabled = UiPrefs.isNonHomeBackgroundEnabled(),
+                nonHomeBackgroundUri = UiPrefs.getNonHomeBackgroundUri(),
+                nonHomeBackgroundOpacity = UiPrefs.getNonHomeBackgroundOpacity(),
             )
         }
         chromePrefs.value = loaded

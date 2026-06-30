@@ -45,6 +45,9 @@ import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.sync.WebDavSyncPage
 import os.kei.ui.page.main.sync.rememberWebDavSyncDataPorts
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyle
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.BindLiquidToastBridge
 import os.kei.ui.page.main.widget.glass.LiquidToastHost
@@ -198,85 +201,93 @@ internal fun MainScreenNavHost(
                             )
                         }
                         entry<KeiosRoute.Settings> {
-                            SettingsPage(
-                                notificationPermissionGranted = notificationPermissionGranted,
-                                onRequestNotificationPermission = onRequestNotificationPermission,
-                                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                                onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
-                                liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
-                                onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
-                                liquidToastEnabled = prefsState.liquidToastEnabled,
-                                onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
-                                reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
-                                onReduceToastInterruptionChanged = prefsState::updateReduceToastInterruptionEnabled,
-                                liquidSheetEnabled = prefsState.liquidSheetEnabled,
-                                onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
-                                liquidDialogEnabled = prefsState.liquidDialogEnabled,
-                                onLiquidDialogChanged = prefsState::updateLiquidDialogEnabled,
-                                transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
-                                onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
-                                predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
-                                onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
-                                searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
-                                onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
-                                gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
-                                onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
-                                homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
-                                onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
-                                homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
-                                onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
-                                preloadingEnabled = prefsState.preloadingEnabled,
-                                onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
-                                launcherIconDesign = prefsState.launcherIconDesign,
-                                onLauncherIconDesignChanged = prefsState::updateLauncherIconDesign,
-                                nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
-                                onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
-                                nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
-                                onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
-                                nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
-                                onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
-                                superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
-                                onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
-                                superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
-                                onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
-                                superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
-                                onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
-                                logLevel = prefsState.logLevel,
-                                onLogLevelChanged = prefsState::updateLogLevel,
-                                textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
-                                onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
-                                cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
-                                onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
-                                shizukuStatus = pagerCoordinator.shizukuStatus,
-                                onCheckOrRequestShizuku = onCheckOrRequestShizuku,
-                                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                                appThemeMode = appThemeMode,
-                                onAppThemeModeChanged = onAppThemeModeChanged,
-                                onBack = onRouteBack,
-                                onOpenWebDavSync = { navigator.pushSingleTop(KeiosRoute.WebDavSync) },
-                            )
+                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                                SettingsPage(
+                                    notificationPermissionGranted = notificationPermissionGranted,
+                                    onRequestNotificationPermission = onRequestNotificationPermission,
+                                    liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                                    onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
+                                    liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
+                                    onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
+                                    liquidToastEnabled = prefsState.liquidToastEnabled,
+                                    onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
+                                    reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
+                                    onReduceToastInterruptionChanged = prefsState::updateReduceToastInterruptionEnabled,
+                                    liquidSheetEnabled = prefsState.liquidSheetEnabled,
+                                    onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
+                                    liquidDialogEnabled = prefsState.liquidDialogEnabled,
+                                    onLiquidDialogChanged = prefsState::updateLiquidDialogEnabled,
+                                    transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
+                                    onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
+                                    predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
+                                    onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
+                                    searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
+                                    onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
+                                    gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
+                                    onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
+                                    homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
+                                    onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
+                                    homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
+                                    onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
+                                    preloadingEnabled = prefsState.preloadingEnabled,
+                                    onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
+                                    launcherIconDesign = prefsState.launcherIconDesign,
+                                    onLauncherIconDesignChanged = prefsState::updateLauncherIconDesign,
+                                    nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
+                                    onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
+                                    nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
+                                    onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
+                                    nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
+                                    onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
+                                    superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
+                                    onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
+                                    superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
+                                    onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
+                                    superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
+                                    onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
+                                    logLevel = prefsState.logLevel,
+                                    onLogLevelChanged = prefsState::updateLogLevel,
+                                    textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
+                                    onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
+                                    cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
+                                    onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
+                                    shizukuStatus = pagerCoordinator.shizukuStatus,
+                                    onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+                                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                                    appThemeMode = appThemeMode,
+                                    onAppThemeModeChanged = onAppThemeModeChanged,
+                                    onBack = onRouteBack,
+                                    onOpenWebDavSync = { navigator.pushSingleTop(KeiosRoute.WebDavSync) },
+                                )
+                            }
                         }
                         entry<KeiosRoute.McpSkill> {
-                            McpSkillPage(
-                                mcpServerManager = mcpServerManager,
-                                onBack = onRouteBack,
-                            )
+                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                                McpSkillPage(
+                                    mcpServerManager = mcpServerManager,
+                                    onBack = onRouteBack,
+                                )
+                            }
                         }
                         entry<KeiosRoute.GitHubActionsNotificationHistory> {
-                            GitHubActionsNotificationHistoryPage(
-                                onBack = onRouteBack,
-                                onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
-                            )
+                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                                GitHubActionsNotificationHistoryPage(
+                                    onBack = onRouteBack,
+                                    onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
+                                )
+                            }
                         }
                         entry<KeiosRoute.About> {
-                            AboutPage(
-                                appLabel = appLabel,
-                                notificationPermissionGranted = notificationPermissionGranted,
-                                shizukuStatus = pagerCoordinator.shizukuStatus,
-                                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                                onCheckShizuku = onCheckOrRequestShizuku,
-                                onBack = onRouteBack,
-                            )
+                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                                AboutPage(
+                                    appLabel = appLabel,
+                                    notificationPermissionGranted = notificationPermissionGranted,
+                                    shizukuStatus = pagerCoordinator.shizukuStatus,
+                                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                                    onCheckShizuku = onCheckOrRequestShizuku,
+                                    onBack = onRouteBack,
+                                )
+                            }
                         }
                         entry<KeiosRoute.BaStudentGuide> {
                             BaStudentGuidePage(
@@ -298,10 +309,12 @@ internal fun MainScreenNavHost(
                         }
                         entry<KeiosRoute.WebDavSync> {
                             val dataPorts = rememberWebDavSyncDataPorts()
-                            WebDavSyncPage(
-                                onBack = onRouteBack,
-                                dataPorts = dataPorts,
-                            )
+                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                                WebDavSyncPage(
+                                    onBack = onRouteBack,
+                                    dataPorts = dataPorts,
+                                )
+                            }
                         }
                     },
                 )
@@ -327,5 +340,20 @@ private fun <T : Any> noNavPredictiveContentTransform():
     ContentTransform(
         targetContentEnter = EnterTransition.None,
         initialContentExit = ExitTransition.None,
+    )
+}
+
+@Composable
+private fun MainScreenRouteBackgroundHost(
+    prefsState: MainScreenUiPrefsState,
+    style: AppManagedBackgroundStyle = AppManagedBackgroundStyles.Standard,
+    content: @Composable () -> Unit,
+) {
+    AppManagedBackgroundHost(
+        enabled = prefsState.nonHomeBackgroundEnabled,
+        imageUri = prefsState.nonHomeBackgroundUri,
+        opacity = prefsState.nonHomeBackgroundOpacity,
+        style = style,
+        content = content,
     )
 }

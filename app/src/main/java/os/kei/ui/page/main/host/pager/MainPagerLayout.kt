@@ -20,15 +20,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
-import coil3.size.Precision
-import coil3.size.Scale
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
@@ -38,8 +32,8 @@ import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
 import os.kei.ui.page.main.back.MainBackNavigationAction
 import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundImage
 import os.kei.ui.page.main.widget.chrome.AppScaffold
-import os.kei.ui.page.main.widget.chrome.appWindowSizeDp
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
@@ -208,7 +202,7 @@ internal fun MainPagerLayout(
     ) { _ ->
         Box(modifier = Modifier.fillMaxSize()) {
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
-                NonHomePageBackground(
+                AppManagedBackgroundImage(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
                     opacity = nonHomeBackgroundOpacity,
@@ -517,48 +511,3 @@ private tailrec fun Context.findActivity(): Activity? =
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
-
-@Composable
-private fun NonHomePageBackground(
-    enabled: Boolean,
-    imageUri: String,
-    opacity: Float,
-    modifier: Modifier = Modifier,
-) {
-    if (!enabled || imageUri.isBlank()) return
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val windowSize = appWindowSizeDp()
-    val (targetWidthPx, targetHeightPx) =
-        remember(windowSize, density) {
-            with(density) {
-                val width =
-                    windowSize.width
-                        .roundToPx()
-                        .coerceAtLeast(1)
-                val height =
-                    windowSize.height
-                        .roundToPx()
-                        .coerceAtLeast(1)
-                width to height
-            }
-        }
-    val request =
-        remember(imageUri, targetWidthPx, targetHeightPx) {
-            ImageRequest
-                .Builder(context)
-                .data(imageUri)
-                .size(targetWidthPx, targetHeightPx)
-                .scale(Scale.FILL)
-                .precision(Precision.INEXACT)
-                .diskCachePolicy(CachePolicy.DISABLED)
-                .build()
-        }
-    AsyncImage(
-        model = request,
-        contentDescription = null,
-        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-        alpha = opacity.coerceIn(0f, 1f),
-        modifier = modifier,
-    )
-}

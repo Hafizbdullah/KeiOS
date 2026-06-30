@@ -11,11 +11,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.model.StarImportApplyResult
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -122,12 +125,13 @@ private fun buildResultIntent(result: StarImportApplyResult): Intent {
 
 @Composable
 private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
-    val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+    val prefsSnapshot = remember { UiPrefs.loadSnapshot() }
+    val transitionAnimationsEnabled = prefsSnapshot.transitionAnimationsEnabled
     val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
         transitionAnimationsEnabled = transitionAnimationsEnabled,
-        predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
+        predictiveBackAnimationsEnabled = prefsSnapshot.predictiveBackAnimationsEnabled,
     )
-    val colorSchemeMode = when (UiPrefs.getAppThemeMode()) {
+    val colorSchemeMode = when (prefsSnapshot.appThemeMode) {
         AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
         AppThemeMode.LIGHT -> ColorSchemeMode.Light
         AppThemeMode.DARK -> ColorSchemeMode.Dark
@@ -137,9 +141,15 @@ private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
             CompositionLocalProvider(
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                 LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
-                LocalLiquidControlsEnabled provides UiPrefs.isLiquidSwitchEnabled()
+                LocalLiquidControlsEnabled provides prefsSnapshot.liquidSwitchEnabled,
             ) {
-                content()
+                AppManagedBackgroundHost(
+                    enabled = prefsSnapshot.nonHomeBackgroundEnabled,
+                    imageUri = prefsSnapshot.nonHomeBackgroundUri,
+                    opacity = prefsSnapshot.nonHomeBackgroundOpacity,
+                    style = AppManagedBackgroundStyles.FocusedTask,
+                    content = content,
+                )
             }
         }
     }

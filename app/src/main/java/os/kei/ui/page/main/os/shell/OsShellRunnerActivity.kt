@@ -20,6 +20,8 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -58,20 +60,27 @@ class OsShellRunnerActivity : ComponentActivity() {
                         LocalTransitionAnimationsEnabled provides chromePrefs.transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
                     ) {
-                        OsShellRunnerPage(
-                            canRunShellCommand = canRunShellCommand,
-                            onRequestShizukuPermission = {
-                                shizukuApiUtils.requestPermissionIfNeeded()
-                                refreshShellCommandReadyState()
-                            },
-                            onRunShellCommand = { command, timeoutMs, onOutput ->
-                                shizukuApiUtils.execCommandCancellableStreaming(
-                                    command = command,
-                                    timeoutMs = timeoutMs
-                                ) { output -> onOutput(output) }
-                            },
-                            onClose = { finish() }
-                        )
+                        AppManagedBackgroundHost(
+                            enabled = chromePrefs.nonHomeBackgroundEnabled,
+                            imageUri = chromePrefs.nonHomeBackgroundUri,
+                            opacity = chromePrefs.nonHomeBackgroundOpacity,
+                            style = AppManagedBackgroundStyles.FocusedTask,
+                        ) {
+                            OsShellRunnerPage(
+                                canRunShellCommand = canRunShellCommand,
+                                onRequestShizukuPermission = {
+                                    shizukuApiUtils.requestPermissionIfNeeded()
+                                    refreshShellCommandReadyState()
+                                },
+                                onRunShellCommand = { command, timeoutMs, onOutput ->
+                                    shizukuApiUtils.execCommandCancellableStreaming(
+                                        command = command,
+                                        timeoutMs = timeoutMs
+                                    ) { output -> onOutput(output) }
+                                },
+                                onClose = { finish() }
+                            )
+                        }
                     }
                 }
             }
