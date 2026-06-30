@@ -46,6 +46,9 @@ object FdroidRepositoryPresets {
     val commonSearchRepos: List<FdroidRepositoryPreset> =
         listOf(Main, IzzyOnDroid, GuardianProject)
 
+    val defaultCommonSearchRepoIds: List<String> =
+        listOf(MAIN_ID, IZZY_ID)
+
     fun presetForId(id: String): FdroidRepositoryPreset? {
         val normalized = id.trim().lowercase(Locale.ROOT)
         return entries.firstOrNull { preset -> preset.id == normalized }
@@ -58,9 +61,33 @@ object FdroidRepositoryPresets {
         }
     }
 
-    fun repoUrlsForScope(scopeId: String, customRepoUrl: String): List<String> {
+    fun commonSearchReposForIds(ids: List<String>): List<FdroidRepositoryPreset> {
+        val normalizedIds = normalizedCommonSearchRepoIds(ids).toSet()
+        return commonSearchRepos.filter { preset -> preset.id in normalizedIds }
+    }
+
+    fun normalizedCommonSearchRepoIds(ids: List<String>): List<String> {
+        val requestedIds =
+            ids
+                .asSequence()
+                .map { id -> id.trim().lowercase(Locale.ROOT) }
+                .filter { id -> id.isNotBlank() }
+                .distinct()
+                .toSet()
+        val normalized =
+            commonSearchRepos
+                .map { preset -> preset.id }
+                .filter { id -> id in requestedIds }
+        return normalized.ifEmpty { defaultCommonSearchRepoIds }
+    }
+
+    fun repoUrlsForScope(
+        scopeId: String,
+        customRepoUrl: String,
+        commonRepoIds: List<String> = defaultCommonSearchRepoIds
+    ): List<String> {
         return when (scopeId.trim().lowercase(Locale.ROOT)) {
-            COMMON_ID -> commonSearchRepos.map { preset -> preset.repoUrl }
+            COMMON_ID -> commonSearchReposForIds(commonRepoIds).map { preset -> preset.repoUrl }
             CUSTOM_ID -> listOf(customRepoUrl)
             else -> presetForId(scopeId)?.let { listOf(it.repoUrl) }.orEmpty()
         }.map { url -> url.trim().trimEnd('/') }

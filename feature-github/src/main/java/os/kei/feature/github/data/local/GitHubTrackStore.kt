@@ -22,6 +22,7 @@ import os.kei.core.json.parseJsonElementOrNull
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.json.jsonObjectOrNull
 import os.kei.core.json.jsonPrimitiveOrNull
+import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -135,6 +136,7 @@ object GitHubTrackStore {
     private const val KEY_REPOSITORY_HEALTH_CARD_ENABLED = "github_repository_health_card_enabled"
     private const val KEY_APK_TRUST_CHECK_ENABLED = "github_apk_trust_check_enabled"
     private const val KEY_RELEASE_NOTES_MODE = "github_release_notes_mode"
+    private const val KEY_FDROID_COMMON_REPO_IDS = "github_fdroid_common_repo_ids"
     private const val KEY_PENDING_SHARE_IMPORT_TRACK = "github_pending_share_import_track"
     private const val KEY_TRACKED_FIRST_INSTALL_AT_BY_PACKAGE = "github_tracked_first_install_at_by_package"
     private const val KEY_TRACKED_ADDED_AT_BY_ID = "github_tracked_added_at_by_id"
@@ -829,7 +831,10 @@ object GitHubTrackStore {
             (item.repoUrl.length + item.owner.length + item.repo.length + item.packageName.length + item.appLabel.length)
                 .toLong() * 2 + 32L
         }
-        val prefsBytes = snapshot.lookupConfig.apiToken.length.toLong() * 2 + 96L
+        val prefsBytes =
+            (snapshot.lookupConfig.apiToken.length +
+                snapshot.lookupConfig.normalizedFdroidCommonRepoIds.sumOf { id -> id.length })
+                .toLong() * 2 + 128L
         return trackedBytes + prefsBytes
     }
 
@@ -889,7 +894,8 @@ object GitHubTrackStore {
             apkTrustCheckEnabled = kv().decodeBool(KEY_APK_TRUST_CHECK_ENABLED, false),
             releaseNotesMode = GitHubReleaseNotesMode.fromStorageId(
                 kv().decodeString(KEY_RELEASE_NOTES_MODE).orEmpty()
-            )
+            ),
+            fdroidCommonRepoIds = loadFdroidCommonRepoIds()
         )
     }
 
@@ -918,6 +924,20 @@ object GitHubTrackStore {
         kv().encode(KEY_REPOSITORY_HEALTH_CARD_ENABLED, config.repositoryHealthCardEnabled)
         kv().encode(KEY_APK_TRUST_CHECK_ENABLED, config.apkTrustCheckEnabled)
         kv().encode(KEY_RELEASE_NOTES_MODE, config.releaseNotesMode.storageId)
+        kv().encode(
+            KEY_FDROID_COMMON_REPO_IDS,
+            config.normalizedFdroidCommonRepoIds.joinToString(",")
+        )
+    }
+
+    private fun loadFdroidCommonRepoIds(): List<String> {
+        val raw = kv().decodeString(KEY_FDROID_COMMON_REPO_IDS).orEmpty()
+        val ids =
+            raw
+                .split(',')
+                .map { id -> id.trim() }
+                .filter { id -> id.isNotBlank() }
+        return FdroidRepositoryPresets.normalizedCommonSearchRepoIds(ids)
     }
 
 }

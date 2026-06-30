@@ -98,8 +98,12 @@ data class GitHubLookupConfig(
     val decisionAssistEnabled: Boolean = false,
     val repositoryHealthCardEnabled: Boolean = false,
     val apkTrustCheckEnabled: Boolean = false,
-    val releaseNotesMode: GitHubReleaseNotesMode = GitHubReleaseNotesMode.Off
+    val releaseNotesMode: GitHubReleaseNotesMode = GitHubReleaseNotesMode.Off,
+    val fdroidCommonRepoIds: List<String> = FdroidRepositoryPresets.defaultCommonSearchRepoIds
 ) {
+    val normalizedFdroidCommonRepoIds: List<String>
+        get() = FdroidRepositoryPresets.normalizedCommonSearchRepoIds(fdroidCommonRepoIds)
+
     val actionsRequireApiToken: Boolean
         get() = actionsStrategy == GitHubActionsLookupStrategyOption.GitHubApiToken
 
