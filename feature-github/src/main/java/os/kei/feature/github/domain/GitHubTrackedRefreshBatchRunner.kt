@@ -58,6 +58,7 @@ object GitHubTrackedRefreshBatchRunner {
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
+        onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: (suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck)? = null
     ): GitHubTrackedRefreshBatchResult {
         val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
@@ -67,6 +68,7 @@ object GitHubTrackedRefreshBatchRunner {
             maxConcurrency = maxConcurrency,
             dispatcher = dispatcher,
             onProgress = onProgress,
+            onItemResult = onItemResult,
             evaluator = { item ->
                 evaluator?.invoke(context, item)
                     ?: batchEvaluator.evaluateTrackedApp(context, item)
@@ -80,6 +82,7 @@ object GitHubTrackedRefreshBatchRunner {
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
+        onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
     ): GitHubTrackedRefreshBatchResult {
         if (trackedItems.isEmpty()) {
@@ -139,11 +142,13 @@ object GitHubTrackedRefreshBatchRunner {
                             if (error is CancellationException) throw error
                             failedCheck(error)
                         }
+                        val itemElapsedMs = elapsedMsSince(itemStartNs)
                         results[workItem.originalIndex] = GitHubTrackedRefreshItemResult(
                             item = item,
                             check = check,
-                            elapsedMs = elapsedMsSince(itemStartNs)
+                            elapsedMs = itemElapsedMs
                         )
+                        onItemResult(item, check, itemElapsedMs)
                         val progress = progressMutex.withLock {
                             if (check.hasUpdate == true) updatableCount += 1
                             if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1

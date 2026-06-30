@@ -41,16 +41,28 @@ internal class GitHubRefreshActions(
         GitHubBackgroundRefreshCoordinator(
             env = env,
             actionsRunRefreshCoordinator = actionsRunRefreshCoordinator,
-            refreshItem = { request ->
-                singleItemActions.refreshItemNow(
+            prepareItemRefresh = { item, previousState ->
+                assetActions.clearApkAssetCacheNow(
+                    item = item,
+                    itemState = previousState,
+                    allowLatestReleaseFallback = true,
+                )
+            },
+            evaluateItemCheck = { request ->
+                checkNotNull(request.batchEvaluator) {
+                    "GitHub background refresh requires a batch evaluator"
+                }.evaluateTrackedApp(
+                    context = context,
                     item = request.item,
-                    showToastOnError = false,
-                    keepCurrentVisualWhileRefreshing = true,
                     profilePurposeOverride = request.profilePurposeOverride,
                     forceRefresh = request.forceRefresh,
-                    persistAfterUpdate = false,
-                    refreshActionsAfterUpdate = false,
-                    batchEvaluator = request.batchEvaluator,
+                )
+            },
+            mergeResolvedState = { item, resolvedState, previousState ->
+                mergeDirectApkRemoteFallback(
+                    item = item,
+                    resolvedState = resolvedState,
+                    previousState = previousState,
                 )
             },
             persistCheckCache = { targetIds -> mergeCheckCacheNow(targetIds) },
