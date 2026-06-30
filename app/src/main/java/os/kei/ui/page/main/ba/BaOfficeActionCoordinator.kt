@@ -5,7 +5,6 @@ import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
-import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 
@@ -18,6 +17,8 @@ internal class BaOfficeActionCoordinator(
     private val onSettingsCafeLevelChange: (Int) -> Unit,
     private val onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     private val onCafeLevelPopupChange: (Boolean) -> Unit,
+    private val onOpenApLimitTools: () -> Unit,
+    private val onOpenCafeApTools: () -> Unit,
     private val onAccountSelected: (BaAccountId) -> Unit,
     private val onEditAccount: (BaAccountId) -> Unit,
     private val onRefreshCalendar: () -> Unit,
@@ -29,8 +30,10 @@ internal class BaOfficeActionCoordinator(
         BaPageContentActions(
             onApCurrentInputChange = { office.apCurrentInput = it },
             onApCurrentDone = ::saveApCurrentInput,
-            onApLimitInputChange = { office.apLimitInput = it },
-            onApLimitDone = ::saveApLimitInput,
+            onOpenApLimitTools = onOpenApLimitTools,
+            onCafeStoredApInputChange = { office.cafeStoredApInput = normalizeCafeStoredApInput(it) },
+            onCafeStoredApDone = ::saveCafeStoredApInput,
+            onOpenCafeApTools = onOpenCafeApTools,
             onCafeLevelPopupAnchorBoundsChange = onCafeLevelPopupAnchorBoundsChange,
             onCafeLevelPopupChange = onCafeLevelPopupChange,
             onAccountSelected = onAccountSelected,
@@ -56,18 +59,11 @@ internal class BaOfficeActionCoordinator(
         office.apCurrentInput = finalValue.toString()
     }
 
-    private fun saveApLimitInput() {
-        val finalValue =
-            office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
-                ?: BA_AP_LIMIT_MAX
-        val limitUpdate = office.updateApLimit(finalValue)
-        scope.launch {
-            BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
-            limitUpdate.runtimeUpdate?.withCurrentAccount()?.persistAsync()
-            office.applyApRegen()?.withCurrentAccount()?.persistAsync()
-        }
+    private fun saveCafeStoredApInput() {
+        val finalValue = office.cafeStoredApInput.replace(',', '.').toDoubleOrNull() ?: 0.0
+        persistRuntime(office.updateCafeStoredAp(finalValue))
         AppBackgroundScheduler.scheduleBaApThreshold(context)
-        office.apLimitInput = finalValue.toString()
+        office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }
 
     private fun selectCafeLevel(level: Int) {
@@ -103,6 +99,21 @@ internal class BaOfficeActionCoordinator(
         if (update == null) return
         scope.launch {
             update.persistAsync()
+        }
+    }
+}
+
+private fun normalizeCafeStoredApInput(input: String): String {
+    var hasDecimalSeparator = false
+    return buildString {
+        for (char in input.trim().take(8)) {
+            when {
+                char.isDigit() -> append(char)
+                (char == '.' || char == ',') && !hasDecimalSeparator -> {
+                    append(char)
+                    hasDecimalSeparator = true
+                }
+            }
         }
     }
 }

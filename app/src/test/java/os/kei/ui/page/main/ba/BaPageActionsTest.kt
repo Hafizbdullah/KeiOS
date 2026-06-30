@@ -3,6 +3,10 @@ package os.kei.ui.page.main.ba
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.ba.support.cafeDailyCapacity
+import os.kei.ui.page.main.ba.support.cafeStorageCap
+import os.kei.ui.page.main.ba.support.floorToHourMs
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -77,6 +81,62 @@ class BaPageActionsTest {
     }
 
     @Test
+    fun `cafe rank nine daily capacity uses current known cap`() {
+        assertEquals(670, cafeDailyCapacity(9))
+    }
+
+    @Test
+    fun `cafe stored ap update keeps decimals and resets hour base`() {
+        val nowMs = 3_745_000L
+
+        val (nextStoredAp, nextHour) =
+            applyBaCafeStoredApUpdate(
+                newValue = 12.75,
+                cafeLevel = 1,
+                nowMs = nowMs,
+            )
+
+        assertEquals(12.75, nextStoredAp)
+        assertEquals(floorToHourMs(nowMs), nextHour)
+    }
+
+    @Test
+    fun `cafe stored ap update clamps to cafe storage cap`() {
+        val (nextStoredAp, _) =
+            applyBaCafeStoredApUpdate(
+                newValue = 999.0,
+                cafeLevel = 1,
+                nowMs = 3_745_000L,
+            )
+
+        assertEquals(cafeStorageCap(1), nextStoredAp)
+    }
+
+    @Test
+    fun `manual cafe stored ap update resets cafe notification guard`() {
+        val nowMs = 7_345_000L
+        val office =
+            BaOfficeController(
+                snapshot =
+                    BaPageSnapshot(
+                        cafeLevel = 10,
+                        cafeStoredAp = 120.0,
+                        cafeApLastNotifiedLevel = 120,
+                    ),
+                clock = FixedBaOfficeClock(nowMs),
+            )
+
+        val update = office.updateCafeStoredAp(12.75)
+
+        assertEquals(12.75, office.cafeStoredAp)
+        assertEquals(floorToHourMs(nowMs), office.cafeLastHourMs)
+        assertEquals(-1, office.cafeApLastNotifiedLevel)
+        assertEquals(12.75, update.cafeStoredAp)
+        assertEquals(floorToHourMs(nowMs), update.cafeLastHourMs)
+        assertEquals(-1, update.cafeApLastNotifiedLevel)
+    }
+
+    @Test
     fun `ap notification plan sends threshold only for a new reached level`() {
         val accountId = BaAccountId("cn-main")
         val plan = planBaApNotificationSync(
@@ -116,4 +176,8 @@ class BaPageActionsTest {
         assertTrue(plan.shouldRefreshActiveNotification)
         assertEquals(-1, plan.nextLastNotifiedLevel)
     }
+}
+
+private class FixedBaOfficeClock(private val nowMs: Long) : BaOfficeClock {
+    override fun nowMs(): Long = nowMs
 }

@@ -48,6 +48,7 @@ internal data class BaOfficeState(
     val coffeeInvite2UsedMs: Long,
     val apCurrentInput: String,
     val apLimitInput: String,
+    val cafeStoredApInput: String,
     val apLastNotifiedLevel: Int,
 )
 
@@ -80,9 +81,12 @@ internal class BaOfficeController(
 
     var apCurrentInput by mutableStateOf(displayAp(apCurrent).toString())
     var apLimitInput by mutableStateOf(apLimit.toString())
+    var cafeStoredApInput by mutableStateOf(displayAp(cafeStoredAp).toString())
     var apLastNotifiedLevel by mutableIntStateOf(snapshot.apLastNotifiedLevel)
 
     fun displayApInputText(): String = displayAp(apCurrent).toString()
+
+    fun displayCafeStoredApInputText(): String = displayAp(cafeStoredAp).toString()
 
     fun matchesSnapshot(snapshot: BaPageSnapshot): Boolean =
         cafeLevel == snapshot.cafeLevel &&
@@ -108,6 +112,7 @@ internal class BaOfficeController(
             coffeeInvite2UsedMs == snapshot.coffeeInvite2UsedMs &&
             apCurrentInput == displayAp(snapshot.apCurrent.coerceAtLeast(0.0)).toString() &&
             apLimitInput == snapshot.apLimit.toString() &&
+            cafeStoredApInput == displayAp(snapshot.cafeStoredAp.coerceAtLeast(0.0)).toString() &&
             apLastNotifiedLevel == snapshot.apLastNotifiedLevel
 
     fun applySnapshot(snapshot: BaPageSnapshot) {
@@ -134,6 +139,7 @@ internal class BaOfficeController(
         coffeeInvite2UsedMs = snapshot.coffeeInvite2UsedMs
         apCurrentInput = displayAp(apCurrent).toString()
         apLimitInput = apLimit.toString()
+        cafeStoredApInput = displayAp(cafeStoredAp).toString()
         apLastNotifiedLevel = snapshot.apLastNotifiedLevel
     }
 
@@ -162,6 +168,7 @@ internal class BaOfficeController(
             coffeeInvite2UsedMs = coffeeInvite2UsedMs,
             apCurrentInput = apCurrentInput,
             apLimitInput = apLimitInput,
+            cafeStoredApInput = cafeStoredApInput,
             apLastNotifiedLevel = apLastNotifiedLevel,
         )
 
@@ -400,6 +407,28 @@ internal class BaOfficeController(
         }
         return null
     }
+
+    fun updateCafeStoredAp(newValue: Double): BaRuntimePersistenceUpdate {
+        val (nextStoredAp, nextHour) =
+            applyBaCafeStoredApUpdate(
+                newValue = newValue,
+                cafeLevel = cafeLevel,
+                nowMs = clock.nowMs(),
+            )
+        cafeStoredAp = nextStoredAp
+        cafeLastHourMs = nextHour
+        cafeApLastNotifiedLevel = -1
+        return BaRuntimePersistenceUpdate(
+            cafeStoredAp = nextStoredAp,
+            cafeLastHourMs = nextHour,
+            cafeApLastNotifiedLevel = -1,
+            notifyHomeOverview = true,
+        )
+    }
+
+    fun clearCafeStoredAp(): BaRuntimePersistenceUpdate = updateCafeStoredAp(0.0)
+
+    fun fillCafeStoredAp(): BaRuntimePersistenceUpdate = updateCafeStoredAp(cafeStorageCap(cafeLevel))
 
     fun claimCafeStoredAp(context: Context): BaRuntimePersistenceUpdate? {
         var update = applyCafeStorageUpdate()

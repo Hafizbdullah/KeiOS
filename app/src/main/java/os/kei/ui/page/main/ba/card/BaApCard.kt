@@ -48,9 +48,7 @@ internal fun BaApCard(
     apCurrentInput: String,
     onApCurrentInputChange: (String) -> Unit,
     onApCurrentDone: () -> Unit,
-    apLimitInput: String,
-    onApLimitInputChange: (String) -> Unit,
-    onApLimitDone: () -> Unit,
+    onOpenApLimitTools: () -> Unit,
 ) {
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val apSyncTimeText =
@@ -77,9 +75,7 @@ internal fun BaApCard(
             apCurrentInput = apCurrentInput,
             onApCurrentInputChange = onApCurrentInputChange,
             onApCurrentDone = onApCurrentDone,
-            apLimitInput = apLimitInput,
-            onApLimitInputChange = onApLimitInputChange,
-            onApLimitDone = onApLimitDone,
+            onOpenApLimitTools = onOpenApLimitTools,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -118,9 +114,7 @@ private fun BaApInputPanel(
     apCurrentInput: String,
     onApCurrentInputChange: (String) -> Unit,
     onApCurrentDone: () -> Unit,
-    apLimitInput: String,
-    onApLimitInputChange: (String) -> Unit,
-    onApLimitDone: () -> Unit,
+    onOpenApLimitTools: () -> Unit,
 ) {
     val uiNowMs = clockState.uiNowMs.longValue
     val uiMinuteMs = clockState.uiMinuteMs.longValue
@@ -144,6 +138,7 @@ private fun BaApInputPanel(
     BaLiquidPanel(
         backdrop = backdrop,
         accentColor = accentGreen,
+        onLongClick = onOpenApLimitTools,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -188,18 +183,9 @@ private fun BaApInputPanel(
                     textColor = accentGreen,
                 )
                 Text("/", color = MiuixTheme.colorScheme.onBackgroundVariant)
-                AppLiquidSearchField(
-                    modifier = Modifier.width(72.dp),
-                    value = apLimitInput,
-                    onValueChange = onApLimitInputChange,
-                    onImeActionDone = onApLimitDone,
-                    label = "240",
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true,
-                    textAlign = TextAlign.Center,
-                    fontSize = 18.sp,
-                    textColor = accentGreen,
+                BaLimitValueText(
+                    text = apLimit.toString(),
+                    color = accentGreen,
                 )
             }
         }

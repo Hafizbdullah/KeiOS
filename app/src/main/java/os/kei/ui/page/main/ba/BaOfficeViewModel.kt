@@ -183,6 +183,34 @@ internal class BaOfficeViewModel(
         }
     }
 
+    fun showApLimitToolsSheet() {
+        _chromeUiState.update { state ->
+            state
+                .withoutFloatingPopups()
+                .copy(showApLimitToolsSheet = true)
+        }
+    }
+
+    fun hideApLimitToolsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showApLimitToolsSheet = false)
+        }
+    }
+
+    fun showCafeApToolsSheet() {
+        _chromeUiState.update { state ->
+            state
+                .withoutFloatingPopups()
+                .copy(showCafeApToolsSheet = true)
+        }
+    }
+
+    fun hideCafeApToolsSheet() {
+        _chromeUiState.update { state ->
+            state.copy(showCafeApToolsSheet = false)
+        }
+    }
+
     fun updateDebugUseRealCalendarPoolData(enabled: Boolean) {
         _chromeUiState.update { state ->
             if (state.debugUseRealCalendarPoolData == enabled) {

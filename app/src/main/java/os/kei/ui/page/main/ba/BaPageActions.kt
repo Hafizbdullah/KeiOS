@@ -100,6 +100,16 @@ internal fun applyBaCafeStorageTick(
     return normalizeAp((cafeStoredAp + gained).coerceAtMost(cap)) to currentHour
 }
 
+internal fun applyBaCafeStoredApUpdate(
+    newValue: Double,
+    cafeLevel: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): Pair<Double, Long> {
+    val cap = cafeStorageCap(cafeLevel)
+    val next = normalizeAp(newValue.coerceIn(0.0, cap))
+    return next to floorToHourMs(nowMs)
+}
+
 internal fun applyBaCafeClaim(cafeStoredAp: Double): Double = normalizeAp(cafeStoredAp)
 
 internal fun applyBaCafeDebugGain(

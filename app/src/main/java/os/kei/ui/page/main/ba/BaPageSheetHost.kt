@@ -3,11 +3,16 @@
 package os.kei.ui.page.main.ba
 
 import android.content.Context
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
+import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -36,6 +41,34 @@ internal fun BaPageSheetHost(
     onDismissNotificationSettings: () -> Unit,
     onSaveNotificationSettings: () -> Unit,
 ) {
+    val sheetScope = rememberCoroutineScope()
+
+    LaunchedEffect(routeState.showApLimitToolsSheet) {
+        if (routeState.showApLimitToolsSheet) {
+            office.apLimitInput = office.apLimit.toString()
+        }
+    }
+
+    fun persistApLimitInput() {
+        val finalValue =
+            office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
+                ?: office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX)
+        val limitUpdate = office.updateApLimit(finalValue)
+        office.apLimitInput = limitUpdate.limit.toString()
+        runtimePersistenceCoordinator.submit(limitUpdate.runtimeUpdate)
+        runtimePersistenceCoordinator.submit(office.applyApRegen())
+        sheetScope.launch {
+            BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
+        }
+        AppBackgroundScheduler.scheduleBaApThreshold(context)
+    }
+
+    fun persistCafeStoredApCalibration(update: BaRuntimePersistenceUpdate) {
+        runtimePersistenceCoordinator.submit(update)
+        AppBackgroundScheduler.scheduleBaApThreshold(context)
+        office.cafeStoredApInput = office.displayCafeStoredApInputText()
+    }
+
     BaSettingsSheet(
         show = routeState.showSettingsSheet,
         backdrop = backdrop,
@@ -133,6 +166,34 @@ internal fun BaPageSheetHost(
         hasUnsavedChanges = notificationSettingsSheetState != savedNotificationSettingsSheetState,
         onDismissRequest = onDismissNotificationSettings,
         onSaveRequest = onSaveNotificationSettings,
+    )
+    BaApLimitToolsSheet(
+        show = routeState.showApLimitToolsSheet,
+        backdrop = backdrop,
+        apLimitInput = office.apLimitInput,
+        onApLimitInputChange = { input ->
+            office.apLimitInput = input
+        },
+        onSaveApLimit = {
+            persistApLimitInput()
+            viewModel.hideApLimitToolsSheet()
+        },
+        onDismissRequest = viewModel::hideApLimitToolsSheet,
+    )
+    BaCafeApToolsSheet(
+        show = routeState.showCafeApToolsSheet,
+        backdrop = backdrop,
+        cafeLevel = office.cafeLevel,
+        cafeStoredAp = office.cafeStoredAp,
+        cafeLastHourMs = office.cafeLastHourMs,
+        uiMinuteMs = uiNowMsProvider(),
+        onClearCafeStoredAp = {
+            persistCafeStoredApCalibration(office.clearCafeStoredAp())
+        },
+        onFillCafeStoredAp = {
+            persistCafeStoredApCalibration(office.fillCafeStoredAp())
+        },
+        onDismissRequest = viewModel::hideCafeApToolsSheet,
     )
 }
 

@@ -135,6 +135,11 @@ internal fun BaPageCommonEffects(
         if (office.apLimitInput != target) office.apLimitInput = target
     }
 
+    LaunchedEffect(office.cafeStoredAp) {
+        val target = office.displayCafeStoredApInputText()
+        if (office.cafeStoredApInput != target) office.cafeStoredApInput = target
+    }
+
     LaunchedEffect(serverIndex) {
         onServerChanged()
     }

@@ -39,6 +39,8 @@ internal data class BaOfficeChromeUiState(
     val showAccountManagementSheet: Boolean = false,
     val accountManagementInitialEditAccountId: BaAccountId? = null,
     val showNotificationSettingsSheet: Boolean = false,
+    val showApLimitToolsSheet: Boolean = false,
+    val showCafeApToolsSheet: Boolean = false,
     val showCafeLevelPopup: Boolean = false,
     val cafeLevelPopupAnchorBounds: IntRect? = null,
     val notificationLeadDropdownExpanded: Boolean = false,

@@ -205,18 +205,20 @@ private const val BA_GLOBAL_NICKNAME_MAX_LENGTH = 12
 private const val BA_FRIEND_CODE_LENGTH = 8
 
 internal fun BaAccountRuntime.normalized(): BaAccountRuntime =
-    copy(
-        apLimit = apLimit.coerceIn(0, BA_AP_LIMIT_MAX),
-        apCurrent = normalizeAp(apCurrent),
-        apRegenBaseMs = apRegenBaseMs.coerceAtLeast(0L),
-        apSyncMs = apSyncMs.coerceAtLeast(0L),
-        cafeLevel = cafeLevel.coerceIn(1, 10),
-        cafeStoredAp = normalizeAp(cafeStoredAp),
-        cafeLastHourMs = cafeLastHourMs.coerceAtLeast(0L),
-        coffeeHeadpatMs = coffeeHeadpatMs.coerceAtLeast(0L),
-        coffeeInvite1UsedMs = coffeeInvite1UsedMs.coerceAtLeast(0L),
-        coffeeInvite2UsedMs = coffeeInvite2UsedMs.coerceAtLeast(0L),
-    )
+    cafeLevel.coerceIn(1, 10).let { safeCafeLevel ->
+        copy(
+            apLimit = apLimit.coerceIn(0, BA_AP_LIMIT_MAX),
+            apCurrent = normalizeAp(apCurrent),
+            apRegenBaseMs = apRegenBaseMs.coerceAtLeast(0L),
+            apSyncMs = apSyncMs.coerceAtLeast(0L),
+            cafeLevel = safeCafeLevel,
+            cafeStoredAp = normalizeAp(cafeStoredAp.coerceIn(0.0, cafeStorageCap(safeCafeLevel))),
+            cafeLastHourMs = cafeLastHourMs.coerceAtLeast(0L),
+            coffeeHeadpatMs = coffeeHeadpatMs.coerceAtLeast(0L),
+            coffeeInvite1UsedMs = coffeeInvite1UsedMs.coerceAtLeast(0L),
+            coffeeInvite2UsedMs = coffeeInvite2UsedMs.coerceAtLeast(0L),
+        )
+    }
 
 internal fun BaGlobalReminderSettings.normalized(): BaGlobalReminderSettings =
     copy(

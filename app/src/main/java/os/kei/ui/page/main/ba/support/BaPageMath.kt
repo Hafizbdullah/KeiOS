@@ -20,7 +20,7 @@ internal const val BA_HEADPAT_COOLDOWN_MS = 3 * 60 * 60 * 1000L
 internal const val BA_INVITE_COOLDOWN_MS = 20 * 60 * 60 * 1000L
 internal const val BA_DEFAULT_NICKNAME = "Kei"
 internal const val BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
-internal val BA_CAFE_DAILY_AP_BY_LEVEL = intArrayOf(92, 152, 222, 302, 390, 460, 530, 600, 570, 740)
+internal val BA_CAFE_DAILY_AP_BY_LEVEL = intArrayOf(92, 152, 222, 302, 390, 460, 530, 600, 670, 740)
 
 internal fun displayAp(apExact: Double): Int = apExact.coerceAtLeast(0.0).toInt()
 
@@ -47,6 +47,28 @@ internal fun cafeDailyCapacity(level: Int): Int {
 internal fun cafeStorageCap(level: Int): Double {
     val safeLevel = level.coerceIn(1, 10)
     return BA_CAFE_DAILY_AP_BY_LEVEL[safeLevel - 1].toDouble()
+}
+
+internal fun calculateCafeFullAtMs(
+    cafeLevel: Int,
+    cafeStoredAp: Double,
+    cafeLastHourMs: Long,
+    nowMs: Long = System.currentTimeMillis(),
+): Long {
+    val cap = cafeStorageCap(cafeLevel)
+    val current = cafeStoredAp.coerceAtLeast(0.0)
+    if (current >= cap) return nowMs
+
+    val gain = cafeHourlyGain(cafeLevel)
+    if (gain <= 0.0) return nowMs
+
+    val currentHour = floorToHourMs(nowMs)
+    val baseHour = if (cafeLastHourMs <= 0L || cafeLastHourMs > currentHour) currentHour else cafeLastHourMs
+    val elapsed = (nowMs - baseHour).coerceAtLeast(0L)
+    val remainder = elapsed % BA_CAFE_HOURLY_INTERVAL_MS
+    val untilNextHour = if (remainder == 0L) BA_CAFE_HOURLY_INTERVAL_MS else BA_CAFE_HOURLY_INTERVAL_MS - remainder
+    val hoursNeeded = ceil((cap - current) / gain).toLong().coerceAtLeast(1L)
+    return nowMs + untilNextHour + (hoursNeeded - 1L) * BA_CAFE_HOURLY_INTERVAL_MS
 }
 
 internal fun calculateApFullAtMs(

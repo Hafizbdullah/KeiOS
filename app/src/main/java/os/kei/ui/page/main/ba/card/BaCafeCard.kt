@@ -2,19 +2,29 @@
 
 package os.kei.ui.page.main.ba.card
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
@@ -22,16 +32,17 @@ import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
+import os.kei.ui.page.main.ba.support.cafeHourlyGain
+import os.kei.ui.page.main.ba.support.calculateCafeFullAtMs
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
 import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
-import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.nextArenaRefreshMs
 import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -43,12 +54,17 @@ internal fun BaCafeCard(
     serverIndex: Int,
     cafeLevel: Int,
     cafeStoredAp: Double,
+    cafeLastHourMs: Long,
+    cafeStoredApInput: String,
     cafeLevelOptions: List<Int>,
     showCafeLevelPopup: Boolean,
     cafeLevelPopupAnchorBounds: IntRect?,
     onCafeLevelPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onCafeLevelPopupChange: (Boolean) -> Unit,
     onCafeLevelChange: (Int) -> Unit,
+    onCafeStoredApInputChange: (String) -> Unit,
+    onCafeStoredApDone: () -> Unit,
+    onOpenCafeApTools: () -> Unit,
     onClaimCafeStoredAp: () -> Unit,
     coffeeHeadpatMs: Long,
     coffeeInvite1UsedMs: Long,
@@ -119,48 +135,19 @@ internal fun BaCafeCard(
             },
         )
 
-        BaLiquidPanel(
+        BaCafeApStockPanel(
             backdrop = backdrop,
-            accentColor = accentPink,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier.heightIn(min = 40.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    Text(
-                        text = stringResource(R.string.ba_overview_cafe_ap_title),
-                        color = MiuixTheme.colorScheme.onBackground,
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppLiquidIconButton(
-                        backdrop = backdrop,
-                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
-                        contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
-                        variant = GlassVariant.Content,
-                        iconTint = Color.Unspecified,
-                        containerColor = accentPink,
-                        onClick = onClaimCafeStoredAp,
-                    )
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        text = "${displayAp(cafeStoredAp)}/${cafeDailyCapacity(cafeLevel)}",
-                        textColor = accentPink,
-                        containerColor = accentPink,
-                        variant = GlassVariant.Floating,
-                        onClick = {},
-                    )
-                }
-            }
-        }
+            clockState = clockState,
+            cafeLevel = cafeLevel,
+            cafeStoredAp = cafeStoredAp,
+            cafeLastHourMs = cafeLastHourMs,
+            cafeStoredApInput = cafeStoredApInput,
+            accentPink = accentPink,
+            onCafeStoredApInputChange = onCafeStoredApInputChange,
+            onCafeStoredApDone = onCafeStoredApDone,
+            onOpenCafeApTools = onOpenCafeApTools,
+            onClaimCafeStoredAp = onClaimCafeStoredAp,
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -219,6 +206,120 @@ internal fun BaCafeCard(
             enabled = invite2Ready,
             onClick = onUseInviteTicket2,
             onLongClick = onForceResetInviteTicket2Cooldown,
+        )
+    }
+}
+
+@Composable
+private fun BaCafeApStockPanel(
+    backdrop: Backdrop?,
+    clockState: BaPageClockState,
+    cafeLevel: Int,
+    cafeStoredAp: Double,
+    cafeLastHourMs: Long,
+    cafeStoredApInput: String,
+    accentPink: Color,
+    onCafeStoredApInputChange: (String) -> Unit,
+    onCafeStoredApDone: () -> Unit,
+    onOpenCafeApTools: () -> Unit,
+    onClaimCafeStoredAp: () -> Unit,
+) {
+    val uiMinuteMs = clockState.uiMinuteMs.longValue
+    val cafeCap = cafeDailyCapacity(cafeLevel)
+    val hourlyGain = cafeHourlyGain(cafeLevel)
+    val isCafeFull = cafeStoredAp >= cafeCap.toDouble()
+    val cafeFullAt =
+        calculateCafeFullAtMs(
+            cafeLevel = cafeLevel,
+            cafeStoredAp = cafeStoredAp,
+            cafeLastHourMs = cafeLastHourMs,
+            nowMs = uiMinuteMs,
+        )
+    val hourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, hourlyGain)
+    val fullText =
+        if (isCafeFull) {
+            stringResource(R.string.ba_cafe_ap_full_now)
+        } else {
+            stringResource(
+                R.string.ba_cafe_ap_full_remaining_format,
+                formatBaRemainingTime(cafeFullAt, uiMinuteMs),
+            )
+        }
+    val statusText = stringResource(R.string.ba_cafe_ap_panel_status, hourlyText, fullText)
+
+    BaLiquidPanel(
+        backdrop = backdrop,
+        accentColor = accentPink,
+        onLongClick = onOpenCafeApTools,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.heightIn(min = 40.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.ba_overview_cafe_ap_title),
+                        color = accentPink,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Image(
+                        painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
+                        contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppLiquidSearchField(
+                    modifier = Modifier.width(72.dp),
+                    value = cafeStoredApInput,
+                    onValueChange = onCafeStoredApInputChange,
+                    onImeActionDone = onCafeStoredApDone,
+                    label = "0",
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true,
+                    textAlign = TextAlign.Center,
+                    fontSize = 18.sp,
+                    textColor = accentPink,
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done,
+                        ),
+                )
+                Text("/", color = MiuixTheme.colorScheme.onBackgroundVariant)
+                BaLimitValueText(
+                    text = cafeCap.toString(),
+                    color = accentPink,
+                )
+                AppLiquidIconButton(
+                    backdrop = backdrop,
+                    painter = painterResource(id = R.drawable.item_icon_consumable_ap_3_small),
+                    contentDescription = stringResource(R.string.ba_overview_cd_claim_cafe_ap),
+                    variant = GlassVariant.Content,
+                    iconTint = Color.Unspecified,
+                    containerColor = accentPink,
+                    onClick = onClaimCafeStoredAp,
+                )
+            }
+        }
+        Text(
+            text = statusText,
+            color = accentPink,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

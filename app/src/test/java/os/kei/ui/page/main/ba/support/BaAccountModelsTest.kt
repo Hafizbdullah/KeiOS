@@ -51,4 +51,17 @@ class BaAccountModelsTest {
         assertEquals("ABCDEFGHIJ", normalized?.profile?.nickname)
         assertEquals("ab12cd34", normalized?.profile?.friendCode)
     }
+
+    @Test
+    fun `runtime normalization clamps cafe stored ap to cafe capacity`() {
+        val runtime =
+            BaAccountRuntime(
+                cafeLevel = 1,
+                cafeStoredAp = 999.0,
+            )
+
+        val normalized = runtime.normalized()
+
+        assertEquals(cafeStorageCap(1), normalized.cafeStoredAp)
+    }
 }
