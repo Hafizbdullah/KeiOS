@@ -25,8 +25,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
@@ -281,6 +284,8 @@ private fun LiquidTrackSlider(
     ) {
         val trackWidth = constraints.maxWidth.coerceAtLeast(1)
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+        val hapticFeedback = LocalHapticFeedback.current
+        val hapticState = remember { LiquidSliderHapticState() }
         val animationScope = rememberCoroutineScope()
         var didDrag by remember { mutableStateOf(false) }
         val rangeSpan = safeValueRange.endInclusive - safeValueRange.start
@@ -320,6 +325,13 @@ private fun LiquidTrackSlider(
                         )
                         snapToValue(target)
                         onValueChangeState.value(target)
+                        hapticState.reset(target)
+                        hapticState.handleHapticFeedback(
+                            currentValue = target,
+                            valueRange = safeValueRange,
+                            hapticFeedback = hapticFeedback,
+                            keyPoints = keyPoints,
+                        )
                         onInteractionChangedState.value(true)
                     }
                 },
@@ -351,6 +363,12 @@ private fun LiquidTrackSlider(
                     val boundedTarget = target.coerceIn(safeValueRange)
                     snapToValue(boundedTarget)
                     onValueChangeState.value(boundedTarget)
+                    hapticState.handleHapticFeedback(
+                        currentValue = boundedTarget,
+                        valueRange = safeValueRange,
+                        hapticFeedback = hapticFeedback,
+                        keyPoints = keyPoints,
+                    )
                 }
             )
         }
@@ -494,6 +512,13 @@ private fun LiquidTrackSlider(
                             )
                             dampedDragAnimation.animateToValue(target)
                             onValueChangeState.value(target)
+                            hapticState.reset(value().coerceIn(safeValueRange))
+                            hapticState.handleHapticFeedback(
+                                currentValue = target,
+                                valueRange = safeValueRange,
+                                hapticFeedback = hapticFeedback,
+                                keyPoints = keyPoints,
+                            )
                             onValueChangeFinishedState.value?.invoke(target)
                         }
                     }
@@ -652,6 +677,56 @@ internal fun sliderVisualProgress(
     progress: Float,
     isLtr: Boolean
 ): Float = if (isLtr) progress else 1f - progress
+
+private class LiquidSliderHapticState {
+    private var edgeFeedbackTriggered = false
+    private var activeKeyPoint: Float? = null
+
+    fun reset(currentValue: Float) {
+        edgeFeedbackTriggered = false
+        activeKeyPoint = null
+        lastValue = currentValue
+    }
+
+    private var lastValue = Float.NaN
+
+    fun handleHapticFeedback(
+        currentValue: Float,
+        valueRange: ClosedFloatingPointRange<Float>,
+        hapticFeedback: HapticFeedback,
+        keyPoints: List<LiquidSliderKeyPoint>,
+    ) {
+        val isAtEdge = currentValue == valueRange.start || currentValue == valueRange.endInclusive
+        if (isAtEdge && !edgeFeedbackTriggered) {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+            edgeFeedbackTriggered = true
+        } else if (!isAtEdge) {
+            edgeFeedbackTriggered = false
+        }
+
+        if (keyPoints.isNotEmpty() && !isAtEdge) {
+            val rangeSpan = valueRange.endInclusive - valueRange.start
+            val threshold = rangeSpan * 0.005f
+            val previousValue = lastValue
+            val hit =
+                keyPoints
+                    .map { keyPoint -> keyPoint.value.coerceIn(valueRange) }
+                    .firstOrNull { keyPointValue ->
+                        abs(keyPointValue - currentValue) <= threshold ||
+                            (
+                                !previousValue.isNaN() &&
+                                    keyPointValue in
+                                    minOf(previousValue, currentValue)..maxOf(previousValue, currentValue)
+                            )
+                    }
+            if (hit != null && activeKeyPoint != hit) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            activeKeyPoint = hit
+        }
+        lastValue = currentValue
+    }
+}
 
 @Composable
 private fun resolveKeyPointColor(

@@ -23,7 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.Role
@@ -216,6 +218,7 @@ private fun LiquidSwitchToggle(
     val currentOnSelect by rememberUpdatedState(onSelect)
     val currentSelected by rememberUpdatedState(selected)
     val currentEnabled by rememberUpdatedState(enabled)
+    val hapticFeedback = LocalHapticFeedback.current
     val dragWidth = with(density) { 20.dp.toPx() }
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
@@ -239,7 +242,13 @@ private fun LiquidSwitchToggle(
                     if (!currentEnabled) return@DampedDragAnimation
                     if (didDrag) {
                         fraction = if (targetValue >= 0.5f) 1f else 0f
-                        currentOnSelect(fraction == 1f)
+                        val nextSelected = fraction == 1f
+                        if (nextSelected != currentSelected()) {
+                            hapticFeedback.performHapticFeedback(
+                                if (nextSelected) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                            )
+                        }
+                        currentOnSelect(nextSelected)
                     } else {
                         fraction = if (currentSelected()) 1f else 0f
                     }
@@ -303,7 +312,14 @@ private fun LiquidSwitchToggle(
                     role = Role.Switch,
                     interactionSource = toggleInteractionSource,
                     indication = null,
-                    onValueChange = onSelect,
+                    onValueChange = { nextSelected ->
+                        if (nextSelected != externalSelected) {
+                            hapticFeedback.performHapticFeedback(
+                                if (nextSelected) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                            )
+                        }
+                        onSelect(nextSelected)
+                    },
                 )
                 .graphicsLayer {
                     alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha

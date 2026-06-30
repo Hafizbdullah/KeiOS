@@ -6,7 +6,6 @@
 
 package os.kei.ui.page.main.widget.sheet
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -47,6 +46,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +80,10 @@ import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.LocalDismissState
@@ -371,13 +375,55 @@ private fun LiquidDetentBottomSheetContentLayout(
     }
 
     popupHost(internalVisible.value) {
-        BackHandler(enabled = show) {
-            if (allowDismiss) {
-                currentOnDismissRequest?.invoke()
-            } else {
-                onBlockedDismissRequest?.invoke()
+        val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+        NavigationBackHandler(
+            state = navigationEventState,
+            isBackEnabled = show,
+            onBackCancelled = {
                 coroutineScope.launch { resetGesture() }
-            }
+            },
+            onBackCompleted = {
+                if (allowDismiss) {
+                    coroutineScope.launch {
+                        animateDismissOffScreen(
+                            dismissOffsetY = dismissOffsetY,
+                            visibleHeightPx = visibleHeightPx(),
+                            windowHeightPx = windowHeightPx(),
+                            dimAlpha = dimAlpha,
+                        ) {
+                            currentOnDismissRequest?.invoke()
+                        }
+                    }
+                } else {
+                    onBlockedDismissRequest?.invoke()
+                    coroutineScope.launch { resetGesture() }
+                }
+            },
+        )
+
+        LaunchedEffect(navigationEventState, allowDismiss) {
+            snapshotFlow { navigationEventState.transitionState }
+                .collect { transitionState ->
+                    if (
+                        transitionState is NavigationEventTransitionState.InProgress &&
+                        transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
+                    ) {
+                        val progress = transitionState.latestEvent.progress.coerceIn(0f, 1f)
+                        val baseOffset = visibleHeightPx().coerceAtLeast(500f)
+                        dismissOffsetY.floatValue =
+                            if (allowDismiss) {
+                                progress * baseOffset
+                            } else {
+                                progress * baseOffset * LIQUID_SHEET_BLOCKED_DISMISS_RESISTANCE
+                            }
+                        dimAlpha.floatValue =
+                            if (allowDismiss) {
+                                1f - progress
+                            } else {
+                                1f
+                            }
+                    }
+                }
         }
 
         if (enableWindowDim) {
