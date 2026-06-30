@@ -28,6 +28,7 @@ internal class GitHubStrategyPageStateHolder {
     var decisionAssistEnabledInput by mutableStateOf(false)
     var repositoryHealthCardEnabledInput by mutableStateOf(false)
     var apkTrustCheckEnabledInput by mutableStateOf(false)
+    var fdroidCommonRepoIdsInput by mutableStateOf(lookupConfig.normalizedFdroidCommonRepoIds)
     var showApiTokenPlainText by mutableStateOf(false)
     var showShareImportFlowModePopup by mutableStateOf(false)
     var strategyBenchmarkRunning by mutableStateOf(false)

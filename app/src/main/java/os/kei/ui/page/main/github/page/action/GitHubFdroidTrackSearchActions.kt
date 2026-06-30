@@ -92,7 +92,8 @@ internal class GitHubFdroidTrackSearchActions(
     ) {
         val repoUrls = FdroidRepositoryPresets.repoUrlsForScope(
             scopeId = state.fdroidRepoScopeIdInput,
-            customRepoUrl = state.repoUrlInput
+            customRepoUrl = state.repoUrlInput,
+            commonRepoIds = state.lookupConfig.normalizedFdroidCommonRepoIds
         )
         if (repoUrls.isEmpty()) {
             env.toast(R.string.github_toast_fill_repo_and_select_app)

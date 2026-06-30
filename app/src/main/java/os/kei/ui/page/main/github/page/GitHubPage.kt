@@ -377,6 +377,7 @@ fun GitHubPage(
                     onOpenStarImport = transferCallbacks.onOpenStarImport,
                     onOpenStrategySheet = actions::openStrategySheet,
                     onOpenCheckLogicSheet = actions::openCheckLogicSheet,
+                    onOpenDroidSourcesSheet = actions::openDroidSourcesSheet,
                     onOpenActionsNotificationHistory = onOpenActionsNotificationHistory,
                     onOverviewExpandedChange = actions::setOverviewExpanded,
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,

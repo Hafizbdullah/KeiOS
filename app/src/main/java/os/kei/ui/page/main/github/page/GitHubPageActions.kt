@@ -95,6 +95,10 @@ internal class GitHubPageActions(
 
     fun closeCheckLogicSheet() = configActions.closeCheckLogicSheet()
 
+    fun openDroidSourcesSheet() = configActions.openDroidSourcesSheet()
+
+    fun closeDroidSourcesSheet() = configActions.closeDroidSourcesSheet()
+
     fun setCheckAllTrackedPreReleasesInput(value: Boolean) = configActions.setCheckAllTrackedPreReleasesInput(value)
 
     fun setCheckAllDirectApkPreReleasesInput(value: Boolean) =
@@ -121,6 +125,13 @@ internal class GitHubPageActions(
     fun setRepositoryHealthCardEnabledInput(value: Boolean) = configActions.setRepositoryHealthCardEnabledInput(value)
 
     fun setApkTrustCheckEnabledInput(value: Boolean) = configActions.setApkTrustCheckEnabledInput(value)
+
+    fun setFdroidCommonRepoEnabled(
+        repoId: String,
+        enabled: Boolean,
+    ) = configActions.setFdroidCommonRepoEnabled(repoId = repoId, enabled = enabled)
+
+    fun applyDroidSourcesSheet() = configActions.applyDroidSourcesSheet()
 
     fun setShowDownloaderPopup(value: Boolean) = configActions.setShowDownloaderPopup(value)
 

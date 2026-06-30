@@ -6,6 +6,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
+import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.ui.page.main.github.actions.GitHubActionsSheet
 import os.kei.ui.page.main.github.actions.GitHubActionsSheetUiState
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerDerivedState
@@ -16,6 +17,7 @@ import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
+import os.kei.ui.page.main.github.sheet.GitHubDroidSourcesSheet
 import os.kei.ui.page.main.github.sheet.GitHubFdroidDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
@@ -60,6 +62,12 @@ internal fun GitHubPageSheetHost(
     val trackedPackageNames =
         remember(state.trackedItems) {
             state.trackedItems.map { item -> item.packageName }.toSet()
+        }
+    val enabledFdroidCommonRepos =
+        remember(state.lookupConfig.normalizedFdroidCommonRepoIds) {
+            FdroidRepositoryPresets.commonSearchReposForIds(
+                state.lookupConfig.normalizedFdroidCommonRepoIds
+            )
         }
 
     GitHubOverviewEntrySheet(
@@ -155,6 +163,16 @@ internal fun GitHubPageSheetHost(
         onDownloaderPopupAnchorBoundsChange = actions::setDownloaderPopupAnchorBounds,
         onOnlineShareTargetPopupAnchorBoundsChange = actions::setOnlineShareTargetPopupAnchorBounds,
         onShareImportFlowModePopupAnchorBoundsChange = actions::setShareImportFlowModePopupAnchorBounds,
+    )
+
+    GitHubDroidSourcesSheet(
+        show = state.showDroidSourcesSheet,
+        backdrop = backdrops.sheet,
+        lookupConfig = state.lookupConfig,
+        selectedRepoIds = state.fdroidCommonRepoIdsInput,
+        onDismissRequest = actions::closeDroidSourcesSheet,
+        onApply = actions::applyDroidSourcesSheet,
+        onRepoEnabledChange = actions::setFdroidCommonRepoEnabled,
     )
 
     GitHubActionsSheet(
@@ -265,6 +283,7 @@ internal fun GitHubPageSheetHost(
         fdroidAppSearchCandidates = state.fdroidAppSearchCandidates,
         fdroidSelectedCandidate = state.fdroidSelectedCandidate,
         fdroidAppSearchRunning = state.fdroidAppSearchRunning,
+        enabledFdroidCommonRepos = enabledFdroidCommonRepos,
         sourceModeDropdownExpanded = state.sourceModeDropdownExpanded,
         sourceModeDropdownAnchorBounds = state.sourceModeDropdownAnchorBounds,
         updateIntervalDropdownExpanded = state.updateIntervalDropdownExpanded,

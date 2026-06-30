@@ -15,6 +15,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
 import os.kei.feature.github.model.GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS
@@ -77,6 +78,7 @@ internal fun GitHubTrackEditFormContent(
     fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
     fdroidSelectedCandidate: FdroidAppSearchCandidate?,
     fdroidAppSearchRunning: Boolean,
+    enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
     fdroidVersionSelectionDropdownExpanded: Boolean,
     fdroidVersionSelectionDropdownAnchorBounds: IntRect?,
     fdroidTrustPolicyDropdownExpanded: Boolean,
@@ -309,6 +311,7 @@ internal fun GitHubTrackEditFormContent(
                 candidates = fdroidAppSearchCandidates,
                 selectedCandidate = fdroidSelectedCandidate,
                 searching = fdroidAppSearchRunning,
+                enabledCommonRepos = enabledFdroidCommonRepos,
                 repoScopeDropdownExpanded = fdroidRepoScopeDropdownExpanded,
                 repoScopeDropdownAnchorBounds = fdroidRepoScopeDropdownAnchorBounds,
                 onRepoUrlInputChange = onRepoUrlInputChange,

@@ -15,6 +15,7 @@ internal class GitHubPageSheetStateHolder {
     var showAddSheet by mutableStateOf(false)
     var showStrategySheet by mutableStateOf(false)
     var showCheckLogicSheet by mutableStateOf(false)
+    var showDroidSourcesSheet by mutableStateOf(false)
     var showActionsSheet by mutableStateOf(false)
     var showOverviewEntrySheet by mutableStateOf(false)
     var showDownloaderPopup by mutableStateOf(false)

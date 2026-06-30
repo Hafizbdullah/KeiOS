@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
+import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -17,6 +18,7 @@ import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.GitHubTrackImportApplyResult
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
+import java.util.Locale
 
 internal class GitHubConfigActions(
     private val env: GitHubPageActionEnvironment,
@@ -44,6 +46,20 @@ internal class GitHubConfigActions(
             state.githubApiTokenInput = config.apiToken
             state.showStrategySheet = true
         }
+    }
+
+    fun openDroidSourcesSheet() {
+        state.showActionMenuPopup = false
+        scope.launch {
+            val config = repository.loadLookupConfig()
+            state.lookupConfig = config
+            state.fdroidCommonRepoIdsInput = config.normalizedFdroidCommonRepoIds
+            state.showDroidSourcesSheet = true
+        }
+    }
+
+    fun closeDroidSourcesSheet() {
+        state.showDroidSourcesSheet = false
     }
 
     fun closeStrategySheet() {
@@ -152,6 +168,32 @@ internal class GitHubConfigActions(
         state.apkTrustCheckEnabledInput = value
     }
 
+    fun setFdroidCommonRepoEnabled(
+        repoId: String,
+        enabled: Boolean
+    ) {
+        val normalizedRepoId = repoId.trim().lowercase(Locale.ROOT)
+        val configurableIds = FdroidRepositoryPresets.commonSearchRepos.map { preset -> preset.id }.toSet()
+        if (normalizedRepoId !in configurableIds) return
+        val current =
+            FdroidRepositoryPresets
+                .normalizedCommonSearchRepoIds(state.fdroidCommonRepoIdsInput)
+                .toMutableList()
+        if (enabled) {
+            if (normalizedRepoId !in current) {
+                current += normalizedRepoId
+            }
+        } else {
+            if (current.size <= 1 && normalizedRepoId in current) {
+                env.toast(R.string.github_toast_fdroid_common_repo_requires_one)
+                return
+            }
+            current.remove(normalizedRepoId)
+        }
+        state.fdroidCommonRepoIdsInput =
+            FdroidRepositoryPresets.normalizedCommonSearchRepoIds(current)
+    }
+
     fun setShowDownloaderPopup(value: Boolean) {
         state.showDownloaderPopup = value
     }
@@ -223,6 +265,7 @@ internal class GitHubConfigActions(
                     repositoryHealthCardEnabled = previousConfig.repositoryHealthCardEnabled,
                     apkTrustCheckEnabled = previousConfig.apkTrustCheckEnabled,
                     releaseNotesMode = previousConfig.releaseNotesMode,
+                    fdroidCommonRepoIds = previousConfig.normalizedFdroidCommonRepoIds,
                 )
             repository.saveLookupConfig(newConfig)
             state.lookupConfig = newConfig
@@ -410,6 +453,24 @@ internal class GitHubConfigActions(
                 else -> {
                     env.toast(R.string.github_toast_check_logic_unchanged)
                 }
+            }
+        }
+    }
+
+    fun applyDroidSourcesSheet() {
+        scope.launch {
+            val previousConfig = repository.loadLookupConfig()
+            val normalizedIds =
+                FdroidRepositoryPresets.normalizedCommonSearchRepoIds(state.fdroidCommonRepoIdsInput)
+            val newConfig = previousConfig.copy(fdroidCommonRepoIds = normalizedIds)
+            repository.saveLookupConfig(newConfig)
+            state.lookupConfig = newConfig
+            state.fdroidCommonRepoIdsInput = newConfig.normalizedFdroidCommonRepoIds
+            closeDroidSourcesSheet()
+            if (previousConfig.normalizedFdroidCommonRepoIds == newConfig.normalizedFdroidCommonRepoIds) {
+                env.toast(R.string.github_toast_fdroid_sources_unchanged)
+            } else {
+                env.toast(R.string.github_toast_fdroid_sources_saved)
             }
         }
     }

@@ -76,6 +76,7 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     candidates: List<FdroidAppSearchCandidate>,
     selectedCandidate: FdroidAppSearchCandidate?,
     searching: Boolean,
+    enabledCommonRepos: List<FdroidRepositoryPreset>,
     repoScopeDropdownExpanded: Boolean,
     repoScopeDropdownAnchorBounds: IntRect?,
     onRepoUrlInputChange: (String) -> Unit,
@@ -89,9 +90,17 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     onRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
     onRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
-    val scopeOptions = remember {
+    val activeCommonRepos =
+        remember(enabledCommonRepos) {
+            enabledCommonRepos.ifEmpty {
+                FdroidRepositoryPresets.commonSearchReposForIds(
+                    FdroidRepositoryPresets.defaultCommonSearchRepoIds
+                )
+            }
+        }
+    val scopeOptions = remember(activeCommonRepos) {
         listOf(FdroidRepoScopeOption(FdroidRepositoryPresets.COMMON_ID)) +
-            FdroidRepositoryPresets.commonSearchRepos.map { preset ->
+            activeCommonRepos.map { preset ->
                 FdroidRepoScopeOption(id = preset.id, preset = preset)
             } +
             listOf(
@@ -138,7 +147,10 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
             )
         }
         SheetDescriptionText(
-            text = selectedScope.fdroidRepoScopeDetail(repoUrlInput),
+            text = selectedScope.fdroidRepoScopeDetail(
+                repoUrlInput = repoUrlInput,
+                activeCommonRepos = activeCommonRepos,
+            ),
         )
         if (customScope) {
             SheetInputTitle(stringResource(R.string.github_track_sheet_input_fdroid_custom_repo_title))
@@ -458,12 +470,15 @@ private fun FdroidRepoScopeOption.fdroidRepoScopeSummary(): String =
     }
 
 @Composable
-private fun FdroidRepoScopeOption.fdroidRepoScopeDetail(repoUrlInput: String): String =
+private fun FdroidRepoScopeOption.fdroidRepoScopeDetail(
+    repoUrlInput: String,
+    activeCommonRepos: List<FdroidRepositoryPreset>,
+): String =
     when (id) {
         FdroidRepositoryPresets.COMMON_ID -> {
             stringResource(
                 R.string.github_track_sheet_detail_fdroid_repo_scope_common,
-                FdroidRepositoryPresets.commonSearchRepos.joinToString(", ") { preset ->
+                activeCommonRepos.joinToString(", ") { preset ->
                     preset.displayName
                 },
             )

@@ -52,6 +52,7 @@ internal class GitHubPageState(
     var showAddSheet by sheetState::showAddSheet
     var showStrategySheet by sheetState::showStrategySheet
     var showCheckLogicSheet by sheetState::showCheckLogicSheet
+    var showDroidSourcesSheet by sheetState::showDroidSourcesSheet
     var showActionsSheet by sheetState::showActionsSheet
     var showOverviewEntrySheet by sheetState::showOverviewEntrySheet
     var showDownloaderPopup by sheetState::showDownloaderPopup
@@ -179,6 +180,7 @@ internal class GitHubPageState(
     var decisionAssistEnabledInput by strategyState::decisionAssistEnabledInput
     var repositoryHealthCardEnabledInput by strategyState::repositoryHealthCardEnabledInput
     var apkTrustCheckEnabledInput by strategyState::apkTrustCheckEnabledInput
+    var fdroidCommonRepoIdsInput by strategyState::fdroidCommonRepoIdsInput
     var showApiTokenPlainText by strategyState::showApiTokenPlainText
     var showShareImportFlowModePopup by strategyState::showShareImportFlowModePopup
     var strategyBenchmarkRunning by strategyState::strategyBenchmarkRunning

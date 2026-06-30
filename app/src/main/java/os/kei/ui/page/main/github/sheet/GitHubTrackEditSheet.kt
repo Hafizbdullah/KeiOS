@@ -20,6 +20,7 @@ import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
+import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidTrackedAppConfig
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.model.FdroidVersionSelectionMode
@@ -83,6 +84,7 @@ internal fun GitHubTrackEditSheet(
     fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
     fdroidSelectedCandidate: FdroidAppSearchCandidate?,
     fdroidAppSearchRunning: Boolean,
+    enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
     sourceModeDropdownExpanded: Boolean,
     sourceModeDropdownAnchorBounds: IntRect?,
     updateIntervalDropdownExpanded: Boolean,
@@ -305,6 +307,7 @@ internal fun GitHubTrackEditSheet(
                     fdroidAppSearchCandidates = fdroidAppSearchCandidates,
                     fdroidSelectedCandidate = fdroidSelectedCandidate,
                     fdroidAppSearchRunning = fdroidAppSearchRunning,
+                    enabledFdroidCommonRepos = enabledFdroidCommonRepos,
                     fdroidVersionSelectionDropdownExpanded =
                     fdroidVersionSelectionDropdownExpanded,
                     fdroidVersionSelectionDropdownAnchorBounds =

@@ -14,6 +14,7 @@ import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.RefreshIntervalOption
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
+import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
@@ -29,6 +30,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
@@ -70,11 +72,13 @@ internal fun GitHubTopBarActions(
     sortDirection: GitHubSortDirection,
     trackedFilterMode: GitHubTrackedFilterMode,
     refreshIntervalHours: Int,
+    fdroidCommonRepoCount: Int,
     showActionMenuPopup: Boolean,
     tracksExporting: Boolean,
     tracksImporting: Boolean,
     onOpenStrategySheet: () -> Unit,
     onOpenCheckLogicSheet: () -> Unit,
+    onOpenDroidSourcesSheet: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onSortDirectionChange: (GitHubSortDirection) -> Unit,
@@ -93,6 +97,7 @@ internal fun GitHubTopBarActions(
     val sortIcon = appLucideSortIcon()
     val filterIcon = appLucideFilterIcon()
     val intervalIcon = appLucideTimeIcon()
+    val droidSourcesIcon = appLucideDatabaseIcon()
     val moreIcon = appLucideMoreIcon()
     val chevronRightIcon = appLucideChevronRightIcon()
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
@@ -101,6 +106,9 @@ internal fun GitHubTopBarActions(
     val sortDirectionLabel = stringResource(R.string.github_topbar_cd_sort_direction)
     val filterLabel = stringResource(R.string.github_topbar_cd_filter)
     val refreshIntervalLabel = stringResource(R.string.github_check_sheet_label_refresh_interval)
+    val droidSourcesLabel = stringResource(R.string.github_topbar_droid_sources)
+    val droidSourcesCountLabel =
+        stringResource(R.string.github_topbar_droid_sources_count, fdroidCommonRepoCount)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
     val exportTracksLabel =
         if (tracksExporting) {
@@ -249,6 +257,13 @@ internal fun GitHubTopBarActions(
                                     ),
                                 items =
                                     listOf(
+                                        LiquidGlassActionMenuActionRow(
+                                            id = "droid_sources",
+                                            text = droidSourcesLabel,
+                                            subtitle = droidSourcesCountLabel,
+                                            leadingIcon = droidSourcesIcon,
+                                            onClick = onOpenDroidSourcesSheet,
+                                        ),
                                         LiquidGlassActionMenuSubmenuRow(
                                             id = "sort",
                                             text = sortContentDescription,
