@@ -49,7 +49,6 @@ internal class GitHubTrackActions(
         fdroidSearchActions.cancel()
         state.resetTrackEditor()
         state.showAddSheet = true
-        refreshAppListForTrackSheet()
     }
 
     fun openTrackSheetForEdit(item: GitHubTrackedApp) {
@@ -92,7 +91,7 @@ internal class GitHubTrackActions(
         state.fdroidSelectedCandidate = null
         state.fdroidAppSearchRunning = false
         state.showAddSheet = true
-        refreshAppListForTrackSheet()
+        ensureAppListForTrackSheet()
     }
 
     fun dismissTrackSheet() {
@@ -103,7 +102,7 @@ internal class GitHubTrackActions(
     fun setTrackAppPickerExpanded(value: Boolean) {
         state.pickerExpanded = value
         if (value) {
-            refreshAppListForTrackSheet()
+            ensureAppListForTrackSheet()
         }
     }
 
@@ -373,12 +372,18 @@ internal class GitHubTrackActions(
         state.fdroidAntiFeaturePolicyDropdownAnchorBounds = value
     }
 
-    fun refreshAppListForTrackSheet() {
+    private fun ensureAppListForTrackSheet() {
+        if (!state.appListLoaded) {
+            refreshAppListForTrackSheet(forceRefresh = false)
+        }
+    }
+
+    fun refreshAppListForTrackSheet(forceRefresh: Boolean = true) {
         if (appListRefreshJob?.isActive == true) return
         appListRefreshJob =
             scope.launch {
                 refreshActions.reloadApps(
-                    forceRefresh = true,
+                    forceRefresh = forceRefresh,
                     includeSystemApps = true,
                 )
                 syncSelectedAppFromPackageInput()

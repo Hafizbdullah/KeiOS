@@ -257,6 +257,7 @@ internal fun GitHubTrackEditSheet(
             if (expanded) {
                 GitHubTrackAppPickerContent(
                     backdrop = backdrop,
+                    active = pickerExpanded,
                     appSearch = appSearch,
                     selectedApp = selectedApp,
                     appList = appList,

@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 
-private const val GITHUB_APP_ICON_PRELOAD_LIMIT = 96
+private const val GITHUB_APP_ICON_PRELOAD_LIMIT = 32
 
 @Composable
 internal fun BindGitHubAppIconPreloadEffect(

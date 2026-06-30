@@ -234,6 +234,7 @@ internal fun GitHubTrackAppPickerButtonRow(
 @Composable
 internal fun GitHubTrackAppPickerContent(
     backdrop: LayerBackdrop,
+    active: Boolean,
     appSearch: String,
     selectedApp: InstalledAppItem?,
     appList: List<InstalledAppItem>,
@@ -253,7 +254,9 @@ internal fun GitHubTrackAppPickerContent(
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
     onSelectedAppChange: (InstalledAppItem?) -> Unit
 ) {
-    val listMaxHeight = (appWindowHeightDp() * 0.60f).coerceIn(340.dp, 680.dp)
+    val windowHeight = appWindowHeightDp()
+    val adaptiveListMinHeight = (windowHeight * 0.34f).coerceIn(260.dp, 420.dp)
+    val listMaxHeight = (windowHeight * 0.60f).coerceIn(340.dp, 680.dp)
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     var includeUserApps by remember(appPickerPreferences) {
@@ -315,7 +318,11 @@ internal fun GitHubTrackAppPickerContent(
             emptyList()
         }
     val appFilterReady = derivedInputMatches && !derivedState.deriving
-    LaunchedEffect(appPickerInput) {
+    val visibleRowsForStableHeight = derivedState.filteredApps.size.coerceIn(1, 6)
+    val contentDrivenListMinHeight = (visibleRowsForStableHeight * 72).dp
+    val listMinHeight = minOf(adaptiveListMinHeight, contentDrivenListMinHeight)
+    LaunchedEffect(active, appPickerInput) {
+        if (!active) return@LaunchedEffect
         onRequestAppPickerState(appPickerInput)
     }
 
@@ -343,8 +350,10 @@ internal fun GitHubTrackAppPickerContent(
         rememberAddPickerScroll,
         rememberedFirstVisibleItemIndex,
         rememberedFirstVisibleItemScrollOffset,
-        initialAppFocusApplied
+        initialAppFocusApplied,
+        active,
     ) {
+        if (!active) return@LaunchedEffect
         if (initialAppFocusApplied || filteredApps.isEmpty()) return@LaunchedEffect
         if (rememberAddPickerScroll && selectedApp == null) {
             listState.scrollToItem(
@@ -362,8 +371,8 @@ internal fun GitHubTrackAppPickerContent(
         initialAppFocusApplied = true
     }
 
-    LaunchedEffect(rememberAddPickerScroll, listState) {
-        if (!rememberAddPickerScroll) return@LaunchedEffect
+    LaunchedEffect(active, rememberAddPickerScroll, listState) {
+        if (!active || !rememberAddPickerScroll) return@LaunchedEffect
         snapshotFlow {
             listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
         }
@@ -495,7 +504,7 @@ internal fun GitHubTrackAppPickerContent(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = listMaxHeight),
+                        .heightIn(min = listMinHeight, max = listMaxHeight),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 2.dp)
                 ) {
