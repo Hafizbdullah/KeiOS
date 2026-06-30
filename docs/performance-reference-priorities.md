@@ -13,7 +13,7 @@
 
 | Area | Source | KeiOS Landing Direction | Status |
 | --- | --- | --- |
-| Squircle / rounded surfaces | MIUIX `85ae469`, `68352b1` | Move `AppSquircle` SDF data from first-use runtime generation to Gradle pre-baked generated source, add a global squircle switch, keep RuntimeShader fallback gates. | Landed: `bakeAppSquircleSdf`, generated SDF source, `LocalAppSquircleEnabled`, runtime fallback retained. |
+| Squircle / rounded surfaces | MIUIX `b09d5deb` | Delegate `AppSquircle` fill, clip, and surface behavior to `miuix-squircle`, keep KeiOS `appSquircle*` call sites stable, and retain `LocalAppSquircleEnabled` as the project-level switch. | Updated: local SDF baking was retired; `ui-liquid-glass` depends on `miuix-squircle-android`, and hot draw-path helpers now use MIUIX squircle paths. |
 | Nested Backdrop safety | Backdrop Glass Bottom Sheet docs, MIUIX glass components | Audit glass-on-glass paths and route child glass through `exportedBackdrop` where a parent glass surface must become the child backdrop. This avoids self-referential `layerBackdrop` loops and RenderThread crashes. | Landed: shared floating surface supports `exportedBackdrop`; BA BGM mini-player consumes combined/exported backdrop. Continue auditing new glass-on-glass components as they are added. |
 | MainScreen route back coordination | InstallerX-Revived `c612369`, `c77de9e` architecture idea | Keep ViewModel navigation as one-off events, keep route/back effects in Route/NavHost, and centralize child-route pop decisions so predictive and commit-only handlers call the same entry. | Landed first pass: `MainScreenBackCoordinator` now owns child-route back behavior and BA catalog return signaling; next pass should audit remaining page-local modal back handlers. |
 
