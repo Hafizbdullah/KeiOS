@@ -18,12 +18,14 @@ import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.BaStudentGuideCacheSnapshot
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.alignBaGuideStudentDetailCacheMetaWithCatalog
 import os.kei.ui.page.main.student.baGuideStudentDetailCacheStore
 import os.kei.ui.page.main.student.buildBaGuideStudentDetailCacheMetaFromInfo
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.extractBaGuideReleaseDateSec
 import os.kei.ui.page.main.student.decideBaGuideStudentDetailCacheRefresh
 import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
@@ -85,6 +87,11 @@ internal class BaStudentGuideRepository(
     },
     private val detailCacheStoreProvider: (Context) -> BaGuideStudentDetailFileCacheStore =
         ::baGuideStudentDetailCacheStore,
+    private val releaseDateExtractor: (BaStudentGuideInfo) -> Long =
+        ::extractBaGuideReleaseDateSec,
+    private val releaseDateIndexUpserter: suspend (Map<Long, Long>) -> Unit = { releaseDateSecByContentId ->
+        BaGuideCatalogStore.upsertReleaseDateIndex(releaseDateSecByContentId)
+    },
 ) {
     private val npcSatelliteGuideFlagCache = ConcurrentHashMap<Long, Boolean>()
     private val inFlightGuideFetches = ConcurrentHashMap<String, CompletableDeferred<Result<BaStudentGuideInfo>>>()
@@ -195,20 +202,38 @@ internal class BaStudentGuideRepository(
         val existingStudentMeta =
             if (studentCacheContext != null) {
                 withContext(ioDispatcher) {
-                    studentCacheContext.store.loadMeta(requestUrl)
+                    val loaded =
+                        studentCacheContext.store.loadMeta(requestUrl)
+                            ?: studentCacheContext.store.loadMetaByContentId(studentCacheContext.entry.contentId)
+                    loaded?.let { meta ->
+                        val aligned =
+                            alignBaGuideStudentDetailCacheMetaWithCatalog(
+                                meta = meta,
+                                sourceUrl = requestUrl,
+                                catalogCreatedAtSec = studentCacheContext.entry.createdAtSec,
+                                releaseDateSec = studentCacheContext.entry.releaseDateSec,
+                                nowMs = now,
+                            )
+                        if (aligned != meta) {
+                            studentCacheContext.store.saveMeta(aligned)
+                        }
+                        aligned
+                    }
                 }
             } else {
                 null
             }
         val studentMeta =
             if (studentCacheContext != null && cacheInfo != null) {
-                existingStudentMeta ?: buildAndSaveStudentDetailMeta(
-                    store = studentCacheContext.store,
-                    info = cacheInfo,
-                    entry = studentCacheContext.entry,
-                    previous = null,
-                    nowMs = now,
-                )
+                existingStudentMeta ?: withContext(ioDispatcher) {
+                    buildAndSaveStudentDetailMeta(
+                        store = studentCacheContext.store,
+                        info = cacheInfo,
+                        entry = studentCacheContext.entry,
+                        previous = null,
+                        nowMs = now,
+                    )
+                }
             } else {
                 existingStudentMeta
             }
@@ -348,25 +373,37 @@ internal class BaStudentGuideRepository(
         }
     }
 
-    private fun buildAndSaveStudentDetailMeta(
+    private suspend fun buildAndSaveStudentDetailMeta(
         store: BaGuideStudentDetailFileCacheStore,
         info: BaStudentGuideInfo,
         entry: BaGuideCatalogEntry,
         previous: BaGuideStudentDetailCacheMeta?,
         nowMs: Long,
     ): BaGuideStudentDetailCacheMeta? {
+        val releaseDateSec = resolveDetailReleaseDateSec(info = info, entry = entry)
         val meta =
             buildBaGuideStudentDetailCacheMetaFromInfo(
                 info = info,
                 contentId = entry.contentId,
                 tab = entry.tab,
                 catalogCreatedAtSec = entry.createdAtSec,
-                releaseDateSec = entry.releaseDateSec,
+                releaseDateSec = releaseDateSec,
                 previous = previous,
                 nowMs = nowMs,
             ) ?: return null
         store.saveMeta(meta)
+        if (entry.releaseDateSec <= 0L && releaseDateSec > 0L) {
+            releaseDateIndexUpserter(mapOf(entry.contentId to releaseDateSec))
+        }
         return meta
+    }
+
+    private fun resolveDetailReleaseDateSec(
+        info: BaStudentGuideInfo,
+        entry: BaGuideCatalogEntry,
+    ): Long {
+        entry.releaseDateSec.takeIf { it > 0L }?.let { return it }
+        return releaseDateExtractor(info).coerceAtLeast(0L)
     }
 
     private fun BaGuideStudentDetailCacheMeta.recordFailure(nowMs: Long): BaGuideStudentDetailCacheMeta {

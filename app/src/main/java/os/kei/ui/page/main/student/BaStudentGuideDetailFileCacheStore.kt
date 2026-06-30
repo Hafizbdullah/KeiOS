@@ -48,6 +48,14 @@ internal class BaGuideStudentDetailFileCacheStore(
             readMetaLocked(source)
         }
 
+    fun loadMetaByContentId(contentId: Long): BaGuideStudentDetailCacheMeta? {
+        if (contentId <= 0L) return null
+        return allMetas()
+            .asSequence()
+            .filter { meta -> meta.tab == BaGuideCatalogTab.Student && meta.contentId == contentId }
+            .maxByOrNull { meta -> maxOf(meta.lastValidatedAtMs, meta.cachedAtMs) }
+    }
+
     fun saveMeta(meta: BaGuideStudentDetailCacheMeta) {
         synchronized(lock) {
             val source = normalizeStudentGuideSourceUrl(meta.sourceUrl)
@@ -229,6 +237,47 @@ internal fun buildBaGuideStudentDetailCacheMetaFromInfo(
         failureCount = 0,
         lastFailureAtMs = 0L,
         nextRetryAtMs = 0L,
+    )
+}
+
+internal fun alignBaGuideStudentDetailCacheMetaWithCatalog(
+    meta: BaGuideStudentDetailCacheMeta,
+    sourceUrl: String,
+    catalogCreatedAtSec: Long,
+    releaseDateSec: Long,
+    nowMs: Long = System.currentTimeMillis(),
+): BaGuideStudentDetailCacheMeta {
+    if (meta.tab != BaGuideCatalogTab.Student) return meta
+    val source = normalizeStudentGuideSourceUrl(sourceUrl).ifBlank { meta.sourceUrl }
+    val alignedCatalogCreatedAtSec =
+        catalogCreatedAtSec
+            .takeIf { it > 0L }
+            ?: meta.catalogCreatedAtSec.coerceAtLeast(0L)
+    val alignedReleaseDateSec =
+        releaseDateSec
+            .takeIf { it > 0L }
+            ?: meta.releaseDateSec.coerceAtLeast(0L)
+    val tier =
+        resolveBaGuideStudentDetailFreshnessTier(
+            tab = meta.tab,
+            catalogCreatedAtSec = alignedCatalogCreatedAtSec,
+            releaseDateSec = alignedReleaseDateSec,
+            firstSeenAtMs = meta.firstSeenAtMs,
+            unchangedValidationCount = meta.unchangedValidationCount,
+            nowMs = nowMs,
+        ) ?: meta.freshnessTier
+    val nextAutoRefreshAtMs =
+        if (meta.lastValidatedAtMs > 0L) {
+            meta.lastValidatedAtMs + tier.validationIntervalMs
+        } else {
+            meta.nextAutoRefreshAtMs
+        }
+    return meta.copy(
+        sourceUrl = source,
+        catalogCreatedAtSec = alignedCatalogCreatedAtSec,
+        releaseDateSec = alignedReleaseDateSec,
+        nextAutoRefreshAtMs = nextAutoRefreshAtMs,
+        freshnessTier = tier,
     )
 }
 

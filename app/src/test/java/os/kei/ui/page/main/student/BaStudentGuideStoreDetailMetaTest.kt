@@ -12,6 +12,7 @@ import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [35])
@@ -117,6 +118,56 @@ class BaStudentGuideStoreDetailMetaTest {
         assertEquals(1, stats.longTermCount)
         assertEquals(1, stats.archivedCount)
         assertEquals(2_000L, stats.latestValidatedAtMs)
+    }
+
+    @Test
+    fun `file store loads detail meta by content id`() {
+        val sourceUrl = uniqueSourceUrl(24)
+        val meta =
+            detailMeta(
+                sourceUrl = sourceUrl,
+                contentId = 24L,
+                tier = BaGuideStudentDetailFreshnessTier.Stable,
+            )
+
+        store.saveMeta(meta)
+
+        assertEquals(meta, store.loadMetaByContentId(24L))
+        assertNull(store.loadMetaByContentId(404L))
+    }
+
+    @Test
+    fun `catalog alignment preserves validation times while updating catalog signals`() {
+        val nowMs = 400L * DAY_MS
+        val sourceUrl = uniqueSourceUrl(25)
+        val previous =
+            detailMeta(
+                sourceUrl = sourceUrl,
+                contentId = 25L,
+                tier = BaGuideStudentDetailFreshnessTier.Unknown,
+            ).copy(
+                catalogCreatedAtSec = 0L,
+                releaseDateSec = 0L,
+                firstSeenAtMs = nowMs - 45L * DAY_MS,
+                lastValidatedAtMs = nowMs - 2L * DAY_MS,
+                cachedAtMs = nowMs - 3L * DAY_MS,
+            )
+
+        val aligned =
+            alignBaGuideStudentDetailCacheMetaWithCatalog(
+                meta = previous,
+                sourceUrl = sourceUrl,
+                catalogCreatedAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                releaseDateSec = (nowMs - 120L * DAY_MS) / 1000L,
+                nowMs = nowMs,
+            )
+
+        assertEquals(previous.firstSeenAtMs, aligned.firstSeenAtMs)
+        assertEquals(previous.lastValidatedAtMs, aligned.lastValidatedAtMs)
+        assertEquals(previous.cachedAtMs, aligned.cachedAtMs)
+        assertEquals((nowMs - 40L * DAY_MS) / 1000L, aligned.catalogCreatedAtSec)
+        assertEquals((nowMs - 120L * DAY_MS) / 1000L, aligned.releaseDateSec)
+        assertTrue(aligned.nextAutoRefreshAtMs > previous.lastValidatedAtMs)
     }
 
     private fun guideInfo(

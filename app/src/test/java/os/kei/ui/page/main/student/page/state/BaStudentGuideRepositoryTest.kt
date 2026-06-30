@@ -391,6 +391,109 @@ class BaStudentGuideRepositoryTest {
             assertFalse(fetchCalled)
         }
 
+    @Test
+    fun `changed detail url keeps first seen time from content id meta`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val oldUrl = "https://www.gamekee.com/ba/tj/10006-old.html"
+            val newUrl = "https://www.gamekee.com/ba/tj/10006.html"
+            val cached = guideInfo(sourceUrl = newUrl, title = "迁移缓存", syncedAtMs = nowMs - DAY_MS)
+            val metaStore = tempMetaStore(context)
+            val oldFirstSeenAtMs = nowMs - 60L * DAY_MS
+            metaStore.saveMeta(
+                detailMeta(
+                    sourceUrl = oldUrl,
+                    contentId = 10006L,
+                    tier = BaGuideStudentDetailFreshnessTier.Stable,
+                    catalogCreatedAtSec = 0L,
+                    cachedAtMs = nowMs - 10L * DAY_MS,
+                    lastValidatedAtMs = nowMs - 5L * DAY_MS,
+                ).copy(firstSeenAtMs = oldFirstSeenAtMs),
+            )
+            var fetchCalled = false
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalogBundle(
+                        catalogEntry(
+                            sourceUrl = newUrl,
+                            contentId = 10006L,
+                            tab = BaGuideCatalogTab.Student,
+                            createdAtSec = 0L,
+                        ),
+                    ),
+                    metaStore = metaStore,
+                    fetcher = {
+                        fetchCalled = true
+                        guideInfo(sourceUrl = newUrl, title = "迁移网络", syncedAtMs = nowMs)
+                    },
+                )
+
+            val result =
+                repository.loadGuide(
+                    context = context,
+                    sourceUrl = newUrl,
+                    currentInfo = null,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(cached, result.info)
+            assertFalse(fetchCalled)
+            assertNotNull(result.cacheMeta)
+            assertEquals(oldFirstSeenAtMs, result.cacheMeta.firstSeenAtMs)
+            assertEquals(oldFirstSeenAtMs, metaStore.loadMeta(newUrl)?.firstSeenAtMs)
+        }
+
+    @Test
+    fun `detail refresh extracts release date and upserts catalog release index`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10007.html"
+            val cached = guideInfo(sourceUrl = sourceUrl, title = "日期旧缓存", syncedAtMs = nowMs - DAY_MS)
+            val latest =
+                guideInfo(sourceUrl = sourceUrl, title = "日期新详情", syncedAtMs = nowMs).copy(
+                    profileRows = listOf(BaGuideRow("实装日期", "2025年1月2日")),
+                )
+            val metaStore = tempMetaStore(context)
+            var upsertedReleaseDates: Map<Long, Long> = emptyMap()
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalogBundle(
+                        catalogEntry(
+                            sourceUrl = sourceUrl,
+                            contentId = 10007L,
+                            tab = BaGuideCatalogTab.Student,
+                            createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                        ),
+                    ),
+                    metaStore = metaStore,
+                    fetcher = { latest },
+                    releaseDateIndexUpserter = { upsertedReleaseDates = it },
+                )
+
+            val result =
+                repository.loadGuide(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    currentInfo = cached,
+                    manualRefresh = true,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(latest, result.info)
+            assertNotNull(result.cacheMeta)
+            assertTrue(result.cacheMeta.releaseDateSec > 0L)
+            assertEquals(result.cacheMeta.releaseDateSec, upsertedReleaseDates[10007L])
+        }
+
     private fun repository(
         nowMs: Long,
         refreshIntervalHours: Int = 12,
@@ -399,6 +502,7 @@ class BaStudentGuideRepositoryTest {
         metaStore: BaGuideStudentDetailFileCacheStore,
         fetcher: suspend (String) -> BaStudentGuideInfo,
         saver: suspend (BaStudentGuideInfo) -> Unit = {},
+        releaseDateIndexUpserter: suspend (Map<Long, Long>) -> Unit = {},
     ): BaStudentGuideRepository =
         BaStudentGuideRepository(
             ioDispatcher = Dispatchers.Unconfined,
@@ -411,6 +515,7 @@ class BaStudentGuideRepositoryTest {
             guideFetcher = { sourceUrl, _, _, _ -> fetcher(sourceUrl) },
             catalogBundleLoader = { catalog },
             detailCacheStoreProvider = { metaStore },
+            releaseDateIndexUpserter = releaseDateIndexUpserter,
         )
 
     private fun tempMetaStore(context: Application): BaGuideStudentDetailFileCacheStore {
@@ -433,7 +538,7 @@ class BaStudentGuideRepositoryTest {
             description = "desc",
             imageUrl = "https://example.com/$title.png",
             summary = "summary",
-            stats = listOf("实装日期" to "2025年1月1日"),
+            stats = listOf("学校" to "夏莱"),
             profileRows = listOf(BaGuideRow("学校", "夏莱")),
             syncedAtMs = syncedAtMs,
         )
