@@ -10,6 +10,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.feature.home.model.HomeAppOverview
@@ -25,6 +26,7 @@ import os.kei.ui.page.main.home.HomePage
 import os.kei.ui.page.main.mcp.McpPage
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.OsPage
+import os.kei.ui.page.main.widget.chrome.LocalAppScaffoldContainerColor
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.testing.KeiOsTestTags
@@ -98,6 +100,7 @@ internal fun MainPagerPageHost(
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
+        LocalAppScaffoldContainerColor provides mainPagerPageContainerColorOverride(pageType),
         LocalGlassEffectRuntime provides glassRuntime,
     ) {
         Box(
@@ -216,6 +219,9 @@ internal fun shouldRenderMainPagerPageContent(
     pageType == BottomPage.Home ||
         runtime.hasActivated ||
         runtime.isWarmActive
+
+internal fun mainPagerPageContainerColorOverride(pageType: BottomPage): Color? =
+    if (pageType == BottomPage.Home) null else Color.Transparent
 
 private fun BottomPage.pageRootTestTag(): String =
     when (this) {

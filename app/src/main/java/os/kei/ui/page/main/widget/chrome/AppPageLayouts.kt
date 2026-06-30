@@ -11,13 +11,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
+
+internal val LocalAppScaffoldContainerColor = staticCompositionLocalOf<Color?> { null }
 
 fun appPageContentPadding(
     innerPadding: PaddingValues,
@@ -37,12 +41,18 @@ fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp =
 @Composable
 fun AppScaffold(
     modifier: Modifier = Modifier,
+    containerColor: Color? = null,
     topBar: @Composable () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val resolvedContainerColor =
+        containerColor
+            ?: LocalAppScaffoldContainerColor.current
+            ?: MiuixTheme.colorScheme.surface
     MiuixScaffold(
         modifier = modifier,
+        containerColor = resolvedContainerColor,
         topBar = topBar,
         bottomBar = bottomBar,
         content = content,

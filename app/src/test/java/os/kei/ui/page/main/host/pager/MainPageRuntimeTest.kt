@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.host.pager
 
+import androidx.compose.ui.graphics.Color
 import org.junit.Test
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -77,5 +78,14 @@ class MainPageRuntimeTest {
                 runtime = MainPageRuntime(hasActivated = true, isWarmActive = false),
             ),
         )
+    }
+
+    @Test
+    fun `main pager keeps non home page container transparent for shared background`() {
+        assertEquals(null, mainPagerPageContainerColorOverride(BottomPage.Home))
+        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Os))
+        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Ba))
+        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Mcp))
+        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.GitHub))
     }
 }
