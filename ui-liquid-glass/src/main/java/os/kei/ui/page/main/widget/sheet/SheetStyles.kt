@@ -57,6 +57,11 @@ private const val DefaultSelectedLabelSentinel = "\u0000default-selected-label"
 private const val DefaultCollapsedHintSentinel = "\u0000default-collapsed-hint"
 private const val DefaultExpandedHintSentinel = "\u0000default-expanded-hint"
 
+enum class SheetCardSurfaceTone {
+    Default,
+    Readable,
+}
+
 @Composable
 fun SheetRow(
     modifier: Modifier = Modifier,
@@ -122,18 +127,20 @@ fun SheetDescriptionText(
 fun SheetSurfaceCard(
     modifier: Modifier = Modifier,
     containerColor: Color? = null,
-    borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
+    borderColor: Color? = null,
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
+    surfaceTone: SheetCardSurfaceTone = SheetCardSurfaceTone.Default,
     verticalSpacing: Dp = 8.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val isDark = isSystemInDarkTheme()
     AppSurfaceCard(
         modifier = modifier,
-        containerColor = containerColor ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
-        borderColor = borderColor,
+        containerColor = containerColor ?: sheetCardSurfaceColor(surfaceTone, isDark),
+        borderColor = borderColor ?: sheetCardBorderColor(surfaceTone),
         contentColor = contentColor,
         captureLocalBackdrop = false,
         pressSafePadding = pressSafePadding,
@@ -151,7 +158,8 @@ fun SheetSurfaceCard(
 fun SheetSectionCard(
     modifier: Modifier = Modifier,
     containerColor: Color? = null,
-    borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
+    borderColor: Color? = null,
+    surfaceTone: SheetCardSurfaceTone = SheetCardSurfaceTone.Default,
     verticalSpacing: Dp = 8.dp,
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     content: @Composable ColumnScope.() -> Unit,
@@ -160,10 +168,36 @@ fun SheetSectionCard(
         modifier = modifier,
         containerColor = containerColor,
         borderColor = borderColor,
+        surfaceTone = surfaceTone,
         verticalSpacing = verticalSpacing,
         contentPadding = contentPadding,
         content = content
     )
+}
+
+@Composable
+private fun sheetCardSurfaceColor(
+    surfaceTone: SheetCardSurfaceTone,
+    isDark: Boolean,
+): Color {
+    val alpha =
+        when (surfaceTone) {
+            SheetCardSurfaceTone.Default -> 0.64f
+            SheetCardSurfaceTone.Readable -> if (isDark) 0.86f else 0.92f
+        }
+    return MiuixTheme.colorScheme.surfaceContainer.copy(alpha = alpha)
+}
+
+@Composable
+private fun sheetCardBorderColor(
+    surfaceTone: SheetCardSurfaceTone,
+): Color {
+    val alpha =
+        when (surfaceTone) {
+            SheetCardSurfaceTone.Default -> 0.14f
+            SheetCardSurfaceTone.Readable -> 0.22f
+        }
+    return MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = alpha)
 }
 
 @Composable

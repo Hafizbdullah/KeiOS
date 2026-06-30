@@ -18,6 +18,8 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.sheet.LiquidSheetSurfaceTone
+import os.kei.ui.page.main.widget.sheet.SheetCardSurfaceTone
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -58,10 +60,11 @@ internal fun BaCalendarPoolDataSettingsSheet(
                 onClick = onDismissRequest,
             )
         },
+        surfaceTone = LiquidSheetSurfaceTone.Readable,
     ) {
         SheetContentColumn(verticalSpacing = 10.dp) {
             SheetSectionTitle(stringResource(R.string.ba_settings_section_sync))
-            SheetSectionCard {
+            SheetSectionCard(surfaceTone = SheetCardSurfaceTone.Readable) {
                 Text(
                     text = stringResource(R.string.ba_settings_card_sync_title),
                     color = settingsAccent,
@@ -83,7 +86,7 @@ internal fun BaCalendarPoolDataSettingsSheet(
             }
 
             SheetSectionTitle(stringResource(R.string.ba_settings_section_content))
-            SheetSectionCard {
+            SheetSectionCard(surfaceTone = SheetCardSurfaceTone.Readable) {
                 when (pageKind) {
                     BaCalendarPoolPageKind.Calendar -> {
                         SheetControlRow(label = stringResource(R.string.ba_settings_label_show_ended_activity)) {

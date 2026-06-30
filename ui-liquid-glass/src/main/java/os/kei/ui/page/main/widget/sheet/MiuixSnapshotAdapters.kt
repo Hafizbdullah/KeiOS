@@ -450,6 +450,7 @@ fun SnapshotWindowBottomSheet(
     onBlockedDismissRequest: (() -> Unit)? = null,
     enableNestedScroll: Boolean = true,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
+    surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
     useLiquidGlassSheet: Boolean = LocalLiquidSheetEnabled.current,
     content: @Composable () -> Unit,
 ) {
@@ -499,6 +500,7 @@ fun SnapshotWindowBottomSheet(
             onBlockedDismissRequest = onBlockedDismissRequest,
             enableNestedScroll = enableNestedScroll,
             initialDetent = initialDetent,
+            surfaceTone = surfaceTone,
             content = content,
         )
     } else {

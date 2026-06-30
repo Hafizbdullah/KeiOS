@@ -76,6 +76,11 @@ enum class LiquidSheetInitialDetent(
     Full(DETENT_FULL),
 }
 
+enum class LiquidSheetSurfaceTone {
+    Default,
+    Readable,
+}
+
 val LocalLiquidSheetContentOverflowReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetContentScrollStateReporter =
@@ -114,6 +119,7 @@ fun LiquidGlassBottomSheet(
     onBlockedDismissRequest: (() -> Unit)? = null,
     enableNestedScroll: Boolean = true,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
+    surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
     content: @Composable () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -199,6 +205,7 @@ fun LiquidGlassBottomSheet(
                         liquidSheetGlassSurfaceColor(
                             isDark = isDark,
                             detentFraction = visualDetentFraction.floatValue,
+                            surfaceTone = surfaceTone,
                         )
                     )
                 },
@@ -238,6 +245,7 @@ fun LiquidGlassBottomSheet(
                 liquidSheetSurfaceColor(
                     isDark = isDark,
                     detentFraction = targetFraction,
+                    surfaceTone = surfaceTone,
                 )
             }
     LiquidDetentWindowBottomSheet(
@@ -391,24 +399,58 @@ private fun liquidSheetMaxWidth(requestedMaxWidth: Dp): Dp {
 internal fun liquidSheetSurfaceColor(
     isDark: Boolean,
     detentFraction: Float,
+    surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
 ): Color {
     val solidness = liquidSheetSolidness(detentFraction)
+    val alpha =
+        when (surfaceTone) {
+            LiquidSheetSurfaceTone.Default ->
+                if (isDark) {
+                    lerp(0.90f, 0.99f, solidness)
+                } else {
+                    lerp(0.87f, 0.99f, solidness)
+                }
+
+            LiquidSheetSurfaceTone.Readable ->
+                if (isDark) {
+                    lerp(0.94f, 0.99f, solidness)
+                } else {
+                    lerp(0.93f, 0.99f, solidness)
+                }
+        }
     return if (isDark) {
-        Color(0xFF141420).copy(alpha = lerp(0.90f, 0.99f, solidness))
+        Color(0xFF141420).copy(alpha = alpha)
     } else {
-        Color(0xFFF8F9FC).copy(alpha = lerp(0.87f, 0.99f, solidness))
+        Color(0xFFF8F9FC).copy(alpha = alpha)
     }
 }
 
 internal fun liquidSheetGlassSurfaceColor(
     isDark: Boolean,
     detentFraction: Float,
+    surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
 ): Color {
     val solidness = liquidSheetSolidness(detentFraction)
+    val alpha =
+        when (surfaceTone) {
+            LiquidSheetSurfaceTone.Default ->
+                if (isDark) {
+                    lerp(0.34f, 0.58f, solidness)
+                } else {
+                    lerp(0.28f, 0.50f, solidness)
+                }
+
+            LiquidSheetSurfaceTone.Readable ->
+                if (isDark) {
+                    lerp(0.60f, 0.78f, solidness)
+                } else {
+                    lerp(0.58f, 0.74f, solidness)
+                }
+        }
     return if (isDark) {
-        Color(0xFF141420).copy(alpha = lerp(0.34f, 0.58f, solidness))
+        Color(0xFF141420).copy(alpha = alpha)
     } else {
-        Color(0xFFF8F9FC).copy(alpha = lerp(0.28f, 0.50f, solidness))
+        Color(0xFFF8F9FC).copy(alpha = alpha)
     }
 }
 
