@@ -14,39 +14,58 @@ import java.util.Locale
 
 private const val DEFAULT_FDROID_REPOSITORY_BATCH_SIZE = 4
 
-fun interface FdroidRepositorySnapshotProvider {
-    suspend fun loadRepositorySnapshot(
+fun interface FdroidRepositoryPackagesSnapshotProvider {
+    suspend fun loadRepositoryPackagesSnapshot(
         repoUrl: String,
+        packageNames: Set<String>,
         forceRefresh: Boolean
     ): Result<FdroidRepositorySnapshot>
 }
 
-class FdroidRepositoryIndexSnapshotProvider(
+class FdroidRepositoryIndexPackagesSnapshotProvider(
     private val client: FdroidRepositoryIndexClient = FdroidRepositoryIndexClient()
-) : FdroidRepositorySnapshotProvider {
-    override suspend fun loadRepositorySnapshot(
+) : FdroidRepositoryPackagesSnapshotProvider {
+    override suspend fun loadRepositoryPackagesSnapshot(
         repoUrl: String,
+        packageNames: Set<String>,
         forceRefresh: Boolean
     ): Result<FdroidRepositorySnapshot> {
-        return client.fetchIndexV2(repoUrl)
+        return client.fetchIndexV2Packages(
+            repoBaseUrl = repoUrl,
+            packageNames = packageNames
+        )
     }
 }
 
 class FdroidBatchPackageSnapshotProvider(
     trackedItems: List<GitHubTrackedApp>,
     private val packageProvider: FdroidPackageSnapshotProvider = FdroidPackageApiSnapshotProvider(),
-    private val repositoryProvider: FdroidRepositorySnapshotProvider = FdroidRepositoryIndexSnapshotProvider(),
+    private val repositoryPackagesProvider: FdroidRepositoryPackagesSnapshotProvider =
+        FdroidRepositoryIndexPackagesSnapshotProvider(),
     private val minRepositoryBatchSize: Int = DEFAULT_FDROID_REPOSITORY_BATCH_SIZE
 ) : FdroidPackageSnapshotProvider, FdroidPackageLookupSnapshotProvider {
-    private val repositoryModeUrls: Set<String> =
+    private val repositoryModePackagesByUrl: Map<String, Set<String>> =
         trackedItems
             .asSequence()
             .filter { item -> item.isFdroidRepositoryTrack() }
-            .mapNotNull { item -> item.fdroidIdentityOrNull()?.normalizedRepoUrl }
-            .groupingBy { repoUrl -> repoUrl }
-            .eachCount()
-            .filterValues { count -> count >= minRepositoryBatchSize.coerceAtLeast(2) }
-            .keys
+            .mapNotNull { item ->
+                item.fdroidIdentityOrNull()?.let { identity ->
+                    identity.normalizedRepoUrl to identity.packageName
+                }
+            }
+            .groupBy(
+                keySelector = { (repoUrl, _) -> repoUrl },
+                valueTransform = { (_, packageName) -> packageName }
+            )
+            .mapValues { (_, packageNames) ->
+                packageNames
+                    .asSequence()
+                    .map { name -> name.trim() }
+                    .filter { name -> name.isNotBlank() }
+                    .distinctBy { name -> name.lowercase(Locale.ROOT) }
+                    .toSet()
+            }
+            .filterValues { packageNames -> packageNames.size >= minRepositoryBatchSize.coerceAtLeast(2) }
 
     private val mutex = Mutex()
     private val repositoryCache = mutableMapOf<String, Result<FdroidRepositorySnapshot>>()
@@ -75,7 +94,7 @@ class FdroidBatchPackageSnapshotProvider(
     ): Result<FdroidPackageLookupSnapshot> {
         val identity = item.fdroidIdentityOrNull()
             ?: return Result.failure(IllegalArgumentException("invalid F-Droid repository URL or package"))
-        return if (identity.normalizedRepoUrl in repositoryModeUrls) {
+        return if (identity.normalizedRepoUrl in repositoryModePackagesByUrl) {
             loadLookupFromRepository(
                 repoUrl = identity.normalizedRepoUrl,
                 packageName = identity.packageName,
@@ -96,7 +115,11 @@ class FdroidBatchPackageSnapshotProvider(
         packageName: String,
         forceRefresh: Boolean
     ): Result<FdroidPackageLookupSnapshot> {
-        return loadRepository(repoUrl, forceRefresh).mapCatching { repository ->
+        return loadRepositoryPackages(
+            repoUrl = repoUrl,
+            packageName = packageName,
+            forceRefresh = forceRefresh
+        ).mapCatching { repository ->
             val packageSnapshot = repository.packageSnapshot(packageName)
                 ?: error("F-Droid package $packageName was not found in $repoUrl")
             FdroidPackageLookupSnapshot(
@@ -106,18 +129,50 @@ class FdroidBatchPackageSnapshotProvider(
         }
     }
 
-    private suspend fun loadRepository(
+    private suspend fun loadRepositoryPackages(
         repoUrl: String,
+        packageName: String,
         forceRefresh: Boolean
     ): Result<FdroidRepositorySnapshot> {
-        val key = repoUrl.cacheKey()
+        val packageNames =
+            repositoryModePackagesByUrl[repoUrl]
+                ?.plus(packageName)
+                ?: setOf(packageName)
+        val key =
+            repoUrl.cacheKey() +
+                "|" +
+                packageNames
+                    .map { name -> name.cacheKey() }
+                    .sorted()
+                    .joinToString(",")
+        return loadRepository(
+            cacheKey = key,
+            repoUrl = repoUrl,
+            forceRefresh = forceRefresh
+        ) {
+            repositoryPackagesProvider.loadRepositoryPackagesSnapshot(
+                repoUrl = repoUrl,
+                packageNames = packageNames,
+                forceRefresh = forceRefresh
+            )
+        }
+    }
+
+    private suspend fun loadRepository(
+        cacheKey: String,
+        repoUrl: String,
+        forceRefresh: Boolean,
+        loader: suspend () -> Result<FdroidRepositorySnapshot>
+    ): Result<FdroidRepositorySnapshot> {
         val inFlight = mutex.withLock {
-            repositoryCache[key]?.let { cached -> return cached }
-            repositoryInFlight[key]?.let { existing ->
+            if (!forceRefresh) {
+                repositoryCache[cacheKey]?.let { cached -> return cached }
+            }
+            repositoryInFlight[cacheKey]?.let { existing ->
                 return@withLock InFlight(existing, owner = false)
             }
             val created = CompletableDeferred<Result<FdroidRepositorySnapshot>>()
-            repositoryInFlight[key] = created
+            repositoryInFlight[cacheKey] = created
             InFlight(created, owner = true)
         }
         if (!inFlight.owner) {
@@ -125,17 +180,17 @@ class FdroidBatchPackageSnapshotProvider(
         }
         val result =
             try {
-                repositoryProvider.loadRepositorySnapshot(repoUrl, forceRefresh)
+                loader()
             } catch (error: CancellationException) {
-                mutex.withLock { repositoryInFlight.remove(key) }
+                mutex.withLock { repositoryInFlight.remove(cacheKey) }
                 inFlight.deferred.completeExceptionally(error)
                 throw error
             } catch (error: Throwable) {
                 Result.failure(error)
             }
         mutex.withLock {
-            repositoryCache[key] = result
-            repositoryInFlight.remove(key)
+            repositoryCache[cacheKey] = result
+            repositoryInFlight.remove(cacheKey)
         }
         inFlight.deferred.complete(result)
         return result
@@ -183,7 +238,9 @@ class FdroidBatchPackageSnapshotProvider(
     ): Result<FdroidPackageSnapshot> {
         val key = "$repoUrl|$packageName".cacheKey()
         val inFlight = mutex.withLock {
-            packageCache[key]?.let { cached -> return cached }
+            if (!forceRefresh) {
+                packageCache[key]?.let { cached -> return cached }
+            }
             packageInFlight[key]?.let { existing ->
                 return@withLock InFlight(existing, owner = false)
             }

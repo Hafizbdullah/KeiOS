@@ -1,7 +1,6 @@
 package os.kei.feature.github.data.remote.fdroid
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -10,6 +9,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.json.jsonArrayOrNull
 import os.kei.core.json.jsonObjectOrNull
@@ -21,17 +21,18 @@ import os.kei.core.json.parseJsonObjectOrNull
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 class FdroidPackageApiClient(
     private val client: OkHttpClient = defaultClient,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun fetchPackage(
         repoBaseUrl: String,
         packageName: String
     ): Result<FdroidPackageSnapshot> = withContext(ioDispatcher) {
-        runCatching {
+        fdroidPackageApiResult {
             val normalizedRepoUrl = repoBaseUrl.trim().trimEnd('/')
             require(normalizedRepoUrl.isNotBlank()) { "F-Droid repository URL is blank" }
             val normalizedPackageName = packageName.trim()
@@ -224,5 +225,15 @@ class FdroidPackageApiClient(
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
             .build()
+    }
+}
+
+private inline fun <T> fdroidPackageApiResult(block: () -> T): Result<T> {
+    return try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
     }
 }

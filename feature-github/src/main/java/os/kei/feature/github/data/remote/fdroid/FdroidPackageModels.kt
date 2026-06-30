@@ -52,10 +52,11 @@ data class FdroidRepositorySnapshot(
     val repoDescription: String,
     val timestampMillis: Long?,
     val mirrors: List<String>,
-    val packages: Map<String, FdroidPackageSnapshot>
+    val packages: Map<String, FdroidPackageSnapshot>,
+    val totalPackageCount: Int? = null
 ) {
     val packageCount: Int
-        get() = packages.size
+        get() = totalPackageCount ?: packages.size
 
     fun packageSnapshot(packageName: String): FdroidPackageSnapshot? {
         val key = packageName.trim()

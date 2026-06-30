@@ -6,7 +6,6 @@ import kotlinx.coroutines.launch
 import os.kei.BuildConfig
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
-import os.kei.feature.github.model.FdroidAppSearchRequest
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.FdroidTrackedAppConfig
@@ -41,17 +40,20 @@ internal class GitHubTrackActions(
     private val assetActions: GitHubAssetActions,
 ) {
     private var appListRefreshJob: Job? = null
+    private val fdroidSearchActions = GitHubFdroidTrackSearchActions(env)
     private val state get() = env.state
     private val scope get() = env.scope
     private val repository get() = env.repository
 
     fun openTrackSheetForAdd() {
+        fdroidSearchActions.cancel()
         state.resetTrackEditor()
         state.showAddSheet = true
         refreshAppListForTrackSheet()
     }
 
     fun openTrackSheetForEdit(item: GitHubTrackedApp) {
+        fdroidSearchActions.cancel()
         state.editingTrackedItem = item
         state.repoUrlInput = item.repoUrl
         state.packageNameInput = item.packageName
@@ -91,6 +93,7 @@ internal class GitHubTrackActions(
     }
 
     fun dismissTrackSheet() {
+        fdroidSearchActions.cancel()
         state.dismissTrackSheet()
     }
 
@@ -102,6 +105,7 @@ internal class GitHubTrackActions(
     }
 
     fun setRepoUrlInput(value: String) {
+        fdroidSearchActions.cancel()
         state.repoUrlInput = value
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
@@ -113,6 +117,7 @@ internal class GitHubTrackActions(
     }
 
     fun setTrackSourceModeInput(value: GitHubTrackedSourceMode) {
+        fdroidSearchActions.cancel()
         state.trackSourceModeInput = value
         state.updateIntervalModeInput = state.updateIntervalModeInput.coerceForSource(value)
         state.repoScanCandidates = emptyList()
@@ -135,6 +140,7 @@ internal class GitHubTrackActions(
     }
 
     fun setPackageNameInput(value: String) {
+        fdroidSearchActions.cancel()
         state.packageNameInput = value
         state.repoScanCandidates = emptyList()
         val selectedCandidate = state.fdroidSelectedCandidate
@@ -163,6 +169,7 @@ internal class GitHubTrackActions(
     }
 
     fun setSelectedApp(value: InstalledAppItem?) {
+        fdroidSearchActions.cancel()
         state.selectedApp = value
         state.repoScanCandidates = emptyList()
         state.fdroidSelectedCandidate = null
@@ -175,6 +182,7 @@ internal class GitHubTrackActions(
     }
 
     fun setFdroidRepoScopeIdInput(value: String) {
+        fdroidSearchActions.cancel()
         val normalized = value.trim().ifBlank { FdroidRepositoryPresets.COMMON_ID }
         state.fdroidRepoScopeIdInput = normalized
         state.fdroidSelectedCandidate = null
@@ -189,6 +197,7 @@ internal class GitHubTrackActions(
     }
 
     fun setFdroidAppSearchQueryInput(value: String) {
+        fdroidSearchActions.cancel()
         state.fdroidAppSearchQueryInput = value
         state.fdroidSelectedCandidate = null
     }
@@ -435,111 +444,15 @@ internal class GitHubTrackActions(
     }
 
     fun searchFdroidAppsByName() {
-        if (state.fdroidAppSearchRunning) return
-        if (state.trackSourceModeInput != GitHubTrackedSourceMode.FdroidRepository) return
-        val query = state.fdroidAppSearchQueryInput.trim()
-        if (query.isBlank()) {
-            env.toast(R.string.github_toast_fdroid_search_requires_query)
-            return
-        }
-        runFdroidAppSearch(
-            query = query,
-            packageName = "",
-            emptyToastRes = R.string.github_toast_fdroid_search_no_match,
-        )
+        fdroidSearchActions.searchByName()
     }
 
     fun scanFdroidReposFromPackage() {
-        if (state.fdroidAppSearchRunning) return
-        if (state.trackSourceModeInput != GitHubTrackedSourceMode.FdroidRepository) return
-        val packageName = state.packageNameInput.trim()
-            .ifBlank { state.selectedApp?.packageName.orEmpty().trim() }
-        if (packageName.isBlank()) {
-            env.toast(R.string.github_toast_fdroid_scan_requires_package)
-            return
-        }
-        val selectedAppLabel =
-            state.selectedApp
-                ?.takeIf { app -> app.packageName.equals(packageName, ignoreCase = true) }
-                ?.label
-                .orEmpty()
-        runFdroidAppSearch(
-            query = selectedAppLabel,
-            packageName = packageName,
-            emptyToastRes = R.string.github_toast_fdroid_scan_no_match,
-        )
+        fdroidSearchActions.scanReposFromPackage()
     }
 
     fun selectFdroidAppSearchCandidate(candidate: FdroidAppSearchCandidate) {
-        state.repoUrlInput = candidate.repoUrl
-        state.packageNameInput = candidate.packageName
-        state.fdroidSelectedCandidate = candidate
-        state.fdroidAppSearchQueryInput = candidate.appName.ifBlank { candidate.packageName }
-        state.fdroidRepoScopeIdInput = candidate.repoPresetId.ifBlank {
-            FdroidRepositoryPresets.presetForRepoUrl(candidate.repoUrl)?.id
-                ?: FdroidRepositoryPresets.CUSTOM_ID
-        }
-        state.selectedApp = state.appList.firstOrNull { app ->
-            app.packageName.equals(candidate.packageName, ignoreCase = true)
-        } ?: state.selectedApp?.takeIf { selected ->
-            selected.packageName.equals(candidate.packageName, ignoreCase = true)
-        }
-        env.toast(
-            R.string.github_toast_fdroid_candidate_selected,
-            candidate.displayName,
-            candidate.repoDisplayName
-        )
-    }
-
-    private fun runFdroidAppSearch(
-        query: String,
-        packageName: String,
-        emptyToastRes: Int
-    ) {
-        val repoUrls = FdroidRepositoryPresets.repoUrlsForScope(
-            scopeId = state.fdroidRepoScopeIdInput,
-            customRepoUrl = state.repoUrlInput
-        )
-        if (repoUrls.isEmpty()) {
-            env.toast(R.string.github_toast_fill_repo_and_select_app)
-            return
-        }
-        state.fdroidAppSearchRunning = true
-        state.fdroidAppSearchCandidates = emptyList()
-        state.fdroidSelectedCandidate = null
-        scope.launch {
-            try {
-                val result = repository.searchFdroidApps(
-                    FdroidAppSearchRequest(
-                        query = query,
-                        packageName = packageName,
-                        repoUrls = repoUrls,
-                        limit = FDROID_SEARCH_LIMIT
-                    )
-                ).getOrElse { error ->
-                    env.toast(
-                        R.string.github_toast_fdroid_search_failed,
-                        localizedGitHubPageErrorMessage(
-                            context = env.context,
-                            error = error,
-                            fallbackMessage = env.string(R.string.github_error_fdroid_search_failed),
-                        ),
-                    )
-                    return@launch
-                }
-                state.fdroidAppSearchCandidates = result.candidates
-                if (result.candidates.isEmpty()) {
-                    env.toast(emptyToastRes)
-                } else {
-                    env.toast(
-                        R.string.github_toast_fdroid_search_candidates_found,
-                        result.candidates.size
-                    )
-                }
-            } finally {
-                state.fdroidAppSearchRunning = false
-            }
-        }
+        fdroidSearchActions.selectCandidate(candidate)
     }
 
     fun scanRepoUrlFromPackage() {
@@ -906,9 +819,6 @@ internal class GitHubTrackActions(
         }
     }
 
-    private companion object {
-        const val FDROID_SEARCH_LIMIT = 16
-    }
 }
 
 private fun VersionCheckUi.currentReleaseIgnoreChannel(): GitHubReleaseIgnoreChannel? {

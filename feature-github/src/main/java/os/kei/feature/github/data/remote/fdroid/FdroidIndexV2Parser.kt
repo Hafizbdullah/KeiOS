@@ -51,6 +51,19 @@ object FdroidIndexV2Parser {
         )
     }
 
+    fun parsePackage(
+        repoUrl: String,
+        packageName: String,
+        rawJson: String
+    ): Result<FdroidPackageSnapshot> = runCatching {
+        val packageObject = rawJson.parseJsonObjectOrNull()
+            ?: error("F-Droid package JSON is invalid")
+        packageObject.toPackageSnapshot(
+            repoUrl = repoUrl.trim().trimEnd('/'),
+            packageName = packageName.trim()
+        )
+    }
+
     private fun JsonObject.toPackageSnapshot(
         repoUrl: String,
         packageName: String

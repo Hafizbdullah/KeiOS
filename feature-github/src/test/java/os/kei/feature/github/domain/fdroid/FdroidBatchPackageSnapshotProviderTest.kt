@@ -26,24 +26,29 @@ class FdroidBatchPackageSnapshotProviderTest {
             packageProvider = FdroidPackageSnapshotProvider { _, _ ->
                 Result.failure(IllegalStateException("package api should not be used"))
             },
-            repositoryProvider = FdroidRepositorySnapshotProvider { repoUrl, _ ->
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _ ->
                 repositoryLoads.incrementAndGet()
+                delay(30)
                 Result.success(
                     repositorySnapshot(
                         repoUrl = repoUrl,
-                        packages = listOf("demo.one", "demo.two")
+                        packages = packageNames.toList()
                     )
                 )
             },
             minRepositoryBatchSize = 2
         )
 
-        val one = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = true)
-        val two = provider.loadPackageSnapshot(fdroidItem("demo.two"), forceRefresh = true)
+        val results = listOf(
+            async { provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = true) },
+            async { provider.loadPackageSnapshot(fdroidItem("demo.two"), forceRefresh = true) }
+        ).awaitAll()
 
         assertEquals(1, repositoryLoads.get())
-        assertEquals("demo.one", one.getOrThrow().packageName)
-        assertEquals("demo.two", two.getOrThrow().packageName)
+        assertEquals(
+            listOf("demo.one", "demo.two"),
+            results.map { result -> result.getOrThrow().packageName }
+        )
     }
 
     @Test
@@ -55,7 +60,7 @@ class FdroidBatchPackageSnapshotProviderTest {
                 packageLoads.incrementAndGet()
                 Result.success(packageSnapshot(item.packageName))
             },
-            repositoryProvider = FdroidRepositorySnapshotProvider { _, _ ->
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _ ->
                 Result.failure(IllegalStateException("repository index should not be used"))
             },
             minRepositoryBatchSize = 2
@@ -77,12 +82,12 @@ class FdroidBatchPackageSnapshotProviderTest {
                 packageLoads.incrementAndGet()
                 Result.failure(IllegalStateException("package api unavailable"))
             },
-            repositoryProvider = FdroidRepositorySnapshotProvider { repoUrl, _ ->
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _ ->
                 repositoryLoads.incrementAndGet()
                 Result.success(
                     repositorySnapshot(
                         repoUrl = repoUrl,
-                        packages = listOf("demo.one")
+                        packages = packageNames.toList()
                     )
                 )
             },
@@ -106,7 +111,7 @@ class FdroidBatchPackageSnapshotProviderTest {
                 delay(30)
                 Result.success(packageSnapshot(item.packageName))
             },
-            repositoryProvider = FdroidRepositorySnapshotProvider { _, _ ->
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _ ->
                 Result.failure(IllegalStateException("repository index should not be used"))
             },
             minRepositoryBatchSize = 2
@@ -136,13 +141,13 @@ class FdroidBatchPackageSnapshotProviderTest {
             packageProvider = FdroidPackageSnapshotProvider { _, _ ->
                 Result.failure(IllegalStateException("package api should not be used"))
             },
-            repositoryProvider = FdroidRepositorySnapshotProvider { repoUrl, _ ->
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _ ->
                 repositoryLoads.incrementAndGet()
                 delay(30)
                 Result.success(
                     repositorySnapshot(
                         repoUrl = repoUrl,
-                        packages = listOf("demo.one", "demo.two")
+                        packages = packageNames.toList()
                     )
                 )
             },
@@ -161,6 +166,65 @@ class FdroidBatchPackageSnapshotProviderTest {
         )
     }
 
+    @Test
+    fun `loadPackageSnapshot force refresh bypasses completed package cache`() = runBlocking {
+        val packageLoads = AtomicInteger(0)
+        val provider = FdroidBatchPackageSnapshotProvider(
+            trackedItems = listOf(fdroidItem("demo.one")),
+            packageProvider = FdroidPackageSnapshotProvider { item, _ ->
+                val load = packageLoads.incrementAndGet()
+                Result.success(packageSnapshot(item.packageName, versionName = "1.$load"))
+            },
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { _, _, _ ->
+                Result.failure(IllegalStateException("repository index should not be used"))
+            },
+            minRepositoryBatchSize = 2
+        )
+
+        val cached = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = false)
+        val cachedAgain = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = false)
+        val refreshed = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = true)
+
+        assertEquals(2, packageLoads.get())
+        assertEquals("1.1", cached.getOrThrow().versions.single().versionName)
+        assertEquals("1.1", cachedAgain.getOrThrow().versions.single().versionName)
+        assertEquals("1.2", refreshed.getOrThrow().versions.single().versionName)
+    }
+
+    @Test
+    fun `loadPackageSnapshot force refresh bypasses completed repository cache`() = runBlocking {
+        val repositoryLoads = AtomicInteger(0)
+        val provider = FdroidBatchPackageSnapshotProvider(
+            trackedItems = listOf(
+                fdroidItem("demo.one"),
+                fdroidItem("demo.two")
+            ),
+            packageProvider = FdroidPackageSnapshotProvider { _, _ ->
+                Result.failure(IllegalStateException("package api should not be used"))
+            },
+            repositoryPackagesProvider = FdroidRepositoryPackagesSnapshotProvider { repoUrl, packageNames, _ ->
+                val load = repositoryLoads.incrementAndGet()
+                Result.success(
+                    repositorySnapshot(
+                        repoUrl = repoUrl,
+                        packages = packageNames.toList(),
+                        versionName = "1.$load"
+                    )
+                )
+            },
+            minRepositoryBatchSize = 2
+        )
+
+        val cached = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = false)
+        val cachedAgain = provider.loadPackageSnapshot(fdroidItem("demo.two"), forceRefresh = false)
+        val refreshed = provider.loadPackageSnapshot(fdroidItem("demo.one"), forceRefresh = true)
+
+        assertEquals(2, repositoryLoads.get())
+        assertEquals("1.1", cached.getOrThrow().versions.single().versionName)
+        assertEquals("1.1", cachedAgain.getOrThrow().versions.single().versionName)
+        assertEquals("1.2", refreshed.getOrThrow().versions.single().versionName)
+    }
+
     private fun fdroidItem(packageName: String): GitHubTrackedApp {
         return GitHubTrackedApp(
             repoUrl = "https://f-droid.org/repo",
@@ -174,7 +238,8 @@ class FdroidBatchPackageSnapshotProviderTest {
 
     private fun repositorySnapshot(
         repoUrl: String,
-        packages: List<String>
+        packages: List<String>,
+        versionName: String = "1.0"
     ): FdroidRepositorySnapshot {
         return FdroidRepositorySnapshot(
             repoUrl = repoUrl,
@@ -183,22 +248,30 @@ class FdroidBatchPackageSnapshotProviderTest {
             repoDescription = "",
             timestampMillis = null,
             mirrors = emptyList(),
-            packages = packages.associateWith(::packageSnapshot)
+            packages = packages.associateWith { packageName ->
+                packageSnapshot(packageName, versionName)
+            }
         )
     }
 
-    private fun packageSnapshot(packageName: String): FdroidPackageSnapshot {
+    private fun packageSnapshot(
+        packageName: String,
+        versionName: String = "1.0"
+    ): FdroidPackageSnapshot {
         return FdroidPackageSnapshot(
             repoUrl = "https://f-droid.org/repo",
             packageName = packageName,
             suggestedVersionCode = 1L,
-            versions = listOf(version(packageName))
+            versions = listOf(version(packageName, versionName))
         )
     }
 
-    private fun version(packageName: String): FdroidVersionSnapshot {
+    private fun version(
+        packageName: String,
+        versionName: String
+    ): FdroidVersionSnapshot {
         return FdroidVersionSnapshot(
-            versionName = "1.0",
+            versionName = versionName,
             versionCode = 1L,
             apkName = "$packageName.apk",
             apkPath = "/repo/$packageName.apk",

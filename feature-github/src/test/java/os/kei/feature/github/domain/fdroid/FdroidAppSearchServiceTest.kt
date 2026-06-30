@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain.fdroid
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
@@ -11,7 +12,9 @@ import os.kei.feature.github.model.FdroidAppSearchRequest
 import os.kei.feature.github.model.FdroidAppSearchSource
 import os.kei.feature.github.model.FdroidIndexFormat
 import os.kei.feature.github.model.FdroidRepositoryPresets
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class FdroidAppSearchServiceTest {
@@ -29,7 +32,7 @@ class FdroidAppSearchServiceTest {
                     )
                 )
             ),
-            repositoryProvider = emptyRepositoryProvider()
+            repositorySearchProvider = emptyRepositorySearchProvider()
         )
 
         val result = service.search(
@@ -51,7 +54,7 @@ class FdroidAppSearchServiceTest {
     fun `package scan can find app on izzy when fdroid main misses`() = runBlocking {
         val service = FdroidAppSearchService(
             searchApiClient = fakeSearchApiClient(apps = emptyList()),
-            repositoryProvider = repositoryProvider(
+            repositorySearchProvider = repositorySearchProvider(
                 FdroidRepositoryPresets.IzzyOnDroid.repoUrl to repository(
                     repoUrl = FdroidRepositoryPresets.IzzyOnDroid.repoUrl,
                     repoName = "IzzyOnDroid",
@@ -87,11 +90,32 @@ class FdroidAppSearchServiceTest {
     }
 
     @Test
-    fun `fdroid main falls back to repository index when official search api returns empty`() =
+    fun `fdroid main keeps official empty result without scanning repository index`() =
         runBlocking {
             val service = FdroidAppSearchService(
                 searchApiClient = fakeSearchApiClient(apps = emptyList()),
-                repositoryProvider = repositoryProvider(
+                repositorySearchProvider = FdroidRepositorySearchProvider { _, _, _, _, _ ->
+                    error("repository index should not be scanned after a successful official search")
+                }
+            )
+
+            val result = service.search(
+                FdroidAppSearchRequest(
+                    query = "AntennaPod",
+                    repoUrls = listOf(FdroidRepositoryPresets.Main.repoUrl)
+                )
+            ).getOrThrow()
+
+            assertTrue(result.candidates.isEmpty())
+            assertTrue(result.failures.isEmpty())
+        }
+
+    @Test
+    fun `fdroid main falls back to repository index when official search api fails`() =
+        runBlocking {
+            val service = FdroidAppSearchService(
+                searchApiClient = failingSearchApiClient(),
+                repositorySearchProvider = repositorySearchProvider(
                     FdroidRepositoryPresets.Main.repoUrl to repository(
                         repoUrl = FdroidRepositoryPresets.Main.repoUrl,
                         repoName = "F-Droid",
@@ -121,7 +145,7 @@ class FdroidAppSearchServiceTest {
     fun `installed app scan can fall back to app name when fdroid package differs`() = runBlocking {
         val service = FdroidAppSearchService(
             searchApiClient = fakeSearchApiClient(apps = emptyList()),
-            repositoryProvider = repositoryProvider(
+            repositorySearchProvider = repositorySearchProvider(
                 FdroidRepositoryPresets.IzzyOnDroid.repoUrl to repository(
                     repoUrl = FdroidRepositoryPresets.IzzyOnDroid.repoUrl,
                     repoName = "IzzyOnDroid",
@@ -159,7 +183,7 @@ class FdroidAppSearchServiceTest {
     fun `name lookup filters third party repository index`() = runBlocking {
         val service = FdroidAppSearchService(
             searchApiClient = fakeSearchApiClient(apps = emptyList()),
-            repositoryProvider = repositoryProvider(
+            repositorySearchProvider = repositorySearchProvider(
                 FdroidRepositoryPresets.IzzyOnDroid.repoUrl to repository(
                     repoUrl = FdroidRepositoryPresets.IzzyOnDroid.repoUrl,
                     repoName = "IzzyOnDroid",
@@ -181,6 +205,28 @@ class FdroidAppSearchServiceTest {
         assertEquals(listOf("com.perol.asdpl.play.pixivez"), result.candidates.map { it.packageName })
     }
 
+    @Test
+    fun `search rethrows cancellation from repository index provider`() {
+        runBlocking {
+            val service = FdroidAppSearchService(
+                searchApiClient = fakeSearchApiClient(apps = emptyList()),
+                repositorySearchProvider = FdroidRepositorySearchProvider { _, _, _, _, _ ->
+                    throw CancellationException("cancelled")
+                },
+                dispatcher = Dispatchers.Unconfined
+            )
+
+            assertFailsWith<CancellationException> {
+                service.search(
+                    FdroidAppSearchRequest(
+                        query = "PixEz",
+                        repoUrls = listOf(FdroidRepositoryPresets.IzzyOnDroid.repoUrl)
+                    )
+                )
+            }
+        }
+    }
+
     private fun fakeSearchApiClient(apps: List<FdroidSearchApiApp>): FdroidSearchApiClient {
         return object : FdroidSearchApiClient() {
             override suspend fun searchApps(
@@ -192,19 +238,30 @@ class FdroidAppSearchServiceTest {
         }
     }
 
-    private fun emptyRepositoryProvider(): FdroidRepositorySnapshotProvider =
-        FdroidRepositorySnapshotProvider { repoUrl, _ ->
+    private fun failingSearchApiClient(): FdroidSearchApiClient {
+        return object : FdroidSearchApiClient() {
+            override suspend fun searchApps(
+                query: String,
+                limit: Int
+            ): Result<List<FdroidSearchApiApp>> {
+                return Result.failure(IllegalStateException("official search unavailable"))
+            }
+        }
+    }
+
+    private fun emptyRepositorySearchProvider(): FdroidRepositorySearchProvider =
+        FdroidRepositorySearchProvider { repoUrl, _, _, _, _ ->
             Result.failure(IllegalStateException("No fixture for $repoUrl"))
         }
 
-    private fun repositoryProvider(
+    private fun repositorySearchProvider(
         vararg snapshots: Pair<String, FdroidRepositorySnapshot>
-    ): FdroidRepositorySnapshotProvider {
+    ): FdroidRepositorySearchProvider {
         val byUrl = snapshots.associateBy(
             keySelector = { (url, _) -> url },
             valueTransform = { (_, snapshot) -> snapshot }
         )
-        return FdroidRepositorySnapshotProvider { repoUrl, _ ->
+        return FdroidRepositorySearchProvider { repoUrl, _, _, _, _ ->
             byUrl[repoUrl]?.let { Result.success(it) }
                 ?: Result.failure(IllegalStateException("No fixture for $repoUrl"))
         }

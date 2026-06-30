@@ -1,9 +1,11 @@
 package os.kei.feature.github.domain.fdroid
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.GitHubExecution
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
+import os.kei.feature.github.data.remote.fdroid.FdroidRepositoryIndexClient
 import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiApp
 import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiClient
@@ -16,59 +18,63 @@ import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.normalizedFdroidRepoUrlKey
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 
 class FdroidAppSearchService(
     private val searchApiClient: FdroidSearchApiClient = FdroidSearchApiClient(),
-    private val repositoryProvider: FdroidRepositorySnapshotProvider = FdroidRepositoryIndexSnapshotProvider(),
+    private val repositorySearchProvider: FdroidRepositorySearchProvider =
+        FdroidRepositoryIndexSearchProvider(),
     private val dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     suspend fun search(request: FdroidAppSearchRequest): Result<FdroidAppSearchResult> =
-        runCatching {
-            val normalizedQuery = request.query.trim()
-            val normalizedPackageName = request.packageName.trim()
-            require(normalizedQuery.isNotBlank() || normalizedPackageName.isNotBlank()) {
-                "F-Droid search query or package name is required"
-            }
-            val repoUrls = request.repoUrls
-                .map { url -> url.trim().trimEnd('/') }
-                .filter { url -> url.isNotBlank() }
-                .distinctBy { url -> url.normalizedFdroidRepoUrlKey() }
-            require(repoUrls.isNotEmpty()) { "F-Droid repository scope is blank" }
+        withContext(dispatcher) {
+            fdroidAppSearchResult {
+                val normalizedQuery = request.query.trim()
+                val normalizedPackageName = request.packageName.trim()
+                require(normalizedQuery.isNotBlank() || normalizedPackageName.isNotBlank()) {
+                    "F-Droid search query or package name is required"
+                }
+                val repoUrls = request.repoUrls
+                    .map { url -> url.trim().trimEnd('/') }
+                    .filter { url -> url.isNotBlank() }
+                    .distinctBy { url -> url.normalizedFdroidRepoUrlKey() }
+                require(repoUrls.isNotEmpty()) { "F-Droid repository scope is blank" }
 
-            val repoResults =
-                GitHubExecution.mapOrderedBounded(
-                    items = repoUrls,
-                    maxConcurrency = 2,
-                    dispatcher = dispatcher
-                ) { repoUrl ->
-                    searchRepo(
-                        repoUrl = repoUrl,
-                        query = normalizedQuery,
-                        packageName = normalizedPackageName,
-                        limit = request.limit,
-                        includeOfficialSearchApi = request.includeOfficialSearchApi
+                val repoResults =
+                    GitHubExecution.mapOrderedBounded(
+                        items = repoUrls,
+                        maxConcurrency = 2,
+                        dispatcher = dispatcher
+                    ) { repoUrl ->
+                        searchRepo(
+                            repoUrl = repoUrl,
+                            query = normalizedQuery,
+                            packageName = normalizedPackageName,
+                            limit = request.limit,
+                            includeOfficialSearchApi = request.includeOfficialSearchApi
+                        )
+                    }
+                val candidates = repoResults
+                    .flatMap { result -> result.candidates }
+                    .distinctBy { candidate ->
+                        candidate.repoUrl.normalizedFdroidRepoUrlKey() +
+                            "|" +
+                            candidate.packageName.lowercase(Locale.ROOT)
+                    }
+                    .sortedWith(
+                        compareByDescending<FdroidAppSearchCandidate> { candidate -> candidate.score }
+                            .thenBy { candidate -> candidate.repoDisplayName.lowercase(Locale.ROOT) }
+                            .thenBy { candidate -> candidate.displayName.lowercase(Locale.ROOT) }
                     )
-                }
-            val candidates = repoResults
-                .flatMap { result -> result.candidates }
-                .distinctBy { candidate ->
-                    candidate.repoUrl.normalizedFdroidRepoUrlKey() +
-                        "|" +
-                        candidate.packageName.lowercase(Locale.ROOT)
-                }
-                .sortedWith(
-                    compareByDescending<FdroidAppSearchCandidate> { candidate -> candidate.score }
-                        .thenBy { candidate -> candidate.repoDisplayName.lowercase(Locale.ROOT) }
-                        .thenBy { candidate -> candidate.displayName.lowercase(Locale.ROOT) }
+                    .take(request.limit.coerceIn(1, 50))
+                FdroidAppSearchResult(
+                    query = normalizedQuery,
+                    packageName = normalizedPackageName,
+                    searchedRepoUrls = repoUrls,
+                    candidates = candidates,
+                    failures = repoResults.flatMap { result -> result.failures }
                 )
-                .take(request.limit.coerceIn(1, 50))
-            FdroidAppSearchResult(
-                query = normalizedQuery,
-                packageName = normalizedPackageName,
-                searchedRepoUrls = repoUrls,
-                candidates = candidates,
-                failures = repoResults.flatMap { result -> result.failures }
-            )
+            }
         }
 
     private suspend fun searchRepo(
@@ -80,14 +86,16 @@ class FdroidAppSearchService(
     ): RepoSearchResult {
         if (includeOfficialSearchApi && repoUrl.isFdroidMainRepo()) {
             val apiResult = searchOfficialRepo(repoUrl, query, packageName, limit)
-            if (apiResult.candidates.isNotEmpty()) {
+            if (apiResult.candidates.isNotEmpty() || apiResult.failures.isEmpty()) {
                 return apiResult
             }
             val indexResult = searchRepositoryIndex(repoUrl, query, packageName, limit)
-            if (indexResult.candidates.isNotEmpty() || apiResult.failures.isNotEmpty()) {
+            if (indexResult.candidates.isNotEmpty()) {
                 return indexResult
             }
-            return apiResult
+            return RepoSearchResult(
+                failures = apiResult.failures + indexResult.failures
+            )
         }
         return searchRepositoryIndex(repoUrl, query, packageName, limit)
     }
@@ -148,8 +156,11 @@ class FdroidAppSearchService(
         packageName: String,
         limit: Int
     ): RepoSearchResult {
-        val result = repositoryProvider.loadRepositorySnapshot(
+        val result = repositorySearchProvider.searchRepository(
             repoUrl = repoUrl,
+            query = query,
+            packageName = packageName,
+            limit = limit,
             forceRefresh = false
         )
         return result.fold(
@@ -311,4 +322,43 @@ class FdroidAppSearchService(
         val candidates: List<FdroidAppSearchCandidate> = emptyList(),
         val failures: List<FdroidAppSearchFailure> = emptyList()
     )
+
+    private inline fun <T> fdroidAppSearchResult(block: () -> T): Result<T> {
+        return try {
+            Result.success(block())
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Result.failure(error)
+        }
+    }
+}
+
+fun interface FdroidRepositorySearchProvider {
+    suspend fun searchRepository(
+        repoUrl: String,
+        query: String,
+        packageName: String,
+        limit: Int,
+        forceRefresh: Boolean
+    ): Result<FdroidRepositorySnapshot>
+}
+
+class FdroidRepositoryIndexSearchProvider(
+    private val client: FdroidRepositoryIndexClient = FdroidRepositoryIndexClient()
+) : FdroidRepositorySearchProvider {
+    override suspend fun searchRepository(
+        repoUrl: String,
+        query: String,
+        packageName: String,
+        limit: Int,
+        forceRefresh: Boolean
+    ): Result<FdroidRepositorySnapshot> {
+        return client.searchIndexV2(
+            repoBaseUrl = repoUrl,
+            query = query,
+            packageName = packageName,
+            limit = limit
+        )
+    }
 }

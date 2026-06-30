@@ -1,7 +1,6 @@
 package os.kei.feature.github.data.remote.fdroid
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -9,6 +8,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.json.jsonObjectOrNull
 import os.kei.core.json.jsonPrimitiveOrNull
@@ -16,6 +16,7 @@ import os.kei.core.json.optArray
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 data class FdroidSearchApiApp(
@@ -29,13 +30,13 @@ data class FdroidSearchApiApp(
 open class FdroidSearchApiClient(
     private val client: OkHttpClient = defaultClient,
     private val searchEndpoint: String = DEFAULT_SEARCH_ENDPOINT,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
     open suspend fun searchApps(
         query: String,
         limit: Int = DEFAULT_LIMIT
     ): Result<List<FdroidSearchApiApp>> = withContext(ioDispatcher) {
-        runCatching {
+        fdroidSearchApiResult {
             val normalizedQuery = query.trim()
             require(normalizedQuery.isNotBlank()) { "F-Droid search query is blank" }
             val url = searchEndpoint.toHttpUrlBuilder()
@@ -91,5 +92,15 @@ open class FdroidSearchApiClient(
             .readTimeout(12.seconds)
             .callTimeout(18.seconds)
             .build()
+    }
+}
+
+private inline fun <T> fdroidSearchApiResult(block: () -> T): Result<T> {
+    return try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
     }
 }

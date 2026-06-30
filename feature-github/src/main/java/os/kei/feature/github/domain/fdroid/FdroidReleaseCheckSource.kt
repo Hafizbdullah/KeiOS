@@ -2,8 +2,8 @@ package os.kei.feature.github.domain.fdroid
 
 import android.os.Build
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarWriter
 import os.kei.feature.github.data.local.fdroid.buildFdroidMetadataSidecar
@@ -78,7 +78,7 @@ class FdroidPackageApiSnapshotProvider(
 class FdroidReleaseCheckSource(
     private val snapshotProvider: FdroidPackageSnapshotProvider = FdroidPackageApiSnapshotProvider(),
     private val metadataWriter: FdroidMetadataSidecarWriter = FdroidMetadataSidecarStore,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
     private val deviceSdkProvider: () -> Int = { Build.VERSION.SDK_INT },
     private val clock: () -> Long = { System.currentTimeMillis() }
 ) : FdroidReleaseCheckEvaluator {
