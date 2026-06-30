@@ -187,7 +187,7 @@ Extend the BA Guide cache summary.
 | P0 | S4 | Done | Expose detail cache status in ViewModel/UI state for current student. | Repository meta is now surfaced as structured `BaStudentGuideCacheStatusUiState`; targeted tests and `:app:compileDebugKotlin` passed. |
 | P1 | S5 | Planned | Update catalog refresh linkage: maintain `firstSeenAtMs`, sync `createdAtSec`, and update existing meta. | Catalog repository/store tests for new Student discovery and metadata alignment. |
 | P1 | S6 | Planned | Update detail refresh write path: compute hash, update validation/change timestamps, and backfill release date. | Tests for unchanged hash, changed hash, release date extraction, catalog index upsert. |
-| P1 | S7 | Planned | Add retry backoff and singleflight per source URL. | Coroutine tests for concurrent loads, retry delay, cancellation. |
+| P1 | S7 | Done | Add retry backoff and singleflight per source URL. | Repository tests cover retry-window cache return and concurrent forced validations sharing one network fetch. |
 | P1 | S8 | Planned | Add detail page cache status sheet and manual clear current-student cache action. | Compose smoke test or AVD screenshot pass. |
 | P1 | S9 | Done | Extend settings cache diagnostics with Student detail tier counts. | BA Guide cache summary now includes implemented detail counts, hot-update/long-term/archived tier counts, file-cache bytes, and clears the file-backed detail metadata. |
 | P2 | S10 | Planned | Add media cache differential cleanup for detail refreshes. | Tests for retained referenced media and removed stale media. |
@@ -230,6 +230,7 @@ Extend the BA Guide cache summary.
 | 2026-07-01 | P0 S1-S3 done | `BaStudentGuideRepository.loadGuide()` now resolves catalog context, lazily writes Student metadata from existing cache, keeps NPC/satellite on legacy cadence, returns cached Student first paint when validation is due, and lets ViewModel run silent background validation. Targeted unit tests passed with `:app:compileDebugKotlin`. |
 | 2026-07-01 | P0 S4 done | Added structured cache status UI state for current student detail: cached time, validation time, next auto-refresh, freshness tier, background validation flag, and retry/failure metadata. |
 | 2026-07-01 | P1 S9 done | Settings cache diagnostics now include the file-backed implemented-student detail cache, tier counts, latest cache/validation time, and file-cache bytes. |
+| 2026-07-01 | P1 S7 done | Added per-source singleflight in `BaStudentGuideRepository` so concurrent validations share one network fetch. Repository tests now cover retry-window automatic validation suppression and concurrent forced validation. |
 
 ## Open Decisions
 

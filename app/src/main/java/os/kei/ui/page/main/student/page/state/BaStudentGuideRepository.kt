@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.content.Context
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
@@ -86,6 +87,7 @@ internal class BaStudentGuideRepository(
         ::baGuideStudentDetailCacheStore,
 ) {
     private val npcSatelliteGuideFlagCache = ConcurrentHashMap<Long, Boolean>()
+    private val inFlightGuideFetches = ConcurrentHashMap<String, CompletableDeferred<Result<BaStudentGuideInfo>>>()
 
     suspend fun loadCurrentUrlAsync(): String =
         withContext(ioDispatcher) {
@@ -252,14 +254,8 @@ internal class BaStudentGuideRepository(
             }
 
         val result =
-            try {
-                Result.success(
-                    guideFetcher(requestUrl, ioDispatcher, parseDispatcher, clock),
-                )
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Throwable) {
-                Result.failure(error)
+            fetchGuideInfoSingleFlight(requestUrl) {
+                guideFetcher(requestUrl, ioDispatcher, parseDispatcher, clock)
             }
         return result.fold(
             onSuccess = { latest ->
@@ -314,6 +310,41 @@ internal class BaStudentGuideRepository(
             val entries = BaGuideCatalogTab.entries.flatMap { tab -> bundle.entries(tab) }
             entries.firstOrNull { entry -> normalizeStudentGuideSourceUrl(entry.detailUrl) == normalized }
                 ?: contentId?.let { id -> entries.firstOrNull { entry -> entry.contentId == id } }
+        }
+    }
+
+    private suspend fun fetchGuideInfoSingleFlight(
+        sourceUrl: String,
+        fetch: suspend () -> BaStudentGuideInfo,
+    ): Result<BaStudentGuideInfo> {
+        val key = normalizeStudentGuideSourceUrl(sourceUrl).ifBlank { sourceUrl.trim() }
+        if (key.isBlank()) {
+            return runCatching { fetch() }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                }
+        }
+        val ownFetch = CompletableDeferred<Result<BaStudentGuideInfo>>()
+        val existingFetch = inFlightGuideFetches.putIfAbsent(key, ownFetch)
+        if (existingFetch != null) {
+            return existingFetch.await()
+        }
+        try {
+            val result =
+                try {
+                    Result.success(fetch())
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Throwable) {
+                    Result.failure(error)
+                }
+            ownFetch.complete(result)
+            return result
+        } catch (error: CancellationException) {
+            ownFetch.cancel(error)
+            throw error
+        } finally {
+            inFlightGuideFetches.remove(key, ownFetch)
         }
     }
 

@@ -3,7 +3,10 @@ package os.kei.ui.page.main.student.page.state
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -250,6 +253,142 @@ class BaStudentGuideRepositoryTest {
             assertNull(result.error)
             assertFalse(fetchCalled)
             assertNull(metaStore.loadMeta(sourceUrl))
+        }
+
+    @Test
+    fun `concurrent forced validations for the same student share one network fetch`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10004.html"
+            val cached = guideInfo(sourceUrl = sourceUrl, title = "并发旧缓存", syncedAtMs = nowMs - DAY_MS)
+            val latest = guideInfo(sourceUrl = sourceUrl, title = "并发新详情", syncedAtMs = nowMs)
+            val entry =
+                catalogEntry(
+                    sourceUrl = sourceUrl,
+                    contentId = 10004L,
+                    tab = BaGuideCatalogTab.Student,
+                    createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                )
+            val metaStore = tempMetaStore(context)
+            metaStore.saveMeta(
+                detailMeta(
+                    sourceUrl = sourceUrl,
+                    contentId = entry.contentId,
+                    tier = BaGuideStudentDetailFreshnessTier.Stable,
+                    catalogCreatedAtSec = entry.createdAtSec,
+                    cachedAtMs = cached.syncedAtMs,
+                    lastValidatedAtMs = nowMs - 5L * DAY_MS,
+                ),
+            )
+            val releaseFetch = CompletableDeferred<Unit>()
+            val firstFetchStarted = CompletableDeferred<Unit>()
+            var fetchCount = 0
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalogBundle(entry),
+                    metaStore = metaStore,
+                    fetcher = {
+                        fetchCount += 1
+                        if (fetchCount == 1) {
+                            firstFetchStarted.complete(Unit)
+                        }
+                        releaseFetch.await()
+                        latest
+                    },
+                )
+
+            val first =
+                async {
+                    repository.loadGuide(
+                        context = context,
+                        sourceUrl = sourceUrl,
+                        currentInfo = cached,
+                        manualRefresh = false,
+                        forceValidation = true,
+                        loadFailedText = "加载失败",
+                        refreshFailedKeepCacheText = "保留缓存",
+                    )
+                }
+            firstFetchStarted.await()
+            val second =
+                async {
+                    repository.loadGuide(
+                        context = context,
+                        sourceUrl = sourceUrl,
+                        currentInfo = cached,
+                        manualRefresh = false,
+                        forceValidation = true,
+                        loadFailedText = "加载失败",
+                        refreshFailedKeepCacheText = "保留缓存",
+                    )
+                }
+            releaseFetch.complete(Unit)
+            val results = awaitAll(first, second)
+
+            assertEquals(1, fetchCount)
+            assertEquals(listOf(latest, latest), results.map { it.info })
+            assertTrue(results.all { it.error == null })
+        }
+
+    @Test
+    fun `student cache inside retry window skips automatic background validation`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10005.html"
+            val cached = guideInfo(sourceUrl = sourceUrl, title = "重试窗口缓存", syncedAtMs = nowMs - DAY_MS)
+            val entry =
+                catalogEntry(
+                    sourceUrl = sourceUrl,
+                    contentId = 10005L,
+                    tab = BaGuideCatalogTab.Student,
+                    createdAtSec = (nowMs - 2L * DAY_MS) / 1000L,
+                )
+            val metaStore = tempMetaStore(context)
+            metaStore.saveMeta(
+                detailMeta(
+                    sourceUrl = sourceUrl,
+                    contentId = entry.contentId,
+                    tier = BaGuideStudentDetailFreshnessTier.HotUpdate,
+                    catalogCreatedAtSec = entry.createdAtSec,
+                    cachedAtMs = cached.syncedAtMs,
+                    lastValidatedAtMs = nowMs - 2L * HOUR_MS,
+                ).copy(
+                    failureCount = 2,
+                    lastFailureAtMs = nowMs - 5L * 60L * 1000L,
+                    nextRetryAtMs = nowMs + HOUR_MS,
+                ),
+            )
+            var fetchCalled = false
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalogBundle(entry),
+                    metaStore = metaStore,
+                    fetcher = {
+                        fetchCalled = true
+                        guideInfo(sourceUrl = sourceUrl, title = "重试窗口网络", syncedAtMs = nowMs)
+                    },
+                )
+
+            val result =
+                repository.loadGuide(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    currentInfo = null,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(cached, result.info)
+            assertNull(result.error)
+            assertFalse(result.validateInBackground)
+            assertFalse(fetchCalled)
         }
 
     private fun repository(
