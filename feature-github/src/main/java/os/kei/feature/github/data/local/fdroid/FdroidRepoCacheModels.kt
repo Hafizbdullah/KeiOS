@@ -101,13 +101,50 @@ data class FdroidRepoCacheRecord(
     }
 }
 
+data class FdroidRepoIndexCacheStats(
+    val recordCount: Int,
+    val repoCount: Int,
+    val oldestAccessMillis: Long,
+    val newestAccessMillis: Long
+) {
+    companion object {
+        val Empty = FdroidRepoIndexCacheStats(
+            recordCount = 0,
+            repoCount = 0,
+            oldestAccessMillis = 0L,
+            newestAccessMillis = 0L
+        )
+    }
+}
+
+data class FdroidRepoIndexCachePruneReport(
+    val originalCount: Int,
+    val retainedCount: Int,
+    val removedCount: Int
+)
+
 interface FdroidRepositoryIndexCacheStore {
     fun load(key: FdroidRepoCacheRequestKey): FdroidRepoCacheRecord?
 
     fun save(key: FdroidRepoCacheRequestKey, record: FdroidRepoCacheRecord)
 
     fun clear(repoUrl: String? = null)
+
+    fun stats(): FdroidRepoIndexCacheStats = FdroidRepoIndexCacheStats.Empty
+
+    fun prune(maxRecords: Int = FDROID_REPO_INDEX_CACHE_MAX_RECORDS): FdroidRepoIndexCachePruneReport =
+        FdroidRepoIndexCachePruneReport(
+            originalCount = 0,
+            retainedCount = 0,
+            removedCount = 0
+        )
 }
+
+internal data class FdroidRepoIndexCacheEntry(
+    val id: String,
+    val repoUrl: String,
+    val accessedAtMillis: Long
+)
 
 object FdroidRepoIndexCacheStore : FdroidRepositoryIndexCacheStore {
     private const val KV_ID = "github_fdroid_repo_index_cache"
@@ -117,8 +154,15 @@ object FdroidRepoIndexCacheStore : FdroidRepositoryIndexCacheStore {
 
     override fun load(key: FdroidRepoCacheRequestKey): FdroidRepoCacheRecord? {
         return runCatching {
-            val raw = store.decodeString(entryStoreKey(key.stableId), "").orEmpty()
-            parseFdroidRepoCacheRecord(raw.parseJsonObjectOrNull())
+            val id = key.stableId
+            val raw = store.decodeString(entryStoreKey(id), "").orEmpty()
+            val record = parseFdroidRepoCacheRecord(raw.parseJsonObjectOrNull())
+            if (record == null) {
+                removeIndexEntry(id)
+            } else {
+                touchIndexEntry(id = id, repoUrl = key.repoUrl)
+            }
+            record
         }.getOrNull()
     }
 
@@ -126,8 +170,12 @@ object FdroidRepoIndexCacheStore : FdroidRepositoryIndexCacheStore {
         runCatching {
             val id = key.stableId
             store.encode(entryStoreKey(id), record.toCacheJson().encodeCompact())
-            val entry = indexEntry(id = id, repoUrl = key.repoUrl)
-            saveIndex(trimIndex((loadIndex() - id) + entry))
+            val entry = FdroidRepoIndexCacheEntry(
+                id = id,
+                repoUrl = key.repoUrl,
+                accessedAtMillis = System.currentTimeMillis()
+            )
+            saveIndex(trimIndex(upsertIndexEntry(loadIndex(), entry)))
         }
     }
 
@@ -136,47 +184,148 @@ object FdroidRepoIndexCacheStore : FdroidRepositoryIndexCacheStore {
             val normalizedRepoUrl = repoUrl?.trim()?.trimEnd('/').orEmpty()
             val current = loadIndex()
             val removed = current.filter { entry ->
-                normalizedRepoUrl.isBlank() || entry.substringAfter('|') == normalizedRepoUrl
+                normalizedRepoUrl.isBlank() || entry.repoUrl == normalizedRepoUrl
             }
             removed.forEach { entry ->
-                store.removeValueForKey(entryStoreKey(entry.substringBefore('|')))
+                store.removeValueForKey(entryStoreKey(entry.id))
             }
             saveIndex(current - removed.toSet())
             store.trim()
         }
     }
 
-    private fun loadIndex(): Set<String> {
+    override fun stats(): FdroidRepoIndexCacheStats {
+        return runCatching {
+            val index = loadIndex()
+            if (index.isEmpty()) {
+                FdroidRepoIndexCacheStats.Empty
+            } else {
+                val accessTimes = index.map { entry -> entry.accessedAtMillis }.filter { it > 0L }
+                FdroidRepoIndexCacheStats(
+                    recordCount = index.size,
+                    repoCount = index.map { entry -> entry.repoUrl }.distinct().size,
+                    oldestAccessMillis = accessTimes.minOrNull() ?: 0L,
+                    newestAccessMillis = accessTimes.maxOrNull() ?: 0L
+                )
+            }
+        }.getOrDefault(FdroidRepoIndexCacheStats.Empty)
+    }
+
+    override fun prune(maxRecords: Int): FdroidRepoIndexCachePruneReport {
+        return runCatching {
+            val current = loadIndex()
+            val trimmed = trimIndex(current, maxRecords = maxRecords)
+            saveIndex(trimmed)
+            store.trim()
+            FdroidRepoIndexCachePruneReport(
+                originalCount = current.size,
+                retainedCount = trimmed.size,
+                removedCount = (current.size - trimmed.size).coerceAtLeast(0)
+            )
+        }.getOrDefault(
+            FdroidRepoIndexCachePruneReport(
+                originalCount = 0,
+                retainedCount = 0,
+                removedCount = 0
+            )
+        )
+    }
+
+    private fun loadIndex(): Set<FdroidRepoIndexCacheEntry> {
         return store.decodeString(KEY_INDEX, "").orEmpty()
             .split('\n')
-            .map { it.trim() }
-            .filter { it.isNotBlank() && '|' in it }
+            .mapNotNull { raw -> parseIndexEntry(raw) }
+            .groupBy { entry -> entry.id }
+            .values
+            .mapNotNull { entries ->
+                entries.maxByOrNull { entry -> entry.accessedAtMillis }
+            }
             .toSet()
     }
 
-    private fun saveIndex(index: Set<String>) {
+    private fun saveIndex(index: Set<FdroidRepoIndexCacheEntry>) {
         if (index.isEmpty()) {
             store.removeValueForKey(KEY_INDEX)
         } else {
-            store.encode(KEY_INDEX, index.sorted().joinToString("\n"))
+            store.encode(
+                KEY_INDEX,
+                index
+                    .sortedWith(
+                        compareBy<FdroidRepoIndexCacheEntry> { entry -> entry.accessedAtMillis }
+                            .thenBy { entry -> entry.id }
+                    )
+                    .joinToString("\n") { entry -> entry.serialize() }
+            )
         }
     }
 
-    private fun trimIndex(index: Set<String>): Set<String> {
-        if (index.size <= FDROID_REPO_INDEX_CACHE_MAX_RECORDS) return index
-        val sorted = index.sorted()
-        val removed = sorted.take(index.size - FDROID_REPO_INDEX_CACHE_MAX_RECORDS)
-        removed.forEach { entry -> store.removeValueForKey(entryStoreKey(entry.substringBefore('|'))) }
-        return sorted.drop(removed.size).toSet()
+    private fun trimIndex(
+        index: Set<FdroidRepoIndexCacheEntry>,
+        maxRecords: Int = FDROID_REPO_INDEX_CACHE_MAX_RECORDS
+    ): Set<FdroidRepoIndexCacheEntry> {
+        val retained = retainMostRecentlyAccessedIndexEntries(index, maxRecords)
+        val removed = index - retained
+        removed.forEach { entry -> store.removeValueForKey(entryStoreKey(entry.id)) }
+        return retained
     }
 
-    private fun indexEntry(id: String, repoUrl: String): String = "$id|$repoUrl"
+    private fun upsertIndexEntry(
+        index: Set<FdroidRepoIndexCacheEntry>,
+        entry: FdroidRepoIndexCacheEntry
+    ): Set<FdroidRepoIndexCacheEntry> {
+        return (index.filterNot { existing -> existing.id == entry.id } + entry).toSet()
+    }
+
+    private fun touchIndexEntry(id: String, repoUrl: String) {
+        val entry = FdroidRepoIndexCacheEntry(
+            id = id,
+            repoUrl = repoUrl,
+            accessedAtMillis = System.currentTimeMillis()
+        )
+        saveIndex(trimIndex(upsertIndexEntry(loadIndex(), entry)))
+    }
+
+    private fun removeIndexEntry(id: String) {
+        store.removeValueForKey(entryStoreKey(id))
+        saveIndex(loadIndex().filterNot { entry -> entry.id == id }.toSet())
+    }
 
     private fun entryStoreKey(id: String): String = "entry_$id"
 }
 
 fun FdroidRepoCacheRecord.withFetchedAt(fetchedAtMillis: Long): FdroidRepoCacheRecord {
     return copy(fetchedAtMillis = fetchedAtMillis)
+}
+
+internal fun parseIndexEntry(raw: String): FdroidRepoIndexCacheEntry? {
+    val parts = raw.trim().split('|', limit = 3)
+    if (parts.size < 2) return null
+    val id = parts[0].trim()
+    val repoUrl = parts[1].trim().trimEnd('/')
+    if (id.isBlank() || repoUrl.isBlank()) return null
+    return FdroidRepoIndexCacheEntry(
+        id = id,
+        repoUrl = repoUrl,
+        accessedAtMillis = parts.getOrNull(2)?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+    )
+}
+
+internal fun FdroidRepoIndexCacheEntry.serialize(): String =
+    listOf(id, repoUrl, accessedAtMillis.coerceAtLeast(0L).toString()).joinToString("|")
+
+internal fun retainMostRecentlyAccessedIndexEntries(
+    index: Set<FdroidRepoIndexCacheEntry>,
+    maxRecords: Int
+): Set<FdroidRepoIndexCacheEntry> {
+    val safeMaxRecords = maxRecords.coerceAtLeast(0)
+    if (index.size <= safeMaxRecords) return index
+    return index
+        .sortedWith(
+            compareBy<FdroidRepoIndexCacheEntry> { entry -> entry.accessedAtMillis }
+                .thenBy { entry -> entry.id }
+        )
+        .takeLast(safeMaxRecords)
+        .toSet()
 }
 
 private fun FdroidRepoCacheRecord.toCacheJson(): JsonObject {

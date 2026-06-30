@@ -5,6 +5,7 @@ import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
+import os.kei.feature.github.data.local.fdroid.FdroidRepoIndexCacheStore
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 
@@ -18,6 +19,9 @@ data class GitHubCacheSummaryData(
     val iconMemoryBytes: Long,
     val lastRefreshMs: Long,
     val refreshIntervalHours: Int,
+    val fdroidRepoIndexCacheRecordCount: Int,
+    val fdroidRepoIndexCacheRepoCount: Int,
+    val fdroidRepoIndexCacheNewestAccessMs: Long,
 )
 
 data class GitHubAppIconCacheSummaryData(
@@ -38,6 +42,7 @@ object GitHubCacheService {
         GitHubTrackStoreSignals.notifyChanged()
         GitHubReleaseAssetCacheStore.clearAll()
         FdroidMetadataSidecarStore.clearAll()
+        FdroidRepoIndexCacheStore.clear()
     }
 
     fun clearGitHubMcpCaches() {
@@ -51,6 +56,7 @@ object GitHubCacheService {
 
     fun loadGitHubSummaryData(): GitHubCacheSummaryData {
         val snapshot = GitHubTrackStore.loadSnapshot()
+        val fdroidIndexStats = FdroidRepoIndexCacheStore.stats()
         return GitHubCacheSummaryData(
             trackedCount = snapshot.items.size,
             checkCacheCount = snapshot.checkCache.size,
@@ -61,6 +67,9 @@ object GitHubCacheService {
             iconMemoryBytes = AppIconCache.estimatedMemoryBytes(),
             lastRefreshMs = snapshot.lastRefreshMs,
             refreshIntervalHours = snapshot.refreshIntervalHours,
+            fdroidRepoIndexCacheRecordCount = fdroidIndexStats.recordCount,
+            fdroidRepoIndexCacheRepoCount = fdroidIndexStats.repoCount,
+            fdroidRepoIndexCacheNewestAccessMs = fdroidIndexStats.newestAccessMillis,
         )
     }
 

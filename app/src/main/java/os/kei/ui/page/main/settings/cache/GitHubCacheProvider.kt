@@ -23,7 +23,7 @@ internal fun appIconCacheEntryProvider(): CacheEntryProvider =
 
 private fun githubSummary(context: Context): CacheEntrySummary {
     val data = GitHubCacheService.loadGitHubSummaryData()
-    val updatedAtMs = data.lastRefreshMs
+    val updatedAtMs = maxOf(data.lastRefreshMs, data.fdroidRepoIndexCacheNewestAccessMs)
     val clearedAtMs = CacheEventStore.loadClearedAt("github")
     val refreshState =
         context.getString(
@@ -43,6 +43,8 @@ private fun githubSummary(context: Context): CacheEntrySummary {
                 data.trackedCount,
                 data.checkCacheCount,
                 data.releaseAssetCacheCount,
+                data.fdroidRepoIndexCacheRecordCount,
+                data.fdroidRepoIndexCacheRepoCount,
                 refreshState,
             ),
         activity = formatActivity(context, updatedAtMs, clearedAtMs),

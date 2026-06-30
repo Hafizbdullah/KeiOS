@@ -251,7 +251,7 @@
     <string name="settings_cache_storage_debug_ui_dump">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · ディレクトリ %4$s</string>
     <string name="settings_cache_entry_github_title">Home / GitHub</string>
     <string name="settings_cache_entry_github_summary">バージョン確認結果と GitHub 追跡設定。</string>
-    <string name="settings_cache_entry_github_detail">追跡 %1$d 件 · 確認キャッシュ %2$d 件 · アセットキャッシュ %3$d 件 · %4$s</string>
+    <string name="settings_cache_entry_github_detail">追跡 %1$d 件 · 確認キャッシュ %2$d 件 · アセットキャッシュ %3$d 件 · F-Droid Index %4$d 件 / %5$d ソース · %6$s</string>
     <string name="settings_cache_refresh_record_present">更新記録あり</string>
     <string name="settings_cache_refresh_record_empty">更新記録なし</string>
     <string name="settings_cache_state_empty">空</string>

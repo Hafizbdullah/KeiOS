@@ -247,7 +247,7 @@
     <string name="settings_cache_storage_debug_ui_dump">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 目录 %4$s</string>
     <string name="settings_cache_entry_github_title">主页 / GitHub</string>
     <string name="settings_cache_entry_github_summary">版本检查结果与 GitHub 追踪配置</string>
-    <string name="settings_cache_entry_github_detail">跟踪 %1$d 项 · 检查缓存 %2$d 项 · 资产缓存 %3$d 项 · %4$s</string>
+    <string name="settings_cache_entry_github_detail">跟踪 %1$d 项 · 检查缓存 %2$d 项 · 资产缓存 %3$d 项 · F-Droid Index %4$d 项 / %5$d 源 · %6$s</string>
     <string name="settings_cache_refresh_record_present">已有刷新记录</string>
     <string name="settings_cache_refresh_record_empty">暂无刷新记录</string>
     <string name="settings_cache_state_empty">空</string>

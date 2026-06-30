@@ -251,7 +251,7 @@
     <string name="settings_cache_storage_debug_ui_dump">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · Directory %4$s</string>
     <string name="settings_cache_entry_github_title">Home / GitHub</string>
     <string name="settings_cache_entry_github_summary">Version check results and GitHub tracking config.</string>
-    <string name="settings_cache_entry_github_detail">Tracked %1$d items · Check cache %2$d items · Asset cache %3$d items · %4$s</string>
+    <string name="settings_cache_entry_github_detail">Tracked %1$d items · Check cache %2$d items · Asset cache %3$d items · F-Droid Index %4$d items / %5$d sources · %6$s</string>
     <string name="settings_cache_refresh_record_present">Refresh recorded</string>
     <string name="settings_cache_refresh_record_empty">No refresh record</string>
     <string name="settings_cache_state_empty">Empty</string>
