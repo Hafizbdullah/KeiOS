@@ -246,6 +246,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_media">キャッシュ推定 %1$s · 設定推定 %2$s · MMKV 使用 %3$s · メディアディスク %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">キャッシュ推定 %1$s · 設定推定 %2$s · MMKV 使用 %3$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_disk">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · ファイルキャッシュ %4$s</string>
+    <string name="settings_cache_storage_ba_guide_payloads">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · メタデータファイル %4$s · 詳細MMKV %5$s · 詳細ファイル %6$s</string>
     <string name="settings_cache_storage_cache_config_memory">キャッシュ推定 %1$s · 設定推定 %2$s · メモリ %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s</string>
     <string name="settings_cache_storage_ba_playback">キャッシュ推定 %1$s · 設定推定 %2$s · ディスク %3$s · 走査 %4$d 件 · ヒット %5$d 件/%6$d 区間/%7$s</string>

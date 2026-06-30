@@ -105,11 +105,12 @@ private fun baStudentGuideSummary(context: Context): CacheEntrySummary {
     val studentDetailCacheStore = baGuideStudentDetailCacheStore(context)
     val studentDetailStats = studentDetailCacheStore.stats()
     val studentDetailFileBytes = studentDetailCacheStore.storageBytes()
+    val payloadStats = BaStudentGuideStore.payloadStorageStats(context)
     val catalogCounts = BaGuideCatalogStore.cachedEntryCounts()
     val studentCount = catalogCounts[BaGuideCatalogTab.Student] ?: 0
     val npcSatelliteCount = catalogCounts[BaGuideCatalogTab.NpcSatellite] ?: 0
     val cacheBytes =
-        BaStudentGuideStore.cacheBytesEstimated() +
+            BaStudentGuideStore.cacheBytesEstimated() +
             BaGuideCatalogStore.cacheBytesEstimated() +
             studentDetailFileBytes
     val configBytes = BaStudentGuideStore.configBytesEstimated() + BaGuideCatalogStore.configBytesEstimated()
@@ -147,11 +148,13 @@ private fun baStudentGuideSummary(context: Context): CacheEntrySummary {
         activity = formatActivity(context, updatedAtMs, clearedAtMs),
         storage =
             context.getString(
-                R.string.settings_cache_storage_cache_config_mmkv_disk,
+                R.string.settings_cache_storage_ba_guide_payloads,
                 formatBytes(cacheBytes),
                 formatBytes(configBytes),
                 formatBytes(diskBytes),
                 formatBytes(studentDetailFileBytes),
+                formatBytes(payloadStats.mmkvPayloadBytes),
+                formatBytes(payloadStats.filePayloadBytes),
             ),
         clearLabel = context.getString(R.string.common_clear),
         cacheBytes = cacheBytes,

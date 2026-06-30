@@ -18,8 +18,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okio.Path.Companion.toOkioPath
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogger
 import os.kei.core.perf.Android17AnomalyProfiler
@@ -30,6 +32,7 @@ import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
+import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.sync.WebDavAutoSync
 
 private const val COIL_MEMORY_CACHE_PERCENT = 0.25
@@ -88,6 +91,7 @@ class KeiOSApp : Application() {
         // First-frame critical path: keep this list as small as possible. Anything that touches
         // MMKV, AlarmManager, or scans tracked-app state should run via [applicationScope] below.
         MMKV.initialize(this)
+        BaStudentGuideStore.configure(this)
         AppBuildEnv.configure(
             buildType = BuildConfig.BUILD_TYPE,
             isDebugBuild = BuildConfig.DEBUG,
@@ -136,6 +140,11 @@ class KeiOSApp : Application() {
             delay(DEFERRED_STARTUP_WORK_DELAY_MS)
             runCatching { AppBackgroundScheduler.scheduleAll(this@KeiOSApp) }
             runCatching { GitHubShareImportPendingScheduler.scheduleNext(this@KeiOSApp) }
+            runCatching {
+                withContext(AppDispatchers.fileIo) {
+                    BaStudentGuideStore.migratePayloadsToFileStoreIfNeeded(this@KeiOSApp)
+                }
+            }
         }
     }
 

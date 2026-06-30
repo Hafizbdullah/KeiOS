@@ -90,8 +90,16 @@ internal fun decodeGuideLegacyInfo(raw: String, source: String): BaStudentGuideI
     }.getOrNull()
 }
 
-internal fun decodeGuideV2Info(source: String, id: String, store: MMKV): BaStudentGuideInfo? {
-    val metaRaw = store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_META), "").orEmpty()
+internal fun decodeGuideV2Info(source: String, id: String, store: MMKV): BaStudentGuideInfo? =
+    decodeGuideV2InfoFromPayload(source = source) { suffix ->
+        store.decodeString(guideV2CacheKey(id, suffix), "").orEmpty()
+    }
+
+internal fun decodeGuideV2InfoFromPayload(
+    source: String,
+    payload: (String) -> String,
+): BaStudentGuideInfo? {
+    val metaRaw = payload(CACHE_SUFFIX_META)
     if (metaRaw.isBlank()) return null
     return runCatching {
         val meta = JSONObject(metaRaw)
@@ -100,42 +108,42 @@ internal fun decodeGuideV2Info(source: String, id: String, store: MMKV): BaStude
         val voiceCvCn = meta.optString("voiceCvCn").trim()
         val stats = decodeStats(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_STATS), "").orEmpty()
+                payload(CACHE_SUFFIX_STATS)
             )
         )
         val skillRows = decodeGuideRowsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_SKILL), "").orEmpty()
+                payload(CACHE_SUFFIX_SKILL)
             )
         )
         val profileRows = decodeGuideRowsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_PROFILE), "").orEmpty()
+                payload(CACHE_SUFFIX_PROFILE)
             )
         )
         val galleryItems = decodeGalleryItemsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_GALLERY), "").orEmpty()
+                payload(CACHE_SUFFIX_GALLERY)
             )
         )
         val growthRows = decodeGuideRowsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_GROWTH), "").orEmpty()
+                payload(CACHE_SUFFIX_GROWTH)
             )
         )
         val simulateRows = decodeGuideRowsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_SIMULATE), "").orEmpty()
+                payload(CACHE_SUFFIX_SIMULATE)
             )
         )
         val voiceRows = decodeGuideRowsFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_VOICE_ROWS), "").orEmpty()
+                payload(CACHE_SUFFIX_VOICE_ROWS)
             )
         )
         val voiceEntries = decodeVoiceEntriesFromArray(
             parseJsonArray(
-                store.decodeString(guideV2CacheKey(id, CACHE_SUFFIX_VOICE_ENTRIES), "").orEmpty()
+                payload(CACHE_SUFFIX_VOICE_ENTRIES)
             )
         )
         val voiceCvByLanguage = decodeVoiceCvByLanguage(

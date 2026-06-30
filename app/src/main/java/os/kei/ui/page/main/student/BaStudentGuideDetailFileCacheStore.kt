@@ -97,19 +97,36 @@ internal class BaGuideStudentDetailFileCacheStore(
 
     fun allMetas(): List<BaGuideStudentDetailCacheMeta> =
         synchronized(lock) {
-            readIndexLocked()
-                .mapNotNull(::readMetaLocked)
-                .ifEmpty {
-                    cacheRootDir()
-                        .listFiles()
-                        .orEmpty()
-                        .asSequence()
-                        .filter { file -> file.isDirectory }
-                        .mapNotNull { dir ->
-                            val raw = File(dir, META_FILE_NAME).readTextOrNull()
-                            KeiJson.lenient.decodeFromStringOrNull<BaGuideStudentDetailCacheMeta>(raw.orEmpty())
-                        }.toList()
-                }
+            allMetasLocked()
+        }
+
+    fun removeOrphanStudentMetas(activeStudentSourceUrlsByContentId: Map<Long, Set<String>>): List<BaGuideStudentDetailCacheMeta> =
+        synchronized(lock) {
+            if (activeStudentSourceUrlsByContentId.isEmpty()) return@synchronized emptyList()
+            val activeSourcesByContentId =
+                activeStudentSourceUrlsByContentId
+                    .mapValues { (_, urls) ->
+                        urls
+                            .asSequence()
+                            .map(::normalizeStudentGuideSourceUrl)
+                            .filter { it.isNotBlank() }
+                            .toSet()
+                    }.filter { (contentId, urls) -> contentId > 0L && urls.isNotEmpty() }
+            if (activeSourcesByContentId.isEmpty()) return@synchronized emptyList()
+            val removed =
+                allMetasLocked()
+                    .filter { meta ->
+                        meta.tab == BaGuideCatalogTab.Student &&
+                            activeSourcesByContentId[meta.contentId]?.contains(meta.sourceUrl) != true
+                    }
+            if (removed.isEmpty()) return@synchronized emptyList()
+            val index = readIndexLocked().toMutableSet()
+            removed.forEach { meta ->
+                runCatching { entryDir(meta.sourceUrl).deleteRecursively() }
+                index.remove(meta.sourceUrl)
+            }
+            writeIndexLocked(index)
+            removed
         }
 
     fun stats(): BaGuideStudentDetailCacheStats {
@@ -138,6 +155,21 @@ internal class BaGuideStudentDetailFileCacheStore(
         val meta = KeiJson.lenient.decodeFromStringOrNull<BaGuideStudentDetailCacheMeta>(raw) ?: return null
         return meta.takeIf { normalizeStudentGuideSourceUrl(it.sourceUrl) == sourceUrl }
     }
+
+    private fun allMetasLocked(): List<BaGuideStudentDetailCacheMeta> =
+        readIndexLocked()
+            .mapNotNull(::readMetaLocked)
+            .ifEmpty {
+                cacheRootDir()
+                    .listFiles()
+                    .orEmpty()
+                    .asSequence()
+                    .filter { file -> file.isDirectory }
+                    .mapNotNull { dir ->
+                        val raw = File(dir, META_FILE_NAME).readTextOrNull()
+                        KeiJson.lenient.decodeFromStringOrNull<BaGuideStudentDetailCacheMeta>(raw.orEmpty())
+                    }.toList()
+            }
 
     private fun readIndexLocked(): Set<String> {
         val raw = File(cacheRootDir(), INDEX_FILE_NAME).readTextOrNull().orEmpty()

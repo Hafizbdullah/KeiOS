@@ -242,6 +242,7 @@ internal class AppMcpBaToolDelegate(
     }
 
     override fun buildGuideCacheOverviewText(): String {
+        val payloadStats = BaStudentGuideStore.payloadStorageStats(appContext)
         return buildString {
             appendLine("currentUrl=${BaStudentGuideStore.loadCurrentUrl()}")
             appendLine("cachedEntryCount=${BaStudentGuideStore.cachedEntryCount()}")
@@ -250,6 +251,11 @@ internal class AppMcpBaToolDelegate(
             appendLine("actualDataBytes=${BaStudentGuideStore.actualDataBytes()}")
             appendLine("cacheBytesEstimated=${BaStudentGuideStore.cacheBytesEstimated()}")
             appendLine("configBytesEstimated=${BaStudentGuideStore.configBytesEstimated()}")
+            appendLine("payloadMmkvEntryCount=${payloadStats.mmkvEntryCount}")
+            appendLine("payloadFileEntryCount=${payloadStats.fileEntryCount}")
+            appendLine("payloadMmkvBytes=${payloadStats.mmkvPayloadBytes}")
+            appendLine("payloadFileBytes=${payloadStats.filePayloadBytes}")
+            appendLine("payloadFileEnabled=${payloadStats.filePayloadEnabled}")
         }.trim()
     }
 

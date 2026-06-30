@@ -250,6 +250,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_media">缓存估算 %1$s · 配置估算 %2$s · MMKV 已用 %3$s · 媒体磁盘 %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">缓存估算 %1$s · 配置估算 %2$s · MMKV 已用 %3$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_disk">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 文件缓存 %4$s</string>
+    <string name="settings_cache_storage_ba_guide_payloads">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 元数据文件 %4$s · 详情MMKV %5$s · 详情文件 %6$s</string>
     <string name="settings_cache_storage_cache_config_memory">缓存估算 %1$s · 配置估算 %2$s · 内存占用 %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s</string>
     <string name="settings_cache_storage_ba_playback">缓存估算 %1$s · 配置估算 %2$s · 磁盘占用 %3$s · 累计扫描 %4$d 项 · 累计命中 %5$d 项/%6$d 片段/%7$s</string>

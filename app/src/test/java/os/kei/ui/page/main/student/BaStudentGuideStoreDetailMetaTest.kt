@@ -10,6 +10,7 @@ import org.robolectric.annotation.Config
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -137,6 +138,33 @@ class BaStudentGuideStoreDetailMetaTest {
     }
 
     @Test
+    fun `file store removes orphan student metas by active catalog sources`() {
+        val keepSourceUrl = uniqueSourceUrl(26)
+        val oldSourceUrl = uniqueSourceUrl(27)
+        val keepMeta = detailMeta(keepSourceUrl, 26L, BaGuideStudentDetailFreshnessTier.Stable)
+        val orphanMeta = detailMeta(oldSourceUrl, 27L, BaGuideStudentDetailFreshnessTier.Stable)
+        val npcMeta =
+            detailMeta(uniqueSourceUrl(28), 28L, BaGuideStudentDetailFreshnessTier.Stable)
+                .copy(tab = BaGuideCatalogTab.NpcSatellite)
+        store.saveMeta(keepMeta)
+        store.saveMeta(orphanMeta)
+        store.saveMeta(npcMeta)
+
+        val removed =
+            store.removeOrphanStudentMetas(
+                mapOf(
+                    26L to setOf(keepSourceUrl),
+                    27L to setOf("https://www.gamekee.com/ba/tj/27-new.html"),
+                ),
+            )
+
+        assertEquals(listOf(orphanMeta), removed)
+        assertEquals(keepMeta, store.loadMeta(keepSourceUrl))
+        assertNull(store.loadMeta(oldSourceUrl))
+        assertEquals(npcMeta, store.loadMeta(npcMeta.sourceUrl))
+    }
+
+    @Test
     fun `catalog alignment preserves validation times while updating catalog signals`() {
         val nowMs = 400L * DAY_MS
         val sourceUrl = uniqueSourceUrl(25)
@@ -168,6 +196,91 @@ class BaStudentGuideStoreDetailMetaTest {
         assertEquals((nowMs - 40L * DAY_MS) / 1000L, aligned.catalogCreatedAtSec)
         assertEquals((nowMs - 120L * DAY_MS) / 1000L, aligned.releaseDateSec)
         assertTrue(aligned.nextAutoRefreshAtMs > previous.lastValidatedAtMs)
+    }
+
+    @Test
+    fun `guide payload migration moves oversized mmkv payloads to file cache and keeps reads working`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val payloadStore =
+            BaStudentGuidePayloadFileCacheStore(
+                File(context.filesDir, "student-payload-cache-test-${System.nanoTime()}").apply {
+                    deleteRecursively()
+                    mkdirs()
+                },
+            )
+        val kv = InMemoryPayloadKeyValueStore()
+        val sourceUrl = uniqueSourceUrl(31)
+        val info =
+            guideInfo(
+                sourceUrl = sourceUrl,
+                syncedAtMs = 500L * DAY_MS,
+                title = "迁移学生",
+            ).copy(
+                profileRows =
+                    List(32) { index ->
+                        BaGuideRow("资料$index", "长文本-${"x".repeat(128)}")
+                    },
+            )
+
+        writeGuideV2Payload(
+            store = kv,
+            id = guideCacheId(sourceUrl),
+            payload = encodeGuideV2Payload(info),
+        )
+
+        val before =
+            BaStudentGuidePayloadStorageStats(
+                mmkvEntryCount = 1,
+                fileEntryCount = payloadStore.entryCount(),
+                totalEntryCount = 1,
+                mmkvPayloadBytes = mmkvGuidePayloadBytes(kv, setOf(sourceUrl)),
+                filePayloadBytes = payloadStore.payloadBytes(),
+                filePayloadEnabled = payloadStore.isEnabled(),
+            )
+        assertEquals(1, before.totalEntryCount)
+        assertTrue(before.mmkvPayloadBytes > 0L)
+        assertEquals(0L, before.filePayloadBytes)
+        assertTrue(
+            before.shouldMigrateToFiles(
+                BaStudentGuidePayloadMigrationThresholds(
+                    minMmkvPayloadBytes = 1L,
+                    minMmkvEntryCount = 1,
+                ),
+            ),
+        )
+
+        val migration =
+            migrateBaStudentGuidePayloadsToFileStore(
+                keyValueStore = kv,
+                sourceUrls = setOf(sourceUrl),
+                payloadStore = payloadStore,
+            )
+        payloadStore.setEnabled(migration.migratedEntryCount > 0)
+
+        assertEquals(1, migration.migratedEntryCount)
+        assertEquals(0, migration.skippedEntryCount)
+        assertTrue(migration.remainingMmkvSources.isEmpty())
+        assertNull(readGuideV2Payload(kv, guideCacheId(sourceUrl)))
+        val after =
+            BaStudentGuidePayloadStorageStats(
+                mmkvEntryCount = 0,
+                fileEntryCount = payloadStore.entryCount(),
+                totalEntryCount = payloadStore.entryCount(),
+                mmkvPayloadBytes = mmkvGuidePayloadBytes(kv, setOf(sourceUrl)),
+                filePayloadBytes = payloadStore.payloadBytes(),
+                filePayloadEnabled = payloadStore.isEnabled(),
+            )
+        assertEquals(1, after.totalEntryCount)
+        assertEquals(0L, after.mmkvPayloadBytes)
+        assertTrue(after.filePayloadBytes > 0L)
+        assertFalse(after.shouldMigrateToFiles())
+        val filePayload = payloadStore.loadPayload(sourceUrl)
+        assertNotNull(filePayload)
+        val decoded = decodeGuideV2InfoFromPayload(sourceUrl) { suffix -> filePayload[suffix].orEmpty() }
+        assertNotNull(decoded)
+        assertTrue(isGuideInfoPayloadComplete(decoded))
+        assertEquals(info.title, decoded.title)
+        assertEquals(info.profileRows.size, decoded.profileRows.size)
     }
 
     private fun guideInfo(
@@ -213,6 +326,24 @@ class BaStudentGuideStoreDetailMetaTest {
 
     private fun uniqueSourceUrl(contentId: Long): String =
         "https://www.gamekee.com/ba/tj/$contentId-${System.nanoTime()}.html"
+
+    private class InMemoryPayloadKeyValueStore : BaStudentGuidePayloadKeyValueStore {
+        private val values = linkedMapOf<String, String>()
+
+        override fun encode(key: String, value: String) {
+            values[key] = value
+        }
+
+        override fun decodeString(key: String): String = values[key].orEmpty()
+
+        override fun containsKey(key: String): Boolean = key in values
+
+        override fun allKeys(): List<String> = values.keys.toList()
+
+        override fun removeValueForKey(key: String) {
+            values.remove(key)
+        }
+    }
 
     private companion object {
         private const val DAY_MS = 24L * 60L * 60L * 1000L

@@ -246,6 +246,7 @@
     <string name="settings_cache_storage_cache_config_mmkv_media">Cache estimate %1$s · Config estimate %2$s · MMKV used %3$s · Media disk %4$s</string>
     <string name="settings_cache_storage_cache_config_mmkv">Cache estimate %1$s · Config estimate %2$s · MMKV used %3$s</string>
     <string name="settings_cache_storage_cache_config_mmkv_disk">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · File cache %4$s</string>
+    <string name="settings_cache_storage_ba_guide_payloads">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · Metadata files %4$s · Detail MMKV %5$s · Detail files %6$s</string>
     <string name="settings_cache_storage_cache_config_memory">Cache estimate %1$s · Config estimate %2$s · Memory %3$s</string>
     <string name="settings_cache_storage_cache_config_disk">Cache estimate %1$s · Config estimate %2$s · Disk %3$s</string>
     <string name="settings_cache_storage_ba_playback">Cache estimate %1$s · Config estimate %2$s · Disk %3$s · Scanned %4$d items · Hits %5$d items/%6$d spans/%7$s</string>
