@@ -51,6 +51,18 @@ Add a lightweight metadata index beside the detail payload. This index supports 
 
 Dependency and storage audit:
 
+Gradle inventory checked on 2026-07-01:
+
+| Category | Current Dependency / Module | Version / Location | Cache Role |
+| --- | --- | --- | --- |
+| Key-value store | `com.tencent:mmkv` via `core-prefs` | `2.4.0` | Small settings, indexes, favorites, quick flags, legacy guide payload compatibility. |
+| Typed JSON | `kotlinx-serialization-json` via `core-json` | `1.11.0` | New schema-driven cache metadata, diagnostics, import/export-adjacent models. |
+| App-private files | Standard Android `filesDir` | Existing log/detail-meta stores | Long-lived structured metadata and future large payload migration target. |
+| Regenerable files | Standard Android `cacheDir` | Existing GameKee/guide media stores | Thumbnails, temporary media, offline media that can be trimmed independently. |
+| Network | OkHttp / Ktor / dav4jvm | OkHttp `5.4.0`, Ktor `3.5.1` | Fetch and sync transport only. |
+| Media | Coil 3 / Media3 | Coil `3.5.0`, Media3 `1.10.1` | Image/audio loading and media-specific cache ownership. |
+| Database / preferences alternatives | Room, SQLDelight, DataStore | Not present | Keep as future candidates only after byte/count/query evidence. |
+
 | Existing Dependency / Store Pattern | Current Use | Student Detail Cache Fit |
 | --- | --- | --- |
 | `MMKV` through `core-prefs` | Small settings, guide current URL, favorites, catalog bundles, bounded GitHub/F-Droid sidecars | Good for small state, indexes, compatibility, and fast key-value reads. Large long-lived payloads need byte-count guardrails. |
@@ -71,6 +83,14 @@ Dependency and storage audit:
 | Temporary media files | Existing cache-dir file store plus index | Regenerable media belongs in cache storage and can be trimmed independently. |
 
 No new database dependency is planned for P0-P2. The current dependency set already includes `kotlinx.serialization-json` through `core-json` and the app module, and has no Room/SQLDelight/DataStore baseline. A file-backed metadata repository keeps the dependency surface small while fitting the current cache size. If detail payload bytes or metadata queries grow past the P2 thresholds, the same store interface can move payloads to `filesDir` and metadata to SQLite/Room.
+
+Dependency decision:
+
+- Keep MMKV for small key-value data and current V2 detail payload compatibility.
+- Use `filesDir` + `kotlinx.serialization-json` for Student detail metadata and diagnostics.
+- Keep `cacheDir` ownership for media files and thumbnails.
+- Add payload-size metrics before migrating large detail payloads out of MMKV.
+- Consider Room/SQLite only if metadata scans, cleanup, or cross-entry queries become a measurable bottleneck.
 
 ```kotlin
 data class BaGuideStudentDetailCacheMeta(
@@ -202,11 +222,11 @@ Extend the BA Guide cache summary.
 | P1 | S7 | Done | Add retry backoff and singleflight per source URL. | Repository tests cover retry-window cache return and concurrent forced validations sharing one network fetch. |
 | P1 | S8 | Done | Add detail page cache status sheet and manual clear current-student cache action. | Added detail cache status sheet and current-student clear action; `:app:compileDebugKotlin` and targeted student cache tests passed. |
 | P1 | S9 | Done | Extend settings cache diagnostics with Student detail tier counts. | BA Guide cache summary now includes implemented detail counts, hot-update/long-term/archived tier counts, file-cache bytes, and clears the file-backed detail metadata. |
-| P2 | S10 | Planned | Add media cache differential cleanup for detail refreshes. | Tests for retained referenced media and removed stale media. |
-| P2 | S11 | Planned | Add orphan Student detail cache detection and cleanup. | Store tests for URL changes and orphan cleanup. |
-| P2 | S12 | Planned | Add optional low-priority validation for favorites and recently viewed implemented students. | Scheduler tests for bounded concurrency and cancellation. |
-| P2 | S13 | Planned | Run AVD validation: cached old student, hot-update student, manual refresh failure, offline opening. | AVD log, screenshot, and no app error logs. |
-| P2 | S16 | Planned | Measure implemented-student detail payload growth in MMKV and add a guarded file-backed payload migration path when byte/count thresholds justify it. | Unit tests for payload migration plus settings diagnostics showing MMKV/file payload bytes. |
+| P2 | S10 | Done | Add media cache differential cleanup for detail refreshes. | Media support/cache tests and repository tests cover retained referenced media and removed stale media. |
+| P2 | S11 | Done | Add orphan Student detail cache detection and cleanup. | Store and repository tests cover URL changes, stale meta removal, and cached payload/media cleanup. |
+| P2 | S12 | Done | Add optional low-priority validation for favorites and recently viewed implemented students. | Repository scheduler tests cover recent-first ordering, favorite ordering, candidate limits, and fresh-cache network skip; catalog page triggers bounded background validation. |
+| P2 | S13 | Done | Run AVD validation: cached student detail, cache-status sheet, and offline cache opening. | Debug AVD `emulator-5554` loaded the student detail page, opened the cache-status sheet, reopened cached detail in airplane mode, and produced no PID-filtered E logs. |
+| P2 | S16 | Done | Measure implemented-student detail payload growth in MMKV and add a guarded file-backed payload migration path when byte/count thresholds justify it. | Payload migration test covers MMKV-format payload byte measurement, guarded file-store migration, MMKV cleanup, and file payload decode; settings and MCP diagnostics now show MMKV/file payload bytes. |
 | P3 | S14 | Planned | Consider offline cache pack or pre-cache for selected favorites. | Product review after P0-P2 land. |
 | P3 | S15 | Planned | Consider WebDAV/import-export coverage for detail cache metadata. | Sync design review after metadata stabilizes. |
 
@@ -246,6 +266,10 @@ Extend the BA Guide cache summary.
 | 2026-07-01 | P1 S7 done | Added per-source singleflight in `BaStudentGuideRepository` so concurrent validations share one network fetch. Repository tests now cover retry-window automatic validation suppression and concurrent forced validation. |
 | 2026-07-01 | P1 S5-S6 done | Added contentId metadata lookup for changed detail URLs, catalog-signal metadata alignment, and shared release-date parsing. Detail refresh now backfills `BaGuideCatalogStore` release-date index when the catalog entry lacks a release date. Targeted repository/store tests and `os.kei.ui.page.main.student.catalog.*` tests passed. |
 | 2026-07-01 | P1 S8 done | Rechecked project dependencies before UI wiring: current MMKV, file-backed private JSON stores, `core-json`, Coil 3, Media3, and bounded dispatchers cover the cache model without adding Room/SQLDelight/DataStore for P0-P2. Added current-student detail cache status sheet, manual refresh, and manual clear action. Validation passed with `:app:compileDebugKotlin` and targeted student cache tests. |
+| 2026-07-01 | P2 S10-S11 done | Added detail media differential retention so implemented-student refresh keeps referenced media and removes stale files. Added orphan Student detail cleanup by current catalog sources so changed detail URLs can remove stale metadata, payload, and media. Targeted media, store, and repository tests passed. |
+| 2026-07-01 | P2 S12 done | Added bounded low-priority background validation for current/recent detail plus favorite implemented students from the catalog page. It waits for first-screen work, caps candidates to 4, uses single parallelism, and skips network for fresh detail cache. |
+| 2026-07-01 | P2 S16 done | Added file-backed detail payload cache under `filesDir`, guarded MMKV-to-file migration thresholds, payload byte statistics, settings/MCP diagnostics, and deferred startup migration on `AppDispatchers.fileIo`. Validation passed with targeted student cache tests and `:app:compileDebugKotlin`. |
+| 2026-07-01 | P2 S13 done | AVD validation used `emulator-5554` with the debug QA student detail entry. Screenshots captured the loaded detail page, cache-status sheet, and airplane-mode cached opening. PID-filtered logcat files for both online and offline launches were empty at E level. |
 
 ## Open Decisions
 
