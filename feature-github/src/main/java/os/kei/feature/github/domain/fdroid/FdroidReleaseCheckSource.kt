@@ -12,6 +12,7 @@ import os.kei.feature.github.data.remote.fdroid.FdroidPackageApiClient
 import os.kei.feature.github.data.remote.fdroid.FdroidPackageSnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
+import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -175,6 +176,14 @@ class FdroidReleaseCheckSource(
                 )
             )
         }
+        selectedVersion?.trustFailureDetail(item.fdroidConfig.trustPolicy, item.fdroidConfig.repoFingerprint)?.let { detail ->
+            return@withContext failedCheck(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                sourceConfigSignature = sourceConfigSignature,
+                detail = detail
+            )
+        }
         val snapshot = GitHubRepositoryReleaseSnapshot(
             strategyId = GITHUB_FDROID_STRATEGY_ID,
             feed = GitHubAtomFeed(
@@ -303,6 +312,35 @@ class FdroidReleaseCheckSource(
             Regex("""\brc\b|release candidate""").containsMatchIn(text) -> GitHubReleaseChannel.RC
             "preview" in text -> GitHubReleaseChannel.PREVIEW
             else -> GitHubReleaseChannel.STABLE
+        }
+    }
+
+    private fun FdroidVersionSnapshot.trustFailureDetail(
+        trustPolicy: FdroidTrustPolicy,
+        repoFingerprint: String
+    ): String? {
+        return when (trustPolicy) {
+            FdroidTrustPolicy.TrackOnlyWarn -> null
+            FdroidTrustPolicy.RequireRepoFingerprint ->
+                if (repoFingerprint.trim().isBlank()) {
+                    "F-Droid repository fingerprint is required but missing"
+                } else {
+                    null
+                }
+
+            FdroidTrustPolicy.RequireApkHash ->
+                if (apkSha256.trim().isBlank()) {
+                    "F-Droid APK hash is required but missing"
+                } else {
+                    null
+                }
+
+            FdroidTrustPolicy.RequireOfficialSignerIndex ->
+                if (signerSha256.isEmpty()) {
+                    "F-Droid signer index is required but missing"
+                } else {
+                    null
+                }
         }
     }
 

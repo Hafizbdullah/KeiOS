@@ -32,7 +32,8 @@ class FdroidRepositoryIndexPackagesSnapshotProvider(
     ): Result<FdroidRepositorySnapshot> {
         return client.fetchIndexV2Packages(
             repoBaseUrl = repoUrl,
-            packageNames = packageNames
+            packageNames = packageNames,
+            forceRefresh = forceRefresh
         )
     }
 }

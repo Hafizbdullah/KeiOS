@@ -358,7 +358,8 @@ class FdroidRepositoryIndexSearchProvider(
             repoBaseUrl = repoUrl,
             query = query,
             packageName = packageName,
-            limit = limit
+            limit = limit,
+            forceRefresh = forceRefresh
         )
     }
 }
