@@ -206,6 +206,80 @@ class FdroidAppSearchServiceTest {
     }
 
     @Test
+    fun `search passes force refresh to repository index provider`() = runBlocking {
+        val forceRefreshValues = mutableListOf<Boolean>()
+        val service = FdroidAppSearchService(
+            searchApiClient = fakeSearchApiClient(apps = emptyList()),
+            repositorySearchProvider = FdroidRepositorySearchProvider { repoUrl, _, _, _, forceRefresh ->
+                forceRefreshValues += forceRefresh
+                Result.success(
+                    repository(
+                        repoUrl = repoUrl,
+                        repoName = "IzzyOnDroid",
+                        packages = listOf(
+                            packageSnapshot("dev.imranr.obtainium", "Obtainium", "App updater")
+                        )
+                    )
+                )
+            }
+        )
+
+        service.search(
+            FdroidAppSearchRequest(
+                query = "Obtainium",
+                repoUrls = listOf(FdroidRepositoryPresets.IzzyOnDroid.repoUrl),
+                forceRefresh = true
+            )
+        ).getOrThrow()
+
+        assertEquals(listOf(true), forceRefreshValues)
+    }
+
+    @Test
+    fun `search reports per repository timing and outcome`() = runBlocking {
+        var nowMillis = 1_000L
+        val service = FdroidAppSearchService(
+            searchApiClient = fakeSearchApiClient(apps = emptyList()),
+            repositorySearchProvider = FdroidRepositorySearchProvider { repoUrl, _, _, _, _ ->
+                nowMillis += 37L
+                if (repoUrl == FdroidRepositoryPresets.IzzyOnDroid.repoUrl) {
+                    Result.success(
+                        repository(
+                            repoUrl = repoUrl,
+                            repoName = "IzzyOnDroid",
+                            packages = listOf(
+                                packageSnapshot("dev.imranr.obtainium", "Obtainium", "App updater")
+                            )
+                        )
+                    )
+                } else {
+                    Result.failure(IllegalStateException("repo offline"))
+                }
+            },
+            clock = { nowMillis }
+        )
+
+        val result = service.search(
+            FdroidAppSearchRequest(
+                query = "Obtainium",
+                repoUrls = listOf(
+                    FdroidRepositoryPresets.IzzyOnDroid.repoUrl,
+                    "https://offline.example/fdroid/repo"
+                )
+            )
+        ).getOrThrow()
+
+        assertEquals(2, result.repoReports.size)
+        assertEquals(
+            listOf(FdroidRepositoryPresets.IzzyOnDroid.repoUrl, "https://offline.example/fdroid/repo"),
+            result.repoReports.map { report -> report.repoUrl }
+        )
+        assertEquals(listOf(1, 0), result.repoReports.map { report -> report.candidateCount })
+        assertEquals(listOf(0, 1), result.repoReports.map { report -> report.failureCount })
+        assertTrue(result.repoReports.all { report -> report.elapsedMillis > 0L })
+    }
+
+    @Test
     fun `search rethrows cancellation from repository index provider`() {
         runBlocking {
             val service = FdroidAppSearchService(

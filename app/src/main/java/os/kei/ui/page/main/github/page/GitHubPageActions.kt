@@ -669,6 +669,11 @@ internal class GitHubPageActions(
 
     fun scanTrackFdroidReposFromPackage() = trackActions.scanFdroidReposFromPackage()
 
+    fun retryTrackFdroidSearchFailures() = trackActions.retryFdroidSearchFailures()
+
+    fun setTrackFdroidSearchFailuresExpanded(value: Boolean) =
+        trackActions.setFdroidSearchFailuresExpanded(value)
+
     fun selectTrackFdroidAppSearchCandidate(candidate: FdroidAppSearchCandidate) =
         trackActions.selectFdroidAppSearchCandidate(candidate)
 

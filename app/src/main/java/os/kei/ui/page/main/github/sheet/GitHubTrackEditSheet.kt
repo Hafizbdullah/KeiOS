@@ -20,6 +20,7 @@ import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
+import os.kei.feature.github.model.FdroidAppSearchRepoReport
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidTrackedAppConfig
@@ -84,6 +85,8 @@ internal fun GitHubTrackEditSheet(
     fdroidAppSearchQueryInput: String,
     fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
     fdroidAppSearchFailures: List<FdroidAppSearchFailure>,
+    fdroidAppSearchFailuresExpanded: Boolean,
+    fdroidAppSearchRepoReports: List<FdroidAppSearchRepoReport>,
     fdroidSelectedCandidate: FdroidAppSearchCandidate?,
     fdroidAppSearchRunning: Boolean,
     enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
@@ -138,6 +141,8 @@ internal fun GitHubTrackEditSheet(
     onFdroidAppSearchQueryInputChange: (String) -> Unit,
     onSearchFdroidAppsByName: () -> Unit,
     onScanFdroidReposFromPackage: () -> Unit,
+    onRetryFdroidSearchFailures: () -> Unit,
+    onFdroidSearchFailuresExpandedChange: (Boolean) -> Unit,
     onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
@@ -308,6 +313,8 @@ internal fun GitHubTrackEditSheet(
                     fdroidAppSearchQueryInput = fdroidAppSearchQueryInput,
                     fdroidAppSearchCandidates = fdroidAppSearchCandidates,
                     fdroidAppSearchFailures = fdroidAppSearchFailures,
+                    fdroidAppSearchFailuresExpanded = fdroidAppSearchFailuresExpanded,
+                    fdroidAppSearchRepoReports = fdroidAppSearchRepoReports,
                     fdroidSelectedCandidate = fdroidSelectedCandidate,
                     fdroidAppSearchRunning = fdroidAppSearchRunning,
                     enabledFdroidCommonRepos = enabledFdroidCommonRepos,
@@ -351,6 +358,8 @@ internal fun GitHubTrackEditSheet(
                     onFdroidAppSearchQueryInputChange = onFdroidAppSearchQueryInputChange,
                     onSearchFdroidAppsByName = onSearchFdroidAppsByName,
                     onScanFdroidReposFromPackage = onScanFdroidReposFromPackage,
+                    onRetryFdroidSearchFailures = onRetryFdroidSearchFailures,
+                    onFdroidSearchFailuresExpandedChange = onFdroidSearchFailuresExpandedChange,
                     onFdroidAppSearchCandidateSelected = onFdroidAppSearchCandidateSelected,
                     onSourceModeDropdownExpandedChange = onSourceModeDropdownExpandedChange,
                     onSourceModeDropdownAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,

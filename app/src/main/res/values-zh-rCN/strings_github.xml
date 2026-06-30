@@ -325,7 +325,7 @@
     <string name="github_overview_label_stable_latest">稳定已最新</string>
     <string name="github_overview_label_prerelease_tracked">预发跟踪</string>
     <string name="github_overview_label_prerelease_update">预发可更新</string>
-    <string name="github_overview_label_oldest_checked">最旧检查</string>
+    <string name="github_overview_label_oldest_checked">当前最旧</string>
     <string name="github_overview_label_check_failed">检查失败</string>
     <string name="github_overview_action_show_failed">查看失败项</string>
     <string name="github_overview_action_clear_failed_filter">显示全部</string>
@@ -769,6 +769,12 @@
     <string name="github_track_sheet_summary_git">填写 Gitee、GitLab、自建 Git 或其他 Git 平台仓库地址，支持 HTTPS 与 SSH clone URL。</string>
     <string name="github_track_sheet_summary_direct_apk">填写 APK 下载链接、APK 目录索引、JSON 订阅源或带版本目录的 APK 地址；刷新时会解析远端 APK Manifest 与本机版本对比。</string>
     <string name="github_track_sheet_summary_fdroid_repo">填写 F-Droid 仓库地址或包详情页；支持 f-droid.org、IzzyOnDroid 和兼容 F-Droid index 的第三方仓库。</string>
+    <string name="github_track_sheet_fdroid_search_failure_expand">展开详情</string>
+    <string name="github_track_sheet_fdroid_search_failure_collapse">收起详情</string>
+    <string name="github_track_sheet_fdroid_search_failure_retry">重试失败源</string>
+    <string name="github_track_sheet_fdroid_search_report_format">已搜索 %1$d 个源，%2$d 个失败，最慢 %3$s</string>
+    <string name="github_track_sheet_fdroid_search_elapsed_ms">%1$d ms</string>
+    <string name="github_track_sheet_fdroid_search_elapsed_seconds">%1$d.%2$d s</string>
     <string name="github_track_sheet_section_repo_candidates">项目候选</string>
     <string name="github_track_sheet_repo_candidates_summary">已验证到同一包名，选择一个仓库写入草稿。</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d 个</string>

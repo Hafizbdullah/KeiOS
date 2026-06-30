@@ -15,6 +15,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
+import os.kei.feature.github.model.FdroidAppSearchRepoReport
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidTrustPolicy
@@ -78,6 +79,8 @@ internal fun GitHubTrackEditFormContent(
     fdroidAppSearchQueryInput: String,
     fdroidAppSearchCandidates: List<FdroidAppSearchCandidate>,
     fdroidAppSearchFailures: List<FdroidAppSearchFailure>,
+    fdroidAppSearchFailuresExpanded: Boolean,
+    fdroidAppSearchRepoReports: List<FdroidAppSearchRepoReport>,
     fdroidSelectedCandidate: FdroidAppSearchCandidate?,
     fdroidAppSearchRunning: Boolean,
     enabledFdroidCommonRepos: List<FdroidRepositoryPreset>,
@@ -114,6 +117,8 @@ internal fun GitHubTrackEditFormContent(
     onFdroidAppSearchQueryInputChange: (String) -> Unit,
     onSearchFdroidAppsByName: () -> Unit,
     onScanFdroidReposFromPackage: () -> Unit,
+    onRetryFdroidSearchFailures: () -> Unit,
+    onFdroidSearchFailuresExpandedChange: (Boolean) -> Unit,
     onFdroidAppSearchCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onSourceModeDropdownExpandedChange: (Boolean) -> Unit,
     onSourceModeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
@@ -312,6 +317,8 @@ internal fun GitHubTrackEditFormContent(
                 selectedApp = selectedApp,
                 candidates = fdroidAppSearchCandidates,
                 searchFailures = fdroidAppSearchFailures,
+                searchFailuresExpanded = fdroidAppSearchFailuresExpanded,
+                searchRepoReports = fdroidAppSearchRepoReports,
                 selectedCandidate = fdroidSelectedCandidate,
                 searching = fdroidAppSearchRunning,
                 enabledCommonRepos = enabledFdroidCommonRepos,
@@ -323,6 +330,8 @@ internal fun GitHubTrackEditFormContent(
                 onPackageNameInputChange = onPackageNameInputChange,
                 onSearchByName = onSearchFdroidAppsByName,
                 onScanFromPackage = onScanFdroidReposFromPackage,
+                onRetryFailures = onRetryFdroidSearchFailures,
+                onSearchFailuresExpandedChange = onFdroidSearchFailuresExpandedChange,
                 onCandidateSelected = onFdroidAppSearchCandidateSelected,
                 onPickerExpandedChange = onPickerExpandedChange,
                 onRepoScopeDropdownExpandedChange = onFdroidRepoScopeDropdownExpandedChange,

@@ -332,7 +332,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_overview_label_stable_latest">Stable 最新</string>
     <string name="github_overview_label_prerelease_tracked">Pre-release 追跡</string>
     <string name="github_overview_label_prerelease_update">Pre-release 更新</string>
-    <string name="github_overview_label_oldest_checked">最古の確認</string>
+    <string name="github_overview_label_oldest_checked">現在の最古</string>
     <string name="github_overview_label_check_failed">確認失敗</string>
     <string name="github_overview_action_show_failed">失敗項目を表示</string>
     <string name="github_overview_action_clear_failed_filter">すべて表示</string>
@@ -794,6 +794,12 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_fdroid_search_partial_failure">一部の Droid ソース検索に失敗: %1$d 件</string>
     <string name="github_track_sheet_fdroid_search_partial_failure_detail_format">%1$s: %2$s</string>
     <string name="github_track_sheet_fdroid_search_partial_failure_more_format">ほか %1$d 件のソースが失敗しました</string>
+    <string name="github_track_sheet_fdroid_search_failure_expand">詳細を表示</string>
+    <string name="github_track_sheet_fdroid_search_failure_collapse">詳細を隠す</string>
+    <string name="github_track_sheet_fdroid_search_failure_retry">失敗したソースを再試行</string>
+    <string name="github_track_sheet_fdroid_search_report_format">%1$d 件のソースを検索、%2$d 件失敗、最長 %3$s</string>
+    <string name="github_track_sheet_fdroid_search_elapsed_ms">%1$d ms</string>
+    <string name="github_track_sheet_fdroid_search_elapsed_seconds">%1$d.%2$d s</string>
     <string name="github_track_sheet_section_repo_candidates">プロジェクト候補</string>
     <string name="github_track_sheet_repo_candidates_summary">同じパッケージ名で確認できたリポジトリです。選択すると下書きに反映します。</string>
     <string name="github_track_sheet_repo_candidate_count_format">%1$d 件</string>

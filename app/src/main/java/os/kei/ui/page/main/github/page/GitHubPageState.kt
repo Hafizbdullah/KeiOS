@@ -104,6 +104,8 @@ internal class GitHubPageState(
     var fdroidAppSearchQueryInput by trackEditorState::fdroidAppSearchQueryInput
     var fdroidAppSearchCandidates by trackEditorState::fdroidAppSearchCandidates
     var fdroidAppSearchFailures by trackEditorState::fdroidAppSearchFailures
+    var fdroidAppSearchFailuresExpanded by trackEditorState::fdroidAppSearchFailuresExpanded
+    var fdroidAppSearchRepoReports by trackEditorState::fdroidAppSearchRepoReports
     var fdroidSelectedCandidate by trackEditorState::fdroidSelectedCandidate
     var fdroidAppSearchRunning by trackEditorState::fdroidAppSearchRunning
     var trackSourceModeInput by trackEditorState::trackSourceModeInput

@@ -28,6 +28,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
+import os.kei.feature.github.model.FdroidAppSearchRepoReport
 import os.kei.feature.github.model.FdroidAppSearchSource
 import os.kei.feature.github.model.FdroidRepositoryPreset
 import os.kei.feature.github.model.FdroidRepositoryPresets
@@ -76,6 +77,8 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     selectedApp: InstalledAppItem?,
     candidates: List<FdroidAppSearchCandidate>,
     searchFailures: List<FdroidAppSearchFailure>,
+    searchFailuresExpanded: Boolean,
+    searchRepoReports: List<FdroidAppSearchRepoReport>,
     selectedCandidate: FdroidAppSearchCandidate?,
     searching: Boolean,
     enabledCommonRepos: List<FdroidRepositoryPreset>,
@@ -87,6 +90,8 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
     onPackageNameInputChange: (String) -> Unit,
     onSearchByName: () -> Unit,
     onScanFromPackage: () -> Unit,
+    onRetryFailures: () -> Unit,
+    onSearchFailuresExpandedChange: (Boolean) -> Unit,
     onCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
@@ -275,15 +280,29 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
         )
     }
     if (searchFailures.isNotEmpty()) {
-        FdroidSearchFailureNotice(failures = searchFailures)
+        FdroidSearchFailureNotice(
+            backdrop = backdrop,
+            failures = searchFailures,
+            expanded = searchFailuresExpanded,
+            repoReports = searchRepoReports,
+            searching = searching,
+            onRetryFailures = onRetryFailures,
+            onExpandedChange = onSearchFailuresExpandedChange,
+        )
     }
 }
 
 @Composable
 private fun FdroidSearchFailureNotice(
+    backdrop: LayerBackdrop,
     failures: List<FdroidAppSearchFailure>,
+    expanded: Boolean,
+    repoReports: List<FdroidAppSearchRepoReport>,
+    searching: Boolean,
+    onRetryFailures: () -> Unit,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
-    val visibleFailures = failures.take(2)
+    val visibleFailures = if (expanded) failures else failures.take(1)
     SheetSectionCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -303,6 +322,17 @@ private fun FdroidSearchFailureNotice(
             )
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (repoReports.isNotEmpty()) {
+                SheetDescriptionText(
+                    text =
+                        stringResource(
+                            R.string.github_track_sheet_fdroid_search_report_format,
+                            repoReports.size,
+                            repoReports.sumOf { report -> report.failureCount },
+                            fdroidSearchElapsedText(repoReports.maxOf { report -> report.elapsedMillis }),
+                        ),
+                )
+            }
             val fallbackMessage = stringResource(R.string.github_error_fdroid_search_failed)
             visibleFailures.forEach { failure ->
                 Text(
@@ -320,7 +350,7 @@ private fun FdroidSearchFailureNotice(
                 )
             }
             val hiddenCount = failures.size - visibleFailures.size
-            if (hiddenCount > 0) {
+            if (hiddenCount > 0 && !expanded) {
                 SheetDescriptionText(
                     text =
                         stringResource(
@@ -329,6 +359,50 @@ private fun FdroidSearchFailureNotice(
                         ),
                 )
             }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (failures.size > 1) {
+                AppLiquidTextButton(
+                    modifier = Modifier.weight(1f),
+                    backdrop = backdrop,
+                    variant = GlassVariant.SheetAction,
+                    text =
+                        stringResource(
+                            if (expanded) {
+                                R.string.github_track_sheet_fdroid_search_failure_collapse
+                            } else {
+                                R.string.github_track_sheet_fdroid_search_failure_expand
+                            },
+                        ),
+                    enabled = !searching,
+                    onClick = { onExpandedChange(!expanded) },
+                    minHeight = 30.dp,
+                    horizontalPadding = 10.dp,
+                    verticalPadding = 4.dp,
+                    textMaxLines = 1,
+                )
+            }
+            AppLiquidTextButton(
+                modifier = Modifier.weight(1f),
+                backdrop = backdrop,
+                variant = GlassVariant.SheetAction,
+                text =
+                    if (searching) {
+                        stringResource(R.string.github_track_sheet_btn_fdroid_search_running)
+                    } else {
+                        stringResource(R.string.github_track_sheet_fdroid_search_failure_retry)
+                    },
+                enabled = !searching,
+                onClick = onRetryFailures,
+                minHeight = 30.dp,
+                horizontalPadding = 10.dp,
+                verticalPadding = 4.dp,
+                textMaxLines = 1,
+            )
         }
     }
 }
@@ -596,4 +670,18 @@ private fun FdroidAppSearchFailure.repoFailureDisplayName(): String {
         .removePrefix("http://")
         .substringBefore('/')
         .ifBlank { repoUrl }
+}
+
+@Composable
+private fun fdroidSearchElapsedText(elapsedMillis: Long): String {
+    val safeMillis = elapsedMillis.coerceAtLeast(0L)
+    return if (safeMillis < 1_000L) {
+        stringResource(R.string.github_track_sheet_fdroid_search_elapsed_ms, safeMillis)
+    } else {
+        stringResource(
+            R.string.github_track_sheet_fdroid_search_elapsed_seconds,
+            safeMillis / 1_000,
+            (safeMillis % 1_000) / 100,
+        )
+    }
 }

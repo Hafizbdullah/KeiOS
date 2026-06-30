@@ -11,6 +11,7 @@ import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiApp
 import os.kei.feature.github.data.remote.fdroid.FdroidSearchApiClient
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
+import os.kei.feature.github.model.FdroidAppSearchRepoReport
 import os.kei.feature.github.model.FdroidAppSearchRequest
 import os.kei.feature.github.model.FdroidAppSearchResult
 import os.kei.feature.github.model.FdroidAppSearchSource
@@ -24,7 +25,8 @@ class FdroidAppSearchService(
     private val searchApiClient: FdroidSearchApiClient = FdroidSearchApiClient(),
     private val repositorySearchProvider: FdroidRepositorySearchProvider =
         FdroidRepositoryIndexSearchProvider(),
-    private val dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
+    private val dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val clock: () -> Long = { System.currentTimeMillis() }
 ) {
     suspend fun search(request: FdroidAppSearchRequest): Result<FdroidAppSearchResult> =
         withContext(dispatcher) {
@@ -46,12 +48,13 @@ class FdroidAppSearchService(
                         maxConcurrency = 2,
                         dispatcher = dispatcher
                     ) { repoUrl ->
-                        searchRepo(
+                        timedSearchRepo(
                             repoUrl = repoUrl,
                             query = normalizedQuery,
                             packageName = normalizedPackageName,
                             limit = request.limit,
-                            includeOfficialSearchApi = request.includeOfficialSearchApi
+                            includeOfficialSearchApi = request.includeOfficialSearchApi,
+                            forceRefresh = request.forceRefresh
                         )
                     }
                 val candidates = repoResults
@@ -72,24 +75,48 @@ class FdroidAppSearchService(
                     packageName = normalizedPackageName,
                     searchedRepoUrls = repoUrls,
                     candidates = candidates,
-                    failures = repoResults.flatMap { result -> result.failures }
+                    failures = repoResults.flatMap { result -> result.failures },
+                    repoReports = repoResults.map { result -> result.toReport() }
                 )
             }
         }
+
+    private suspend fun timedSearchRepo(
+        repoUrl: String,
+        query: String,
+        packageName: String,
+        limit: Int,
+        includeOfficialSearchApi: Boolean,
+        forceRefresh: Boolean
+    ): RepoSearchResult {
+        val startedAtMillis = clock()
+        return searchRepo(
+            repoUrl = repoUrl,
+            query = query,
+            packageName = packageName,
+            limit = limit,
+            includeOfficialSearchApi = includeOfficialSearchApi,
+            forceRefresh = forceRefresh
+        ).copy(
+            repoUrl = repoUrl,
+            elapsedMillis = (clock() - startedAtMillis).coerceAtLeast(0L)
+        )
+    }
 
     private suspend fun searchRepo(
         repoUrl: String,
         query: String,
         packageName: String,
         limit: Int,
-        includeOfficialSearchApi: Boolean
+        includeOfficialSearchApi: Boolean,
+        forceRefresh: Boolean
     ): RepoSearchResult {
         if (includeOfficialSearchApi && repoUrl.isFdroidMainRepo()) {
             val apiResult = searchOfficialRepo(repoUrl, query, packageName, limit)
             if (apiResult.candidates.isNotEmpty() || apiResult.failures.isEmpty()) {
                 return apiResult
             }
-            val indexResult = searchRepositoryIndex(repoUrl, query, packageName, limit)
+            val indexResult = searchRepositoryIndex(repoUrl, query, packageName, limit, forceRefresh)
             if (indexResult.candidates.isNotEmpty()) {
                 return indexResult
             }
@@ -97,7 +124,7 @@ class FdroidAppSearchService(
                 failures = apiResult.failures + indexResult.failures
             )
         }
-        return searchRepositoryIndex(repoUrl, query, packageName, limit)
+        return searchRepositoryIndex(repoUrl, query, packageName, limit, forceRefresh)
     }
 
     private suspend fun searchOfficialRepo(
@@ -154,14 +181,15 @@ class FdroidAppSearchService(
         repoUrl: String,
         query: String,
         packageName: String,
-        limit: Int
+        limit: Int,
+        forceRefresh: Boolean
     ): RepoSearchResult {
         val result = repositorySearchProvider.searchRepository(
             repoUrl = repoUrl,
             query = query,
             packageName = packageName,
             limit = limit,
-            forceRefresh = false
+            forceRefresh = forceRefresh
         )
         return result.fold(
             onSuccess = { repository ->
@@ -319,9 +347,20 @@ class FdroidAppSearchService(
             .replace(Regex("""\s+"""), " ")
 
     private data class RepoSearchResult(
+        val repoUrl: String = "",
         val candidates: List<FdroidAppSearchCandidate> = emptyList(),
-        val failures: List<FdroidAppSearchFailure> = emptyList()
-    )
+        val failures: List<FdroidAppSearchFailure> = emptyList(),
+        val elapsedMillis: Long = 0L
+    ) {
+        fun toReport(): FdroidAppSearchRepoReport {
+            return FdroidAppSearchRepoReport(
+                repoUrl = repoUrl,
+                candidateCount = candidates.size,
+                failureCount = failures.size,
+                elapsedMillis = elapsedMillis
+            )
+        }
+    }
 
     private inline fun <T> fdroidAppSearchResult(block: () -> T): Result<T> {
         return try {

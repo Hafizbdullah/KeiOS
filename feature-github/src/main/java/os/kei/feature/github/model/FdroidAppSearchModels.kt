@@ -10,7 +10,8 @@ data class FdroidAppSearchRequest(
     val packageName: String = "",
     val repoUrls: List<String>,
     val limit: Int = 12,
-    val includeOfficialSearchApi: Boolean = true
+    val includeOfficialSearchApi: Boolean = true,
+    val forceRefresh: Boolean = false
 )
 
 data class FdroidAppSearchCandidate(
@@ -39,10 +40,18 @@ data class FdroidAppSearchFailure(
     val message: String
 )
 
+data class FdroidAppSearchRepoReport(
+    val repoUrl: String,
+    val candidateCount: Int,
+    val failureCount: Int,
+    val elapsedMillis: Long
+)
+
 data class FdroidAppSearchResult(
     val query: String,
     val packageName: String,
     val searchedRepoUrls: List<String>,
     val candidates: List<FdroidAppSearchCandidate>,
-    val failures: List<FdroidAppSearchFailure> = emptyList()
+    val failures: List<FdroidAppSearchFailure> = emptyList(),
+    val repoReports: List<FdroidAppSearchRepoReport> = emptyList()
 )

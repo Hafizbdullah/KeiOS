@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchRequest
+import os.kei.feature.github.model.FdroidAppSearchRepoReport
 import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
@@ -54,6 +55,31 @@ internal class GitHubFdroidTrackSearchActions(
         )
     }
 
+    fun retryFailures() {
+        if (state.fdroidAppSearchRunning) return
+        if (state.trackSourceModeInput != GitHubTrackedSourceMode.FdroidRepository) return
+        val failedRepoUrls = state.fdroidAppSearchFailures
+            .map { failure -> failure.repoUrl.trim().trimEnd('/') }
+            .filter { url -> url.isNotBlank() }
+            .distinct()
+        if (failedRepoUrls.isEmpty()) return
+        val query = state.fdroidAppSearchQueryInput.trim()
+        val packageName = state.packageNameInput.trim()
+            .ifBlank { state.selectedApp?.packageName.orEmpty().trim() }
+        if (query.isBlank() && packageName.isBlank()) {
+            env.toast(R.string.github_toast_fdroid_search_requires_query)
+            return
+        }
+        runSearch(
+            query = query,
+            packageName = packageName,
+            emptyToastRes = R.string.github_toast_fdroid_search_no_match,
+            repoUrlsOverride = failedRepoUrls,
+            forceRefresh = true,
+            clearCandidates = false,
+        )
+    }
+
     fun selectCandidate(candidate: FdroidAppSearchCandidate) {
         cancel()
         state.repoUrlInput = candidate.repoUrl
@@ -61,6 +87,8 @@ internal class GitHubFdroidTrackSearchActions(
         state.fdroidSelectedCandidate = candidate
         state.fdroidAppSearchQueryInput = candidate.appName.ifBlank { candidate.packageName }
         state.fdroidAppSearchFailures = emptyList()
+        state.fdroidAppSearchFailuresExpanded = false
+        state.fdroidAppSearchRepoReports = emptyList()
         state.fdroidRepoScopeIdInput = candidate.repoPresetId.ifBlank {
             FdroidRepositoryPresets.presetForRepoUrl(candidate.repoUrl)?.id
                 ?: FdroidRepositoryPresets.CUSTOM_ID
@@ -82,6 +110,8 @@ internal class GitHubFdroidTrackSearchActions(
         searchJob?.cancel()
         searchJob = null
         state.fdroidAppSearchFailures = emptyList()
+        state.fdroidAppSearchFailuresExpanded = false
+        state.fdroidAppSearchRepoReports = emptyList()
         if (state.fdroidAppSearchRunning) {
             state.fdroidAppSearchRunning = false
         }
@@ -90,21 +120,34 @@ internal class GitHubFdroidTrackSearchActions(
     private fun runSearch(
         query: String,
         packageName: String,
-        emptyToastRes: Int
+        emptyToastRes: Int,
+        repoUrlsOverride: List<String>? = null,
+        forceRefresh: Boolean = false,
+        clearCandidates: Boolean = true,
     ) {
-        val repoUrls = FdroidRepositoryPresets.repoUrlsForScope(
-            scopeId = state.fdroidRepoScopeIdInput,
-            customRepoUrl = state.repoUrlInput,
-            commonRepoIds = state.lookupConfig.normalizedFdroidCommonRepoIds
-        )
+        val repoUrls =
+            repoUrlsOverride
+                ?: FdroidRepositoryPresets.repoUrlsForScope(
+                    scopeId = state.fdroidRepoScopeIdInput,
+                    customRepoUrl = state.repoUrlInput,
+                    commonRepoIds = state.lookupConfig.normalizedFdroidCommonRepoIds
+                )
         if (repoUrls.isEmpty()) {
             env.toast(R.string.github_toast_fill_repo_and_select_app)
             return
         }
         state.fdroidAppSearchRunning = true
-        state.fdroidAppSearchCandidates = emptyList()
+        if (clearCandidates) {
+            state.fdroidAppSearchCandidates = emptyList()
+        }
         state.fdroidAppSearchFailures = emptyList()
-        state.fdroidSelectedCandidate = null
+        state.fdroidAppSearchFailuresExpanded = false
+        if (clearCandidates) {
+            state.fdroidAppSearchRepoReports = emptyList()
+        }
+        if (clearCandidates) {
+            state.fdroidSelectedCandidate = null
+        }
         val generation = ++searchGeneration
         searchJob?.cancel()
         searchJob = scope.launch {
@@ -114,7 +157,8 @@ internal class GitHubFdroidTrackSearchActions(
                         query = query,
                         packageName = packageName,
                         repoUrls = repoUrls,
-                        limit = FDROID_SEARCH_LIMIT
+                        limit = FDROID_SEARCH_LIMIT,
+                        forceRefresh = forceRefresh
                     )
                 ).getOrElse { error ->
                     if (!isActive(generation)) return@launch
@@ -129,14 +173,27 @@ internal class GitHubFdroidTrackSearchActions(
                     return@launch
                 }
                 if (!isActive(generation)) return@launch
-                state.fdroidAppSearchCandidates = result.candidates
+                val newCandidateCount = result.candidates.size
+                state.fdroidAppSearchCandidates =
+                    if (clearCandidates) {
+                        result.candidates
+                    } else {
+                        mergeCandidates(state.fdroidAppSearchCandidates, result.candidates)
+                    }
                 state.fdroidAppSearchFailures = result.failures
-                if (result.candidates.isEmpty()) {
+                state.fdroidAppSearchRepoReports =
+                    if (clearCandidates) {
+                        result.repoReports
+                    } else {
+                        mergeRepoReports(state.fdroidAppSearchRepoReports, result.repoReports)
+                    }
+                if (state.fdroidAppSearchCandidates.isEmpty()) {
                     env.toast(emptyToastRes)
                 } else {
                     env.toast(
                         R.string.github_toast_fdroid_search_candidates_found,
-                        result.candidates.size
+                        newCandidateCount.takeIf { count -> count > 0 }
+                            ?: state.fdroidAppSearchCandidates.size
                     )
                 }
             } finally {
@@ -152,6 +209,32 @@ internal class GitHubFdroidTrackSearchActions(
         return generation == searchGeneration &&
             state.showAddSheet &&
             state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository
+    }
+
+    private fun mergeCandidates(
+        current: List<FdroidAppSearchCandidate>,
+        incoming: List<FdroidAppSearchCandidate>
+    ): List<FdroidAppSearchCandidate> {
+        return (current + incoming)
+            .distinctBy { candidate ->
+                candidate.repoUrl.trim().trimEnd('/') +
+                    "|" +
+                    candidate.packageName.trim().lowercase()
+            }
+    }
+
+    private fun mergeRepoReports(
+        current: List<FdroidAppSearchRepoReport>,
+        incoming: List<FdroidAppSearchRepoReport>
+    ): List<FdroidAppSearchRepoReport> {
+        val merged = LinkedHashMap<String, FdroidAppSearchRepoReport>()
+        current.forEach { report ->
+            merged[report.repoUrl.trim().trimEnd('/')] = report
+        }
+        incoming.forEach { report ->
+            merged[report.repoUrl.trim().trimEnd('/')] = report
+        }
+        return merged.values.toList()
     }
 
     private companion object {
