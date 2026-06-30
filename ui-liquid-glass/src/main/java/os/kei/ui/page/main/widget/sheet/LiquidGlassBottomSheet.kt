@@ -89,7 +89,7 @@ val LocalLiquidSheetManagedScrollableContentReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetVisibleHeightPx =
     compositionLocalOf<(() -> Int)?> { null }
-val LocalLiquidSheetEnabled = compositionLocalOf { true }
+val LocalLiquidSheetEnabled = compositionLocalOf { false }
 
 /**
  * Liquid glass bottom sheet.

@@ -64,6 +64,7 @@ import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -479,6 +480,22 @@ fun SnapshotWindowBottomSheet(
             onBlockedDismissRequest = { blockedDismissPromptToken++ },
         )
 
+    val sheetVisualMode =
+        if (useLiquidGlassSheet) {
+            SheetVisualMode.Liquid
+        } else {
+            SheetVisualMode.Miuix
+        }
+    val sheetContent: @Composable () -> Unit = {
+        CompositionLocalProvider(LocalSheetVisualMode provides sheetVisualMode) {
+            content()
+        }
+    }
+
+    val miuixSheetBackgroundColor =
+        (backgroundColor ?: BottomSheetDefaults.backgroundColor())
+            .opaqueCompositeOver(MiuixTheme.colorScheme.background)
+
     if (useLiquidGlassSheet) {
         LiquidGlassBottomSheet(
             show = show,
@@ -501,7 +518,7 @@ fun SnapshotWindowBottomSheet(
             enableNestedScroll = enableNestedScroll,
             initialDetent = initialDetent,
             surfaceTone = surfaceTone,
-            content = content,
+            content = sheetContent,
         )
     } else {
         WindowBottomSheet(
@@ -510,7 +527,7 @@ fun SnapshotWindowBottomSheet(
             title = title,
             startAction = startAction,
             endAction = endAction,
-            backgroundColor = backgroundColor ?: BottomSheetDefaults.backgroundColor(),
+            backgroundColor = miuixSheetBackgroundColor,
             enableWindowDim = enableWindowDim,
             cornerRadius = cornerRadius,
             sheetMaxWidth = sheetMaxWidth,
@@ -522,7 +539,7 @@ fun SnapshotWindowBottomSheet(
             dragHandleColor = dragHandleColor ?: BottomSheetDefaults.dragHandleColor(),
             allowDismiss = allowDismiss,
             enableNestedScroll = enableNestedScroll,
-            content = content,
+            content = sheetContent,
         )
     }
 
