@@ -177,13 +177,13 @@ internal class SettingsPageRepository(
         }
     }
 
-    suspend fun deleteManagedNonHomeBackgroundFile(
+    suspend fun trimManagedNonHomeBackgroundFiles(
         context: Context,
-        uriText: String,
+        keepUriText: String,
     ) {
         val appContext = context.applicationContext
         withContext(ioDispatcher) {
-            deleteManagedNonHomeBackgroundFileSync(appContext, uriText)
+            trimManagedNonHomeBackgroundFilesSync(appContext, keepUriText)
         }
     }
 }
@@ -225,22 +225,46 @@ private fun resolveNonHomeBackgroundCropSize(context: Context): Pair<Int, Int> {
     return width to height
 }
 
-private fun deleteManagedNonHomeBackgroundFileSync(
+internal fun trimManagedNonHomeBackgroundFilesSync(
+    context: Context,
+    keepUriText: String,
+) {
+    val dir = File(context.filesDir, NON_HOME_BACKGROUND_CROP_DIR)
+    val keepFile = resolveManagedNonHomeBackgroundFile(context, keepUriText)
+    val keepPath = keepFile?.safeCanonicalPath()
+    dir
+        .listFiles()
+        .orEmpty()
+        .asSequence()
+        .filter { it.isFile }
+        .filter { it.name.startsWith(NON_HOME_BACKGROUND_CROP_FILE_PREFIX) }
+        .filter { keepPath == null || it.safeCanonicalPath() != keepPath }
+        .forEach { file ->
+            runCatching { file.delete() }
+        }
+}
+
+private fun resolveManagedNonHomeBackgroundFile(
     context: Context,
     uriText: String,
-) {
-    if (uriText.isBlank()) return
-    val uri = runCatching { uriText.toUri() }.getOrNull() ?: return
-    val target =
-        when (uri.scheme) {
-            "file" -> File(uri.path ?: return)
-            "content" -> resolveManagedNonHomeBackgroundFileByContentUri(context, uri) ?: return
-            else -> return
-        }
-    if (target.name.startsWith(NON_HOME_BACKGROUND_CROP_FILE_PREFIX).not()) return
-    if (target.parentFile?.name != NON_HOME_BACKGROUND_CROP_DIR) return
-    runCatching { target.delete() }
+): File? {
+    if (uriText.isBlank()) return null
+    val uri = runCatching { uriText.toUri() }.getOrNull() ?: return null
+    return when (uri.scheme) {
+        "file" -> File(uri.path ?: return null).takeIf(::isManagedNonHomeBackgroundFile)
+        "content" -> resolveManagedNonHomeBackgroundFileByContentUri(context, uri)
+        else -> null
+    }
 }
+
+private fun isManagedNonHomeBackgroundFile(file: File): Boolean {
+    if (!file.name.startsWith(NON_HOME_BACKGROUND_CROP_FILE_PREFIX)) return false
+    if (file.parentFile?.name != NON_HOME_BACKGROUND_CROP_DIR) return false
+    return true
+}
+
+private fun File.safeCanonicalPath(): String =
+    runCatching { canonicalPath }.getOrDefault(absolutePath)
 
 private fun resolveManagedNonHomeBackgroundFileByContentUri(
     context: Context,

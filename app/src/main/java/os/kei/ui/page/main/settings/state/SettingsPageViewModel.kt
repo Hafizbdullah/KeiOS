@@ -308,14 +308,14 @@ internal class SettingsPageViewModel : ViewModel() {
         }
     }
 
-    fun deleteManagedNonHomeBackgroundFile(
+    fun trimManagedNonHomeBackgroundFiles(
         context: Context,
-        uriText: String,
+        keepUriText: String,
     ) {
         viewModelScope.launch {
-            repository.deleteManagedNonHomeBackgroundFile(
+            repository.trimManagedNonHomeBackgroundFiles(
                 context = context.applicationContext,
-                uriText = uriText,
+                keepUriText = keepUriText,
             )
         }
     }

@@ -49,6 +49,7 @@ internal fun rememberSettingsBackgroundController(
                         }
                     settingsPageViewModel.notifyNonHomeBackgroundCropFailed(reason)
                 }
+                settingsPageViewModel.trimManagedNonHomeBackgroundFiles(context, latestBackgroundUri)
                 return@rememberLauncherForActivityResult
             }
 
@@ -60,11 +61,11 @@ internal fun rememberSettingsBackgroundController(
                     return@rememberLauncherForActivityResult
                 }
 
-            settingsPageViewModel.deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
             latestOnBackgroundUriChange(outputUri.toString())
             if (!latestBackgroundEnabled) {
                 latestOnBackgroundEnabledChange(true)
             }
+            settingsPageViewModel.trimManagedNonHomeBackgroundFiles(context, outputUri.toString())
             settingsPageViewModel.notifyNonHomeBackgroundSelected()
         }
 
@@ -83,6 +84,10 @@ internal fun rememberSettingsBackgroundController(
                     runCatching {
                         cropLauncher.launch(event.intent)
                     }.onFailure { error ->
+                        settingsPageViewModel.trimManagedNonHomeBackgroundFiles(
+                            context = context,
+                            keepUriText = latestBackgroundUri,
+                        )
                         val reason =
                             error.javaClass.simpleName.ifBlank {
                                 context.resolveString(R.string.common_unknown)
@@ -98,7 +103,7 @@ internal fun rememberSettingsBackgroundController(
         SettingsBackgroundController(
             backgroundPickerLauncher = pickerLauncher,
             clearBackground = {
-                settingsPageViewModel.deleteManagedNonHomeBackgroundFile(context, latestBackgroundUri)
+                settingsPageViewModel.trimManagedNonHomeBackgroundFiles(context, keepUriText = "")
                 latestOnBackgroundUriChange("")
                 settingsPageViewModel.notifyNonHomeBackgroundCleared()
             },
