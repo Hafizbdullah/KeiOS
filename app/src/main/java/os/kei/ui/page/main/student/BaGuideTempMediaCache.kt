@@ -2,6 +2,8 @@ package os.kei.ui.page.main.student
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import java.io.File
@@ -45,6 +47,7 @@ object BaGuideTempMediaCache {
     private val cacheIndex = BaGuideTempMediaIndex(clock)
     private val prefetcher = BaGuideTempMediaPrefetcher(cacheIndex, clock)
     private val resolver = BaGuideTempMediaCacheResolver(clock)
+    private val retainer = BaGuideTempMediaRetainer(cacheIndex)
 
     suspend fun prefetchForGuide(
         context: Context,
@@ -97,6 +100,16 @@ object BaGuideTempMediaCache {
         cacheIndex.removeSessionIndex(sourceUrl)
     }
 
+    internal suspend fun retainGuideMediaCache(
+        context: Context,
+        sourceUrl: String,
+        retainedRawUrls: Set<String>,
+        ioDispatcher: CoroutineDispatcher = AppDispatchers.media,
+    ): BaGuideMediaCacheSessionSummary =
+        withContext(ioDispatcher) {
+            retainer.retainGuideMediaCache(context, sourceUrl, retainedRawUrls)
+        }
+
     fun clearMediaCache(
         context: Context,
         sourceUrl: String,
@@ -123,4 +136,40 @@ object BaGuideTempMediaCache {
     fun latestModifiedAtMs(context: Context): Long = cacheIndex.loadIndexSummary(context).latest
 
     internal fun activeDownloadLockCount(): Int = prefetcher.activeDownloadLockCount()
+}
+
+internal class BaGuideTempMediaRetainer(
+    private val indexUpdater: BaGuideTempMediaSessionIndexUpdater,
+) {
+    suspend fun retainGuideMediaCache(
+        context: Context,
+        sourceUrl: String,
+        retainedRawUrls: Set<String>,
+    ): BaGuideMediaCacheSessionSummary {
+        val sessionDir = baGuideTempMediaSessionDir(context, sourceUrl)
+        if (!sessionDir.exists()) {
+            indexUpdater.rebuildSessionIndex(context, sourceUrl)
+            return scanBaGuideMediaCacheSession(sessionDir)
+        }
+        val retainedFileNames =
+            retainedRawUrls
+                .asSequence()
+                .map(::baGuideNormalizeMediaTarget)
+                .filter { it.isNotBlank() }
+                .map { normalized -> baGuideTempMediaTargetFile(context, sourceUrl, normalized).name }
+                .toSet()
+        sessionDir
+            .listFiles()
+            .orEmpty()
+            .filter { it.isFile }
+            .forEachIndexed { index, file ->
+                if (index % 32 == 0) currentCoroutineContext().ensureActive()
+                if (file.name.endsWith(".part", ignoreCase = true)) return@forEachIndexed
+                if (file.name !in retainedFileNames) {
+                    runCatching { file.delete() }
+                }
+            }
+        indexUpdater.rebuildSessionIndex(context, sourceUrl)
+        return scanBaGuideMediaCacheSession(sessionDir)
+    }
 }

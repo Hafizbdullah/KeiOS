@@ -26,6 +26,7 @@ import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogJsonExportRequest
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPageChromeState
+import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaGuideCatalogDataUiState(
@@ -46,9 +47,11 @@ internal class BaGuideCatalogViewModel(
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaGuideCatalogRepository()
+    private val detailRepository = BaStudentGuideRepository()
     private var binding: BaGuideCatalogBinding? = null
     private var loadJob: Job? = null
     private var hydrateJob: Job? = null
+    private var detailValidationJob: Job? = null
     private var hydratedSyncedAtMs: Long = -1L
     private val listDerivationController =
         BaGuideCatalogListDerivationController(
@@ -139,6 +142,7 @@ internal class BaGuideCatalogViewModel(
     init {
         viewModelScope.launch {
             _catalogFavoriteEntries.value = repository.loadCatalogFavorites()
+            scheduleStudentDetailValidation(_dataState.value.catalog)
         }
         viewModelScope.launch {
             repository.hydrateBgmFavorites()
@@ -606,6 +610,31 @@ internal class BaGuideCatalogViewModel(
                         error = result.error,
                     )
                 hydrateReleaseDatesIfNeeded(result.catalog)
+                scheduleStudentDetailValidation(result.catalog)
+            }
+    }
+
+    private fun scheduleStudentDetailValidation(catalog: BaGuideCatalogBundle) {
+        if (catalog.entriesByTab.values.all { it.isEmpty() }) return
+        detailValidationJob?.cancel()
+        detailValidationJob =
+            viewModelScope.launch {
+                try {
+                    delay(CATALOG_DETAIL_VALIDATION_INITIAL_REST_MS.milliseconds)
+                    val currentSourceUrl = detailRepository.loadCurrentUrlAsync()
+                    detailRepository.validateFavoriteAndRecentStudentDetails(
+                        context = appContext,
+                        catalog = catalog,
+                        favoriteContentIdsByFavoritedAtMs = _catalogFavoriteEntries.value,
+                        recentSourceUrls = listOf(currentSourceUrl),
+                        maxCandidates = CATALOG_DETAIL_VALIDATION_MAX_CANDIDATES,
+                        maxParallelism = CATALOG_DETAIL_VALIDATION_MAX_PARALLELISM,
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (_: Throwable) {
+                    // Background cache validation should never interrupt the catalog page.
+                }
             }
     }
 
@@ -635,6 +664,7 @@ internal class BaGuideCatalogViewModel(
     override fun onCleared() {
         loadJob?.cancel()
         hydrateJob?.cancel()
+        detailValidationJob?.cancel()
         listDerivationController.cancel()
         bgmCacheController.cancel()
         imageController.clearLoadingState()
@@ -643,5 +673,8 @@ internal class BaGuideCatalogViewModel(
 
     private companion object {
         const val CATALOG_RELEASE_DATE_HYDRATE_INITIAL_REST_MS = 900L
+        const val CATALOG_DETAIL_VALIDATION_INITIAL_REST_MS = 1_800L
+        const val CATALOG_DETAIL_VALIDATION_MAX_CANDIDATES = 4
+        const val CATALOG_DETAIL_VALIDATION_MAX_PARALLELISM = 1
     }
 }

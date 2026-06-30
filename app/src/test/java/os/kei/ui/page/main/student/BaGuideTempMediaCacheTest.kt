@@ -3,12 +3,14 @@ package os.kei.ui.page.main.student
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class, sdk = [35])
@@ -65,6 +67,49 @@ class BaGuideTempMediaCacheTest {
         assertEquals(1, summary.count)
         assertEquals(5L, summary.bytes)
         sessionDir.deleteRecursively()
+    }
+
+    @Test
+    fun `retain guide media cache keeps referenced media and removes stale media`() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val sourceUrl = "$SOURCE_URL-retain-${System.nanoTime()}"
+            val retainedRawUrl = "https://example.com/media/keep.png?token=1"
+            val staleRawUrl = "https://example.com/media/stale.png"
+            val retainedFile =
+                baGuideTempMediaTargetFile(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    normalizedUrl = baGuideNormalizeMediaTarget(retainedRawUrl),
+                ).apply {
+                    parentFile?.mkdirs()
+                    writeText("keep")
+                }
+            val staleFile =
+                baGuideTempMediaTargetFile(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    normalizedUrl = baGuideNormalizeMediaTarget(staleRawUrl),
+                ).apply {
+                    parentFile?.mkdirs()
+                    writeText("stale")
+                }
+
+            val summary =
+                BaGuideTempMediaRetainer(
+                    indexUpdater = BaGuideTempMediaSessionIndexUpdater { _, _ -> },
+                ).retainGuideMediaCache(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    retainedRawUrls = setOf(retainedRawUrl, retainedRawUrl),
+                )
+
+            assertTrue(retainedFile.exists())
+            assertFalse(staleFile.exists())
+            assertEquals(1, summary.count)
+            assertEquals(4L, summary.bytes)
+            baGuideTempMediaSessionDir(context, sourceUrl).deleteRecursively()
+        }
     }
 
     private fun newScanDir(name: String): File {

@@ -2,6 +2,8 @@ package os.kei.ui.page.main.student.page.support
 
 import org.junit.Test
 import os.kei.ui.page.main.student.BaGuideGalleryItem
+import os.kei.ui.page.main.student.BaGuideRow
+import os.kei.ui.page.main.student.BaGuideVoiceEntry
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import kotlin.test.assertEquals
 
@@ -127,6 +129,76 @@ class BaStudentGuideMediaSupportTest {
             listOf(
                 "https://img.example.com/static.png",
                 "https://img.example.com/static.webp",
+            ),
+            urls,
+        )
+    }
+
+    @Test
+    fun `media cache urls include detail rows gallery voice and tab icons`() {
+        val info =
+            guideInfo(
+                imageUrl = "https://img.example.com/cover.png",
+                galleryItems =
+                    listOf(
+                        BaGuideGalleryItem(
+                            title = "立绘",
+                            imageUrl = "https://img.example.com/gallery.png",
+                            mediaUrl = "https://img.example.com/gallery-large.webp",
+                        ),
+                    ),
+            ).copy(
+                skillRows =
+                    listOf(
+                        BaGuideRow(
+                            key = "EX",
+                            value = "desc",
+                            imageUrl = "https://img.example.com/skill.png",
+                            imageUrls =
+                                listOf(
+                                    "https://img.example.com/skill-extra.png",
+                                    "https://img.example.com/skill.png",
+                                ),
+                        ),
+                    ),
+                profileRows = listOf(BaGuideRow("武器", "desc", imageUrl = "https://img.example.com/profile.png")),
+                voiceEntries =
+                    listOf(
+                        BaGuideVoiceEntry(
+                            section = "大厅",
+                            title = "登录",
+                            audioUrls =
+                                listOf(
+                                    "https://audio.example.com/login.ogg",
+                                    "https://audio.example.com/login.ogg",
+                                ),
+                            audioUrl = "https://audio.example.com/fallback.mp3",
+                        ),
+                    ),
+                tabSkillIconUrl = "https://img.example.com/tab-skill.png",
+                tabProfileIconUrl = "https://img.example.com/tab-profile.png",
+                tabVoiceIconUrl = "https://img.example.com/tab-voice.png",
+                tabGalleryIconUrl = "https://img.example.com/tab-gallery.png",
+                tabSimulateIconUrl = "https://img.example.com/tab-sim.png",
+            )
+
+        val urls = collectGuideMediaCacheUrls(info)
+
+        assertEquals(
+            listOf(
+                "https://img.example.com/cover.png",
+                "https://img.example.com/skill.png",
+                "https://img.example.com/skill-extra.png",
+                "https://img.example.com/profile.png",
+                "https://img.example.com/gallery.png",
+                "https://img.example.com/gallery-large.webp",
+                "https://audio.example.com/login.ogg",
+                "https://audio.example.com/fallback.mp3",
+                "https://img.example.com/tab-skill.png",
+                "https://img.example.com/tab-profile.png",
+                "https://img.example.com/tab-voice.png",
+                "https://img.example.com/tab-gallery.png",
+                "https://img.example.com/tab-sim.png",
             ),
             urls,
         )

@@ -137,6 +137,99 @@ class BaStudentGuideRepositoryTest {
         }
 
     @Test
+    fun `manual refresh implemented student detail retains referenced media instead of clearing complete cache`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10021.html"
+            val cached = guideInfo(sourceUrl = sourceUrl, title = "媒体旧缓存", syncedAtMs = nowMs - DAY_MS)
+            val latest =
+                guideInfo(sourceUrl = sourceUrl, title = "媒体新详情", syncedAtMs = nowMs).copy(
+                    skillRows = listOf(BaGuideRow("EX", "desc", imageUrl = "https://example.com/skill.png")),
+                )
+            val metaStore = tempMetaStore(context)
+            var clearCalled = false
+            var retainedSourceUrl = ""
+            var retainedUrls: Set<String> = emptySet()
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalogBundle(
+                        catalogEntry(
+                            sourceUrl = sourceUrl,
+                            contentId = 10021L,
+                            tab = BaGuideCatalogTab.Student,
+                            createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                        ),
+                    ),
+                    metaStore = metaStore,
+                    fetcher = { latest },
+                    clearer = { _, _ -> clearCalled = true },
+                    mediaRetainer = { _, url, urls ->
+                        retainedSourceUrl = url
+                        retainedUrls = urls
+                    },
+                )
+
+            val result =
+                repository.loadGuide(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    currentInfo = cached,
+                    manualRefresh = true,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(latest, result.info)
+            assertFalse(clearCalled)
+            assertEquals(sourceUrl, retainedSourceUrl)
+            assertTrue(retainedUrls.contains("https://example.com/媒体新详情.png"))
+            assertTrue(retainedUrls.contains("https://example.com/skill.png"))
+        }
+
+    @Test
+    fun `implemented student incomplete cache still clears before saving refreshed detail`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10022.html"
+            val latest = guideInfo(sourceUrl = sourceUrl, title = "补全详情", syncedAtMs = nowMs)
+            val metaStore = tempMetaStore(context)
+            var clearedSourceUrl = ""
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(null, hasCache = true, isComplete = false, syncedAtMs = 0L),
+                    catalog = catalogBundle(
+                        catalogEntry(
+                            sourceUrl = sourceUrl,
+                            contentId = 10022L,
+                            tab = BaGuideCatalogTab.Student,
+                            createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                        ),
+                    ),
+                    metaStore = metaStore,
+                    fetcher = { latest },
+                    clearer = { _, url -> clearedSourceUrl = url },
+                )
+
+            val result =
+                repository.loadGuide(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    currentInfo = null,
+                    manualRefresh = false,
+                    loadFailedText = "加载失败",
+                    refreshFailedKeepCacheText = "保留缓存",
+                )
+
+            assertEquals(latest, result.info)
+            assertEquals(sourceUrl, clearedSourceUrl)
+        }
+
+    @Test
     fun `expired hot update student cache returns first paint and requests background validation`() =
         runBlocking {
             val context = ApplicationProvider.getApplicationContext<Application>()
@@ -529,15 +622,193 @@ class BaStudentGuideRepositoryTest {
             assertNull(metaStore.loadMeta(sourceUrl))
         }
 
+    @Test
+    fun `clear orphan student detail cache removes stale meta and cached payload`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val oldUrl = "https://www.gamekee.com/ba/tj/10031-old.html"
+            val newUrl = "https://www.gamekee.com/ba/tj/10031.html"
+            val keepUrl = "https://www.gamekee.com/ba/tj/10032.html"
+            val metaStore = tempMetaStore(context)
+            val oldMeta =
+                detailMeta(
+                    sourceUrl = oldUrl,
+                    contentId = 10031L,
+                    tier = BaGuideStudentDetailFreshnessTier.Stable,
+                    catalogCreatedAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    cachedAtMs = nowMs - DAY_MS,
+                    lastValidatedAtMs = nowMs - HOUR_MS,
+                )
+            val keepMeta =
+                detailMeta(
+                    sourceUrl = keepUrl,
+                    contentId = 10032L,
+                    tier = BaGuideStudentDetailFreshnessTier.Stable,
+                    catalogCreatedAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    cachedAtMs = nowMs - DAY_MS,
+                    lastValidatedAtMs = nowMs - HOUR_MS,
+                )
+            metaStore.saveMeta(oldMeta)
+            metaStore.saveMeta(keepMeta)
+            val clearedUrls = mutableListOf<String>()
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot.EMPTY,
+                    catalog =
+                        catalogBundle(
+                            catalogEntry(
+                                sourceUrl = newUrl,
+                                contentId = 10031L,
+                                tab = BaGuideCatalogTab.Student,
+                                createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                            ),
+                            catalogEntry(
+                                sourceUrl = keepUrl,
+                                contentId = 10032L,
+                                tab = BaGuideCatalogTab.Student,
+                                createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                            ),
+                        ),
+                    metaStore = metaStore,
+                    fetcher = { guideInfo(sourceUrl = it, title = "网络学生", syncedAtMs = nowMs) },
+                    clearer = { _, url -> clearedUrls += url },
+                )
+
+            val removedCount = repository.clearOrphanStudentDetailCache(context)
+
+            assertEquals(1, removedCount)
+            assertEquals(listOf(oldUrl), clearedUrls)
+            assertNull(metaStore.loadMeta(oldUrl))
+            assertEquals(keepMeta, metaStore.loadMeta(keepUrl))
+        }
+
+    @Test
+    fun `background validation candidates prefer recent and newest favorites within limit`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val recentUrl = "https://www.gamekee.com/ba/tj/10041.html"
+            val favoriteNewUrl = "https://www.gamekee.com/ba/tj/10042.html"
+            val favoriteOldUrl = "https://www.gamekee.com/ba/tj/10043.html"
+            val npcUrl = "https://www.gamekee.com/ba/tj/10044.html"
+            val catalog =
+                catalogBundle(
+                    catalogEntry(
+                        sourceUrl = recentUrl,
+                        contentId = 10041L,
+                        tab = BaGuideCatalogTab.Student,
+                        createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    ),
+                    catalogEntry(
+                        sourceUrl = favoriteNewUrl,
+                        contentId = 10042L,
+                        tab = BaGuideCatalogTab.Student,
+                        createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    ),
+                    catalogEntry(
+                        sourceUrl = favoriteOldUrl,
+                        contentId = 10043L,
+                        tab = BaGuideCatalogTab.Student,
+                        createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    ),
+                    catalogEntry(
+                        sourceUrl = npcUrl,
+                        contentId = 10044L,
+                        tab = BaGuideCatalogTab.NpcSatellite,
+                        createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    ),
+                )
+            val fetchedUrls = mutableListOf<String>()
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot.EMPTY,
+                    catalog = catalog,
+                    metaStore = tempMetaStore(context),
+                    fetcher = { sourceUrl ->
+                        fetchedUrls += sourceUrl
+                        guideInfo(sourceUrl = sourceUrl, title = "网络学生", syncedAtMs = nowMs)
+                    },
+                )
+
+            val summary =
+                repository.validateFavoriteAndRecentStudentDetails(
+                    context = context,
+                    catalog = catalog,
+                    favoriteContentIdsByFavoritedAtMs =
+                        mapOf(
+                            10043L to nowMs - HOUR_MS,
+                            10042L to nowMs,
+                            10044L to nowMs + HOUR_MS,
+                        ),
+                    recentSourceUrls = listOf(recentUrl, npcUrl),
+                    maxCandidates = 2,
+                    maxParallelism = 1,
+                )
+
+            assertEquals(2, summary.candidateCount)
+            assertEquals(2, summary.completedCount)
+            assertEquals(0, summary.failedCount)
+            assertEquals(listOf(recentUrl, favoriteNewUrl), fetchedUrls)
+        }
+
+    @Test
+    fun `background validation skips fresh cached favorite without network fetch`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10045.html"
+            val cached = guideInfo(sourceUrl = sourceUrl, title = "新鲜缓存", syncedAtMs = nowMs - HOUR_MS)
+            val catalog =
+                catalogBundle(
+                    catalogEntry(
+                        sourceUrl = sourceUrl,
+                        contentId = 10045L,
+                        tab = BaGuideCatalogTab.Student,
+                        createdAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    ),
+                )
+            var fetchCalled = false
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot(cached, hasCache = true, isComplete = true, cached.syncedAtMs),
+                    catalog = catalog,
+                    metaStore = tempMetaStore(context),
+                    fetcher = {
+                        fetchCalled = true
+                        guideInfo(sourceUrl = sourceUrl, title = "网络学生", syncedAtMs = nowMs)
+                    },
+                )
+
+            val summary =
+                repository.validateFavoriteAndRecentStudentDetails(
+                    context = context,
+                    catalog = catalog,
+                    favoriteContentIdsByFavoritedAtMs = mapOf(10045L to nowMs),
+                    recentSourceUrls = emptyList(),
+                    maxCandidates = 4,
+                    maxParallelism = 1,
+                )
+
+            assertEquals(1, summary.candidateCount)
+            assertEquals(1, summary.completedCount)
+            assertFalse(fetchCalled)
+        }
+
     private fun repository(
         nowMs: Long,
         refreshIntervalHours: Int = 12,
         cacheSnapshot: BaStudentGuideCacheSnapshot,
+        cacheSnapshotLoader: suspend (String) -> BaStudentGuideCacheSnapshot = { cacheSnapshot },
         catalog: BaGuideCatalogBundle?,
         metaStore: BaGuideStudentDetailFileCacheStore,
         fetcher: suspend (String) -> BaStudentGuideInfo,
         saver: suspend (BaStudentGuideInfo) -> Unit = {},
         clearer: suspend (Context, String) -> Unit = { _, _ -> },
+        mediaRetainer: suspend (Context, String, Set<String>) -> Unit = { _, _, _ -> },
         releaseDateIndexUpserter: suspend (Map<Long, Long>) -> Unit = {},
     ): BaStudentGuideRepository =
         BaStudentGuideRepository(
@@ -545,9 +816,10 @@ class BaStudentGuideRepositoryTest {
             parseDispatcher = Dispatchers.Unconfined,
             clock = BaGuideDataClock { nowMs },
             refreshIntervalLoader = { refreshIntervalHours },
-            cacheSnapshotLoader = { cacheSnapshot },
+            cacheSnapshotLoader = cacheSnapshotLoader,
             cacheSaver = saver,
             cacheClearer = clearer,
+            mediaCacheRetainer = mediaRetainer,
             guideFetcher = { sourceUrl, _, _, _ -> fetcher(sourceUrl) },
             catalogBundleLoader = { catalog },
             detailCacheStoreProvider = { metaStore },
@@ -579,13 +851,13 @@ class BaStudentGuideRepositoryTest {
             syncedAtMs = syncedAtMs,
         )
 
-    private fun catalogBundle(entry: BaGuideCatalogEntry): BaGuideCatalogBundle =
+    private fun catalogBundle(vararg entries: BaGuideCatalogEntry): BaGuideCatalogBundle =
         BaGuideCatalogBundle(
             entriesByTab =
                 mapOf(
-                    BaGuideCatalogTab.Student to listOf(entry).filter { it.tab == BaGuideCatalogTab.Student },
+                    BaGuideCatalogTab.Student to entries.toList().filter { it.tab == BaGuideCatalogTab.Student },
                     BaGuideCatalogTab.NpcSatellite to
-                        listOf(entry).filter { it.tab == BaGuideCatalogTab.NpcSatellite },
+                        entries.toList().filter { it.tab == BaGuideCatalogTab.NpcSatellite },
                 ),
             syncedAtMs = 1_000L,
         )

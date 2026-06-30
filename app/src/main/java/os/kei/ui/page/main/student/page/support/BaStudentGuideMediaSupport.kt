@@ -8,7 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
+import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.baGuideNormalizeMediaTarget
 import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.hasRenderableGalleryMedia
 import os.kei.ui.page.main.student.isMemoryHallFileGalleryItem
@@ -65,6 +67,45 @@ internal fun collectGuideStaticImagePrefetchUrls(
         if (addPrefetchUrl(item.imageUrl)) break
         if (addPrefetchUrl(item.mediaUrl)) break
     }
+    return orderedUrls.toList()
+}
+
+internal fun collectGuideMediaCacheUrls(info: BaStudentGuideInfo): List<String> {
+    val orderedUrls = LinkedHashSet<String>()
+
+    fun addMediaUrl(raw: String) {
+        val normalized = baGuideNormalizeMediaTarget(raw)
+        if (normalized.isNotBlank()) {
+            orderedUrls += normalized
+        }
+    }
+
+    fun addRows(rows: List<BaGuideRow>) {
+        rows.forEach { row ->
+            addMediaUrl(row.imageUrl)
+            row.imageUrls.forEach(::addMediaUrl)
+        }
+    }
+
+    addMediaUrl(info.imageUrl)
+    addRows(info.skillRows)
+    addRows(info.profileRows)
+    addRows(info.growthRows)
+    addRows(info.simulateRows)
+    addRows(info.voiceRows)
+    info.galleryItems.forEach { item ->
+        addMediaUrl(item.imageUrl)
+        addMediaUrl(item.mediaUrl)
+    }
+    info.voiceEntries.forEach { entry ->
+        entry.audioUrls.forEach(::addMediaUrl)
+        addMediaUrl(entry.audioUrl)
+    }
+    addMediaUrl(info.tabSkillIconUrl)
+    addMediaUrl(info.tabProfileIconUrl)
+    addMediaUrl(info.tabVoiceIconUrl)
+    addMediaUrl(info.tabGalleryIconUrl)
+    addMediaUrl(info.tabSimulateIconUrl)
     return orderedUrls.toList()
 }
 

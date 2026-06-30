@@ -1,10 +1,17 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.content.Context
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
@@ -31,6 +38,7 @@ import os.kei.ui.page.main.student.fetch.extractGuideContentIdFromUrl
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.isNpcSatelliteLikeGuide
 import os.kei.ui.page.main.student.normalizeStudentGuideSourceUrl
+import os.kei.ui.page.main.student.page.support.collectGuideMediaCacheUrls
 import os.kei.ui.page.main.student.page.support.collectGuideStaticImagePrefetchUrls
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
@@ -44,6 +52,12 @@ internal data class BaStudentGuideLoadResult(
 
 internal data class BaStudentGuideMediaSettings(
     val mediaAdaptiveRotationEnabled: Boolean = false,
+)
+
+internal data class BaStudentGuideBackgroundValidationSummary(
+    val candidateCount: Int = 0,
+    val completedCount: Int = 0,
+    val failedCount: Int = 0,
 )
 
 private data class BaStudentGuideDetailCacheContext(
@@ -68,6 +82,13 @@ internal class BaStudentGuideRepository(
     private val cacheClearer: suspend (Context, String) -> Unit = { context, sourceUrl ->
         BaStudentGuideStore.clearCachedInfo(sourceUrl)
         BaGuideTempMediaCache.clearGuideCache(context, sourceUrl)
+    },
+    private val mediaCacheRetainer: suspend (Context, String, Set<String>) -> Unit = { context, sourceUrl, rawUrls ->
+        BaGuideTempMediaCache.retainGuideMediaCache(
+            context = context,
+            sourceUrl = sourceUrl,
+            retainedRawUrls = rawUrls,
+        )
     },
     private val guideFetcher: suspend (
         String,
@@ -140,6 +161,73 @@ internal class BaStudentGuideRepository(
                 ?.takeIf { meta -> meta.sourceUrl != requestUrl }
                 ?.let { meta -> store.remove(meta.sourceUrl) }
         }
+    }
+
+    suspend fun clearOrphanStudentDetailCache(context: Context): Int =
+        withContext(ioDispatcher) {
+            val activeSourcesByContentId =
+                catalogBundleLoader()
+                    ?.entries(BaGuideCatalogTab.Student)
+                    .orEmpty()
+                    .asSequence()
+                    .filter { entry -> entry.contentId > 0L }
+                    .groupBy(
+                        keySelector = { entry -> entry.contentId },
+                        valueTransform = { entry -> normalizeStudentGuideSourceUrl(entry.detailUrl) },
+                    ).mapValues { (_, urls) ->
+                        urls.filter { sourceUrl -> sourceUrl.isNotBlank() }.toSet()
+                    }.filterValues { urls -> urls.isNotEmpty() }
+            if (activeSourcesByContentId.isEmpty()) return@withContext 0
+            val removed =
+                detailCacheStoreProvider(context)
+                    .removeOrphanStudentMetas(activeSourcesByContentId)
+            removed.forEachIndexed { index, meta ->
+                if (index % 16 == 0) currentCoroutineContext().ensureActive()
+                cacheClearer(context, meta.sourceUrl)
+            }
+            removed.size
+        }
+
+    suspend fun validateFavoriteAndRecentStudentDetails(
+        context: Context,
+        catalog: BaGuideCatalogBundle,
+        favoriteContentIdsByFavoritedAtMs: Map<Long, Long>,
+        recentSourceUrls: List<String>,
+        maxCandidates: Int = 4,
+        maxParallelism: Int = 1,
+        loadFailedText: String = "",
+        refreshFailedKeepCacheText: String = "",
+    ): BaStudentGuideBackgroundValidationSummary {
+        val candidates =
+            buildFavoriteAndRecentValidationCandidates(
+                catalog = catalog,
+                favoriteContentIdsByFavoritedAtMs = favoriteContentIdsByFavoritedAtMs,
+                recentSourceUrls = recentSourceUrls,
+                maxCandidates = maxCandidates,
+            )
+        if (candidates.isEmpty()) return BaStudentGuideBackgroundValidationSummary()
+        val parallelism = maxParallelism.coerceIn(1, 2)
+        val semaphore = Semaphore(parallelism)
+        val results =
+            coroutineScope {
+                candidates.map { sourceUrl ->
+                    async {
+                        semaphore.withPermit {
+                            validateStudentDetailCandidate(
+                                context = context,
+                                sourceUrl = sourceUrl,
+                                loadFailedText = loadFailedText,
+                                refreshFailedKeepCacheText = refreshFailedKeepCacheText,
+                            )
+                        }
+                    }
+                }.awaitAll()
+            }
+        return BaStudentGuideBackgroundValidationSummary(
+            candidateCount = candidates.size,
+            completedCount = results.count { it },
+            failedCount = results.count { !it },
+        )
     }
 
     suspend fun resolveNpcSatelliteGuide(
@@ -293,7 +381,7 @@ internal class BaStudentGuideRepository(
             }
         val shouldClearLocalCache =
             if (studentCacheContext != null) {
-                manualRefresh || (cacheSnapshot.hasCache && !cacheSnapshot.isComplete)
+                cacheSnapshot.hasCache && !cacheSnapshot.isComplete
             } else {
                 manualRefresh || (cacheSnapshot.hasCache && (cacheExpired || !cacheSnapshot.isComplete))
             }
@@ -311,6 +399,11 @@ internal class BaStudentGuideRepository(
                     }
                     cacheSaver(latest)
                     if (studentCacheContext != null) {
+                        mediaCacheRetainer(
+                            context,
+                            requestUrl,
+                            collectGuideMediaCacheUrls(latest).toSet(),
+                        )
                         latestMeta = buildAndSaveStudentDetailMeta(
                             store = studentCacheContext.store,
                             info = latest,
@@ -392,6 +485,87 @@ internal class BaStudentGuideRepository(
             inFlightGuideFetches.remove(key, ownFetch)
         }
     }
+
+    private suspend fun buildFavoriteAndRecentValidationCandidates(
+        catalog: BaGuideCatalogBundle,
+        favoriteContentIdsByFavoritedAtMs: Map<Long, Long>,
+        recentSourceUrls: List<String>,
+        maxCandidates: Int,
+    ): List<String> =
+        withContext(parseDispatcher) {
+            if (maxCandidates <= 0) return@withContext emptyList()
+            val studentEntries = catalog.entries(BaGuideCatalogTab.Student)
+            if (studentEntries.isEmpty()) return@withContext emptyList()
+            val studentSources =
+                studentEntries
+                    .mapNotNull { entry ->
+                        normalizeStudentGuideSourceUrl(entry.detailUrl)
+                            .takeIf { sourceUrl -> sourceUrl.isNotBlank() }
+                            ?.let { sourceUrl -> entry.contentId to sourceUrl }
+                    }
+            val sourceByContentId = studentSources.toMap()
+            val validStudentSources = studentSources.mapTo(LinkedHashSet()) { (_, sourceUrl) -> sourceUrl }
+            val ordered = LinkedHashSet<String>()
+            recentSourceUrls
+                .asSequence()
+                .map(::normalizeStudentGuideSourceUrl)
+                .filter { sourceUrl -> sourceUrl in validStudentSources }
+                .forEach { sourceUrl ->
+                    if (ordered.size < maxCandidates) {
+                        ordered += sourceUrl
+                    }
+                }
+            favoriteContentIdsByFavoritedAtMs
+                .asSequence()
+                .filter { (contentId, favoritedAtMs) -> contentId > 0L && favoritedAtMs > 0L }
+                .sortedByDescending { (_, favoritedAtMs) -> favoritedAtMs }
+                .mapNotNull { (contentId, _) -> sourceByContentId[contentId] }
+                .forEach { sourceUrl ->
+                    if (ordered.size < maxCandidates) {
+                        ordered += sourceUrl
+                    }
+                }
+            ordered.toList()
+        }
+
+    private suspend fun validateStudentDetailCandidate(
+        context: Context,
+        sourceUrl: String,
+        loadFailedText: String,
+        refreshFailedKeepCacheText: String,
+    ): Boolean =
+        try {
+            currentCoroutineContext().ensureActive()
+            val firstPass =
+                loadGuide(
+                    context = context,
+                    sourceUrl = sourceUrl,
+                    currentInfo = null,
+                    manualRefresh = false,
+                    forceValidation = false,
+                    loadFailedText = loadFailedText,
+                    refreshFailedKeepCacheText = refreshFailedKeepCacheText,
+                )
+            if (!firstPass.validateInBackground) {
+                firstPass.error == null
+            } else {
+                val validation =
+                    loadGuide(
+                        context = context,
+                        sourceUrl = sourceUrl,
+                        currentInfo = firstPass.info,
+                        manualRefresh = false,
+                        forceValidation = true,
+                        loadFailedText = loadFailedText,
+                        refreshFailedKeepCacheText = refreshFailedKeepCacheText,
+                    )
+                validation.error == null
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            false
+        }
 
     private suspend fun buildAndSaveStudentDetailMeta(
         store: BaGuideStudentDetailFileCacheStore,

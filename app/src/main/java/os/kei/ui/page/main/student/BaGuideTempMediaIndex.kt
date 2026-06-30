@@ -4,6 +4,13 @@ import android.content.Context
 import java.io.File
 import java.util.concurrent.atomic.AtomicLong
 
+internal fun interface BaGuideTempMediaSessionIndexUpdater {
+    fun rebuildSessionIndex(
+        context: Context,
+        sourceUrl: String,
+    )
+}
+
 internal data class BaGuideTempMediaSummary(
     val count: Int,
     val bytes: Long,
@@ -13,7 +20,7 @@ internal data class BaGuideTempMediaSummary(
 internal class BaGuideTempMediaIndex(
     private val clock: BaGuideMediaCacheClock = BaGuideSystemMediaCacheClock,
     private val sessionIndexStore: BaGuideTempMediaSessionIndexStore = BaGuideTempMediaSessionIndexStore(),
-) {
+) : BaGuideTempMediaSessionIndexUpdater {
     private val pruner = BaGuideTempMediaPruner(clock)
     private val lastPruneAtMs = AtomicLong(0L)
     private val lastIndexStaleCheckAtMs = AtomicLong(0L)
@@ -31,7 +38,7 @@ internal class BaGuideTempMediaIndex(
         )
     }
 
-    fun rebuildSessionIndex(
+    override fun rebuildSessionIndex(
         context: Context,
         sourceUrl: String,
     ) {
