@@ -20,6 +20,7 @@ class UiPrefsDefaultSnapshotTest {
         assertEquals(NonHomeBackgroundPageStyle.Standard, snapshot.nonHomeBackgroundPageStyle)
         assertEquals(0f, snapshot.nonHomeBackgroundScrim)
         assertFalse(snapshot.nonHomeBackgroundDepthEnabled)
+        assertEquals(1f, snapshot.nonHomeBackgroundSaturation)
     }
 
     @Test

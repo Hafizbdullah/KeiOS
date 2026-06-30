@@ -25,6 +25,7 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     val nonHomeBackgroundScrim: Float,
     val nonHomeBackgroundDepthEnabled: Boolean,
+    val nonHomeBackgroundSaturation: Float,
     val superIslandNotificationEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
@@ -104,6 +105,7 @@ object UiPrefs {
     private const val KEY_NON_HOME_BACKGROUND_PAGE_STYLE = "non_home_background_page_style"
     private const val KEY_NON_HOME_BACKGROUND_SCRIM = "non_home_background_scrim"
     private const val KEY_NON_HOME_BACKGROUND_DEPTH = "non_home_background_depth"
+    private const val KEY_NON_HOME_BACKGROUND_SATURATION = "non_home_background_saturation"
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
@@ -123,6 +125,9 @@ object UiPrefs {
     private const val NON_HOME_BACKGROUND_SCRIM_DEFAULT = 0.00f
     private const val NON_HOME_BACKGROUND_SCRIM_MIN = 0.00f
     private const val NON_HOME_BACKGROUND_SCRIM_MAX = 0.40f
+    private const val NON_HOME_BACKGROUND_SATURATION_DEFAULT = 1.00f
+    private const val NON_HOME_BACKGROUND_SATURATION_MIN = 0.60f
+    private const val NON_HOME_BACKGROUND_SATURATION_MAX = 1.20f
     const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100
     const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
@@ -306,6 +311,25 @@ object UiPrefs {
         kv().encode(KEY_NON_HOME_BACKGROUND_DEPTH, value)
     }
 
+    fun getNonHomeBackgroundSaturation(defaultValue: Float = NON_HOME_BACKGROUND_SATURATION_DEFAULT): Float {
+        val fallback =
+            defaultValue.coerceIn(
+                NON_HOME_BACKGROUND_SATURATION_MIN,
+                NON_HOME_BACKGROUND_SATURATION_MAX,
+            )
+        return kv().decodeFloat(KEY_NON_HOME_BACKGROUND_SATURATION, fallback).coerceIn(
+            NON_HOME_BACKGROUND_SATURATION_MIN,
+            NON_HOME_BACKGROUND_SATURATION_MAX,
+        )
+    }
+
+    fun setNonHomeBackgroundSaturation(value: Float) {
+        kv().encode(
+            KEY_NON_HOME_BACKGROUND_SATURATION,
+            value.coerceIn(NON_HOME_BACKGROUND_SATURATION_MIN, NON_HOME_BACKGROUND_SATURATION_MAX),
+        )
+    }
+
     fun isSuperIslandNotificationEnabled(defaultValue: Boolean = false): Boolean =
         kv().decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, defaultValue)
 
@@ -467,6 +491,7 @@ object UiPrefs {
             nonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
             nonHomeBackgroundScrim = NON_HOME_BACKGROUND_SCRIM_DEFAULT,
             nonHomeBackgroundDepthEnabled = false,
+            nonHomeBackgroundSaturation = NON_HOME_BACKGROUND_SATURATION_DEFAULT,
             superIslandNotificationEnabled = false,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
@@ -507,6 +532,7 @@ object UiPrefs {
             nonHomeBackgroundPageStyle = getNonHomeBackgroundPageStyle(),
             nonHomeBackgroundScrim = getNonHomeBackgroundScrim(),
             nonHomeBackgroundDepthEnabled = isNonHomeBackgroundDepthEnabled(),
+            nonHomeBackgroundSaturation = getNonHomeBackgroundSaturation(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),

@@ -344,6 +344,8 @@ internal fun formatLogTime(timestampMs: Long): String {
 
 internal fun formatOpacityPercent(alpha: Float): Int = (alpha.coerceIn(0f, 1f) * 100f).roundToInt()
 
+internal fun formatScalePercent(value: Float): Int = (value * 100f).roundToInt()
+
 internal fun formatMilliseconds(value: Int): Int = value.coerceAtLeast(0)
 
 internal const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
@@ -373,6 +375,19 @@ internal val NON_HOME_BACKGROUND_SCRIM_KEY_POINTS =
         0.20f,
         0.28f,
         NON_HOME_BACKGROUND_SCRIM_MAX,
+    )
+internal const val NON_HOME_BACKGROUND_SATURATION_DEFAULT = 1.00f
+internal const val NON_HOME_BACKGROUND_SATURATION_MIN = 0.60f
+internal const val NON_HOME_BACKGROUND_SATURATION_MAX = 1.20f
+internal const val NON_HOME_BACKGROUND_SATURATION_MAGNET_THRESHOLD = 0.03f
+internal val NON_HOME_BACKGROUND_SATURATION_KEY_POINTS =
+    listOf(
+        NON_HOME_BACKGROUND_SATURATION_MIN,
+        0.80f,
+        0.90f,
+        NON_HOME_BACKGROUND_SATURATION_DEFAULT,
+        1.10f,
+        NON_HOME_BACKGROUND_SATURATION_MAX,
     )
 internal const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100f
 internal const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50f

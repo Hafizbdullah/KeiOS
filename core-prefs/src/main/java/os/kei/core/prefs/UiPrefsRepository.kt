@@ -156,6 +156,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setNonHomeBackgroundSaturation(value: Float) {
+        updateAndPersist({ copy(nonHomeBackgroundSaturation = value) }) {
+            UiPrefs.setNonHomeBackgroundSaturation(value)
+        }
+    }
+
     suspend fun resetNonHomeBackgroundRendering() {
         val defaults = UiPrefs.defaultSnapshot()
         updateAndPersist(
@@ -167,6 +173,7 @@ class UiPrefsRepository(
                     nonHomeBackgroundPageStyle = defaults.nonHomeBackgroundPageStyle,
                     nonHomeBackgroundScrim = defaults.nonHomeBackgroundScrim,
                     nonHomeBackgroundDepthEnabled = defaults.nonHomeBackgroundDepthEnabled,
+                    nonHomeBackgroundSaturation = defaults.nonHomeBackgroundSaturation,
                 )
             },
         ) {
@@ -176,12 +183,14 @@ class UiPrefsRepository(
             UiPrefs.setNonHomeBackgroundPageStyle(defaults.nonHomeBackgroundPageStyle)
             UiPrefs.setNonHomeBackgroundScrim(defaults.nonHomeBackgroundScrim)
             UiPrefs.setNonHomeBackgroundDepthEnabled(defaults.nonHomeBackgroundDepthEnabled)
+            UiPrefs.setNonHomeBackgroundSaturation(defaults.nonHomeBackgroundSaturation)
         }
     }
 
     suspend fun applyNonHomeBackgroundReadableSuggestion(isDarkTheme: Boolean) {
         val opacity = if (isDarkTheme) 0.18f else 0.14f
         val scrim = if (isDarkTheme) 0.18f else 0.20f
+        val saturation = if (isDarkTheme) 0.92f else 0.86f
         updateAndPersist(
             reducer = {
                 copy(
@@ -194,6 +203,7 @@ class UiPrefsRepository(
                         },
                     nonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Readable,
                     nonHomeBackgroundScrim = scrim,
+                    nonHomeBackgroundSaturation = saturation,
                 )
             },
         ) {
@@ -203,6 +213,7 @@ class UiPrefsRepository(
             }
             UiPrefs.setNonHomeBackgroundPageStyle(NonHomeBackgroundPageStyle.Readable)
             UiPrefs.setNonHomeBackgroundScrim(scrim)
+            UiPrefs.setNonHomeBackgroundSaturation(saturation)
         }
     }
 

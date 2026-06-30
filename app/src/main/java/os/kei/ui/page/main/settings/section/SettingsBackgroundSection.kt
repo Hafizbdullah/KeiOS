@@ -37,12 +37,18 @@ import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SCRIM_KEY_POINTS
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SCRIM_MAGNET_THRESHOLD
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SCRIM_MAX
 import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SCRIM_MIN
+import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SATURATION_DEFAULT
+import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SATURATION_KEY_POINTS
+import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SATURATION_MAGNET_THRESHOLD
+import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SATURATION_MAX
+import os.kei.ui.page.main.settings.support.NON_HOME_BACKGROUND_SATURATION_MIN
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.settings.support.formatOpacityPercent
+import os.kei.ui.page.main.settings.support.formatScalePercent
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -74,6 +80,8 @@ internal fun SettingsBackgroundSection(
     onNonHomeBackgroundScrimChanged: (Float) -> Unit,
     nonHomeBackgroundDepthEnabled: Boolean,
     onNonHomeBackgroundDepthEnabledChanged: (Boolean) -> Unit,
+    nonHomeBackgroundSaturation: Float,
+    onNonHomeBackgroundSaturationChanged: (Float) -> Unit,
     onResetNonHomeBackgroundRendering: () -> Unit,
     onApplyNonHomeBackgroundReadableSuggestion: (Boolean) -> Unit,
     backgroundPickerLauncher: ActivityResultLauncher<Array<String>>,
@@ -335,6 +343,41 @@ internal fun SettingsBackgroundSection(
                     formatOpacityPercent(NON_HOME_BACKGROUND_OPACITY_DEFAULT),
                 ),
         )
+        val saturationTitle = stringResource(R.string.settings_non_home_background_saturation_title)
+        SettingsValueItem(
+            title = saturationTitle,
+            summary =
+                stringResource(
+                    R.string.settings_non_home_background_saturation_summary,
+                    formatScalePercent(nonHomeBackgroundSaturation),
+                ),
+        )
+        SettingsLiquidKeyPointSlider(
+            value =
+                nonHomeBackgroundSaturation.coerceIn(
+                    NON_HOME_BACKGROUND_SATURATION_MIN,
+                    NON_HOME_BACKGROUND_SATURATION_MAX,
+                ),
+            onValueChange = onNonHomeBackgroundSaturationChanged,
+            valueRange = NON_HOME_BACKGROUND_SATURATION_MIN..NON_HOME_BACKGROUND_SATURATION_MAX,
+            keyPoints = NON_HOME_BACKGROUND_SATURATION_KEY_POINTS,
+            magnetThreshold = NON_HOME_BACKGROUND_SATURATION_MAGNET_THRESHOLD,
+            enabled = nonHomeBackgroundEnabled,
+            contentDescription = saturationTitle,
+            onInteractionChanged = onSliderInteractionChanged,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+        )
+        SettingsInfoItem(
+            key = stringResource(R.string.common_note),
+            value =
+                stringResource(
+                    R.string.settings_non_home_background_saturation_default,
+                    formatScalePercent(NON_HOME_BACKGROUND_SATURATION_DEFAULT),
+                ),
+        )
         val scrimTitle = stringResource(R.string.settings_non_home_background_scrim_title)
         SettingsValueItem(
             title = scrimTitle,
@@ -381,6 +424,7 @@ internal fun SettingsBackgroundSection(
         nonHomeBackgroundAlignment = nonHomeBackgroundAlignment,
         nonHomeBackgroundPageStyle = nonHomeBackgroundPageStyle,
         nonHomeBackgroundScrim = nonHomeBackgroundScrim,
+        nonHomeBackgroundSaturation = nonHomeBackgroundSaturation,
     )
 }
 
@@ -437,6 +481,7 @@ private fun BackgroundPreviewSheet(
     nonHomeBackgroundAlignment: NonHomeBackgroundAlignment,
     nonHomeBackgroundPageStyle: NonHomeBackgroundPageStyle,
     nonHomeBackgroundScrim: Float,
+    nonHomeBackgroundSaturation: Float,
 ) {
     SnapshotWindowBottomSheet(
         show = visible,
@@ -456,6 +501,7 @@ private fun BackgroundPreviewSheet(
                 enabled = nonHomeBackgroundEnabled,
                 imageUri = nonHomeBackgroundUri,
                 opacity = nonHomeBackgroundOpacity,
+                saturation = nonHomeBackgroundSaturation,
                 contentScale = nonHomeBackgroundContentScale,
                 alignment = nonHomeBackgroundAlignment,
                 pageStyle = nonHomeBackgroundPageStyle,

@@ -124,6 +124,13 @@
     <string name="settings_non_home_background_opacity_title">背景不透明度</string>
     <string name="settings_non_home_background_opacity_summary">現在の不透明度: %1$d%%。プリセットで素早く切り替えできます。</string>
     <string name="settings_non_home_background_opacity_default">推奨既定値: %1$d%%。可読性と雰囲気のバランスを取ります。</string>
+    <string name="settings_non_home_background_depth_title">背景の奥行きモーション</string>
+    <string name="settings_non_home_background_depth_summary_enabled">メインページ切り替え中に背景が少し追従し、奥行きを加えます。</string>
+    <string name="settings_non_home_background_depth_summary_disabled">背景を固定し、ページ切り替え時の瞬間的な描画負荷を抑えます。</string>
+    <string name="settings_non_home_background_depth_scope">OS / MCP / GitHub / BA などのメインページ横切り替えにのみ影響します。設定や概要などの独立ページでは背景を固定します。</string>
+    <string name="settings_non_home_background_saturation_title">背景の色彩強度</string>
+    <string name="settings_non_home_background_saturation_summary">現在の色彩強度: %1$d%%。下げると情報量の多い画像が文字の邪魔をしにくくなります。</string>
+    <string name="settings_non_home_background_saturation_default">推奨既定値: %1$d%%。元画像の色を保ちます。</string>
     <string name="settings_non_home_background_scrim_title">読みやすさオーバーレイ</string>
     <string name="settings_non_home_background_scrim_summary">現在のオーバーレイ: %1$d%%。情報量の多い背景で文字を読みやすくします。</string>
     <string name="settings_non_home_background_scrim_default">推奨既定値: %1$d%%。背景の雰囲気を保ちます。</string>

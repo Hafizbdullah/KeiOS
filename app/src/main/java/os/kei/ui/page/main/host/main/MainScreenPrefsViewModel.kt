@@ -167,6 +167,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
         }
     }
 
+    fun updateNonHomeBackgroundSaturation(value: Float) {
+        launchRepositoryUpdate {
+            setNonHomeBackgroundSaturation(value)
+        }
+    }
+
     fun resetNonHomeBackgroundRendering() {
         launchRepositoryUpdate {
             resetNonHomeBackgroundRendering()

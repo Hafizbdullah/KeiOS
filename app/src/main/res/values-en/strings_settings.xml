@@ -128,6 +128,9 @@
     <string name="settings_non_home_background_opacity_title">Background opacity</string>
     <string name="settings_non_home_background_opacity_summary">Current opacity: %1$d%%. Use preset stops for quick switching.</string>
     <string name="settings_non_home_background_opacity_default">Recommended default: %1$d%%, balancing readability and atmosphere.</string>
+    <string name="settings_non_home_background_saturation_title">Background color intensity</string>
+    <string name="settings_non_home_background_saturation_summary">Current color intensity: %1$d%%. Lower it to keep busy images from competing with text.</string>
+    <string name="settings_non_home_background_saturation_default">Recommended default: %1$d%%, preserving the original image colors.</string>
     <string name="settings_non_home_background_scrim_title">Reading overlay</string>
     <string name="settings_non_home_background_scrim_summary">Current overlay: %1$d%%. Improves text readability for visually busy images.</string>
     <string name="settings_non_home_background_scrim_default">Recommended default: %1$d%%, preserving the original background mood.</string>

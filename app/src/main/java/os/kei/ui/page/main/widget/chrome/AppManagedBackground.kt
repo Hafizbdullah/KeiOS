@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -28,6 +30,7 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 @Immutable
 data class AppManagedBackgroundStyle(
@@ -119,6 +122,7 @@ fun AppManagedBackgroundHost(
     enabled: Boolean,
     imageUri: String,
     opacity: Float,
+    saturation: Float = 1f,
     contentScale: NonHomeBackgroundContentScale,
     scrim: Float,
     modifier: Modifier = Modifier,
@@ -150,6 +154,7 @@ fun AppManagedBackgroundHost(
                 enabled = true,
                 imageUri = trimmedUri,
                 opacity = opacity * resolvedStyle.opacityMultiplier,
+                saturation = saturation,
                 contentScale = contentScale,
                 alignment = alignment,
                 modifier = Modifier.fillMaxSize(),
@@ -243,6 +248,7 @@ fun AppManagedBackgroundImage(
     modifier: Modifier = Modifier,
     contentScale: NonHomeBackgroundContentScale = NonHomeBackgroundContentScale.Crop,
     alignment: NonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
+    saturation: Float = 1f,
     motionScale: Float = 1f,
     motionTranslationXProvider: (() -> Float)? = null,
     motionTranslationYProvider: (() -> Float)? = null,
@@ -277,12 +283,26 @@ fun AppManagedBackgroundImage(
                 .build()
         }
     val safeMotionScale = motionScale.coerceAtLeast(1f)
+    val safeSaturation = saturation.coerceIn(0f, 2f)
+    val colorFilter =
+        remember(safeSaturation) {
+            if (abs(safeSaturation - 1f) < 0.01f) {
+                null
+            } else {
+                ColorFilter.colorMatrix(
+                    ColorMatrix().apply {
+                        setToSaturation(safeSaturation)
+                    },
+                )
+            }
+        }
     AsyncImage(
         model = request,
         contentDescription = null,
         contentScale = contentScale.toComposeContentScale(),
         alignment = alignment.toComposeAlignment(),
         alpha = opacity.coerceIn(0f, 1f),
+        colorFilter = colorFilter,
         modifier =
             modifier.then(
                 if (

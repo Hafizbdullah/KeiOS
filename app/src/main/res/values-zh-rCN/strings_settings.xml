@@ -124,6 +124,9 @@
     <string name="settings_non_home_background_opacity_title">背景透明度</string>
     <string name="settings_non_home_background_opacity_summary">当前透明度 %1$d%%。使用关键刻度滑杆快速切换常用档位。</string>
     <string name="settings_non_home_background_opacity_default">默认推荐 %1$d%%，兼顾可读性与背景氛围。</string>
+    <string name="settings_non_home_background_saturation_title">背景色彩强度</string>
+    <string name="settings_non_home_background_saturation_summary">当前色彩强度 %1$d%%。降低可减少复杂图片抢占文字注意力。</string>
+    <string name="settings_non_home_background_saturation_default">默认推荐 %1$d%%，保留原图色彩。</string>
     <string name="settings_non_home_background_scrim_title">阅读蒙层</string>
     <string name="settings_non_home_background_scrim_summary">当前蒙层 %1$d%%。提升文字区域可读性，适合颜色较复杂的背景图。</string>
     <string name="settings_non_home_background_scrim_default">默认推荐 %1$d%%，保留原图氛围。</string>
