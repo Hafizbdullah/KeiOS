@@ -68,7 +68,7 @@
     <string name="webdav_sync_url_error_scheme">URL must start with http:// or https://</string>
 
     <string name="webdav_sync_auto_sync_label">Auto sync</string>
-    <string name="webdav_sync_auto_sync_summary">Sync on app launch and when local data changes</string>
+    <string name="webdav_sync_auto_sync_summary">Check remote on launch; safely upload local changes; keep conflicts for review.</string>
 
     <string name="webdav_sync_sync_all">Sync all</string>
     <string name="webdav_sync_upload_all">Upload all</string>
@@ -92,8 +92,12 @@
     <string name="webdav_sync_status_network_error">Network error</string>
     <string name="webdav_sync_status_invalid_url">Invalid server URL</string>
     <string name="webdav_sync_status_conflict">Remote changed during sync — try again</string>
+    <string name="webdav_sync_status_baseline_required">Baseline required before auto sync</string>
     <string name="webdav_sync_status_error">Sync error</string>
     <string name="webdav_sync_status_unknown">Unknown error</string>
+    <string name="webdav_sync_pending_local_upload">Local changes pending upload · %1$s</string>
+    <string name="webdav_sync_pending_remote_conflict">Remote changed; local data kept · %1$s</string>
+    <string name="webdav_sync_pending_baseline_required">Refresh or sync once to establish a safe baseline · %1$s</string>
 
     <string name="webdav_sync_clear_label">Clear configuration</string>
     <string name="webdav_sync_clear_summary">Remove the saved server URL, credentials and per-item sync metadata. Local data is not deleted.</string>

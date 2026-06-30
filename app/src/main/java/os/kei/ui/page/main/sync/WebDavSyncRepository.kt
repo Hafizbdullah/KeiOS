@@ -197,6 +197,7 @@ internal class WebDavSyncRepository(
                 lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
                 lastOutcome = previous[item]?.lastOutcome,
                 remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
+                pendingSummary = WebDavSyncStore.loadItemPendingSummary(item),
                 localCount = previous[item]?.localCount ?: -1,
                 remoteProbeError = previous[item]?.remoteProbeError,
             )
@@ -207,6 +208,7 @@ internal class WebDavSyncRepository(
             enabled = WebDavSyncStore.isItemEnabled(item),
             lastSyncTimeMs = WebDavSyncStore.getLastSyncTime(item),
             remoteSummary = WebDavSyncStore.loadRemoteSummary(item),
+            pendingSummary = WebDavSyncStore.loadItemPendingSummary(item),
         )
 }
 

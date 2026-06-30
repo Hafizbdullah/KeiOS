@@ -74,6 +74,8 @@ internal object WebDavSyncStore {
                 remoteEtagKey(item),
                 remoteProbedAtKey(item),
                 remoteEmptyKey(item),
+                pendingStateKey(item),
+                pendingUpdatedAtKey(item),
             )
         }
         mmkv.removeValuesForKeys(
@@ -139,6 +141,38 @@ internal object WebDavSyncStore {
 
     fun setItemContentHash(item: WebDavSyncItem, hash: String) {
         mmkv.encode(hashKey(item), hash)
+    }
+
+    // ── Per-item pending state (auto-sync conflict / first-baseline guard) ─
+
+    fun loadItemPendingSummary(item: WebDavSyncItem): WebDavSyncPendingSummary? {
+        val raw = mmkv.decodeString(pendingStateKey(item), null).orEmpty()
+        val state = WebDavSyncPendingState.entries.firstOrNull { it.name == raw } ?: return null
+        return WebDavSyncPendingSummary(
+            state = state,
+            updatedAtMs = mmkv.decodeLong(pendingUpdatedAtKey(item), 0L).coerceAtLeast(0L),
+        )
+    }
+
+    fun setItemPendingState(
+        item: WebDavSyncItem,
+        state: WebDavSyncPendingState,
+        updatedAtMs: Long = System.currentTimeMillis(),
+    ) {
+        mmkv.encode(pendingStateKey(item), state.name)
+        mmkv.encode(pendingUpdatedAtKey(item), updatedAtMs.coerceAtLeast(0L))
+        WebDavSyncStoreSignals.notifyChanged()
+    }
+
+    fun clearItemPendingState(item: WebDavSyncItem) {
+        val hadPending =
+            mmkv.containsKey(pendingStateKey(item)) ||
+                mmkv.containsKey(pendingUpdatedAtKey(item))
+        mmkv.removeValueForKey(pendingStateKey(item))
+        mmkv.removeValueForKey(pendingUpdatedAtKey(item))
+        if (hadPending) {
+            WebDavSyncStoreSignals.notifyChanged()
+        }
     }
 
     // ── Last full sync time ────────────────────────────────────────────
@@ -209,6 +243,8 @@ internal object WebDavSyncStore {
     private fun remoteEtagKey(item: WebDavSyncItem) = "remote_etag_${item.name}"
     private fun remoteProbedAtKey(item: WebDavSyncItem) = "remote_probed_at_${item.name}"
     private fun remoteEmptyKey(item: WebDavSyncItem) = "remote_empty_${item.name}"
+    private fun pendingStateKey(item: WebDavSyncItem) = "pending_state_${item.name}"
+    private fun pendingUpdatedAtKey(item: WebDavSyncItem) = "pending_updated_at_${item.name}"
 }
 
 internal object WebDavSyncStoreSignals {
@@ -231,4 +267,15 @@ internal data class WebDavRemoteSummary(
     val byteSize: Long,
     val etag: String?,
     val probedAtMs: Long,
+)
+
+internal enum class WebDavSyncPendingState {
+    LocalUploadPending,
+    RemoteConflict,
+    BaselineRequired,
+}
+
+internal data class WebDavSyncPendingSummary(
+    val state: WebDavSyncPendingState,
+    val updatedAtMs: Long,
 )

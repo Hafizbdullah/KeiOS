@@ -258,6 +258,167 @@ class WebDavSyncEngineTest {
         assertTrue(client.uploadCalls.isEmpty())
         assertTrue(metadata.etags.isEmpty())
     }
+
+    @Test
+    fun `auto local change upload uses previous etag and never merges stale remote into local`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            uploadResults = mutableListOf(WebDavUploadResult.Success("etag-new")),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 12_345L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"local-new","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"local-new"}""",
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = "etag-old",
+                expectedRemoteHash = WebDavSyncEngine.contentHash("""{"value":"remote-old"}"""),
+            )
+
+        assertEquals(WebDavItemStatus.Uploaded, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertEquals("""{"value":"local-new","exportedAtMs":2}""", client.uploadCalls.single().content)
+        assertEquals("etag-old", client.uploadCalls.single().etag)
+        assertEquals("etag-new", metadata.etags[WebDavSyncItem.BaAccounts])
+        assertEquals(WebDavSyncEngine.contentHash("""{"value":"local-new"}"""), metadata.hashes[WebDavSyncItem.BaAccounts])
+        assertTrue(metadata.pendingStates.isEmpty())
+    }
+
+    @Test
+    fun `auto local change upload reports conflict without mutating local when remote etag changed`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            uploadResults = mutableListOf(WebDavUploadResult.Conflict),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 22_222L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"local-new","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"local-new"}""",
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = "etag-old",
+                expectedRemoteHash = WebDavSyncEngine.contentHash("""{"value":"remote-old"}"""),
+            )
+
+        assertEquals(WebDavItemStatus.ConflictUnresolved, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertTrue(metadata.hashes.isEmpty())
+        assertEquals(WebDavSyncPendingState.RemoteConflict, metadata.pendingStates[WebDavSyncItem.BaAccounts])
+    }
+
+    @Test
+    fun `auto local change upload requires a baseline when no previous etag or hash exists`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge()
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 24_000L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"local-new","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"local-new"}""",
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = null,
+                expectedRemoteHash = null,
+            )
+
+        assertEquals(WebDavItemStatus.BaselineRequired, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertTrue(client.downloadResults.isEmpty())
+        assertTrue(client.uploadCalls.isEmpty())
+        assertTrue(client.uploadIfAbsentCalls.isEmpty())
+        assertTrue(metadata.hashes.isEmpty())
+        assertEquals(WebDavSyncPendingState.BaselineRequired, metadata.pendingStates[WebDavSyncItem.BaAccounts])
+    }
+
+    @Test
+    fun `auto local change upload validates remote hash when etag is missing`() = runBlocking {
+        val remoteFingerprint = """{"value":"remote-old"}"""
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"value":"remote-old","exportedAtMs":1}""", "etag-refreshed"),
+            ),
+            uploadResults = mutableListOf(WebDavUploadResult.Success("etag-new")),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 25_000L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"local-new","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"local-new"}""",
+            remoteFingerprintJson = { remoteFingerprint },
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = null,
+                expectedRemoteHash = WebDavSyncEngine.contentHash(remoteFingerprint),
+            )
+
+        assertEquals(WebDavItemStatus.Uploaded, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertEquals(1, client.uploadCalls.size)
+        assertEquals("etag-refreshed", client.uploadCalls.single().etag)
+        assertEquals("etag-new", metadata.etags[WebDavSyncItem.BaAccounts])
+    }
+
+    @Test
+    fun `sync compares stable fingerprints instead of export timestamp metadata`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"value":"same","exportedAtMs":1}""", "etag-1"),
+            ),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 33_333L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"same","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"same"}""",
+            remoteFingerprintJson = { """{"value":"same"}""" },
+        )
+
+        val outcome = engine.sync(fakeConfig(), WebDavSyncItem.BaAccounts, port.port)
+
+        assertEquals(WebDavItemStatus.UpToDate, outcome.status)
+        assertTrue(port.mergeCalls.isEmpty())
+        assertTrue(client.uploadCalls.isEmpty())
+        assertEquals(WebDavSyncEngine.contentHash("""{"value":"same"}"""), metadata.hashes[WebDavSyncItem.BaAccounts])
+    }
 }
 
 private fun fakeConfig() = WebDavConfig(
@@ -271,10 +432,14 @@ private class FakeWebDavSyncDataPort(
     private var localJson: String,
     private val localCount: Int = 0,
     private val remoteItemCount: Int = 0,
+    private val localFingerprintJson: String = localJson,
+    private val remoteFingerprintJson: (String) -> String = { it },
 ) {
     val mergeCalls = mutableListOf<String>()
     val port = WebDavSyncDataPort(
         exportJson = { localJson },
+        fingerprintJson = { localFingerprintJson },
+        remoteFingerprintJson = remoteFingerprintJson,
         merge = { remote ->
             mergeCalls += remote
             localJson = if (localJson == "local") {
@@ -334,6 +499,7 @@ private class FakeWebDavSyncMetadataStore : WebDavSyncMetadataStore {
     val lastSyncTimes = mutableMapOf<WebDavSyncItem, Long>()
     val remoteFound = mutableMapOf<WebDavSyncItem, RemoteSummaryRecord>()
     val remoteEmpty = mutableMapOf<WebDavSyncItem, Long>()
+    val pendingStates = mutableMapOf<WebDavSyncItem, WebDavSyncPendingState>()
 
     override fun setItemEtag(item: WebDavSyncItem, etag: String?) {
         etags[item] = etag
@@ -345,6 +511,18 @@ private class FakeWebDavSyncMetadataStore : WebDavSyncMetadataStore {
 
     override fun setLastSyncTime(item: WebDavSyncItem, timeMs: Long) {
         lastSyncTimes[item] = timeMs
+    }
+
+    override fun setItemPendingState(
+        item: WebDavSyncItem,
+        state: WebDavSyncPendingState,
+        updatedAtMs: Long,
+    ) {
+        pendingStates[item] = state
+    }
+
+    override fun clearItemPendingState(item: WebDavSyncItem) {
+        pendingStates.remove(item)
     }
 
     override fun saveRemoteSummaryFound(

@@ -29,6 +29,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
 import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJson
 import os.kei.ui.page.main.student.catalog.page.parseCatalogFavoritesExport
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.buildBaAccountsSyncFingerprintJson
 
 /**
  * Builds the [WebDavSyncDataPort] for every [WebDavSyncItem].
@@ -92,6 +93,20 @@ private fun buildWebDavSyncDataPorts(
                     )
                 GitHubTrackedItemsTransferService.buildExportJson(items)
             },
+            fingerprintJson = {
+                val items =
+                    normalizeGitHubTrackedItemsForSync(
+                        GitHubTrackedItemsTransferService.loadItems(),
+                    )
+                GitHubTrackedItemsTransferService.buildExportJson(items, exportedAtMillis = 0L)
+            },
+            remoteFingerprintJson = { raw ->
+                val payload = GitHubTrackedItemsTransferService.parseImport(raw)
+                GitHubTrackedItemsTransferService.buildExportJson(
+                    normalizeGitHubTrackedItemsForSync(payload.items),
+                    exportedAtMillis = 0L,
+                )
+            },
             merge = { raw ->
                 val payload = GitHubTrackedItemsTransferService.parseImport(raw)
                 GitHubTrackedItemsTransferService.applyImport(
@@ -116,6 +131,11 @@ private fun buildWebDavSyncDataPorts(
         ),
         WebDavSyncItem.BaAccounts to WebDavSyncDataPort(
             exportJson = { BASettingsStore.buildAccountsSyncExportJson() },
+            fingerprintJson = {
+                BASettingsStore.buildAccountsSyncExportJson(nowMs = 0L)
+                    .let(::buildBaAccountsSyncFingerprintJson)
+            },
+            remoteFingerprintJson = ::buildBaAccountsSyncFingerprintJson,
             merge = { raw ->
                 BASettingsStore.mergeAccountsSyncJson(raw)
                 AppBackgroundScheduler.scheduleBaApThreshold(context)
@@ -128,6 +148,12 @@ private fun buildWebDavSyncDataPorts(
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(
             exportJson = {
                 buildCatalogFavoritesExportJson(BaGuideCatalogStore.loadFavorites())
+            },
+            fingerprintJson = {
+                buildCatalogFavoritesExportJson(BaGuideCatalogStore.loadFavorites(), nowMs = 0L)
+            },
+            remoteFingerprintJson = { raw ->
+                buildCatalogFavoritesExportJson(parseCatalogFavoritesExport(raw), nowMs = 0L)
             },
             merge = { raw ->
                 val imported = parseCatalogFavoritesExport(raw)
@@ -151,6 +177,8 @@ private fun buildWebDavSyncDataPorts(
         ),
         WebDavSyncItem.BaBgmFavorites to WebDavSyncDataPort(
             exportJson = { GuideBgmFavoriteStore.buildFavoritesExportJson() },
+            fingerprintJson = { GuideBgmFavoriteStore.buildFavoritesExportJson(nowMs = 0L) },
+            remoteFingerprintJson = { raw -> GuideBgmFavoriteStore.buildFavoritesFingerprintJson(raw) },
             merge = { raw -> GuideBgmFavoriteStore.importFavoritesJsonMerged(raw) },
             localCount = { GuideBgmFavoriteStore.favoritesSnapshot().size },
             countRemoteItems = { raw ->

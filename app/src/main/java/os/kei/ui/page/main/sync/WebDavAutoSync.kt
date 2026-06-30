@@ -21,7 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger
  *
  * Two trigger points (matching the user's chosen "Auto on launch + on change" model):
  *  1. **Launch sync** — when [init] is called from [Application.onCreate], if a config exists and
- *     auto-sync is enabled, run one full pull-merge-push pass for every enabled item.
+ *     auto-sync is enabled, reconcile each enabled item from its last known baseline. Local dirty
+ *     data is pushed first; clean data may pull remote changes; missing baselines are probed only.
  *  2. **Push-on-background** — when the app moves to background (last foreground Activity stops),
  *     re-export every enabled item, compute its content hash, and push only those whose hash has
  *     drifted from the last persisted [WebDavSyncStore.getItemContentHash]. This catches local
@@ -59,11 +60,11 @@ internal object WebDavAutoSync {
         scope.launch { runLaunchSync() }
     }
 
-    /** First app start (cold launch) → one full sync if config + auto-sync allow it. */
+    /** First app start (cold launch) → baseline-aware sync if config + auto-sync allow it. */
     private suspend fun runLaunchSync() {
         val config = WebDavSyncStore.loadConfig() ?: return
         if (!WebDavSyncStore.isAutoSyncEnabled()) return
-        runFullSync(config, reason = "launch")
+        runAutoSync(config, reason = "launch")
     }
 
     /** App moved to background → push the items whose local content has drifted since last sync. */
@@ -77,13 +78,13 @@ internal object WebDavAutoSync {
         }
     }
 
-    private suspend fun runFullSync(config: WebDavConfig, reason: String) = mutex.withLock {
+    private suspend fun runAutoSync(config: WebDavConfig, reason: String) = mutex.withLock {
         runCatching {
             val ports = buildWebDavSyncDataPorts(appContext)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             for (item in targets) {
                 val port = ports[item] ?: continue
-                val outcome = engine.sync(config, item, port)
+                val outcome = reconcileItem(config, item, port)
                 if (!outcome.isSuccess) {
                     AppLogger.w(TAG, "auto-sync ($reason) ${item.name} → ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
@@ -98,15 +99,92 @@ internal object WebDavAutoSync {
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             for (item in targets) {
                 val port = ports[item] ?: continue
-                val currentHash = WebDavSyncEngine.contentHash(port.exportJson())
+                val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                 val storedHash = WebDavSyncStore.getItemContentHash(item)
                 if (currentHash == storedHash) continue
-                val outcome = engine.sync(config, item, port)
+                val outcome =
+                    pushLocalChange(
+                        config = config,
+                        item = item,
+                        port = port,
+                        storedHash = storedHash,
+                    )
                 if (!outcome.isSuccess) {
                     AppLogger.w(TAG, "auto-push ${item.name} → ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
             }
         }.onFailure { AppLogger.w(TAG, "auto-push failed", it) }
+    }
+
+    private suspend fun reconcileItem(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome {
+        val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
+        val storedHash = WebDavSyncStore.getItemContentHash(item)
+        return when {
+            storedHash == null -> adoptOrDeferMissingBaseline(config, item, port)
+            currentHash != storedHash ->
+                pushLocalChange(
+                    config = config,
+                    item = item,
+                    port = port,
+                    storedHash = storedHash,
+                )
+            else -> engine.sync(config, item, port)
+        }
+    }
+
+    private suspend fun pushLocalChange(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        storedHash: String?,
+    ): WebDavItemOutcome =
+        engine.uploadLocalChange(
+            config = config,
+            item = item,
+            port = port,
+            expectedRemoteEtag = WebDavSyncStore.getItemEtag(item),
+            expectedRemoteHash = storedHash,
+        )
+
+    private suspend fun adoptOrDeferMissingBaseline(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome {
+        val planItem =
+            engine.prepareChange(
+                config = config,
+                kind = WebDavBatchKind.Sync,
+                item = item,
+                port = port,
+            )
+        return when (val remote = planItem.remoteState) {
+            WebDavSyncPlanRemoteState.Empty ->
+                engine.upload(
+                    config = config,
+                    item = item,
+                    port = port,
+                    remoteKnownEmpty = true,
+                )
+            is WebDavSyncPlanRemoteState.Found -> {
+                if (planItem.localHash == remote.contentHash) {
+                    engine.recordCurrentLocalAsSynced(item, remote.etag, port)
+                    WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                } else {
+                    WebDavSyncStore.setItemPendingState(
+                        item = item,
+                        state = WebDavSyncPendingState.BaselineRequired,
+                    )
+                    WebDavItemOutcome(WebDavItemStatus.BaselineRequired)
+                }
+            }
+            is WebDavSyncPlanRemoteState.Error ->
+                WebDavItemOutcome(remote.status, remote.detail)
+        }
     }
 
     private object LifecycleObserver : Application.ActivityLifecycleCallbacks {

@@ -259,6 +259,7 @@ private fun itemStatusText(status: WebDavItemStatus): String =
             WebDavItemStatus.PermissionDenied -> R.string.webdav_sync_status_permission_denied
             WebDavItemStatus.NetworkError -> R.string.webdav_sync_status_network_error
             WebDavItemStatus.ConflictUnresolved -> R.string.webdav_sync_status_conflict
+            WebDavItemStatus.BaselineRequired -> R.string.webdav_sync_status_baseline_required
             WebDavItemStatus.Error -> R.string.webdav_sync_status_error
         },
     )

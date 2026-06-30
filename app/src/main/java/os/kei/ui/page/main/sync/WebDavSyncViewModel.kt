@@ -464,6 +464,7 @@ internal data class WebDavSyncItemUiState(
     val lastSyncTimeMs: Long = 0L,
     val lastOutcome: WebDavItemOutcome? = null,
     val remoteSummary: WebDavRemoteSummary? = null,
+    val pendingSummary: WebDavSyncPendingSummary? = null,
     val remoteProbeError: WebDavItemOutcome? = null,
     /** Local item count; -1 means "not yet measured". Populated by [WebDavSyncViewModel.refreshLocalCounts]. */
     val localCount: Int = -1,

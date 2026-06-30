@@ -512,10 +512,12 @@ private fun WebDavSyncItemRow(
     val actionEnabled = enabled && syncReady && !state.interactionLocked
     val running = itemState?.running == true
     val outcome = itemState?.lastOutcome
+    val pending = itemState?.pendingSummary
     val lastSync = itemState?.lastSyncTimeMs?.takeIf { it > 0 }
     val statusText = when {
         running -> stringResource(R.string.webdav_sync_item_running)
         outcome != null -> itemStatusText(outcome)
+        pending != null -> pendingStatusText(pending)
         lastSync != null -> stringResource(R.string.webdav_sync_last_sync, formatTime(lastSync))
         else -> stringResource(item.descriptionRes)
     }
@@ -523,6 +525,7 @@ private fun WebDavSyncItemRow(
         running -> MiuixTheme.colorScheme.primary
         outcome?.isSuccess == true -> Color(0xFF22C55E)
         outcome != null -> MiuixTheme.colorScheme.error
+        pending != null -> MiuixTheme.colorScheme.error
         else -> MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     }
     val localCount = itemState?.localCount ?: -1
@@ -698,8 +701,22 @@ private fun itemStatusText(status: WebDavItemStatus): String = when (status) {
     WebDavItemStatus.PermissionDenied -> stringResource(R.string.webdav_sync_status_permission_denied)
     WebDavItemStatus.NetworkError -> stringResource(R.string.webdav_sync_status_network_error)
     WebDavItemStatus.ConflictUnresolved -> stringResource(R.string.webdav_sync_status_conflict)
+    WebDavItemStatus.BaselineRequired -> stringResource(R.string.webdav_sync_status_baseline_required)
     WebDavItemStatus.Error -> stringResource(R.string.webdav_sync_status_error)
 }
+
+@Composable
+private fun pendingStatusText(summary: WebDavSyncPendingSummary): String =
+    when (summary.state) {
+        WebDavSyncPendingState.LocalUploadPending ->
+            stringResource(R.string.webdav_sync_pending_local_upload, formatTime(summary.updatedAtMs))
+
+        WebDavSyncPendingState.RemoteConflict ->
+            stringResource(R.string.webdav_sync_pending_remote_conflict, formatTime(summary.updatedAtMs))
+
+        WebDavSyncPendingState.BaselineRequired ->
+            stringResource(R.string.webdav_sync_pending_baseline_required, formatTime(summary.updatedAtMs))
+    }
 
 @Composable
 private fun remoteProbeErrorLine(outcome: WebDavItemOutcome): String {

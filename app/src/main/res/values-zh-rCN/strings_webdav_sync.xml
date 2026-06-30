@@ -68,7 +68,7 @@
     <string name="webdav_sync_url_error_scheme">地址需以 http:// 或 https:// 开头</string>
 
     <string name="webdav_sync_auto_sync_label">自动同步</string>
-    <string name="webdav_sync_auto_sync_summary">应用启动时及本地数据变化后自动同步</string>
+    <string name="webdav_sync_auto_sync_summary">启动时检查远端；本地变更会安全上传；冲突会保留本地等待处理。</string>
 
     <string name="webdav_sync_sync_all">全部同步</string>
     <string name="webdav_sync_upload_all">全部上传</string>
@@ -92,8 +92,12 @@
     <string name="webdav_sync_status_network_error">网络异常</string>
     <string name="webdav_sync_status_invalid_url">服务器地址无效</string>
     <string name="webdav_sync_status_conflict">同步过程中远端有变动 — 请重试</string>
+    <string name="webdav_sync_status_baseline_required">需要先建立同步基线</string>
     <string name="webdav_sync_status_error">同步出错</string>
     <string name="webdav_sync_status_unknown">未知错误</string>
+    <string name="webdav_sync_pending_local_upload">本地变更等待上传 · %1$s</string>
+    <string name="webdav_sync_pending_remote_conflict">远端有变动，本地数据已保留 · %1$s</string>
+    <string name="webdav_sync_pending_baseline_required">请先刷新或同步一次，建立安全基线 · %1$s</string>
 
     <string name="webdav_sync_clear_label">清除配置</string>
     <string name="webdav_sync_clear_summary">移除已保存的服务器地址、凭据与各项同步元数据。不会删除本地数据。</string>

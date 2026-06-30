@@ -106,7 +106,16 @@ internal object GuideBgmFavoriteStore {
     }
 
     fun buildFavoritesExportJson(nowMs: Long = System.currentTimeMillis()): String {
-        val favorites = favoritesSnapshot()
+        return buildFavoritesExportJson(favoritesSnapshot(), nowMs)
+    }
+
+    fun buildFavoritesFingerprintJson(raw: String): String =
+        buildFavoritesExportJson(parseFavoritesImport(raw), nowMs = 0L)
+
+    fun buildFavoritesExportJson(
+        favorites: List<GuideBgmFavoriteItem>,
+        nowMs: Long = System.currentTimeMillis(),
+    ): String {
         return JSONObject().apply {
             put("type", "keios.ba.bgm_favorites")
             put("version", 1)
