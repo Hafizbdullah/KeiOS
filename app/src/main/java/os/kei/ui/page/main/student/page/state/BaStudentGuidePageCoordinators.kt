@@ -20,18 +20,24 @@ import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 internal fun rememberBaStudentGuideTopBarActionItems(
     shareIcon: androidx.compose.ui.graphics.vector.ImageVector,
     refreshIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    cacheStatusIcon: androidx.compose.ui.graphics.vector.ImageVector,
     shareSourceContentDescription: String,
     refreshContentDescription: String,
+    cacheStatusContentDescription: String,
     onShareSource: () -> Unit,
     onRefresh: () -> Unit,
+    onOpenCacheStatus: () -> Unit,
 ): List<LiquidActionItem> =
     remember(
         shareIcon,
         refreshIcon,
+        cacheStatusIcon,
         shareSourceContentDescription,
         refreshContentDescription,
+        cacheStatusContentDescription,
         onShareSource,
         onRefresh,
+        onOpenCacheStatus,
     ) {
         listOf(
             LiquidActionItem(
@@ -43,6 +49,11 @@ internal fun rememberBaStudentGuideTopBarActionItems(
                 icon = refreshIcon,
                 contentDescription = refreshContentDescription,
                 onClick = onRefresh,
+            ),
+            LiquidActionItem(
+                icon = cacheStatusIcon,
+                contentDescription = cacheStatusContentDescription,
+                onClick = onOpenCacheStatus,
             ),
         )
     }

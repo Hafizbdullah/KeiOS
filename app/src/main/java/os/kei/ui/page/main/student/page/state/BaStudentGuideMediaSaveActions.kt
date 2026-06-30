@@ -132,6 +132,14 @@ internal fun BindBaStudentGuideMediaSaveEvents(guideViewModel: BaStudentGuideVie
                 BaStudentGuideEvent.BgmFavoriteRemoved -> {
                     context.showToast(R.string.guide_bgm_toast_favorite_removed)
                 }
+
+                BaStudentGuideEvent.GuideCacheCleared -> {
+                    context.showToast(R.string.guide_cache_status_toast_cleared)
+                }
+
+                is BaStudentGuideEvent.GuideCacheClearFailed -> {
+                    context.showToast(R.string.guide_cache_status_toast_clear_failed)
+                }
             }
         }
     }

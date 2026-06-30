@@ -50,6 +50,12 @@ internal sealed interface BaStudentGuideEvent {
     data object BgmFavoriteAdded : BaStudentGuideEvent
 
     data object BgmFavoriteRemoved : BaStudentGuideEvent
+
+    data object GuideCacheCleared : BaStudentGuideEvent
+
+    data class GuideCacheClearFailed(
+        val error: Throwable,
+    ) : BaStudentGuideEvent
 }
 
 internal class BaStudentGuideMediaSaveCoordinator(

@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.app.Application
+import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CompletableDeferred
@@ -494,6 +495,40 @@ class BaStudentGuideRepositoryTest {
             assertEquals(result.cacheMeta.releaseDateSec, upsertedReleaseDates[10007L])
         }
 
+    @Test
+    fun `clear guide cache removes payload media and detail meta`() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Application>()
+            val nowMs = 100L * DAY_MS
+            val sourceUrl = "https://www.gamekee.com/ba/tj/10008.html"
+            val metaStore = tempMetaStore(context)
+            metaStore.saveMeta(
+                detailMeta(
+                    sourceUrl = sourceUrl,
+                    contentId = 10008L,
+                    tier = BaGuideStudentDetailFreshnessTier.Stable,
+                    catalogCreatedAtSec = (nowMs - 40L * DAY_MS) / 1000L,
+                    cachedAtMs = nowMs - DAY_MS,
+                    lastValidatedAtMs = nowMs - HOUR_MS,
+                ),
+            )
+            var clearedSourceUrl = ""
+            val repository =
+                repository(
+                    nowMs = nowMs,
+                    cacheSnapshot = BaStudentGuideCacheSnapshot.EMPTY,
+                    catalog = null,
+                    metaStore = metaStore,
+                    fetcher = { guideInfo(sourceUrl = sourceUrl, title = "网络学生", syncedAtMs = nowMs) },
+                    clearer = { _, clearedUrl -> clearedSourceUrl = clearedUrl },
+                )
+
+            repository.clearGuideCache(context, sourceUrl)
+
+            assertEquals(sourceUrl, clearedSourceUrl)
+            assertNull(metaStore.loadMeta(sourceUrl))
+        }
+
     private fun repository(
         nowMs: Long,
         refreshIntervalHours: Int = 12,
@@ -502,6 +537,7 @@ class BaStudentGuideRepositoryTest {
         metaStore: BaGuideStudentDetailFileCacheStore,
         fetcher: suspend (String) -> BaStudentGuideInfo,
         saver: suspend (BaStudentGuideInfo) -> Unit = {},
+        clearer: suspend (Context, String) -> Unit = { _, _ -> },
         releaseDateIndexUpserter: suspend (Map<Long, Long>) -> Unit = {},
     ): BaStudentGuideRepository =
         BaStudentGuideRepository(
@@ -511,7 +547,7 @@ class BaStudentGuideRepositoryTest {
             refreshIntervalLoader = { refreshIntervalHours },
             cacheSnapshotLoader = { cacheSnapshot },
             cacheSaver = saver,
-            cacheClearer = { _, _ -> },
+            cacheClearer = clearer,
             guideFetcher = { sourceUrl, _, _, _ -> fetcher(sourceUrl) },
             catalogBundleLoader = { catalog },
             detailCacheStoreProvider = { metaStore },

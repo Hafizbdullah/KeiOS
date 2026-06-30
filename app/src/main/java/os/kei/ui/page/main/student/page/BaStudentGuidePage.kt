@@ -37,6 +37,7 @@ import os.kei.R
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
+import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.student.GuideBottomTab
@@ -94,6 +95,7 @@ fun BaStudentGuidePage(
     val openLinkFailedText = stringResource(R.string.common_open_link_failed)
     val shareSourceContentDescription = stringResource(R.string.guide_cd_share_source)
     val refreshContentDescription = stringResource(R.string.common_refresh)
+    val cacheStatusContentDescription = stringResource(R.string.guide_cd_cache_status)
     val loadFailedText = stringResource(R.string.guide_load_failed)
     val refreshFailedKeepCacheText = stringResource(R.string.guide_refresh_failed_keep_cached)
     val accent = MiuixTheme.colorScheme.primary
@@ -323,14 +325,21 @@ fun BaStudentGuidePage(
     )
     val shareIcon = appLucideShareIcon()
     val refreshIcon = appLucideRefreshIcon()
+    val cacheStatusIcon = appLucideDatabaseIcon()
+    var showCacheStatusSheet by rememberSaveable { mutableStateOf(false) }
     val actionItems =
         rememberBaStudentGuideTopBarActionItems(
             shareIcon = shareIcon,
             refreshIcon = refreshIcon,
+            cacheStatusIcon = cacheStatusIcon,
             shareSourceContentDescription = shareSourceContentDescription,
             refreshContentDescription = refreshContentDescription,
+            cacheStatusContentDescription = cacheStatusContentDescription,
             onShareSource = pageActions.shareSource,
             onRefresh = pageActions.requestRefresh,
+            onOpenCacheStatus = {
+                showCacheStatusSheet = true
+            },
         )
     CompositionLocalProvider(
         LocalGuideMediaImageBitmaps provides guideMediaImageState.bitmaps,
@@ -438,6 +447,22 @@ fun BaStudentGuidePage(
                     items = actionItems,
                 )
             }
+            BaStudentGuideCacheStatusSheet(
+                show = showCacheStatusSheet,
+                cacheStatus = guideDataState.cacheStatus,
+                backdrop = topBarBackdrop,
+                onDismissRequest = {
+                    showCacheStatusSheet = false
+                },
+                onRefreshCurrentStudent = {
+                    showCacheStatusSheet = false
+                    pageActions.requestRefresh()
+                },
+                onClearCurrentStudentCache = {
+                    showCacheStatusSheet = false
+                    guideViewModel.requestClearCurrentGuideCache()
+                },
+            )
         }
     }
 }

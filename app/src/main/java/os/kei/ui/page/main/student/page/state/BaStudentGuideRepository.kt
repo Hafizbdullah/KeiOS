@@ -122,6 +122,26 @@ internal class BaStudentGuideRepository(
 
     fun consumeInitialBottomTab(sourceUrl: String): GuideBottomTab? = GuideDetailTabRequestStore.consume(sourceUrl)
 
+    suspend fun clearGuideCache(
+        context: Context,
+        sourceUrl: String,
+    ) {
+        val requestUrl = normalizeStudentGuideSourceUrl(sourceUrl)
+        if (requestUrl.isBlank()) return
+        val catalogEntry = resolveCatalogEntrySource(requestUrl)
+        withContext(ioDispatcher) {
+            cacheClearer(context, requestUrl)
+            val store = detailCacheStoreProvider(context)
+            store.remove(requestUrl)
+            catalogEntry
+                ?.contentId
+                ?.takeIf { it > 0L }
+                ?.let(store::loadMetaByContentId)
+                ?.takeIf { meta -> meta.sourceUrl != requestUrl }
+                ?.let { meta -> store.remove(meta.sourceUrl) }
+        }
+    }
+
     suspend fun resolveNpcSatelliteGuide(
         sourceUrl: String,
         info: BaStudentGuideInfo?,

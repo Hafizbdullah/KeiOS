@@ -32,6 +32,7 @@ import os.kei.ui.page.main.student.fetch.normalizeGuideUrl
 import os.kei.ui.page.main.student.page.support.GuideMediaPackSaveRequest
 import os.kei.ui.page.main.student.page.support.GuideMediaSaveRequest
 import os.kei.ui.page.main.student.tabcontent.profile.GuideProfileLinkTitleLoader
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 internal data class BaStudentGuideDataUiState(
@@ -345,6 +346,31 @@ internal class BaStudentGuideViewModel(
             manualRefresh = true,
             allowInitialDelay = false,
         )
+    }
+
+    fun requestClearCurrentGuideCache() {
+        val currentSourceUrl = _dataState.value.sourceUrl
+        if (currentSourceUrl.isBlank()) return
+        viewModelScope.launch {
+            try {
+                repository.clearGuideCache(appContext, currentSourceUrl)
+                _dataState.update { state ->
+                    if (state.sourceUrl == currentSourceUrl) {
+                        state.copy(
+                            error = null,
+                            cacheStatus = BaStudentGuideCacheStatusUiState.Empty,
+                        )
+                    } else {
+                        state
+                    }
+                }
+                mutableEvents.emit(BaStudentGuideEvent.GuideCacheCleared)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                mutableEvents.emit(BaStudentGuideEvent.GuideCacheClearFailed(error))
+            }
+        }
     }
 
     fun requestToggleBgmFavorite(item: GuideBgmFavoriteItem) {
