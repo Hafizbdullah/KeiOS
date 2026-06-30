@@ -130,7 +130,7 @@ private fun BaPoolRoot(
     var guideNonce by remember { mutableLongStateOf(0L) }
     KeiOSBackNavigationHandler(
         enabled = guideOpen,
-        source = BackNavigationSource.MainRoute,
+        source = BackNavigationSource.StandaloneRoute,
     ) {
         guideOpen = false
     }

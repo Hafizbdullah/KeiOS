@@ -92,14 +92,14 @@ class BackNavigationRuntimeTest {
         controller.updatePolicy(policy)
         assertSame(policyState, controller.state)
 
-        controller.beginGesture(BackNavigationSource.MainRoute)
+        controller.beginGesture(BackNavigationSource.StandaloneRoute)
         val gestureState = controller.state
-        controller.beginGesture(BackNavigationSource.MainRoute)
+        controller.beginGesture(BackNavigationSource.StandaloneRoute)
         assertSame(gestureState, controller.state)
 
-        controller.beginCommit(BackNavigationSource.MainRoute)
+        controller.beginCommit(BackNavigationSource.StandaloneRoute)
         val commitState = controller.state
-        controller.beginCommit(BackNavigationSource.MainRoute)
+        controller.beginCommit(BackNavigationSource.StandaloneRoute)
         assertSame(commitState, controller.state)
 
         controller.reset()

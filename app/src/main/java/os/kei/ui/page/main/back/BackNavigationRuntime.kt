@@ -25,7 +25,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 internal enum class BackNavigationSource {
     Idle,
     MainPager,
-    MainRoute,
+    StandaloneRoute,
     Activity,
     Fullscreen,
     Modal
