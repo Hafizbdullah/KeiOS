@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
@@ -550,6 +551,7 @@ private fun NonHomePageBackground(
                 .size(targetWidthPx, targetHeightPx)
                 .scale(Scale.FILL)
                 .precision(Precision.INEXACT)
+                .diskCachePolicy(CachePolicy.DISABLED)
                 .build()
         }
     AsyncImage(
