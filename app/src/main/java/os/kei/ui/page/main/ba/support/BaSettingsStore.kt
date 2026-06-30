@@ -142,11 +142,16 @@ internal object BASettingsStore {
         store.replaceAll(
             accounts = merged.accounts,
             activeAccountId = merged.activeAccountId,
+            activeAccountUpdatedAtMs = merged.activeAccountUpdatedAtMs,
         )
-        store.saveAllAccountsFollowGlobalNotificationSettings(
+        store.saveAllAccountsFollowGlobalNotificationSettingsFromSync(
             merged.allAccountsFollowGlobalNotificationSettings,
+            merged.allAccountsFollowGlobalNotificationSettingsUpdatedAtMs,
         )
-        store.saveGlobalReminderSettings(merged.globalReminderSettings)
+        store.saveGlobalReminderSettingsFromSync(
+            merged.globalReminderSettings,
+            merged.globalReminderSettingsUpdatedAtMs,
+        )
         notifyChanged()
     }
 
@@ -182,6 +187,7 @@ internal object BASettingsStore {
         val store = migratedAccountStore()
         val accountId = newManualAccountId(input.serverIndex)
         val nextNickname = sanitizeBaAccountNickname(input.nickname)
+        val updatedAtMs = System.currentTimeMillis().coerceAtLeast(1L)
         val account =
             BaAccountRecord(
                 profile =
@@ -201,6 +207,10 @@ internal object BASettingsStore {
                     } else {
                         null
                     },
+                profileUpdatedAtMs = updatedAtMs,
+                runtimeUpdatedAtMs = updatedAtMs,
+                reminderRuntimeUpdatedAtMs = updatedAtMs,
+                reminderOverrideUpdatedAtMs = updatedAtMs,
             )
         store.addAccount(account)
         store.selectActiveAccount(account.profile.id)

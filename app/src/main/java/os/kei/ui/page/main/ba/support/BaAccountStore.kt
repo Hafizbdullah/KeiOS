@@ -7,8 +7,13 @@ import os.kei.core.json.KeiJson
 
 internal const val KEY_BA_ACCOUNTS_V1 = "ba_accounts_v1"
 internal const val KEY_BA_ACTIVE_ACCOUNT_ID = "active_account_id"
+internal const val KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS = "active_account_updated_at_ms"
 internal const val KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS =
     "ba_accounts_all_follow_global_notifications"
+internal const val KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS_UPDATED_AT_MS =
+    "ba_accounts_all_follow_global_notifications_updated_at_ms"
+internal const val KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS =
+    "ba_global_reminder_settings_updated_at_ms"
 
 internal interface BaAccountKeyValueStore : BaIdKeyValueStore {
     fun decodeInt(key: String, defaultValue: Int): Int
@@ -29,6 +34,10 @@ internal class BaAccountStore(
             activeAccountId = resolveActiveAccountId(accounts),
             allAccountsFollowGlobalNotificationSettings = loadAllAccountsFollowGlobalNotificationSettings(),
             globalReminderSettings = loadGlobalReminderSettings(),
+            activeAccountUpdatedAtMs = loadActiveAccountUpdatedAtMs(),
+            allAccountsFollowGlobalNotificationSettingsUpdatedAtMs =
+                loadAllAccountsFollowGlobalNotificationSettingsUpdatedAtMs(),
+            globalReminderSettingsUpdatedAtMs = loadGlobalReminderSettingsUpdatedAtMs(),
         )
     }
 
@@ -55,6 +64,7 @@ internal class BaAccountStore(
     fun replaceAll(
         accounts: List<BaAccountRecord>,
         activeAccountId: BaAccountId?,
+        activeAccountUpdatedAtMs: Long = loadActiveAccountUpdatedAtMs(),
     ) {
         val normalized = accounts.normalizedAccounts()
         store.encode(KEY_BA_ACCOUNTS_V1, KeiJson.lenient.encodeToString(normalized))
@@ -64,8 +74,10 @@ internal class BaAccountStore(
             } ?: normalized.firstOrNull()?.profile?.id
         if (resolvedActive == null) {
             store.removeValueForKey(KEY_BA_ACTIVE_ACCOUNT_ID)
+            store.removeValueForKey(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS)
         } else {
             store.encode(KEY_BA_ACTIVE_ACCOUNT_ID, resolvedActive.value)
+            store.encode(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS, activeAccountUpdatedAtMs.coerceAtLeast(0L))
         }
     }
 
@@ -82,23 +94,40 @@ internal class BaAccountStore(
     fun updateAccount(account: BaAccountRecord): Boolean {
         val current = loadAccounts()
         if (current.none { it.profile.id == account.profile.id }) return false
-        saveAccounts(current.map { if (it.profile.id == account.profile.id) account else it })
-        return true
+        var changed = false
+        val updated =
+            current.map { existing ->
+                if (existing.profile.id != account.profile.id) {
+                    existing
+                } else {
+                    val touched =
+                        account
+                            .touchProfileIf(existing.profile != account.profile)
+                            .touchReminderOverrideIf(existing.reminderOverride != account.reminderOverride)
+                    changed = touched != existing
+                    touched
+                }
+            }
+        if (!changed) return false
+        saveAccounts(updated)
+        return changed
     }
 
     fun updateActiveAccountProfile(transform: (BaAccountProfile) -> BaAccountProfile): Boolean =
         updateActiveAccountRecord { account ->
-            account.copy(
-                profile =
-                    transform(account.profile).copy(
-                        id = account.profile.id,
-                    ),
-            )
+            val nextProfile =
+                transform(account.profile).copy(
+                    id = account.profile.id,
+                )
+            account.copy(profile = nextProfile)
+                .touchProfileIf(nextProfile != account.profile)
         }
 
     fun updateActiveAccountRuntime(transform: (BaAccountRuntime) -> BaAccountRuntime): Boolean =
         updateActiveAccountRecord { account ->
-            account.copy(runtime = transform(account.runtime).normalized())
+            val nextRuntime = transform(account.runtime).normalized()
+            account.copy(runtime = nextRuntime)
+                .touchRuntimeIf(nextRuntime != account.runtime.normalized())
         }
 
     fun updateAccountRuntime(
@@ -106,14 +135,18 @@ internal class BaAccountStore(
         transform: (BaAccountRuntime) -> BaAccountRuntime,
     ): Boolean =
         updateAccountRecord(accountId) { account ->
-            account.copy(runtime = transform(account.runtime).normalized())
+            val nextRuntime = transform(account.runtime).normalized()
+            account.copy(runtime = nextRuntime)
+                .touchRuntimeIf(nextRuntime != account.runtime.normalized())
         }
 
     fun updateActiveAccountReminderRuntime(
         transform: (BaAccountReminderRuntime) -> BaAccountReminderRuntime,
     ): Boolean =
         updateActiveAccountRecord { account ->
-            account.copy(reminderRuntime = transform(account.reminderRuntime).normalized())
+            val nextRuntime = transform(account.reminderRuntime).normalized()
+            account.copy(reminderRuntime = nextRuntime)
+                .touchReminderRuntimeIf(nextRuntime != account.reminderRuntime.normalized())
         }
 
     fun updateAccountReminderRuntime(
@@ -121,7 +154,9 @@ internal class BaAccountStore(
         transform: (BaAccountReminderRuntime) -> BaAccountReminderRuntime,
     ): Boolean =
         updateAccountRecord(accountId) { account ->
-            account.copy(reminderRuntime = transform(account.reminderRuntime).normalized())
+            val nextRuntime = transform(account.reminderRuntime).normalized()
+            account.copy(reminderRuntime = nextRuntime)
+                .touchReminderRuntimeIf(nextRuntime != account.reminderRuntime.normalized())
         }
 
     fun deleteAccount(accountId: BaAccountId): Boolean {
@@ -147,7 +182,7 @@ internal class BaAccountStore(
         mutable.add(toIndex, account)
         saveAccounts(
             mutable.mapIndexed { index, record ->
-                record.copy(profile = record.profile.copy(sortOrder = index))
+                record.copy(profile = record.profile.copy(sortOrder = index)).touchProfileIf(true)
             },
         )
         return true
@@ -163,7 +198,9 @@ internal class BaAccountStore(
 
     fun selectActiveAccount(accountId: BaAccountId): Boolean {
         if (loadAccounts().none { it.profile.id == accountId }) return false
+        if (loadActiveAccountId() == accountId) return true
         store.encode(KEY_BA_ACTIVE_ACCOUNT_ID, accountId.value)
+        store.encode(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS, nowMs())
         return true
     }
 
@@ -173,7 +210,9 @@ internal class BaAccountStore(
         store.decodeBool(KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS, true)
 
     fun saveAllAccountsFollowGlobalNotificationSettings(enabled: Boolean) {
+        if (loadAllAccountsFollowGlobalNotificationSettings() == enabled) return
         store.encode(KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS, enabled)
+        store.encode(KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS_UPDATED_AT_MS, nowMs())
     }
 
     fun loadGlobalReminderSettings(): BaGlobalReminderSettings =
@@ -194,25 +233,64 @@ internal class BaAccountStore(
 
     fun saveGlobalReminderSettings(settings: BaGlobalReminderSettings) {
         val normalized = settings.normalized()
+        if (loadGlobalReminderSettings() == normalized) return
         store.encode(KEY_AP_NOTIFY_ENABLED, normalized.apNotifyEnabled)
         store.encode(KEY_AP_NOTIFY_THRESHOLD, normalized.apNotifyThreshold)
         store.encode(KEY_CAFE_AP_NOTIFY_ENABLED, normalized.cafeApNotifyEnabled)
         store.encode(KEY_CAFE_AP_NOTIFY_THRESHOLD, normalized.cafeApNotifyThreshold)
         store.encode(KEY_ARENA_REFRESH_NOTIFY_ENABLED, normalized.arenaRefreshNotifyEnabled)
         store.encode(KEY_CAFE_VISIT_NOTIFY_ENABLED, normalized.cafeVisitNotifyEnabled)
+        store.encode(KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS, nowMs())
+    }
+
+    fun saveAllAccountsFollowGlobalNotificationSettingsFromSync(
+        enabled: Boolean,
+        updatedAtMs: Long,
+    ) {
+        store.encode(KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS, enabled)
+        store.encode(
+            KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS_UPDATED_AT_MS,
+            updatedAtMs.coerceAtLeast(0L),
+        )
+    }
+
+    fun saveGlobalReminderSettingsFromSync(
+        settings: BaGlobalReminderSettings,
+        updatedAtMs: Long,
+    ) {
+        val normalized = settings.normalized()
+        store.encode(KEY_AP_NOTIFY_ENABLED, normalized.apNotifyEnabled)
+        store.encode(KEY_AP_NOTIFY_THRESHOLD, normalized.apNotifyThreshold)
+        store.encode(KEY_CAFE_AP_NOTIFY_ENABLED, normalized.cafeApNotifyEnabled)
+        store.encode(KEY_CAFE_AP_NOTIFY_THRESHOLD, normalized.cafeApNotifyThreshold)
+        store.encode(KEY_ARENA_REFRESH_NOTIFY_ENABLED, normalized.arenaRefreshNotifyEnabled)
+        store.encode(KEY_CAFE_VISIT_NOTIFY_ENABLED, normalized.cafeVisitNotifyEnabled)
+        store.encode(KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS, updatedAtMs.coerceAtLeast(0L))
     }
 
     private fun repairActiveAccount(accounts: List<BaAccountRecord>): BaAccountId? {
         val resolved = resolveActiveAccountId(accounts)
         if (resolved == null) {
             store.removeValueForKey(KEY_BA_ACTIVE_ACCOUNT_ID)
+            store.removeValueForKey(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS)
             return null
         }
         if (loadActiveAccountId() != resolved) {
             store.encode(KEY_BA_ACTIVE_ACCOUNT_ID, resolved.value)
+            store.encode(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS, nowMs())
         }
         return resolved
     }
+
+    private fun loadActiveAccountUpdatedAtMs(): Long =
+        store.decodeLong(KEY_BA_ACTIVE_ACCOUNT_UPDATED_AT_MS, 0L).coerceAtLeast(0L)
+
+    private fun loadAllAccountsFollowGlobalNotificationSettingsUpdatedAtMs(): Long =
+        store.decodeLong(KEY_BA_ACCOUNTS_ALL_FOLLOW_GLOBAL_NOTIFICATIONS_UPDATED_AT_MS, 0L)
+            .coerceAtLeast(0L)
+
+    private fun loadGlobalReminderSettingsUpdatedAtMs(): Long =
+        store.decodeLong(KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS, 0L).coerceAtLeast(0L)
 
     private fun resolveActiveAccountId(accounts: List<BaAccountRecord>): BaAccountId? {
         val active = loadActiveAccountId()
@@ -245,26 +323,46 @@ internal class BaAccountStore(
         accountId: BaAccountId,
         transform: (BaAccountRecord) -> BaAccountRecord,
     ): Boolean {
+        var found = false
         var changed = false
         val updated =
             accounts.map { account ->
                 if (account.profile.id != accountId) {
                     account
                 } else {
-                    changed = true
+                    found = true
                     val transformed = transform(account)
-                    transformed.copy(
-                        profile =
-                            transformed.profile.copy(
-                                id = accountId,
-                            ),
-                    )
+                    val next =
+                        transformed.copy(
+                            profile =
+                                transformed.profile.copy(
+                                    id = accountId,
+                                ),
+                        )
+                    if (next != account) {
+                        changed = true
+                    }
+                    next
                 }
             }
-        if (!changed) return false
+        if (!found || !changed) return false
         saveAccounts(updated)
         return true
     }
+
+    private fun BaAccountRecord.touchRuntimeIf(changed: Boolean): BaAccountRecord =
+        if (changed) copy(runtimeUpdatedAtMs = nowMs()) else this
+
+    private fun BaAccountRecord.touchProfileIf(changed: Boolean): BaAccountRecord =
+        if (changed) copy(profileUpdatedAtMs = nowMs()) else this
+
+    private fun BaAccountRecord.touchReminderRuntimeIf(changed: Boolean): BaAccountRecord =
+        if (changed) copy(reminderRuntimeUpdatedAtMs = nowMs()) else this
+
+    private fun BaAccountRecord.touchReminderOverrideIf(changed: Boolean): BaAccountRecord =
+        if (changed) copy(reminderOverrideUpdatedAtMs = nowMs()) else this
+
+    private fun nowMs(): Long = System.currentTimeMillis().coerceAtLeast(1L)
 }
 
 internal fun List<BaAccountRecord>.normalizedAccounts(): List<BaAccountRecord> {

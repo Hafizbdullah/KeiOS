@@ -89,6 +89,10 @@ internal data class BaAccountRecord(
     val runtime: BaAccountRuntime = BaAccountRuntime(),
     val reminderRuntime: BaAccountReminderRuntime = BaAccountReminderRuntime(),
     val reminderOverride: BaAccountReminderOverride? = null,
+    val profileUpdatedAtMs: Long = 0L,
+    val runtimeUpdatedAtMs: Long = 0L,
+    val reminderRuntimeUpdatedAtMs: Long = 0L,
+    val reminderOverrideUpdatedAtMs: Long = 0L,
 )
 
 internal data class BaAccountStoreSnapshot(
@@ -96,6 +100,9 @@ internal data class BaAccountStoreSnapshot(
     val activeAccountId: BaAccountId?,
     val allAccountsFollowGlobalNotificationSettings: Boolean,
     val globalReminderSettings: BaGlobalReminderSettings,
+    val activeAccountUpdatedAtMs: Long = 0L,
+    val allAccountsFollowGlobalNotificationSettingsUpdatedAtMs: Long = 0L,
+    val globalReminderSettingsUpdatedAtMs: Long = 0L,
 )
 
 internal fun BaAccountStoreSnapshot.enabledServerIndices(): List<Int> =
@@ -152,6 +159,10 @@ internal fun BaAccountRecord.normalized(defaultSortOrder: Int): BaAccountRecord?
         runtime = runtime.normalized(),
         reminderRuntime = reminderRuntime.normalized(),
         reminderOverride = reminderOverride?.normalized(accountId),
+        profileUpdatedAtMs = profileUpdatedAtMs.coerceAtLeast(0L),
+        runtimeUpdatedAtMs = runtimeUpdatedAtMs.coerceAtLeast(0L),
+        reminderRuntimeUpdatedAtMs = reminderRuntimeUpdatedAtMs.coerceAtLeast(0L),
+        reminderOverrideUpdatedAtMs = reminderOverrideUpdatedAtMs.coerceAtLeast(0L),
     )
 }
 

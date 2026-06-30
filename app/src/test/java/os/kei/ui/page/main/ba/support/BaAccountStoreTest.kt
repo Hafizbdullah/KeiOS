@@ -343,6 +343,54 @@ class BaAccountStoreTest {
         assertTrue(override.cafeVisitNotifyEnabled)
     }
 
+    @Test
+    fun `field timestamps move only when stored values change`() {
+        val backingStore = InMemoryBaAccountKeyValueStore()
+        val store = BaAccountStore(backingStore)
+        val accountId = BaAccountId("cn-main")
+        store.saveAccounts(listOf(testAccount(id = accountId.value, serverIndex = 0)))
+
+        assertFalse(
+            store.updateAccountRuntime(accountId) { runtime ->
+                runtime.copy(apCurrent = DEFAULT_AP_CURRENT)
+            },
+        )
+        assertEquals(0L, store.loadAccounts().single().runtimeUpdatedAtMs)
+
+        assertTrue(
+            store.updateAccountRuntime(accountId) { runtime ->
+                runtime.copy(apCurrent = 80.0)
+            },
+        )
+        val firstRuntimeTimestamp = store.loadAccounts().single().runtimeUpdatedAtMs
+        assertTrue(firstRuntimeTimestamp > 0L)
+
+        assertFalse(
+            store.updateAccountRuntime(accountId) { runtime ->
+                runtime.copy(apCurrent = 80.0)
+            },
+        )
+        assertEquals(firstRuntimeTimestamp, store.loadAccounts().single().runtimeUpdatedAtMs)
+
+        assertEquals(0L, store.loadState().allAccountsFollowGlobalNotificationSettingsUpdatedAtMs)
+        store.saveAllAccountsFollowGlobalNotificationSettings(false)
+        val firstGlobalFollowTimestamp =
+            store.loadState().allAccountsFollowGlobalNotificationSettingsUpdatedAtMs
+        assertTrue(firstGlobalFollowTimestamp > 0L)
+        store.saveAllAccountsFollowGlobalNotificationSettings(false)
+        assertEquals(
+            firstGlobalFollowTimestamp,
+            store.loadState().allAccountsFollowGlobalNotificationSettingsUpdatedAtMs,
+        )
+
+        assertEquals(0L, store.loadState().globalReminderSettingsUpdatedAtMs)
+        store.saveGlobalReminderSettings(BaGlobalReminderSettings(apNotifyEnabled = true))
+        val firstReminderSettingsTimestamp = store.loadState().globalReminderSettingsUpdatedAtMs
+        assertTrue(firstReminderSettingsTimestamp > 0L)
+        store.saveGlobalReminderSettings(BaGlobalReminderSettings(apNotifyEnabled = true))
+        assertEquals(firstReminderSettingsTimestamp, store.loadState().globalReminderSettingsUpdatedAtMs)
+    }
+
     private fun testAccount(
         id: String,
         serverIndex: Int,
