@@ -805,6 +805,7 @@
     <string name="github_track_sheet_section_fdroid_candidates">F-Droid candidates</string>
     <string name="github_track_sheet_fdroid_candidate_count_format">%1$d found</string>
     <string name="github_track_sheet_fdroid_candidate_selected">Selected</string>
+    <string name="github_track_sheet_fdroid_candidate_source_package_api">Package API</string>
     <string name="github_track_sheet_fdroid_candidate_source_api">Search API</string>
     <string name="github_track_sheet_fdroid_candidate_source_index">Repo index</string>
     <string name="github_track_sheet_fdroid_candidate_versions_format">Version %1$s (%2$d) · %3$d total</string>

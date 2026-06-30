@@ -1,6 +1,7 @@
 package os.kei.feature.github.model
 
 enum class FdroidAppSearchSource {
+    PackageApi,
     OfficialSearchApi,
     RepositoryIndex
 }

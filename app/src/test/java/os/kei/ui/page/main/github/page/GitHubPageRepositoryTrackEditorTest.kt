@@ -196,6 +196,38 @@ class GitHubPageRepositoryTrackEditorTest {
     }
 
     @Test
+    fun `fdroid source preserves explicit package page url for custom repository`() = runBlocking {
+        val result = repository.buildTrackedItem(
+            GitHubTrackEditorDraft(
+                sourceMode = GitHubTrackedSourceMode.FdroidRepository,
+                repoUrl = "https://repo.example/fdroid/repo",
+                packageName = "com.example.app",
+                preferPreRelease = false,
+                alwaysShowLatestReleaseDownloadButton = true,
+                checkActionsUpdates = true,
+                updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours12,
+                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
+                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
+                fdroidConfig = FdroidTrackedAppConfig(
+                    packagePageUrl = "https://repo.example/apps/com.example.app",
+                    repoPresetId = "custom",
+                ),
+                appList = emptyList(),
+            )
+        )
+
+        val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
+
+        assertEquals("https://repo.example/fdroid/repo", item.repoUrl)
+        assertEquals("com.example.app", item.packageName)
+        assertEquals(
+            "https://repo.example/apps/com.example.app",
+            item.fdroidConfig.packagePageUrl,
+        )
+        assertEquals("custom", item.fdroidConfig.repoPresetId)
+    }
+
+    @Test
     fun `track editor draft preserves ignore policy`() = runBlocking {
         val result = repository.buildTrackedItem(
             GitHubTrackEditorDraft(

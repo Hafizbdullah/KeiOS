@@ -111,6 +111,65 @@ class FdroidAppSearchServiceTest {
         }
 
     @Test
+    fun `fdroid main package scan uses package api when search api misses`() =
+        runBlocking {
+            val service = FdroidAppSearchService(
+                searchApiClient = fakeSearchApiClient(apps = emptyList()),
+                packageApiProvider = FdroidPackageSearchProvider { repoUrl, packageName ->
+                    Result.success(
+                        packageSnapshot(
+                            packageName = packageName,
+                            appName = "AntennaPod",
+                            summary = "Podcast player",
+                        ).copy(repoUrl = repoUrl)
+                    )
+                },
+                repositorySearchProvider = FdroidRepositorySearchProvider { _, _, _, _, _ ->
+                    error("repository index should not be scanned after package api hit")
+                }
+            )
+
+            val result = service.search(
+                FdroidAppSearchRequest(
+                    packageName = "de.danoeh.antennapod",
+                    repoUrls = listOf(FdroidRepositoryPresets.Main.repoUrl)
+                )
+            ).getOrThrow()
+
+            assertEquals(1, result.candidates.size)
+            val candidate = result.candidates.single()
+            assertEquals("de.danoeh.antennapod", candidate.packageName)
+            assertEquals("AntennaPod", candidate.appName)
+            assertEquals(FdroidAppSearchSource.PackageApi, candidate.source)
+            assertEquals(FdroidRepositoryPresets.MAIN_ID, candidate.repoPresetId)
+            assertTrue(result.failures.isEmpty())
+        }
+
+    @Test
+    fun `fdroid main package api miss stays quiet when search api succeeds empty`() =
+        runBlocking {
+            val service = FdroidAppSearchService(
+                searchApiClient = fakeSearchApiClient(apps = emptyList()),
+                packageApiProvider = FdroidPackageSearchProvider { _, _ ->
+                    Result.failure(IllegalStateException("package not found"))
+                },
+                repositorySearchProvider = FdroidRepositorySearchProvider { _, _, _, _, _ ->
+                    error("repository index should stay idle after official empty result")
+                }
+            )
+
+            val result = service.search(
+                FdroidAppSearchRequest(
+                    packageName = "missing.package",
+                    repoUrls = listOf(FdroidRepositoryPresets.Main.repoUrl)
+                )
+            ).getOrThrow()
+
+            assertTrue(result.candidates.isEmpty())
+            assertTrue(result.failures.isEmpty())
+        }
+
+    @Test
     fun `fdroid main falls back to repository index when official search api fails`() =
         runBlocking {
             val service = FdroidAppSearchService(

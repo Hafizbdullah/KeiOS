@@ -23,6 +23,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.feature.github.model.buildFdroidRepositoryTrackIdentity
 import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import os.kei.feature.github.model.coerceForSource
 import os.kei.feature.github.model.defaultKeiOsTrackedApp
@@ -568,21 +569,14 @@ internal class GitHubTrackActions(
     }
 
     fun applyTrackSheet() {
+        val selectedFdroidCandidate = selectedFdroidCandidateForDraft()
+        val editingFdroidConfig = editingFdroidConfigForDraft()
         val draft =
             GitHubTrackEditorDraft(
                 sourceMode = state.trackSourceModeInput,
                 repoUrl = state.repoUrlInput,
                 packageName = state.packageNameInput,
-                appLabelOverride =
-                    state.fdroidSelectedCandidate
-                        ?.takeIf { candidate ->
-                            state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository &&
-                                candidate.repoUrl.trim().trimEnd('/')
-                                    .equals(state.repoUrlInput.trim().trimEnd('/'), ignoreCase = true) &&
-                                candidate.packageName.equals(state.packageNameInput.trim(), ignoreCase = true)
-                        }
-                        ?.appName
-                        .orEmpty(),
+                appLabelOverride = selectedFdroidCandidate?.appName.orEmpty(),
                 preferPreRelease = state.preferPreReleaseInput,
                 alwaysShowLatestReleaseDownloadButton =
                     when (state.trackSourceModeInput) {
@@ -643,13 +637,20 @@ internal class GitHubTrackActions(
                             apkNameRegex = state.fdroidApkNameRegexInput.trim(),
                             trustPolicy = state.fdroidTrustPolicyInput,
                             antiFeaturePolicy = state.fdroidAntiFeaturePolicyInput,
-                            packagePageUrl = state.fdroidSelectedCandidate?.packagePageUrl.orEmpty(),
+                            packagePageUrl =
+                                selectedFdroidCandidate
+                                    ?.packagePageUrl
+                                    ?.takeIf { url -> url.isNotBlank() }
+                                    ?: editingFdroidConfig?.packagePageUrl.orEmpty(),
                             repoPresetId =
-                                if (state.fdroidRepoScopeIdInput == FdroidRepositoryPresets.COMMON_ID) {
-                                    FdroidRepositoryPresets.presetForRepoUrl(state.repoUrlInput)?.id.orEmpty()
-                                } else {
-                                    state.fdroidRepoScopeIdInput
-                                }
+                                selectedFdroidCandidate
+                                    ?.repoPresetId
+                                    ?.takeIf { id -> id.isNotBlank() }
+                                    ?: if (state.fdroidRepoScopeIdInput == FdroidRepositoryPresets.COMMON_ID) {
+                                        FdroidRepositoryPresets.presetForRepoUrl(state.repoUrlInput)?.id.orEmpty()
+                                    } else {
+                                        state.fdroidRepoScopeIdInput
+                                    }
                         )
                     } else {
                         FdroidTrackedAppConfig()
@@ -840,6 +841,42 @@ internal class GitHubTrackActions(
                 app.packageName.equals(packageName, ignoreCase = true)
             } ?: return
         state.selectedApp = refreshedApp
+    }
+
+    private fun selectedFdroidCandidateForDraft(): FdroidAppSearchCandidate? {
+        if (state.trackSourceModeInput != GitHubTrackedSourceMode.FdroidRepository) return null
+        return state.fdroidSelectedCandidate
+            ?.takeIf { candidate ->
+                candidate.repoUrl.trim().trimEnd('/')
+                    .equals(state.repoUrlInput.trim().trimEnd('/'), ignoreCase = true) &&
+                    candidate.packageName.equals(state.packageNameInput.trim(), ignoreCase = true)
+            }
+    }
+
+    private fun editingFdroidConfigForDraft(): FdroidTrackedAppConfig? {
+        if (state.trackSourceModeInput != GitHubTrackedSourceMode.FdroidRepository) return null
+        val editingItem = state.editingTrackedItem
+            ?.takeIf { item -> item.sourceMode == GitHubTrackedSourceMode.FdroidRepository }
+            ?: return null
+        val draftIdentity = buildFdroidRepositoryTrackIdentity(
+            rawUrl = state.repoUrlInput,
+            rawPackageName = state.packageNameInput,
+        ) ?: return null
+        val editingIdentity = buildFdroidRepositoryTrackIdentity(
+            rawUrl = editingItem.repoUrl,
+            rawPackageName = editingItem.packageName,
+        ) ?: return null
+        val sameRepo =
+            draftIdentity.normalizedRepoUrl.equals(
+                editingIdentity.normalizedRepoUrl,
+                ignoreCase = true,
+            )
+        val samePackage =
+            draftIdentity.packageName.equals(
+                editingIdentity.packageName,
+                ignoreCase = true,
+            )
+        return editingItem.fdroidConfig.takeIf { sameRepo && samePackage }
     }
 
     private fun currentEditingReleaseIgnoreKey(channel: GitHubReleaseIgnoreChannel): String {

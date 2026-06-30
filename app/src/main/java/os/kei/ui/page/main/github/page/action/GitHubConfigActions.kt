@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubProfileDepth
 import os.kei.feature.github.model.GitHubShareImportFlowMode
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.RefreshIntervalOption
@@ -466,6 +467,16 @@ internal class GitHubConfigActions(
             repository.saveLookupConfig(newConfig)
             state.lookupConfig = newConfig
             state.fdroidCommonRepoIdsInput = newConfig.normalizedFdroidCommonRepoIds
+            if (previousConfig.normalizedFdroidCommonRepoIds != newConfig.normalizedFdroidCommonRepoIds &&
+                state.trackSourceModeInput == GitHubTrackedSourceMode.FdroidRepository &&
+                state.fdroidRepoScopeIdInput == FdroidRepositoryPresets.COMMON_ID
+            ) {
+                state.fdroidAppSearchCandidates = emptyList()
+                state.fdroidSelectedCandidate = null
+                state.fdroidAppSearchFailures = emptyList()
+                state.fdroidAppSearchFailuresExpanded = false
+                state.fdroidAppSearchRepoReports = emptyList()
+            }
             closeDroidSourcesSheet()
             if (previousConfig.normalizedFdroidCommonRepoIds == newConfig.normalizedFdroidCommonRepoIds) {
                 env.toast(R.string.github_toast_fdroid_sources_unchanged)

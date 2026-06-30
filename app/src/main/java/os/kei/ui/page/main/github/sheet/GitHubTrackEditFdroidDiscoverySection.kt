@@ -553,6 +553,10 @@ private fun FdroidCandidateRow(
                 label =
                     stringResource(
                         when (candidate.source) {
+                            FdroidAppSearchSource.PackageApi -> {
+                                R.string.github_track_sheet_fdroid_candidate_source_package_api
+                            }
+
                             FdroidAppSearchSource.OfficialSearchApi -> {
                                 R.string.github_track_sheet_fdroid_candidate_source_api
                             }
