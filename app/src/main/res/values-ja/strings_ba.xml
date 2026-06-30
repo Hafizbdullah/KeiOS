@@ -102,6 +102,7 @@
     <string name="ba_account_management_editor_display_name">表示名</string>
     <string name="ba_account_management_editor_nickname">ニックネーム</string>
     <string name="ba_account_management_editor_friend_code">フレンドコード</string>
+    <string name="ba_account_management_editor_friend_code_summary">中国版は小文字英字と数字を保持し、グローバル版と日本版は大文字で保存します。</string>
     <string name="ba_account_management_editor_server">サーバー</string>
     <string name="ba_account_management_editor_cancel">キャンセル</string>
     <string name="ba_account_management_editor_save">保存</string>

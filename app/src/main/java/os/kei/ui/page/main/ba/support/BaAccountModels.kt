@@ -119,36 +119,61 @@ internal data class BaAccountReminderSnapshot(
     val snapshot: BaPageSnapshot,
 )
 
-internal fun sanitizeBaAccountNickname(name: String): String =
-    name.trim().take(10).ifEmpty { BA_DEFAULT_NICKNAME }
-
-internal fun normalizeBaAccountFriendCodeInput(code: String): String =
-    code
+internal fun sanitizeBaAccountNickname(name: String, serverIndex: Int? = null): String =
+    name
         .trim()
-        .uppercase(Locale.ROOT)
-        .filter { it in 'A'..'Z' || it in '0'..'9' }
-        .take(8)
+        .take(baAccountNicknameMaxLength(serverIndex))
+        .ifEmpty { BA_DEFAULT_NICKNAME }
 
-internal fun sanitizeBaAccountFriendCode(code: String): String {
-    val normalized = normalizeBaAccountFriendCodeInput(code)
-    return if (normalized.length == 8) normalized else BA_DEFAULT_FRIEND_CODE
+internal fun normalizeBaAccountFriendCodeInput(code: String, serverIndex: Int? = null): String {
+    val trimmed = code.trim()
+    val normalizedServerIndex = serverIndex?.coerceIn(0, 2)
+    return if (normalizedServerIndex == BA_SERVER_INDEX_CN) {
+        trimmed
+            .lowercase(Locale.ROOT)
+            .filter { it in 'a'..'z' || it in '0'..'9' }
+            .take(BA_FRIEND_CODE_LENGTH)
+    } else {
+        trimmed
+            .uppercase(Locale.ROOT)
+            .filter { it in 'A'..'Z' || it in '0'..'9' }
+            .take(BA_FRIEND_CODE_LENGTH)
+    }
+}
+
+internal fun sanitizeBaAccountFriendCode(code: String, serverIndex: Int? = null): String {
+    val normalized = normalizeBaAccountFriendCodeInput(code, serverIndex)
+    return if (normalized.length == BA_FRIEND_CODE_LENGTH) {
+        normalized
+    } else {
+        normalizeBaAccountFriendCodeInput(BA_DEFAULT_FRIEND_CODE, serverIndex)
+    }
 }
 
 internal fun sanitizeBaAccountDisplayName(
     displayName: String,
     nickname: String,
 ): String =
-    displayName.trim().take(24).ifEmpty { sanitizeBaAccountNickname(nickname) }
+    displayName
+        .trim()
+        .take(24)
+        .ifEmpty {
+            nickname
+                .trim()
+                .take(24)
+                .ifEmpty { BA_DEFAULT_NICKNAME }
+        }
 
 internal fun BaAccountRecord.normalized(defaultSortOrder: Int): BaAccountRecord? {
     val accountId = BaAccountId(profile.id.value.trim())
     if (accountId.value.isBlank()) return null
-    val nickname = sanitizeBaAccountNickname(profile.nickname)
-    val friendCode = sanitizeBaAccountFriendCode(profile.friendCode)
+    val serverIndex = profile.serverIndex.coerceIn(0, 2)
+    val nickname = sanitizeBaAccountNickname(profile.nickname, serverIndex)
+    val friendCode = sanitizeBaAccountFriendCode(profile.friendCode, serverIndex)
     val normalizedProfile =
         profile.copy(
             id = accountId,
-            serverIndex = profile.serverIndex.coerceIn(0, 2),
+            serverIndex = serverIndex,
             displayName = sanitizeBaAccountDisplayName(profile.displayName, nickname),
             nickname = nickname,
             friendCode = friendCode,
@@ -165,6 +190,19 @@ internal fun BaAccountRecord.normalized(defaultSortOrder: Int): BaAccountRecord?
         reminderOverrideUpdatedAtMs = reminderOverrideUpdatedAtMs.coerceAtLeast(0L),
     )
 }
+
+private fun baAccountNicknameMaxLength(serverIndex: Int?): Int =
+    if (serverIndex?.coerceIn(0, 2) == BA_SERVER_INDEX_GLOBAL) {
+        BA_GLOBAL_NICKNAME_MAX_LENGTH
+    } else {
+        BA_DEFAULT_NICKNAME_MAX_LENGTH
+    }
+
+private const val BA_SERVER_INDEX_CN = 0
+private const val BA_SERVER_INDEX_GLOBAL = 1
+private const val BA_DEFAULT_NICKNAME_MAX_LENGTH = 10
+private const val BA_GLOBAL_NICKNAME_MAX_LENGTH = 12
+private const val BA_FRIEND_CODE_LENGTH = 8
 
 internal fun BaAccountRuntime.normalized(): BaAccountRuntime =
     copy(

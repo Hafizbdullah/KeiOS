@@ -185,18 +185,19 @@ internal object BASettingsStore {
 
     fun addAccount(input: BaAccountProfileInput): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
-        val accountId = newManualAccountId(input.serverIndex)
-        val nextNickname = sanitizeBaAccountNickname(input.nickname)
+        val serverIndex = input.serverIndex.coerceIn(0, 2)
+        val accountId = newManualAccountId(serverIndex)
+        val nextNickname = sanitizeBaAccountNickname(input.nickname, serverIndex)
         val updatedAtMs = System.currentTimeMillis().coerceAtLeast(1L)
         val account =
             BaAccountRecord(
                 profile =
                     BaAccountProfile(
                         id = accountId,
-                        serverIndex = input.serverIndex.coerceIn(0, 2),
+                        serverIndex = serverIndex,
                         displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
                         nickname = nextNickname,
-                        friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                        friendCode = sanitizeBaAccountFriendCode(input.friendCode, serverIndex),
                         notificationMode = input.notificationMode,
                         remindersEnabled = input.remindersEnabled,
                         sortOrder = store.loadAccounts().size,
@@ -225,15 +226,16 @@ internal object BASettingsStore {
         val store = migratedAccountStore()
         val account = store.loadAccounts().firstOrNull { it.profile.id == accountId }
         if (account != null) {
-            val nextNickname = sanitizeBaAccountNickname(input.nickname)
+            val serverIndex = input.serverIndex.coerceIn(0, 2)
+            val nextNickname = sanitizeBaAccountNickname(input.nickname, serverIndex)
             store.updateAccount(
                 account.copy(
                     profile =
                         account.profile.copy(
-                            serverIndex = input.serverIndex.coerceIn(0, 2),
+                            serverIndex = serverIndex,
                             displayName = sanitizeBaAccountDisplayName(input.displayName, nextNickname),
                             nickname = nextNickname,
-                            friendCode = sanitizeBaAccountFriendCode(input.friendCode),
+                            friendCode = sanitizeBaAccountFriendCode(input.friendCode, serverIndex),
                             notificationMode = input.notificationMode,
                             remindersEnabled = input.remindersEnabled,
                         ),
@@ -864,8 +866,11 @@ internal object BASettingsStore {
             if (serverIndex != null && serverIndex.coerceIn(0, 2) != profile.serverIndex) {
                 return@updateActiveAccountProfile profile
             }
-            val nextNickname = nickname?.let(::sanitizeBaAccountNickname) ?: profile.nickname
-            val nextFriendCode = friendCode?.let(::sanitizeBaAccountFriendCode) ?: profile.friendCode
+            val normalizedServerIndex = profile.serverIndex.coerceIn(0, 2)
+            val nextNickname =
+                nickname?.let { sanitizeBaAccountNickname(it, normalizedServerIndex) } ?: profile.nickname
+            val nextFriendCode =
+                friendCode?.let { sanitizeBaAccountFriendCode(it, normalizedServerIndex) } ?: profile.friendCode
             profile.copy(
                 displayName =
                     if (nickname != null && profile.displayName == profile.nickname) {

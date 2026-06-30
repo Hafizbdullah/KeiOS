@@ -102,6 +102,7 @@
     <string name="ba_account_management_editor_display_name">显示名</string>
     <string name="ba_account_management_editor_nickname">昵称</string>
     <string name="ba_account_management_editor_friend_code">好友码</string>
+    <string name="ba_account_management_editor_friend_code_summary">国服保留小写字母和数字；国际服与日服会保存为大写。</string>
     <string name="ba_account_management_editor_server">服务器</string>
     <string name="ba_account_management_editor_cancel">取消</string>
     <string name="ba_account_management_editor_save">保存</string>

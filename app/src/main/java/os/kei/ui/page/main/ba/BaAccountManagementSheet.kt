@@ -31,6 +31,7 @@ import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.ba.support.normalizeBaAccountFriendCodeInput
+import os.kei.ui.page.main.ba.support.sanitizeBaAccountFriendCode
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -108,7 +109,7 @@ internal fun BaAccountManagementSheet(
                 editingAccountId = null,
                 displayName = defaultAccountName,
                 nickname = defaultAccountName,
-                friendCode = "ARISUKEI",
+                friendCode = sanitizeBaAccountFriendCode("ARISUKEI", defaultServerIndex),
                 serverIndex = defaultServerIndex,
                 notificationMode = BaAccountNotificationMode.FollowGlobal,
                 remindersEnabled = true,
@@ -289,13 +290,18 @@ private fun BaAccountEditorCard(
         AppLiquidSearchField(
             value = draft.friendCode,
             onValueChange = { value ->
-                onDraftChange(draft.copy(friendCode = normalizeBaAccountFriendCodeInput(value)))
+                onDraftChange(
+                    draft.copy(
+                        friendCode = normalizeBaAccountFriendCodeInput(value, draft.serverIndex),
+                    ),
+                )
             },
             label = stringResource(R.string.ba_account_management_editor_friend_code),
             backdrop = backdrop,
             variant = GlassVariant.SheetInput,
             singleLine = true,
         )
+        SheetDescriptionText(stringResource(R.string.ba_account_management_editor_friend_code_summary))
         SheetControlRow(
             label = stringResource(R.string.ba_account_management_editor_server),
         ) {
@@ -308,7 +314,13 @@ private fun BaAccountEditorCard(
                 anchorBounds = serverDropdownAnchorBounds,
                 onExpandedChange = { serverDropdownExpanded = it },
                 onSelectedIndexChange = { index ->
-                    onDraftChange(draft.copy(serverIndex = index.coerceIn(0, 2)))
+                    val nextServerIndex = index.coerceIn(0, 2)
+                    onDraftChange(
+                        draft.copy(
+                            serverIndex = nextServerIndex,
+                            friendCode = normalizeBaAccountFriendCodeInput(draft.friendCode, nextServerIndex),
+                        ),
+                    )
                     serverDropdownExpanded = false
                 },
                 onAnchorBoundsChange = { serverDropdownAnchorBounds = it },

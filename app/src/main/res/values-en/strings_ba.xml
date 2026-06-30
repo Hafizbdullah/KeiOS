@@ -102,6 +102,7 @@
     <string name="ba_account_management_editor_display_name">Display name</string>
     <string name="ba_account_management_editor_nickname">Nickname</string>
     <string name="ba_account_management_editor_friend_code">Friend code</string>
+    <string name="ba_account_management_editor_friend_code_summary">China server keeps lowercase letters and digits; Global and JP save uppercase codes.</string>
     <string name="ba_account_management_editor_server">Server</string>
     <string name="ba_account_management_editor_cancel">Cancel</string>
     <string name="ba_account_management_editor_save">Save</string>

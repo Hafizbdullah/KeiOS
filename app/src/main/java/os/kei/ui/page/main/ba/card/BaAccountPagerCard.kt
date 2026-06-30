@@ -159,7 +159,7 @@ private fun BaAccountPageCard(
     val context = LocalContext.current
     val accentColor = AppStatusColors.Cached
     val serverName = serverOptions.getOrElse(account.serverIndex) { serverOptions.lastOrNull().orEmpty() }
-    val friendCode = sanitizeBaAccountFriendCode(account.friendCode)
+    val friendCode = sanitizeBaAccountFriendCode(account.friendCode, account.serverIndex)
     val currentOnEditAccount by rememberUpdatedState(onEditAccount)
     val officeTitle =
         when (account.serverIndex.coerceIn(0, 2)) {
