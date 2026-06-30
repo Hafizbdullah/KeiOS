@@ -8,6 +8,12 @@ The model uses GameKee catalog `created_at`, detail-page release date, and local
 
 NPC and satellite entries keep the existing timely-refresh behavior because those entries can change at any time and users usually open them for fresh information.
 
+## Current Delivery Scope
+
+The current implementation target is P0-P2 plus S16. That scope delivers the long-term cache model, detail metadata, cache status UI, refresh/backoff behavior, media retention, low-priority validation, guarded payload migration, diagnostics, and AVD validation.
+
+P3 items are product-design backlog items. They have been evaluated after P0-P2 landed and are kept out of the current delivery until there is a dedicated product request for offline cache packs or cache portability.
+
 ## Current Baseline
 
 | Area | Current State | Main File |
@@ -227,8 +233,15 @@ Extend the BA Guide cache summary.
 | P2 | S12 | Done | Add optional low-priority validation for favorites and recently viewed implemented students. | Repository scheduler tests cover recent-first ordering, favorite ordering, candidate limits, and fresh-cache network skip; catalog page triggers bounded background validation. |
 | P2 | S13 | Done | Run AVD validation: cached student detail, cache-status sheet, and offline cache opening. | Debug AVD `emulator-5554` loaded the student detail page, opened the cache-status sheet, reopened cached detail in airplane mode, and produced no PID-filtered E logs. |
 | P2 | S16 | Done | Measure implemented-student detail payload growth in MMKV and add a guarded file-backed payload migration path when byte/count thresholds justify it. | Payload migration test covers MMKV-format payload byte measurement, guarded file-store migration, MMKV cleanup, and file payload decode; settings and MCP diagnostics now show MMKV/file payload bytes. |
-| P3 | S14 | Planned | Consider offline cache pack or pre-cache for selected favorites. | Product review after P0-P2 land. |
-| P3 | S15 | Planned | Consider WebDAV/import-export coverage for detail cache metadata. | Sync design review after metadata stabilizes. |
+| P3 | S14 | Decided backlog | Consider offline cache pack or pre-cache for selected favorites. | S12 already gives bounded low-priority validation for current/recent/favorite students. A full offline pack needs product UI for selected favorites, storage quota, media size preview, and user-controlled cleanup. |
+| P3 | S15 | Decided backlog | Consider WebDAV/import-export coverage for detail cache metadata. | Current WebDAV/json sync covers user-owned BA accounts, catalog favorites, and BGM favorites. Detail metadata/payload is rebuildable cache data, so remote sync waits for a dedicated cache-portability design. |
+
+## P3 Backlog Decisions
+
+| ID | Decision | Rationale | Next Design Gate |
+| --- | --- | --- | --- |
+| S14 | Keep as future offline-pack feature. | Existing S12 already improves favorites/recent readiness without creating a large user-visible offline package. A full pack should expose size estimates, selected favorites, media inclusion, Wi-Fi/charging policy, and cleanup controls. | Add when users request offline-first student guide browsing or favorites pack download. |
+| S15 | Keep cache metadata/payload out of WebDAV/json sync for this delivery. | BA detail cache is derived from GameKee and can grow quickly with images, audio, and serialized detail payloads. Syncing it now would increase remote data size and stale-cache merge complexity while user-owned BA settings/favorites already sync. | Add after a cache portability spec defines schema versioning, size limits, conflict policy, and remote pruning. |
 
 ## Implementation Notes
 
@@ -270,6 +283,7 @@ Extend the BA Guide cache summary.
 | 2026-07-01 | P2 S12 done | Added bounded low-priority background validation for current/recent detail plus favorite implemented students from the catalog page. It waits for first-screen work, caps candidates to 4, uses single parallelism, and skips network for fresh detail cache. |
 | 2026-07-01 | P2 S16 done | Added file-backed detail payload cache under `filesDir`, guarded MMKV-to-file migration thresholds, payload byte statistics, settings/MCP diagnostics, and deferred startup migration on `AppDispatchers.fileIo`. Validation passed with targeted student cache tests and `:app:compileDebugKotlin`. |
 | 2026-07-01 | P2 S13 done | AVD validation used `emulator-5554` with the debug QA student detail entry. Screenshots captured the loaded detail page, cache-status sheet, and airplane-mode cached opening. PID-filtered logcat files for both online and offline launches were empty at E level. |
+| 2026-07-01 | P3 decided backlog | Reviewed WebDAV/json import-export and BA guide cache boundaries. S14 remains a future offline-pack product feature; S15 remains a future cache-portability design after schema/size/conflict policy is specified. |
 
 ## Open Decisions
 
