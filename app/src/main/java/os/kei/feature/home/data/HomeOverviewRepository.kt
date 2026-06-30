@@ -30,7 +30,6 @@ import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.isValidForTrackedItem
 import os.kei.feature.home.model.HOME_BA_AP_MAX
 import os.kei.feature.home.model.HOME_BA_CAFE_DAILY_AP_BY_LEVEL
-import os.kei.feature.home.model.HOME_BA_DEFAULT_FRIEND_CODE
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -39,6 +38,7 @@ import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeOverviewSnapshot
 import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.feature.home.model.defaultHomeOverviewCards
+import os.kei.feature.home.model.isHomeBaActivated
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
@@ -356,7 +356,7 @@ private fun loadHomeBaOverview(
     accountState: BaAccountStoreSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
 ): HomeBaOverview {
-    val activated = snapshot.idFriendCode != HOME_BA_DEFAULT_FRIEND_CODE
+    val activated = isHomeBaActivated(snapshot.idFriendCode)
     var enabledAccountCount = 0
     var activeAccountName = ""
     accountState.accounts.forEach { account ->
