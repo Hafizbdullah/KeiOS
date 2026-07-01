@@ -65,6 +65,8 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
@@ -218,6 +220,7 @@ fun LiquidGlassBottomBar(
         mutableIntStateOf(selectedIndex.fastCoerceIn(0, safeTabsCount - 1))
     }
     var pressedTabIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
+    var localDragSettledIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
     val currentOnSelected by rememberUpdatedState(onSelected)
 
     class DampedDragAnimationHolder {
@@ -252,7 +255,13 @@ fun LiquidGlassBottomBar(
                 onDragStarted = {},
                 onDragStopped = {
                     val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, safeTabsCount - 1)
+                    localDragSettledIndex = targetIndex
                     currentIndex = targetIndex
+                    if (transitionAnimationsEnabled) {
+                        animateToValue(targetIndex.toFloat())
+                    } else {
+                        snapToValue(targetIndex.toFloat())
+                    }
                     currentOnSelected(targetIndex)
                     animationScope.launch {
                         if (transitionAnimationsEnabled) {
@@ -265,8 +274,8 @@ fun LiquidGlassBottomBar(
                 onDrag = { _, dragAmount ->
                     if (tabWidthPx > 0f) {
                         val progressDelta = dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f
-                        updateValue(
-                            (targetValue + progressDelta).fastCoerceIn(0f, (safeTabsCount - 1).toFloat()),
+                        snapToValue(
+                            (value + progressDelta).fastCoerceIn(0f, (safeTabsCount - 1).toFloat()),
                         )
                         animationScope.launch {
                             offsetAnimation.snapTo(offsetAnimation.value + dragAmount.x)
@@ -282,9 +291,22 @@ fun LiquidGlassBottomBar(
         )
     val currentExternalSelectionPosition = rememberUpdatedState(externalSelectionPosition)
     val currentSelectedPositionProvider = rememberUpdatedState(selectedPositionProvider)
+    val currentLocalDragSettledIndex = rememberUpdatedState(localDragSettledIndex)
     val displaySelectionValueProvider =
         remember(safeTabsCount, dampedDragAnimation) {
-            {
+            selectionProvider@{
+                val localSettledIndex = currentLocalDragSettledIndex.value
+                if (localSettledIndex >= 0) {
+                    val target = localSettledIndex.fastCoerceIn(0, safeTabsCount - 1).toFloat()
+                    val localStillSettling =
+                        dampedDragAnimation.pressProgress > 0.001f ||
+                            abs(dampedDragAnimation.value - target) > 0.001f
+                    return@selectionProvider if (localStillSettling) {
+                        dampedDragAnimation.value
+                    } else {
+                        target
+                    }
+                }
                 val providedPosition =
                     currentSelectedPositionProvider.value
                         ?.invoke()
@@ -303,6 +325,7 @@ fun LiquidGlassBottomBar(
 
     LaunchedEffect(externalSelectionPosition, safeTabsCount) {
         val pagerDrivenPosition = externalSelectionPosition ?: return@LaunchedEffect
+        if (localDragSettledIndex >= 0) return@LaunchedEffect
         dampedDragAnimation.snapToValue(
             value = pagerDrivenPosition,
             updateVelocity = false,
@@ -310,12 +333,36 @@ fun LiquidGlassBottomBar(
     }
     LaunchedEffect(selectedIndex, safeTabsCount) {
         val index = selectedIndex.fastCoerceIn(0, safeTabsCount - 1)
+        if (localDragSettledIndex >= 0 && localDragSettledIndex != index) {
+            localDragSettledIndex = -1
+        }
         currentIndex = index
-        if (selectedPositionProvider != null) {
+        if (selectedPositionProvider != null && localDragSettledIndex != index) {
             dampedDragAnimation.snapToValue(
                 value = index.toFloat(),
                 updateVelocity = false,
             )
+        }
+    }
+    LaunchedEffect(localDragSettledIndex, safeTabsCount, selectedPositionProvider, externalSelectionPosition) {
+        val index = localDragSettledIndex
+        if (index < 0) return@LaunchedEffect
+        val target = index.fastCoerceIn(0, safeTabsCount - 1).toFloat()
+        val hasExternalPosition = selectedPositionProvider != null || externalSelectionPosition != null
+        if (!hasExternalPosition) {
+            localDragSettledIndex = -1
+            return@LaunchedEffect
+        }
+        snapshotFlow {
+            currentSelectedPositionProvider.value
+                ?.invoke()
+                ?.fastCoerceIn(0f, (safeTabsCount - 1).toFloat())
+                ?: currentExternalSelectionPosition.value
+        }.filter { position ->
+            position != null && abs(position - target) <= 0.01f
+        }.first()
+        if (localDragSettledIndex == index) {
+            localDragSettledIndex = -1
         }
     }
 
@@ -324,6 +371,16 @@ fun LiquidGlassBottomBar(
             .drop(1)
             .collectLatest { index ->
                 val target = index.fastCoerceIn(0, safeTabsCount - 1).toFloat()
+                val localSettlingTarget = localDragSettledIndex
+                if (localSettlingTarget == index) {
+                    return@collectLatest
+                }
+                if (
+                    abs(dampedDragAnimation.value - target) <= 0.001f &&
+                    abs(dampedDragAnimation.targetValue - target) <= 0.001f
+                ) {
+                    return@collectLatest
+                }
                 if (transitionAnimationsEnabled) {
                     dampedDragAnimation.animateToValue(target)
                 } else {
