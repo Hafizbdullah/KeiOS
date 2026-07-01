@@ -15,10 +15,12 @@ import os.kei.R
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogV2ListContent
+import os.kei.ui.page.main.student.catalog.component.BaGuideMemoryLobbyTabContent
 import os.kei.ui.page.main.student.catalog.component.BaGuideStudentBgmTabContent
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
@@ -26,6 +28,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
+import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 
@@ -39,6 +42,7 @@ internal fun BaGuideCatalogPagePager(
     catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     catalogFavoriteEntries: Map<Long, Long>,
     studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
     studentBgmDisplayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
     favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
     favoriteBgms: List<GuideBgmFavoriteItem>,
@@ -49,6 +53,7 @@ internal fun BaGuideCatalogPagePager(
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
     pageChromeBackdrop: LayerBackdrop,
     transitionAnimationsEnabled: Boolean,
+    mediaAdaptiveRotationEnabled: Boolean,
     accent: Color,
     onOpenGuide: (String) -> Unit,
     onRequestVisibleCatalogImages: (List<String>) -> Unit,
@@ -78,6 +83,7 @@ internal fun BaGuideCatalogPagePager(
                 catalogListDerivedStates = catalogListDerivedStates,
                 catalogFavoriteEntries = catalogFavoriteEntries,
                 studentBgmListDerivedState = studentBgmListDerivedState,
+                memoryLobbyListDerivedState = memoryLobbyListDerivedState,
                 studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
                 favoriteBgmListDerivedState = favoriteBgmListDerivedState,
                 favoriteBgms = favoriteBgms,
@@ -87,7 +93,9 @@ internal fun BaGuideCatalogPagePager(
                 playbackUiState = playbackUiState,
                 chromeScrollState = chromeScrollState,
                 accent = accent,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 onOpenGuide = onOpenGuide,
+                onRequestGuideDetailTab = pageActions.onRequestGuideDetailTab,
                 onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
                 onSliderInteractionChanged = pageState::updateSliderInteractionActive,
             )
@@ -108,6 +116,7 @@ private fun BaGuideCatalogPageTabContent(
     catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     catalogFavoriteEntries: Map<Long, Long>,
     studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
     studentBgmDisplayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
     favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
     favoriteBgms: List<GuideBgmFavoriteItem>,
@@ -117,7 +126,9 @@ private fun BaGuideCatalogPageTabContent(
     playbackUiState: BaGuideBgmPlaybackUiState,
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
     accent: Color,
+    mediaAdaptiveRotationEnabled: Boolean,
     onOpenGuide: (String) -> Unit,
+    onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
     onRequestVisibleCatalogImages: (List<String>) -> Unit,
     onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
@@ -149,10 +160,28 @@ private fun BaGuideCatalogPageTabContent(
         }
 
         pageTab.specialTab == BaGuideCatalogSpecialTab.MemoryLobby -> {
-            BaGuideCatalogMusicPlaceholder(
-                label = stringResource(R.string.ba_catalog_memory_lobby_placeholder),
-                topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,
-                bottomPadding = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+            BaGuideMemoryLobbyTabContent(
+                catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
+                derivedState = memoryLobbyListDerivedState,
+                favoriteCatalogEntries = catalogFavoriteEntries,
+                searchQuery = pageSearchQuery,
+                loading = catalogDataState.loading,
+                error = catalogDataState.error,
+                innerPadding =
+                    PaddingValues(
+                        top = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                        bottom = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+                    ),
+                nestedScrollConnection = chromeScrollState,
+                accent = accent,
+                isPageActive = pageIndex == pagerState.settledPage,
+                scrollToTopSignal = pageState.scrollToTopSignal,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                onScrollBoundsChange = chromeScrollState::expandForStaticContent,
+                onRequestVisibleImages = onRequestVisibleCatalogImages,
+                onOpenGuide = onOpenGuide,
+                onRequestGuideDetailTab = onRequestGuideDetailTab,
+                onToggleFavorite = pageActions.onToggleCatalogFavorite,
             )
         }
 

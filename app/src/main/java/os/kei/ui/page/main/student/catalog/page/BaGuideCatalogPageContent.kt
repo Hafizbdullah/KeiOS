@@ -40,6 +40,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
+import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -62,6 +63,7 @@ internal fun BaGuideCatalogPageContent(
     catalogDataState: BaGuideCatalogDataUiState,
     catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
     studentBgmDisplayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
     favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
     favoriteBgms: List<GuideBgmFavoriteItem>,
@@ -79,6 +81,7 @@ internal fun BaGuideCatalogPageContent(
     allExportSuccessText: String,
     studentExportSuccessText: String,
     bgmExportSuccessText: String,
+    mediaAdaptiveRotationEnabled: Boolean,
     transitionAnimationsEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     enableSearchBar: Boolean,
@@ -154,6 +157,7 @@ internal fun BaGuideCatalogPageContent(
                 catalogListDerivedStates = catalogListDerivedStates,
                 catalogFavoriteEntries = catalogFavoriteEntries,
                 studentBgmListDerivedState = studentBgmListDerivedState,
+                memoryLobbyListDerivedState = memoryLobbyListDerivedState,
                 studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
                 favoriteBgmListDerivedState = favoriteBgmListDerivedState,
                 favoriteBgms = favoriteBgms,
@@ -164,6 +168,7 @@ internal fun BaGuideCatalogPageContent(
                 chromeScrollState = chromeScrollState,
                 pageChromeBackdrop = pageChromeBackdrop,
                 transitionAnimationsEnabled = transitionAnimationsEnabled,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 accent = accent,
                 onOpenGuide = onOpenGuide,
                 onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,

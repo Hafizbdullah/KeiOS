@@ -98,6 +98,9 @@ internal class BaGuideCatalogPageStateHolder(
     val npcSearchQuery: String
         get() = searchQueries.catalogSearchQueryFor(BaGuideCatalogTab.NpcSatellite)
 
+    val memoryLobbySearchQuery: String
+        get() = searchQueries[BaGuideCatalogPageTab.MemoryLobby.name].orEmpty()
+
     val studentBgmSearchQuery: String
         get() = searchQueries[BaGuideCatalogPageTab.StudentBgm.name].orEmpty()
 

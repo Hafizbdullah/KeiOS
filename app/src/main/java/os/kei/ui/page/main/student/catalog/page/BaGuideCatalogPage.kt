@@ -23,6 +23,11 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
+import os.kei.ui.page.main.student.LocalGuideMediaGifTargetRequester
+import os.kei.ui.page.main.student.LocalGuideMediaGifTargets
+import os.kei.ui.page.main.student.LocalGuideMediaImageBitmaps
+import os.kei.ui.page.main.student.LocalGuideMediaImageMissingKeys
+import os.kei.ui.page.main.student.LocalGuideMediaImageRequester
 import os.kei.ui.page.main.student.catalog.component.LocalBaGuideCatalogImageBitmaps
 import os.kei.ui.page.main.student.catalog.component.bgm.rememberBaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.rememberBaGuideBgmPlaybackCoordinator
@@ -82,6 +87,7 @@ fun BaGuideCatalogPage(
     val catalogViewModel: BaGuideCatalogViewModel = applicationViewModel(create = ::BaGuideCatalogViewModel)
     val routeState = collectBaGuideCatalogRouteState(catalogViewModel)
     val imageState by catalogViewModel.imageState.collectAsStateWithLifecycle()
+    val mediaImageState by catalogViewModel.mediaImageState.collectAsStateWithLifecycle()
     val pageChromeState by catalogViewModel.pageChromeState.collectAsStateWithLifecycle()
     val filterSortSnapshot by catalogViewModel.filterSortState.collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
@@ -232,7 +238,14 @@ fun BaGuideCatalogPage(
 
     val searchAutoFocusEnabled = LocalSearchAutoFocusEnabled.current
 
-    CompositionLocalProvider(LocalBaGuideCatalogImageBitmaps provides imageState.bitmaps) {
+    CompositionLocalProvider(
+        LocalBaGuideCatalogImageBitmaps provides imageState.bitmaps,
+        LocalGuideMediaImageBitmaps provides mediaImageState.bitmaps,
+        LocalGuideMediaImageMissingKeys provides mediaImageState.missingKeys,
+        LocalGuideMediaGifTargets provides mediaImageState.resolvedGifTargets,
+        LocalGuideMediaImageRequester provides catalogViewModel::requestGuideMediaImages,
+        LocalGuideMediaGifTargetRequester provides catalogViewModel::requestGuideMediaGifTargets,
+    ) {
         BaGuideCatalogPageContent(
             pageTitle = pageTitle,
             accent = accent,
@@ -248,6 +261,7 @@ fun BaGuideCatalogPage(
             catalogDataState = routeState.catalogDataState,
             catalogListDerivedStates = routeState.catalogListDerivedStates,
             studentBgmListDerivedState = routeState.studentBgmListDerivedState,
+            memoryLobbyListDerivedState = routeState.memoryLobbyListDerivedState,
             studentBgmDisplayedDerivedState = routeState.studentBgmDisplayedDerivedState,
             favoriteBgmListDerivedState = routeState.favoriteBgmListDerivedState,
             favoriteBgms = routeState.favoriteBgms,
@@ -265,6 +279,7 @@ fun BaGuideCatalogPage(
             allExportSuccessText = allExportSuccessText,
             studentExportSuccessText = studentExportSuccessText,
             bgmExportSuccessText = bgmExportSuccessText,
+            mediaAdaptiveRotationEnabled = routeState.mediaAdaptiveRotationEnabled,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             searchAutoFocusEnabled = searchAutoFocusEnabled,
             enableSearchBar = enableSearchBar,

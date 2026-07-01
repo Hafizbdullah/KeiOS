@@ -9,6 +9,7 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
+import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 
@@ -19,6 +20,7 @@ internal class BaGuideCatalogPageActions(
     val onToggleCatalogFavorite: (Long) -> Unit,
     val onRequestCatalogListState: (BaGuideCatalogListInput) -> Unit,
     val onRequestStudentBgmListState: (BaGuideStudentBgmListInput) -> Unit,
+    val onRequestMemoryLobbyListState: (BaGuideMemoryLobbyListInput) -> Unit,
     val onRequestFavoriteBgmListState: (BaGuideFavoriteBgmListInput) -> Unit,
     val onRequestStudentBgmDisplayedState: (BaGuideStudentBgmDisplayedInput) -> Unit,
     val onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
@@ -57,6 +59,7 @@ internal fun rememberBaGuideCatalogPageActions(catalogViewModel: BaGuideCatalogV
             onToggleCatalogFavorite = catalogViewModel::toggleCatalogFavorite,
             onRequestCatalogListState = catalogViewModel::requestCatalogListDerivedState,
             onRequestStudentBgmListState = catalogViewModel::requestStudentBgmListDerivedState,
+            onRequestMemoryLobbyListState = catalogViewModel::requestMemoryLobbyListDerivedState,
             onRequestFavoriteBgmListState = catalogViewModel::requestFavoriteBgmListDerivedState,
             onRequestStudentBgmDisplayedState = catalogViewModel::requestStudentBgmDisplayedDerivedState,
             onToggleBgmFavorite = catalogViewModel::requestToggleBgmFavorite,

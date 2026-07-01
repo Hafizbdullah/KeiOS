@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListInput
+import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListInput
 
 @Composable
@@ -77,6 +78,20 @@ internal fun BaGuideCatalogPageDerivedEffects(
                 ),
             )
         }
+    }
+    LaunchedEffect(
+        pageActions,
+        catalogDataState.catalog,
+        catalogFavoriteEntries,
+        pageState.memoryLobbySearchQuery,
+    ) {
+        pageActions.onRequestMemoryLobbyListState(
+            BaGuideMemoryLobbyListInput(
+                catalog = catalogDataState.catalog,
+                favoriteCatalogEntries = catalogFavoriteEntries,
+                searchQuery = pageState.memoryLobbySearchQuery,
+            ),
+        )
     }
     LaunchedEffect(
         pageActions,
