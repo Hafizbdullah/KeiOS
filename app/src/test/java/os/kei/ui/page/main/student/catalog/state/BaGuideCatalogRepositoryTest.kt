@@ -389,6 +389,69 @@ class BaGuideCatalogRepositoryTest {
         }
 
     @Test
+    fun `memory lobby list derivation filters students by search and pins favorites`() =
+        runBlocking {
+            val favorite =
+                catalogEntry(
+                    name = "阿露",
+                    tab = BaGuideCatalogTab.Student,
+                    order = 3,
+                )
+            val regular =
+                catalogEntry(
+                    name = "日富美",
+                    tab = BaGuideCatalogTab.Student,
+                    order = 1,
+                )
+            val unmatched =
+                catalogEntry(
+                    name = "小春",
+                    tab = BaGuideCatalogTab.Student,
+                    order = 2,
+                )
+            val npc =
+                catalogEntry(
+                    name = "阿露 NPC",
+                    tab = BaGuideCatalogTab.NpcSatellite,
+                    order = 0,
+                )
+            val bundle =
+                BaGuideCatalogBundle(
+                    entriesByTab =
+                        mapOf(
+                            BaGuideCatalogTab.Student to listOf(regular, unmatched, favorite),
+                            BaGuideCatalogTab.NpcSatellite to listOf(npc),
+                        ),
+                    syncedAtMs = 5_000L,
+                )
+            val repository = BaGuideCatalogRepository(parseDispatcher = Dispatchers.Unconfined)
+
+            val result =
+                repository.deriveMemoryLobbyListState(
+                    BaGuideMemoryLobbyListInput(
+                        catalog = bundle,
+                        favoriteCatalogEntries = mapOf(favorite.contentId to 1L),
+                        searchQuery = "阿露",
+                    ),
+                )
+
+            assertEquals(listOf("阿露"), result.filteredEntries.map { it.name })
+            assertEquals(listOf("日富美", "小春", "阿露"), result.allStudentEntries.map { it.name })
+            assertEquals(false, result.deriving)
+
+            val pinnedResult =
+                repository.deriveMemoryLobbyListState(
+                    BaGuideMemoryLobbyListInput(
+                        catalog = bundle,
+                        favoriteCatalogEntries = mapOf(favorite.contentId to 1L),
+                        searchQuery = "",
+                    ),
+                )
+
+            assertEquals(listOf("阿露", "日富美", "小春"), pinnedResult.filteredEntries.map { it.name })
+        }
+
+    @Test
     fun `favorite bgm list derivation sorts off composable path`() =
         runBlocking {
             val older =

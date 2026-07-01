@@ -17,6 +17,8 @@ internal class BaGuideCatalogListDerivationController(
     private val listDerivationInputs = mutableMapOf<BaGuideCatalogTab, BaGuideCatalogListInput>()
     private var studentBgmListDerivationJob: Job? = null
     private var studentBgmListDerivationInput: BaGuideStudentBgmListInput? = null
+    private var memoryLobbyListDerivationJob: Job? = null
+    private var memoryLobbyListDerivationInput: BaGuideMemoryLobbyListInput? = null
     private var favoriteBgmListDerivationJob: Job? = null
     private var favoriteBgmListDerivationInput: BaGuideFavoriteBgmListInput? = null
     private var studentBgmDisplayedDerivationJob: Job? = null
@@ -26,6 +28,8 @@ internal class BaGuideCatalogListDerivationController(
         MutableStateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>(emptyMap())
     private val mutableStudentBgmListDerivedState =
         MutableStateFlow(BaGuideStudentBgmListDerivedState.Empty)
+    private val mutableMemoryLobbyListDerivedState =
+        MutableStateFlow(BaGuideMemoryLobbyListDerivedState.Empty)
     private val mutableFavoriteBgmListDerivedState =
         MutableStateFlow(BaGuideFavoriteBgmListDerivedState.Empty)
     private val mutableStudentBgmDisplayedDerivedState =
@@ -35,6 +39,8 @@ internal class BaGuideCatalogListDerivationController(
         mutableCatalogListDerivedStates.asStateFlow()
     val studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState> =
         mutableStudentBgmListDerivedState.asStateFlow()
+    val memoryLobbyListDerivedState: StateFlow<BaGuideMemoryLobbyListDerivedState> =
+        mutableMemoryLobbyListDerivedState.asStateFlow()
     val favoriteBgmListDerivedState: StateFlow<BaGuideFavoriteBgmListDerivedState> =
         mutableFavoriteBgmListDerivedState.asStateFlow()
     val studentBgmDisplayedDerivedState: StateFlow<BaGuideStudentBgmDisplayedDerivedState> =
@@ -83,6 +89,28 @@ internal class BaGuideCatalogListDerivationController(
             }
     }
 
+    fun requestMemoryLobbyListState(input: BaGuideMemoryLobbyListInput) {
+        val previousInput = memoryLobbyListDerivationInput
+        if (
+            previousInput == input &&
+            mutableMemoryLobbyListDerivedState.value !== BaGuideMemoryLobbyListDerivedState.Empty
+        ) {
+            return
+        }
+
+        memoryLobbyListDerivationInput = input
+        memoryLobbyListDerivationJob?.cancel()
+        mutableMemoryLobbyListDerivedState.update { state ->
+            state.copy(deriving = true)
+        }
+        memoryLobbyListDerivationJob =
+            scope.launch {
+                val derivedState = repository.deriveMemoryLobbyListState(input)
+                if (memoryLobbyListDerivationInput != input) return@launch
+                mutableMemoryLobbyListDerivedState.value = derivedState
+            }
+    }
+
     fun requestFavoriteBgmListState(input: BaGuideFavoriteBgmListInput) {
         val previousInput = favoriteBgmListDerivationInput
         if (
@@ -128,6 +156,7 @@ internal class BaGuideCatalogListDerivationController(
     fun cancel() {
         listDerivationJobs.values.forEach { job -> job.cancel() }
         studentBgmListDerivationJob?.cancel()
+        memoryLobbyListDerivationJob?.cancel()
         favoriteBgmListDerivationJob?.cancel()
         studentBgmDisplayedDerivationJob?.cancel()
     }

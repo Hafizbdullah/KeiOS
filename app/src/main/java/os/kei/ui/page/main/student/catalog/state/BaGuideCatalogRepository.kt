@@ -137,6 +137,11 @@ internal class BaGuideCatalogRepository(
             BASettingsStore.loadNativeBgmMediaNotificationEnabled()
         }
 
+    suspend fun loadMediaAdaptiveRotationEnabled(): Boolean =
+        withContext(ioDispatcher) {
+            BASettingsStore.loadMediaAdaptiveRotationEnabled()
+        }
+
     suspend fun saveNativeBgmMediaNotificationEnabled(enabled: Boolean) {
         withContext(ioDispatcher) {
             BASettingsStore.saveNativeBgmMediaNotificationEnabled(enabled)
@@ -347,6 +352,24 @@ internal class BaGuideCatalogRepository(
                         entries = allStudentEntries,
                         searchQuery = input.searchQuery,
                         favoriteContentIds = favoriteContentIds,
+                    ),
+                deriving = false,
+            )
+        }
+
+    suspend fun deriveMemoryLobbyListState(input: BaGuideMemoryLobbyListInput): BaGuideMemoryLobbyListDerivedState =
+        withContext(parseDispatcher) {
+            val allStudentEntries =
+                input.catalog
+                    .entries(BaGuideCatalogTab.Student)
+                    .sortedBy { it.order }
+            BaGuideMemoryLobbyListDerivedState(
+                allStudentEntries = allStudentEntries,
+                filteredEntries =
+                    filterAndSortMemoryLobbyEntries(
+                        entries = allStudentEntries,
+                        searchQuery = input.searchQuery,
+                        favoriteCatalogEntries = input.favoriteCatalogEntries,
                     ),
                 deriving = false,
             )

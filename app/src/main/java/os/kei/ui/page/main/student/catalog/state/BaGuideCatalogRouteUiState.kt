@@ -9,6 +9,7 @@ internal data class BaGuideCatalogRouteState(
     val catalogDataState: BaGuideCatalogDataUiState = BaGuideCatalogDataUiState(),
     val catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState> = emptyMap(),
     val studentBgmListDerivedState: BaGuideStudentBgmListDerivedState = BaGuideStudentBgmListDerivedState.Empty,
+    val memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState = BaGuideMemoryLobbyListDerivedState.Empty,
     val favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState = BaGuideFavoriteBgmListDerivedState.Empty,
     val studentBgmDisplayedDerivedState: BaGuideStudentBgmDisplayedDerivedState =
         BaGuideStudentBgmDisplayedDerivedState.Empty,
@@ -18,6 +19,7 @@ internal data class BaGuideCatalogRouteState(
     val favoriteBgmOfflineCacheState: BaGuideFavoriteBgmOfflineCacheUiState =
         BaGuideFavoriteBgmOfflineCacheUiState(),
     val nativeBgmMediaNotificationEnabled: Boolean = false,
+    val mediaAdaptiveRotationEnabled: Boolean = true,
     val transferSettings: BaGuideCatalogTransferSettingsUiState =
         BaGuideCatalogTransferSettingsUiState(),
 )

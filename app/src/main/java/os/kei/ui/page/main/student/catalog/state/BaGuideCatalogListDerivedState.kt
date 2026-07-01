@@ -65,6 +65,27 @@ internal class BaGuideStudentBgmListInput(
     }
 }
 
+internal class BaGuideMemoryLobbyListInput(
+    val catalog: BaGuideCatalogBundle,
+    val favoriteCatalogEntries: Map<Long, Long>,
+    val searchQuery: String,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        return other is BaGuideMemoryLobbyListInput &&
+            catalog === other.catalog &&
+            favoriteCatalogEntries == other.favoriteCatalogEntries &&
+            searchQuery == other.searchQuery
+    }
+
+    override fun hashCode(): Int {
+        var result = System.identityHashCode(catalog)
+        result = 31 * result + favoriteCatalogEntries.hashCode()
+        result = 31 * result + searchQuery.hashCode()
+        return result
+    }
+}
+
 internal class BaGuideFavoriteBgmListInput(
     val catalog: BaGuideCatalogBundle,
     val favorites: List<GuideBgmFavoriteItem>,
@@ -189,6 +210,17 @@ internal data class BaGuideStudentBgmListDerivedState(
     }
 }
 
+@Immutable
+internal data class BaGuideMemoryLobbyListDerivedState(
+    val allStudentEntries: List<BaGuideCatalogEntry> = emptyList(),
+    val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
+    val deriving: Boolean = false,
+) {
+    companion object {
+        val Empty = BaGuideMemoryLobbyListDerivedState()
+    }
+}
+
 internal fun favoriteStudentBgmEntryContentIds(
     entries: List<BaGuideCatalogEntry>,
     favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
@@ -223,6 +255,20 @@ internal fun filterAndSortStudentBgmEntries(
     return filtered.sortedWith(
         compareByDescending<BaGuideCatalogEntry> { entry ->
             entry.contentId in favoriteContentIds
+        }.thenBy { entry -> entry.order },
+    )
+}
+
+internal fun filterAndSortMemoryLobbyEntries(
+    entries: List<BaGuideCatalogEntry>,
+    searchQuery: String,
+    favoriteCatalogEntries: Map<Long, Long>,
+): List<BaGuideCatalogEntry> {
+    val filtered = entries.filterByQuery(searchQuery)
+    if (filtered.size <= 1 || favoriteCatalogEntries.isEmpty()) return filtered
+    return filtered.sortedWith(
+        compareBy<BaGuideCatalogEntry> { entry ->
+            favoriteCatalogEntries[entry.contentId] ?: Long.MAX_VALUE
         }.thenBy { entry -> entry.order },
     )
 }

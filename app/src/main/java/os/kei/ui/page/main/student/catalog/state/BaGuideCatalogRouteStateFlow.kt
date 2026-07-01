@@ -12,8 +12,17 @@ private data class BaGuideCatalogRouteCoreState(
     val catalogDataState: BaGuideCatalogDataUiState,
     val catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     val studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    val memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
     val favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
     val studentBgmDisplayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
+)
+
+private data class BaGuideCatalogRouteListState(
+    val catalogDataState: BaGuideCatalogDataUiState,
+    val catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
+    val studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    val memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
+    val favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
 )
 
 private data class BaGuideCatalogRouteLibraryState(
@@ -24,11 +33,18 @@ private data class BaGuideCatalogRouteLibraryState(
     val favoriteBgmOfflineCacheState: BaGuideFavoriteBgmOfflineCacheUiState,
 )
 
+private data class BaGuideCatalogRouteSettingsState(
+    val library: BaGuideCatalogRouteLibraryState,
+    val nativeBgmMediaNotificationEnabled: Boolean,
+    val mediaAdaptiveRotationEnabled: Boolean,
+)
+
 internal fun buildBaGuideCatalogRouteStateFlow(
     scope: CoroutineScope,
     dataState: StateFlow<BaGuideCatalogDataUiState>,
     catalogListDerivedStates: StateFlow<Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>>,
     studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState>,
+    memoryLobbyListDerivedState: StateFlow<BaGuideMemoryLobbyListDerivedState>,
     favoriteBgmListDerivedState: StateFlow<BaGuideFavoriteBgmListDerivedState>,
     studentBgmDisplayedDerivedState: StateFlow<BaGuideStudentBgmDisplayedDerivedState>,
     catalogFavoriteEntries: StateFlow<Map<Long, Long>>,
@@ -36,27 +52,54 @@ internal fun buildBaGuideCatalogRouteStateFlow(
     bgmCacheSnapshot: StateFlow<BaGuideFavoriteBgmCacheSnapshot>,
     favoriteBgmOfflineCacheState: StateFlow<BaGuideFavoriteBgmOfflineCacheUiState>,
     nativeBgmMediaNotificationEnabled: StateFlow<Boolean>,
+    mediaAdaptiveRotationEnabled: StateFlow<Boolean>,
     transferSettings: StateFlow<BaGuideCatalogTransferSettingsUiState>,
 ): StateFlow<BaGuideCatalogRouteState> {
-    val routeCoreState =
+    val routeListState =
         combine(
             dataState,
             catalogListDerivedStates,
             studentBgmListDerivedState,
+            memoryLobbyListDerivedState,
             favoriteBgmListDerivedState,
-            studentBgmDisplayedDerivedState,
         ) {
                 catalogDataState,
                 catalogListDerivedStates,
                 studentBgmListDerivedState,
+                memoryLobbyListDerivedState,
                 favoriteBgmListDerivedState,
-                studentBgmDisplayedDerivedState,
             ->
-            BaGuideCatalogRouteCoreState(
+            BaGuideCatalogRouteListState(
                 catalogDataState = catalogDataState,
                 catalogListDerivedStates = catalogListDerivedStates,
                 studentBgmListDerivedState = studentBgmListDerivedState,
+                memoryLobbyListDerivedState = memoryLobbyListDerivedState,
                 favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+            )
+        }.stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue =
+                BaGuideCatalogRouteListState(
+                    catalogDataState = dataState.value,
+                    catalogListDerivedStates = catalogListDerivedStates.value,
+                    studentBgmListDerivedState = studentBgmListDerivedState.value,
+                    memoryLobbyListDerivedState = memoryLobbyListDerivedState.value,
+                    favoriteBgmListDerivedState = favoriteBgmListDerivedState.value,
+                ),
+        )
+
+    val routeCoreState =
+        combine(
+            routeListState,
+            studentBgmDisplayedDerivedState,
+        ) { listState, studentBgmDisplayedDerivedState ->
+            BaGuideCatalogRouteCoreState(
+                catalogDataState = listState.catalogDataState,
+                catalogListDerivedStates = listState.catalogListDerivedStates,
+                studentBgmListDerivedState = listState.studentBgmListDerivedState,
+                memoryLobbyListDerivedState = listState.memoryLobbyListDerivedState,
+                favoriteBgmListDerivedState = listState.favoriteBgmListDerivedState,
                 studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
             )
         }.stateIn(
@@ -64,10 +107,11 @@ internal fun buildBaGuideCatalogRouteStateFlow(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue =
                 BaGuideCatalogRouteCoreState(
-                    catalogDataState = dataState.value,
-                    catalogListDerivedStates = catalogListDerivedStates.value,
-                    studentBgmListDerivedState = studentBgmListDerivedState.value,
-                    favoriteBgmListDerivedState = favoriteBgmListDerivedState.value,
+                    catalogDataState = routeListState.value.catalogDataState,
+                    catalogListDerivedStates = routeListState.value.catalogListDerivedStates,
+                    studentBgmListDerivedState = routeListState.value.studentBgmListDerivedState,
+                    memoryLobbyListDerivedState = routeListState.value.memoryLobbyListDerivedState,
+                    favoriteBgmListDerivedState = routeListState.value.favoriteBgmListDerivedState,
                     studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState.value,
                 ),
         )
@@ -100,22 +144,46 @@ internal fun buildBaGuideCatalogRouteStateFlow(
                 ),
         )
 
+    val routeSettingsState =
+        combine(
+            routeLibraryState,
+            nativeBgmMediaNotificationEnabled,
+            mediaAdaptiveRotationEnabled,
+        ) { libraryState, nativeBgmMediaNotificationEnabled, mediaAdaptiveRotationEnabled ->
+            BaGuideCatalogRouteSettingsState(
+                library = libraryState,
+                nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+            )
+        }.stateIn(
+            scope = scope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue =
+                BaGuideCatalogRouteSettingsState(
+                    library = routeLibraryState.value,
+                    nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled.value,
+                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled.value,
+                ),
+        )
+
     return combine(
-        routeLibraryState,
-        nativeBgmMediaNotificationEnabled,
+        routeSettingsState,
         transferSettings,
-    ) { libraryState, nativeBgmMediaNotificationEnabled, transferSettings ->
+    ) { settingsState, transferSettings ->
+        val libraryState = settingsState.library
         BaGuideCatalogRouteState(
             catalogDataState = libraryState.core.catalogDataState,
             catalogListDerivedStates = libraryState.core.catalogListDerivedStates,
             studentBgmListDerivedState = libraryState.core.studentBgmListDerivedState,
+            memoryLobbyListDerivedState = libraryState.core.memoryLobbyListDerivedState,
             favoriteBgmListDerivedState = libraryState.core.favoriteBgmListDerivedState,
             studentBgmDisplayedDerivedState = libraryState.core.studentBgmDisplayedDerivedState,
             catalogFavoriteEntries = libraryState.catalogFavoriteEntries,
             favoriteBgms = libraryState.favoriteBgms,
             bgmCacheSnapshot = libraryState.bgmCacheSnapshot,
             favoriteBgmOfflineCacheState = libraryState.favoriteBgmOfflineCacheState,
-            nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+            nativeBgmMediaNotificationEnabled = settingsState.nativeBgmMediaNotificationEnabled,
+            mediaAdaptiveRotationEnabled = settingsState.mediaAdaptiveRotationEnabled,
             transferSettings = transferSettings,
         )
     }.stateIn(
@@ -126,6 +194,7 @@ internal fun buildBaGuideCatalogRouteStateFlow(
                 catalogDataState = routeCoreState.value.catalogDataState,
                 catalogListDerivedStates = routeCoreState.value.catalogListDerivedStates,
                 studentBgmListDerivedState = routeCoreState.value.studentBgmListDerivedState,
+                memoryLobbyListDerivedState = routeCoreState.value.memoryLobbyListDerivedState,
                 favoriteBgmListDerivedState = routeCoreState.value.favoriteBgmListDerivedState,
                 studentBgmDisplayedDerivedState = routeCoreState.value.studentBgmDisplayedDerivedState,
                 catalogFavoriteEntries = catalogFavoriteEntries.value,
@@ -133,6 +202,7 @@ internal fun buildBaGuideCatalogRouteStateFlow(
                 bgmCacheSnapshot = bgmCacheSnapshot.value,
                 favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState.value,
                 nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled.value,
+                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled.value,
                 transferSettings = transferSettings.value,
             ),
     )

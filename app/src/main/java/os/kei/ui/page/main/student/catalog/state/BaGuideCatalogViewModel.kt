@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.GuideMediaImageLoader
+import os.kei.ui.page.main.student.GuideMediaImageRequest
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.resolvedBaGuideCatalogIncrementalRefreshIntervalHours
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
@@ -65,6 +67,11 @@ internal class BaGuideCatalogViewModel(
             scope = viewModelScope,
             appContext = appContext,
         )
+    private val mediaImageLoader =
+        GuideMediaImageLoader(
+            appContext = appContext,
+            scope = viewModelScope,
+        )
 
     private val _dataState = MutableStateFlow(BaGuideCatalogDataUiState())
     val dataState: StateFlow<BaGuideCatalogDataUiState> = _dataState.asStateFlow()
@@ -102,6 +109,9 @@ internal class BaGuideCatalogViewModel(
     val studentBgmListDerivedState: StateFlow<BaGuideStudentBgmListDerivedState> =
         listDerivationController.studentBgmListDerivedState
 
+    val memoryLobbyListDerivedState: StateFlow<BaGuideMemoryLobbyListDerivedState> =
+        listDerivationController.memoryLobbyListDerivedState
+
     val favoriteBgmListDerivedState: StateFlow<BaGuideFavoriteBgmListDerivedState> =
         listDerivationController.favoriteBgmListDerivedState
 
@@ -122,6 +132,11 @@ internal class BaGuideCatalogViewModel(
         bgmCacheController.favoriteBgmOfflineCacheState
     val imageState: StateFlow<BaGuideCatalogImageUiState> =
         imageController.state
+    val mediaImageState =
+        mediaImageLoader.state
+    private val _mediaAdaptiveRotationEnabled = MutableStateFlow(true)
+    val mediaAdaptiveRotationEnabled: StateFlow<Boolean> =
+        _mediaAdaptiveRotationEnabled.asStateFlow()
 
     val routeState: StateFlow<BaGuideCatalogRouteState> =
         buildBaGuideCatalogRouteStateFlow(
@@ -129,6 +144,7 @@ internal class BaGuideCatalogViewModel(
             dataState = dataState,
             catalogListDerivedStates = catalogListDerivedStates,
             studentBgmListDerivedState = studentBgmListDerivedState,
+            memoryLobbyListDerivedState = memoryLobbyListDerivedState,
             favoriteBgmListDerivedState = favoriteBgmListDerivedState,
             studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
             catalogFavoriteEntries = catalogFavoriteEntries,
@@ -136,6 +152,7 @@ internal class BaGuideCatalogViewModel(
             bgmCacheSnapshot = bgmCacheSnapshot,
             favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
             nativeBgmMediaNotificationEnabled = nativeBgmMediaNotificationEnabled,
+            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
             transferSettings = transferSettings,
         )
 
@@ -149,6 +166,9 @@ internal class BaGuideCatalogViewModel(
         }
         viewModelScope.launch {
             _nativeBgmMediaNotificationEnabled.value = repository.loadNativeBgmMediaNotificationEnabled()
+        }
+        viewModelScope.launch {
+            _mediaAdaptiveRotationEnabled.value = repository.loadMediaAdaptiveRotationEnabled()
         }
         viewModelScope.launch {
             _transferSettings.value = repository.loadTransferSettings()
@@ -394,6 +414,14 @@ internal class BaGuideCatalogViewModel(
         imageController.requestVisibleImages(imageUrls)
     }
 
+    fun requestGuideMediaImages(requests: List<GuideMediaImageRequest>) {
+        mediaImageLoader.requestImages(requests)
+    }
+
+    fun requestGuideMediaGifTargets(rawTargets: List<String>) {
+        mediaImageLoader.requestGifTargets(rawTargets)
+    }
+
     fun ensureCatalogFavoritesLoaded() {
         if (_catalogFavoriteEntries.value.isNotEmpty()) return
         viewModelScope.launch {
@@ -550,6 +578,10 @@ internal class BaGuideCatalogViewModel(
 
     fun requestStudentBgmListDerivedState(input: BaGuideStudentBgmListInput) {
         listDerivationController.requestStudentBgmListState(input)
+    }
+
+    fun requestMemoryLobbyListDerivedState(input: BaGuideMemoryLobbyListInput) {
+        listDerivationController.requestMemoryLobbyListState(input)
     }
 
     fun requestFavoriteBgmListDerivedState(input: BaGuideFavoriteBgmListInput) {
