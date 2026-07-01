@@ -58,6 +58,9 @@ internal object GuideBgmPlayerStore {
             playerByScopedAudio[key] ?: ExoPlayer.Builder(context)
                 .setMediaSourceFactory(createGameKeeMediaSourceFactory(context))
                 .build()
+                .apply {
+                    configureGuideMediaAudioBehavior()
+                }
                 .also { created ->
                     playerByScopedAudio[key] = created
                 }

@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.student.section.gallery
 
+import android.graphics.Rect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -132,6 +134,7 @@ fun GuideGalleryVideoGroupCardItem(
                         GuideVideoFullscreenActivity.launch(
                             context = context,
                             mediaUrl = normalized,
+                            previewImageUrl = displayPreviewUrl,
                         )
                     }
                 },
@@ -225,6 +228,9 @@ internal fun GuideInlineVideoPlayer(
     previewProgressState: GuideMediaProgressState? = null,
     onPreviewLoadingChanged: ((Boolean) -> Unit)? = null,
     showCollapsedPreview: Boolean = true,
+    pictureInPictureRequestToken: Int = 0,
+    onPictureInPictureRequest: (positionMs: Long) -> Unit = {},
+    onVideoBoundsChanged: (Rect?) -> Unit = {},
 ) {
     val context = LocalContext.current
     val normalizedUrl = remember(mediaUrl) { normalizeGuideMediaSource(mediaUrl) }
@@ -234,6 +240,9 @@ internal fun GuideInlineVideoPlayer(
     var isPlaying by remember(normalizedUrl) { mutableStateOf(false) }
     var loadError by remember(normalizedUrl) { mutableStateOf<String?>(null) }
     var loopEnabled by remember(normalizedUrl) { mutableStateOf(false) }
+    var retryToken by remember(normalizedUrl) { mutableIntStateOf(0) }
+    val latestOnExpandedChange by rememberUpdatedState(onExpandedChange)
+    val latestOnPictureInPictureRequest by rememberUpdatedState(onPictureInPictureRequest)
     val openFullscreen =
         remember(context, normalizedUrl) {
             {
@@ -255,6 +264,7 @@ internal fun GuideInlineVideoPlayer(
             onPreviewLoadingChanged,
             onBufferingChange,
             onIsPlayingChange,
+            onVideoBoundsChanged,
         ) {
             if (!showCollapsedPreview) {
                 previewProgressState?.set(1f)
@@ -262,6 +272,7 @@ internal fun GuideInlineVideoPlayer(
             }
             onBufferingChange(false)
             onIsPlayingChange(false)
+            onVideoBoundsChanged(null)
         }
         if (showCollapsedPreview) {
             GuideInlineVideoPreview(
@@ -281,7 +292,8 @@ internal fun GuideInlineVideoPlayer(
         rememberGuidePreparedVideoPlayer(
             context = context,
             mediaUrl = normalizedUrl,
-            active = expanded,
+            active = expanded && loadError == null,
+            restartToken = retryToken,
         )
     BindGuideVideoPlayerState(
         player = player,
@@ -326,8 +338,28 @@ internal fun GuideInlineVideoPlayer(
 
     val activePlayer = player
     if (activePlayer == null) {
-        onIsPlayingChange(false)
-        GuideInlineVideoUnavailableHint()
+        LaunchedEffect(normalizedUrl, loadError, onBufferingChange, onIsPlayingChange) {
+            isBuffering = false
+            isPlaying = false
+            onBufferingChange(false)
+            onIsPlayingChange(false)
+        }
+        val error = loadError
+        if (error != null) {
+            GuideInlineVideoFailureBody(
+                videoRatio = videoRatio,
+                loadError = error,
+                mediaUrl = normalizedUrl,
+                backdrop = backdrop,
+                onRetry = {
+                    loadError = null
+                    retryToken += 1
+                },
+                onCollapse = { onExpandedChange(false) },
+            )
+        } else {
+            GuideInlineVideoUnavailableHint()
+        }
         return
     }
 
@@ -344,16 +376,25 @@ internal fun GuideInlineVideoPlayer(
         }
     }
 
+    LaunchedEffect(pictureInPictureRequestToken, activePlayer, normalizedUrl) {
+        if (pictureInPictureRequestToken <= 0 || !activePlayer.isPlaying) return@LaunchedEffect
+        latestOnPictureInPictureRequest(activePlayer.currentPosition.coerceAtLeast(0L))
+        latestOnExpandedChange(false)
+    }
+
     GuideInlineVideoPlayerBody(
         player = activePlayer,
         videoRatio = videoRatio,
         loopEnabled = loopEnabled,
         onToggleLoop = { loopEnabled = !loopEnabled },
         onCollapse = { onExpandedChange(false) },
+        onVideoBoundsChanged = onVideoBoundsChanged,
         backdrop = backdrop,
     )
     GuideInlineVideoStatusHints(
         isBuffering = isBuffering,
-        loadError = loadError,
+        loadError = null,
+        mediaUrl = normalizedUrl,
+        backdrop = backdrop,
     )
 }

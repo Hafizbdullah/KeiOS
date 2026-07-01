@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.media3.exoplayer.ExoPlayer
+import os.kei.ui.page.main.student.configureGuideMediaAudioBehavior
 import os.kei.ui.page.main.student.createGameKeeMediaSourceFactory
 
 @Stable
@@ -23,6 +24,9 @@ internal class BaStudentGuideVoicePlayerController(
         return ExoPlayer.Builder(appContext)
             .setMediaSourceFactory(createGameKeeMediaSourceFactory(appContext))
             .build()
+            .apply {
+                configureGuideMediaAudioBehavior()
+            }
             .also { player = it }
     }
 

@@ -77,6 +77,9 @@ internal fun isRenderableGalleryImageUrl(raw: String): Boolean {
     if (Regex("""\.(mp3|ogg|wav|m4a|aac)(\?.*)?(#.*)?$""").containsMatchIn(lower)) {
         return false
     }
+    if (Regex("""\.(mp4|webm|mov|m3u8)(\?.*)?(#.*)?$""").containsMatchIn(lower)) {
+        return false
+    }
     if (Regex("""\.(png|jpg|jpeg|webp|gif|bmp|svg|avif)(\?.*)?(#.*)?$""").containsMatchIn(lower)) {
         return true
     }

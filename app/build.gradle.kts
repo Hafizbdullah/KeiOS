@@ -249,6 +249,7 @@ val zoomImageVersion = "1.4.0"
 val lucideIconsVersion = "2.2.1"
 val documentFileVersion = "1.1.0"
 val uCropVersion = "2.2.11"
+val corePipVersion = "1.0.0-alpha03"
 val focusApiVersion = "1.4"
 val metricsPerformanceVersion = "1.0.0"
 val profileInstallerVersion = "1.4.1"
@@ -587,6 +588,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-gif:$coil3Version")
     implementation("com.composables:icons-lucide-android:$lucideIconsVersion")
     implementation("com.github.yalantis:ucrop:$uCropVersion")
+    implementation("androidx.core:core-pip:$corePipVersion")
     implementation("androidx.metrics:metrics-performance:$metricsPerformanceVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleViewModelComposeVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")

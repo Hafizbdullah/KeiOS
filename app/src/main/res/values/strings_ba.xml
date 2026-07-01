@@ -366,10 +366,13 @@
     <string name="ba_catalog_memory_lobby_overview_subtitle">收藏学生置顶，展开卡片即可快速查看记忆大厅</string>
     <string name="ba_catalog_memory_lobby_ready_count">已解析 %1$d</string>
     <string name="ba_catalog_memory_lobby_resolving_count">抓取中 %1$d</string>
+    <string name="ba_catalog_memory_lobby_action_more">记忆大厅更多操作</string>
     <string name="ba_catalog_memory_lobby_action_fullscreen">全屏查看记忆大厅</string>
     <string name="ba_catalog_memory_lobby_action_open_guide">打开学生图鉴</string>
     <string name="ba_catalog_memory_lobby_action_expand">展开记忆大厅</string>
     <string name="ba_catalog_memory_lobby_action_collapse">收纳记忆大厅</string>
+    <string name="ba_catalog_memory_lobby_menu_favorite">收藏记忆大厅</string>
+    <string name="ba_catalog_memory_lobby_menu_unfavorite">取消收藏记忆大厅</string>
     <string name="ba_catalog_memory_lobby_status_idle">待抓取</string>
     <string name="ba_catalog_memory_lobby_status_resolving">抓取中</string>
     <string name="ba_catalog_memory_lobby_status_missing">暂未收录</string>
@@ -657,6 +660,10 @@
     <string name="guide_gallery_memorial_lobby">回忆大厅</string>
     <string name="guide_gallery_memorial_lobby_video">回忆大厅视频</string>
     <string name="guide_gallery_memorial_lobby_video_format">回忆大厅视频%1$s</string>
+    <string name="guide_gallery_memorial_lobby_pip_play">播放回忆大厅视频</string>
+    <string name="guide_gallery_memorial_lobby_pip_fullscreen">全屏播放</string>
+    <string name="guide_gallery_memorial_lobby_pip_size_standard">标准画中画</string>
+    <string name="guide_gallery_memorial_lobby_pip_size_wide">宽幅画中画</string>
     <string name="guide_gallery_character_trailer">角色演示</string>
     <string name="guide_gallery_character_trailer_format">角色演示%1$s</string>
     <string name="guide_gallery_official_intro">官方介绍</string>
@@ -673,6 +680,9 @@
     <string name="guide_gallery_video_unavailable">视频暂不可用</string>
     <string name="guide_gallery_video_loading">视频加载中…</string>
     <string name="guide_gallery_video_failed_with_reason">视频播放失败：%1$s</string>
+    <string name="guide_gallery_video_failed_decoder_capability">当前设备解码器无法播放这个视频，通常和高分辨率或高帧率有关。</string>
+    <string name="guide_gallery_video_error_code">错误码：%1$s</string>
+    <string name="guide_gallery_video_open_external">外部打开</string>
     <string name="guide_gallery_image_load_error">图片加载异常</string>
     <string name="guide_gallery_memory_unlock_level">回忆大厅解锁等级</string>
     <string name="guide_profile_section_nickname">学生昵称</string>

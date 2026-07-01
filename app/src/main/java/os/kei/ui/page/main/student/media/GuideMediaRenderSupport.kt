@@ -141,6 +141,14 @@ internal fun GuideRemoteImageAdaptive(
         }
         return
     }
+    val isKnownVideoSource = remember(target) { isRenderableGalleryVideoUrl(target) }
+    if (isKnownVideoSource) {
+        LaunchedEffect(progressState, onLoadingChanged) {
+            progressState?.set(1f)
+            onLoadingChanged?.invoke(false)
+        }
+        return
+    }
     val fallbackRatio = remember(target) { detectMediaRatioFromUrl(target) ?: (16f / 9f) }
     val stableRatio = remember(fallbackRatio) { fallbackRatio.coerceIn(0.4f, 4f) }
     val isGifSource = remember(target) { isGifMediaSource(target) }

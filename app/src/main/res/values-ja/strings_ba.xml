@@ -361,10 +361,13 @@
     <string name="ba_catalog_memory_lobby_overview_subtitle">お気に入りの生徒を上部に表示し、カードを展開してロビーを確認できます。</string>
     <string name="ba_catalog_memory_lobby_ready_count">解析済み %1$d</string>
     <string name="ba_catalog_memory_lobby_resolving_count">取得中 %1$d</string>
+    <string name="ba_catalog_memory_lobby_action_more">メモリアルロビーのその他操作</string>
     <string name="ba_catalog_memory_lobby_action_fullscreen">メモリアルロビーを全画面表示</string>
     <string name="ba_catalog_memory_lobby_action_open_guide">生徒情報を開く</string>
     <string name="ba_catalog_memory_lobby_action_expand">メモリアルロビーを展開</string>
     <string name="ba_catalog_memory_lobby_action_collapse">メモリアルロビーを閉じる</string>
+    <string name="ba_catalog_memory_lobby_menu_favorite">メモリアルロビーをお気に入り</string>
+    <string name="ba_catalog_memory_lobby_menu_unfavorite">メモリアルロビーのお気に入りを解除</string>
     <string name="ba_catalog_memory_lobby_status_idle">未取得</string>
     <string name="ba_catalog_memory_lobby_status_resolving">取得中</string>
     <string name="ba_catalog_memory_lobby_status_missing">未収録</string>
@@ -651,6 +654,10 @@
     <string name="guide_gallery_memorial_lobby">メモリアルロビー</string>
     <string name="guide_gallery_memorial_lobby_video">メモリアルロビー動画</string>
     <string name="guide_gallery_memorial_lobby_video_format">メモリアルロビー動画 %1$s</string>
+    <string name="guide_gallery_memorial_lobby_pip_play">メモリアルロビー動画を再生</string>
+    <string name="guide_gallery_memorial_lobby_pip_fullscreen">全画面再生</string>
+    <string name="guide_gallery_memorial_lobby_pip_size_standard">標準 PIP</string>
+    <string name="guide_gallery_memorial_lobby_pip_size_wide">ワイド PIP</string>
     <string name="guide_gallery_character_trailer">生徒紹介 PV</string>
     <string name="guide_gallery_character_trailer_format">生徒紹介 PV %1$s</string>
     <string name="guide_gallery_official_intro">公式紹介</string>
@@ -667,6 +674,9 @@
     <string name="guide_gallery_video_unavailable">動画を利用できません</string>
     <string name="guide_gallery_video_loading">動画を読み込み中…</string>
     <string name="guide_gallery_video_failed_with_reason">動画再生に失敗しました: %1$s</string>
+    <string name="guide_gallery_video_failed_decoder_capability">この端末のデコーダーではこの動画を再生できません。高解像度または高フレームレートが原因である場合があります。</string>
+    <string name="guide_gallery_video_error_code">エラーコード: %1$s</string>
+    <string name="guide_gallery_video_open_external">外部で開く</string>
     <string name="guide_gallery_image_load_error">画像の読み込みに失敗しました</string>
     <string name="guide_gallery_memory_unlock_level">メモリアルロビー解放</string>
     <string name="guide_profile_section_nickname">別名</string>

@@ -10,7 +10,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -325,14 +327,25 @@ internal fun GuideVideoFullscreenDialog(
             }
 
             loadError?.takeIf { it.isNotBlank() }?.let { err ->
-                Text(
-                    text = stringResource(R.string.guide_gallery_video_failed_with_reason, err),
-                    color = Color(0xFFFCA5A5),
+                Box(
                     modifier =
                         Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 24.dp),
-                )
+                            .align(Alignment.Center)
+                            .padding(24.dp)
+                            .fillMaxWidth()
+                            .background(Color(0xD9000000), RoundedCornerShape(20.dp))
+                            .padding(18.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GuideVideoFailureMessage(
+                        loadError = err,
+                        mediaUrl = normalizedUrl,
+                        errorColor = Color(0xFFFCA5A5),
+                        supportingColor = Color(0xFFBFDBFE),
+                        buttonTextColor = Color(0xFFBFDBFE),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    )
+                }
             }
         }
     }

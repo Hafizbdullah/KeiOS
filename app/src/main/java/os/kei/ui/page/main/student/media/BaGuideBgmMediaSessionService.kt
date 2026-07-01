@@ -45,6 +45,9 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
                 .Builder(this)
                 .setMediaSourceFactory(createGameKeeMediaSourceFactory(this))
                 .build()
+                .apply {
+                    configureGuideMediaAudioBehavior()
+                }
         sessionPlayer.addListener(repeatModeListener)
         player = sessionPlayer
         serviceScope.launch {

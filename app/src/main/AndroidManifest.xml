@@ -202,7 +202,10 @@
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:enableOnBackInvokedCallback="true"
             android:excludeFromRecents="true"
-            android:exported="false" />
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true" />
 
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
