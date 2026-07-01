@@ -198,6 +198,7 @@ internal fun BaGuideCatalogPageContent(
                 incrementalRefreshIntervalHours = pageState.catalogIncrementalRefreshIntervalHours,
                 selectedStudentCatalogTab = pageState.selectedStudentCatalogTab,
                 studentCatalogSwitchEnabled = chromePresentation.activeTab == BaGuideCatalogPageTab.Student,
+                catalogListActionsEnabled = chromePresentation.activeCatalogTab != null,
                 onSelectSortMode = { mode ->
                     filterSortState.selectSortMode(mode)
                     pageState.closeMorePopup()

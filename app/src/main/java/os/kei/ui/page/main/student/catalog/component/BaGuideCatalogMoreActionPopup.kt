@@ -41,6 +41,7 @@ internal fun BaGuideCatalogMoreActionPopup(
     incrementalRefreshIntervalHours: Int,
     selectedStudentCatalogTab: BaGuideCatalogTab,
     studentCatalogSwitchEnabled: Boolean,
+    catalogListActionsEnabled: Boolean,
     onDismissRequest: () -> Unit,
     onOpenTransfer: () -> Unit,
     onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
@@ -127,25 +128,27 @@ internal fun BaGuideCatalogMoreActionPopup(
                             ),
                         )
                     }
-                    add(
-                        LiquidGlassActionMenuSubmenuRow(
-                            id = "sort",
-                            text = stringResource(R.string.ba_catalog_more_sort_title),
-                            subtitle = selectedSortLabel,
-                            leadingIcon = sortIcon,
-                            trailingIcon = chevronRightIcon,
-                            submenuItems =
-                                sortModes.mapIndexed { index, mode ->
-                                    LiquidGlassActionMenuSingleChoiceRow(
-                                        id = mode.name,
-                                        text = sortLabels[index],
-                                        selected = sortMode == mode,
-                                        leadingIcon = sortIcon,
-                                        onClick = { onSelectSortMode(mode) },
-                                    )
-                                },
-                        ),
-                    )
+                    if (catalogListActionsEnabled) {
+                        add(
+                            LiquidGlassActionMenuSubmenuRow(
+                                id = "sort",
+                                text = stringResource(R.string.ba_catalog_more_sort_title),
+                                subtitle = selectedSortLabel,
+                                leadingIcon = sortIcon,
+                                trailingIcon = chevronRightIcon,
+                                submenuItems =
+                                    sortModes.mapIndexed { index, mode ->
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = mode.name,
+                                            text = sortLabels[index],
+                                            selected = sortMode == mode,
+                                            leadingIcon = sortIcon,
+                                            onClick = { onSelectSortMode(mode) },
+                                        )
+                                    },
+                            ),
+                        )
+                    }
                     add(
                         LiquidGlassActionMenuActionRow(
                             id = "refresh_scope",
