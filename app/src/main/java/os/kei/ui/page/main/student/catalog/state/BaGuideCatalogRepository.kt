@@ -155,6 +155,23 @@ internal class BaGuideCatalogRepository(
             BaGuideCatalogStore.saveIncrementalRefreshIntervalHours(hours)
         }
 
+    suspend fun loadCatalogUiPreferences(): BaGuideCatalogUiPreferences =
+        withContext(ioDispatcher) {
+            BaGuideCatalogUiPreferencesStore.load()
+        }
+
+    suspend fun saveCatalogSelectedStudentCatalogTab(tab: BaGuideCatalogTab) {
+        withContext(ioDispatcher) {
+            BaGuideCatalogUiPreferencesStore.saveSelectedStudentCatalogTab(tab)
+        }
+    }
+
+    suspend fun saveCatalogFilterSortSnapshot(snapshot: BaGuideCatalogFilterSortSnapshot) {
+        withContext(ioDispatcher) {
+            BaGuideCatalogUiPreferencesStore.saveFilterSortSnapshot(snapshot)
+        }
+    }
+
     suspend fun saveTransferMediaSaveCustomEnabled(enabled: Boolean) {
         BaGuideCatalogTransferSettingsRepository.saveMediaSaveCustomEnabled(enabled)
     }

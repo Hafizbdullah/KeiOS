@@ -154,6 +154,10 @@ internal class BaGuideCatalogViewModel(
             _transferSettings.value = repository.loadTransferSettings()
         }
         viewModelScope.launch {
+            val preferences = repository.loadCatalogUiPreferences()
+            applyCatalogUiPreferences(preferences)
+        }
+        viewModelScope.launch {
             val refreshHours = repository.loadCatalogIncrementalRefreshIntervalHours()
             _pageChromeState.update { state ->
                 state.copy(catalogIncrementalRefreshIntervalHours = refreshHours)
@@ -200,12 +204,12 @@ internal class BaGuideCatalogViewModel(
     }
 
     fun updateCatalogSelectedStudentCatalogTab(tab: BaGuideCatalogTab) {
+        if (_pageChromeState.value.selectedStudentCatalogTab == tab) return
         _pageChromeState.update { state ->
-            if (state.selectedStudentCatalogTab == tab) {
-                state
-            } else {
-                state.copy(selectedStudentCatalogTab = tab)
-            }
+            state.copy(selectedStudentCatalogTab = tab)
+        }
+        viewModelScope.launch {
+            repository.saveCatalogSelectedStudentCatalogTab(tab)
         }
     }
 
@@ -372,11 +376,12 @@ internal class BaGuideCatalogViewModel(
             snapshot.copy(
                 searchQuery = snapshot.searchQuery.trim(),
             )
-        _filterSortState.update { state ->
-            if (state == normalized) {
-                state
-            } else {
-                normalized
+        val previous = _filterSortState.value
+        if (previous == normalized) return
+        _filterSortState.value = normalized
+        if (previous.hasDifferentPersistentFilterSortPreferences(normalized)) {
+            viewModelScope.launch {
+                repository.saveCatalogFilterSortSnapshot(normalized)
             }
         }
     }
@@ -671,6 +676,23 @@ internal class BaGuideCatalogViewModel(
             }
     }
 
+    private fun applyCatalogUiPreferences(preferences: BaGuideCatalogUiPreferences) {
+        _pageChromeState.update { state ->
+            if (state.selectedStudentCatalogTab == BaGuideCatalogTab.Student) {
+                state.copy(selectedStudentCatalogTab = preferences.selectedStudentCatalogTab)
+            } else {
+                state
+            }
+        }
+        _filterSortState.update { state ->
+            if (state == BaGuideCatalogFilterSortSnapshot()) {
+                preferences.filterSortSnapshot
+            } else {
+                state
+            }
+        }
+    }
+
     override fun onCleared() {
         loadJob?.cancel()
         hydrateJob?.cancel()
@@ -688,3 +710,11 @@ internal class BaGuideCatalogViewModel(
         const val CATALOG_DETAIL_VALIDATION_MAX_PARALLELISM = 1
     }
 }
+
+private fun BaGuideCatalogFilterSortSnapshot.hasDifferentPersistentFilterSortPreferences(
+    next: BaGuideCatalogFilterSortSnapshot,
+): Boolean =
+    studentSortMode != next.studentSortMode ||
+        npcSatelliteSortMode != next.npcSatelliteSortMode ||
+        studentSelectedFiltersRaw != next.studentSelectedFiltersRaw ||
+        npcSatelliteSelectedFiltersRaw != next.npcSatelliteSelectedFiltersRaw
