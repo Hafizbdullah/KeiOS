@@ -85,6 +85,9 @@ internal fun BaGuideBgmDockGroupContent(
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val currentExpandedEnabled by rememberUpdatedState(expandedEnabled)
     val currentAnimationsEnabled by rememberUpdatedState(animationsEnabled)
+    val currentSelectedDockKey by rememberUpdatedState(selectedDockKey)
+    val currentTabs by rememberUpdatedState(tabs)
+    val currentOnSelectedDockKeyChange by rememberUpdatedState(onSelectedDockKeyChange)
     val animationScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
@@ -267,12 +270,21 @@ internal fun BaGuideBgmDockGroupContent(
                 .snapshotFlow { currentIndex }
                 .drop(1)
                 .collectLatest { index ->
-                    if (animationsEnabled) {
-                        dampedDragAnimation.animateToValue(index.toFloat())
-                    } else {
-                        dampedDragAnimation.snapToValue(index.toFloat())
+                    val target = index.fastCoerceIn(0, safeTabCount - 1).toFloat()
+                    if (
+                        abs(dampedDragAnimation.value - target) > 0.001f ||
+                        abs(dampedDragAnimation.targetValue - target) > 0.001f
+                    ) {
+                        if (animationsEnabled) {
+                            dampedDragAnimation.animateToValue(target)
+                        } else {
+                            dampedDragAnimation.snapToValue(target)
+                        }
                     }
-                    tabs.getOrNull(index)?.key?.let(onSelectedDockKeyChange)
+                    val targetKey = currentTabs.getOrNull(index)?.key
+                    if (targetKey != null && targetKey != currentSelectedDockKey) {
+                        currentOnSelectedDockKeyChange(targetKey)
+                    }
                 }
         }
         Row(
