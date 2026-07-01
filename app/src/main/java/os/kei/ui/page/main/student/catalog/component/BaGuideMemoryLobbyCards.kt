@@ -2,7 +2,9 @@
 
 package os.kei.ui.page.main.student.catalog.component
 
+import android.graphics.Rect
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,31 +13,40 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.core.ext.showToast
-import os.kei.core.intent.SafeExternalIntents
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
+import os.kei.ui.page.main.os.appLucideMoreIcon
+import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.student.BaGuideGalleryItem
+import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
+import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.isRenderableGalleryImageUrl
-import os.kei.ui.page.main.student.section.GuideGalleryCardItem
 import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
@@ -44,13 +55,30 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
+import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
+import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
+import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
+import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.roundToInt
+
+private val MemoryLobbyMoreMenuMinWidth = 156.dp
+private val MemoryLobbyMoreMenuMaxWidth = 196.dp
+private val MemoryLobbyMoreMenuMaxHeight = 240.dp
+private val MemoryLobbyVariantMenuMinWidth = 136.dp
+private val MemoryLobbyVariantMenuMaxWidth = 196.dp
+private val MemoryLobbyVariantMenuMaxHeight = 220.dp
 
 @Composable
 internal fun BaGuideMemoryLobbyHeader(
@@ -132,8 +160,6 @@ internal fun BaGuideMemoryLobbyCard(
     }
     var fullscreenImageUrl by remember(entry.contentId) { mutableStateOf<String?>(null) }
     val ready = lookupState as? BaGuideMemoryLobbyLookupState.Ready
-    val isLoading = lookupState == BaGuideMemoryLobbyLookupState.Loading
-    val isMissing = lookupState == BaGuideMemoryLobbyLookupState.Missing
     val firstFullscreenImageUrl =
         remember(ready?.item?.galleryItems) {
             ready
@@ -191,15 +217,26 @@ internal fun BaGuideMemoryLobbyCard(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(
-                        text = entry.name,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.CompactTitle.fontSize,
-                        lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
-                        fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = entry.name,
+                            modifier = Modifier.weight(1f),
+                            color = MiuixTheme.colorScheme.onBackground,
+                            fontSize = AppTypographyTokens.CompactTitle.fontSize,
+                            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
+                            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        BaGuideMemoryLobbyStatusRow(
+                            lookupState = lookupState,
+                            resolvedItem = ready?.item,
+                        )
+                    }
                     if (entry.aliasDisplay.isNotBlank()) {
                         Text(
                             text = entry.aliasDisplay,
@@ -210,48 +247,19 @@ internal fun BaGuideMemoryLobbyCard(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    BaGuideMemoryLobbyStatusRow(
-                        lookupState = lookupState,
-                        resolvedItem = ready?.item,
-                    )
                 }
                 Row(
-                    modifier = Modifier.width(if (expanded && firstFullscreenImageUrl.isNotBlank()) 156.dp else 118.dp),
+                    modifier = Modifier.width(82.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    AppCompactIconAction(
-                        icon = appLucideHeartIcon(),
-                        contentDescription =
-                            stringResource(
-                                if (favorite) {
-                                    R.string.ba_catalog_cd_unfavorite_student
-                                } else {
-                                    R.string.ba_catalog_cd_favorite_student
-                                },
-                            ),
-                        onClick = onToggleFavorite,
-                        modifier = Modifier.size(38.dp),
-                        tint = if (favorite) Color(0xFFEC4899) else neutralTint,
-                        minSize = 38.dp,
-                    )
-                    if (expanded && firstFullscreenImageUrl.isNotBlank()) {
-                        AppCompactIconAction(
-                            icon = appLucideFullscreenIcon(),
-                            contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
-                            onClick = { fullscreenImageUrl = firstFullscreenImageUrl },
-                            modifier = Modifier.size(38.dp),
-                            tint = accent,
-                            minSize = 38.dp,
-                        )
-                    }
-                    AppCompactIconAction(
-                        icon = appLucideExternalLinkIcon(),
-                        contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_open_guide),
-                        onClick = onOpenGuide,
-                        modifier = Modifier.size(38.dp),
-                        tint = neutralTint,
-                        minSize = 38.dp,
+                    BaGuideMemoryLobbyMoreActions(
+                        favorite = favorite,
+                        firstFullscreenImageUrl = firstFullscreenImageUrl,
+                        iconTint = neutralTint,
+                        onToggleFavorite = onToggleFavorite,
+                        onOpenFullscreen = { fullscreenImageUrl = firstFullscreenImageUrl },
+                        onOpenGuide = onOpenGuide,
                     )
                     AppCompactIconAction(
                         icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
@@ -280,7 +288,8 @@ internal fun BaGuideMemoryLobbyCard(
             ) {
                 BaGuideMemoryLobbyExpandedContent(
                     lookupState = lookupState,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                    accent = accent,
+                    onOpenFullscreenImage = { imageUrl -> fullscreenImageUrl = imageUrl },
                 )
             }
         }
@@ -335,10 +344,9 @@ private fun BaGuideMemoryLobbyStatusRow(
 @Composable
 private fun BaGuideMemoryLobbyExpandedContent(
     lookupState: BaGuideMemoryLobbyLookupState,
-    mediaAdaptiveRotationEnabled: Boolean,
+    accent: Color,
+    onOpenFullscreenImage: (String) -> Unit,
 ) {
-    val context = LocalContext.current
-    val openFailed = stringResource(R.string.common_open_link_failed)
     when (lookupState) {
         BaGuideMemoryLobbyLookupState.Idle,
         BaGuideMemoryLobbyLookupState.Loading,
@@ -375,38 +383,33 @@ private fun BaGuideMemoryLobbyExpandedContent(
 
         is BaGuideMemoryLobbyLookupState.Ready -> {
             val item = lookupState.item
+            val imageItems = item.galleryItems.filterNot(BaGuideGalleryItem::isMemoryLobbyVideo)
+            val videoItems = item.galleryItems.filter(BaGuideGalleryItem::isMemoryLobbyVideo)
+            val previewImageUrl = imageItems.firstFullscreenImageUrl()
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (item.memoryUnlockLevel.isNotBlank()) {
+                if (videoItems.isNotEmpty()) {
+                    BaGuideMemoryLobbyVideoGroup(
+                        items = videoItems,
+                        previewFallbackUrl = previewImageUrl,
+                        unlockLevel = item.memoryUnlockLevel,
+                        accent = accent,
+                    )
+                } else if (previewImageUrl.isNotBlank()) {
+                    BaGuideMemoryLobbyImagePreviewGroup(
+                        previewImageUrl = previewImageUrl,
+                        unlockLevel = item.memoryUnlockLevel,
+                        accent = accent,
+                        onOpenFullscreen = { onOpenFullscreenImage(previewImageUrl) },
+                    )
+                } else {
                     Text(
-                        text = stringResource(
-                            R.string.ba_catalog_memory_lobby_unlock_level,
-                            item.memoryUnlockLevel,
-                        ),
+                        text = stringResource(R.string.ba_catalog_memory_lobby_missing_body),
                         color = MiuixTheme.colorScheme.onBackgroundVariant,
                         fontSize = AppTypographyTokens.Supporting.fontSize,
                         lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    )
-                }
-                item.galleryItems.forEach { galleryItem ->
-                    GuideGalleryCardItem(
-                        item = galleryItem,
-                        backdrop = null,
-                        onOpenMedia = { rawUrl ->
-                            if (!SafeExternalIntents.startBrowsableUrl(context, rawUrl, newTask = true)) {
-                                context.showToast(openFailed)
-                            }
-                        },
-                        embedded = true,
-                        showSaveAction = false,
-                        showBgmFavoriteAction = false,
-                        showAudioLoopAction = false,
-                        bgmFavoriteStudentTitle = item.studentTitle,
-                        bgmFavoriteStudentImageUrl = item.studentImageUrl,
-                        bgmFavoriteSourceUrl = item.sourceUrl,
-                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                     )
                 }
             }
@@ -414,11 +417,409 @@ private fun BaGuideMemoryLobbyExpandedContent(
     }
 }
 
+@Composable
+private fun BaGuideMemoryLobbyMoreActions(
+    favorite: Boolean,
+    firstFullscreenImageUrl: String,
+    iconTint: Color,
+    onToggleFavorite: () -> Unit,
+    onOpenFullscreen: () -> Unit,
+    onOpenGuide: () -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var menuAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val moreIcon = appLucideMoreIcon()
+    val favoriteIcon = appLucideHeartIcon()
+    val fullscreenIcon = appLucideFullscreenIcon()
+    val openGuideIcon = appLucideExternalLinkIcon()
+    val optionSize = 2 + if (firstFullscreenImageUrl.isNotBlank()) 1 else 0
+    Box(
+        modifier = Modifier.capturePopupAnchor { bounds -> menuAnchorBounds = bounds },
+        contentAlignment = Alignment.Center,
+    ) {
+        AppCompactIconAction(
+            icon = moreIcon,
+            contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_more),
+            onClick = { menuExpanded = !menuExpanded },
+            modifier = Modifier.size(38.dp),
+            tint = iconTint,
+            minSize = 38.dp,
+        )
+        if (menuExpanded) {
+            SnapshotWindowListPopup(
+                show = true,
+                alignment = PopupPositionProvider.Align.BottomEnd,
+                anchorBounds = menuAnchorBounds,
+                placement = SnapshotPopupPlacement.ButtonEnd,
+                enableWindowDim = false,
+                onDismissRequest = { menuExpanded = false },
+            ) {
+                LiquidGlassDropdownColumn(
+                    minWidth = MemoryLobbyMoreMenuMinWidth,
+                    maxWidth = MemoryLobbyMoreMenuMaxWidth,
+                    maxHeight = MemoryLobbyMoreMenuMaxHeight,
+                ) {
+                    var index = 0
+                    BaGuideMemoryLobbyMenuAction(
+                        text =
+                            stringResource(
+                                if (favorite) {
+                                    R.string.ba_catalog_memory_lobby_menu_unfavorite
+                                } else {
+                                    R.string.ba_catalog_memory_lobby_menu_favorite
+                                },
+                            ),
+                        leadingIcon = favoriteIcon,
+                        index = index++,
+                        optionSize = optionSize,
+                        onClick = {
+                            menuExpanded = false
+                            onToggleFavorite()
+                        },
+                    )
+                    if (firstFullscreenImageUrl.isNotBlank()) {
+                        BaGuideMemoryLobbyMenuAction(
+                            text = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
+                            leadingIcon = fullscreenIcon,
+                            index = index++,
+                            optionSize = optionSize,
+                            onClick = {
+                                menuExpanded = false
+                                onOpenFullscreen()
+                            },
+                        )
+                    }
+                    BaGuideMemoryLobbyMenuAction(
+                        text = stringResource(R.string.ba_catalog_memory_lobby_action_open_guide),
+                        leadingIcon = openGuideIcon,
+                        index = index,
+                        optionSize = optionSize,
+                        onClick = {
+                            menuExpanded = false
+                            onOpenGuide()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BaGuideMemoryLobbyMenuAction(
+    text: String,
+    leadingIcon: ImageVector,
+    index: Int,
+    optionSize: Int,
+    onClick: () -> Unit,
+) {
+    LiquidGlassDropdownActionItem(
+        text = text,
+        leadingIcon = leadingIcon,
+        index = index,
+        optionSize = optionSize,
+        variant = GlassVariant.SheetAction,
+        onClick = onClick,
+    )
+}
+
+@Composable
+private fun BaGuideMemoryLobbyVideoGroup(
+    items: List<BaGuideGalleryItem>,
+    previewFallbackUrl: String,
+    unlockLevel: String,
+    accent: Color,
+) {
+    if (items.isEmpty()) return
+    val context = LocalContext.current
+    val itemKey = remember(items) {
+        items.joinToString(separator = "|") { item ->
+            item.mediaUrl.ifBlank { item.imageUrl }
+        }
+    }
+    var selectedIndex by rememberSaveable(itemKey) { mutableStateOf(0) }
+    LaunchedEffect(items.size) {
+        if (selectedIndex !in items.indices) selectedIndex = 0
+    }
+    val selectedItem = items.getOrElse(selectedIndex) { items.first() }
+    val displayMediaUrl = remember(selectedItem.mediaUrl) { normalizeGuideMediaSource(selectedItem.mediaUrl) }
+    val displayPreviewUrl =
+        remember(selectedItem.imageUrl, previewFallbackUrl) {
+            val staticPreview = previewFallbackUrl.takeIf(::isRenderableGalleryImageUrl).orEmpty()
+            val videoPreview = selectedItem.imageUrl.takeIf(::isRenderableGalleryImageUrl).orEmpty()
+            normalizeGuideMediaSource(staticPreview.ifBlank { videoPreview })
+        }
+    var videoSourceRect by remember(displayMediaUrl) { mutableStateOf<Rect?>(null) }
+    val optionLabels =
+        if (items.size <= 1) {
+            listOf(stringResource(R.string.guide_gallery_video_format, 1))
+        } else {
+            items.mapIndexed { index, item ->
+                item.title
+                    .trim()
+                    .takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.guide_gallery_video_format, index + 1)
+            }
+        }
+    val openPictureInPicture = {
+        if (displayMediaUrl.isBlank()) {
+            context.showToast(context.getString(R.string.guide_media_video_url_invalid))
+        } else {
+            GuideVideoFullscreenActivity.launchInPictureInPicture(
+                context = context,
+                mediaUrl = displayMediaUrl,
+                previewImageUrl = displayPreviewUrl,
+                startPositionMs = 0L,
+                sourceRectHint = videoSourceRect,
+            )
+        }
+    }
+    val openFullscreen = {
+        if (displayMediaUrl.isBlank()) {
+            context.showToast(context.getString(R.string.guide_media_video_url_invalid))
+        } else {
+            GuideVideoFullscreenActivity.launch(
+                context = context,
+                mediaUrl = displayMediaUrl,
+                previewImageUrl = displayPreviewUrl,
+            )
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.guide_gallery_memorial_lobby),
+                color = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            BaGuideMemoryLobbyUnlockPill(
+                unlockLevel = unlockLevel,
+                accent = accent,
+            )
+            BaGuideMemoryLobbyVariantSelector(
+                optionLabels = optionLabels,
+                selectedIndex = selectedIndex,
+                onSelectedIndexChange = { selectedIndex = it },
+            )
+            if (displayMediaUrl.isNotBlank()) {
+                AppCompactIconAction(
+                    icon = appLucidePlayIcon(),
+                    contentDescription = stringResource(R.string.guide_gallery_memorial_lobby_pip_play),
+                    onClick = openPictureInPicture,
+                    modifier = Modifier.size(38.dp),
+                    tint = Color(0xFF3B82F6),
+                    minSize = 38.dp,
+                )
+                AppCompactIconAction(
+                    icon = appLucideFullscreenIcon(),
+                    contentDescription = stringResource(R.string.guide_gallery_memorial_lobby_pip_fullscreen),
+                    onClick = openFullscreen,
+                    modifier = Modifier.size(38.dp),
+                    tint = Color(0xFF3B82F6),
+                    minSize = 38.dp,
+                )
+            }
+        }
+        if (displayMediaUrl.isBlank()) {
+            Text(
+                text = stringResource(R.string.guide_gallery_video_not_found),
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        } else if (displayPreviewUrl.isNotBlank()) {
+            BaGuideMemoryLobbyVideoPreview(
+                previewImageUrl = displayPreviewUrl,
+                onBoundsChanged = { rect -> videoSourceRect = rect },
+                onClick = openPictureInPicture,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaGuideMemoryLobbyVariantSelector(
+    optionLabels: List<String>,
+    selectedIndex: Int,
+    onSelectedIndexChange: (Int) -> Unit,
+) {
+    if (optionLabels.size <= 1) return
+    var showPicker by remember(optionLabels) { mutableStateOf(false) }
+    var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    Box(
+        modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
+        contentAlignment = Alignment.Center,
+    ) {
+        AppDropdownAnchorButton(
+            text = optionLabels.getOrElse(selectedIndex) {
+                stringResource(R.string.guide_gallery_video_format, 1)
+            },
+            onClick = { showPicker = !showPicker },
+            modifier = Modifier.widthIn(min = 54.dp, max = 96.dp),
+            textColor = Color(0xFF3B82F6),
+            variant = GlassVariant.Compact,
+            horizontalPadding = 8.dp,
+            textSize = AppTypographyTokens.Supporting.fontSize,
+            textLineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        if (showPicker) {
+            SnapshotWindowListPopup(
+                show = true,
+                alignment = PopupPositionProvider.Align.BottomEnd,
+                anchorBounds = pickerPopupAnchorBounds,
+                placement = SnapshotPopupPlacement.ButtonEnd,
+                enableWindowDim = false,
+                onDismissRequest = { showPicker = false },
+            ) {
+                LiquidGlassDropdownColumn(
+                    minWidth = MemoryLobbyVariantMenuMinWidth,
+                    maxWidth = MemoryLobbyVariantMenuMaxWidth,
+                    maxHeight = MemoryLobbyVariantMenuMaxHeight,
+                ) {
+                    optionLabels.forEachIndexed { index, option ->
+                        LiquidGlassDropdownSingleChoiceItem(
+                            text = option,
+                            optionSize = optionLabels.size,
+                            isSelected = selectedIndex == index,
+                            index = index,
+                            accentColor = Color(0xFF3B82F6),
+                            variant = GlassVariant.SheetAction,
+                            textMaxLines = 1,
+                            onSelectedIndexChange = { selected ->
+                                onSelectedIndexChange(selected)
+                                showPicker = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BaGuideMemoryLobbyImagePreviewGroup(
+    previewImageUrl: String,
+    unlockLevel: String,
+    accent: Color,
+    onOpenFullscreen: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.guide_gallery_memorial_lobby),
+                color = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            BaGuideMemoryLobbyUnlockPill(
+                unlockLevel = unlockLevel,
+                accent = accent,
+            )
+            AppCompactIconAction(
+                icon = appLucideFullscreenIcon(),
+                contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
+                onClick = onOpenFullscreen,
+                modifier = Modifier.size(38.dp),
+                tint = Color(0xFF3B82F6),
+                minSize = 38.dp,
+            )
+        }
+        BaGuideMemoryLobbyVideoPreview(
+            previewImageUrl = previewImageUrl,
+            onBoundsChanged = {},
+            onClick = onOpenFullscreen,
+        )
+    }
+}
+
+@Composable
+private fun BaGuideMemoryLobbyUnlockPill(
+    unlockLevel: String,
+    accent: Color,
+) {
+    val label = remember(unlockLevel) { unlockLevel.memoryLobbyUnlockLevelPillLabel() }
+    if (label.isBlank()) return
+    StatusPill(
+        label = label,
+        color = accent,
+        size = AppStatusPillSize.Compact,
+    )
+}
+
+@Composable
+private fun BaGuideMemoryLobbyVideoPreview(
+    previewImageUrl: String,
+    onBoundsChanged: (Rect?) -> Unit,
+    onClick: () -> Unit,
+) {
+    var loading by remember(previewImageUrl) { mutableStateOf(false) }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInWindow()
+                    val rect =
+                        Rect(
+                            bounds.left.roundToInt(),
+                            bounds.top.roundToInt(),
+                            bounds.right.roundToInt(),
+                            bounds.bottom.roundToInt(),
+                        )
+                    onBoundsChanged(rect.takeUnless { it.isEmpty })
+                }
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        GuideRemoteImageAdaptive(
+            imageUrl = previewImageUrl,
+            maxDecodeDimension = 1600,
+            onLoadingChanged = { loading = it },
+        )
+        if (loading) {
+            LiquidCircularProgressBar(
+                progress = { 0.35f },
+                size = 22.dp,
+                strokeWidth = 2.5.dp,
+                activeColor = Color(0xFF3B82F6),
+                inactiveColor = Color(0xFF3B82F6).copy(alpha = 0.24f),
+            )
+        }
+    }
+}
+
+private fun String.memoryLobbyUnlockLevelPillLabel(): String {
+    val trimmed = trim()
+    if (trimmed.isBlank()) return ""
+    return Regex("""\d+""").find(trimmed)?.value ?: trimmed
+}
+
+private fun BaGuideGalleryItem.isMemoryLobbyVideo(): Boolean =
+    mediaType.equals("video", ignoreCase = true)
+
 private fun List<BaGuideGalleryItem>.firstFullscreenImageUrl(): String =
     firstOrNull { item ->
-        val type = item.mediaType.lowercase()
-        type != "video" &&
-            type != "audio" &&
+        !item.isMemoryLobbyVideo() &&
+            item.mediaType.lowercase() != "audio" &&
             (
                 isRenderableGalleryImageUrl(item.imageUrl) ||
                     isRenderableGalleryImageUrl(item.mediaUrl)

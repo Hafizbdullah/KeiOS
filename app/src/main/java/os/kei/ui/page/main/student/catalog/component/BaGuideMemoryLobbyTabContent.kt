@@ -150,7 +150,6 @@ internal fun BaGuideMemoryLobbyTabContent(
                 lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
             }
     }
-
     LazyColumn(
         state = listState,
         modifier =
