@@ -268,10 +268,14 @@
 
     <string name="ba_catalog_page_title">图鉴</string>
     <string name="ba_catalog_tab_title">当前分区：%1$s</string>
+    <string name="ba_catalog_tab_students">学生</string>
+    <string name="ba_catalog_tab_students_short">学生</string>
     <string name="ba_catalog_tab_student">实装学生</string>
     <string name="ba_catalog_tab_student_short">实装学生</string>
     <string name="ba_catalog_tab_npc_satellite">NPC及卫星</string>
     <string name="ba_catalog_tab_npc_satellite_short">NPC及卫星</string>
+    <string name="ba_catalog_tab_memory_lobby">记忆大厅</string>
+    <string name="ba_catalog_tab_memory_lobby_short">记忆大厅</string>
     <string name="ba_catalog_tab_student_bgm">音乐</string>
     <string name="ba_catalog_tab_student_bgm_short">音乐</string>
     <string name="ba_catalog_tab_bgm">播放</string>
@@ -282,6 +286,7 @@
     <string name="ba_catalog_action_more">图鉴更多操作</string>
     <string name="ba_catalog_more_transfer">备份与播放设置</string>
     <string name="ba_catalog_more_transfer_summary">导入导出、保存位置、媒体通知</string>
+    <string name="ba_catalog_more_student_type_title">学生类型</string>
     <string name="ba_catalog_more_sort_title">排序方式</string>
     <string name="ba_catalog_more_refresh_scope_title">刷新范围</string>
     <string name="ba_catalog_more_refresh_scope_summary">图鉴总览专用；活动/卡池见 BA 设置</string>
@@ -344,8 +349,10 @@
     <string name="ba_catalog_search_label">搜索名称 / 别名 / ID</string>
     <string name="ba_catalog_search_placeholder_student">搜索学生名称、别名或 ID</string>
     <string name="ba_catalog_search_placeholder_npc_satellite">搜索 NPC、卫星名称或 ID</string>
+    <string name="ba_catalog_search_placeholder_memory_lobby">记忆大厅搜索稍后开放</string>
     <string name="ba_catalog_search_placeholder_music">搜索学生姓名、别名或已解析 BGM</string>
     <string name="ba_catalog_search_placeholder_playback">搜索已收藏 BGM、学生或来源</string>
+    <string name="ba_catalog_memory_lobby_placeholder">记忆大厅板块准备中</string>
     <string name="ba_catalog_sync_status_title">同步状态</string>
     <string name="ba_catalog_sync_status_body_retry">可通过右上角刷新按钮重试</string>
     <string name="ba_catalog_load_failed">图鉴列表加载失败</string>

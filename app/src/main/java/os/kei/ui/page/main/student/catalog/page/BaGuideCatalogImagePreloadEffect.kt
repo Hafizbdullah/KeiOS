@@ -22,6 +22,7 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
     requestCatalogImages: (List<String>) -> Unit,
 ) {
     val activeTab = chromePresentation.activeTab
+    val activeCatalogTab = chromePresentation.activeCatalogTab
     val catalogListDerivedStates = routeState.catalogListDerivedStates
     val studentBgmEntries = routeState.studentBgmListDerivedState.filteredEntries
     val favoriteBgms = routeState.favoriteBgmListDerivedState.displayedFavorites
@@ -30,6 +31,7 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
     val imageUrls =
         remember(
             activeTab,
+            activeCatalogTab,
             catalogListDerivedStates,
             studentBgmEntries,
             favoriteBgms,
@@ -38,6 +40,7 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
         ) {
             buildBaGuideCatalogImagePreloadUrls(
                 activeTab = activeTab,
+                activeCatalogTab = activeCatalogTab,
                 catalogListDerivedStates = catalogListDerivedStates,
                 studentBgmEntries = studentBgmEntries,
                 favoriteBgms = favoriteBgms,
@@ -52,6 +55,7 @@ internal fun BindBaGuideCatalogImagePreloadEffect(
 
 internal fun buildBaGuideCatalogImagePreloadUrls(
     activeTab: BaGuideCatalogPageTab,
+    activeCatalogTab: BaGuideCatalogTab?,
     catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
     studentBgmEntries: List<BaGuideCatalogEntry>,
     favoriteBgms: List<GuideBgmFavoriteItem>,
@@ -87,7 +91,7 @@ internal fun buildBaGuideCatalogImagePreloadUrls(
             }
     }
 
-    activeTab.catalogTab?.let { tab ->
+    activeCatalogTab?.let { tab ->
         addEntries(
             entries = catalogListDerivedStates[tab]?.filteredEntries.orEmpty(),
             limit = BA_GUIDE_CATALOG_ACTIVE_HEAD_PRELOAD_LIMIT,
@@ -112,7 +116,7 @@ internal fun buildBaGuideCatalogImagePreloadUrls(
     if (urls.size < BA_GUIDE_CATALOG_IMAGE_PRELOAD_LIMIT) {
         buildFairCatalogWarmupUrls(
             catalogListDerivedStates = catalogListDerivedStates,
-            activeCatalogTab = activeTab.catalogTab,
+            activeCatalogTab = activeCatalogTab,
             limit = BA_GUIDE_CATALOG_IMAGE_PRELOAD_LIMIT - urls.size,
         ).forEach(::addUrl)
     }

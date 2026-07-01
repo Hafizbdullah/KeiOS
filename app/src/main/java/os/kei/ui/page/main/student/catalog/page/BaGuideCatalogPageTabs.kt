@@ -10,14 +10,15 @@ internal enum class BaGuideCatalogPageTab(
     val specialTab: BaGuideCatalogSpecialTab? = null,
 ) {
     Student(
-        labelRes = R.string.ba_catalog_tab_student,
-        compactLabelRes = R.string.ba_catalog_tab_student_short,
-        catalogTab = BaGuideCatalogTab.Student,
+        labelRes = R.string.ba_catalog_tab_students,
+        compactLabelRes = R.string.ba_catalog_tab_students_short,
+        catalogTab = null,
     ),
-    NpcSatellite(
-        labelRes = R.string.ba_catalog_tab_npc_satellite,
-        compactLabelRes = R.string.ba_catalog_tab_npc_satellite_short,
-        catalogTab = BaGuideCatalogTab.NpcSatellite,
+    MemoryLobby(
+        labelRes = R.string.ba_catalog_tab_memory_lobby,
+        compactLabelRes = R.string.ba_catalog_tab_memory_lobby_short,
+        catalogTab = null,
+        specialTab = BaGuideCatalogSpecialTab.MemoryLobby,
     ),
     StudentBgm(
         labelRes = R.string.ba_catalog_tab_student_bgm,
@@ -34,15 +35,37 @@ internal enum class BaGuideCatalogPageTab(
 }
 
 internal enum class BaGuideCatalogSpecialTab {
+    MemoryLobby,
     StudentBgm,
     FavoriteBgm,
 }
 
-internal val BaGuideCatalogPageTab.searchPlaceholderRes: Int
+internal fun BaGuideCatalogPageTab.resolvedCatalogTab(
+    selectedStudentCatalogTab: BaGuideCatalogTab,
+): BaGuideCatalogTab? =
+    when (this) {
+        BaGuideCatalogPageTab.Student -> selectedStudentCatalogTab
+        else -> catalogTab
+    }
+
+internal fun BaGuideCatalogPageTab.searchPlaceholderRes(
+    selectedStudentCatalogTab: BaGuideCatalogTab,
+): Int =
+    when (this) {
+        BaGuideCatalogPageTab.Student ->
+            when (selectedStudentCatalogTab) {
+                BaGuideCatalogTab.Student -> R.string.ba_catalog_search_placeholder_student
+                BaGuideCatalogTab.NpcSatellite -> R.string.ba_catalog_search_placeholder_npc_satellite
+            }
+
+        BaGuideCatalogPageTab.MemoryLobby -> R.string.ba_catalog_search_placeholder_memory_lobby
+        BaGuideCatalogPageTab.StudentBgm -> R.string.ba_catalog_search_placeholder_music
+        BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
+    }
+
+internal val BaGuideCatalogTab.studentTypeLabelRes: Int
     get() =
         when (this) {
-            BaGuideCatalogPageTab.Student -> R.string.ba_catalog_search_placeholder_student
-            BaGuideCatalogPageTab.NpcSatellite -> R.string.ba_catalog_search_placeholder_npc_satellite
-            BaGuideCatalogPageTab.StudentBgm -> R.string.ba_catalog_search_placeholder_music
-            BaGuideCatalogPageTab.Bgm -> R.string.ba_catalog_search_placeholder_playback
+            BaGuideCatalogTab.Student -> R.string.ba_catalog_tab_student
+            BaGuideCatalogTab.NpcSatellite -> R.string.ba_catalog_tab_npc_satellite
         }

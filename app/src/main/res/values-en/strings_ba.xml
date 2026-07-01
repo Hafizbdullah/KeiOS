@@ -264,10 +264,14 @@
 
     <string name="ba_catalog_page_title">Archive</string>
     <string name="ba_catalog_tab_title">Current section: %1$s</string>
+    <string name="ba_catalog_tab_students">Students</string>
+    <string name="ba_catalog_tab_students_short">Students</string>
     <string name="ba_catalog_tab_student">Released Students</string>
     <string name="ba_catalog_tab_student_short">Students</string>
     <string name="ba_catalog_tab_npc_satellite">NPC &amp; Upcoming</string>
     <string name="ba_catalog_tab_npc_satellite_short">NPC</string>
+    <string name="ba_catalog_tab_memory_lobby">Memorial Lobby</string>
+    <string name="ba_catalog_tab_memory_lobby_short">Lobby</string>
     <string name="ba_catalog_tab_student_bgm">Music</string>
     <string name="ba_catalog_tab_student_bgm_short">Music</string>
     <string name="ba_catalog_tab_bgm">Play</string>
@@ -275,6 +279,19 @@
     <string name="ba_catalog_action_sort">Sort</string>
     <string name="ba_catalog_action_refresh">Refresh list</string>
     <string name="ba_catalog_action_transfer">Favorites data</string>
+    <string name="ba_catalog_action_more">More archive actions</string>
+    <string name="ba_catalog_more_transfer">Backup &amp; playback</string>
+    <string name="ba_catalog_more_transfer_summary">Import/export, save location, media notification</string>
+    <string name="ba_catalog_more_student_type_title">Student type</string>
+    <string name="ba_catalog_more_sort_title">Sort</string>
+    <string name="ba_catalog_more_refresh_scope_title">Refresh scope</string>
+    <string name="ba_catalog_more_refresh_scope_summary">Archive only. Events/banners use BA settings.</string>
+    <string name="ba_catalog_more_incremental_refresh_title">Incremental check</string>
+    <string name="ba_catalog_more_incremental_refresh_12h">Incremental check: every 12 hours</string>
+    <string name="ba_catalog_more_incremental_refresh_24h">Incremental check: every 24 hours</string>
+    <string name="ba_catalog_more_incremental_refresh_summary">Checks additions/changes when opening archive and reuses cache.</string>
+    <string name="ba_catalog_more_full_refresh_title">Auto full refresh: every 3 days</string>
+    <string name="ba_catalog_more_full_refresh_summary">Rebuilds every 3 days. Refresh runs a full rebuild now.</string>
     <string name="ba_catalog_transfer_sheet_title">Favorites backup</string>
     <string name="ba_catalog_transfer_hero_title">Favorites bundle</string>
     <string name="ba_catalog_transfer_hero_badge">Local merge</string>
@@ -324,8 +341,10 @@
     <string name="ba_catalog_search_label">Search name / alias / ID</string>
     <string name="ba_catalog_search_placeholder_student">Search student name, alias, or ID</string>
     <string name="ba_catalog_search_placeholder_npc_satellite">Search NPC, upcoming student, or ID</string>
+    <string name="ba_catalog_search_placeholder_memory_lobby">Memorial Lobby search coming later</string>
     <string name="ba_catalog_search_placeholder_music">Search student, alias, or resolved BGM</string>
     <string name="ba_catalog_search_placeholder_playback">Search favorite BGM, student, or source</string>
+    <string name="ba_catalog_memory_lobby_placeholder">Memorial Lobby section is being prepared</string>
     <string name="ba_catalog_sync_status_title">Sync status</string>
     <string name="ba_catalog_sync_status_body_retry">Use the refresh button in the upper-right corner to try again.</string>
     <string name="ba_catalog_load_failed">Archive list failed to load.</string>

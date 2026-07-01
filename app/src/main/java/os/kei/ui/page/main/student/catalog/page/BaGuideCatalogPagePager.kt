@@ -8,8 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.R
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -62,9 +64,11 @@ internal fun BaGuideCatalogPagePager(
     ) { pageIndex ->
         val pageTab = tabs.getOrElse(pageIndex) { BaGuideCatalogPageTab.Student }
         val pageSearchQuery = pageState.searchQueryFor(pageTab)
-        key(pageTab.name) {
+        val resolvedCatalogTab = pageTab.resolvedCatalogTab(pageState.selectedStudentCatalogTab)
+        key(pageTab.name, resolvedCatalogTab) {
             BaGuideCatalogPageTabContent(
                 pageTab = pageTab,
+                resolvedCatalogTab = resolvedCatalogTab,
                 pageIndex = pageIndex,
                 pagerState = pagerState,
                 pageState = pageState,
@@ -94,6 +98,7 @@ internal fun BaGuideCatalogPagePager(
 @Composable
 private fun BaGuideCatalogPageTabContent(
     pageTab: BaGuideCatalogPageTab,
+    resolvedCatalogTab: BaGuideCatalogTab?,
     pageIndex: Int,
     pagerState: MainLoadedPagerState,
     pageState: BaGuideCatalogPageStateHolder,
@@ -117,8 +122,8 @@ private fun BaGuideCatalogPageTabContent(
     onSliderInteractionChanged: (Boolean) -> Unit,
 ) {
     when {
-        pageTab.catalogTab != null -> {
-            val catalogTab = pageTab.catalogTab
+        resolvedCatalogTab != null -> {
+            val catalogTab = resolvedCatalogTab
             BaGuideCatalogV2ListContent(
                 tab = catalogTab,
                 filterSortState = filterSortState,
@@ -140,6 +145,14 @@ private fun BaGuideCatalogPageTabContent(
                 onRequestVisibleImages = onRequestVisibleCatalogImages,
                 onOpenGuide = onOpenGuide,
                 onToggleFavorite = pageActions.onToggleCatalogFavorite,
+            )
+        }
+
+        pageTab.specialTab == BaGuideCatalogSpecialTab.MemoryLobby -> {
+            BaGuideCatalogMusicPlaceholder(
+                label = stringResource(R.string.ba_catalog_memory_lobby_placeholder),
+                topPadding = CATALOG_MUSIC_CONTENT_TOP_PADDING,
+                bottomPadding = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
             )
         }
 

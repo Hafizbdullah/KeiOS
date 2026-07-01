@@ -91,6 +91,7 @@ fun BaGuideCatalogPage(
             chromeActions =
                 BaGuideCatalogPageChromeActions(
                     onSelectedTabIndexChange = catalogViewModel::updateCatalogSelectedTabIndex,
+                    onSelectedStudentCatalogTabChange = catalogViewModel::updateCatalogSelectedStudentCatalogTab,
                     onSearchQueriesChange = catalogViewModel::updateCatalogSearchQueries,
                     onShowTransferSheetChange = catalogViewModel::updateCatalogTransferSheetVisible,
                     onShowMorePopupChange = catalogViewModel::updateCatalogMorePopupVisible,
@@ -128,7 +129,10 @@ fun BaGuideCatalogPage(
     val filterSortState =
         rememberBaGuideCatalogFilterSortState(
             snapshot = filterSortSnapshot,
-            activeCatalogTab = tabs.getOrNull(pageState.selectedTabIndex)?.catalogTab,
+            activeCatalogTab =
+                tabs
+                    .getOrNull(pageState.selectedTabIndex)
+                    ?.resolvedCatalogTab(pageState.selectedStudentCatalogTab),
             onSnapshotChange = catalogViewModel::updateCatalogFilterSortState,
         )
     BaGuideCatalogPageDerivedEffects(
@@ -176,9 +180,9 @@ fun BaGuideCatalogPage(
         chromePresentation = chromePresentation,
         requestCatalogImages = catalogViewModel::requestCatalogImages,
     )
-    LaunchedEffect(chromePresentation.activeTab) {
+    LaunchedEffect(chromePresentation.activeTab, chromePresentation.activeCatalogTab) {
         chromeScrollState.expand()
-        if (chromePresentation.activeTab.catalogTab == null) {
+        if (chromePresentation.activeCatalogTab == null) {
             filterSortState.showFilterPopup = false
         }
     }

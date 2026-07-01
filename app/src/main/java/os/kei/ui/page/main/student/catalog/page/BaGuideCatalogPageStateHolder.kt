@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 @Stable
 internal data class BaGuideCatalogPageChromeState(
     val selectedTabIndex: Int = 0,
+    val selectedStudentCatalogTab: BaGuideCatalogTab = BaGuideCatalogTab.Student,
     val searchQueries: Map<String, String> = emptyMap(),
     val showTransferSheet: Boolean = false,
     val showMorePopup: Boolean = false,
@@ -42,6 +43,9 @@ internal class BaGuideCatalogPageStateHolder(
 
     val selectedTabIndex: Int
         get() = chromeState().selectedTabIndex
+
+    val selectedStudentCatalogTab: BaGuideCatalogTab
+        get() = chromeState().selectedStudentCatalogTab
 
     val searchQueries: Map<String, String>
         get() = chromeState().searchQueries
@@ -100,7 +104,11 @@ internal class BaGuideCatalogPageStateHolder(
     val favoriteBgmSearchQuery: String
         get() = searchQueries[BaGuideCatalogPageTab.Bgm.name].orEmpty()
 
-    fun searchQueryFor(tab: BaGuideCatalogPageTab): String = searchQueries[tab.name].orEmpty()
+    fun searchQueryFor(tab: BaGuideCatalogPageTab): String =
+        tab
+            .resolvedCatalogTab(selectedStudentCatalogTab)
+            ?.let { catalogTab -> searchQueries.catalogSearchQueryFor(catalogTab) }
+            ?: searchQueries[tab.name].orEmpty()
 
     fun updateSettledPage(pageIndex: Int) {
         if (selectedTabIndex != pageIndex) {
@@ -112,11 +120,22 @@ internal class BaGuideCatalogPageStateHolder(
         actions().onSelectedTabIndexChange(index)
     }
 
+    fun updateSelectedStudentCatalogTab(tab: BaGuideCatalogTab) {
+        if (selectedStudentCatalogTab != tab) {
+            actions().onSelectedStudentCatalogTabChange(tab)
+        }
+    }
+
     fun updateSearchQuery(
         tab: BaGuideCatalogPageTab,
         query: String,
     ) {
-        actions().onSearchQueriesChange(searchQueries + (tab.name to query))
+        val queryKey =
+            tab
+                .resolvedCatalogTab(selectedStudentCatalogTab)
+                ?.catalogSearchQueryKey()
+                ?: tab.name
+        actions().onSearchQueriesChange(searchQueries + (queryKey to query))
     }
 
     fun openSearch(autoFocus: Boolean) {
@@ -198,6 +217,7 @@ internal class BaGuideCatalogPageStateHolder(
 @Stable
 internal data class BaGuideCatalogPageChromeActions(
     val onSelectedTabIndexChange: (Int) -> Unit,
+    val onSelectedStudentCatalogTabChange: (BaGuideCatalogTab) -> Unit,
     val onSearchQueriesChange: (Map<String, String>) -> Unit,
     val onShowTransferSheetChange: (Boolean) -> Unit,
     val onShowMorePopupChange: (Boolean) -> Unit,

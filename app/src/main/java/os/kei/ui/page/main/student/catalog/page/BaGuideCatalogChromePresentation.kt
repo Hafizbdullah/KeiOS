@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageUrl
@@ -20,6 +21,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
 internal data class BaGuideCatalogChromePresentation(
     val activePageIndex: Int,
     val activeTab: BaGuideCatalogPageTab,
+    val activeCatalogTab: BaGuideCatalogTab?,
     val currentTitle: String,
     val filterDefinitions: List<BaGuideCatalogFilterDefinition>,
     val filterEnabled: Boolean,
@@ -49,16 +51,17 @@ internal fun rememberBaGuideCatalogChromePresentation(
         }
     }
     val activeTab = tabs.getOrElse(activePageIndex) { BaGuideCatalogPageTab.Student }
+    val activeCatalogTab = activeTab.resolvedCatalogTab(pageState.selectedStudentCatalogTab)
     val currentTitle = stringResource(id = activeTab.labelRes)
     val filterDefinitions =
-        remember(catalogDataState.catalog, activeTab) {
-            activeTab.catalogTab
+        remember(catalogDataState.catalog, activeCatalogTab) {
+            activeCatalogTab
                 ?.let { tab ->
                     catalogDataState.catalog.filterDefinitions(tab).filter { it.type == 0 }
                 }.orEmpty()
         }
     val searchQuery = pageState.searchQueryFor(activeTab)
-    val searchPlaceholder = stringResource(activeTab.searchPlaceholderRes)
+    val searchPlaceholder = stringResource(activeTab.searchPlaceholderRes(pageState.selectedStudentCatalogTab))
     val playbackFavorite =
         remember(
             playbackUiState.selectedAudioUrl,
@@ -78,6 +81,7 @@ internal fun rememberBaGuideCatalogChromePresentation(
     return remember(
         activePageIndex,
         activeTab,
+        activeCatalogTab,
         currentTitle,
         filterDefinitions,
         searchQuery,
@@ -88,6 +92,7 @@ internal fun rememberBaGuideCatalogChromePresentation(
         BaGuideCatalogChromePresentation(
             activePageIndex = activePageIndex,
             activeTab = activeTab,
+            activeCatalogTab = activeCatalogTab,
             currentTitle = currentTitle,
             filterDefinitions = filterDefinitions,
             filterEnabled = filterDefinitions.isNotEmpty(),

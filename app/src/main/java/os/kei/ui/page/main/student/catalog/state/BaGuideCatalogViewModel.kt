@@ -199,6 +199,16 @@ internal class BaGuideCatalogViewModel(
         }
     }
 
+    fun updateCatalogSelectedStudentCatalogTab(tab: BaGuideCatalogTab) {
+        _pageChromeState.update { state ->
+            if (state.selectedStudentCatalogTab == tab) {
+                state
+            } else {
+                state.copy(selectedStudentCatalogTab = tab)
+            }
+        }
+    }
+
     fun updateCatalogSearchQueries(searchQueries: Map<String, String>) {
         val normalized =
             searchQueries
