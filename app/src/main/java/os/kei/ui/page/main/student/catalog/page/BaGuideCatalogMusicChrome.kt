@@ -26,6 +26,7 @@ import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogFilterActionPopup
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogMoreActionPopup
@@ -53,7 +54,10 @@ internal fun BaGuideCatalogMusicTopBar(
     selectedFilterOptions: Map<Int, Set<Int>>,
     showMorePopup: Boolean,
     incrementalRefreshIntervalHours: Int,
+    selectedStudentCatalogTab: BaGuideCatalogTab,
+    studentCatalogSwitchEnabled: Boolean,
     onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
+    onSelectStudentCatalogTab: (BaGuideCatalogTab) -> Unit,
     onFilter: () -> Unit,
     onDismissFilter: () -> Unit,
     onToggleFilterOption: (filterId: Int, optionId: Int) -> Unit,
@@ -151,9 +155,12 @@ internal fun BaGuideCatalogMusicTopBar(
                                 backdrop = backdrop,
                                 sortMode = sortMode,
                                 incrementalRefreshIntervalHours = incrementalRefreshIntervalHours,
+                                selectedStudentCatalogTab = selectedStudentCatalogTab,
+                                studentCatalogSwitchEnabled = studentCatalogSwitchEnabled,
                                 onDismissRequest = onDismissMore,
                                 onOpenTransfer = onTransfer,
                                 onSelectSortMode = onSelectSortMode,
+                                onSelectStudentCatalogTab = onSelectStudentCatalogTab,
                                 onSelectIncrementalRefreshIntervalHours = onSelectIncrementalRefreshIntervalHours,
                             )
                         }

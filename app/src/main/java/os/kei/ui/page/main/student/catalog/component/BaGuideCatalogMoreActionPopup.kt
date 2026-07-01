@@ -11,11 +11,14 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.student.catalog.BA_GUIDE_CATALOG_INCREMENTAL_REFRESH_MIN_HOURS
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogIncrementalRefreshIntervalOptions
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.page.studentTypeLabelRes
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
@@ -36,9 +39,12 @@ internal fun BaGuideCatalogMoreActionPopup(
     backdrop: Backdrop,
     sortMode: BaGuideCatalogSortMode,
     incrementalRefreshIntervalHours: Int,
+    selectedStudentCatalogTab: BaGuideCatalogTab,
+    studentCatalogSwitchEnabled: Boolean,
     onDismissRequest: () -> Unit,
     onOpenTransfer: () -> Unit,
     onSelectSortMode: (BaGuideCatalogSortMode) -> Unit,
+    onSelectStudentCatalogTab: (BaGuideCatalogTab) -> Unit,
     onSelectIncrementalRefreshIntervalHours: (Int) -> Unit,
 ) {
     if (!show) return
@@ -56,6 +62,12 @@ internal fun BaGuideCatalogMoreActionPopup(
             sortLabels.getOrElse(sortModes.indexOf(sortMode)) {
                 stringResource(sortMode.labelRes)
             }
+        val studentCatalogTabs = listOf(BaGuideCatalogTab.Student, BaGuideCatalogTab.NpcSatellite)
+        val studentCatalogLabels = studentCatalogTabs.map { tab -> stringResource(tab.studentTypeLabelRes) }
+        val selectedStudentCatalogLabel =
+            studentCatalogLabels.getOrElse(studentCatalogTabs.indexOf(selectedStudentCatalogTab)) {
+                stringResource(selectedStudentCatalogTab.studentTypeLabelRes)
+            }
         val refreshOptions = BaGuideCatalogIncrementalRefreshIntervalOptions
         val refreshOptionLabels =
             refreshOptions.map { hours ->
@@ -72,6 +84,7 @@ internal fun BaGuideCatalogMoreActionPopup(
                     ?: stringResource(R.string.ba_catalog_more_incremental_refresh_12h)
             }
         val databaseIcon = appLucideDatabaseIcon()
+        val libraryIcon = appLucideLibraryIcon()
         val sortIcon = appLucideSortIcon()
         val infoIcon = appLucideInfoIcon()
         val timeIcon = appLucideTimeIcon()
@@ -83,66 +96,97 @@ internal fun BaGuideCatalogMoreActionPopup(
             maxWidth = BaCatalogMoreMenuMaxWidth,
             maxHeight = BaCatalogMoreMenuMaxHeight,
             items =
-                listOf(
-                    LiquidGlassActionMenuActionRow(
-                        id = "transfer",
-                        text = stringResource(R.string.ba_catalog_more_transfer),
-                        subtitle = stringResource(R.string.ba_catalog_more_transfer_summary),
-                        leadingIcon = databaseIcon,
-                        onClick = onOpenTransfer,
-                    ),
-                    LiquidGlassActionMenuSubmenuRow(
-                        id = "sort",
-                        text = stringResource(R.string.ba_catalog_more_sort_title),
-                        subtitle = selectedSortLabel,
-                        leadingIcon = sortIcon,
-                        trailingIcon = chevronRightIcon,
-                        submenuItems =
-                            sortModes.mapIndexed { index, mode ->
-                                LiquidGlassActionMenuSingleChoiceRow(
-                                    id = mode.name,
-                                    text = sortLabels[index],
-                                    selected = sortMode == mode,
-                                    leadingIcon = sortIcon,
-                                    onClick = { onSelectSortMode(mode) },
-                                )
-                            },
-                    ),
-                    LiquidGlassActionMenuActionRow(
-                        id = "refresh_scope",
-                        text = stringResource(R.string.ba_catalog_more_refresh_scope_title),
-                        subtitle = stringResource(R.string.ba_catalog_more_refresh_scope_summary),
-                        leadingIcon = infoIcon,
-                        enabled = false,
-                        onClick = {},
-                    ),
-                    LiquidGlassActionMenuSubmenuRow(
-                        id = "incremental_refresh",
-                        text = stringResource(R.string.ba_catalog_more_incremental_refresh_title),
-                        subtitle = selectedRefreshLabel,
-                        leadingIcon = timeIcon,
-                        trailingIcon = chevronRightIcon,
-                        submenuItems =
-                            refreshOptions.mapIndexed { index, hours ->
-                                LiquidGlassActionMenuSingleChoiceRow(
-                                    id = "${hours}h",
-                                    text = refreshOptionLabels[index],
-                                    subtitle = stringResource(R.string.ba_catalog_more_incremental_refresh_summary),
-                                    selected = incrementalRefreshIntervalHours == hours,
-                                    leadingIcon = timeIcon,
-                                    onClick = { onSelectIncrementalRefreshIntervalHours(hours) },
-                                )
-                            },
-                    ),
-                    LiquidGlassActionMenuActionRow(
-                        id = "full_refresh",
-                        text = stringResource(R.string.ba_catalog_more_full_refresh_title),
-                        subtitle = stringResource(R.string.ba_catalog_more_full_refresh_summary),
-                        leadingIcon = refreshIcon,
-                        enabled = false,
-                        onClick = {},
-                    ),
-                ),
+                buildList {
+                    add(
+                        LiquidGlassActionMenuActionRow(
+                            id = "transfer",
+                            text = stringResource(R.string.ba_catalog_more_transfer),
+                            subtitle = stringResource(R.string.ba_catalog_more_transfer_summary),
+                            leadingIcon = databaseIcon,
+                            onClick = onOpenTransfer,
+                        ),
+                    )
+                    if (studentCatalogSwitchEnabled) {
+                        add(
+                            LiquidGlassActionMenuSubmenuRow(
+                                id = "student_catalog_type",
+                                text = stringResource(R.string.ba_catalog_more_student_type_title),
+                                subtitle = selectedStudentCatalogLabel,
+                                leadingIcon = libraryIcon,
+                                trailingIcon = chevronRightIcon,
+                                submenuItems =
+                                    studentCatalogTabs.mapIndexed { index, tab ->
+                                        LiquidGlassActionMenuSingleChoiceRow(
+                                            id = tab.name,
+                                            text = studentCatalogLabels[index],
+                                            selected = selectedStudentCatalogTab == tab,
+                                            leadingIcon = libraryIcon,
+                                            onClick = { onSelectStudentCatalogTab(tab) },
+                                        )
+                                    },
+                            ),
+                        )
+                    }
+                    add(
+                        LiquidGlassActionMenuSubmenuRow(
+                            id = "sort",
+                            text = stringResource(R.string.ba_catalog_more_sort_title),
+                            subtitle = selectedSortLabel,
+                            leadingIcon = sortIcon,
+                            trailingIcon = chevronRightIcon,
+                            submenuItems =
+                                sortModes.mapIndexed { index, mode ->
+                                    LiquidGlassActionMenuSingleChoiceRow(
+                                        id = mode.name,
+                                        text = sortLabels[index],
+                                        selected = sortMode == mode,
+                                        leadingIcon = sortIcon,
+                                        onClick = { onSelectSortMode(mode) },
+                                    )
+                                },
+                        ),
+                    )
+                    add(
+                        LiquidGlassActionMenuActionRow(
+                            id = "refresh_scope",
+                            text = stringResource(R.string.ba_catalog_more_refresh_scope_title),
+                            subtitle = stringResource(R.string.ba_catalog_more_refresh_scope_summary),
+                            leadingIcon = infoIcon,
+                            enabled = false,
+                            onClick = {},
+                        ),
+                    )
+                    add(
+                        LiquidGlassActionMenuSubmenuRow(
+                            id = "incremental_refresh",
+                            text = stringResource(R.string.ba_catalog_more_incremental_refresh_title),
+                            subtitle = selectedRefreshLabel,
+                            leadingIcon = timeIcon,
+                            trailingIcon = chevronRightIcon,
+                            submenuItems =
+                                refreshOptions.mapIndexed { index, hours ->
+                                    LiquidGlassActionMenuSingleChoiceRow(
+                                        id = "${hours}h",
+                                        text = refreshOptionLabels[index],
+                                        subtitle = stringResource(R.string.ba_catalog_more_incremental_refresh_summary),
+                                        selected = incrementalRefreshIntervalHours == hours,
+                                        leadingIcon = timeIcon,
+                                        onClick = { onSelectIncrementalRefreshIntervalHours(hours) },
+                                    )
+                                },
+                        ),
+                    )
+                    add(
+                        LiquidGlassActionMenuActionRow(
+                            id = "full_refresh",
+                            text = stringResource(R.string.ba_catalog_more_full_refresh_title),
+                            subtitle = stringResource(R.string.ba_catalog_more_full_refresh_summary),
+                            leadingIcon = refreshIcon,
+                            enabled = false,
+                            onClick = {},
+                        ),
+                    )
+                },
             onDismissRequest = onDismissRequest,
         )
     }
