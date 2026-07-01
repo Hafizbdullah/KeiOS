@@ -30,7 +30,7 @@
     <string name="ba_overview_server_label">サーバー</string>
     <string name="ba_overview_cd_ap_icon">AP アイコン</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | AP 全回復 %2$s</string>
-    <string name="ba_overview_cafe_ap_title">カフェ AP</string>
+    <string name="ba_overview_cafe_ap_title">AP</string>
     <string name="ba_overview_cd_claim_cafe_ap">カフェ AP を受け取る</string>
     <string name="ba_ap_card_title">AP</string>
     <string name="ba_ap_limit_tools_title">AP 上限の調整</string>
