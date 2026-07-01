@@ -33,7 +33,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -694,7 +693,9 @@ private fun AppFloatingVerticalDockAction(
             AppFloatingVerticalDockActionIcon(
                 icon = icon,
                 contentDescription = contentDescription,
+                buttonSize = size,
                 iconSize = iconSize,
+                iconTint = animatedTintProvider(),
                 badgeLabel = badgeLabel,
                 badgeColor = badgeColor,
                 badgeContentColor = badgeContentColor,
@@ -705,7 +706,6 @@ private fun AppFloatingVerticalDockAction(
                             scaleX = pressedScale
                             scaleY = pressedScale
                             rotationZ = if (rotating) rotationProvider() else 0f
-                            colorFilter = ColorFilter.tint(animatedTintProvider())
                         },
             )
         }
@@ -726,21 +726,32 @@ private fun AppFloatingVerticalDockAction(
 private fun AppFloatingVerticalDockActionIcon(
     icon: ImageVector,
     contentDescription: String,
+    buttonSize: Dp,
     iconSize: Dp,
+    iconTint: Color,
     badgeLabel: String?,
     badgeColor: Color?,
     badgeContentColor: Color?,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        AppLiquidBadgedIcon(
-            icon = icon,
+    Box(
+        modifier = Modifier.size(buttonSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(iconSize),
-            tint = Color.White,
-            badgeLabel = badgeLabel,
-            badgeColor = badgeColor,
-            badgeContentColor = badgeContentColor,
+            modifier = modifier.size(iconSize),
+            tint = iconTint,
+        )
+        AppLiquidIconBadge(
+            label = badgeLabel,
+            color = badgeColor,
+            contentColor = badgeContentColor,
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-5).dp, y = 6.dp),
         )
     }
 }

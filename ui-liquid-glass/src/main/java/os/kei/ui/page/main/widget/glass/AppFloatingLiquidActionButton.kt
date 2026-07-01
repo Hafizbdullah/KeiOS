@@ -1,7 +1,10 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,21 +31,32 @@ fun AppFloatingLiquidActionButton(
     badgeColor: Color? = null,
     badgeContentColor: Color? = null,
 ) {
-    AppLiquidIconButton(
-        backdrop = backdrop,
-        icon = icon,
-        contentDescription = contentDescription,
-        onClick = onClick,
-        modifier = modifier,
-        width = size,
-        height = size,
-        variant = GlassVariant.Bar,
-        iconTint = iconTint,
-        iconModifier = iconModifier.then(Modifier.size(iconSize)),
-        enabled = enabled,
-        tooltipText = tooltipText,
-        badgeLabel = badgeLabel,
-        badgeColor = badgeColor,
-        badgeContentColor = badgeContentColor,
-    )
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center,
+    ) {
+        AppLiquidIconButton(
+            backdrop = backdrop,
+            icon = icon,
+            contentDescription = contentDescription,
+            onClick = onClick,
+            modifier = Modifier.size(size),
+            width = size,
+            height = size,
+            variant = GlassVariant.Bar,
+            iconTint = iconTint,
+            iconModifier = iconModifier.then(Modifier.size(iconSize)),
+            enabled = enabled,
+            tooltipText = tooltipText,
+        )
+        AppLiquidIconBadge(
+            label = badgeLabel,
+            color = badgeColor,
+            contentColor = badgeContentColor,
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-5).dp, y = 6.dp),
+        )
+    }
 }

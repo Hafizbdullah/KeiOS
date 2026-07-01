@@ -1,11 +1,17 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import top.yukonga.miuix.kmp.basic.Badge
-import top.yukonga.miuix.kmp.basic.BadgedBox
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -31,15 +37,12 @@ internal fun AppLiquidBadgedIcon(
         return
     }
 
-    BadgedBox(
-        badge = {
-            Badge(
-                containerColor = badgeColor ?: MiuixTheme.colorScheme.error,
-                contentColor = badgeContentColor ?: MiuixTheme.colorScheme.onError,
-            ) {
-                Text(text = label)
-            }
-        },
+    Box(
+        modifier = Modifier.defaultMinSize(
+            minWidth = AppLiquidBadgedIconAnchorSize,
+            minHeight = AppLiquidBadgedIconAnchorSize,
+        ),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
@@ -47,5 +50,46 @@ internal fun AppLiquidBadgedIcon(
             modifier = modifier,
             tint = tint,
         )
+        AppLiquidIconBadge(
+            label = label,
+            color = badgeColor,
+            contentColor = badgeContentColor,
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
     }
 }
+
+@Composable
+internal fun AppLiquidIconBadge(
+    label: String?,
+    modifier: Modifier = Modifier,
+    color: Color? = null,
+    contentColor: Color? = null,
+) {
+    val resolvedLabel = label?.takeIf { it.isNotBlank() } ?: return
+    Box(
+        modifier =
+            modifier
+                .defaultMinSize(
+                    minWidth = AppLiquidIconBadgeMinSize,
+                    minHeight = AppLiquidIconBadgeMinSize,
+                )
+                .appSquircleBackground(
+                    color = color ?: MiuixTheme.colorScheme.error,
+                    cornerRadius = AppLiquidIconBadgeMinSize / 2,
+                )
+                .padding(horizontal = 5.dp, vertical = 1.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = resolvedLabel,
+            color = contentColor ?: MiuixTheme.colorScheme.onError,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+private val AppLiquidBadgedIconAnchorSize = 34.dp
+private val AppLiquidIconBadgeMinSize = 18.dp
