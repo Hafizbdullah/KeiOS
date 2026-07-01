@@ -13,6 +13,7 @@ class BaGuideCatalogImagePreloadEffectTest {
         val urls =
             buildBaGuideCatalogImagePreloadUrls(
                 activeTab = BaGuideCatalogPageTab.Student,
+                activeCatalogTab = BaGuideCatalogTab.Student,
                 catalogListDerivedStates =
                     mapOf(
                         BaGuideCatalogTab.Student to
@@ -41,6 +42,7 @@ class BaGuideCatalogImagePreloadEffectTest {
         val urls =
             buildBaGuideCatalogImagePreloadUrls(
                 activeTab = BaGuideCatalogPageTab.Bgm,
+                activeCatalogTab = null,
                 catalogListDerivedStates = emptyMap(),
                 studentBgmEntries = listOf(catalogEntry("student-bgm")),
                 favoriteBgms =
@@ -66,6 +68,7 @@ class BaGuideCatalogImagePreloadEffectTest {
         val urls =
             buildBaGuideCatalogImagePreloadUrls(
                 activeTab = BaGuideCatalogPageTab.Student,
+                activeCatalogTab = BaGuideCatalogTab.Student,
                 catalogListDerivedStates =
                     mapOf(
                         BaGuideCatalogTab.Student to BaGuideCatalogListDerivedState(filteredEntries = studentEntries),
