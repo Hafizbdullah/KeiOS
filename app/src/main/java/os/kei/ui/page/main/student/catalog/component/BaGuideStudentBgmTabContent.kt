@@ -336,6 +336,7 @@ internal fun BaGuideStudentBgmTabContent(
         if (!isPageActive) return@LaunchedEffect
         playbackCoordinator.prepareSelected()
     }
+    val entryListGap = rememberBaGuideCatalogEntryListGap()
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -359,7 +360,7 @@ internal fun BaGuideStudentBgmTabContent(
                     start = AppChromeTokens.pageHorizontalPadding,
                     end = AppChromeTokens.pageHorizontalPadding,
                 ),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(entryListGap),
         ) {
             if (effectiveLoading && allStudentEntries.isEmpty()) {
                 item(

@@ -30,6 +30,7 @@ internal fun BaGuideCatalogTabListLayout(
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit
 ) {
+    val entryListGap = rememberBaGuideCatalogEntryListGap()
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -41,7 +42,7 @@ internal fun BaGuideCatalogTabListLayout(
             start = AppChromeTokens.pageHorizontalPadding,
             end = AppChromeTokens.pageHorizontalPadding
         ),
-        verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap)
+        verticalArrangement = Arrangement.spacedBy(entryListGap)
     ) {
         if (uiState.showError) {
             item(

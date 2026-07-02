@@ -160,6 +160,7 @@ internal fun BaGuideCatalogV2ListContent(
                 }
             }
     }
+    val entryListGap = rememberBaGuideCatalogEntryListGap()
     LazyColumn(
         state = tabListState.listState,
         modifier =
@@ -173,7 +174,7 @@ internal fun BaGuideCatalogV2ListContent(
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
             ),
-        verticalArrangement = Arrangement.spacedBy(AppChromeTokens.pageSectionGap),
+        verticalArrangement = Arrangement.spacedBy(entryListGap),
     ) {
         if (uiState.showError) {
             item(

@@ -204,6 +204,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                 lookupCoordinator.prewarmVisibleNetwork(work.prewarmEntries)
             }
     }
+    val entryListGap = rememberBaGuideCatalogEntryListGap()
     LazyColumn(
         state = listState,
         modifier =
@@ -217,7 +218,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
             ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(entryListGap),
     ) {
         if (showError) {
             item(
