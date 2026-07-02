@@ -6,6 +6,9 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.favoriteStudentBgmEntryContentIds
 import os.kei.ui.page.main.student.catalog.state.filterAndSortStudentBgmEntries
+import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
+import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
+import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -63,6 +66,70 @@ class BaGuideStudentBgmDisplayedModelTest {
             )
 
         assertEquals(listOf(3L, 1L, 2L), result.map { it.contentId })
+    }
+
+    @Test
+    fun `student bgm favorite visibility can hide favorite entries`() {
+        val entries =
+            listOf(
+                catalogEntry(contentId = 3L, name = "Carol", order = 3),
+                catalogEntry(contentId = 1L, name = "Alice", order = 1),
+                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+            )
+
+        val visible =
+            visibleStudentBgmEntriesWithFavoriteVisibility(
+                filteredEntries = entries,
+                favoriteContentIds = setOf(3L),
+                favoritesHidden = true,
+            )
+        val restored =
+            visibleStudentBgmEntriesWithFavoriteVisibility(
+                filteredEntries = entries,
+                favoriteContentIds = setOf(3L),
+                favoritesHidden = false,
+            )
+
+        assertEquals(listOf(1L, 2L), visible.map { it.contentId })
+        assertEquals(listOf(3L, 1L, 2L), restored.map { it.contentId })
+    }
+
+    @Test
+    fun `memory lobby favorite visibility can hide catalog favorites`() {
+        val entries =
+            listOf(
+                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+                catalogEntry(contentId = 1L, name = "Alice", order = 1),
+                catalogEntry(contentId = 3L, name = "Carol", order = 3),
+            )
+
+        val visible =
+            visibleMemoryLobbyEntriesWithFavoriteVisibility(
+                filteredEntries = entries,
+                favoriteCatalogEntries = mapOf(2L to 100L),
+                favoritesHidden = true,
+            )
+
+        assertEquals(listOf(1L, 3L), visible.map { it.contentId })
+    }
+
+    @Test
+    fun `catalog favorite visibility can hide pinned favorites`() {
+        val entries =
+            listOf(
+                catalogEntry(contentId = 2L, name = "Bob", order = 2),
+                catalogEntry(contentId = 1L, name = "Alice", order = 1),
+                catalogEntry(contentId = 3L, name = "Carol", order = 3),
+            )
+
+        val visible =
+            visibleCatalogEntriesWithFavoriteVisibility(
+                filteredEntries = entries,
+                favoriteCatalogEntries = mapOf(2L to 100L),
+                favoritesHidden = true,
+            )
+
+        assertEquals(listOf(1L, 3L), visible.map { it.contentId })
     }
 
     @Test

@@ -259,6 +259,15 @@ internal fun filterAndSortStudentBgmEntries(
     )
 }
 
+internal fun visibleStudentBgmEntriesWithFavoriteVisibility(
+    filteredEntries: List<BaGuideCatalogEntry>,
+    favoriteContentIds: Set<Long>,
+    favoritesHidden: Boolean,
+): List<BaGuideCatalogEntry> {
+    if (!favoritesHidden || favoriteContentIds.isEmpty()) return filteredEntries
+    return filteredEntries.filterNot { entry -> entry.contentId in favoriteContentIds }
+}
+
 internal fun filterAndSortMemoryLobbyEntries(
     entries: List<BaGuideCatalogEntry>,
     searchQuery: String,
@@ -271,6 +280,26 @@ internal fun filterAndSortMemoryLobbyEntries(
             favoriteCatalogEntries[entry.contentId] ?: Long.MAX_VALUE
         }.thenBy { entry -> entry.order },
     )
+}
+
+internal fun visibleMemoryLobbyEntriesWithFavoriteVisibility(
+    filteredEntries: List<BaGuideCatalogEntry>,
+    favoriteCatalogEntries: Map<Long, Long>,
+    favoritesHidden: Boolean,
+): List<BaGuideCatalogEntry> =
+    visibleCatalogEntriesWithFavoriteVisibility(
+        filteredEntries = filteredEntries,
+        favoriteCatalogEntries = favoriteCatalogEntries,
+        favoritesHidden = favoritesHidden,
+    )
+
+internal fun visibleCatalogEntriesWithFavoriteVisibility(
+    filteredEntries: List<BaGuideCatalogEntry>,
+    favoriteCatalogEntries: Map<Long, Long>,
+    favoritesHidden: Boolean,
+): List<BaGuideCatalogEntry> {
+    if (!favoritesHidden || favoriteCatalogEntries.isEmpty()) return filteredEntries
+    return filteredEntries.filterNot { entry -> favoriteCatalogEntries.containsKey(entry.contentId) }
 }
 
 @Immutable
