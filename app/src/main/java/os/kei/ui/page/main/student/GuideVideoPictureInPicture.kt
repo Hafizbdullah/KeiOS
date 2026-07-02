@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student
 
 import android.app.PictureInPictureParams
+import android.app.Activity
 import android.content.Context
 import android.graphics.Rect
 import android.util.Rational
@@ -12,25 +13,28 @@ import os.kei.ui.pip.AppPictureInPictureRemoteActionSpec
 import os.kei.ui.pip.buildAppPictureInPictureActionSet
 import os.kei.ui.pip.buildAppPictureInPictureParams
 import os.kei.ui.pip.supportsAppPictureInPicture
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 internal const val GUIDE_VIDEO_ACTION_CLOSE_PIP = "os.kei.action.CLOSE_GUIDE_PIP"
 internal const val GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK = "os.kei.action.TOGGLE_GUIDE_PIP_PLAYBACK"
-internal const val GUIDE_VIDEO_ACTION_REQUEST_FULLSCREEN =
-    "os.kei.action.REQUEST_GUIDE_PIP_FULLSCREEN"
 
 internal val GuideVideoPictureInPictureActions =
     setOf(
         GUIDE_VIDEO_ACTION_CLOSE_PIP,
         GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-        GUIDE_VIDEO_ACTION_REQUEST_FULLSCREEN,
     )
 
 internal const val GUIDE_VIDEO_PIP_AUTHORITY = "guide-video-pip"
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE = 3500
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK = 3501
-private const val GUIDE_VIDEO_REQUEST_CODE_PIP_FULLSCREEN = 3502
 
 private val GuidePictureInPictureAspectRatio = Rational(16, 9)
+private const val GUIDE_VIDEO_PIP_ASPECT_RATIO = 16f / 9f
+private const val GUIDE_VIDEO_PIP_TARGET_WIDTH_FRACTION = 0.8f
+private const val GUIDE_VIDEO_PIP_TARGET_HEIGHT_FRACTION = 0.62f
+private const val GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE = 0.92f
 
 internal fun buildGuidePictureInPictureParams(
     context: Context,
@@ -83,14 +87,6 @@ internal fun buildGuidePictureInPictureActionSet(
                         requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
                     )
                 )
-                add(
-                    AppPictureInPictureRemoteActionSpec(
-                        action = GUIDE_VIDEO_ACTION_REQUEST_FULLSCREEN,
-                        iconRes = LucideR.drawable.lucide_ic_external_link,
-                        title = context.getString(R.string.guide_gallery_memorial_lobby_pip_fullscreen),
-                        requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_FULLSCREEN,
-                    )
-                )
             },
         closeAction =
             AppPictureInPictureRemoteActionSpec(
@@ -105,4 +101,106 @@ internal fun buildGuidePictureInPictureActionSet(
 
 internal fun Context.supportsGuidePictureInPicture(): Boolean {
     return supportsAppPictureInPicture()
+}
+
+internal fun Activity.resolveGuidePictureInPictureLaunchBounds(
+    sourceRectHint: Rect?,
+): Rect? {
+    val windowBounds = windowManager.currentWindowMetrics.bounds.takeUnless { rect -> rect.isEmpty }
+        ?: return sourceRectHint?.takeUnless { rect -> rect.isEmpty }
+    return resolveGuidePictureInPictureLaunchBounds(
+        windowBounds = windowBounds,
+        sourceRectHint = sourceRectHint,
+    )
+}
+
+internal fun resolveGuidePictureInPictureLaunchBounds(
+    windowBounds: Rect,
+    sourceRectHint: Rect?,
+): Rect? {
+    return resolveGuidePictureInPictureLaunchBounds(
+        windowBounds = windowBounds.toGuidePictureInPictureLaunchBounds(),
+        sourceRectHint = sourceRectHint
+            ?.takeUnless { rect -> rect.isEmpty }
+            ?.toGuidePictureInPictureLaunchBounds(),
+    )?.toRect()
+}
+
+internal fun resolveGuidePictureInPictureLaunchBounds(
+    windowBounds: GuidePictureInPictureLaunchBounds,
+    sourceRectHint: GuidePictureInPictureLaunchBounds?,
+): GuidePictureInPictureLaunchBounds? {
+    if (windowBounds.isEmpty) return sourceRectHint?.takeUnless { rect -> rect.isEmpty }
+    val source = sourceRectHint?.takeUnless { rect -> rect.isEmpty }
+    val windowWidth = windowBounds.width().coerceAtLeast(1)
+    val windowHeight = windowBounds.height().coerceAtLeast(1)
+    val targetWidthByWindow = (windowWidth * GUIDE_VIDEO_PIP_TARGET_WIDTH_FRACTION).roundToInt()
+    val targetHeightByWindow = (windowHeight * GUIDE_VIDEO_PIP_TARGET_HEIGHT_FRACTION).roundToInt()
+    val targetWidthByHeight = (targetHeightByWindow * GUIDE_VIDEO_PIP_ASPECT_RATIO).roundToInt()
+    val targetWidth = min(targetWidthByWindow, targetWidthByHeight).coerceAtLeast(1)
+    val targetHeight = (targetWidth / GUIDE_VIDEO_PIP_ASPECT_RATIO).roundToInt()
+        .coerceAtLeast(1)
+
+    if (source != null) {
+        val sourceArea = source.width().coerceAtLeast(0) * source.height().coerceAtLeast(0)
+        val targetArea = targetWidth * targetHeight
+        if (sourceArea >= targetArea * GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE) {
+            return source
+        }
+    }
+
+    val centerX = source?.centerX() ?: windowBounds.centerX()
+    val centerY = source?.centerY() ?: windowBounds.centerY()
+    val left = clampInt(
+        value = centerX - targetWidth / 2,
+        minValue = windowBounds.left,
+        maxValue = max(windowBounds.left, windowBounds.right - targetWidth),
+    )
+    val top = clampInt(
+        value = centerY - targetHeight / 2,
+        minValue = windowBounds.top,
+        maxValue = max(windowBounds.top, windowBounds.bottom - targetHeight),
+    )
+    return GuidePictureInPictureLaunchBounds(left, top, left + targetWidth, top + targetHeight)
+}
+
+private fun clampInt(
+    value: Int,
+    minValue: Int,
+    maxValue: Int,
+): Int {
+    return value.coerceIn(minValue, maxValue)
+}
+
+internal data class GuidePictureInPictureLaunchBounds(
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+) {
+    val isEmpty: Boolean
+        get() = left >= right || top >= bottom
+
+    fun width(): Int = right - left
+
+    fun height(): Int = bottom - top
+
+    fun centerX(): Int = (left + right) / 2
+
+    fun centerY(): Int = (top + bottom) / 2
+
+    fun contains(other: GuidePictureInPictureLaunchBounds): Boolean {
+        return left <= other.left &&
+            top <= other.top &&
+            right >= other.right &&
+            bottom >= other.bottom
+    }
+}
+
+private fun Rect.toGuidePictureInPictureLaunchBounds(): GuidePictureInPictureLaunchBounds {
+    return GuidePictureInPictureLaunchBounds(left, top, right, bottom)
+}
+
+private fun GuidePictureInPictureLaunchBounds.toRect(): Rect {
+    return Rect(left, top, right, bottom)
 }

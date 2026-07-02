@@ -25,6 +25,7 @@ class AppPictureInPictureActionReceiver(
     // Package scoping plus session ids keep the action target narrow.
     private val exported: Boolean = true,
     private val currentSessionId: () -> Long,
+    private val acceptStaleSession: () -> Boolean = { false },
     private val onAction: (AppPictureInPictureActionEvent) -> Unit,
 ) {
     private val actionSet = actions.toSet()
@@ -43,7 +44,8 @@ class AppPictureInPictureActionReceiver(
                     return
                 }
                 val sessionId = identity.sessionId
-                if (sessionId == APP_PIP_NO_SESSION_ID || sessionId != currentSessionId()) return
+                if (sessionId == APP_PIP_NO_SESSION_ID) return
+                if (sessionId != currentSessionId() && !acceptStaleSession()) return
                 onAction(
                     AppPictureInPictureActionEvent(
                         action = action,
