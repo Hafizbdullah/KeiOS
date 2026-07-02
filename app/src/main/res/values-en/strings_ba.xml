@@ -655,6 +655,7 @@
     <string name="guide_gallery_memorial_lobby_pip_play">Play Memorial Lobby video</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">Play</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">Pause</string>
+    <string name="guide_gallery_memorial_lobby_pip_resize">Resize</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">Fullscreen</string>
     <string name="guide_gallery_character_trailer">Character Trailer</string>
     <string name="guide_gallery_character_trailer_format">Character Trailer %1$s</string>

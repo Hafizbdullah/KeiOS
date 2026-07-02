@@ -661,6 +661,7 @@
     <string name="guide_gallery_memorial_lobby_pip_play">播放回忆大厅视频</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">播放</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">暂停</string>
+    <string name="guide_gallery_memorial_lobby_pip_resize">切换大小</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">全屏播放</string>
     <string name="guide_gallery_character_trailer">角色演示</string>
     <string name="guide_gallery_character_trailer_format">角色演示%1$s</string>

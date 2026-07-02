@@ -207,11 +207,6 @@
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true" />
 
-        <receiver
-            android:name=".ui.page.main.student.GuideVideoPictureInPictureActionReceiver"
-            android:enabled="true"
-            android:exported="false" />
-
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:exported="false"

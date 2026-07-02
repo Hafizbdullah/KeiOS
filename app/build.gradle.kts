@@ -543,6 +543,7 @@ dependencies {
     implementation(project(":core-json"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
+    implementation(project(":ui-pip"))
     implementation(project(":ui-liquid-glass"))
     implementation(project(":miuix-navigation3-ui"))
     implementation(project(":feature-mcp"))
