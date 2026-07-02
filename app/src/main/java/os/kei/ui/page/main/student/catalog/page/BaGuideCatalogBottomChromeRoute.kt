@@ -32,6 +32,7 @@ internal fun BaGuideCatalogBottomChromeRoute(
     transitionAnimationsEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
+    pagerSwitchMotion: BaGuideCatalogPagerSwitchMotion,
     backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
 ) {
@@ -52,6 +53,7 @@ internal fun BaGuideCatalogBottomChromeRoute(
         transitionAnimationsEnabled = transitionAnimationsEnabled,
         searchAutoFocusEnabled = searchAutoFocusEnabled,
         playbackCoordinator = playbackCoordinator,
+        pagerSwitchMotion = pagerSwitchMotion,
         backdrop = backdrop,
         modifier = modifier,
     )

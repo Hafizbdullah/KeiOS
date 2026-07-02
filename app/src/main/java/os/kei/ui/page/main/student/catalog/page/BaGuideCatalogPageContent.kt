@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -107,6 +108,7 @@ internal fun BaGuideCatalogPageContent(
     val catalogSortMode = filterSortState.sortMode
     val catalogSelectedFilterOptions = filterSortState.selectedFilterOptions
     val requestVisibleCatalogImages by rememberUpdatedState(onRequestVisibleCatalogImages)
+    val pagerSwitchMotion = rememberBaGuideCatalogPagerSwitchMotion()
     val playbackForegroundImageUrls =
         remember(
             chromePresentation.artworkImageUrl,
@@ -172,6 +174,9 @@ internal fun BaGuideCatalogPageContent(
                 accent = accent,
                 onOpenGuide = onOpenGuide,
                 onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
+                modifier =
+                    Modifier
+                        .graphicsLayer { alpha = pagerSwitchMotion.contentAlpha },
             )
             Box(
                 modifier =
@@ -299,6 +304,7 @@ internal fun BaGuideCatalogPageContent(
             transitionAnimationsEnabled = transitionAnimationsEnabled,
             searchAutoFocusEnabled = searchAutoFocusEnabled,
             playbackCoordinator = playbackCoordinator,
+            pagerSwitchMotion = pagerSwitchMotion,
             backdrop = bottomChromeBackdrop,
             modifier =
                 Modifier

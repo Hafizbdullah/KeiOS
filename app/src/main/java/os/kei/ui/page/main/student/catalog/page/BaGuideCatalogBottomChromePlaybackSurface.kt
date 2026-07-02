@@ -6,10 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -37,10 +39,12 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
     transitionAnimationsEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
+    pagerSwitchMotion: BaGuideCatalogPagerSwitchMotion,
     backdrop: LayerBackdrop,
     modifier: Modifier = Modifier,
 ) {
     val pageScope = rememberCoroutineScope()
+    val pageSwitchJobHolder = remember { BaGuideCatalogPageSwitchJobHolder() }
     val playbackRuntimeState by remember(playbackCoordinator) {
         playbackCoordinator.runtimeStateFlow
     }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState)
@@ -94,21 +98,30 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
                     if (index == pagerState.settledPage) {
                         pageState.emitScrollToTop()
                     } else {
-                        pageState.updateSelectedTabIndex(index)
-                        pageScope.launch {
-                            if (transitionAnimationsEnabled) {
-                                pagerState.animateToPage(
-                                    target = index,
-                                    animationsEnabled = true,
-                                    durationMillis =
-                                        catalogPagerSwitchDurationMillis(
-                                            abs(index - pagerState.settledPage),
-                                        ),
-                                )
-                            } else {
-                                pagerState.scrollToPage(index)
+                        val distance = abs(index - pagerState.settledPage)
+                        pageSwitchJobHolder.job?.cancel()
+                        pageSwitchJobHolder.job =
+                            pageScope.launch {
+                                if (transitionAnimationsEnabled) {
+                                    withFrameNanos { }
+                                }
+                                pageState.updateSelectedTabIndex(index)
+                                pagerSwitchMotion.runSwitch(
+                                    distance = distance,
+                                    animationsEnabled = transitionAnimationsEnabled,
+                                ) {
+                                    if (transitionAnimationsEnabled && distance <= 1) {
+                                        pagerState.animateToPage(
+                                            target = index,
+                                            animationsEnabled = true,
+                                            durationMillis =
+                                                catalogPagerSwitchDurationMillis(distance),
+                                        )
+                                    } else {
+                                        pagerState.scrollToPage(index)
+                                    }
+                                }
                             }
-                        }
                     }
                 }
         },
@@ -125,4 +138,8 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
         backdrop = backdrop,
         modifier = modifier,
     )
+}
+
+private class BaGuideCatalogPageSwitchJobHolder {
+    var job: Job? = null
 }

@@ -57,13 +57,14 @@ internal fun BaGuideCatalogPagePager(
     accent: Color,
     onOpenGuide: (String) -> Unit,
     onRequestVisibleCatalogImages: (List<String>) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     MainLoadedPager(
         state = pagerState,
         userScrollEnabled = !pageState.sliderInteractionActive,
         animationsEnabled = transitionAnimationsEnabled,
         modifier =
-            Modifier
+            modifier
                 .fillMaxSize()
                 .layerBackdrop(pageChromeBackdrop),
     ) { pageIndex ->
