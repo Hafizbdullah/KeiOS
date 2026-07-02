@@ -655,9 +655,9 @@
     <string name="guide_gallery_memorial_lobby_video">メモリアルロビー動画</string>
     <string name="guide_gallery_memorial_lobby_video_format">メモリアルロビー動画 %1$s</string>
     <string name="guide_gallery_memorial_lobby_pip_play">メモリアルロビー動画を再生</string>
+    <string name="guide_gallery_memorial_lobby_pip_resume">再生</string>
+    <string name="guide_gallery_memorial_lobby_pip_pause">一時停止</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">全画面再生</string>
-    <string name="guide_gallery_memorial_lobby_pip_size_standard">標準 PIP</string>
-    <string name="guide_gallery_memorial_lobby_pip_size_wide">ワイド PIP</string>
     <string name="guide_gallery_character_trailer">生徒紹介 PV</string>
     <string name="guide_gallery_character_trailer_format">生徒紹介 PV %1$s</string>
     <string name="guide_gallery_official_intro">公式紹介</string>

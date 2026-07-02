@@ -661,9 +661,9 @@
     <string name="guide_gallery_memorial_lobby_video">回忆大厅视频</string>
     <string name="guide_gallery_memorial_lobby_video_format">回忆大厅视频%1$s</string>
     <string name="guide_gallery_memorial_lobby_pip_play">播放回忆大厅视频</string>
+    <string name="guide_gallery_memorial_lobby_pip_resume">播放</string>
+    <string name="guide_gallery_memorial_lobby_pip_pause">暂停</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">全屏播放</string>
-    <string name="guide_gallery_memorial_lobby_pip_size_standard">标准画中画</string>
-    <string name="guide_gallery_memorial_lobby_pip_size_wide">宽幅画中画</string>
     <string name="guide_gallery_character_trailer">角色演示</string>
     <string name="guide_gallery_character_trailer_format">角色演示%1$s</string>
     <string name="guide_gallery_official_intro">官方介绍</string>
