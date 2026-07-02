@@ -15,3 +15,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 }
+
+dependencies {
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
+    testImplementation("junit:junit:4.13.2")
+}

@@ -665,6 +665,8 @@
     <string name="guide_gallery_memorial_lobby_pip_pause">暂停</string>
     <string name="guide_gallery_memorial_lobby_pip_loop_enable">循环播放</string>
     <string name="guide_gallery_memorial_lobby_pip_loop_disable">取消循环</string>
+    <string name="guide_gallery_memorial_lobby_pip_seek_back_10s">回退 10 秒</string>
+    <string name="guide_gallery_memorial_lobby_pip_seek_forward_10s">快进 10 秒</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">全屏播放</string>
     <string name="guide_gallery_character_trailer">角色演示</string>
     <string name="guide_gallery_character_trailer_format">角色演示%1$s</string>

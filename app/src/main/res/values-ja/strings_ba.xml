@@ -657,6 +657,8 @@
     <string name="guide_gallery_memorial_lobby_pip_play">メモリアルロビー動画を再生</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">再生</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">一時停止</string>
+    <string name="guide_gallery_memorial_lobby_pip_seek_back_10s">10 秒戻す</string>
+    <string name="guide_gallery_memorial_lobby_pip_seek_forward_10s">10 秒進める</string>
     <string name="guide_gallery_memorial_lobby_pip_fullscreen">全画面再生</string>
     <string name="guide_gallery_character_trailer">生徒紹介 PV</string>
     <string name="guide_gallery_character_trailer_format">生徒紹介 PV %1$s</string>

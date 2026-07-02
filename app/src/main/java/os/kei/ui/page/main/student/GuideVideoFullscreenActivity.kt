@@ -74,6 +74,7 @@ import os.kei.ui.pip.APP_PIP_NO_SESSION_ID
 import os.kei.ui.pip.APP_PIP_CLOSE_REASON_APP_ACTION
 import os.kei.ui.pip.APP_PIP_CLOSE_REASON_HOST_CLOSE
 import os.kei.ui.pip.APP_PIP_CLOSE_REASON_REPLACE_ACTIVE
+import os.kei.ui.pip.APP_PIP_SEEK_INTERVAL_10_SECONDS_MS
 import os.kei.ui.pip.AppPictureInPictureActionReceiver
 import os.kei.ui.pip.AppPictureInPictureActivityRegistry
 import os.kei.ui.pip.AppPictureInPictureCloseController
@@ -81,6 +82,7 @@ import os.kei.ui.pip.AppPictureInPictureSessionIds
 import os.kei.ui.pip.appPictureInPictureSessionId
 import os.kei.ui.pip.appPictureInPictureSourceRect
 import os.kei.ui.pip.findHostActivity
+import os.kei.ui.pip.resolveAppPictureInPictureSeekPositionMs
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -332,6 +334,22 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                 toggleGuideVideoLoop()
             }
 
+            GUIDE_VIDEO_ACTION_SEEK_BACK_10S -> {
+                Log.i(
+                    GUIDE_VIDEO_PIP_TAG,
+                    "PiP seek back 10s session=$guideVideoPictureInPictureSessionId",
+                )
+                seekGuideVideoBy(-APP_PIP_SEEK_INTERVAL_10_SECONDS_MS)
+            }
+
+            GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S -> {
+                Log.i(
+                    GUIDE_VIDEO_PIP_TAG,
+                    "PiP seek forward 10s session=$guideVideoPictureInPictureSessionId",
+                )
+                seekGuideVideoBy(APP_PIP_SEEK_INTERVAL_10_SECONDS_MS)
+            }
+
             GUIDE_VIDEO_ACTION_CLOSE_PIP -> {
                 Log.i(
                     GUIDE_VIDEO_PIP_TAG,
@@ -342,6 +360,22 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                     reason = APP_PIP_CLOSE_REASON_APP_ACTION,
                 )
             }
+        }
+    }
+
+    private fun seekGuideVideoBy(deltaMs: Long) {
+        val player = boundVideoPlayer ?: guideVideoPlayer ?: return
+        val targetPositionMs =
+            resolveAppPictureInPictureSeekPositionMs(
+                currentPositionMs = player.currentPosition,
+                durationMs = player.duration,
+                deltaMs = deltaMs,
+            )
+        runCatching {
+            if (player.playbackState == Player.STATE_IDLE) {
+                player.prepare()
+            }
+            player.seekTo(targetPositionMs)
         }
     }
 

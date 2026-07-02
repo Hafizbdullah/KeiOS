@@ -8,10 +8,12 @@ import android.util.Rational
 import com.composables.icons.lucide.R as LucideR
 import os.kei.R
 import os.kei.ui.pip.AppPictureInPictureActionSet
+import os.kei.ui.pip.AppPictureInPictureMediaControlActions
 import os.kei.ui.pip.AppPictureInPictureParamsSpec
 import os.kei.ui.pip.AppPictureInPictureRemoteActionSpec
 import os.kei.ui.pip.buildAppPictureInPictureActionSet
 import os.kei.ui.pip.buildAppPictureInPictureParams
+import os.kei.ui.pip.resolveVisibleActions
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -19,18 +21,24 @@ import kotlin.math.roundToInt
 internal const val GUIDE_VIDEO_ACTION_CLOSE_PIP = "os.kei.action.CLOSE_GUIDE_PIP"
 internal const val GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK = "os.kei.action.TOGGLE_GUIDE_PIP_PLAYBACK"
 internal const val GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP = "os.kei.action.TOGGLE_GUIDE_PIP_LOOP"
+internal const val GUIDE_VIDEO_ACTION_SEEK_BACK_10S = "os.kei.action.SEEK_BACK_GUIDE_PIP_10S"
+internal const val GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S = "os.kei.action.SEEK_FORWARD_GUIDE_PIP_10S"
 
 internal val GuideVideoPictureInPictureActions =
     setOf(
         GUIDE_VIDEO_ACTION_CLOSE_PIP,
         GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
         GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
+        GUIDE_VIDEO_ACTION_SEEK_BACK_10S,
+        GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S,
     )
 
 internal const val GUIDE_VIDEO_PIP_AUTHORITY = "guide-video-pip"
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE = 3500
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK = 3501
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_LOOP = 3502
+private const val GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_BACK_10S = 3503
+private const val GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_FORWARD_10S = 3504
 
 private val GuidePictureInPictureAspectRatio = Rational(16, 9)
 private val GuidePictureInPictureExpandedAspectRatio = Rational(12, 5)
@@ -101,30 +109,44 @@ internal fun buildGuidePictureInPictureActionSet(
             title = context.getString(R.string.common_close),
             requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE,
         )
+    val seekBackAction =
+        AppPictureInPictureRemoteActionSpec(
+            action = GUIDE_VIDEO_ACTION_SEEK_BACK_10S,
+            iconRes = LucideR.drawable.lucide_ic_skip_back,
+            title = context.getString(R.string.guide_gallery_memorial_lobby_pip_seek_back_10s),
+            requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_BACK_10S,
+        )
+    val playbackAction =
+        AppPictureInPictureRemoteActionSpec(
+            action = GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
+            iconRes = playbackIcon,
+            title = playbackTitle,
+            requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
+        )
+    val seekForwardAction =
+        AppPictureInPictureRemoteActionSpec(
+            action = GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S,
+            iconRes = LucideR.drawable.lucide_ic_skip_forward,
+            title = context.getString(R.string.guide_gallery_memorial_lobby_pip_seek_forward_10s),
+            requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_FORWARD_10S,
+        )
+    val repeatAction =
+        AppPictureInPictureRemoteActionSpec(
+            action = GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
+            iconRes = repeatIcon,
+            title = repeatTitle,
+            requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_LOOP,
+        )
     return context.buildAppPictureInPictureActionSet(
         sessionId = sessionId,
         authority = GUIDE_VIDEO_PIP_AUTHORITY,
-        actions =
-            buildList {
-                add(
-                    AppPictureInPictureRemoteActionSpec(
-                        action = GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-                        iconRes = playbackIcon,
-                        title = playbackTitle,
-                        requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
-                    )
-                )
-                add(
-                    AppPictureInPictureRemoteActionSpec(
-                        action = GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
-                        iconRes = repeatIcon,
-                        title = repeatTitle,
-                        requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_LOOP,
-                    )
-                )
-            },
+        actions = AppPictureInPictureMediaControlActions(
+            playbackAction = playbackAction,
+            seekForwardAction = seekForwardAction,
+            seekBackAction = seekBackAction,
+            secondaryAction = repeatAction,
+        ).resolveVisibleActions(maxActions),
         closeAction = closeAction,
-        maxActions = maxActions,
     )
 }
 
