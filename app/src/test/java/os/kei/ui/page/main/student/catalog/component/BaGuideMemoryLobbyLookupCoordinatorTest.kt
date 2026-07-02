@@ -26,7 +26,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
                 BaGuideMemoryLobbyLookupCoordinator(
                     scope = CoroutineScope(Dispatchers.Unconfined),
                     ioDispatcher = Dispatchers.Unconfined,
-                    cachedLoader = { item },
+                    cachedLoader = { BaGuideMemoryLobbyCachedLookupResult.Ready(item) },
                     networkLoader = {
                         networkCalls += 1
                         null
@@ -51,7 +51,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
                 BaGuideMemoryLobbyLookupCoordinator(
                     scope = CoroutineScope(Dispatchers.Unconfined),
                     ioDispatcher = Dispatchers.Unconfined,
-                    cachedLoader = { null },
+                    cachedLoader = { BaGuideMemoryLobbyCachedLookupResult.NoCache },
                     networkLoader = { null },
                 )
 
@@ -70,7 +70,7 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
                 BaGuideMemoryLobbyLookupCoordinator(
                     scope = this,
                     ioDispatcher = Dispatchers.Unconfined,
-                    cachedLoader = { null },
+                    cachedLoader = { BaGuideMemoryLobbyCachedLookupResult.NoCache },
                     networkLoader = { deferred.await() },
                 )
             val resolvedUrls = mutableListOf<String?>()
@@ -93,6 +93,29 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
                     coordinator.states.value.getValue(entry.contentId),
                 )
             assertEquals(item.galleryItems.single().mediaUrl, ready.item.galleryItems.single().mediaUrl)
+        }
+
+    @Test
+    fun `fresh cached missing state skips visible network prewarm`() =
+        runBlocking {
+            var networkCalls = 0
+            val entry = catalogEntry(contentId = 4L)
+            val coordinator =
+                BaGuideMemoryLobbyLookupCoordinator(
+                    scope = CoroutineScope(Dispatchers.Unconfined),
+                    ioDispatcher = Dispatchers.Unconfined,
+                    cachedLoader = { BaGuideMemoryLobbyCachedLookupResult.FreshMissing },
+                    networkLoader = {
+                        networkCalls += 1
+                        null
+                    },
+                )
+
+            coordinator.prewarmCached(listOf(entry))
+            coordinator.prewarmVisibleNetwork(listOf(entry))
+
+            assertEquals(BaGuideMemoryLobbyLookupState.Missing, coordinator.states.value[entry.contentId])
+            assertEquals(0, networkCalls)
         }
 
     private fun catalogEntry(contentId: Long): BaGuideCatalogEntry =

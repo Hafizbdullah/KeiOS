@@ -3,12 +3,14 @@ package os.kei.ui.page.main.student.catalog.state
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.student.BaGuideDataClock
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.BaGuideSystemDataClock
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
+import os.kei.ui.page.main.student.catalog.component.BaGuideMemoryLobbyCachedLookupResult
 import os.kei.ui.page.main.student.catalog.component.BaGuideMemoryLobbyResolvedItem
 import os.kei.ui.page.main.student.fetchGuideInfoAsync
 import os.kei.ui.page.main.student.isMemoryHallGalleryItem
@@ -19,10 +21,35 @@ internal class BaGuideMemoryLobbyResolveRepository(
     private val parseDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val clock: BaGuideDataClock = BaGuideSystemDataClock,
 ) {
-    suspend fun loadCachedMemoryLobby(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyResolvedItem? =
+    suspend fun loadCachedMemoryLobbyLookup(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyCachedLookupResult =
         withContext(ioDispatcher) {
-            val info = BaStudentGuideStore.loadInfoSnapshot(entry.detailUrl).info ?: return@withContext null
-            info.toMemoryLobbyResolvedItem(entry = entry, fromCache = true)
+            val snapshot = BaStudentGuideStore.loadInfoSnapshot(entry.detailUrl)
+            val info = snapshot.info ?: return@withContext BaGuideMemoryLobbyCachedLookupResult.NoCache
+            info
+                .toMemoryLobbyResolvedItem(entry = entry, fromCache = true)
+                ?.let(BaGuideMemoryLobbyCachedLookupResult::Ready)
+                ?: run {
+                    val refreshIntervalHours = BASettingsStore.loadCalendarRefreshIntervalHours()
+                    val expired =
+                        BaStudentGuideStore.isCacheExpired(
+                            snapshot = snapshot,
+                            refreshIntervalHours = refreshIntervalHours,
+                            nowMs = clock.nowMs(),
+                        )
+                    if (expired) {
+                        BaGuideMemoryLobbyCachedLookupResult.NoCache
+                    } else {
+                        BaGuideMemoryLobbyCachedLookupResult.FreshMissing
+                    }
+                }
+        }
+
+    suspend fun loadCachedMemoryLobby(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyResolvedItem? =
+        when (val result = loadCachedMemoryLobbyLookup(entry)) {
+            is BaGuideMemoryLobbyCachedLookupResult.Ready -> result.item
+            BaGuideMemoryLobbyCachedLookupResult.FreshMissing,
+            BaGuideMemoryLobbyCachedLookupResult.NoCache,
+            -> null
         }
 
     suspend fun fetchMemoryLobby(entry: BaGuideCatalogEntry): BaGuideMemoryLobbyResolvedItem? {

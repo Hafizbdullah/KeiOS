@@ -35,8 +35,8 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
             ioDispatcher = ioDispatcher,
             parseDispatcher = parseDispatcher,
         ),
-    private val cachedLoader: suspend (BaGuideCatalogEntry) -> BaGuideMemoryLobbyResolvedItem? = { entry ->
-        repository.loadCachedMemoryLobby(entry)
+    private val cachedLoader: suspend (BaGuideCatalogEntry) -> BaGuideMemoryLobbyCachedLookupResult = { entry ->
+        repository.loadCachedMemoryLobbyLookup(entry)
     },
     private val networkLoader: suspend (BaGuideCatalogEntry) -> BaGuideMemoryLobbyResolvedItem? = { entry ->
         repository.fetchMemoryLobby(entry)
@@ -80,24 +80,34 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
                 val semaphore = Semaphore(MEMORY_LOBBY_CACHE_PREWARM_PARALLELISM)
                 pendingEntries.chunked(MEMORY_LOBBY_CACHE_PREWARM_BATCH_SIZE).forEach { batch ->
                     currentCoroutineContext().ensureActive()
-                    val cached =
+                    val cachedStates =
                         batch
                             .map { entry ->
                                 async {
                                     semaphore.withPermit {
                                         runCatchingCancellable {
-                                            cachedLoader(entry)?.let { item -> entry.contentId to item }
+                                            when (val result = cachedLoader(entry)) {
+                                                BaGuideMemoryLobbyCachedLookupResult.NoCache -> null
+                                                BaGuideMemoryLobbyCachedLookupResult.FreshMissing ->
+                                                    entry.contentId to BaGuideMemoryLobbyLookupState.Missing
+                                                is BaGuideMemoryLobbyCachedLookupResult.Ready ->
+                                                    entry.contentId to BaGuideMemoryLobbyLookupState.Ready(result.item)
+                                            }
                                         }.getOrNull()
                                     }
                                 }
                             }.awaitAll()
                             .filterNotNull()
                     cachePrewarmCheckedContentIds += batch.map { entry -> entry.contentId }
-                    if (cached.isNotEmpty()) {
+                    if (cachedStates.isNotEmpty()) {
                         mutableStates.update { states ->
-                            states + cached.associate { (contentId, item) ->
-                                contentId to BaGuideMemoryLobbyLookupState.Ready(item)
+                            var nextStates = states
+                            cachedStates.forEach { (contentId, state) ->
+                                if (nextStates[contentId] == null) {
+                                    nextStates = nextStates + (contentId to state)
+                                }
                             }
+                            nextStates
                         }
                     }
                     yield()
@@ -181,12 +191,15 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
             }
         }
         scope.launch {
+            var cachedResult: BaGuideMemoryLobbyCachedLookupResult? = null
             val resolved =
                 runCatchingCancellable {
                     if (allowNetwork) {
                         networkLoader(entry)
                     } else {
                         cachedLoader(entry)
+                            .also { cachedResult = it }
+                            .readyItemOrNull()
                     }
                 }.getOrNull()
             val callbacks =
@@ -198,7 +211,7 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
                     }
                 }
             if (callbacks.isEmpty() && generation != lookupGeneration) return@launch
-            if (allowNetwork || resolved != null) {
+            if (allowNetwork || resolved != null || cachedResult == BaGuideMemoryLobbyCachedLookupResult.FreshMissing) {
                 mutableStates.update { states ->
                     states + (
                         contentId to if (resolved == null) {
@@ -225,3 +238,6 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
         }
     }
 }
+
+private fun BaGuideMemoryLobbyCachedLookupResult.readyItemOrNull(): BaGuideMemoryLobbyResolvedItem? =
+    (this as? BaGuideMemoryLobbyCachedLookupResult.Ready)?.item

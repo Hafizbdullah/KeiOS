@@ -10,6 +10,12 @@ internal sealed interface BaGuideMemoryLobbyLookupState {
     data class Ready(val item: BaGuideMemoryLobbyResolvedItem) : BaGuideMemoryLobbyLookupState
 }
 
+internal sealed interface BaGuideMemoryLobbyCachedLookupResult {
+    data object NoCache : BaGuideMemoryLobbyCachedLookupResult
+    data object FreshMissing : BaGuideMemoryLobbyCachedLookupResult
+    data class Ready(val item: BaGuideMemoryLobbyResolvedItem) : BaGuideMemoryLobbyCachedLookupResult
+}
+
 @Immutable
 internal data class BaGuideMemoryLobbyResolvedItem(
     val galleryItems: List<BaGuideGalleryItem>,
