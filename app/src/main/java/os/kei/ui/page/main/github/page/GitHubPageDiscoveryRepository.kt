@@ -35,15 +35,17 @@ internal class GitHubPageDiscoveryRepository(
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation
 ) {
     private val packageNamePattern = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
-    private val discoveryFacade =
+    private val discoveryFacade by lazy {
         GitHubRepositoryDiscoveryFacade(
             ioDispatcher = ioDispatcher,
             defaultDispatcher = defaultDispatcher,
         )
-    private val fdroidAppSearchService =
+    }
+    private val fdroidAppSearchService by lazy {
         FdroidAppSearchService(
             dispatcher = ioDispatcher
         )
+    }
 
     suspend fun buildStrategyBenchmarkTargets(
         items: List<GitHubTrackedApp>
