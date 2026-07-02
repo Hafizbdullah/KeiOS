@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import os.kei.R
 import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import kotlin.test.assertEquals
@@ -26,6 +27,7 @@ class GuideVideoPictureInPictureActionsTest {
                 context = context,
                 sessionId = 42L,
                 playWhenReady = true,
+                repeatEnabled = true,
             )
 
         val closeAction = assertNotNull(actionSet.closeAction)
@@ -34,10 +36,14 @@ class GuideVideoPictureInPictureActionsTest {
                 action.actionIntent == closeAction.actionIntent
             }
 
-        assertEquals(1, actionSet.actions.size)
+        assertEquals(2, actionSet.actions.size)
         assertEquals(
             GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
-            shadowOf(actionSet.actions.single().actionIntent).savedIntent.action,
+            shadowOf(actionSet.actions.first().actionIntent).savedIntent.action,
+        )
+        assertEquals(
+            GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
+            shadowOf(actionSet.actions.last().actionIntent).savedIntent.action,
         )
         assertNull(visibleCloseAction)
     }
@@ -50,6 +56,7 @@ class GuideVideoPictureInPictureActionsTest {
                 context = context,
                 sessionId = 43L,
                 playWhenReady = false,
+                repeatEnabled = false,
                 maxActions = 0,
         )
 
@@ -60,6 +67,41 @@ class GuideVideoPictureInPictureActionsTest {
             }
         )
         assertEquals(0, actionSet.actions.size)
+    }
+
+    @Test
+    fun `loop action reflects repeat state`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val repeatEnabledActionSet =
+            buildGuidePictureInPictureActionSet(
+                context = context,
+                sessionId = 44L,
+                playWhenReady = true,
+                repeatEnabled = true,
+            )
+        val repeatDisabledActionSet =
+            buildGuidePictureInPictureActionSet(
+                context = context,
+                sessionId = 45L,
+                playWhenReady = true,
+                repeatEnabled = false,
+            )
+
+        val enabledLoopAction = repeatEnabledActionSet.actions.last()
+        val disabledLoopAction = repeatDisabledActionSet.actions.last()
+
+        assertEquals(
+            GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
+            shadowOf(enabledLoopAction.actionIntent).savedIntent.action,
+        )
+        assertEquals(
+            context.getString(R.string.guide_gallery_memorial_lobby_pip_loop_disable),
+            enabledLoopAction.title,
+        )
+        assertEquals(
+            context.getString(R.string.guide_gallery_memorial_lobby_pip_loop_enable),
+            disabledLoopAction.title,
+        )
     }
 
     @Test

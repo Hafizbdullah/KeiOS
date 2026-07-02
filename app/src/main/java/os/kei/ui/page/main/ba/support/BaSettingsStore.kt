@@ -83,6 +83,13 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
+    fun loadMediaGuideVideoLoopEnabled(): Boolean = kv().decodeBool(KEY_MEDIA_GUIDE_VIDEO_LOOP_ENABLED, true)
+
+    fun saveMediaGuideVideoLoopEnabled(enabled: Boolean) {
+        kv().encode(KEY_MEDIA_GUIDE_VIDEO_LOOP_ENABLED, enabled)
+        notifyChanged(notifyHomeOverview = false)
+    }
+
     fun loadMediaSaveCustomEnabled(): Boolean = kv().decodeBool(KEY_MEDIA_SAVE_CUSTOM_ENABLED, false)
 
     fun saveMediaSaveCustomEnabled(enabled: Boolean) {

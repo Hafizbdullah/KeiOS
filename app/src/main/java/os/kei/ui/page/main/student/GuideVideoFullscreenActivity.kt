@@ -92,6 +92,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
     private val mediaRepository = GuideFullscreenMediaRepository()
     private val pictureInPictureModeState = mutableStateOf(false)
     private val pictureInPicturePlayWhenReadyState = mutableStateOf(false)
+    private val pictureInPictureRepeatEnabledState = mutableStateOf(true)
     private var pictureInPictureRequestPending = false
     private var pictureInPictureRuntimeParamsReady = false
     private var launchedIntoPictureInPicture = false
@@ -186,6 +187,13 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                 requestedOrientation = resolveVideoFullscreenOrientation(mediaAdaptiveRotationEnabled)
             }
         }
+        lifecycleScope.launch {
+            val repeatEnabled = mediaRepository.loadGuideVideoLoopEnabled()
+            setGuideVideoLoopEnabled(
+                enabled = repeatEnabled,
+                persist = false,
+            )
+        }
         enableEdgeToEdge()
 
         val normalizedUrl = normalizeGuideMediaSource(
@@ -233,6 +241,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                         shouldPauseOnStop = { !isInPictureInPictureMode },
                         onRequestEnterPictureInPicture = ::requestEnterGuidePictureInPicture,
                         onPlayerPlayWhenReadyChanged = ::onGuideVideoPlayerPlayWhenReadyChanged,
+                        onPlayerRepeatModeChanged = ::onGuideVideoPlayerRepeatModeChanged,
                         onPlayerViewBound = ::onGuideVideoPlayerViewBound,
                         onPlayerViewReleased = ::onGuideVideoPlayerViewReleased,
                         onClose = {
@@ -255,6 +264,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
         if (mediaUrl.isBlank()) return null
         return buildGuideVideoPlayer(this).apply {
             setMediaItem(MediaItem.fromUri(mediaUrl))
+            repeatMode = resolveGuideVideoRepeatMode(pictureInPictureRepeatEnabledState.value)
             if (startPositionMs > 0L) {
                 seekTo(startPositionMs)
             }
@@ -312,6 +322,14 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                     "PiP toggle playback session=$guideVideoPictureInPictureSessionId",
                 )
                 toggleGuideVideoPlayback()
+            }
+
+            GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP -> {
+                Log.i(
+                    GUIDE_VIDEO_PIP_TAG,
+                    "PiP toggle loop session=$guideVideoPictureInPictureSessionId",
+                )
+                toggleGuideVideoLoop()
             }
 
             GUIDE_VIDEO_ACTION_CLOSE_PIP -> {
@@ -456,8 +474,17 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
             context = this,
             sessionId = guideVideoPictureInPictureSessionId,
             playWhenReady = pictureInPicturePlayWhenReadyState.value,
+            repeatEnabled = pictureInPictureRepeatEnabledState.value,
             maxActions = getMaxNumPictureInPictureActions(),
         )
+
+    private fun resolveGuideVideoRepeatMode(enabled: Boolean): Int {
+        return if (enabled) {
+            Player.REPEAT_MODE_ONE
+        } else {
+            Player.REPEAT_MODE_OFF
+        }
+    }
 
     private fun finishGuideVideoActivity(
         removeTask: Boolean,
@@ -528,9 +555,40 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
         }
     }
 
+    private fun toggleGuideVideoLoop() {
+        setGuideVideoLoopEnabled(
+            enabled = !pictureInPictureRepeatEnabledState.value,
+            persist = true,
+        )
+    }
+
+    private fun setGuideVideoLoopEnabled(
+        enabled: Boolean,
+        persist: Boolean,
+    ) {
+        val player = boundVideoPlayer ?: guideVideoPlayer
+        runCatching {
+            player?.repeatMode = resolveGuideVideoRepeatMode(enabled)
+        }
+        onGuideVideoPlayerRepeatModeChanged(enabled)
+        if (persist) {
+            lifecycleScope.launch {
+                mediaRepository.saveGuideVideoLoopEnabled(enabled)
+            }
+        }
+    }
+
     private fun onGuideVideoPlayerPlayWhenReadyChanged(playWhenReady: Boolean) {
         if (pictureInPicturePlayWhenReadyState.value == playWhenReady) return
         pictureInPicturePlayWhenReadyState.value = playWhenReady
+        if (isInPictureInPictureMode || pictureInPictureRequestPending || launchedIntoPictureInPicture) {
+            commitGuidePictureInPictureParams(forceRuntime = isInPictureInPictureMode)
+        }
+    }
+
+    private fun onGuideVideoPlayerRepeatModeChanged(repeatEnabled: Boolean) {
+        if (pictureInPictureRepeatEnabledState.value == repeatEnabled) return
+        pictureInPictureRepeatEnabledState.value = repeatEnabled
         if (isInPictureInPictureMode || pictureInPictureRequestPending || launchedIntoPictureInPicture) {
             commitGuidePictureInPictureParams(forceRuntime = isInPictureInPictureMode)
         }
@@ -697,6 +755,7 @@ private fun GuideVideoFullscreenScreen(
     shouldPauseOnStop: () -> Boolean,
     onRequestEnterPictureInPicture: () -> Unit,
     onPlayerPlayWhenReadyChanged: (Boolean) -> Unit,
+    onPlayerRepeatModeChanged: (Boolean) -> Unit,
     onPlayerViewBound: (PlayerView) -> Unit,
     onPlayerViewReleased: (PlayerView) -> Unit,
     onClose: () -> Unit
@@ -733,6 +792,10 @@ private fun GuideVideoFullscreenScreen(
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 notifyPlayWhenReady()
+            }
+
+            override fun onRepeatModeChanged(repeatMode: Int) {
+                onPlayerRepeatModeChanged(repeatMode == Player.REPEAT_MODE_ONE)
             }
 
             override fun onRenderedFirstFrame() {

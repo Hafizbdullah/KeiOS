@@ -18,16 +18,19 @@ import kotlin.math.roundToInt
 
 internal const val GUIDE_VIDEO_ACTION_CLOSE_PIP = "os.kei.action.CLOSE_GUIDE_PIP"
 internal const val GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK = "os.kei.action.TOGGLE_GUIDE_PIP_PLAYBACK"
+internal const val GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP = "os.kei.action.TOGGLE_GUIDE_PIP_LOOP"
 
 internal val GuideVideoPictureInPictureActions =
     setOf(
         GUIDE_VIDEO_ACTION_CLOSE_PIP,
         GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
+        GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
     )
 
 internal const val GUIDE_VIDEO_PIP_AUTHORITY = "guide-video-pip"
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE = 3500
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK = 3501
+private const val GUIDE_VIDEO_REQUEST_CODE_PIP_LOOP = 3502
 
 private val GuidePictureInPictureAspectRatio = Rational(16, 9)
 private val GuidePictureInPictureExpandedAspectRatio = Rational(12, 5)
@@ -60,6 +63,7 @@ internal fun buildGuidePictureInPictureActionSet(
     context: Context,
     sessionId: Long,
     playWhenReady: Boolean,
+    repeatEnabled: Boolean,
     maxActions: Int? = null,
 ): AppPictureInPictureActionSet {
     val playbackTitle =
@@ -75,6 +79,20 @@ internal fun buildGuidePictureInPictureActionSet(
             LucideR.drawable.lucide_ic_pause
         } else {
             LucideR.drawable.lucide_ic_play
+        }
+    val repeatTitle =
+        context.getString(
+            if (repeatEnabled) {
+                R.string.guide_gallery_memorial_lobby_pip_loop_disable
+            } else {
+                R.string.guide_gallery_memorial_lobby_pip_loop_enable
+            }
+        )
+    val repeatIcon =
+        if (repeatEnabled) {
+            LucideR.drawable.lucide_ic_repeat_1
+        } else {
+            LucideR.drawable.lucide_ic_repeat
         }
     val closeAction =
         AppPictureInPictureRemoteActionSpec(
@@ -94,6 +112,14 @@ internal fun buildGuidePictureInPictureActionSet(
                         iconRes = playbackIcon,
                         title = playbackTitle,
                         requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
+                    )
+                )
+                add(
+                    AppPictureInPictureRemoteActionSpec(
+                        action = GUIDE_VIDEO_ACTION_TOGGLE_PIP_LOOP,
+                        iconRes = repeatIcon,
+                        title = repeatTitle,
+                        requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_LOOP,
                     )
                 )
             },

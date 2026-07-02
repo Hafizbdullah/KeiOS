@@ -12,4 +12,14 @@ internal class GuideFullscreenMediaRepository(
         withContext(ioDispatcher) {
             BASettingsStore.loadMediaAdaptiveRotationEnabled()
         }
+
+    suspend fun loadGuideVideoLoopEnabled(): Boolean =
+        withContext(ioDispatcher) {
+            BASettingsStore.loadMediaGuideVideoLoopEnabled()
+        }
+
+    suspend fun saveGuideVideoLoopEnabled(enabled: Boolean) =
+        withContext(ioDispatcher) {
+            BASettingsStore.saveMediaGuideVideoLoopEnabled(enabled)
+        }
 }
