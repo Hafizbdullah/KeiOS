@@ -205,7 +205,8 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:resizeableActivity="true"
-            android:supportsPictureInPicture="true" />
+            android:supportsPictureInPicture="true"
+            android:taskAffinity="${applicationId}.guideVideoPip" />
 
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"

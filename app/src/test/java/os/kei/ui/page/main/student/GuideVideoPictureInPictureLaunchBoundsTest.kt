@@ -33,6 +33,20 @@ class GuideVideoPictureInPictureLaunchBoundsTest {
     }
 
     @Test
+    fun `large mismatched preview normalizes to video aspect ratio`() {
+        val source = GuidePictureInPictureLaunchBounds(84, 1222, 1196, 2038)
+        val result = resolveGuidePictureInPictureLaunchBounds(
+            windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
+            sourceRectHint = source,
+        )
+        assertNotNull(result)
+
+        assertTrue(result.width() < source.width())
+        assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
+        assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856).contains(result))
+    }
+
+    @Test
     fun `edge source rect clamps adaptive bounds inside window`() {
         val result = resolveGuidePictureInPictureLaunchBounds(
             windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1080, 2400),

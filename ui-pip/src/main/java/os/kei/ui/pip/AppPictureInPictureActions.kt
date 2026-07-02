@@ -31,20 +31,23 @@ fun Context.buildAppPictureInPictureActionSet(
             ?.takeIf { value -> value >= 0 }
             ?.let { value -> actions.take(value) }
             ?: actions
+    val actionRemoteActions =
+        visibleActions.associateWith { spec ->
+            buildAppPictureInPictureRemoteAction(
+                sessionId = sessionId,
+                authority = authority,
+                spec = spec,
+            )
+        }
     return AppPictureInPictureActionSet(
-        actions = visibleActions.map { spec ->
-            buildAppPictureInPictureRemoteAction(
-                sessionId = sessionId,
-                authority = authority,
-                spec = spec,
-            )
-        },
+        actions = visibleActions.mapNotNull(actionRemoteActions::get),
         closeAction = closeAction?.let { spec ->
-            buildAppPictureInPictureRemoteAction(
-                sessionId = sessionId,
-                authority = authority,
-                spec = spec,
-            )
+            actionRemoteActions[spec]
+                ?: buildAppPictureInPictureRemoteAction(
+                    sessionId = sessionId,
+                    authority = authority,
+                    spec = spec,
+                )
         },
     )
 }

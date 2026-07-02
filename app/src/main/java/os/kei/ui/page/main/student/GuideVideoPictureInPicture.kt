@@ -12,7 +12,6 @@ import os.kei.ui.pip.AppPictureInPictureParamsSpec
 import os.kei.ui.pip.AppPictureInPictureRemoteActionSpec
 import os.kei.ui.pip.buildAppPictureInPictureActionSet
 import os.kei.ui.pip.buildAppPictureInPictureParams
-import os.kei.ui.pip.supportsAppPictureInPicture
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -35,6 +34,7 @@ private const val GUIDE_VIDEO_PIP_ASPECT_RATIO = 16f / 9f
 private const val GUIDE_VIDEO_PIP_TARGET_WIDTH_FRACTION = 0.8f
 private const val GUIDE_VIDEO_PIP_TARGET_HEIGHT_FRACTION = 0.62f
 private const val GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE = 0.92f
+private const val GUIDE_VIDEO_PIP_ASPECT_RATIO_TOLERANCE = 0.08f
 
 internal fun buildGuidePictureInPictureParams(
     context: Context,
@@ -74,6 +74,13 @@ internal fun buildGuidePictureInPictureActionSet(
         } else {
             LucideR.drawable.lucide_ic_play
         }
+    val closeAction =
+        AppPictureInPictureRemoteActionSpec(
+            action = GUIDE_VIDEO_ACTION_CLOSE_PIP,
+            iconRes = LucideR.drawable.lucide_ic_x,
+            title = context.getString(R.string.common_close),
+            requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE,
+        )
     return context.buildAppPictureInPictureActionSet(
         sessionId = sessionId,
         authority = GUIDE_VIDEO_PIP_AUTHORITY,
@@ -87,20 +94,11 @@ internal fun buildGuidePictureInPictureActionSet(
                         requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
                     )
                 )
+                add(closeAction)
             },
-        closeAction =
-            AppPictureInPictureRemoteActionSpec(
-                action = GUIDE_VIDEO_ACTION_CLOSE_PIP,
-                iconRes = LucideR.drawable.lucide_ic_x,
-                title = context.getString(R.string.common_close),
-                requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE,
-            ),
+        closeAction = closeAction,
         maxActions = maxActions,
     )
-}
-
-internal fun Context.supportsGuidePictureInPicture(): Boolean {
-    return supportsAppPictureInPicture()
 }
 
 internal fun Activity.resolveGuidePictureInPictureLaunchBounds(
@@ -144,7 +142,9 @@ internal fun resolveGuidePictureInPictureLaunchBounds(
     if (source != null) {
         val sourceArea = source.width().coerceAtLeast(0) * source.height().coerceAtLeast(0)
         val targetArea = targetWidth * targetHeight
-        if (sourceArea >= targetArea * GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE) {
+        if (sourceArea >= targetArea * GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE &&
+            source.matchesGuidePictureInPictureAspectRatio()
+        ) {
             return source
         }
     }
@@ -170,6 +170,13 @@ private fun clampInt(
     maxValue: Int,
 ): Int {
     return value.coerceIn(minValue, maxValue)
+}
+
+private fun GuidePictureInPictureLaunchBounds.matchesGuidePictureInPictureAspectRatio(): Boolean {
+    if (isEmpty) return false
+    val aspectRatio = width().toFloat() / height().coerceAtLeast(1)
+    return kotlin.math.abs(aspectRatio - GUIDE_VIDEO_PIP_ASPECT_RATIO) <=
+        GUIDE_VIDEO_PIP_ASPECT_RATIO_TOLERANCE
 }
 
 internal data class GuidePictureInPictureLaunchBounds(
