@@ -140,14 +140,14 @@ private fun BaGuideMemoryLobbyHeaderMetrics(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalArrangement = Arrangement.spacedBy(5.dp),
         maxItemsInEachRow = 4,
     ) {
         BaGuideMemoryLobbyMetricPill(
             label = matchedLabel,
             value = matchedCount,
-            color = MiuixTheme.colorScheme.onBackground,
+            color = Color(0xFF6366F1),
         )
         BaGuideMemoryLobbyMetricPill(
             label = favoriteLabel,
