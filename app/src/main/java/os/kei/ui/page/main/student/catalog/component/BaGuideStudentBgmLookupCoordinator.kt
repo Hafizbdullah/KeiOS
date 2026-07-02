@@ -71,7 +71,10 @@ internal class BaGuideStudentBgmLookupCoordinator(
         item: BaGuideStudentBgmResolvedItem
     ) {
         _states.update { states ->
-            states + (entry.contentId to BaGuideStudentBgmLookupState.Ready(item))
+            states.withUpdatedBgmLookupState(
+                contentId = entry.contentId,
+                state = BaGuideStudentBgmLookupState.Ready(item),
+            )
         }
     }
 
@@ -102,9 +105,11 @@ internal class BaGuideStudentBgmLookupCoordinator(
                 cachePrewarmCheckedContentIds += batch.map { entry -> entry.contentId }
                 if (cached.isNotEmpty()) {
                     _states.update { states ->
-                        states + cached.associate { (contentId, item) ->
-                            contentId to BaGuideStudentBgmLookupState.Ready(item)
-                        }
+                        states.withInsertedBgmLookupStates(
+                            cached.map { (contentId, item) ->
+                                contentId to BaGuideStudentBgmLookupState.Ready(item)
+                            },
+                        )
                     }
                 }
                 yield()
@@ -152,9 +157,11 @@ internal class BaGuideStudentBgmLookupCoordinator(
                         resolved
                             .mapNotNull { (contentId, item) ->
                                 item?.let { contentId to BaGuideStudentBgmLookupState.Ready(it) }
-                            }.toMap()
+                            }
                     if (readyStates.isNotEmpty()) {
-                        _states.update { states -> states + readyStates }
+                        _states.update { states ->
+                            states.withUpdatedBgmLookupStates(readyStates)
+                        }
                     }
                     yield()
                 }
@@ -180,7 +187,7 @@ internal class BaGuideStudentBgmLookupCoordinator(
             if (current == BaGuideStudentBgmLookupState.Loading) return
             generation = lookupGeneration
             _states.update { states ->
-                states + (contentId to BaGuideStudentBgmLookupState.Loading)
+                states.withUpdatedBgmLookupState(contentId, BaGuideStudentBgmLookupState.Loading)
             }
         }
         scope.launch {
@@ -202,13 +209,15 @@ internal class BaGuideStudentBgmLookupCoordinator(
             if (callbacks.isEmpty() && generation != lookupGeneration) return@launch
             if (allowNetwork || resolved != null) {
                 _states.update { states ->
-                    states + (
-                            contentId to if (resolved == null) {
+                    states.withUpdatedBgmLookupState(
+                        contentId = contentId,
+                        state =
+                            if (resolved == null) {
                                 BaGuideStudentBgmLookupState.Missing
                             } else {
                                 BaGuideStudentBgmLookupState.Ready(resolved)
-                            }
-                            )
+                            },
+                    )
                 }
             } else {
                 _states.update { states -> states - contentId }
@@ -226,4 +235,42 @@ internal class BaGuideStudentBgmLookupCoordinator(
             Result.failure(error)
         }
     }
+}
+
+private fun Map<Long, BaGuideStudentBgmLookupState>.withUpdatedBgmLookupState(
+    contentId: Long,
+    state: BaGuideStudentBgmLookupState,
+): Map<Long, BaGuideStudentBgmLookupState> {
+    if (this[contentId] == state) return this
+    return this + (contentId to state)
+}
+
+private fun Map<Long, BaGuideStudentBgmLookupState>.withUpdatedBgmLookupStates(
+    updates: List<Pair<Long, BaGuideStudentBgmLookupState>>,
+): Map<Long, BaGuideStudentBgmLookupState> {
+    if (updates.isEmpty()) return this
+    val changed =
+        updates.any { (contentId, state) ->
+            this[contentId] != state
+        }
+    if (!changed) return this
+    val next = LinkedHashMap(this)
+    updates.forEach { (contentId, state) ->
+        next[contentId] = state
+    }
+    return next
+}
+
+private fun Map<Long, BaGuideStudentBgmLookupState>.withInsertedBgmLookupStates(
+    updates: List<Pair<Long, BaGuideStudentBgmLookupState>>,
+): Map<Long, BaGuideStudentBgmLookupState> {
+    if (updates.isEmpty()) return this
+    var next: LinkedHashMap<Long, BaGuideStudentBgmLookupState>? = null
+    updates.forEach { (contentId, state) ->
+        if (this[contentId] == null) {
+            val target = next ?: LinkedHashMap(this).also { next = it }
+            target[contentId] = state
+        }
+    }
+    return next ?: this
 }

@@ -14,6 +14,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaGuideStudentBgmLookupCoordinatorTest {
@@ -135,6 +136,70 @@ class BaGuideStudentBgmLookupCoordinatorTest {
         assertEquals(item.favorite.audioUrl, resolved?.favorite?.audioUrl)
         assertEquals(0, cacheCalls)
         assertEquals(0, networkCalls)
+    }
+
+    @Test
+    fun `mark ready skips state map replacement when state is unchanged`() = runBlocking {
+        val entry = catalogEntry(contentId = 31L)
+        val item = resolvedItem("same.mp3")
+        val coordinator =
+            BaGuideStudentBgmLookupCoordinator(
+                scope = CoroutineScope(Dispatchers.Unconfined),
+                ioDispatcher = Dispatchers.Unconfined,
+                cachedLoader = { null },
+                networkLoader = { null },
+            )
+
+        coordinator.markReadyFromFavorite(entry, item)
+        val firstStateMap = coordinator.states.value
+        coordinator.markReadyFromFavorite(entry, item)
+
+        assertEquals(firstStateMap, coordinator.states.value)
+        assertSame(firstStateMap, coordinator.states.value)
+    }
+
+    @Test
+    fun `cache prewarm does not replace active loading state`() = runTest {
+        val entry = catalogEntry(contentId = 32L)
+        val cachedItem = resolvedItem("cached-race.mp3")
+        val networkItem = resolvedItem("network-race.mp3")
+        val cacheStarted = CompletableDeferred<Unit>()
+        val cacheRelease = CompletableDeferred<Unit>()
+        val networkRelease = CompletableDeferred<BaGuideStudentBgmResolvedItem?>()
+        val coordinator =
+            BaGuideStudentBgmLookupCoordinator(
+                scope = this,
+                ioDispatcher = Dispatchers.Unconfined,
+                cachedLoader = {
+                    cacheStarted.complete(Unit)
+                    cacheRelease.await()
+                    cachedItem
+                },
+                networkLoader = {
+                    networkRelease.await()
+                },
+            )
+
+        coordinator.prewarmCached(listOf(entry))
+        advanceUntilIdle()
+        cacheStarted.await()
+        coordinator.resolveEntry(entry, allowNetwork = true) {}
+        advanceUntilIdle()
+        val loadingStateMap = coordinator.states.value
+
+        cacheRelease.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(BaGuideStudentBgmLookupState.Loading, coordinator.states.value[entry.contentId])
+        assertSame(loadingStateMap, coordinator.states.value)
+
+        networkRelease.complete(networkItem)
+        advanceUntilIdle()
+        val ready =
+            assertIs<BaGuideStudentBgmLookupState.Ready>(
+                coordinator.states.value.getValue(entry.contentId),
+            )
+        assertEquals(networkItem.favorite.audioUrl, ready.item.favorite.audioUrl)
     }
 
     @Test

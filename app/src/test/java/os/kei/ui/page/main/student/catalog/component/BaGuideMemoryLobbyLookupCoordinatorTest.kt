@@ -13,6 +13,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaGuideMemoryLobbyLookupCoordinatorTest {
@@ -116,6 +117,51 @@ class BaGuideMemoryLobbyLookupCoordinatorTest {
 
             assertEquals(BaGuideMemoryLobbyLookupState.Missing, coordinator.states.value[entry.contentId])
             assertEquals(0, networkCalls)
+        }
+
+    @Test
+    fun `cache prewarm does not replace active loading state`() =
+        runTest {
+            val entry = catalogEntry(contentId = 5L)
+            val cachedItem = resolvedItem("https://example.com/cached-race.png")
+            val networkItem = resolvedItem("https://example.com/network-race.png")
+            val cacheStarted = CompletableDeferred<Unit>()
+            val cacheRelease = CompletableDeferred<Unit>()
+            val networkRelease = CompletableDeferred<BaGuideMemoryLobbyResolvedItem?>()
+            val coordinator =
+                BaGuideMemoryLobbyLookupCoordinator(
+                    scope = this,
+                    ioDispatcher = Dispatchers.Unconfined,
+                    cachedLoader = {
+                        cacheStarted.complete(Unit)
+                        cacheRelease.await()
+                        BaGuideMemoryLobbyCachedLookupResult.Ready(cachedItem)
+                    },
+                    networkLoader = {
+                        networkRelease.await()
+                    },
+                )
+
+            coordinator.prewarmCached(listOf(entry))
+            advanceUntilIdle()
+            cacheStarted.await()
+            coordinator.resolveEntry(entry, allowNetwork = true)
+            advanceUntilIdle()
+            val loadingStateMap = coordinator.states.value
+
+            cacheRelease.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(BaGuideMemoryLobbyLookupState.Loading, coordinator.states.value[entry.contentId])
+            assertSame(loadingStateMap, coordinator.states.value)
+
+            networkRelease.complete(networkItem)
+            advanceUntilIdle()
+            val ready =
+                assertIs<BaGuideMemoryLobbyLookupState.Ready>(
+                    coordinator.states.value.getValue(entry.contentId),
+                )
+            assertEquals(networkItem.galleryItems.single().mediaUrl, ready.item.galleryItems.single().mediaUrl)
         }
 
     private fun catalogEntry(contentId: Long): BaGuideCatalogEntry =

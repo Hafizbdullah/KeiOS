@@ -101,13 +101,7 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
                     cachePrewarmCheckedContentIds += batch.map { entry -> entry.contentId }
                     if (cachedStates.isNotEmpty()) {
                         mutableStates.update { states ->
-                            var nextStates = states
-                            cachedStates.forEach { (contentId, state) ->
-                                if (nextStates[contentId] == null) {
-                                    nextStates = nextStates + (contentId to state)
-                                }
-                            }
-                            nextStates
+                            states.withInsertedMemoryLobbyLookupStates(cachedStates)
                         }
                     }
                     yield()
@@ -159,9 +153,11 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
                                 } else {
                                     BaGuideMemoryLobbyLookupState.Ready(item)
                                 }
-                            }.toMap()
+                            }
                     if (nextStates.isNotEmpty()) {
-                        mutableStates.update { states -> states + nextStates }
+                        mutableStates.update { states ->
+                            states.withUpdatedMemoryLobbyLookupStates(nextStates)
+                        }
                     }
                     yield()
                 }
@@ -187,7 +183,7 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
             if (current == BaGuideMemoryLobbyLookupState.Loading) return
             generation = lookupGeneration
             mutableStates.update { states ->
-                states + (contentId to BaGuideMemoryLobbyLookupState.Loading)
+                states.withUpdatedMemoryLobbyLookupState(contentId, BaGuideMemoryLobbyLookupState.Loading)
             }
         }
         scope.launch {
@@ -213,12 +209,14 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
             if (callbacks.isEmpty() && generation != lookupGeneration) return@launch
             if (allowNetwork || resolved != null || cachedResult == BaGuideMemoryLobbyCachedLookupResult.FreshMissing) {
                 mutableStates.update { states ->
-                    states + (
-                        contentId to if (resolved == null) {
-                            BaGuideMemoryLobbyLookupState.Missing
-                        } else {
-                            BaGuideMemoryLobbyLookupState.Ready(resolved)
-                        }
+                    states.withUpdatedMemoryLobbyLookupState(
+                        contentId = contentId,
+                        state =
+                            if (resolved == null) {
+                                BaGuideMemoryLobbyLookupState.Missing
+                            } else {
+                                BaGuideMemoryLobbyLookupState.Ready(resolved)
+                            },
                     )
                 }
             } else {
@@ -241,3 +239,41 @@ internal class BaGuideMemoryLobbyLookupCoordinator(
 
 private fun BaGuideMemoryLobbyCachedLookupResult.readyItemOrNull(): BaGuideMemoryLobbyResolvedItem? =
     (this as? BaGuideMemoryLobbyCachedLookupResult.Ready)?.item
+
+private fun Map<Long, BaGuideMemoryLobbyLookupState>.withUpdatedMemoryLobbyLookupState(
+    contentId: Long,
+    state: BaGuideMemoryLobbyLookupState,
+): Map<Long, BaGuideMemoryLobbyLookupState> {
+    if (this[contentId] == state) return this
+    return this + (contentId to state)
+}
+
+private fun Map<Long, BaGuideMemoryLobbyLookupState>.withUpdatedMemoryLobbyLookupStates(
+    updates: List<Pair<Long, BaGuideMemoryLobbyLookupState>>,
+): Map<Long, BaGuideMemoryLobbyLookupState> {
+    if (updates.isEmpty()) return this
+    val changed =
+        updates.any { (contentId, state) ->
+            this[contentId] != state
+        }
+    if (!changed) return this
+    val next = LinkedHashMap(this)
+    updates.forEach { (contentId, state) ->
+        next[contentId] = state
+    }
+    return next
+}
+
+private fun Map<Long, BaGuideMemoryLobbyLookupState>.withInsertedMemoryLobbyLookupStates(
+    updates: List<Pair<Long, BaGuideMemoryLobbyLookupState>>,
+): Map<Long, BaGuideMemoryLobbyLookupState> {
+    if (updates.isEmpty()) return this
+    var next: LinkedHashMap<Long, BaGuideMemoryLobbyLookupState>? = null
+    updates.forEach { (contentId, state) ->
+        if (this[contentId] == null) {
+            val target = next ?: LinkedHashMap(this).also { next = it }
+            target[contentId] = state
+        }
+    }
+    return next ?: this
+}

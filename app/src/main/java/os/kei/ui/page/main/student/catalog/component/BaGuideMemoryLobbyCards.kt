@@ -604,15 +604,21 @@ private fun BaGuideMemoryLobbyVideoGroup(
             normalizeGuideMediaSource(staticPreview.ifBlank { videoPreview })
         }
     var videoSourceRect by remember(displayMediaUrl) { mutableStateOf<Rect?>(null) }
+    val fallbackOptionLabels =
+        List(items.size.coerceAtLeast(1)) { index ->
+            stringResource(R.string.guide_gallery_video_format, index + 1)
+        }
     val optionLabels =
-        if (items.size <= 1) {
-            listOf(stringResource(R.string.guide_gallery_video_format, 1))
-        } else {
-            items.mapIndexed { index, item ->
-                item.title
-                    .trim()
-                    .takeIf { it.isNotBlank() }
-                    ?: stringResource(R.string.guide_gallery_video_format, index + 1)
+        remember(items, fallbackOptionLabels) {
+            if (items.size <= 1) {
+                listOf(fallbackOptionLabels.first())
+            } else {
+                items.mapIndexed { index, item ->
+                    item.title
+                        .trim()
+                        .takeIf { it.isNotBlank() }
+                        ?: fallbackOptionLabels.getOrElse(index) { fallbackOptionLabels.first() }
+                }
             }
         }
     val openPictureInPicture = {

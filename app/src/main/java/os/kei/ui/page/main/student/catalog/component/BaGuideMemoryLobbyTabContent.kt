@@ -95,6 +95,10 @@ internal fun BaGuideMemoryLobbyTabContent(
                 favoritesHidden = favoritesHidden,
             )
         }
+    val visibleFilteredContentIds =
+        remember(visibleFilteredEntries) {
+            visibleFilteredEntries.mapTo(LinkedHashSet()) { entry -> entry.contentId }
+        }
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listStateHolder =
         rememberBaGuideCatalogTabListState(
@@ -114,28 +118,29 @@ internal fun BaGuideMemoryLobbyTabContent(
     var expandedContentIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     val favoriteCount = favoriteContentIds.size
     val headerCounts =
-        remember(visibleFilteredEntries, lookupStates, favoriteCount) {
+        remember(visibleFilteredContentIds, lookupStates, favoriteCount) {
+            var readyCount = 0
+            var cachedCount = 0
+            lookupStates.forEach { (contentId, state) ->
+                if (contentId in visibleFilteredContentIds && state is BaGuideMemoryLobbyLookupState.Ready) {
+                    readyCount += 1
+                    if (state.item.fromCache) {
+                        cachedCount += 1
+                    }
+                }
+            }
             BaGuideMemoryLobbyHeaderCounts(
-                readyCount =
-                    visibleFilteredEntries.count { entry ->
-                        lookupStates[entry.contentId] is BaGuideMemoryLobbyLookupState.Ready
-                    },
+                readyCount = readyCount,
                 favoriteCount = favoriteCount,
-                cachedCount =
-                    visibleFilteredEntries.count { entry ->
-                        (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)
-                            ?.item
-                            ?.fromCache == true
-                    },
+                cachedCount = cachedCount,
             )
         }
 
     LaunchedEffect(catalogSyncedAtMs) {
         lookupCoordinator.clear()
     }
-    LaunchedEffect(visibleFilteredEntries) {
-        val visibleContentIds = visibleFilteredEntries.mapTo(mutableSetOf()) { entry -> entry.contentId }
-        expandedContentIds = expandedContentIds.filter { contentId -> contentId in visibleContentIds }.toSet()
+    LaunchedEffect(visibleFilteredContentIds) {
+        expandedContentIds = expandedContentIds.filter { contentId -> contentId in visibleFilteredContentIds }.toSet()
     }
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > consumedScrollToTopSignal && isPageActive) {
