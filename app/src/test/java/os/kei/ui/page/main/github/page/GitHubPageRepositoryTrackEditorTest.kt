@@ -22,32 +22,27 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class GitHubPageRepositoryTrackEditorTest {
-    private val repository = GitHubPageRepository(defaultDispatcher = Dispatchers.Unconfined)
+    @Test
+    fun `repository construction keeps network clients lazy in plain unit tests`() {
+        assertIs<GitHubPageRepository>(repository())
+    }
 
     @Test
-    fun `github source rejects non github url`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
-                sourceMode = GitHubTrackedSourceMode.GitHubRepository,
+    fun `github source rejects non github url`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 repoUrl = "https://telegram.org/dl/android/apk",
                 packageName = "org.telegram.messenger",
-                preferPreRelease = false,
-                alwaysShowLatestReleaseDownloadButton = false,
-                checkActionsUpdates = false,
-                updateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
-                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
-                appList = emptyList()
-            )
+            ),
         )
 
         assertEquals(GitHubTrackEditorResult.InvalidRepository, result)
     }
 
     @Test
-    fun `direct apk source builds direct track and closes github options`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
+    fun `direct apk source builds direct track and closes github options`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 sourceMode = GitHubTrackedSourceMode.DirectApk,
                 repoUrl = "https://telegram.org/dl/android/apk-public-beta",
                 packageName = "org.telegram.messenger.beta",
@@ -56,9 +51,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 checkActionsUpdates = true,
                 updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
-                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
-                appList = emptyList()
-            )
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -68,19 +61,14 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals("dl-android-apk-public-beta", item.repo)
         assertEquals("org.telegram.messenger.beta", item.packageName)
         assertEquals(true, item.preferPreRelease)
-        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
-        assertEquals(false, item.checkActionsUpdates)
+        assertGithubOnlyOptionsClosed(item)
         assertEquals(GitHubTrackedUpdateIntervalMode.Hours6, item.updateIntervalMode)
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            item.actionsUpdateIntervalMode
-        )
     }
 
     @Test
-    fun `git repository source builds host scoped track and closes github options`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
+    fun `git repository source builds host scoped track and closes github options`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 sourceMode = GitHubTrackedSourceMode.GitRepository,
                 repoUrl = "git@gitee.com:demo/app.git",
                 packageName = "com.demo.app",
@@ -90,8 +78,7 @@ class GitHubPageRepositoryTrackEditorTest {
                 updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours3,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
-                appList = emptyList()
-            )
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -99,37 +86,30 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(GitHubTrackedSourceMode.GitRepository, item.sourceMode)
         assertEquals("gitee.com/demo", item.owner)
         assertEquals("app", item.repo)
-        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
-        assertEquals(false, item.checkActionsUpdates)
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            item.actionsUpdateIntervalMode
-        )
+        assertGithubOnlyOptionsClosed(item)
         assertEquals(GitHubTrackedPreciseApkVersionMode.Enabled, item.preciseApkVersionMode)
     }
 
     @Test
-    fun `gitee git repository source builds pronto track with package bridge`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
+    fun `gitee git repository source builds pronto track with package bridge`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 sourceMode = GitHubTrackedSourceMode.GitRepository,
                 repoUrl = "https://gitee.com/hugedog233/Pronto",
                 packageName = "com.mt.pronto",
-                preferPreRelease = false,
                 alwaysShowLatestReleaseDownloadButton = true,
                 checkActionsUpdates = true,
                 updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
-                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
                 appList =
                     listOf(
                         InstalledAppItem(
                             label = "Pronto",
                             packageName = "com.mt.pronto",
                             isSystemApp = false,
-                        )
-                    )
-            )
+                        ),
+                    ),
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -140,18 +120,13 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals("Pronto", item.repo)
         assertEquals("com.mt.pronto", item.packageName)
         assertEquals("Pronto", item.appLabel)
-        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
-        assertEquals(false, item.checkActionsUpdates)
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            item.actionsUpdateIntervalMode
-        )
+        assertGithubOnlyOptionsClosed(item)
     }
 
     @Test
-    fun `fdroid source builds normalized track and preserves fdroid config`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
+    fun `fdroid source builds normalized track and preserves fdroid config`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 sourceMode = GitHubTrackedSourceMode.FdroidRepository,
                 repoUrl = "https://f-droid.org/packages/org.fdroid.fdroid/",
                 packageName = "",
@@ -161,14 +136,14 @@ class GitHubPageRepositoryTrackEditorTest {
                 updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours12,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
-                fdroidConfig = FdroidTrackedAppConfig(
-                    selectionMode = FdroidVersionSelectionMode.HighestVersionCode,
-                    apkNameRegex = "universal",
-                    trustPolicy = FdroidTrustPolicy.RequireApkHash,
-                    antiFeaturePolicy = FdroidAntiFeaturePolicy.HideTracking,
-                ),
-                appList = emptyList()
-            )
+                fdroidConfig =
+                    FdroidTrackedAppConfig(
+                        selectionMode = FdroidVersionSelectionMode.HighestVersionCode,
+                        apkNameRegex = "universal",
+                        trustPolicy = FdroidTrustPolicy.RequireApkHash,
+                        antiFeaturePolicy = FdroidAntiFeaturePolicy.HideTracking,
+                    ),
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -179,41 +154,35 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals("repo", item.repo)
         assertEquals("org.fdroid.fdroid", item.packageName)
         assertEquals("org.fdroid.fdroid", item.appLabel)
-        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
-        assertEquals(false, item.checkActionsUpdates)
-        assertEquals(
-            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-            item.actionsUpdateIntervalMode
-        )
+        assertGithubOnlyOptionsClosed(item)
         assertEquals(FdroidVersionSelectionMode.HighestVersionCode, item.fdroidConfig.selectionMode)
         assertEquals("universal", item.fdroidConfig.apkNameRegex)
         assertEquals(FdroidTrustPolicy.RequireApkHash, item.fdroidConfig.trustPolicy)
         assertEquals(FdroidAntiFeaturePolicy.HideTracking, item.fdroidConfig.antiFeaturePolicy)
         assertEquals(
             "https://f-droid.org/packages/org.fdroid.fdroid/",
-            item.fdroidConfig.packagePageUrl
+            item.fdroidConfig.packagePageUrl,
         )
     }
 
     @Test
-    fun `fdroid source preserves explicit package page url for custom repository`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
+    fun `fdroid source preserves explicit package page url for custom repository`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 sourceMode = GitHubTrackedSourceMode.FdroidRepository,
                 repoUrl = "https://repo.example/fdroid/repo",
                 packageName = "com.example.app",
-                preferPreRelease = false,
                 alwaysShowLatestReleaseDownloadButton = true,
                 checkActionsUpdates = true,
                 updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours12,
                 actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes15,
                 preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Enabled,
-                fdroidConfig = FdroidTrackedAppConfig(
-                    packagePageUrl = "https://repo.example/apps/com.example.app",
-                    repoPresetId = "custom",
-                ),
-                appList = emptyList(),
-            )
+                fdroidConfig =
+                    FdroidTrackedAppConfig(
+                        packagePageUrl = "https://repo.example/apps/com.example.app",
+                        repoPresetId = "custom",
+                    ),
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -228,23 +197,13 @@ class GitHubPageRepositoryTrackEditorTest {
     }
 
     @Test
-    fun `track editor draft preserves ignore policy`() = runBlocking {
-        val result = repository.buildTrackedItem(
-            GitHubTrackEditorDraft(
-                sourceMode = GitHubTrackedSourceMode.GitHubRepository,
-                repoUrl = "https://github.com/demo/app",
-                packageName = "com.demo.app",
-                preferPreRelease = false,
-                alwaysShowLatestReleaseDownloadButton = false,
-                checkActionsUpdates = false,
-                updateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
-                actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
-                preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.FollowGlobal,
+    fun `track editor draft preserves ignore policy`() {
+        val result = buildTrackedItem(
+            trackDraft(
                 ignoreMode = GitHubTrackedIgnoreMode.CurrentPreRelease,
                 ignoredStableReleaseKey = "release|v2.0.0",
                 ignoredPreReleaseKey = "release|v2.1.0-beta",
-                appList = emptyList()
-            )
+            ),
         )
 
         val item = assertIs<GitHubTrackEditorResult.Ready>(result).item
@@ -256,36 +215,38 @@ class GitHubPageRepositoryTrackEditorTest {
 
     @Test
     fun `import preview summarizes github git and direct apk source counts`() = runBlocking {
-        val preview = repository.buildTrackedItemsImportPreview(
-            payload = GitHubTrackedItemsImportPayload(
-                items = listOf(
-                    GitHubTrackedApp(
-                        repoUrl = "https://github.com/demo/app",
-                        owner = "demo",
-                        repo = "app",
-                        packageName = "com.demo.app",
-                        appLabel = "Demo"
-                    ),
-                    GitHubTrackedApp(
-                        repoUrl = "https://telegram.org/dl/android/apk",
-                        owner = "telegram.org",
-                        repo = "dl-android-apk",
-                        packageName = "org.telegram.messenger",
-                        appLabel = "Telegram",
-                        sourceMode = GitHubTrackedSourceMode.DirectApk
-                    ),
-                    GitHubTrackedApp(
-                        repoUrl = "https://gitee.com/demo/git-app",
-                        owner = "gitee.com/demo",
-                        repo = "git-app",
-                        packageName = "com.demo.git",
-                        appLabel = "Git",
-                        sourceMode = GitHubTrackedSourceMode.GitRepository
-                    )
+        val preview = repository().buildTrackedItemsImportPreview(
+            payload =
+                GitHubTrackedItemsImportPayload(
+                    items =
+                        listOf(
+                            GitHubTrackedApp(
+                                repoUrl = "https://github.com/demo/app",
+                                owner = "demo",
+                                repo = "app",
+                                packageName = "com.demo.app",
+                                appLabel = "Demo",
+                            ),
+                            GitHubTrackedApp(
+                                repoUrl = "https://telegram.org/dl/android/apk",
+                                owner = "telegram.org",
+                                repo = "dl-android-apk",
+                                packageName = "org.telegram.messenger",
+                                appLabel = "Telegram",
+                                sourceMode = GitHubTrackedSourceMode.DirectApk,
+                            ),
+                            GitHubTrackedApp(
+                                repoUrl = "https://gitee.com/demo/git-app",
+                                owner = "gitee.com/demo",
+                                repo = "git-app",
+                                packageName = "com.demo.git",
+                                appLabel = "Git",
+                                sourceMode = GitHubTrackedSourceMode.GitRepository,
+                            ),
+                        ),
+                    sourceCount = 3,
                 ),
-                sourceCount = 3
-            ),
-            existingItems = emptyList()
+            existingItems = emptyList(),
         )
 
         assertEquals(1, preview.githubRepositoryCount)
@@ -297,7 +258,7 @@ class GitHubPageRepositoryTrackEditorTest {
     @Test
     fun `app picker state derives candidates off ui component`() = runBlocking {
         val result =
-            repository.buildAppPickerState(
+            repository().buildAppPickerState(
                 GitHubTrackAppPickerInput(
                     appList =
                         listOf(
@@ -331,5 +292,59 @@ class GitHubPageRepositoryTrackEditorTest {
         assertEquals(listOf("com.demo.alpha", "com.demo.beta"), result.filteredApps.map { it.packageName })
         assertEquals(listOf("com.demo.alpha", "com.demo.beta"), result.filteredIconPreloadPackages)
         assertEquals(false, result.deriving)
+    }
+
+    private fun buildTrackedItem(draft: GitHubTrackEditorDraft): GitHubTrackEditorResult =
+        runBlocking {
+            repository().buildTrackedItem(draft)
+        }
+
+    private fun repository(): GitHubPageRepository =
+        GitHubPageRepository(defaultDispatcher = Dispatchers.Unconfined)
+
+    private fun trackDraft(
+        sourceMode: GitHubTrackedSourceMode = GitHubTrackedSourceMode.GitHubRepository,
+        repoUrl: String = "https://github.com/demo/app",
+        packageName: String = "com.demo.app",
+        appLabelOverride: String = "",
+        preferPreRelease: Boolean = false,
+        alwaysShowLatestReleaseDownloadButton: Boolean = false,
+        checkActionsUpdates: Boolean = false,
+        updateIntervalMode: GitHubTrackedUpdateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
+        actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode =
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+        preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode =
+            GitHubTrackedPreciseApkVersionMode.FollowGlobal,
+        ignoreMode: GitHubTrackedIgnoreMode = GitHubTrackedIgnoreMode.None,
+        ignoredStableReleaseKey: String = "",
+        ignoredPreReleaseKey: String = "",
+        fdroidConfig: FdroidTrackedAppConfig = FdroidTrackedAppConfig(),
+        appList: List<InstalledAppItem> = emptyList(),
+    ): GitHubTrackEditorDraft =
+        GitHubTrackEditorDraft(
+            sourceMode = sourceMode,
+            repoUrl = repoUrl,
+            packageName = packageName,
+            appLabelOverride = appLabelOverride,
+            preferPreRelease = preferPreRelease,
+            alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
+            checkActionsUpdates = checkActionsUpdates,
+            updateIntervalMode = updateIntervalMode,
+            actionsUpdateIntervalMode = actionsUpdateIntervalMode,
+            preciseApkVersionMode = preciseApkVersionMode,
+            ignoreMode = ignoreMode,
+            ignoredStableReleaseKey = ignoredStableReleaseKey,
+            ignoredPreReleaseKey = ignoredPreReleaseKey,
+            fdroidConfig = fdroidConfig,
+            appList = appList,
+        )
+
+    private fun assertGithubOnlyOptionsClosed(item: GitHubTrackedApp) {
+        assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
+        assertEquals(false, item.checkActionsUpdates)
+        assertEquals(
+            GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
+            item.actionsUpdateIntervalMode,
+        )
     }
 }
