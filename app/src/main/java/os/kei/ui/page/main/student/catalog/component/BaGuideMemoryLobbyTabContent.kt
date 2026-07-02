@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +35,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
+import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
@@ -84,11 +86,20 @@ internal fun BaGuideMemoryLobbyTabContent(
     val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
     val allStudentEntries = derivedState.allStudentEntries
     val filteredEntries = derivedState.filteredEntries
+    var favoritesHidden by rememberSaveable { mutableStateOf(false) }
+    val visibleFilteredEntries =
+        remember(filteredEntries, favoriteCatalogEntries, favoritesHidden) {
+            visibleMemoryLobbyEntriesWithFavoriteVisibility(
+                filteredEntries = filteredEntries,
+                favoriteCatalogEntries = favoriteCatalogEntries,
+                favoritesHidden = favoritesHidden,
+            )
+        }
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listStateHolder =
         rememberBaGuideCatalogTabListState(
             tab = BaGuideCatalogTab.Student,
-            filteredEntries = filteredEntries,
+            filteredEntries = visibleFilteredEntries,
             loading = effectiveLoading,
             isPageActive = isPageActive,
         )
@@ -96,16 +107,16 @@ internal fun BaGuideMemoryLobbyTabContent(
     val displayedEntries = listStateHolder.displayedEntries
     val showError = !error.isNullOrBlank()
     val showLoading = effectiveLoading && allStudentEntries.isEmpty()
-    val showEmpty = !effectiveLoading && filteredEntries.isEmpty()
+    val showEmpty = !effectiveLoading && visibleFilteredEntries.isEmpty()
     val entryStartIndex = if (showError) MEMORY_LOBBY_ENTRY_START_INDEX + 1 else MEMORY_LOBBY_ENTRY_START_INDEX
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var consumedScrollToTopSignal by remember { mutableStateOf(0) }
     var expandedContentIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
     val headerCounts =
-        remember(allStudentEntries, filteredEntries, favoriteCatalogEntries, lookupStates) {
+        remember(allStudentEntries, visibleFilteredEntries, favoriteCatalogEntries, lookupStates) {
             BaGuideMemoryLobbyHeaderCounts(
                 readyCount =
-                    filteredEntries.count { entry ->
+                    visibleFilteredEntries.count { entry ->
                         lookupStates[entry.contentId] is BaGuideMemoryLobbyLookupState.Ready
                     },
                 favoriteCount =
@@ -113,7 +124,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                         favoriteCatalogEntries.containsKey(entry.contentId)
                     },
                 cachedCount =
-                    filteredEntries.count { entry ->
+                    visibleFilteredEntries.count { entry ->
                         (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)
                             ?.item
                             ?.fromCache == true
@@ -124,8 +135,8 @@ internal fun BaGuideMemoryLobbyTabContent(
     LaunchedEffect(catalogSyncedAtMs) {
         lookupCoordinator.clear()
     }
-    LaunchedEffect(filteredEntries) {
-        val visibleContentIds = filteredEntries.mapTo(mutableSetOf()) { entry -> entry.contentId }
+    LaunchedEffect(visibleFilteredEntries) {
+        val visibleContentIds = visibleFilteredEntries.mapTo(mutableSetOf()) { entry -> entry.contentId }
         expandedContentIds = expandedContentIds.filter { contentId -> contentId in visibleContentIds }.toSet()
     }
     LaunchedEffect(scrollToTopSignal) {
@@ -227,12 +238,18 @@ internal fun BaGuideMemoryLobbyTabContent(
             ) {
                 BaGuideMemoryLobbyHeader(
                     totalCount = allStudentEntries.size,
-                    displayedCount = filteredEntries.size,
+                    displayedCount = visibleFilteredEntries.size,
                     readyCount = headerCounts.readyCount,
                     favoriteCount = headerCounts.favoriteCount,
                     cachedCount = headerCounts.cachedCount,
                     searchActive = searchQuery.isNotBlank(),
+                    favoritesHidden = favoritesHidden,
                     accent = accent,
+                    onToggleFavoritesHidden = {
+                        if (favoriteCatalogEntries.isNotEmpty()) {
+                            favoritesHidden = !favoritesHidden
+                        }
+                    },
                 )
             }
         }

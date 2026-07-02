@@ -1,8 +1,11 @@
 package os.kei.ui.page.main.student.catalog.component
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,8 +25,6 @@ import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
-import os.kei.ui.page.main.widget.core.AppOverviewCard
-import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -49,57 +50,95 @@ internal fun BaGuideStudentBgmHeader(
     displayedCount: Int,
     resolvedCount: Int,
     favoriteCount: Int,
-    loadingCount: Int,
     searchActive: Boolean,
-    accent: Color
+    favoritesHidden: Boolean,
+    accent: Color,
+    onToggleFavoritesHidden: () -> Unit,
 ) {
     val matchedCount = if (searchActive) displayedCount else totalCount
-    AppOverviewCard(
-        title = stringResource(R.string.ba_catalog_student_bgm_title),
-        subtitle = "",
+    val hasFavorites = favoriteCount > 0
+    AppSurfaceCard(
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.62f),
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
-        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
-        headerEndActions = {
-            if (loadingCount > 0) {
-                StatusPill(
-                    label = stringResource(R.string.ba_catalog_student_bgm_resolving_count, loadingCount),
-                    color = AppStatusColors.Refreshing,
-                    size = AppStatusPillSize.Compact
-                )
-            }
-            StatusPill(
-                label = stringResource(R.string.ba_catalog_student_bgm_ready_count, resolvedCount.coerceAtLeast(0)),
-                color = accent,
-                size = AppStatusPillSize.Compact
-            )
-        }
+        showIndication = hasFavorites,
+        onClick = if (hasFavorites) onToggleFavoritesHidden else null,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AppOverviewMetricTile(
-                label = stringResource(
+        BaGuideStudentBgmHeaderMetrics(
+            matchedLabel =
+                stringResource(
                     if (searchActive) {
                         R.string.ba_catalog_student_bgm_metric_matched
                     } else {
                         R.string.ba_catalog_student_bgm_metric_students
-                    }
+                    },
                 ),
-                value = matchedCount.coerceAtLeast(0).toString(),
-                valueColor = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
-            )
-            AppOverviewMetricTile(
-                label = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
-                value = favoriteCount.coerceAtLeast(0).toString(),
-                valueColor = Color(0xFFEC4899),
-                modifier = Modifier.weight(1f)
-            )
-        }
+            matchedCount = matchedCount,
+            favoriteLabel = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
+            favoriteCount = favoriteCount,
+            resolvedLabel = stringResource(R.string.ba_catalog_student_bgm_metric_resolved),
+            resolvedCount = resolvedCount,
+            favoritesHidden = favoritesHidden,
+            accent = accent,
+        )
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BaGuideStudentBgmHeaderMetrics(
+    matchedLabel: String,
+    matchedCount: Int,
+    favoriteLabel: String,
+    favoriteCount: Int,
+    resolvedLabel: String,
+    resolvedCount: Int,
+    favoritesHidden: Boolean,
+    accent: Color,
+) {
+    FlowRow(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+        maxItemsInEachRow = 3,
+    ) {
+        BaGuideStudentBgmMetricPill(
+            label = matchedLabel,
+            value = matchedCount,
+            color = Color(0xFF6366F1),
+        )
+        BaGuideStudentBgmMetricPill(
+            label = favoriteLabel,
+            value = favoriteCount,
+            color =
+                if (favoritesHidden) {
+                    MiuixTheme.colorScheme.onBackgroundVariant
+                } else {
+                    Color(0xFFEC4899)
+                },
+        )
+        BaGuideStudentBgmMetricPill(
+            label = resolvedLabel,
+            value = resolvedCount,
+            color = accent,
+        )
+    }
+}
+
+@Composable
+private fun BaGuideStudentBgmMetricPill(
+    label: String,
+    value: Int,
+    color: Color,
+) {
+    StatusPill(
+        label = "$label ${value.coerceAtLeast(0)}",
+        color = color,
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
+    )
 }
 
 @Composable

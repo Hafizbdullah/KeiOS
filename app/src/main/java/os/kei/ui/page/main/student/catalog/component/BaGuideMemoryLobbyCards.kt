@@ -98,13 +98,17 @@ internal fun BaGuideMemoryLobbyHeader(
     favoriteCount: Int,
     cachedCount: Int,
     searchActive: Boolean,
+    favoritesHidden: Boolean,
     accent: Color,
+    onToggleFavoritesHidden: () -> Unit,
 ) {
     val matchedCount = if (searchActive) displayedCount else totalCount
+    val hasFavorites = favoriteCount > 0
     AppSurfaceCard(
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.62f),
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
-        showIndication = false,
+        showIndication = hasFavorites,
+        onClick = if (hasFavorites) onToggleFavoritesHidden else null,
     ) {
         BaGuideMemoryLobbyHeaderMetrics(
             matchedLabel =
@@ -122,6 +126,7 @@ internal fun BaGuideMemoryLobbyHeader(
             readyCount = readyCount,
             cachedLabel = stringResource(R.string.ba_catalog_student_bgm_status_cached_detail),
             cachedCount = cachedCount,
+            favoritesHidden = favoritesHidden,
             accent = accent,
         )
     }
@@ -138,6 +143,7 @@ private fun BaGuideMemoryLobbyHeaderMetrics(
     readyCount: Int,
     cachedLabel: String,
     cachedCount: Int,
+    favoritesHidden: Boolean,
     accent: Color,
 ) {
     FlowRow(
@@ -157,7 +163,12 @@ private fun BaGuideMemoryLobbyHeaderMetrics(
         BaGuideMemoryLobbyMetricPill(
             label = favoriteLabel,
             value = favoriteCount,
-            color = Color(0xFFEC4899),
+            color =
+                if (favoritesHidden) {
+                    MiuixTheme.colorScheme.onBackgroundVariant
+                } else {
+                    Color(0xFFEC4899)
+                },
         )
         BaGuideMemoryLobbyMetricPill(
             label = readyLabel,

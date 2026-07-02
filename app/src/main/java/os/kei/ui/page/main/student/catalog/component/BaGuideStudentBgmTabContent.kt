@@ -18,9 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +47,8 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
+import os.kei.ui.page.main.student.catalog.state.favoriteStudentBgmEntryContentIds
+import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
@@ -114,13 +119,29 @@ internal fun BaGuideStudentBgmTabContent(
     val favoriteAudioUrls = derivedState.favoriteAudioUrls
     val allStudentEntries = derivedState.allStudentEntries
     val filteredEntries = derivedState.filteredEntries
+    var favoritesHidden by rememberSaveable { mutableStateOf(false) }
+    val favoriteContentIds =
+        remember(allStudentEntries, favoriteByNormalizedSourceUrl) {
+            favoriteStudentBgmEntryContentIds(
+                entries = allStudentEntries,
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+            )
+        }
+    val visibleFilteredEntries =
+        remember(filteredEntries, favoriteContentIds, favoritesHidden) {
+            visibleStudentBgmEntriesWithFavoriteVisibility(
+                filteredEntries = filteredEntries,
+                favoriteContentIds = favoriteContentIds,
+                favoritesHidden = favoritesHidden,
+            )
+        }
     val effectiveLoading = loading || (derivedState.deriving && allStudentEntries.isEmpty())
     val listState = rememberLazyListState()
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
-    LaunchedEffect(filteredEntries.size, tabState) {
-        tabState.resetVisibleCount(filteredEntries.size)
+    LaunchedEffect(visibleFilteredEntries.size, tabState) {
+        tabState.resetVisibleCount(visibleFilteredEntries.size)
     }
-    LaunchedEffect(isPageActive, listState, filteredEntries.size, snapshotFlowManager, tabState) {
+    LaunchedEffect(isPageActive, listState, visibleFilteredEntries.size, snapshotFlowManager, tabState) {
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
@@ -133,22 +154,22 @@ internal fun BaGuideStudentBgmTabContent(
                 )
             }.distinctUntilChanged()
             .collect { (lastVisible, totalCount, viewportItems) ->
-                if (tabState.visibleCount >= filteredEntries.size) return@collect
+                if (tabState.visibleCount >= visibleFilteredEntries.size) return@collect
                 if (totalCount <= 0) return@collect
                 val triggerIndex = (totalCount - 1 - STUDENT_BGM_LOAD_MORE_THRESHOLD).coerceAtLeast(0)
                 if (lastVisible < triggerIndex) return@collect
                 tabState.appendVisibleBatch(
-                    totalCount = filteredEntries.size,
+                    totalCount = visibleFilteredEntries.size,
                     viewportItems = viewportItems,
                 )
             }
     }
     val displayedEntries =
-        remember(filteredEntries, tabState.visibleCount) {
-            if (tabState.visibleCount >= filteredEntries.size) {
-                filteredEntries
+        remember(visibleFilteredEntries, tabState.visibleCount) {
+            if (tabState.visibleCount >= visibleFilteredEntries.size) {
+                visibleFilteredEntries
             } else {
-                filteredEntries.subList(0, tabState.visibleCount)
+                visibleFilteredEntries.subList(0, tabState.visibleCount)
             }
         }
     LaunchedEffect(isPageActive, listState, displayedEntries, snapshotFlowManager, lookupCoordinator) {
@@ -356,17 +377,22 @@ internal fun BaGuideStudentBgmTabContent(
                 ) {
                     BaGuideStudentBgmHeader(
                         totalCount = allStudentEntries.size,
-                        displayedCount = filteredEntries.size,
+                        displayedCount = visibleFilteredEntries.size,
                         resolvedCount = displayedBgmModel.resolvedCount,
-                        favoriteCount = favorites.size,
-                        loadingCount = displayedBgmModel.loadingCount,
+                        favoriteCount = favoriteContentIds.size,
                         searchActive = searchQuery.isNotBlank(),
+                        favoritesHidden = favoritesHidden,
                         accent = accent,
+                        onToggleFavoritesHidden = {
+                            if (favoriteContentIds.isNotEmpty()) {
+                                favoritesHidden = !favoritesHidden
+                            }
+                        },
                     )
                 }
             }
 
-            if (!effectiveLoading && filteredEntries.isEmpty()) {
+            if (!effectiveLoading && visibleFilteredEntries.isEmpty()) {
                 item(
                     key = "student-bgm-empty",
                     contentType = "student_bgm_status",

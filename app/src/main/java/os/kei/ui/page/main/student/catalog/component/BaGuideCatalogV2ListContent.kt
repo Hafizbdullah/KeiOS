@@ -2,20 +2,30 @@
 
 package os.kei.ui.page.main.student.catalog.component
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import os.kei.R
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
@@ -23,9 +33,14 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
+import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.status.StatusPill
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BaGuideCatalogV2ListContent(
@@ -46,11 +61,33 @@ internal fun BaGuideCatalogV2ListContent(
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit,
 ) {
+    var favoritesHidden by rememberSaveable(tab) { mutableStateOf(false) }
+    val studentFavoriteHeaderVisible = tab == BaGuideCatalogTab.Student
+    val visibleFilteredEntries =
+        remember(tab, derivedState.filteredEntries, favoriteCatalogEntries, favoritesHidden) {
+            if (studentFavoriteHeaderVisible) {
+                visibleCatalogEntriesWithFavoriteVisibility(
+                    filteredEntries = derivedState.filteredEntries,
+                    favoriteCatalogEntries = favoriteCatalogEntries,
+                    favoritesHidden = favoritesHidden,
+                )
+            } else {
+                derivedState.filteredEntries
+            }
+        }
+    val favoriteCount =
+        remember(derivedState.filteredEntries, favoriteCatalogEntries, studentFavoriteHeaderVisible) {
+            if (studentFavoriteHeaderVisible) {
+                derivedState.filteredEntries.count { entry -> favoriteCatalogEntries.containsKey(entry.contentId) }
+            } else {
+                0
+            }
+        }
     val effectiveLoading = loading || (derivedState.deriving && derivedState.filteredEntries.isEmpty())
     val tabListState =
         rememberBaGuideCatalogTabListState(
             tab = tab,
-            filteredEntries = derivedState.filteredEntries,
+            filteredEntries = visibleFilteredEntries,
             loading = effectiveLoading,
             isPageActive = isPageActive,
         )
@@ -97,11 +134,12 @@ internal fun BaGuideCatalogV2ListContent(
             return@LaunchedEffect
         }
         val entryStartIndex =
-            if (uiState.showError) {
-                1
-            } else {
-                0
-            }
+            (if (uiState.showError) 1 else 0) +
+                if (studentFavoriteHeaderVisible && !uiState.showLoading) {
+                    1
+                } else {
+                    0
+                }
         snapshotFlowManager
             .snapshotFlow {
                 val visibleItemIndices =
@@ -156,6 +194,23 @@ internal fun BaGuideCatalogV2ListContent(
                 AppAronaLoadingPanel(accent = accent)
             }
         }
+        if (studentFavoriteHeaderVisible && !uiState.showLoading) {
+            item(
+                key = "ba-guide-catalog-favorites-header-${tab.name}",
+                contentType = "ba_guide_catalog_favorites_header",
+            ) {
+                BaGuideCatalogFavoriteVisibilityHeader(
+                    totalCount = derivedState.filteredEntries.size,
+                    favoriteCount = favoriteCount,
+                    favoritesHidden = favoritesHidden,
+                    onToggleFavoritesHidden = {
+                        if (favoriteCount > 0) {
+                            favoritesHidden = !favoritesHidden
+                        }
+                    },
+                )
+            }
+        }
         if (uiState.showEmpty) {
             item(
                 key = "ba-guide-catalog-empty-${tab.name}",
@@ -180,4 +235,61 @@ internal fun BaGuideCatalogV2ListContent(
             )
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BaGuideCatalogFavoriteVisibilityHeader(
+    totalCount: Int,
+    favoriteCount: Int,
+    favoritesHidden: Boolean,
+    onToggleFavoritesHidden: () -> Unit,
+) {
+    val hasFavorites = favoriteCount > 0
+    AppSurfaceCard(
+        containerColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.62f),
+        borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
+        showIndication = hasFavorites,
+        onClick = if (hasFavorites) onToggleFavoritesHidden else null,
+    ) {
+        FlowRow(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+            maxItemsInEachRow = 2,
+        ) {
+            BaGuideCatalogFavoriteMetricPill(
+                label = stringResource(R.string.ba_catalog_student_bgm_metric_students),
+                value = totalCount,
+                color = Color(0xFF6366F1),
+            )
+            BaGuideCatalogFavoriteMetricPill(
+                label = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
+                value = favoriteCount,
+                color =
+                    if (favoritesHidden) {
+                        MiuixTheme.colorScheme.onBackgroundVariant
+                    } else {
+                        Color(0xFFEC4899)
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaGuideCatalogFavoriteMetricPill(
+    label: String,
+    value: Int,
+    color: Color,
+) {
+    StatusPill(
+        label = "$label ${value.coerceAtLeast(0)}",
+        color = color,
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
+    )
 }
