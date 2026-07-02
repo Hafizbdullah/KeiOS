@@ -200,8 +200,8 @@ internal fun BaGuideMemoryLobbyTabContent(
                     favoriteCount = allStudentEntries.count { entry ->
                         favoriteCatalogEntries.containsKey(entry.contentId)
                     },
-                    loadingCount = filteredEntries.count { entry ->
-                        lookupStates[entry.contentId] == BaGuideMemoryLobbyLookupState.Loading
+                    cachedCount = filteredEntries.count { entry ->
+                        (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)?.item?.fromCache == true
                     },
                     searchActive = searchQuery.isNotBlank(),
                     accent = accent,

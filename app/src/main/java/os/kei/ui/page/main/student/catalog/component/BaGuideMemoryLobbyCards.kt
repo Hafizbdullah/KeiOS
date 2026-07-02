@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,8 +54,6 @@ import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.isRenderableGalleryImageUrl
 import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
-import os.kei.ui.page.main.widget.core.AppOverviewCard
-import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -90,58 +91,94 @@ internal fun BaGuideMemoryLobbyHeader(
     displayedCount: Int,
     readyCount: Int,
     favoriteCount: Int,
-    loadingCount: Int,
+    cachedCount: Int,
     searchActive: Boolean,
     accent: Color,
 ) {
     val matchedCount = if (searchActive) displayedCount else totalCount
-    AppOverviewCard(
-        title = stringResource(R.string.ba_catalog_memory_lobby_title),
-        subtitle = stringResource(R.string.ba_catalog_memory_lobby_overview_subtitle),
+    AppSurfaceCard(
         containerColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.62f),
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
-        contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
-        headerEndActions = {
-            if (loadingCount > 0) {
-                StatusPill(
-                    label = stringResource(R.string.ba_catalog_memory_lobby_resolving_count, loadingCount),
-                    color = AppStatusColors.Refreshing,
-                    size = AppStatusPillSize.Compact,
-                )
-            }
-            StatusPill(
-                label = stringResource(R.string.ba_catalog_memory_lobby_ready_count, readyCount.coerceAtLeast(0)),
-                color = accent,
-                size = AppStatusPillSize.Compact,
-            )
-        },
+        showIndication = false,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppOverviewMetricTile(
-                label =
-                    stringResource(
-                        if (searchActive) {
-                            R.string.ba_catalog_student_bgm_metric_matched
-                        } else {
-                            R.string.ba_catalog_student_bgm_metric_students
-                        },
-                    ),
-                value = matchedCount.coerceAtLeast(0).toString(),
-                valueColor = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f),
-            )
-            AppOverviewMetricTile(
-                label = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
-                value = favoriteCount.coerceAtLeast(0).toString(),
-                valueColor = Color(0xFFEC4899),
-                modifier = Modifier.weight(1f),
-            )
-        }
+        BaGuideMemoryLobbyHeaderMetrics(
+            matchedLabel =
+                stringResource(
+                    if (searchActive) {
+                        R.string.ba_catalog_student_bgm_metric_matched
+                    } else {
+                        R.string.ba_catalog_student_bgm_metric_students
+                    },
+                ),
+            matchedCount = matchedCount,
+            favoriteLabel = stringResource(R.string.ba_catalog_student_bgm_metric_favorites),
+            favoriteCount = favoriteCount,
+            readyLabel = stringResource(R.string.ba_catalog_memory_lobby_status_ready),
+            readyCount = readyCount,
+            cachedLabel = stringResource(R.string.ba_catalog_student_bgm_status_cached_detail),
+            cachedCount = cachedCount,
+            accent = accent,
+        )
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BaGuideMemoryLobbyHeaderMetrics(
+    matchedLabel: String,
+    matchedCount: Int,
+    favoriteLabel: String,
+    favoriteCount: Int,
+    readyLabel: String,
+    readyCount: Int,
+    cachedLabel: String,
+    cachedCount: Int,
+    accent: Color,
+) {
+    FlowRow(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start),
+        verticalArrangement = Arrangement.spacedBy(5.dp),
+        maxItemsInEachRow = 4,
+    ) {
+        BaGuideMemoryLobbyMetricPill(
+            label = matchedLabel,
+            value = matchedCount,
+            color = MiuixTheme.colorScheme.onBackground,
+        )
+        BaGuideMemoryLobbyMetricPill(
+            label = favoriteLabel,
+            value = favoriteCount,
+            color = Color(0xFFEC4899),
+        )
+        BaGuideMemoryLobbyMetricPill(
+            label = readyLabel,
+            value = readyCount,
+            color = accent,
+        )
+        BaGuideMemoryLobbyMetricPill(
+            label = cachedLabel,
+            value = cachedCount,
+            color = MiuixTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun BaGuideMemoryLobbyMetricPill(
+    label: String,
+    value: Int,
+    color: Color,
+) {
+    StatusPill(
+        label = "$label ${value.coerceAtLeast(0)}",
+        color = color,
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 3.dp),
+    )
 }
 
 @Composable
