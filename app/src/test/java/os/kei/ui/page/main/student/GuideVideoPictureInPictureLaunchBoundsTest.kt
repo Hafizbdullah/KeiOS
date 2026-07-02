@@ -33,7 +33,7 @@ class GuideVideoPictureInPictureLaunchBoundsTest {
     }
 
     @Test
-    fun `large mismatched preview normalizes to video aspect ratio`() {
+    fun `large mismatched preview normalizes to larger video aspect ratio bounds`() {
         val source = GuidePictureInPictureLaunchBounds(84, 1222, 1196, 2038)
         val result = resolveGuidePictureInPictureLaunchBounds(
             windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
@@ -41,7 +41,22 @@ class GuideVideoPictureInPictureLaunchBoundsTest {
         )
         assertNotNull(result)
 
-        assertTrue(result.width() < source.width())
+        assertTrue(result.width() > source.width())
+        assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
+        assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856).contains(result))
+    }
+
+    @Test
+    fun `full width memory preview expands to larger readable pip launch rect`() {
+        val source = GuidePictureInPictureLaunchBounds(128, 1342, 1152, 1918)
+        val result = resolveGuidePictureInPictureLaunchBounds(
+            windowBounds = GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856),
+            sourceRectHint = source,
+        )
+        assertNotNull(result)
+
+        assertTrue(result.width() > source.width())
+        assertTrue(result.height() > source.height())
         assertEquals(16f / 9f, result.width().toFloat() / result.height().toFloat(), 0.02f)
         assertTrue(GuidePictureInPictureLaunchBounds(0, 0, 1280, 2856).contains(result))
     }

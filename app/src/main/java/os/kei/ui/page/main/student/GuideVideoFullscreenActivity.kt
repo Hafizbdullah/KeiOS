@@ -88,7 +88,7 @@ import top.yukonga.miuix.kmp.basic.Text
 private const val GUIDE_VIDEO_PIP_TAG = "GuideVideoPip"
 private const val GUIDE_VIDEO_PIP_DISMISS_FALLBACK_DELAY_MS = 900L
 
-class GuideVideoFullscreenActivity : ComponentActivity() {
+open class GuideVideoFullscreenActivity : ComponentActivity() {
     private val mediaRepository = GuideFullscreenMediaRepository()
     private val pictureInPictureModeState = mutableStateOf(false)
     private val pictureInPicturePlayWhenReadyState = mutableStateOf(false)
@@ -616,7 +616,13 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
                 } else {
                     sourceRectHint
                 }
-            val intent = Intent(context, GuideVideoFullscreenActivity::class.java).apply {
+            val activityClass =
+                if (startInPictureInPicture) {
+                    GuideVideoPictureInPictureActivity::class.java
+                } else {
+                    GuideVideoFullscreenActivity::class.java
+                }
+            val intent = Intent(context, activityClass).apply {
                 putExtra(EXTRA_MEDIA_URL, mediaUrl)
                 putExtra(EXTRA_PREVIEW_IMAGE_URL, previewImageUrl)
                 putExtra(EXTRA_START_IN_PIP, startInPictureInPicture)

@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.student
 
 import android.app.Application
+import android.content.pm.PackageManager
+import android.util.Rational
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -11,6 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @Config(application = Application::class, sdk = [35])
 @RunWith(AndroidJUnit4::class)
@@ -57,5 +60,29 @@ class GuideVideoPictureInPictureActionsTest {
             }
         )
         assertEquals(0, actionSet.actions.size)
+    }
+
+    @Test
+    fun `expanded pip ratio is declared when device supports expanded pip`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        shadowOf(context.packageManager)
+            .setSystemFeature(PackageManager.FEATURE_EXPANDED_PICTURE_IN_PICTURE, true)
+
+        val params = buildGuidePictureInPictureParams(context = context)
+
+        assertEquals(Rational(12, 5), params.expandedAspectRatio)
+        assertTrue(params.isSeamlessResizeEnabled)
+    }
+
+    @Test
+    fun `expanded pip ratio is skipped when device does not support expanded pip`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        shadowOf(context.packageManager)
+            .setSystemFeature(PackageManager.FEATURE_EXPANDED_PICTURE_IN_PICTURE, false)
+
+        val params = buildGuidePictureInPictureParams(context = context)
+
+        assertNull(params.expandedAspectRatio)
+        assertTrue(params.isSeamlessResizeEnabled)
     }
 }

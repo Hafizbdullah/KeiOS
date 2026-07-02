@@ -7,6 +7,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
@@ -79,6 +81,8 @@ private val MemoryLobbyMoreMenuMaxHeight = 240.dp
 private val MemoryLobbyVariantMenuMinWidth = 136.dp
 private val MemoryLobbyVariantMenuMaxWidth = 196.dp
 private val MemoryLobbyVariantMenuMaxHeight = 220.dp
+private const val MemoryLobbyPreviewDecodeMinPx = 720
+private const val MemoryLobbyPreviewDecodeMaxPx = 1280
 
 @Composable
 internal fun BaGuideMemoryLobbyHeader(
@@ -772,7 +776,7 @@ private fun BaGuideMemoryLobbyVideoPreview(
     onClick: () -> Unit,
 ) {
     var loading by remember(previewImageUrl) { mutableStateOf(false) }
-    Box(
+    BoxWithConstraints(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -790,9 +794,18 @@ private fun BaGuideMemoryLobbyVideoPreview(
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
+        val density = LocalDensity.current
+        val previewDecodeDimension =
+            remember(maxWidth, density) {
+                with(density) {
+                    maxWidth
+                        .roundToPx()
+                        .coerceIn(MemoryLobbyPreviewDecodeMinPx, MemoryLobbyPreviewDecodeMaxPx)
+                }
+            }
         GuideRemoteImageAdaptive(
             imageUrl = previewImageUrl,
-            maxDecodeDimension = 1600,
+            maxDecodeDimension = previewDecodeDimension,
             onLoadingChanged = { loading = it },
         )
         if (loading) {

@@ -206,7 +206,26 @@
             android:launchMode="singleTop"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
-            android:taskAffinity="${applicationId}.guideVideoPip" />
+            android:taskAffinity="${applicationId}.guideVideoPip">
+            <layout
+                android:minWidth="@dimen/guide_video_pip_min_width"
+                android:minHeight="@dimen/guide_video_pip_min_height" />
+        </activity>
+
+        <activity
+            android:name=".ui.page.main.student.GuideVideoPictureInPictureActivity"
+            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="true"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:taskAffinity="${applicationId}.guideVideoPip">
+            <layout
+                android:minWidth="@dimen/guide_video_pip_min_width"
+                android:minHeight="@dimen/guide_video_pip_min_height" />
+        </activity>
 
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"

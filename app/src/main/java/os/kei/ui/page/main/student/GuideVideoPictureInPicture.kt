@@ -30,10 +30,11 @@ private const val GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE = 3500
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK = 3501
 
 private val GuidePictureInPictureAspectRatio = Rational(16, 9)
+private val GuidePictureInPictureExpandedAspectRatio = Rational(12, 5)
 private const val GUIDE_VIDEO_PIP_ASPECT_RATIO = 16f / 9f
-private const val GUIDE_VIDEO_PIP_TARGET_WIDTH_FRACTION = 0.8f
-private const val GUIDE_VIDEO_PIP_TARGET_HEIGHT_FRACTION = 0.62f
-private const val GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE = 0.92f
+private const val GUIDE_VIDEO_PIP_TARGET_WIDTH_FRACTION = 0.9f
+private const val GUIDE_VIDEO_PIP_TARGET_HEIGHT_FRACTION = 0.72f
+private const val GUIDE_VIDEO_PIP_EXISTING_AREA_TOLERANCE = 0.8f
 private const val GUIDE_VIDEO_PIP_ASPECT_RATIO_TOLERANCE = 0.08f
 
 internal fun buildGuidePictureInPictureParams(
@@ -46,6 +47,7 @@ internal fun buildGuidePictureInPictureParams(
         AppPictureInPictureParamsSpec(
             title = context.getString(R.string.guide_gallery_memorial_lobby_video),
             aspectRatio = GuidePictureInPictureAspectRatio,
+            expandedAspectRatio = GuidePictureInPictureExpandedAspectRatio,
             actionSet = actionSet,
             sourceRectHint = sourceRectHint,
             autoEnterEnabled = autoEnterEnabled,
