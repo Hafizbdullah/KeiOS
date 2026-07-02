@@ -38,8 +38,20 @@ internal fun favoriteForStudentBgmEntry(
     favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
 ): GuideBgmFavoriteItem? {
     val detailUrl = normalizeGuideUrl(entry.detailUrl)
-    if (detailUrl.isBlank()) return null
-    return favoriteByNormalizedSourceUrl[detailUrl]
+    return favoriteForStudentBgmEntry(
+        entry = entry,
+        normalizedDetailUrl = detailUrl,
+        favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+    )
+}
+
+private fun favoriteForStudentBgmEntry(
+    entry: BaGuideCatalogEntry,
+    normalizedDetailUrl: String,
+    favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
+): GuideBgmFavoriteItem? {
+    if (normalizedDetailUrl.isBlank()) return null
+    return favoriteByNormalizedSourceUrl[normalizedDetailUrl]
         ?.withCatalogEntryStudentMetadata(entry)
 }
 
@@ -48,10 +60,20 @@ internal fun studentBgmStateWithFavoriteFallback(
     lookupState: BaGuideStudentBgmLookupState,
     favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem>,
 ): BaGuideStudentBgmLookupState {
+    val favorite = favoriteForStudentBgmEntry(entry, favoriteByNormalizedSourceUrl)
+    return studentBgmStateWithFavoriteFallback(
+        lookupState = lookupState,
+        favorite = favorite,
+    )
+}
+
+private fun studentBgmStateWithFavoriteFallback(
+    lookupState: BaGuideStudentBgmLookupState,
+    favorite: GuideBgmFavoriteItem?,
+): BaGuideStudentBgmLookupState {
     if (lookupState is BaGuideStudentBgmLookupState.Ready) return lookupState
     if (lookupState == BaGuideStudentBgmLookupState.Loading) return lookupState
-    val favorite =
-        favoriteForStudentBgmEntry(entry, favoriteByNormalizedSourceUrl) ?: return lookupState
+    if (favorite == null) return lookupState
     return BaGuideStudentBgmLookupState.Ready(
         BaGuideStudentBgmResolvedItem(
             favorite = favorite,
@@ -75,15 +97,20 @@ internal fun buildBaGuideStudentBgmDisplayedModel(
     var loadingCount = 0
     displayedEntries.forEach { entry ->
         contentIds += entry.contentId
+        val sourceFavorite =
+            favoriteForStudentBgmEntry(
+                entry = entry,
+                normalizedDetailUrl = normalizeGuideUrl(entry.detailUrl),
+                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+            )
         val lookupState = lookupStates[entry.contentId] ?: BaGuideStudentBgmLookupState.Idle
         if (lookupState == BaGuideStudentBgmLookupState.Loading) {
             loadingCount += 1
         }
         val displayState =
             studentBgmStateWithFavoriteFallback(
-                entry = entry,
                 lookupState = lookupState,
-                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
+                favorite = sourceFavorite,
             )
         val readyFavorite = displayState.readyFavoriteOrNull()
         val readyAudioUrl = readyFavorite?.audioUrl
@@ -91,7 +118,7 @@ internal fun buildBaGuideStudentBgmDisplayedModel(
             if (!readyAudioUrl.isNullOrBlank()) {
                 readyAudioUrl in favoriteAudioUrls
             } else {
-                favoriteForStudentBgmEntry(entry, favoriteByNormalizedSourceUrl) != null
+                sourceFavorite != null
             }
         rows +=
             BaGuideStudentBgmRowModel(

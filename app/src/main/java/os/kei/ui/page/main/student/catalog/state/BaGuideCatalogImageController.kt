@@ -55,7 +55,6 @@ internal class BaGuideCatalogImageController(
 
         if (foreground) {
             rememberForegroundUrls(normalizedUrls)
-            touchLoadedUrls(normalizedUrls)
         }
         val nowMs = clock()
         val currentState = mutableState.value
@@ -120,26 +119,6 @@ internal class BaGuideCatalogImageController(
         synchronized(foregroundLock) {
             foregroundUrls.toSet()
         }
-
-    private fun touchLoadedUrls(imageUrls: List<String>) {
-        val currentBitmaps = mutableState.value.bitmaps
-        val touchedBitmaps =
-            imageUrls.mapNotNull { imageUrl ->
-                currentBitmaps[imageUrl]?.let { bitmap -> imageUrl to bitmap }
-            }.toMap()
-        if (touchedBitmaps.isEmpty()) return
-        mutableState.update { state ->
-            state.copy(
-                bitmaps =
-                    mergeLimitedMap(
-                        current = state.bitmaps,
-                        added = touchedBitmaps,
-                        limit = CATALOG_IMAGE_STATE_LIMIT,
-                        protectedKeys = foregroundUrlsSnapshot(),
-                    ),
-            )
-        }
-    }
 
     private fun enqueueMissingUrls(missingUrls: List<String>) {
         val orderedMissingUrls = missingUrls.distinct()
