@@ -12,10 +12,19 @@ on:
       - "app/**"
       - "core-concurrency/**"
       - "core-io/**"
+      - "core-json/**"
       - "core-log/**"
       - "core-prefs/**"
       - "core-system/**"
+      - "feature-ba/**"
       - "feature-github/**"
+      - "feature-home/**"
+      - "feature-mcp/**"
+      - "feature-os/**"
+      - "feature-webdav/**"
+      - "miuix-navigation3-ui/**"
+      - "ui-liquid-glass/**"
+      - "ui-pip/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"
@@ -66,10 +75,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.commit || github.sha }}
+          persist-credentials: false
 
       - name: Build context
         id: context

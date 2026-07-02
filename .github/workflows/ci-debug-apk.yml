@@ -10,8 +10,21 @@ on:
       - ".github/actions/setup-android-gradle-build/**"
       - ".github/workflows/ci-debug-apk.yml"
       - "app/**"
-      - "core-log/**"
+      - "core-concurrency/**"
       - "core-io/**"
+      - "core-json/**"
+      - "core-log/**"
+      - "core-prefs/**"
+      - "core-system/**"
+      - "feature-ba/**"
+      - "feature-github/**"
+      - "feature-home/**"
+      - "feature-mcp/**"
+      - "feature-os/**"
+      - "feature-webdav/**"
+      - "miuix-navigation3-ui/**"
+      - "ui-liquid-glass/**"
+      - "ui-pip/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"
@@ -33,8 +46,21 @@ on:
       - ".github/actions/setup-android-gradle-build/**"
       - ".github/workflows/ci-debug-apk.yml"
       - "app/**"
-      - "core-log/**"
+      - "core-concurrency/**"
       - "core-io/**"
+      - "core-json/**"
+      - "core-log/**"
+      - "core-prefs/**"
+      - "core-system/**"
+      - "feature-ba/**"
+      - "feature-github/**"
+      - "feature-home/**"
+      - "feature-mcp/**"
+      - "feature-os/**"
+      - "feature-webdav/**"
+      - "miuix-navigation3-ui/**"
+      - "ui-liquid-glass/**"
+      - "ui-pip/**"
       - "baselineprofile/**"
       - "build.gradle.kts"
       - "gradle.properties"
@@ -82,10 +108,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.commit || github.sha }}
+          persist-credentials: false
 
       - name: Build context
         id: context
@@ -178,10 +205,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: ${{ github.event.inputs.commit || github.sha }}
+          persist-credentials: false
 
       - name: Setup Android Gradle build
         uses: ./.github/actions/setup-android-gradle-build
