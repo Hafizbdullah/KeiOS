@@ -112,7 +112,7 @@ internal fun buildGuidePictureInPictureActionSet(
     val seekBackAction =
         AppPictureInPictureRemoteActionSpec(
             action = GUIDE_VIDEO_ACTION_SEEK_BACK_10S,
-            iconRes = LucideR.drawable.lucide_ic_skip_back,
+            iconRes = LucideR.drawable.lucide_ic_rotate_ccw,
             title = context.getString(R.string.guide_gallery_memorial_lobby_pip_seek_back_10s),
             requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_BACK_10S,
         )
@@ -126,7 +126,7 @@ internal fun buildGuidePictureInPictureActionSet(
     val seekForwardAction =
         AppPictureInPictureRemoteActionSpec(
             action = GUIDE_VIDEO_ACTION_SEEK_FORWARD_10S,
-            iconRes = LucideR.drawable.lucide_ic_skip_forward,
+            iconRes = LucideR.drawable.lucide_ic_rotate_cw,
             title = context.getString(R.string.guide_gallery_memorial_lobby_pip_seek_forward_10s),
             requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_SEEK_FORWARD_10S,
         )
