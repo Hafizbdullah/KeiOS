@@ -169,7 +169,7 @@ internal fun BaGuideCatalogV2ListContent(
                 .nestedScroll(nestedScrollConnection),
         contentPadding =
             PaddingValues(
-                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                top = innerPadding.calculateTopPadding(),
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
