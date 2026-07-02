@@ -94,7 +94,6 @@ internal fun buildGuidePictureInPictureActionSet(
                         requestCode = GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK,
                     )
                 )
-                add(closeAction)
             },
         closeAction = closeAction,
         maxActions = maxActions,

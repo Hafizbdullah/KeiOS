@@ -6,15 +6,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.robolectric.annotation.Config
+import org.robolectric.Shadows.shadowOf
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 @Config(application = Application::class, sdk = [35])
 @RunWith(AndroidJUnit4::class)
 class GuideVideoPictureInPictureActionsTest {
     @Test
-    fun `close action is also present in visible actions for SystemUI close handling`() {
+    fun `close action stays out of visible actions`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val actionSet =
             buildGuidePictureInPictureActionSet(
@@ -29,23 +31,31 @@ class GuideVideoPictureInPictureActionsTest {
                 action.actionIntent == closeAction.actionIntent
             }
 
-        assertNotNull(visibleCloseAction)
-        assertEquals(closeAction.title.toString(), visibleCloseAction.title.toString())
-        assertTrue(actionSet.actions.size >= 2)
+        assertEquals(1, actionSet.actions.size)
+        assertEquals(
+            GUIDE_VIDEO_ACTION_TOGGLE_PIP_PLAYBACK,
+            shadowOf(actionSet.actions.single().actionIntent).savedIntent.action,
+        )
+        assertNull(visibleCloseAction)
     }
 
     @Test
-    fun `max actions keeps close action when current guide video action count fits`() {
+    fun `close action survives visible action trimming`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val actionSet =
             buildGuidePictureInPictureActionSet(
                 context = context,
                 sessionId = 43L,
                 playWhenReady = false,
-                maxActions = 3,
-            )
+                maxActions = 0,
+        )
 
         val closeAction = assertNotNull(actionSet.closeAction)
-        assertTrue(actionSet.actions.any { action -> action.actionIntent == closeAction.actionIntent })
+        assertFalse(
+            actionSet.actions.any { action ->
+                action.actionIntent == closeAction.actionIntent
+            }
+        )
+        assertEquals(0, actionSet.actions.size)
     }
 }
