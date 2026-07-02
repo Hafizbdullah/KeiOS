@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -128,6 +129,47 @@ internal class MainLoadedPagerState internal constructor(
             animationsEnabled = animationsEnabled,
             durationMillis = durationMillis,
             epoch = nextNavigationEpoch()
+        )
+    }
+
+    internal suspend fun animateToPageViaAdjacent(
+        target: Int,
+        animationsEnabled: Boolean,
+        durationMillis: Int
+    ) {
+        val epoch = nextNavigationEpoch()
+        val coercedTarget = coercePage(target)
+        if (!animationsEnabled) {
+            snapToPage(coercedTarget, epoch)
+            return
+        }
+        val startPosition = pagePosition
+        if (abs(startPosition - coercedTarget.toFloat()) <= 1f) {
+            animateToPageInternal(
+                target = coercedTarget,
+                animationsEnabled = true,
+                durationMillis = durationMillis,
+                epoch = epoch
+            )
+            return
+        }
+        val anchorPage =
+            if (coercedTarget > startPosition) {
+                coercedTarget - 1
+            } else {
+                coercedTarget + 1
+            }.coerceIn(0, lastIndex().coerceAtLeast(0))
+        updatePosition(
+            position = anchorPage.toFloat(),
+            target = coercedTarget,
+            scrolling = true,
+            settle = false
+        )
+        animateToPageInternal(
+            target = coercedTarget,
+            animationsEnabled = true,
+            durationMillis = durationMillis,
+            epoch = epoch
         )
     }
 

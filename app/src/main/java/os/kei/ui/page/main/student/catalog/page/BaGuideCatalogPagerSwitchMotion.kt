@@ -15,8 +15,13 @@ import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 internal class BaGuideCatalogPagerSwitchMotion internal constructor(
     private val farJumpAlpha: Animatable<Float, AnimationVector1D>,
 ) {
-    val contentAlpha: Float
-        get() = farJumpAlpha.value
+    val veilAlpha: Float
+        get() {
+            val progress =
+                ((1f - farJumpAlpha.value) / (1f - BaGuideCatalogFarJumpDimAlpha))
+                    .coerceIn(0f, 1f)
+            return BaGuideCatalogFarJumpVeilAlpha * progress
+        }
 
     suspend fun runSwitch(
         distance: Int,
@@ -70,4 +75,5 @@ internal fun rememberBaGuideCatalogPagerSwitchMotion(): BaGuideCatalogPagerSwitc
     }
 }
 
-private const val BaGuideCatalogFarJumpDimAlpha = 0.92f
+private const val BaGuideCatalogFarJumpDimAlpha = 0.76f
+private const val BaGuideCatalogFarJumpVeilAlpha = 0.36f

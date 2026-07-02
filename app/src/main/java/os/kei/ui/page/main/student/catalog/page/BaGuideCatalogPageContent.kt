@@ -22,9 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -176,7 +176,13 @@ internal fun BaGuideCatalogPageContent(
                 onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
                 modifier =
                     Modifier
-                        .graphicsLayer { alpha = pagerSwitchMotion.contentAlpha },
+                        .drawWithContent {
+                            drawContent()
+                            val veilAlpha = pagerSwitchMotion.veilAlpha
+                            if (veilAlpha > 0f) {
+                                drawRect(panelBackground.copy(alpha = veilAlpha))
+                            }
+                        },
             )
             Box(
                 modifier =
