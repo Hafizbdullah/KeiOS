@@ -95,7 +95,7 @@ class BaGuideStudentBgmDisplayedModelTest {
     }
 
     @Test
-    fun `memory lobby favorite visibility can hide catalog favorites`() {
+    fun `memory lobby favorite visibility can hide favorite content ids`() {
         val entries =
             listOf(
                 catalogEntry(contentId = 2L, name = "Bob", order = 2),
@@ -106,7 +106,7 @@ class BaGuideStudentBgmDisplayedModelTest {
         val visible =
             visibleMemoryLobbyEntriesWithFavoriteVisibility(
                 filteredEntries = entries,
-                favoriteCatalogEntries = mapOf(2L to 100L),
+                favoriteContentIds = setOf(2L),
                 favoritesHidden = true,
             )
 

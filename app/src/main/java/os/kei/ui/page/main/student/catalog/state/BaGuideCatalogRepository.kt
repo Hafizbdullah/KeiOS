@@ -347,6 +347,7 @@ internal class BaGuideCatalogRepository(
                     input.favorites.mapNotNullTo(LinkedHashSet()) { favorite ->
                         favorite.audioUrl.takeIf { it.isNotBlank() }
                     },
+                favoriteContentIds = favoriteContentIds,
                 filteredEntries =
                     filterAndSortStudentBgmEntries(
                         entries = allStudentEntries,
@@ -363,8 +364,10 @@ internal class BaGuideCatalogRepository(
                 input.catalog
                     .entries(BaGuideCatalogTab.Student)
                     .sortedBy { it.order }
+            val favoriteContentIds = input.favoriteCatalogEntries.keys.toSet()
             BaGuideMemoryLobbyListDerivedState(
                 allStudentEntries = allStudentEntries,
+                favoriteContentIds = favoriteContentIds,
                 filteredEntries =
                     filterAndSortMemoryLobbyEntries(
                         entries = allStudentEntries,

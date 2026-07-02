@@ -56,6 +56,37 @@ class BaGuideCatalogVisibleImageRequestsTest {
     }
 
     @Test
+    fun `visible range request matches contiguous visible indices`() {
+        val entries = (0 until 16).map { index -> catalogEntry("student-$index") }
+
+        val fromIndices =
+            buildBaGuideCatalogVisibleImageRequestUrls(
+                displayedEntries = entries,
+                visibleItemIndices = listOf(6, 7, 8),
+                entryStartIndex = 2,
+                beforeCount = 2,
+                afterCount = 3,
+                limit = 8,
+            )
+        val fromRange =
+            buildBaGuideCatalogVisibleImageRequestUrls(
+                displayedEntries = entries,
+                visibleItemRange =
+                    BaGuideVisibleItemRange(
+                        firstItemIndex = 6,
+                        lastItemIndex = 8,
+                        visibleItemCount = 3,
+                    ),
+                entryStartIndex = 2,
+                beforeCount = 2,
+                afterCount = 3,
+                limit = 8,
+            )
+
+        assertEquals(fromIndices, fromRange)
+    }
+
+    @Test
     fun `visible request filters blank and duplicate urls`() {
         val entries =
             listOf(
@@ -76,6 +107,18 @@ class BaGuideCatalogVisibleImageRequestsTest {
             )
 
         assertEquals(listOf("student-0", "student-3"), urls)
+    }
+
+    @Test
+    fun `visible entry indices are sorted and distinct`() {
+        val indices =
+            buildBaGuideVisibleEntryIndices(
+                displayedEntryCount = 6,
+                visibleItemIndices = listOf(7, 3, 4, 3, 9, 1),
+                entryStartIndex = 2,
+            )
+
+        assertEquals(listOf(1, 2, 5), indices)
     }
 
     private fun catalogEntry(iconUrl: String): BaGuideCatalogEntry =

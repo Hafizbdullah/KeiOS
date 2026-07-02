@@ -203,6 +203,7 @@ internal data class BaGuideStudentBgmListDerivedState(
     val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
     val favoriteByNormalizedSourceUrl: Map<String, GuideBgmFavoriteItem> = emptyMap(),
     val favoriteAudioUrls: Set<String> = emptySet(),
+    val favoriteContentIds: Set<Long> = emptySet(),
     val deriving: Boolean = false,
 ) {
     companion object {
@@ -214,6 +215,7 @@ internal data class BaGuideStudentBgmListDerivedState(
 internal data class BaGuideMemoryLobbyListDerivedState(
     val allStudentEntries: List<BaGuideCatalogEntry> = emptyList(),
     val filteredEntries: List<BaGuideCatalogEntry> = emptyList(),
+    val favoriteContentIds: Set<Long> = emptySet(),
     val deriving: Boolean = false,
 ) {
     companion object {
@@ -284,14 +286,12 @@ internal fun filterAndSortMemoryLobbyEntries(
 
 internal fun visibleMemoryLobbyEntriesWithFavoriteVisibility(
     filteredEntries: List<BaGuideCatalogEntry>,
-    favoriteCatalogEntries: Map<Long, Long>,
+    favoriteContentIds: Set<Long>,
     favoritesHidden: Boolean,
-): List<BaGuideCatalogEntry> =
-    visibleCatalogEntriesWithFavoriteVisibility(
-        filteredEntries = filteredEntries,
-        favoriteCatalogEntries = favoriteCatalogEntries,
-        favoritesHidden = favoritesHidden,
-    )
+): List<BaGuideCatalogEntry> {
+    if (!favoritesHidden || favoriteContentIds.isEmpty()) return filteredEntries
+    return filteredEntries.filterNot { entry -> entry.contentId in favoriteContentIds }
+}
 
 internal fun visibleCatalogEntriesWithFavoriteVisibility(
     filteredEntries: List<BaGuideCatalogEntry>,

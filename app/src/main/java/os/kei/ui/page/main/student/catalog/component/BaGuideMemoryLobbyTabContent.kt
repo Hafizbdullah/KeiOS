@@ -61,7 +61,6 @@ private data class BaGuideMemoryLobbyHeaderCounts(
 internal fun BaGuideMemoryLobbyTabContent(
     catalogSyncedAtMs: Long,
     derivedState: BaGuideMemoryLobbyListDerivedState,
-    favoriteCatalogEntries: Map<Long, Long>,
     searchQuery: String,
     loading: Boolean,
     error: String?,
@@ -86,12 +85,13 @@ internal fun BaGuideMemoryLobbyTabContent(
     val requestVisibleImages by rememberUpdatedState(onRequestVisibleImages)
     val allStudentEntries = derivedState.allStudentEntries
     val filteredEntries = derivedState.filteredEntries
+    val favoriteContentIds = derivedState.favoriteContentIds
     var favoritesHidden by rememberSaveable { mutableStateOf(false) }
     val visibleFilteredEntries =
-        remember(filteredEntries, favoriteCatalogEntries, favoritesHidden) {
+        remember(filteredEntries, favoriteContentIds, favoritesHidden) {
             visibleMemoryLobbyEntriesWithFavoriteVisibility(
                 filteredEntries = filteredEntries,
-                favoriteCatalogEntries = favoriteCatalogEntries,
+                favoriteContentIds = favoriteContentIds,
                 favoritesHidden = favoritesHidden,
             )
         }
@@ -112,17 +112,15 @@ internal fun BaGuideMemoryLobbyTabContent(
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var consumedScrollToTopSignal by remember { mutableStateOf(0) }
     var expandedContentIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val favoriteCount = favoriteContentIds.size
     val headerCounts =
-        remember(allStudentEntries, visibleFilteredEntries, favoriteCatalogEntries, lookupStates) {
+        remember(visibleFilteredEntries, lookupStates, favoriteCount) {
             BaGuideMemoryLobbyHeaderCounts(
                 readyCount =
                     visibleFilteredEntries.count { entry ->
                         lookupStates[entry.contentId] is BaGuideMemoryLobbyLookupState.Ready
                     },
-                favoriteCount =
-                    allStudentEntries.count { entry ->
-                        favoriteCatalogEntries.containsKey(entry.contentId)
-                    },
+                favoriteCount = favoriteCount,
                 cachedCount =
                     visibleFilteredEntries.count { entry ->
                         (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)
@@ -172,18 +170,24 @@ internal fun BaGuideMemoryLobbyTabContent(
         }
         snapshotFlowManager
             .snapshotFlow {
-                val visibleItemIndices = listState.layoutInfo.visibleItemsInfo.map { item -> item.index }
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                val visibleItemRange =
+                    BaGuideVisibleItemRange(
+                        firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                        lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                        visibleItemCount = visibleItems.size,
+                    )
                 BaGuideMemoryLobbyVisibleWork(
                     imageUrls =
                         buildBaGuideCatalogVisibleImageRequestUrls(
                             displayedEntries = displayedEntries,
-                            visibleItemIndices = visibleItemIndices,
+                            visibleItemRange = visibleItemRange,
                             entryStartIndex = entryStartIndex,
                         ),
                     prewarmEntries =
                         buildBaGuideStudentBgmVisiblePrewarmEntries(
                             displayedEntries = displayedEntries,
-                            visibleItemIndices = visibleItemIndices,
+                            visibleItemRange = visibleItemRange,
                             entryStartIndex = entryStartIndex,
                             limit = MEMORY_LOBBY_VISIBLE_PREWARM_LIMIT,
                         ),
@@ -246,7 +250,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                     favoritesHidden = favoritesHidden,
                     accent = accent,
                     onToggleFavoritesHidden = {
-                        if (favoriteCatalogEntries.isNotEmpty()) {
+                        if (favoriteContentIds.isNotEmpty()) {
                             favoritesHidden = !favoritesHidden
                         }
                     },
@@ -284,7 +288,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                     entry = entry,
                     lookupState = lookupStates[entry.contentId] ?: BaGuideMemoryLobbyLookupState.Idle,
                     expanded = expanded,
-                    favorite = favoriteCatalogEntries.containsKey(entry.contentId),
+                    favorite = entry.contentId in favoriteContentIds,
                     accent = accent,
                     mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                     onToggleExpanded = {

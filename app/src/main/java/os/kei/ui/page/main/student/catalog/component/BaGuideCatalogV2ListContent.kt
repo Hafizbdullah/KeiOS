@@ -142,12 +142,15 @@ internal fun BaGuideCatalogV2ListContent(
                 }
         snapshotFlowManager
             .snapshotFlow {
-                val visibleItemIndices =
-                    tabListState.listState.layoutInfo.visibleItemsInfo
-                        .map { itemInfo -> itemInfo.index }
+                val visibleItems = tabListState.listState.layoutInfo.visibleItemsInfo
                 buildBaGuideCatalogVisibleImageRequestUrls(
                     displayedEntries = tabListState.displayedEntries,
-                    visibleItemIndices = visibleItemIndices,
+                    visibleItemRange =
+                        BaGuideVisibleItemRange(
+                            firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                            lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                            visibleItemCount = visibleItems.size,
+                        ),
                     entryStartIndex = entryStartIndex,
                 )
             }.distinctUntilChanged()

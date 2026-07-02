@@ -47,7 +47,6 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
-import os.kei.ui.page.main.student.catalog.state.favoriteStudentBgmEntryContentIds
 import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -117,16 +116,10 @@ internal fun BaGuideStudentBgmTabContent(
 
     val favoriteByNormalizedSourceUrl = derivedState.favoriteByNormalizedSourceUrl
     val favoriteAudioUrls = derivedState.favoriteAudioUrls
+    val favoriteContentIds = derivedState.favoriteContentIds
     val allStudentEntries = derivedState.allStudentEntries
     val filteredEntries = derivedState.filteredEntries
     var favoritesHidden by rememberSaveable { mutableStateOf(false) }
-    val favoriteContentIds =
-        remember(allStudentEntries, favoriteByNormalizedSourceUrl) {
-            favoriteStudentBgmEntryContentIds(
-                entries = allStudentEntries,
-                favoriteByNormalizedSourceUrl = favoriteByNormalizedSourceUrl,
-            )
-        }
     val visibleFilteredEntries =
         remember(filteredEntries, favoriteContentIds, favoritesHidden) {
             visibleStudentBgmEntriesWithFavoriteVisibility(
@@ -176,20 +169,25 @@ internal fun BaGuideStudentBgmTabContent(
         if (!isPageActive) return@LaunchedEffect
         snapshotFlowManager
             .snapshotFlow {
-                listState.layoutInfo.visibleItemsInfo.map { item -> item.index }
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                BaGuideVisibleItemRange(
+                    firstItemIndex = visibleItems.firstOrNull()?.index ?: -1,
+                    lastItemIndex = visibleItems.lastOrNull()?.index ?: -1,
+                    visibleItemCount = visibleItems.size,
+                )
             }.distinctUntilChanged()
-            .collect { visibleItemIndices ->
+            .collect { visibleItemRange ->
                 val imageUrls =
                     buildBaGuideCatalogVisibleImageRequestUrls(
                         displayedEntries = displayedEntries,
-                        visibleItemIndices = visibleItemIndices,
+                        visibleItemRange = visibleItemRange,
                         entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
                     )
                 requestVisibleImages(imageUrls)
                 val prewarmEntries =
                     buildBaGuideStudentBgmVisiblePrewarmEntries(
                         displayedEntries = displayedEntries,
-                        visibleItemIndices = visibleItemIndices,
+                        visibleItemRange = visibleItemRange,
                         entryStartIndex = STUDENT_BGM_ENTRY_START_INDEX,
                     )
                 lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)

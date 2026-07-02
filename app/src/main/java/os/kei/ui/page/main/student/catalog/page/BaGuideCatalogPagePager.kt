@@ -163,7 +163,6 @@ private fun BaGuideCatalogPageTabContent(
             BaGuideMemoryLobbyTabContent(
                 catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
                 derivedState = memoryLobbyListDerivedState,
-                favoriteCatalogEntries = catalogFavoriteEntries,
                 searchQuery = pageSearchQuery,
                 loading = catalogDataState.loading,
                 error = catalogDataState.error,
