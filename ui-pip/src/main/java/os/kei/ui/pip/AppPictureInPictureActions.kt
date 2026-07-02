@@ -60,7 +60,7 @@ fun Context.buildAppPictureInPictureRemoteAction(
         spec.title,
         PendingIntent.getBroadcast(
             this,
-            spec.requestCode,
+            spec.pendingIntentRequestCode(sessionId),
             Intent(spec.action)
                 .setPackage(packageName)
                 .setData(buildAppPictureInPictureActionUri(authority, spec.action, sessionId))
@@ -70,7 +70,7 @@ fun Context.buildAppPictureInPictureRemoteAction(
     )
 }
 
-private fun buildAppPictureInPictureActionUri(
+internal fun buildAppPictureInPictureActionUri(
     authority: String,
     action: String,
     sessionId: Long,
@@ -81,4 +81,9 @@ private fun buildAppPictureInPictureActionUri(
         .appendPath(sessionId.toString())
         .appendPath(action)
         .build()
+}
+
+private fun AppPictureInPictureRemoteActionSpec.pendingIntentRequestCode(sessionId: Long): Int {
+    val sessionHash = (sessionId xor (sessionId ushr 32)).toInt()
+    return requestCode * 31 + sessionHash
 }

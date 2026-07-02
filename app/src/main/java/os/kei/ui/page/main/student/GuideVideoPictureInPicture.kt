@@ -29,7 +29,7 @@ internal val GuideVideoPictureInPictureActions =
         GUIDE_VIDEO_ACTION_TOGGLE_PIP_EXPANDED_MODE,
     )
 
-private const val GUIDE_VIDEO_PIP_AUTHORITY = "guide-video-pip"
+internal const val GUIDE_VIDEO_PIP_AUTHORITY = "guide-video-pip"
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_CLOSE = 3500
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_PLAYBACK = 3501
 private const val GUIDE_VIDEO_REQUEST_CODE_PIP_EXPANDED_MODE = 3502

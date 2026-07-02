@@ -134,6 +134,7 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         pictureInPictureActionReceiver =
             AppPictureInPictureActionReceiver(
                 context = this,
+                authority = GUIDE_VIDEO_PIP_AUTHORITY,
                 actions = GuideVideoPictureInPictureActions,
                 currentSessionId = { guideVideoPictureInPictureSessionId },
                 onAction = { event -> handleGuidePictureInPictureAction(event.action) },
