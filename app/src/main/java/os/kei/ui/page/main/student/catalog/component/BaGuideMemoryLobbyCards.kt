@@ -82,8 +82,13 @@ private val MemoryLobbyMoreMenuMaxHeight = 240.dp
 private val MemoryLobbyVariantMenuMinWidth = 136.dp
 private val MemoryLobbyVariantMenuMaxWidth = 196.dp
 private val MemoryLobbyVariantMenuMaxHeight = 220.dp
-private const val MemoryLobbyPreviewDecodeMinPx = 720
-private const val MemoryLobbyPreviewDecodeMaxPx = 1280
+private const val MemoryLobbyPreviewDecodeMinPx = 960
+private const val MemoryLobbyPreviewDecodeMaxPx = 2048
+
+private data class BaGuideMemoryLobbyMediaGroups(
+    val videoItems: List<BaGuideGalleryItem>,
+    val previewImageUrl: String,
+)
 
 @Composable
 internal fun BaGuideMemoryLobbyHeader(
@@ -225,10 +230,7 @@ internal fun BaGuideMemoryLobbyCard(
     AppSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
-        onClick = {
-            onToggleExpanded()
-            if (!expanded) onResolve()
-        },
+        onClick = onToggleExpanded,
         onLongClick = onOpenGuide,
         clipContent = true,
     ) {
@@ -314,7 +316,6 @@ internal fun BaGuideMemoryLobbyCard(
                             ),
                         onClick = {
                             onToggleExpanded()
-                            if (!expanded) onResolve()
                         },
                         modifier = Modifier.size(38.dp),
                         tint = if (expanded) accent else neutralTint,
@@ -424,26 +425,27 @@ private fun BaGuideMemoryLobbyExpandedContent(
 
         is BaGuideMemoryLobbyLookupState.Ready -> {
             val item = lookupState.item
-            val imageItems = item.galleryItems.filterNot(BaGuideGalleryItem::isMemoryLobbyVideo)
-            val videoItems = item.galleryItems.filter(BaGuideGalleryItem::isMemoryLobbyVideo)
-            val previewImageUrl = imageItems.firstFullscreenImageUrl()
+            val mediaGroups =
+                remember(item.galleryItems) {
+                    item.galleryItems.toMemoryLobbyMediaGroups()
+                }
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (videoItems.isNotEmpty()) {
+                if (mediaGroups.videoItems.isNotEmpty()) {
                     BaGuideMemoryLobbyVideoGroup(
-                        items = videoItems,
-                        previewFallbackUrl = previewImageUrl,
+                        items = mediaGroups.videoItems,
+                        previewFallbackUrl = mediaGroups.previewImageUrl,
                         unlockLevel = item.memoryUnlockLevel,
                         accent = accent,
                     )
-                } else if (previewImageUrl.isNotBlank()) {
+                } else if (mediaGroups.previewImageUrl.isNotBlank()) {
                     BaGuideMemoryLobbyImagePreviewGroup(
-                        previewImageUrl = previewImageUrl,
+                        previewImageUrl = mediaGroups.previewImageUrl,
                         unlockLevel = item.memoryUnlockLevel,
                         accent = accent,
-                        onOpenFullscreen = { onOpenFullscreenImage(previewImageUrl) },
+                        onOpenFullscreen = { onOpenFullscreenImage(mediaGroups.previewImageUrl) },
                     )
                 } else {
                     Text(
@@ -681,7 +683,11 @@ private fun BaGuideMemoryLobbyVideoGroup(
         } else if (displayPreviewUrl.isNotBlank()) {
             BaGuideMemoryLobbyVideoPreview(
                 previewImageUrl = displayPreviewUrl,
-                onBoundsChanged = { rect -> videoSourceRect = rect },
+                onBoundsChanged = { rect ->
+                    if (videoSourceRect != rect) {
+                        videoSourceRect = rect
+                    }
+                },
                 onClick = openPictureInPicture,
             )
         }
@@ -865,6 +871,15 @@ private fun String.memoryLobbyUnlockLevelPillLabel(): String {
 
 private fun BaGuideGalleryItem.isMemoryLobbyVideo(): Boolean =
     mediaType.equals("video", ignoreCase = true)
+
+private fun List<BaGuideGalleryItem>.toMemoryLobbyMediaGroups(): BaGuideMemoryLobbyMediaGroups {
+    val imageItems = filterNot(BaGuideGalleryItem::isMemoryLobbyVideo)
+    val videoItems = filter(BaGuideGalleryItem::isMemoryLobbyVideo)
+    return BaGuideMemoryLobbyMediaGroups(
+        videoItems = videoItems,
+        previewImageUrl = imageItems.firstFullscreenImageUrl(),
+    )
+}
 
 private fun List<BaGuideGalleryItem>.firstFullscreenImageUrl(): String =
     firstOrNull { item ->

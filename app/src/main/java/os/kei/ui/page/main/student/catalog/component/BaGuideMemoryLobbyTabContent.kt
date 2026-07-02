@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.GuideBottomTab
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedState
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
@@ -41,6 +42,18 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val MEMORY_LOBBY_ENTRY_START_INDEX = 1
+private const val MEMORY_LOBBY_VISIBLE_PREWARM_LIMIT = 6
+
+private data class BaGuideMemoryLobbyVisibleWork(
+    val imageUrls: List<String>,
+    val prewarmEntries: List<BaGuideCatalogEntry>,
+)
+
+private data class BaGuideMemoryLobbyHeaderCounts(
+    val readyCount: Int,
+    val favoriteCount: Int,
+    val cachedCount: Int,
+)
 
 @Composable
 internal fun BaGuideMemoryLobbyTabContent(
@@ -88,6 +101,25 @@ internal fun BaGuideMemoryLobbyTabContent(
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     var consumedScrollToTopSignal by remember { mutableStateOf(0) }
     var expandedContentIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val headerCounts =
+        remember(allStudentEntries, filteredEntries, favoriteCatalogEntries, lookupStates) {
+            BaGuideMemoryLobbyHeaderCounts(
+                readyCount =
+                    filteredEntries.count { entry ->
+                        lookupStates[entry.contentId] is BaGuideMemoryLobbyLookupState.Ready
+                    },
+                favoriteCount =
+                    allStudentEntries.count { entry ->
+                        favoriteCatalogEntries.containsKey(entry.contentId)
+                    },
+                cachedCount =
+                    filteredEntries.count { entry ->
+                        (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)
+                            ?.item
+                            ?.fromCache == true
+                    },
+            )
+        }
 
     LaunchedEffect(catalogSyncedAtMs) {
         lookupCoordinator.clear()
@@ -129,25 +161,27 @@ internal fun BaGuideMemoryLobbyTabContent(
         }
         snapshotFlowManager
             .snapshotFlow {
-                listState.layoutInfo.visibleItemsInfo.map { item -> item.index }
+                val visibleItemIndices = listState.layoutInfo.visibleItemsInfo.map { item -> item.index }
+                BaGuideMemoryLobbyVisibleWork(
+                    imageUrls =
+                        buildBaGuideCatalogVisibleImageRequestUrls(
+                            displayedEntries = displayedEntries,
+                            visibleItemIndices = visibleItemIndices,
+                            entryStartIndex = entryStartIndex,
+                        ),
+                    prewarmEntries =
+                        buildBaGuideStudentBgmVisiblePrewarmEntries(
+                            displayedEntries = displayedEntries,
+                            visibleItemIndices = visibleItemIndices,
+                            entryStartIndex = entryStartIndex,
+                            limit = MEMORY_LOBBY_VISIBLE_PREWARM_LIMIT,
+                        ),
+                )
             }.distinctUntilChanged()
-            .collect { visibleItemIndices ->
-                val imageUrls =
-                    buildBaGuideCatalogVisibleImageRequestUrls(
-                        displayedEntries = displayedEntries,
-                        visibleItemIndices = visibleItemIndices,
-                        entryStartIndex = entryStartIndex,
-                    )
-                requestVisibleImages(imageUrls)
-                val prewarmEntries =
-                    buildBaGuideStudentBgmVisiblePrewarmEntries(
-                        displayedEntries = displayedEntries,
-                        visibleItemIndices = visibleItemIndices,
-                        entryStartIndex = entryStartIndex,
-                        limit = 6,
-                    )
-                lookupCoordinator.prewarmCached(prewarmEntries)
-                lookupCoordinator.prewarmVisibleNetwork(prewarmEntries)
+            .collect { work ->
+                requestVisibleImages(work.imageUrls)
+                lookupCoordinator.prewarmCached(work.prewarmEntries)
+                lookupCoordinator.prewarmVisibleNetwork(work.prewarmEntries)
             }
     }
     LazyColumn(
@@ -194,15 +228,9 @@ internal fun BaGuideMemoryLobbyTabContent(
                 BaGuideMemoryLobbyHeader(
                     totalCount = allStudentEntries.size,
                     displayedCount = filteredEntries.size,
-                    readyCount = filteredEntries.count { entry ->
-                        lookupStates[entry.contentId] is BaGuideMemoryLobbyLookupState.Ready
-                    },
-                    favoriteCount = allStudentEntries.count { entry ->
-                        favoriteCatalogEntries.containsKey(entry.contentId)
-                    },
-                    cachedCount = filteredEntries.count { entry ->
-                        (lookupStates[entry.contentId] as? BaGuideMemoryLobbyLookupState.Ready)?.item?.fromCache == true
-                    },
+                    readyCount = headerCounts.readyCount,
+                    favoriteCount = headerCounts.favoriteCount,
+                    cachedCount = headerCounts.cachedCount,
                     searchActive = searchQuery.isNotBlank(),
                     accent = accent,
                 )
