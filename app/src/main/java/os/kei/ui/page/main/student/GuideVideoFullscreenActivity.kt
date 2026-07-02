@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.student
 
 import android.app.ActivityOptions
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -57,7 +56,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import os.kei.R
-import os.kei.core.log.AppLogger
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
@@ -84,10 +82,6 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
-private const val GUIDE_PIP_FULLSCREEN_RESTORE_SETTLE_DELAY_MS = 860L
-private const val GUIDE_PIP_FULLSCREEN_REQUEST_TIMEOUT_MS = 720L
-private const val GUIDE_VIDEO_PIP_LOG_TAG = "GuideVideoPip"
-
 class GuideVideoFullscreenActivity : ComponentActivity() {
     private val mediaRepository = GuideFullscreenMediaRepository()
     private val pictureInPictureModeState = mutableStateOf(false)
@@ -97,9 +91,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
     private var launchedIntoPictureInPicture = false
     private var launchedWithPictureInPictureOptions = false
     private var finishRequested = false
-    private var pictureInPictureFullscreenRequestPending = false
-    private var pictureInPictureFullscreenRelaunchRequested = false
-    private var pictureInPictureExpandedModeEnabled = false
     private var guideVideoMediaUrl: String = ""
     private var guideVideoPreviewImageUrl: String = ""
     private var guideVideoPictureInPictureSessionId = APP_PIP_NO_SESSION_ID
@@ -116,18 +107,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
             }
             pictureInPictureRuntimeParamsReady = true
             commitGuidePictureInPictureParams(forceRuntime = true)
-        }
-    private val restorePictureInPictureFullscreenTaskRunnable =
-        Runnable {
-            restoreGuideVideoTaskToFrontAfterPictureInPictureExit()
-        }
-    private val relaunchPictureInPictureFullscreenTaskRunnable =
-        Runnable {
-            relaunchGuideVideoFullscreenIfRestoredTaskIsBackgrounded()
-        }
-    private val relaunchPictureInPictureFullscreenAfterRequestRunnable =
-        Runnable {
-            relaunchGuideVideoFullscreenAfterRequestTimeout()
         }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -277,10 +256,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
                 requestGuideVideoFullscreenFromPictureInPictureAction()
             }
 
-            GUIDE_VIDEO_ACTION_TOGGLE_PIP_EXPANDED_MODE -> {
-                toggleGuidePictureInPictureExpandedMode()
-            }
-
             GUIDE_VIDEO_ACTION_CLOSE_PIP -> {
                 finishGuideVideoActivity(removeTask = true)
             }
@@ -299,9 +274,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
 
     override fun onDestroy() {
         window.decorView.removeCallbacks(enablePictureInPictureRuntimeParamsRunnable)
-        window.decorView.removeCallbacks(restorePictureInPictureFullscreenTaskRunnable)
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenTaskRunnable)
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
         stopGuideVideoPlayback(release = true)
         boundPlayerView = null
         if (::pictureInPictureActionReceiver.isInitialized) {
@@ -320,16 +292,11 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         if (isInPictureInPictureMode) {
             pictureInPictureRequestPending = false
             pictureInPictureSourceRectHint = null
-            window.decorView.removeCallbacks(restorePictureInPictureFullscreenTaskRunnable)
-            window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
             scheduleGuidePictureInPictureRuntimeParamsCommit()
         } else if (!finishRequested) {
-            pictureInPictureFullscreenRequestPending = false
             pictureInPictureRuntimeParamsReady = false
             window.decorView.removeCallbacks(enablePictureInPictureRuntimeParamsRunnable)
-            window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
             applyVideoFullscreenOrientation()
-            scheduleGuideVideoTaskRestoreAfterPictureInPictureExit()
         }
     }
 
@@ -347,7 +314,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
             actionSet = buildGuidePictureInPictureActionSet(),
             sourceRectHint = runtimeGuidePictureInPictureSourceRectHint(),
             autoEnterEnabled = launchedIntoPictureInPicture,
-            expandedModeEnabled = pictureInPictureExpandedModeEnabled,
         )
         runCatching {
             setPictureInPictureParams(params)
@@ -365,42 +331,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         window.decorView.postDelayed(enablePictureInPictureRuntimeParamsRunnable, 180L)
     }
 
-    private fun scheduleGuideVideoTaskRestoreAfterPictureInPictureExit() {
-        if (!launchedIntoPictureInPicture || finishRequested || isFinishing || isDestroyed) return
-        window.decorView.removeCallbacks(restorePictureInPictureFullscreenTaskRunnable)
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenTaskRunnable)
-        window.decorView.post(restorePictureInPictureFullscreenTaskRunnable)
-        window.decorView.postDelayed(
-            relaunchPictureInPictureFullscreenTaskRunnable,
-            GUIDE_PIP_FULLSCREEN_RESTORE_SETTLE_DELAY_MS,
-        )
-    }
-
-    private fun restoreGuideVideoTaskToFrontAfterPictureInPictureExit() {
-        if (finishRequested || isFinishing || isDestroyed || isInPictureInPictureMode) return
-        if (!launchedIntoPictureInPicture) return
-        val currentTaskId = taskId
-        val activityManager = getSystemService(ActivityManager::class.java) ?: return
-        val task =
-            activityManager.appTasks.firstOrNull { appTask ->
-                appTask.taskInfo?.taskId == currentTaskId
-            } ?: return
-        runCatching { task.moveToFront() }
-    }
-
-    private fun relaunchGuideVideoFullscreenIfRestoredTaskIsBackgrounded() {
-        if (finishRequested || isFinishing || isDestroyed || isInPictureInPictureMode) return
-        if (!launchedIntoPictureInPicture || pictureInPictureFullscreenRelaunchRequested) return
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) && window.decorView.isShown) {
-            return
-        }
-        val mediaUrl = guideVideoMediaUrl.takeIf { it.isNotBlank() } ?: return
-        pictureInPictureFullscreenRelaunchRequested = true
-        if (launchGuideVideoFullscreenReplacement(mediaUrl = mediaUrl)) {
-            finishGuideVideoActivity(removeTask = true)
-        }
-    }
-
     private fun commitGuidePictureInPictureParams(forceRuntime: Boolean = false) {
         if (finishRequested || isFinishing || isDestroyed) return
         if (launchedWithPictureInPictureOptions && !isInPictureInPictureMode) return
@@ -412,7 +342,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
             actionSet = actionSet,
             sourceRectHint = runtimeGuidePictureInPictureSourceRectHint(),
             autoEnterEnabled = autoEnterEnabled,
-            expandedModeEnabled = pictureInPictureExpandedModeEnabled,
         )
         runCatching { setPictureInPictureParams(params) }
     }
@@ -444,7 +373,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
             context = this,
             sessionId = guideVideoPictureInPictureSessionId,
             playWhenReady = pictureInPicturePlayWhenReadyState.value,
-            expandedModeEnabled = pictureInPictureExpandedModeEnabled,
             maxActions = getMaxNumPictureInPictureActions(),
         )
 
@@ -454,9 +382,6 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
         pictureInPictureRequestPending = false
         pictureInPictureRuntimeParamsReady = false
         window.decorView.removeCallbacks(enablePictureInPictureRuntimeParamsRunnable)
-        window.decorView.removeCallbacks(restorePictureInPictureFullscreenTaskRunnable)
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenTaskRunnable)
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
         stopGuideVideoPlayback(release = true)
         if (isInPictureInPictureMode) {
             finish()
@@ -512,94 +437,21 @@ class GuideVideoFullscreenActivity : ComponentActivity() {
 
     private fun requestGuideVideoFullscreenFromPictureInPictureAction() {
         if (finishRequested || isFinishing || isDestroyed) return
-        if (pictureInPictureFullscreenRequestPending || pictureInPictureFullscreenRelaunchRequested) {
-            return
-        }
         if (!isInPictureInPictureMode) {
-            restoreGuideVideoTaskToFrontAfterPictureInPictureExit()
+            applyVideoFullscreenOrientation()
             return
         }
-        pictureInPictureFullscreenRequestPending = true
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
-        window.decorView.postDelayed(
-            relaunchPictureInPictureFullscreenAfterRequestRunnable,
-            GUIDE_PIP_FULLSCREEN_REQUEST_TIMEOUT_MS,
-        )
         requestAppPictureInPictureFullscreen(
             onResult = {
-                if (!isInPictureInPictureMode) {
-                    pictureInPictureFullscreenRequestPending = false
-                    window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
-                }
+                pictureInPictureRequestPending = false
+                pictureInPictureRuntimeParamsReady = false
+                window.decorView.removeCallbacks(enablePictureInPictureRuntimeParamsRunnable)
+                applyVideoFullscreenOrientation()
             },
-            onError = ::relaunchGuideVideoFullscreenAfterRequestFailure,
+            onError = {
+                pictureInPictureRequestPending = false
+            },
         )
-    }
-
-    private fun relaunchGuideVideoFullscreenAfterRequestTimeout() {
-        if (!pictureInPictureFullscreenRequestPending) return
-        if (!isInPictureInPictureMode) {
-            pictureInPictureFullscreenRequestPending = false
-            return
-        }
-        AppLogger.w(GUIDE_VIDEO_PIP_LOG_TAG) {
-            "PIP fullscreen request timed out; launching fullscreen replacement"
-        }
-        relaunchGuideVideoFullscreenFromPictureInPicture()
-    }
-
-    private fun relaunchGuideVideoFullscreenAfterRequestFailure(error: Throwable) {
-        if (!pictureInPictureFullscreenRequestPending) return
-        AppLogger.w(GUIDE_VIDEO_PIP_LOG_TAG, error) {
-            "PIP fullscreen request failed; launching fullscreen replacement"
-        }
-        relaunchGuideVideoFullscreenFromPictureInPicture()
-    }
-
-    private fun relaunchGuideVideoFullscreenFromPictureInPicture() {
-        pictureInPictureFullscreenRequestPending = false
-        window.decorView.removeCallbacks(relaunchPictureInPictureFullscreenAfterRequestRunnable)
-        val mediaUrl = guideVideoMediaUrl.takeIf { it.isNotBlank() } ?: return
-        pictureInPictureFullscreenRelaunchRequested = true
-        if (launchGuideVideoFullscreenReplacement(mediaUrl = mediaUrl)) {
-            finishGuideVideoActivity(removeTask = true)
-        } else {
-            pictureInPictureFullscreenRelaunchRequested = false
-        }
-    }
-
-    private fun launchGuideVideoFullscreenReplacement(mediaUrl: String): Boolean {
-        val player = boundVideoPlayer ?: guideVideoPlayer
-        val startPositionMs =
-            player
-                ?.currentPosition
-                ?.coerceAtLeast(0L)
-                ?: 0L
-        val playWhenReady =
-            player
-                ?.let { current -> current.playWhenReady && current.playbackState != Player.STATE_ENDED }
-                ?: true
-        val intent = Intent(this, GuideVideoFullscreenActivity::class.java).apply {
-            putExtra(EXTRA_MEDIA_URL, mediaUrl)
-            putExtra(EXTRA_PREVIEW_IMAGE_URL, guideVideoPreviewImageUrl)
-            putExtra(EXTRA_START_IN_PIP, false)
-            putExtra(EXTRA_STARTED_WITH_PIP_OPTIONS, false)
-            putExtra(EXTRA_START_POSITION_MS, startPositionMs)
-            putExtra(EXTRA_PLAY_WHEN_READY, playWhenReady)
-            putExtra(APP_PIP_EXTRA_SESSION_ID, guideVideoPictureInPictureSessionId)
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
-                    Intent.FLAG_ACTIVITY_NO_ANIMATION
-            )
-        }
-        return runCatching { startActivity(intent) }.isSuccess
-    }
-
-    private fun toggleGuidePictureInPictureExpandedMode() {
-        if (!supportsGuideExpandedPictureInPicture()) return
-        pictureInPictureExpandedModeEnabled = !pictureInPictureExpandedModeEnabled
-        commitGuidePictureInPictureParams(forceRuntime = true)
     }
 
     private fun onGuideVideoPlayerPlayWhenReadyChanged(playWhenReady: Boolean) {
