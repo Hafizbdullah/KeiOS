@@ -22,8 +22,11 @@ dependencies {
     implementation(project(":core-io"))
     implementation(project(":core-prefs"))
 
-    implementation("com.squareup.okhttp3:okhttp:5.4.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation(platform("io.ktor:ktor-bom:3.5.1"))
+    implementation("io.ktor:ktor-client-auth")
+    implementation("io.ktor:ktor-client-cio")
+    implementation("io.ktor:ktor-client-encoding")
 
     // WebDAV client (used by DAVx⁵, production-grade)
     // Exclude xpp3 — Android has built-in XmlPullParser

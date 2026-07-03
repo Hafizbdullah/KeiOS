@@ -16,7 +16,7 @@ import java.security.MessageDigest
  * Coordinates upload / download / two-way sync for each [WebDavSyncItem].
  *
  * Holds a single [WebDavSyncClient] that is rebuilt only when the connection config changes, so
- * repeated calls reuse the same OkHttp client and auth state. All domain export/import logic is
+ * repeated calls reuse the same HTTP client and auth state. All domain export/import logic is
  * injected via [WebDavSyncDataPort] — the engine never touches a concrete domain store.
  *
  * Every method returns a string-free [WebDavItemOutcome] / [WebDavConnectionOutcome]; turning
@@ -39,6 +39,7 @@ internal class WebDavSyncEngine(
         if (existing != null && cachedConfig == config) {
             existing
         } else {
+            existing?.close()
             clientFactory(config).also {
                 cachedClient = it
                 cachedConfig = config
@@ -48,6 +49,7 @@ internal class WebDavSyncEngine(
 
     /** Drop the cached client (e.g. after the user clears or rewrites the config). */
     fun invalidate() {
+        cachedClient?.close()
         cachedClient = null
         cachedConfig = null
     }
@@ -536,6 +538,7 @@ internal interface WebDavSyncClientBridge {
     suspend fun upload(fileName: String, content: String, etag: String? = null): WebDavUploadResult
     suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult
     suspend fun download(fileName: String): WebDavDownloadResult
+    fun close() = Unit
 }
 
 private class RealWebDavSyncClientBridge(
@@ -554,6 +557,10 @@ private class RealWebDavSyncClientBridge(
 
     override suspend fun download(fileName: String): WebDavDownloadResult =
         delegate.download(fileName)
+
+    override fun close() {
+        delegate.close()
+    }
 }
 
 internal interface WebDavSyncMetadataStore {

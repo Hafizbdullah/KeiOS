@@ -2,7 +2,6 @@ package os.kei.core.concurrency
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import os.kei.core.concurrency.AppDispatchers.media
 
 /**
  * Bounded IO dispatchers for KeiOS feature domains.
@@ -67,6 +66,12 @@ object AppDispatchers {
      * Bounded to 3 threads — covers settings, feedback, JSON import flows.
      */
     val fileIo: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(3)
+
+    /**
+     * WebDAV network operations: remote metadata probes, downloads, uploads, and sync conflict
+     * checks. Kept separate from general file IO so remote sync cannot starve local import/export.
+     */
+    val webDavNetwork: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(3)
 
     /**
      * Media operations: image loading, BGM playback prep, gallery export.

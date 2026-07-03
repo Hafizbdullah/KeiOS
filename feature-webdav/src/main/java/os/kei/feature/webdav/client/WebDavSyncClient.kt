@@ -1,233 +1,127 @@
-@file:Suppress("DEPRECATION")
-
 package os.kei.feature.webdav.client
 
-import at.bitfire.dav4jvm.okhttp.BasicDigestAuthHandler
-import at.bitfire.dav4jvm.okhttp.DavCollection
-import at.bitfire.dav4jvm.okhttp.DavResource
-import at.bitfire.dav4jvm.okhttp.exception.ConflictException
-import at.bitfire.dav4jvm.okhttp.exception.DavException
-import at.bitfire.dav4jvm.okhttp.exception.ForbiddenException
-import at.bitfire.dav4jvm.okhttp.exception.HttpException
-import at.bitfire.dav4jvm.okhttp.exception.NotFoundException
-import at.bitfire.dav4jvm.okhttp.exception.PreconditionFailedException
-import at.bitfire.dav4jvm.okhttp.exception.UnauthorizedException
+import at.bitfire.dav4jvm.ktor.DavCollection
+import at.bitfire.dav4jvm.ktor.DavResource
+import at.bitfire.dav4jvm.ktor.Response
+import at.bitfire.dav4jvm.ktor.createDomainBasicAuthProvider
+import at.bitfire.dav4jvm.ktor.createDomainDigestAuthProvider
+import at.bitfire.dav4jvm.ktor.exception.ConflictException
+import at.bitfire.dav4jvm.ktor.exception.DavException
+import at.bitfire.dav4jvm.ktor.exception.ForbiddenException
+import at.bitfire.dav4jvm.ktor.exception.HttpException
+import at.bitfire.dav4jvm.ktor.exception.NotFoundException
+import at.bitfire.dav4jvm.ktor.exception.PreconditionFailedException
+import at.bitfire.dav4jvm.ktor.exception.UnauthorizedException
+import at.bitfire.dav4jvm.ktor.resolve
+import at.bitfire.dav4jvm.property.webdav.GetContentLength
 import at.bitfire.dav4jvm.property.webdav.GetETag
+import at.bitfire.dav4jvm.property.webdav.GetLastModified
 import at.bitfire.dav4jvm.property.webdav.ResourceType
 import at.bitfire.dav4jvm.property.webdav.WebDAV
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
+import io.ktor.http.content.TextContent
+import io.ktor.http.headersOf
+import io.ktor.http.withCharset
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.model.WebDavConfig
 import os.kei.feature.webdav.model.WebDavRemoteFile
 import java.io.IOException
-import java.util.concurrent.TimeUnit
+import java.net.SocketTimeoutException
 
 /**
- * Production-grade WebDAV client wrapping dav4jvm.
+ * WebDAV client backed by dav4jvm's Ktor API.
  *
- * Supports Basic + Digest authentication (auto-negotiated).
- * Handles recursive directory creation, ETag-based conditional writes,
- * and proper error classification.
+ * The public result model is intentionally stable because WebDAV sync planning, merge previews,
+ * and conflict handling live in the app layer. Internally this client uses the current dav4jvm
+ * Ktor surface exclusively.
  */
 class WebDavSyncClient(
     private val config: WebDavConfig,
+    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.webDavNetwork,
 ) {
-    private val authHandler = BasicDigestAuthHandler(
-        domain = null,
-        username = config.username,
-        password = config.appPassword.toCharArray(),
-    )
+    private val httpClient = HttpClient(CIO) {
+        followRedirects = false
 
-    /**
-     * User-Agent interceptor.
-     *
-     * Some WebDAV providers gate features behind a User-Agent allow-list. Send a recognisable,
-     * application-shaped UA so requests aren't filtered out. Verified against Jianguoyun: any
-     * non-empty UA (including the default `okhttp/<ver>`) is accepted, but advertising a stable
-     * client identity makes server-side diagnostics easier and matches what well-behaved DAV
-     * clients (e.g. DAVx⁵) do.
-     */
-    private val userAgentInterceptor = Interceptor { chain ->
-        val original = chain.request()
-        if (original.header("User-Agent") != null) {
-            chain.proceed(original)
-        } else {
-            chain.proceed(original.newBuilder().header("User-Agent", USER_AGENT).build())
+        install(UserAgent) {
+            agent = USER_AGENT
+        }
+
+        install(HttpTimeout) {
+            connectTimeoutMillis = CONNECT_TIMEOUT_MS
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+            socketTimeoutMillis = SOCKET_TIMEOUT_MS
+        }
+
+        install(Auth) {
+            providers.add(
+                createDomainBasicAuthProvider(
+                    username = config.username,
+                    password = config.appPassword,
+                ),
+            )
+            providers.add(
+                createDomainDigestAuthProvider(
+                    username = config.username,
+                    password = config.appPassword,
+                ),
+            )
         }
     }
 
-    private val httpClient = OkHttpClient.Builder()
-        .followRedirects(false)
-        .authenticator(authHandler)
-        .addInterceptor(userAgentInterceptor)
-        .addNetworkInterceptor(authHandler)
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
+    private val baseUrl: Url by lazy { parseBaseUrl(config.serverUrl) }
 
-    private val baseUrl: okhttp3.HttpUrl
-
-    init {
-        val url = config.serverUrl
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            throw IllegalArgumentException("Server URL must start with http:// or https://, got: $url")
-        }
-        // CRITICAL: keep the trailing slash. okhttp3.HttpUrl.resolve() follows RFC 3986 — when the
-        // base path ends without `/`, the last segment is treated as a *file* and replaced by the
-        // relative reference. Stripping the slash from "https://dav.jianguoyun.com/dav/" turns the
-        // base into "/dav", and resolving "KeiOS/" against it produces "/KeiOS/" (outside the dav
-        // namespace), which Jianguoyun's nginx returns HTTP 410 Gone for. Normalise to a single
-        // trailing slash instead.
-        val normalized = url.trimEnd('/') + "/"
-        baseUrl = normalized.toHttpUrl()
+    fun close() {
+        httpClient.close()
     }
 
-    private fun collectionUrl(): okhttp3.HttpUrl {
-        // Defensive normalisation in case the user typed "KeiOS" without a trailing slash:
-        // resolve("KeiOS") would produce "/dav/KeiOS" — a file path, not a collection. Append the
-        // slash so PROPFIND/MKCOL hit the directory.
-        val dir = config.remoteDir.trimStart('/').let { if (it.endsWith("/")) it else "$it/" }
-        return baseUrl.resolve(dir)!!
-    }
-
-    private fun fileUrl(fileName: String) = collectionUrl().resolve(fileName)!!
-
-
-    // ── Test connection ──────────────────────────────────────────────
-
-    /**
-     * Test connection by attempting to PROPFIND the remote directory.
-     * If the directory doesn't exist (404/409), creates it automatically.
-     */
-    suspend fun testConnection(): WebDavTestConnectionResult = withContext(Dispatchers.IO) {
+    suspend fun testConnection(): WebDavTestConnectionResult = withContext(ioDispatcher) {
         try {
-            val collection = DavCollection(httpClient, collectionUrl())
-            collection.propfind(0, WebDAV.ResourceType) { _, _ -> }
+            collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
             WebDavTestConnectionResult.Success(dirCreated = false)
         } catch (e: NotFoundException) {
             AppLogger.i(TAG, "Remote dir not found, creating...")
             createDirectoryRecursive()
         } catch (e: ConflictException) {
-            AppLogger.i(TAG, "Remote dir conflict (parent missing), creating...")
+            AppLogger.i(TAG, "Remote dir parent missing, creating...")
             createDirectoryRecursive()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: UnauthorizedException) {
             WebDavTestConnectionResult.AuthFailed
         } catch (e: ForbiddenException) {
             WebDavTestConnectionResult.PermissionDenied
-        } catch (e: HttpException) {
-            // Surface the actual HTTP status (e.g. 410 Gone from Jianguoyun's edge filter).
-            // Without this, DavException's catch swallows the code into "WebDAV error" with no
-            // hint about why the server refused the request.
-            WebDavTestConnectionResult.Error("HTTP ${e.statusCode}: ${e.message ?: "request rejected"}")
-        } catch (e: DavException) {
-            WebDavTestConnectionResult.Error(e.message ?: "WebDAV error")
         } catch (e: IOException) {
             WebDavTestConnectionResult.NetworkError(e.message ?: "Network unreachable")
         } catch (e: IllegalArgumentException) {
             WebDavTestConnectionResult.InvalidUrl(e.message ?: "Invalid URL")
+        } catch (e: Exception) {
+            WebDavTestConnectionResult.Error(toMessage(e))
         }
     }
 
-
-    // ── Upload ───────────────────────────────────────────────────────
-
-    /**
-     * Upload a file. Uses If-Match for conditional write when [etag] is provided.
-     *
-     * @param fileName remote file name
-     * @param content JSON content to upload
-     * @param etag previous ETag for conditional write (null = unconditional)
-     * @return [WebDavUploadResult] with new ETag on success
-     */
     suspend fun upload(fileName: String, content: String, etag: String? = null): WebDavUploadResult =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             try {
                 ensureCollection()
-                val resource = DavResource(httpClient, fileUrl(fileName))
-                val body = content.toRequestBody("application/json; charset=utf-8".toMediaType())
-                var resultEtag: String? = null
-
-                resource.put(body, ifETag = etag) { response ->
-                    resultEtag = response.header("ETag")?.removeSurrounding("\"")
-                }
-                WebDavUploadResult.Success(resultEtag)
+                putFile(fileName, content, ifMatchHeaders(etag))
             } catch (e: PreconditionFailedException) {
                 WebDavUploadResult.Conflict
             } catch (e: NotFoundException) {
-                // Directory doesn't exist, try to create and retry
-                try {
-                    ensureCollection()
-                    val resource = DavResource(httpClient, fileUrl(fileName))
-                    val body = content.toRequestBody("application/json; charset=utf-8".toMediaType())
-                    var resultEtag: String? = null
-                    resource.put(body, ifETag = etag) { response ->
-                        resultEtag = response.header("ETag")?.removeSurrounding("\"")
-                    }
-                    WebDavUploadResult.Success(resultEtag)
-                } catch (e2: CancellationException) {
-                    throw e2
-                } catch (e2: Exception) {
-                    WebDavUploadResult.Error(classifyError(e2))
-                }
-            } catch (e: UnauthorizedException) {
-                WebDavUploadResult.Error(WebDavError.AuthFailed)
-            } catch (e: ForbiddenException) {
-                WebDavUploadResult.Error(WebDavError.PermissionDenied)
-            } catch (e: DavException) {
-                WebDavUploadResult.Error(WebDavError.Unknown(0, e.message ?: "WebDAV error"))
-            } catch (e: IOException) {
-                WebDavUploadResult.Error(WebDavError.NetworkUnreachable)
-            }
-        }
-
-    /**
-     * Create a remote file only when it is still absent. Used after the UI has refreshed an empty
-     * remote snapshot; if another device creates the same file before confirmation completes,
-     * the server returns 412 and the caller reports a conflict instead of overwriting it.
-     */
-    suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult =
-        withContext(Dispatchers.IO) {
-            try {
-                ensureCollection()
-                val body = content.toRequestBody("application/json; charset=utf-8".toMediaType())
-                val request =
-                    Request.Builder()
-                        .url(fileUrl(fileName))
-                        .put(body)
-                        .header("If-None-Match", "*")
-                        .build()
-                httpClient.newCall(request).execute().use { response ->
-                    when (response.code) {
-                        200, 201, 204 ->
-                            WebDavUploadResult.Success(response.header("ETag")?.removeSurrounding("\""))
-
-                        412 -> WebDavUploadResult.Conflict
-                        401 -> WebDavUploadResult.Error(WebDavError.AuthFailed)
-                        403 -> WebDavUploadResult.Error(WebDavError.PermissionDenied)
-                        else ->
-                            WebDavUploadResult.Error(
-                                WebDavError.Unknown(
-                                    response.code,
-                                    response.message.ifBlank { "HTTP ${response.code}" },
-                                ),
-                            )
-                    }
-                }
-            } catch (e: UnauthorizedException) {
-                WebDavUploadResult.Error(WebDavError.AuthFailed)
-            } catch (e: ForbiddenException) {
-                WebDavUploadResult.Error(WebDavError.PermissionDenied)
-            } catch (e: IOException) {
-                WebDavUploadResult.Error(WebDavError.NetworkUnreachable)
+                retryAfterEnsuringCollection(fileName, content, ifMatchHeaders(etag))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -235,74 +129,71 @@ class WebDavSyncClient(
             }
         }
 
+    suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult =
+        withContext(ioDispatcher) {
+            try {
+                ensureCollection()
+                putFile(fileName, content, headersOf(HttpHeaders.IfNoneMatch, "*"))
+            } catch (e: PreconditionFailedException) {
+                WebDavUploadResult.Conflict
+            } catch (e: NotFoundException) {
+                retryAfterEnsuringCollection(fileName, content, headersOf(HttpHeaders.IfNoneMatch, "*"))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                WebDavUploadResult.Error(classifyError(e))
+            }
+        }
 
-    // ── Download ─────────────────────────────────────────────────────
-
-    /**
-     * Download a file. Returns content and ETag.
-     *
-     * @param fileName remote file name
-     * @return [WebDavDownloadResult] with content and ETag
-     */
-    suspend fun download(fileName: String): WebDavDownloadResult = withContext(Dispatchers.IO) {
+    suspend fun download(fileName: String): WebDavDownloadResult = withContext(ioDispatcher) {
         try {
             val resource = DavResource(httpClient, fileUrl(fileName))
             var content: String? = null
             var etag: String? = null
 
-            resource.get("*/*", null) { response ->
-                content = response.body.string()
-                etag = response.header("ETag")?.removeSurrounding("\"")
+            resource.get {
+                content = it.bodyAsText()
+                etag = GetETag.fromHttpResponse(it)?.eTag
             }
 
-            if (content.isNullOrBlank()) {
+            val text = content
+            if (text.isNullOrBlank()) {
                 WebDavDownloadResult.Empty
             } else {
-                WebDavDownloadResult.Success(content, etag)
+                WebDavDownloadResult.Success(text, etag)
             }
         } catch (e: NotFoundException) {
             WebDavDownloadResult.Empty
-        } catch (e: UnauthorizedException) {
-            WebDavDownloadResult.Error(WebDavError.AuthFailed)
-        } catch (e: ForbiddenException) {
-            WebDavDownloadResult.Error(WebDavError.PermissionDenied)
-        } catch (e: DavException) {
-            WebDavDownloadResult.Error(WebDavError.Unknown(0, e.message ?: "WebDAV error"))
-        } catch (e: IOException) {
-            WebDavDownloadResult.Error(WebDavError.NetworkUnreachable)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            WebDavDownloadResult.Error(classifyError(e))
         }
     }
 
-
-    // ── List files ───────────────────────────────────────────────────
-
-    /**
-     * List files in the remote directory.
-     */
-    suspend fun listFiles(): List<WebDavRemoteFile> = withContext(Dispatchers.IO) {
+    suspend fun listFiles(): List<WebDavRemoteFile> = withContext(ioDispatcher) {
         try {
             ensureCollection()
-            val collection = DavCollection(httpClient, collectionUrl())
             val files = mutableListOf<WebDavRemoteFile>()
 
-            collection.propfind(1, WebDAV.GetETag, WebDAV.ResourceType) { response, relation ->
-                if (relation == at.bitfire.dav4jvm.okhttp.Response.HrefRelation.MEMBER) {
-                    val getETag = response[GetETag::class.java]
-                    val isCollection = response[ResourceType::class.java]
-                        ?.types?.contains(WebDAV.Collection) == true
-                    if (!isCollection) {
-                        files.add(
-                            WebDavRemoteFile(
-                                href = response.href.toString(),
-                                displayName = response.hrefName(),
-                                lastModified = null,
-                                contentLength = 0,
-                                etag = getETag?.eTag,
-                            )
-                        )
-                    }
+            collection().propfind(
+                1,
+                WebDAV.GetETag,
+                WebDAV.GetLastModified,
+                WebDAV.GetContentLength,
+                WebDAV.ResourceType,
+            ) { response, relation ->
+                if (relation == Response.HrefRelation.MEMBER && !response.isCollection()) {
+                    files += WebDavRemoteFile(
+                        href = response.href.toString(),
+                        displayName = response.hrefName(),
+                        lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
+                        contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
+                        etag = response[GetETag::class.java]?.eTag,
+                    )
                 }
             }
+
             files
         } catch (e: CancellationException) {
             throw e
@@ -312,118 +203,175 @@ class WebDavSyncClient(
         }
     }
 
-
-    // ── Directory management ─────────────────────────────────────────
-
-    /**
-     * Ensure the remote collection (directory) exists.
-     * Creates it recursively if needed.
-     */
-    private fun ensureCollection() {
+    private suspend fun retryAfterEnsuringCollection(
+        fileName: String,
+        content: String,
+        headers: Headers?,
+    ): WebDavUploadResult =
         try {
-            val collection = DavCollection(httpClient, collectionUrl())
-            collection.propfind(0, WebDAV.ResourceType) { _, _ -> }
-        } catch (e: NotFoundException) {
+            ensureCollection()
+            putFile(fileName, content, headers)
+        } catch (e: PreconditionFailedException) {
+            WebDavUploadResult.Conflict
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            WebDavUploadResult.Error(classifyError(e))
+        }
+
+    private suspend fun putFile(fileName: String, content: String, headers: Headers?): WebDavUploadResult {
+        val resource = DavResource(httpClient, fileUrl(fileName))
+        var resultEtag: String? = null
+        resource.put(TextContent(content, JSON_CONTENT_TYPE), headers) { response ->
+            resultEtag = GetETag.fromHttpResponse(response)?.eTag
+        }
+        return WebDavUploadResult.Success(resultEtag)
+    }
+
+    private suspend fun ensureCollection() {
+        try {
+            collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+        } catch (_: NotFoundException) {
             createDirectorySync()
-        } catch (e: ConflictException) {
+        } catch (_: ConflictException) {
             createDirectorySync()
         }
     }
 
-    /**
-     * Create the remote directory synchronously.
-     * Handles recursive creation for nested paths.
-     */
-    private fun createDirectorySync() {
-        val collection = DavCollection(httpClient, collectionUrl())
+    private suspend fun createDirectoryRecursive(): WebDavTestConnectionResult =
+        try {
+            createDirectorySync()
+            WebDavTestConnectionResult.Success(dirCreated = true)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: UnauthorizedException) {
+            WebDavTestConnectionResult.AuthFailed
+        } catch (e: ForbiddenException) {
+            WebDavTestConnectionResult.PermissionDenied
+        } catch (e: IOException) {
+            WebDavTestConnectionResult.NetworkError(e.message ?: "Network error")
+        } catch (e: IllegalArgumentException) {
+            WebDavTestConnectionResult.InvalidUrl(e.message ?: "Invalid URL")
+        } catch (e: Exception) {
+            WebDavTestConnectionResult.Error(toMessage(e))
+        }
+
+    private suspend fun createDirectorySync() {
+        val segments = config.remoteDir
+            .trim()
+            .trim('/')
+            .split('/')
+            .filter { it.isNotBlank() }
+        if (segments.isEmpty()) return
+
+        var currentPath = ""
+        for (segment in segments) {
+            currentPath += "$segment/"
+            ensureDirectorySegment(resolveFromBase(currentPath), currentPath)
+        }
+    }
+
+    private suspend fun ensureDirectorySegment(url: Url, label: String) {
+        val collection = DavCollection(httpClient, url)
+        try {
+            collection.propfind(0, WebDAV.ResourceType) { _, _ -> }
+            return
+        } catch (_: NotFoundException) {
+        } catch (_: ConflictException) {
+        }
+
         try {
             collection.mkCol(null) { _ -> }
-            AppLogger.i(TAG, "Created directory: ${config.remoteDir}")
-        } catch (e: ConflictException) {
-            // Parent doesn't exist — create parent first, then retry
-            AppLogger.i(TAG, "Parent directory missing, creating recursively...")
-            createParentDirectories()
-            collection.mkCol(null) { _ -> }
-            AppLogger.i(TAG, "Created directory after parent creation: ${config.remoteDir}")
+            AppLogger.i(TAG, "Created WebDAV directory: $label")
         } catch (e: HttpException) {
-            // 405 Method Not Allowed = already exists (some servers return this)
             if (e.statusCode == 405) {
-                AppLogger.i(TAG, "Directory already exists (405)")
+                AppLogger.i(TAG, "WebDAV directory already exists: $label")
             } else {
                 throw e
             }
         }
     }
 
-    /**
-     * Create parent directories recursively.
-     * For path "a/b/c/", creates "a/", then "a/b/", etc.
-     */
-    private fun createParentDirectories() {
-        val segments = config.remoteDir.trim('/').split('/')
-        var currentPath = ""
-        for (segment in segments.dropLast(0)) {
-            if (segment.isBlank()) continue
-            currentPath = "$currentPath$segment/"
-            try {
-                val parentUrl = baseUrl.resolve(currentPath)!!
-                val parentCollection = DavCollection(httpClient, parentUrl)
-                parentCollection.mkCol(null) { _ -> }
-                AppLogger.i(TAG, "Created parent directory: $currentPath")
-            } catch (e: HttpException) {
-                if (e.statusCode == 405) {
-                    // Already exists, continue
-                } else {
-                    AppLogger.w(TAG, "Failed to create parent $currentPath: ${e.statusCode}")
+    private fun collection(): DavCollection = DavCollection(httpClient, collectionUrl())
+
+    private fun collectionUrl(): Url {
+        val dir = config.remoteDir
+            .trim()
+            .trimStart('/')
+            .let { path ->
+                when {
+                    path.isBlank() -> ""
+                    path.endsWith("/") -> path
+                    else -> "$path/"
                 }
             }
-        }
+        return if (dir.isBlank()) baseUrl else resolveFromBase(dir)
     }
 
-    /**
-     * Create directory with coroutine context (for test connection).
-     */
-    private suspend fun createDirectoryRecursive(): WebDavTestConnectionResult = withContext(Dispatchers.IO) {
-        try {
-            createDirectorySync()
-            WebDavTestConnectionResult.Success(dirCreated = true)
-        } catch (e: UnauthorizedException) {
-            WebDavTestConnectionResult.AuthFailed
-        } catch (e: ForbiddenException) {
-            WebDavTestConnectionResult.PermissionDenied
-        } catch (e: DavException) {
-            WebDavTestConnectionResult.Error(e.message ?: "Failed to create directory")
-        } catch (e: IOException) {
-            WebDavTestConnectionResult.NetworkError(e.message ?: "Network error")
+    private fun fileUrl(fileName: String): Url =
+        collectionUrl().resolve(fileName)
+            ?: throw IllegalArgumentException("Invalid WebDAV file name: $fileName")
+
+    private fun resolveFromBase(relativePath: String): Url =
+        baseUrl.resolve(relativePath)
+            ?: throw IllegalArgumentException("Invalid WebDAV path: $relativePath")
+
+    private fun parseBaseUrl(url: String): Url {
+        val trimmed = url.trim()
+        require(trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            "Server URL must start with http:// or https://, got: $url"
         }
+        return Url(trimmed.trimEnd('/') + "/")
     }
 
+    private fun Response.isCollection(): Boolean =
+        this[ResourceType::class.java]
+            ?.types
+            ?.contains(WebDAV.Collection) == true
 
-    // ── Error classification ─────────────────────────────────────────
+    private fun ifMatchHeaders(etag: String?): Headers? =
+        etag?.takeIf { it.isNotBlank() }?.let {
+            headersOf(HttpHeaders.IfMatch, formatEtagForHeader(it))
+        }
+
+    private fun formatEtagForHeader(etag: String): String {
+        val trimmed = etag.trim()
+        return when {
+            trimmed.startsWith("W/\"") && trimmed.endsWith('"') -> trimmed
+            trimmed.startsWith('"') && trimmed.endsWith('"') -> trimmed
+            else -> "\"$trimmed\""
+        }
+    }
 
     private fun classifyError(e: Exception): WebDavError = when (e) {
         is UnauthorizedException -> WebDavError.AuthFailed
         is ForbiddenException -> WebDavError.PermissionDenied
         is ConflictException -> WebDavError.Unknown(409, "Directory conflict")
-        is HttpException -> WebDavError.Unknown(e.statusCode, e.message ?: "HTTP ${e.statusCode}")
+        is HttpException -> WebDavError.Unknown(e.statusCode, toMessage(e))
+        is HttpRequestTimeoutException -> WebDavError.NetworkUnreachable
+        is SocketTimeoutException -> WebDavError.NetworkUnreachable
         is IOException -> WebDavError.NetworkUnreachable
-        is DavException -> WebDavError.Unknown(0, e.message ?: "WebDAV error")
+        is DavException -> WebDavError.Unknown(e.statusCode ?: 0, toMessage(e))
+        is IllegalArgumentException -> WebDavError.Unknown(0, e.message ?: "Invalid WebDAV request")
         else -> WebDavError.Unknown(0, e.message ?: "Unknown error")
+    }
+
+    private fun toMessage(e: Exception): String = when (e) {
+        is HttpException -> "HTTP ${e.statusCode}: ${e.message ?: "request rejected"}"
+        is DavException -> e.message ?: "WebDAV error"
+        else -> e.message ?: "Unknown error"
     }
 
     companion object {
         private const val TAG = "WebDavSyncClient"
+        private const val CONNECT_TIMEOUT_MS = 30_000L
+        private const val REQUEST_TIMEOUT_MS = 60_000L
+        private const val SOCKET_TIMEOUT_MS = 60_000L
+        private val JSON_CONTENT_TYPE = ContentType.Application.Json.withCharset(Charsets.UTF_8)
 
-        /**
-         * User-Agent advertised on every request. Stable client identity helps server-side
-         * diagnostics and matches the convention used by mature DAV clients (e.g. DAVx⁵).
-         */
-        const val USER_AGENT: String = "KeiOS-WebDAV/1 (+https://github.com/KeiOS) okhttp"
+        const val USER_AGENT: String = "KeiOS-WebDAV/1 (+https://github.com/KeiOS) ktor"
     }
 }
-
-
-// ── Result types ─────────────────────────────────────────────────────
 
 sealed interface WebDavTestConnectionResult {
     data class Success(val dirCreated: Boolean) : WebDavTestConnectionResult
