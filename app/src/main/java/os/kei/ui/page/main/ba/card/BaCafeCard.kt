@@ -108,6 +108,23 @@ internal fun BaCafeCard(
         formatBaDateTimeNoSeconds(if (invite2Ready) uiNowMs else invite2AvailableAt, notSyncedText)
     val headpatTimeText = if (coffeeHeadpatMs > 0L) formatBaDateTimeNoSeconds(coffeeHeadpatMs, notSyncedText) else "-"
     val cafeHourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, cafeHourlyGain(cafeLevel))
+    val cafeCap = cafeDailyCapacity(cafeLevel)
+    val cafeFullAt =
+        calculateCafeFullAtMs(
+            cafeLevel = cafeLevel,
+            cafeStoredAp = cafeStoredAp,
+            cafeLastHourMs = cafeLastHourMs,
+            nowMs = uiNowMs,
+        )
+    val cafeFullText =
+        if (cafeStoredAp >= cafeCap.toDouble()) {
+            stringResource(R.string.ba_cafe_ap_full_pill_now)
+        } else {
+            stringResource(
+                R.string.ba_cafe_ap_full_pill_format,
+                formatBaRemainingTime(cafeFullAt, uiNowMs),
+            )
+        }
 
     BaLiquidCard(
         backdrop = backdrop,
@@ -118,6 +135,12 @@ internal fun BaCafeCard(
             title = stringResource(R.string.ba_cafe_title),
             titleIconRes = R.drawable.mp_cafe_small,
             trailing = {
+                StatusPill(
+                    label = cafeFullText,
+                    color = countdownBlue,
+                    size = AppStatusPillSize.Compact,
+                    backdrop = backdrop,
+                )
                 StatusPill(
                     label = cafeHourlyText,
                     color = accentPink,
@@ -144,10 +167,7 @@ internal fun BaCafeCard(
 
         BaCafeApStockPanel(
             backdrop = backdrop,
-            clockState = clockState,
             cafeLevel = cafeLevel,
-            cafeStoredAp = cafeStoredAp,
-            cafeLastHourMs = cafeLastHourMs,
             cafeStoredApInput = cafeStoredApInput,
             accentPink = accentPink,
             onCafeStoredApInputChange = onCafeStoredApInputChange,
@@ -207,10 +227,7 @@ internal fun BaCafeCard(
 @Composable
 private fun BaCafeApStockPanel(
     backdrop: Backdrop?,
-    clockState: BaPageClockState,
     cafeLevel: Int,
-    cafeStoredAp: Double,
-    cafeLastHourMs: Long,
     cafeStoredApInput: String,
     accentPink: Color,
     onCafeStoredApInputChange: (String) -> Unit,
@@ -218,25 +235,7 @@ private fun BaCafeApStockPanel(
     onOpenCafeApTools: () -> Unit,
     onClaimCafeStoredAp: () -> Unit,
 ) {
-    val uiMinuteMs = clockState.uiMinuteMs.longValue
     val cafeCap = cafeDailyCapacity(cafeLevel)
-    val isCafeFull = cafeStoredAp >= cafeCap.toDouble()
-    val cafeFullAt =
-        calculateCafeFullAtMs(
-            cafeLevel = cafeLevel,
-            cafeStoredAp = cafeStoredAp,
-            cafeLastHourMs = cafeLastHourMs,
-            nowMs = uiMinuteMs,
-        )
-    val fullText =
-        if (isCafeFull) {
-            stringResource(R.string.ba_cafe_ap_full_pill_now)
-        } else {
-            stringResource(
-                R.string.ba_cafe_ap_full_pill_format,
-                formatBaRemainingTime(cafeFullAt, uiMinuteMs),
-            )
-        }
 
     BaLiquidPanel(
         backdrop = backdrop,
@@ -306,11 +305,5 @@ private fun BaCafeApStockPanel(
                 )
             }
         }
-        StatusPill(
-            label = fullText,
-            color = accentPink,
-            size = AppStatusPillSize.Compact,
-            backdrop = backdrop,
-        )
     }
 }

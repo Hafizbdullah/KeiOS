@@ -49,6 +49,7 @@ internal fun BaApCard(
     onApCurrentDone: () -> Unit,
     onOpenApLimitTools: () -> Unit,
 ) {
+    val uiMinuteMs = clockState.uiMinuteMs.longValue
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val apSyncTimeText =
         if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
@@ -57,9 +58,14 @@ internal fun BaApCard(
             apLimit = apLimit,
             apCurrent = apCurrent,
             apRegenBaseMs = apRegenBaseMs,
-            nowMs = clockState.uiMinuteMs.longValue,
+            nowMs = uiMinuteMs,
         )
     val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
+    val apFullStatusText =
+        stringResource(
+            R.string.ba_ap_full_remaining_format,
+            formatBaRemainingTime(apFullAt, uiMinuteMs),
+        )
     val apRegenRateText = stringResource(R.string.ba_ap_regen_rate_format, 6)
     val accentGreen = AppStatusColors.Fresh
     val accentBlue = AppStatusColors.Cached
@@ -74,6 +80,12 @@ internal fun BaApCard(
             titleIconRes = R.drawable.ba_ap_icon_tight_small,
             trailing = {
                 StatusPill(
+                    label = apFullStatusText,
+                    color = accentBlue,
+                    size = AppStatusPillSize.Compact,
+                    backdrop = backdrop,
+                )
+                StatusPill(
                     label = apRegenRateText,
                     color = accentGreen,
                     size = AppStatusPillSize.Compact,
@@ -83,11 +95,8 @@ internal fun BaApCard(
         )
         BaApInputPanel(
             backdrop = backdrop,
-            clockState = clockState,
             accentGreen = accentGreen,
             apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
             apCurrentInput = apCurrentInput,
             onApCurrentInputChange = onApCurrentInputChange,
             onApCurrentDone = onApCurrentDone,
@@ -108,27 +117,13 @@ internal fun BaApCard(
 @Composable
 private fun BaApInputPanel(
     backdrop: Backdrop?,
-    clockState: BaPageClockState,
     accentGreen: Color,
     apLimit: Int,
-    apCurrent: Double,
-    apRegenBaseMs: Long,
     apCurrentInput: String,
     onApCurrentInputChange: (String) -> Unit,
     onApCurrentDone: () -> Unit,
     onOpenApLimitTools: () -> Unit,
 ) {
-    val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val apFullAt =
-        calculateApFullAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiMinuteMs,
-        )
-    val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
-    val apFullStatusText = stringResource(R.string.ba_ap_full_remaining_format, apFullText)
-
     BaLiquidPanel(
         backdrop = backdrop,
         accentColor = accentGreen,
@@ -183,11 +178,5 @@ private fun BaApInputPanel(
                 )
             }
         }
-        StatusPill(
-            label = apFullStatusText,
-            color = Color(0xFF60A5FA),
-            size = AppStatusPillSize.Compact,
-            backdrop = backdrop,
-        )
     }
 }
