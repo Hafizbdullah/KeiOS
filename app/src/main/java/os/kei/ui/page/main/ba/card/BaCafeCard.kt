@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -231,10 +230,10 @@ private fun BaCafeApStockPanel(
         )
     val fullText =
         if (isCafeFull) {
-            stringResource(R.string.ba_cafe_ap_full_now)
+            stringResource(R.string.ba_cafe_ap_full_pill_now)
         } else {
             stringResource(
-                R.string.ba_cafe_ap_full_remaining_format,
+                R.string.ba_cafe_ap_full_pill_format,
                 formatBaRemainingTime(cafeFullAt, uiMinuteMs),
             )
         }
@@ -307,11 +306,11 @@ private fun BaCafeApStockPanel(
                 )
             }
         }
-        Text(
-            text = fullText,
+        StatusPill(
+            label = fullText,
             color = accentPink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            size = AppStatusPillSize.Compact,
+            backdrop = backdrop,
         )
     }
 }

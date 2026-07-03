@@ -31,7 +31,7 @@
     <string name="ba_overview_cd_ap_icon">AP 图标</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s · Full AP %2$s</string>
     <string name="ba_ap_regen_rate_format">+1/%1$dmin</string>
-    <string name="ba_ap_full_remaining_format">Full AP %1$s</string>
+    <string name="ba_ap_full_remaining_format">Full %1$s</string>
     <string name="ba_overview_cafe_ap_title">AP</string>
     <string name="ba_overview_cd_claim_cafe_ap">领取咖啡厅 AP</string>
     <string name="ba_ap_card_title">AP</string>
@@ -78,6 +78,8 @@
     <string name="ba_cafe_metric_tactical_challenge">竞技场</string>
     <string name="ba_cafe_metric_student_visit">学生访问</string>
     <string name="ba_cafe_ap_hourly_gain_format">+%1$.2f/h</string>
+    <string name="ba_cafe_ap_full_pill_format">Full %1$s</string>
+    <string name="ba_cafe_ap_full_pill_now">Full</string>
     <string name="ba_cafe_ap_full_remaining_format">Full AP %1$s</string>
     <string name="ba_cafe_ap_full_now">Full AP</string>
     <string name="ba_cafe_ap_panel_status">%1$s · %2$s</string>

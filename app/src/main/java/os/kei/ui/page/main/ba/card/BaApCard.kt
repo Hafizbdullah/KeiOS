@@ -18,7 +18,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
@@ -184,11 +183,11 @@ private fun BaApInputPanel(
                 )
             }
         }
-        Text(
-            text = apFullStatusText,
+        StatusPill(
+            label = apFullStatusText,
             color = Color(0xFF60A5FA),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            size = AppStatusPillSize.Compact,
+            backdrop = backdrop,
         )
     }
 }
