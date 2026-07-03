@@ -21,7 +21,7 @@
 - 跨平台 daemon toolchain 配置已在 `gradle/gradle-daemon-jvm.properties` 中跟踪（JetBrains Java 21）。
 - Android 构建基线：`compileSdk=37`、`targetSdk=37`、`minSdk=35`。
 - Gradle Wrapper：`9.6.1`；Kotlin 插件：`2.4.0`；Android Gradle Plugin：`9.3.0-rc01`；
-  Compose 运行库：`1.11.3`；Ktor：`3.5.1`。
+  Compose 运行库：`1.11.4`；Ktor：`3.5.1`。
 - Release APK 读取 `app/src/release/generated/baselineProfiles/` 中已生成的 Baseline Profiles。
   Benchmark 构建会接入同一份 profile 目录，用于预发行性能验证。
 - 本地 JDK 路径与 Token 保留在未跟踪的本机配置文件中。

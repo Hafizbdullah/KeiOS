@@ -20,7 +20,7 @@
   <img alt="minSdk" src="https://img.shields.io/badge/minSdk-35-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="targetSdk" src="https://img.shields.io/badge/targetSdk-37-3DDC84?style=flat-square&logo=android&logoColor=white">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.4.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white">
-  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.3-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
+  <img alt="Jetpack Compose" src="https://img.shields.io/badge/Jetpack%20Compose-1.11.4-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white">
 </p>
 
 KeiOS 是一个 Android 工具台，聚合系统参数查看、本地 MCP 服务、GitHub Releases / Actions、GitHub Star
@@ -90,7 +90,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 - 当前稳定标签：[v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.6.1`、Kotlin `2.4.0`、
-  Compose `1.11.3`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
+  Compose `1.11.4`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
 - 当前应用语言资源覆盖简体中文、English、日本語。
 
 ## 文档

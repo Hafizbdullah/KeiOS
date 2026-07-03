@@ -22,7 +22,7 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Cross-platform daemon toolchain metadata is tracked in `gradle/gradle-daemon-jvm.properties` (JetBrains Java 21).
 - Android config baseline: `compileSdk=37`, `targetSdk=37`, `minSdk=35`.
 - Gradle Wrapper: `9.6.1`; Kotlin plugin: `2.4.0`; Android Gradle Plugin: `9.3.0-rc01`;
-  Compose runtime: `1.11.3`; Ktor: `3.5.1`.
+  Compose runtime: `1.11.4`; Ktor: `3.5.1`.
 - Release APKs read generated Baseline Profiles from `app/src/release/generated/baselineProfiles/`.
   The benchmark build wires the same profile directory so pre-release performance checks exercise
   the release profile path.
