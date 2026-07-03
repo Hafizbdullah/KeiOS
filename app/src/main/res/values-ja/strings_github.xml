@@ -90,6 +90,13 @@
     <string name="github_history_refresh_source_mix_value">リポジトリ %1$d · APK %2$d · F-Droid %3$d · その他 %4$d</string>
     <string name="github_history_refresh_slow_item_value">%1$s · %2$s · %3$s\n%4$s · %5$s</string>
     <string name="github_history_refresh_slow_item_value_with_detail">%1$s · %2$s · %3$s\n%4$s · %5$s · %6$s</string>
+    <string name="github_history_refresh_stage_strategy">方式 %1$s</string>
+    <string name="github_history_refresh_stage_snapshot">Release %1$s</string>
+    <string name="github_history_refresh_stage_snapshot_cache">Release キャッシュ</string>
+    <string name="github_history_refresh_stage_profile">Profile %1$s</string>
+    <string name="github_history_refresh_stage_profile_cache">Profile キャッシュ</string>
+    <string name="github_history_refresh_stage_precise_apk">APK %1$s</string>
+    <string name="github_history_refresh_stage_fallback">Fallback %1$s</string>
     <string name="github_history_refresh_purpose_value">%1$s · %2$s</string>
     <string name="github_history_refresh_source_purpose_page">ページから手動実行</string>
     <string name="github_history_refresh_source_purpose_background">バックグラウンド自動実行</string>

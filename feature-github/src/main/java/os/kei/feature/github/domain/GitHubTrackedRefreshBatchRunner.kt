@@ -70,6 +70,14 @@ data class GitHubTrackedRefreshSlowItem(
     val elapsedMs: Long,
     val status: String,
     val message: String,
+    val strategyId: String = "",
+    val snapshotElapsedMs: Long = 0L,
+    val snapshotFromCache: Boolean = false,
+    val profileElapsedMs: Long = 0L,
+    val profileFromCache: Boolean = false,
+    val preciseApkElapsedMs: Long = 0L,
+    val preciseApkRequested: Boolean = false,
+    val fallbackStrategyId: String = "",
 )
 
 object GitHubTrackedRefreshBatchRunner {
@@ -350,6 +358,14 @@ object GitHubTrackedRefreshBatchRunner {
             elapsedMs = elapsedMs,
             status = check.status.name,
             message = check.message,
+            strategyId = check.strategyId,
+            snapshotElapsedMs = check.diagnostics.snapshotElapsedMs,
+            snapshotFromCache = check.diagnostics.snapshotFromCache,
+            profileElapsedMs = check.diagnostics.profileElapsedMs,
+            profileFromCache = check.diagnostics.profileFromCache,
+            preciseApkElapsedMs = check.diagnostics.preciseApkElapsedMs,
+            preciseApkRequested = check.diagnostics.preciseApkRequested,
+            fallbackStrategyId = check.diagnostics.fallbackStrategyId,
         )
 
     private const val REPOSITORY_REFRESH_ITEM_TIMEOUT_MS = 35_000L

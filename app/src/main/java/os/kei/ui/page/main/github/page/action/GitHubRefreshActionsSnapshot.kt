@@ -7,6 +7,7 @@ import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
@@ -99,6 +100,7 @@ internal suspend fun GitHubRefreshActions.resolveItemState(
     item: GitHubTrackedApp,
     profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
     forceRefresh: Boolean = false,
+    existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null,
     batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null,
 ): VersionCheckUi =
     repository.evaluateTrackedApp(
@@ -106,6 +108,7 @@ internal suspend fun GitHubRefreshActions.resolveItemState(
         item = item,
         profilePurposeOverride = profilePurposeOverride,
         forceRefresh = forceRefresh,
+        existingRepositoryProfile = existingRepositoryProfile,
         batchEvaluator = batchEvaluator,
     )
 

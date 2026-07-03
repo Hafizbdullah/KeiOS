@@ -302,6 +302,14 @@ private fun GitHubRefreshHistorySlowItem.toJson() =
         put("elapsedMs", elapsedMs)
         put("status", status)
         put("message", message)
+        put("strategyId", strategyId)
+        put("snapshotElapsedMs", snapshotElapsedMs)
+        put("snapshotFromCache", snapshotFromCache)
+        put("profileElapsedMs", profileElapsedMs)
+        put("profileFromCache", profileFromCache)
+        put("preciseApkElapsedMs", preciseApkElapsedMs)
+        put("preciseApkRequested", preciseApkRequested)
+        put("fallbackStrategyId", fallbackStrategyId)
     }
 
 private fun GitHubRefreshHistoryFailureSummary.toJson() =

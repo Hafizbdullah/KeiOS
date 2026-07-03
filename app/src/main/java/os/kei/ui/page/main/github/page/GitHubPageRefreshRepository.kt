@@ -10,6 +10,7 @@ import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.state.toUi
@@ -24,6 +25,7 @@ internal class GitHubPageRefreshRepository(
         item: GitHubTrackedApp,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null,
         batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null
     ): VersionCheckUi {
         return withContext(ioDispatcher) {
@@ -37,7 +39,8 @@ internal class GitHubPageRefreshRepository(
                     context = context,
                     item = item,
                     profilePurposeOverride = profilePurposeOverride,
-                    forceRefresh = forceRefresh
+                    forceRefresh = forceRefresh,
+                    existingRepositoryProfile = existingRepositoryProfile
                 )
             check.toUi()
         }

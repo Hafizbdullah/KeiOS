@@ -9,6 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import os.kei.core.json.encodeCompact
 import os.kei.core.json.optArray
+import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
 import os.kei.core.json.optLong
 import os.kei.core.json.optObject
@@ -218,6 +219,14 @@ object GitHubRefreshHistoryStore {
                             elapsedMs = slowItem.elapsedMs.coerceAtLeast(0L),
                             status = slowItem.status.trim(),
                             message = compactHistoryText(slowItem.message, 240),
+                            strategyId = slowItem.strategyId.trim(),
+                            snapshotElapsedMs = slowItem.snapshotElapsedMs.coerceAtLeast(0L),
+                            snapshotFromCache = slowItem.snapshotFromCache,
+                            profileElapsedMs = slowItem.profileElapsedMs.coerceAtLeast(0L),
+                            profileFromCache = slowItem.profileFromCache,
+                            preciseApkElapsedMs = slowItem.preciseApkElapsedMs.coerceAtLeast(0L),
+                            preciseApkRequested = slowItem.preciseApkRequested,
+                            fallbackStrategyId = slowItem.fallbackStrategyId.trim(),
                         )
                     },
             failureSummaries =
@@ -271,6 +280,14 @@ object GitHubRefreshHistoryStore {
             put("elapsedMs", slowItem.elapsedMs)
             put("status", slowItem.status)
             put("message", slowItem.message)
+            put("strategyId", slowItem.strategyId)
+            put("snapshotElapsedMs", slowItem.snapshotElapsedMs)
+            put("snapshotFromCache", slowItem.snapshotFromCache)
+            put("profileElapsedMs", slowItem.profileElapsedMs)
+            put("profileFromCache", slowItem.profileFromCache)
+            put("preciseApkElapsedMs", slowItem.preciseApkElapsedMs)
+            put("preciseApkRequested", slowItem.preciseApkRequested)
+            put("fallbackStrategyId", slowItem.fallbackStrategyId)
         }
     }
 
@@ -285,6 +302,14 @@ object GitHubRefreshHistoryStore {
             elapsedMs = obj.optLong("elapsedMs", 0L).coerceAtLeast(0L),
             status = obj.optString("status").trim(),
             message = obj.optString("message").trim(),
+            strategyId = obj.optString("strategyId").trim(),
+            snapshotElapsedMs = obj.optLong("snapshotElapsedMs", 0L).coerceAtLeast(0L),
+            snapshotFromCache = obj.optBoolean("snapshotFromCache", false),
+            profileElapsedMs = obj.optLong("profileElapsedMs", 0L).coerceAtLeast(0L),
+            profileFromCache = obj.optBoolean("profileFromCache", false),
+            preciseApkElapsedMs = obj.optLong("preciseApkElapsedMs", 0L).coerceAtLeast(0L),
+            preciseApkRequested = obj.optBoolean("preciseApkRequested", false),
+            fallbackStrategyId = obj.optString("fallbackStrategyId").trim(),
         )
 
     private fun encodeFailureSummary(failure: GitHubRefreshHistoryFailureSummary): JsonObject {

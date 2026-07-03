@@ -128,7 +128,13 @@ internal class GitHubRefreshBatchActions(
                     val concurrency = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(snapshot.size)
                     val directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
                     val fdroidConcurrency = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency)
-                    val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(snapshot)
+                    val batchEvaluator =
+                        GitHubTrackedRefreshBatchEvaluator(
+                            trackedItems = snapshot,
+                            existingRepositoryProfileProvider = { item ->
+                                previousCheckStatesById[item.id]?.repositoryProfile
+                            },
+                        )
                     var lastProgressNotifyAtMs = clock.nowMs()
                     val pendingUiResults = mutableListOf<Pair<GitHubTrackedApp, VersionCheckUi>>()
                     val batchResult = GitHubTrackedRefreshBatchRunner.run(

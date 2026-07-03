@@ -64,7 +64,13 @@ class GitHubBackgroundRefreshService(
 
             val refreshResult =
                 if (trackedUpdateTargetItems.isNotEmpty()) {
-                    val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(trackedUpdateTargetItems)
+                    val batchEvaluator =
+                        GitHubTrackedRefreshBatchEvaluator(
+                            trackedItems = trackedUpdateTargetItems,
+                            existingRepositoryProfileProvider = { item ->
+                                snapshot.checkCache[item.id]?.repositoryProfile ?: snapshot.profileCache[item.id]
+                            },
+                        )
                     val runtimeSession =
                         GitHubRefreshRuntimeStore.begin(
                             scope = GitHubRefreshScope.DueTracked,
@@ -182,7 +188,13 @@ class GitHubBackgroundRefreshService(
                 )
             prepareShortcutRefreshCaches()
             onStart(runtimeSession, tracked.size, tracked.size)
-            val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(tracked)
+            val batchEvaluator =
+                GitHubTrackedRefreshBatchEvaluator(
+                    trackedItems = tracked,
+                    existingRepositoryProfileProvider = { item ->
+                        snapshot.checkCache[item.id]?.repositoryProfile ?: snapshot.profileCache[item.id]
+                    },
+                )
             val result =
                 runCatching {
                     GitHubTrackedRefreshBatchRunner.run(

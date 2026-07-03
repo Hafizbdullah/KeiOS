@@ -64,6 +64,14 @@ class GitHubRefreshHistoryExportServiceTest {
                 ?.optObject(0)
                 ?.optString("trackId"),
         )
+        assertEquals(
+            30L,
+            root.optArray("records")
+                ?.optObject(0)
+                ?.optArray("slowItems")
+                ?.optObject(0)
+                ?.optLong("snapshotElapsedMs"),
+        )
     }
 
     @Test
@@ -191,6 +199,10 @@ class GitHubRefreshHistoryExportServiceTest {
                         elapsedMs = 30L,
                         status = "UpToDate",
                         message = "ok",
+                        strategyId = "atom_feed",
+                        snapshotElapsedMs = 30L,
+                        profileElapsedMs = 10L,
+                        profileFromCache = true,
                     ),
                 ),
             failureSummaries =

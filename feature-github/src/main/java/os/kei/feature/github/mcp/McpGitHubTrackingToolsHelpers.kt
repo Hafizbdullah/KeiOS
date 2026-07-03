@@ -354,7 +354,13 @@ internal suspend fun evaluateTrackedApp(
     item: GitHubTrackedApp,
     snapshot: GitHubTrackSnapshot
 ): GitHubCheckRow {
-    val check = GitHubReleaseCheckService.evaluateTrackedApp(appContext, item)
+    val check =
+        GitHubReleaseCheckService.evaluateTrackedApp(
+            context = appContext,
+            item = item,
+            existingRepositoryProfile = snapshot.checkCache[item.id]?.repositoryProfile
+                ?: snapshot.profileCache[item.id],
+        )
     return GitHubCheckRow(
         item = item,
         localVersion = check.localVersion,

@@ -452,7 +452,12 @@ private fun rememberSlowRefreshItemValue(slowItem: GitHubRefreshHistorySlowItem)
     val identity = buildSlowRefreshItemIdentity(slowItem, displayName)
     val statusLabel = rememberRefreshStatusLabel(slowItem.status)
     val detail = rememberRefreshMessageDetail(slowItem.message)
-    return if (detail.isBlank()) {
+    val diagnostics = rememberSlowRefreshDiagnostics(slowItem)
+    val mergedDetail =
+        listOf(detail, diagnostics)
+            .filter { it.isNotBlank() }
+            .joinToString(" · ")
+    return if (mergedDetail.isBlank()) {
         stringResource(
             R.string.github_history_refresh_slow_item_value,
             displayName,
@@ -469,9 +474,57 @@ private fun rememberSlowRefreshItemValue(slowItem: GitHubRefreshHistorySlowItem)
             rememberDurationLabel(slowItem.elapsedMs),
             identity,
             statusLabel,
-            detail,
+            mergedDetail,
         )
     }
+}
+
+@Composable
+private fun rememberSlowRefreshDiagnostics(slowItem: GitHubRefreshHistorySlowItem): String {
+    val parts = buildList {
+        if (slowItem.strategyId.isNotBlank()) {
+            add(stringResource(R.string.github_history_refresh_stage_strategy, slowItem.strategyId))
+        }
+        if (slowItem.snapshotElapsedMs > 0L) {
+            add(
+                stringResource(
+                    R.string.github_history_refresh_stage_snapshot,
+                    rememberDurationLabel(slowItem.snapshotElapsedMs),
+                ),
+            )
+        }
+        if (slowItem.snapshotFromCache) {
+            add(stringResource(R.string.github_history_refresh_stage_snapshot_cache))
+        }
+        if (slowItem.profileElapsedMs > 0L) {
+            add(
+                stringResource(
+                    R.string.github_history_refresh_stage_profile,
+                    rememberDurationLabel(slowItem.profileElapsedMs),
+                ),
+            )
+        }
+        if (slowItem.profileFromCache) {
+            add(stringResource(R.string.github_history_refresh_stage_profile_cache))
+        }
+        if (slowItem.preciseApkRequested || slowItem.preciseApkElapsedMs > 0L) {
+            add(
+                stringResource(
+                    R.string.github_history_refresh_stage_precise_apk,
+                    rememberDurationLabel(slowItem.preciseApkElapsedMs),
+                ),
+            )
+        }
+        if (slowItem.fallbackStrategyId.isNotBlank()) {
+            add(
+                stringResource(
+                    R.string.github_history_refresh_stage_fallback,
+                    slowItem.fallbackStrategyId,
+                ),
+            )
+        }
+    }
+    return parts.joinToString(" · ")
 }
 
 @Composable

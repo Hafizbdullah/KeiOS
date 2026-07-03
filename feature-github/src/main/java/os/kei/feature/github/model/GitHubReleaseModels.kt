@@ -163,6 +163,26 @@ data class GitHubRepositoryReleaseSnapshot(
     val repositoryProfile: GitHubRepositoryProfileSnapshot? = null
 )
 
+data class GitHubReleaseCheckDiagnostics(
+    val snapshotElapsedMs: Long = 0L,
+    val snapshotFromCache: Boolean = false,
+    val profileElapsedMs: Long = 0L,
+    val profileFromCache: Boolean = false,
+    val preciseApkElapsedMs: Long = 0L,
+    val preciseApkRequested: Boolean = false,
+    val fallbackStrategyId: String = "",
+) {
+    val hasStageData: Boolean
+        get() =
+            snapshotElapsedMs > 0L ||
+                profileElapsedMs > 0L ||
+                preciseApkElapsedMs > 0L ||
+                snapshotFromCache ||
+                profileFromCache ||
+                preciseApkRequested ||
+                fallbackStrategyId.isNotBlank()
+}
+
 data class GitHubTrackedReleaseCheck(
     val strategyId: String,
     val localVersion: String,
@@ -192,5 +212,6 @@ data class GitHubTrackedReleaseCheck(
     val directApkRemoteHealthMessage: String = "",
     val directApkRemoteCheckedAtMillis: Long = -1L,
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
-    val message: String = status.defaultMessage
+    val message: String = status.defaultMessage,
+    val diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics(),
 )

@@ -131,14 +131,20 @@ internal class GitHubBackgroundRefreshCoordinator(
             state.refreshProgress = 0f
             state.overviewRefreshState = OverviewRefreshState.Refreshing
             val concurrency = items.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
-            val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
+            val previousCheckStatesById = state.checkStates.toMap()
+            val batchEvaluator =
+                GitHubTrackedRefreshBatchEvaluator(
+                    trackedItems = items,
+                    existingRepositoryProfileProvider = { item ->
+                        previousCheckStatesById[item.id]?.repositoryProfile
+                    },
+                )
             val progressMutex = Mutex()
             var completedCount = 0
             var updatableCount = 0
             var preReleaseUpdateCount = 0
             var failedCount = 0
             var lastProgressNotifyAtMs = clock.nowMs()
-            val previousCheckStatesById = state.checkStates.toMap()
             try {
                 items.forEach(::markItemChecking)
                 repository.notifyRefreshProgress(

@@ -300,6 +300,11 @@ private fun GitHubRefreshHistoryUiRecord.matchesRefreshHistorySearch(query: Stri
                 slowItem.sourceMode,
                 slowItem.status,
                 slowItem.message,
+                slowItem.strategyId,
+                slowItem.fallbackStrategyId,
+                slowItem.snapshotFromCache.toString(),
+                slowItem.profileFromCache.toString(),
+                slowItem.preciseApkRequested.toString(),
             )
         }
     return (

@@ -105,6 +105,13 @@ class GitHubRefreshHistoryStoreTest {
                         elapsedMs = 12_000L,
                         status = "UpToDate",
                         message = "remote index parsed",
+                        strategyId = "fdroid",
+                        snapshotElapsedMs = 9_000L,
+                        profileElapsedMs = 0L,
+                        profileFromCache = true,
+                        preciseApkElapsedMs = 500L,
+                        preciseApkRequested = true,
+                        fallbackStrategyId = "fallback",
                     ),
                 ),
             failureSummaries =

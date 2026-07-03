@@ -74,6 +74,7 @@ internal class GitHubSingleRefreshActions(
                             item = item,
                             profilePurposeOverride = profilePurposeOverride,
                             forceRefresh = forceRefresh,
+                            existingRepositoryProfile = previousState.repositoryProfile,
                             batchEvaluator = batchEvaluator,
                         ),
                     previousState = previousState,

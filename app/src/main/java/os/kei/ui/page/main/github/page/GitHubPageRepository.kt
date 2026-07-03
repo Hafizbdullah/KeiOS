@@ -31,6 +31,7 @@ import os.kei.feature.github.model.GitHubPackageRepositoryScanRequest
 import os.kei.feature.github.model.GitHubPackageRepositoryScanResult
 import os.kei.feature.github.model.GitHubRepoTarget
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
@@ -387,6 +388,7 @@ internal class GitHubPageRepository(
         item: GitHubTrackedApp,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null,
         batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null,
     ): VersionCheckUi =
         refreshRepository.evaluateTrackedApp(
@@ -394,6 +396,7 @@ internal class GitHubPageRepository(
             item = item,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh,
+            existingRepositoryProfile = existingRepositoryProfile,
             batchEvaluator = batchEvaluator,
         )
 

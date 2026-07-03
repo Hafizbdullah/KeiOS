@@ -6,6 +6,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
@@ -235,6 +236,42 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `run keeps stage diagnostics for slow refresh items`() = runBlocking {
+        val result =
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = listOf(tracked(1), tracked(2)),
+                maxConcurrency = 2,
+                dispatcher = Dispatchers.Default,
+                refreshTimestampMs = NOW_MS,
+            ) { item ->
+                Thread.sleep(item.repo.removePrefix("repo-").toLong() * 5L)
+                check(
+                    status = GitHubTrackedReleaseStatus.UpToDate,
+                    hasUpdate = false,
+                    diagnostics =
+                        GitHubReleaseCheckDiagnostics(
+                            snapshotElapsedMs = 120L,
+                            snapshotFromCache = item.repo.endsWith("1"),
+                            profileElapsedMs = 40L,
+                            profileFromCache = true,
+                            preciseApkElapsedMs = 8L,
+                            preciseApkRequested = true,
+                            fallbackStrategyId = "github_api_token",
+                        ),
+                )
+            }
+
+        val slowItem = result.performance.slowItems.first()
+        assertEquals("test", slowItem.strategyId)
+        assertEquals(120L, slowItem.snapshotElapsedMs)
+        assertEquals(40L, slowItem.profileElapsedMs)
+        assertEquals(8L, slowItem.preciseApkElapsedMs)
+        assertTrue(slowItem.profileFromCache)
+        assertTrue(slowItem.preciseApkRequested)
+        assertEquals("github_api_token", slowItem.fallbackStrategyId)
+    }
+
+    @Test
     fun `scheduler interleaves github and direct apk sources fairly`() {
         val items = listOf(
             tracked(1, sourceMode = GitHubTrackedSourceMode.DirectApk),
@@ -394,7 +431,8 @@ class GitHubTrackedRefreshBatchRunnerTest {
     private fun check(
         status: GitHubTrackedReleaseStatus,
         hasUpdate: Boolean? = null,
-        hasPreReleaseUpdate: Boolean = false
+        hasPreReleaseUpdate: Boolean = false,
+        diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics()
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
             strategyId = "test",
@@ -402,7 +440,8 @@ class GitHubTrackedRefreshBatchRunnerTest {
             hasUpdate = hasUpdate,
             hasPreReleaseUpdate = hasPreReleaseUpdate,
             status = status,
-            message = status.defaultMessage
+            message = status.defaultMessage,
+            diagnostics = diagnostics
         )
     }
 

@@ -8,6 +8,7 @@ import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckEvaluator
 import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSource
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 
@@ -18,7 +19,8 @@ class GitHubTrackedRefreshBatchEvaluator(
     private val fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator =
         FdroidReleaseCheckSource(
             snapshotProvider = FdroidBatchPackageSnapshotProvider(trackedItems)
-        )
+        ),
+    private val existingRepositoryProfileProvider: (GitHubTrackedApp) -> GitHubRepositoryProfileSnapshot? = { null }
 ) {
     private val batchLookupConfig: GitHubLookupConfig by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         lookupConfigProvider()
@@ -38,6 +40,7 @@ class GitHubTrackedRefreshBatchEvaluator(
             lookupConfigOverride = batchLookupConfig,
             profilePurposeOverride = profilePurposeOverride,
             forceRefresh = forceRefresh,
+            existingRepositoryProfile = existingRepositoryProfileProvider(item),
             fdroidReleaseCheckSource = fdroidReleaseCheckSource
         )
     }

@@ -13,6 +13,7 @@ import os.kei.feature.github.data.remote.GitRepositoryReleaseStrategy
 import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckEvaluator
 import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSource
 import os.kei.feature.github.model.GitHubCheckCacheEntry
+import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
@@ -21,6 +22,7 @@ import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
+import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -34,9 +36,11 @@ import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.githubReleaseIgnoreKeyMatches
 import os.kei.feature.github.model.githubReleaseLookupItemOrNull
+import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
+import os.kei.feature.github.model.requiredCapabilities
 import os.kei.feature.github.model.suppressesAllReleaseUpdates
 import java.io.IOException
 
@@ -50,6 +54,7 @@ object GitHubReleaseCheckService {
         lookupConfigOverride: GitHubLookupConfig? = null,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = false,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null,
         fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator = FdroidReleaseCheckSource()
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
@@ -60,7 +65,8 @@ object GitHubReleaseCheckService {
             fdroidReleaseCheckSource = fdroidReleaseCheckSource,
             lookupConfigOverride = lookupConfigOverride,
             profilePurposeOverride = profilePurposeOverride,
-            forceRefresh = forceRefresh
+            forceRefresh = forceRefresh,
+            existingRepositoryProfile = existingRepositoryProfile
         )
     }
 
@@ -73,7 +79,8 @@ object GitHubReleaseCheckService {
         fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator = FdroidReleaseCheckSource(),
         lookupConfigOverride: GitHubLookupConfig? = null,
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-        forceRefresh: Boolean = false
+        forceRefresh: Boolean = false,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null
     ): GitHubTrackedReleaseCheck {
         return evaluateTrackedAppInternal(
             context = context,
@@ -83,7 +90,8 @@ object GitHubReleaseCheckService {
             fdroidReleaseCheckSource = fdroidReleaseCheckSource,
             lookupConfigOverride = lookupConfigOverride,
             profilePurposeOverride = profilePurposeOverride,
-            forceRefresh = forceRefresh
+            forceRefresh = forceRefresh,
+            existingRepositoryProfile = existingRepositoryProfile
         )
     }
 
@@ -95,7 +103,8 @@ object GitHubReleaseCheckService {
         fdroidReleaseCheckSource: FdroidReleaseCheckEvaluator,
         lookupConfigOverride: GitHubLookupConfig?,
         profilePurposeOverride: GitHubRepositoryProfilePurpose?,
-        forceRefresh: Boolean
+        forceRefresh: Boolean,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot?
     ): GitHubTrackedReleaseCheck {
         val lookupConfig = (lookupConfigOverride ?: GitHubReleaseStrategyRegistry.loadLookupConfig())
             .forTrackedItem(item)
@@ -133,7 +142,7 @@ object GitHubReleaseCheckService {
                     detail = "invalid Git repository URL"
                 )
             val gitStrategy = GitRepositoryReleaseStrategy(gitIdentity)
-            val gitSnapshot = loadSnapshotWithTransientRetry(
+            val gitSnapshotResult = loadSnapshotWithTransientRetry(
                 strategy = gitStrategy,
                 owner = gitIdentity.owner,
                 repo = gitIdentity.repo,
@@ -144,8 +153,12 @@ object GitHubReleaseCheckService {
                     localVersionCode = localVersionCode,
                     sourceConfigSignature = sourceConfigSignature,
                     detail = error.message ?: "unknown"
+                ).copy(
+                    diagnostics = error.snapshotDiagnostics()
                 )
             }
+            val gitSnapshot = gitSnapshotResult.snapshot
+            val preciseStartNs = System.nanoTime()
             val preciseVersions = gitRepositoryPreciseApkVersionResolver(gitIdentity)
                 ?.let { gitResolver ->
                     resolvePreciseApkVersions(
@@ -157,6 +170,7 @@ object GitHubReleaseCheckService {
                     )
                 }
                 ?: PreciseApkVersionPair()
+            val preciseElapsedMs = elapsedMsSince(preciseStartNs)
             return evaluateSnapshot(
                 item = item,
                 localVersion = localVersion,
@@ -166,19 +180,26 @@ object GitHubReleaseCheckService {
                 preciseStableApkVersion = preciseVersions.stable,
                 precisePreReleaseApkVersion = preciseVersions.preRelease,
                 sourceConfigSignature = sourceConfigSignature
+            ).copy(
+                diagnostics = gitSnapshotResult.diagnostics.copy(
+                    preciseApkElapsedMs = preciseElapsedMs,
+                    preciseApkRequested = preciseVersions.requested
+                )
             )
         }
         val repositoryItem = releaseLookupItem ?: item
         val profileRepository = GitHubRepositoryProfileRepository()
         val effectiveStrategy = strategy ?: GitHubReleaseStrategyRegistry.resolveConfiguredStrategy().getOrElse { error ->
-            val profile = loadRepositoryProfile(
+            val profileResult = loadRepositoryProfile(
                 profileRepository = profileRepository,
                 item = repositoryItem,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast
+                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast,
+                existingRepositoryProfile = existingRepositoryProfile
             )
+            val profile = profileResult.profile
             return GitHubTrackedReleaseCheck(
                 strategyId = lookupConfig.selectedStrategy.storageId,
                 localVersion = localVersion,
@@ -192,11 +213,15 @@ object GitHubReleaseCheckService {
                 repositoryProfile = profile,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
-                message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
+                message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
+                diagnostics = GitHubReleaseCheckDiagnostics(
+                    profileElapsedMs = profileResult.elapsedMs,
+                    profileFromCache = profileResult.fromCache
+                )
             )
         }
 
-        val snapshot = loadSnapshotWithFallback(
+        val snapshotResult = loadSnapshotWithFallback(
             owner = repositoryItem.owner,
             repo = repositoryItem.repo,
             strategy = effectiveStrategy,
@@ -204,14 +229,17 @@ object GitHubReleaseCheckService {
             allowFallback = strategy == null,
             forceRefresh = forceRefresh
         ).getOrElse { error ->
-            val profile = loadRepositoryProfile(
+            val snapshotDiagnostics = error.snapshotDiagnostics()
+            val profileResult = loadRepositoryProfile(
                 profileRepository = profileRepository,
                 item = repositoryItem,
                 lookupConfig = lookupConfig,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast
+                purpose = profilePurposeOverride ?: GitHubRepositoryProfilePurpose.VersionCheckFast,
+                existingRepositoryProfile = existingRepositoryProfile
             )
+            val profile = profileResult.profile
             return GitHubTrackedReleaseCheck(
                 strategyId = effectiveStrategy.id,
                 localVersion = localVersion,
@@ -225,9 +253,15 @@ object GitHubReleaseCheckService {
                 repositoryProfile = profile,
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
-                message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown")
+                message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
+                diagnostics = snapshotDiagnostics.copy(
+                    profileElapsedMs = profileResult.elapsedMs,
+                    profileFromCache = profileResult.fromCache
+                )
             )
         }
+        val snapshot = snapshotResult.snapshot
+        val preciseStartNs = System.nanoTime()
         val preciseVersions = resolvePreciseApkVersions(
             item = item,
             localVersion = localVersion,
@@ -235,7 +269,8 @@ object GitHubReleaseCheckService {
             lookupConfig = lookupConfig,
             resolver = preciseApkVersionResolver
         )
-        val profile = loadRepositoryProfile(
+        val preciseElapsedMs = elapsedMsSince(preciseStartNs)
+        val profileResult = loadRepositoryProfile(
             profileRepository = profileRepository,
             item = repositoryItem,
             lookupConfig = lookupConfig,
@@ -244,8 +279,10 @@ object GitHubReleaseCheckService {
             purpose = profilePurposeOverride ?: lookupConfig.defaultRepositoryProfilePurpose(),
             releaseSnapshot = snapshot,
             preciseStableApkVersion = preciseVersions.stable,
-            precisePreReleaseApkVersion = preciseVersions.preRelease
+            precisePreReleaseApkVersion = preciseVersions.preRelease,
+            existingRepositoryProfile = existingRepositoryProfile
         )
+        val profile = profileResult.profile
 
         return evaluateSnapshot(
             item = item,
@@ -264,6 +301,13 @@ object GitHubReleaseCheckService {
             precisePreReleaseApkVersion = preciseVersions.preRelease,
             sourceConfigSignature = sourceConfigSignature,
             repositoryProfile = profile
+        ).copy(
+            diagnostics = snapshotResult.diagnostics.copy(
+                preciseApkElapsedMs = preciseElapsedMs,
+                preciseApkRequested = preciseVersions.requested,
+                profileElapsedMs = profileResult.elapsedMs,
+                profileFromCache = profileResult.fromCache
+            )
         )
     }
 
@@ -476,7 +520,7 @@ object GitHubReleaseCheckService {
                 }
             }
         }
-        if (targets.isEmpty()) return PreciseApkVersionPair()
+        if (targets.isEmpty()) return PreciseApkVersionPair(requested = true)
         val results = GitHubExecution.mapOrderedBounded(
             items = targets,
             maxConcurrency = 2
@@ -493,7 +537,8 @@ object GitHubReleaseCheckService {
         }
         return PreciseApkVersionPair(
             stable = results.firstOrNull { it.first == PreciseApkVersionChannel.Stable }?.second,
-            preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second
+            preRelease = results.firstOrNull { it.first == PreciseApkVersionChannel.PreRelease }?.second,
+            requested = true
         )
     }
 
@@ -523,9 +568,25 @@ object GitHubReleaseCheckService {
         purpose: GitHubRepositoryProfilePurpose = GitHubRepositoryProfilePurpose.VersionCheckFast,
         releaseSnapshot: GitHubRepositoryReleaseSnapshot? = null,
         preciseStableApkVersion: GitHubRemoteApkVersionInfo? = null,
-        precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null
-    ): GitHubRepositoryProfileSnapshot? {
-        return runCatching {
+        precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null
+    ): RepositoryProfileLoadResult {
+        val startedNs = System.nanoTime()
+        reusableRepositoryProfile(
+            existingRepositoryProfile = existingRepositoryProfile,
+            item = item,
+            lookupConfig = lookupConfig,
+            purpose = purpose,
+            localVersion = localVersion,
+            localVersionCode = localVersionCode
+        )?.let { profile ->
+            return RepositoryProfileLoadResult(
+                profile = profile,
+                elapsedMs = elapsedMsSince(startedNs),
+                fromCache = true
+            )
+        }
+        val profile = runCatching {
             profileRepository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = item.owner,
@@ -541,6 +602,11 @@ object GitHubReleaseCheckService {
                 )
             )
         }.getOrNull()
+        return RepositoryProfileLoadResult(
+            profile = profile,
+            elapsedMs = elapsedMsSince(startedNs),
+            fromCache = false
+        )
     }
 
     private suspend fun loadSnapshotWithFallback(
@@ -550,7 +616,7 @@ object GitHubReleaseCheckService {
         lookupConfig: GitHubLookupConfig,
         allowFallback: Boolean,
         forceRefresh: Boolean = false
-    ): Result<GitHubRepositoryReleaseSnapshot> {
+    ): Result<SnapshotLoadResult> {
         val primaryResult = loadSnapshotWithTransientRetry(
             strategy = strategy,
             owner = owner,
@@ -575,7 +641,15 @@ object GitHubReleaseCheckService {
             repo = repo,
             forceRefresh = forceRefresh
         )
-        if (fallbackResult.isSuccess) return fallbackResult
+        if (fallbackResult.isSuccess) {
+            return fallbackResult.map { result ->
+                result.copy(
+                    diagnostics = result.diagnostics.copy(
+                        fallbackStrategyId = fallbackStrategy.id
+                    )
+                )
+            }
+        }
 
         val fallbackError = fallbackResult.exceptionOrNull()
         val message = buildString {
@@ -589,7 +663,13 @@ object GitHubReleaseCheckService {
             append(fallbackError?.message ?: "unknown")
         }
         return Result.failure(
-            IllegalStateException(message, fallbackError ?: primaryError)
+            SnapshotLoadException(
+                diagnostics =
+                    (fallbackError ?: primaryError)
+                        .snapshotDiagnostics()
+                        .copy(fallbackStrategyId = fallbackStrategy.id),
+                cause = IllegalStateException(message, fallbackError ?: primaryError)
+            )
         )
     }
 
@@ -598,11 +678,11 @@ object GitHubReleaseCheckService {
         owner: String,
         repo: String,
         forceRefresh: Boolean = false
-    ): Result<GitHubRepositoryReleaseSnapshot> {
+    ): Result<SnapshotLoadResult> {
         if (forceRefresh) {
             strategy.clearCaches()
         }
-        var latestResult = strategy.loadSnapshot(owner, repo)
+        var latestResult = strategy.loadSnapshotTraceCompat(owner, repo)
         if (latestResult.isSuccess) return latestResult
 
         repeat(transientRetryCount) {
@@ -611,11 +691,125 @@ object GitHubReleaseCheckService {
                 return latestResult
             }
             strategy.clearCaches()
-            latestResult = strategy.loadSnapshot(owner, repo)
+            latestResult = strategy.loadSnapshotTraceCompat(owner, repo)
             if (latestResult.isSuccess) return latestResult
         }
         return latestResult
     }
+
+    private fun GitHubReleaseLookupStrategy.loadSnapshotTraceCompat(
+        owner: String,
+        repo: String
+    ): Result<SnapshotLoadResult> {
+        val trace =
+            when (this) {
+                GitHubAtomReleaseStrategy -> GitHubAtomReleaseStrategy.loadSnapshotTrace(owner, repo)
+                is GitHubApiTokenReleaseStrategy -> loadSnapshotTrace(owner, repo)
+                else -> {
+                    val startedNs = System.nanoTime()
+                    val result = runCatching { loadSnapshot(owner, repo) }
+                        .getOrElse { error -> Result.failure(error) }
+                    GitHubStrategyLoadTrace(
+                        result = result,
+                        fromCache = false,
+                        elapsedMs = elapsedMsSince(startedNs)
+                    )
+                }
+            }
+        val diagnostics =
+            GitHubReleaseCheckDiagnostics(
+                snapshotElapsedMs = trace.elapsedMs,
+                snapshotFromCache = trace.fromCache
+            )
+        return trace.result.fold(
+            onSuccess = { snapshot ->
+                Result.success(
+                    SnapshotLoadResult(
+                        snapshot = snapshot,
+                        diagnostics = diagnostics
+                    )
+                )
+            },
+            onFailure = { error ->
+                Result.failure(
+                    SnapshotLoadException(
+                        diagnostics = diagnostics,
+                        cause = error
+                    )
+                )
+            }
+        )
+    }
+
+    private fun Throwable.snapshotDiagnostics(): GitHubReleaseCheckDiagnostics {
+        var current: Throwable? = this
+        var depth = 0
+        while (current != null && depth < 8) {
+            if (current is SnapshotLoadException) return current.diagnostics
+            current = current.cause
+            depth += 1
+        }
+        return GitHubReleaseCheckDiagnostics()
+    }
+
+    private fun reusableRepositoryProfile(
+        existingRepositoryProfile: GitHubRepositoryProfileSnapshot?,
+        item: GitHubTrackedApp,
+        lookupConfig: GitHubLookupConfig,
+        purpose: GitHubRepositoryProfilePurpose,
+        localVersion: String,
+        localVersionCode: Long
+    ): GitHubRepositoryProfileSnapshot? {
+        val profile = existingRepositoryProfile ?: return null
+        if (!profile.owner.equals(item.owner, ignoreCase = true)) return null
+        if (!profile.repo.equals(item.repo, ignoreCase = true)) return null
+        val requiredCapabilities = purpose.requiredCapabilities(lookupConfig.profileDepth)
+        val activeSignature = lookupConfig.githubProfileSourceSignature(requiredCapabilities)
+        if (
+            !profile.isFreshFor(
+                activeSourceConfigSignature = activeSignature,
+                requiredCapabilities = requiredCapabilities
+            )
+        ) {
+            return null
+        }
+        val profileLocalVersion = profile.localFit.localVersionName?.value.orEmpty()
+        if (
+            localVersion.isNotBlank() &&
+            profileLocalVersion.isNotBlank() &&
+            profileLocalVersion != localVersion
+        ) {
+            return null
+        }
+        val profileLocalVersionCode = profile.localFit.localVersionCode?.value ?: -1L
+        if (
+            localVersionCode > 0L &&
+            profileLocalVersionCode > 0L &&
+            profileLocalVersionCode != localVersionCode
+        ) {
+            return null
+        }
+        return profile
+    }
+
+    private fun elapsedMsSince(startNs: Long): Long =
+        ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
+
+    private data class SnapshotLoadResult(
+        val snapshot: GitHubRepositoryReleaseSnapshot,
+        val diagnostics: GitHubReleaseCheckDiagnostics
+    )
+
+    private class SnapshotLoadException(
+        val diagnostics: GitHubReleaseCheckDiagnostics,
+        cause: Throwable
+    ) : IllegalStateException(cause.message ?: cause.javaClass.simpleName, cause)
+
+    private data class RepositoryProfileLoadResult(
+        val profile: GitHubRepositoryProfileSnapshot?,
+        val elapsedMs: Long,
+        val fromCache: Boolean
+    )
 
     private fun resolveFallbackStrategy(
         primaryStrategyId: String,
@@ -763,7 +957,8 @@ object GitHubReleaseCheckService {
 
     private data class PreciseApkVersionPair(
         val stable: GitHubRemoteApkVersionInfo? = null,
-        val preRelease: GitHubRemoteApkVersionInfo? = null
+        val preRelease: GitHubRemoteApkVersionInfo? = null,
+        val requested: Boolean = false
     )
 
     private enum class PreciseApkVersionChannel {
