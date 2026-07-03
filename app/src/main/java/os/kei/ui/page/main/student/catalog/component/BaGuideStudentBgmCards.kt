@@ -23,6 +23,8 @@ import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -212,23 +214,8 @@ internal fun BaGuideStudentBgmCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                }
-                subtitle?.let { value ->
-                    Text(
-                        text = value,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     if (isLoading || isMissing) {
-                        StatusPill(
+                        BaGuideCatalogStatusIconPill(
                             label = when {
                                 isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
                                 isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
@@ -239,9 +226,19 @@ internal fun BaGuideStudentBgmCard(
                                 isLoading -> AppStatusColors.Refreshing
                                 else -> AppStatusColors.Fresh
                             },
-                            size = AppStatusPillSize.Compact
+                            icon = if (isMissing) appLucideWarningIcon() else appLucideRefreshIcon(),
                         )
                     }
+                }
+                subtitle?.let { value ->
+                    Text(
+                        text = value,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             Row(

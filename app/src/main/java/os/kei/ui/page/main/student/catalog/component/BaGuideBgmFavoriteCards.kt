@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideUndoIcon
@@ -35,7 +36,6 @@ import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.guideLocalizedLabel
-import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
@@ -48,7 +48,6 @@ import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
-import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
@@ -256,17 +255,17 @@ internal fun BaGuideBgmFavoriteCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (selected) {
-                        StatusPill(
+                        BaGuideCatalogStatusIconPill(
                             label = currentLabel,
                             color = accent,
-                            size = AppStatusPillSize.Compact
+                            icon = appLucidePlayIcon(),
                         )
                     }
                     if (cached) {
-                        StatusPill(
+                        BaGuideCatalogStatusIconPill(
                             label = cacheReadyLabel,
                             color = Color(0xFF22C55E),
-                            size = AppStatusPillSize.Compact
+                            icon = appLucideDatabaseIcon(),
                         )
                     }
                 }

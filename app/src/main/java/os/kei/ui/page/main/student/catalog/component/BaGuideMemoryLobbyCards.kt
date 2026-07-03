@@ -41,11 +41,16 @@ import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
+import os.kei.ui.page.main.os.appLucideConfirmIcon
+import os.kei.ui.page.main.os.appLucideDatabaseIcon
+import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
@@ -362,7 +367,7 @@ private fun BaGuideMemoryLobbyStatusRow(
     resolvedItem: BaGuideMemoryLobbyResolvedItem?,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val statusLabel =
@@ -379,16 +384,23 @@ private fun BaGuideMemoryLobbyStatusRow(
                 BaGuideMemoryLobbyLookupState.Missing -> AppStatusColors.Failed
                 is BaGuideMemoryLobbyLookupState.Ready -> AppStatusColors.Fresh
             }
-        StatusPill(
+        val statusIcon =
+            when (lookupState) {
+                BaGuideMemoryLobbyLookupState.Idle -> appLucideDownloadIcon()
+                BaGuideMemoryLobbyLookupState.Loading -> appLucideRefreshIcon()
+                BaGuideMemoryLobbyLookupState.Missing -> appLucideWarningIcon()
+                is BaGuideMemoryLobbyLookupState.Ready -> appLucideConfirmIcon()
+            }
+        BaGuideCatalogStatusIconPill(
             label = stringResource(statusLabel),
             color = statusColor,
-            size = AppStatusPillSize.Compact,
+            icon = statusIcon,
         )
         if (resolvedItem?.fromCache == true) {
-            StatusPill(
+            BaGuideCatalogStatusIconPill(
                 label = stringResource(R.string.ba_catalog_student_bgm_status_cached_detail),
                 color = MiuixTheme.colorScheme.primary,
-                size = AppStatusPillSize.Compact,
+                icon = appLucideDatabaseIcon(),
             )
         }
     }
