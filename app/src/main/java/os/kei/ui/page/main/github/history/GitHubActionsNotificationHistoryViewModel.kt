@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.feature.github.domain.GitHubHistoryUnreadCounts
+import os.kei.feature.github.domain.GitHubHistoryUnreadEventTimes
 import os.kei.feature.github.domain.GitHubRefreshHistoryOutcomeFilter
 import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubRefreshHistoryQueryDefaults
@@ -36,6 +38,7 @@ internal data class GitHubActionsNotificationHistoryUiState(
     val totalRefreshRecordCount: Int = 0,
     val totalTrackChangeRecordCount: Int = 0,
     val totalAppInstallRecordCount: Int = 0,
+    val unreadCounts: GitHubHistoryUnreadCounts = GitHubHistoryUnreadCounts(),
     val errorMessage: String = "",
     val filterMode: GitHubActionsHistoryFilterMode = GitHubActionsHistoryFilterMode.All,
     val refreshFilterMode: GitHubRefreshHistoryFilterMode = GitHubRefreshHistoryFilterMode.All,
@@ -124,6 +127,11 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         allRecords = snapshot.actionRecords
                         allTrackChangeRecords = snapshot.trackChangeRecords
                         allAppInstallRecords = snapshot.appInstallRecords
+                        val unreadCounts =
+                            repository.markHistoryModeRead(
+                                mode = _uiState.value.historyMode,
+                                eventTimes = snapshot.toUnreadEventTimes(),
+                            )
                         updateDisplayRecords {
                             copy(
                                 loading = false,
@@ -131,6 +139,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
                                 totalRefreshRecordCount = snapshot.refreshRecords.size,
                                 totalTrackChangeRecordCount = snapshot.trackChangeRecords.size,
                                 totalAppInstallRecordCount = snapshot.appInstallRecords.size,
+                                unreadCounts = unreadCounts,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = null,
                             )
@@ -171,6 +180,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
 
     fun setHistoryMode(value: GitHubHistoryMode) {
         updateDisplayRecords { copy(historyMode = value) }
+        markHistoryModeRead(value)
     }
 
     fun setSearchExpanded(value: Boolean) {
@@ -242,6 +252,11 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         allRecords = records
                         allTrackChangeRecords = trackChangeRecords
                         allAppInstallRecords = appInstallRecords
+                        val unreadCounts =
+                            repository.markHistoryModeRead(
+                                mode = _uiState.value.historyMode,
+                                eventTimes = currentUnreadEventTimes(),
+                            )
                         updateDisplayRecords {
                             copy(
                                 loading = false,
@@ -249,6 +264,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
                                 totalRefreshRecordCount = refreshRecords.size,
                                 totalTrackChangeRecordCount = trackChangeRecords.size,
                                 totalAppInstallRecordCount = appInstallRecords.size,
+                                unreadCounts = unreadCounts,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = removedCount,
                             )
@@ -383,6 +399,33 @@ internal class GitHubActionsNotificationHistoryViewModel(
         }
     }
 
+    private fun markHistoryModeRead(mode: GitHubHistoryMode) {
+        viewModelScope.launch {
+            val counts =
+                runCatching {
+                    repository.markHistoryModeRead(
+                        mode = mode,
+                        eventTimes = currentUnreadEventTimes(),
+                    )
+                }.getOrElse { error ->
+                    if (error is CancellationException) throw error
+                    repository.loadUnreadCounts()
+                }
+            _uiState.update { state -> state.copy(unreadCounts = counts) }
+        }
+    }
+
+    private fun currentUnreadEventTimes(): GitHubHistoryUnreadEventTimes =
+        GitHubHistoryUnreadEventTimes(
+            refreshTimes =
+                allRefreshRecords.map { item ->
+                    item.record.finishedAtMillis.takeIf { it > 0L } ?: item.record.startedAtMillis
+                },
+            actionTimes = allRecords.map { item -> item.record.notifiedAtMillis },
+            trackingTimes = allTrackChangeRecords.map { item -> item.record.changedAtMillis },
+            appTimes = allAppInstallRecords.map { item -> item.record.changedAtMillis },
+        )
+
     private fun GitHubRefreshHistoryFilterMode.toDomainOutcomeFilter(): GitHubRefreshHistoryOutcomeFilter {
         return when (this) {
             GitHubRefreshHistoryFilterMode.All -> GitHubRefreshHistoryOutcomeFilter.All
@@ -398,3 +441,14 @@ internal class GitHubActionsNotificationHistoryViewModel(
         return "keios-github-refresh-history-${formatter.format(Date())}.json"
     }
 }
+
+private fun GitHubHistorySnapshot.toUnreadEventTimes(): GitHubHistoryUnreadEventTimes =
+    GitHubHistoryUnreadEventTimes(
+        refreshTimes =
+            refreshRecords.map { item ->
+                item.record.finishedAtMillis.takeIf { it > 0L } ?: item.record.startedAtMillis
+            },
+        actionTimes = actionRecords.map { item -> item.record.notifiedAtMillis },
+        trackingTimes = trackChangeRecords.map { item -> item.record.changedAtMillis },
+        appTimes = appInstallRecords.map { item -> item.record.changedAtMillis },
+    )

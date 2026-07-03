@@ -28,7 +28,8 @@ internal fun BindGitHubPageEffects(
     actions: GitHubPageActions,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onLaunchAppListPermission: (Intent) -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit
+    onActionBarInteractingChanged: (Boolean) -> Unit,
+    onHistoryUnreadCountMayChange: () -> Unit,
 ) {
     BindGitHubPageLifecycleCoordinator(
         context = context,
@@ -40,7 +41,8 @@ internal fun BindGitHubPageEffects(
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = onLaunchAppListPermission,
-        onActionBarInteractingChanged = onActionBarInteractingChanged
+        onActionBarInteractingChanged = onActionBarInteractingChanged,
+        onHistoryUnreadCountMayChange = onHistoryUnreadCountMayChange,
     )
 }
 
@@ -55,7 +57,8 @@ internal fun BindGitHubPageLifecycleCoordinator(
     actions: GitHubPageActions,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onLaunchAppListPermission: (Intent) -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit
+    onActionBarInteractingChanged: (Boolean) -> Unit,
+    onHistoryUnreadCountMayChange: () -> Unit,
 ) {
     DisposableEffect(Unit) {
         onDispose { onActionBarInteractingChanged(false) }
@@ -134,6 +137,7 @@ internal fun BindGitHubPageLifecycleCoordinator(
         if (!isPageDataActive) return@LaunchedEffect
         AppPackageChangedEvents.events.collect { event ->
             actions.handlePackageChangedEvent(event)
+            onHistoryUnreadCountMayChange()
         }
     }
 }

@@ -89,6 +89,23 @@ internal fun GitHubMainContent(
     val actionsHistoryDescription = stringResource(R.string.github_history_cd_open)
     val expandDockDescription = stringResource(R.string.common_expand)
     val actionsHistoryTint = MiuixTheme.colorScheme.primary
+    val historyUnreadBadgeLabel = githubDockBadgeLabel(controls.historyUnreadCount)
+    val historyUnreadBadgeColor: Color? =
+        if (controls.historyUnreadCount > 0) {
+            MiuixTheme.colorScheme.primary
+        } else {
+            null
+        }
+    val historyUnreadBadgeContentColor: Color? =
+        if (controls.historyUnreadCount > 0) {
+            MiuixTheme.colorScheme.onPrimary
+        } else {
+            null
+        }
+    val historyUnreadBadgeTooltip =
+        historyUnreadBadgeLabel?.let {
+            stringResource(R.string.github_history_unread_badge_tooltip, controls.historyUnreadCount)
+        }
     val refreshBadgeCount =
         if (overview.metrics.failedCount > 0) {
             overview.metrics.failedCount
@@ -121,6 +138,10 @@ internal fun GitHubMainContent(
             actionsHistoryIcon,
             actionsHistoryDescription,
             actionsHistoryTint,
+            historyUnreadBadgeLabel,
+            historyUnreadBadgeColor,
+            historyUnreadBadgeContentColor,
+            historyUnreadBadgeTooltip,
             actions.onSearchExpandedChange,
             actions.onOpenActionsNotificationHistory,
         ) {
@@ -130,6 +151,10 @@ internal fun GitHubMainContent(
                     contentDescription = actionsHistoryDescription,
                     iconTint = actionsHistoryTint,
                     testTag = KeiOsTestTags.GitHubActionsHistoryButton,
+                    badgeLabel = historyUnreadBadgeLabel,
+                    badgeColor = historyUnreadBadgeColor,
+                    badgeContentColor = historyUnreadBadgeContentColor,
+                    tooltipText = historyUnreadBadgeTooltip,
                     onClick = {
                         actions.onSearchExpandedChange(false)
                         actions.onOpenActionsNotificationHistory()

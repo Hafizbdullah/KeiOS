@@ -66,6 +66,7 @@ internal class GitHubPageActionEnvironment(
                 trackChangeSource = trackChangeSource,
                 semanticTrackUpdates = semanticTrackUpdates,
             )
+            viewModel.refreshHistoryUnreadCount()
         }
     }
 }

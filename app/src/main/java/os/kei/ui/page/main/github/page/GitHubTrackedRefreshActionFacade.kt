@@ -32,6 +32,7 @@ internal class GitHubTrackedRefreshActionFacade(
                 forceRefresh = forceRefresh,
             ) {
                 reloadExpandedAssetPanelsAfterRefresh()
+                env.viewModel.refreshHistoryUnreadCount()
             }
         }
     }
@@ -58,6 +59,7 @@ internal class GitHubTrackedRefreshActionFacade(
                 forceRefresh = forceRefresh,
             ) {
                 reloadExpandedAssetPanelsAfterRefresh(targetIds = targetIds)
+                env.viewModel.refreshHistoryUnreadCount()
             }
         }
     }

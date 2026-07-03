@@ -40,6 +40,7 @@ import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 private const val PENDING_SHARE_IMPORT_CARD_TICK_MS = 15_000L
@@ -87,6 +88,7 @@ internal data class GitHubPageUiSnapshot(
     val contentDerivedState: GitHubPageContentDerivedState = GitHubPageContentDerivedState(),
     val appPickerDerivedState: GitHubTrackAppPickerDerivedState = GitHubTrackAppPickerDerivedState.Empty,
     val appPickerPreferences: GitHubAppPickerPreferences = GitHubAppPickerPreferences(),
+    val historyUnreadCount: Int = 0,
 )
 
 internal sealed interface GitHubTrackedExportStartResult {
@@ -120,6 +122,8 @@ internal class GitHubPageViewModel(
     private var onlineShareTargetsJob: Job? = null
     private var downloaderOptionsJob: Job? = null
     private var appPickerStateJob: Job? = null
+    private var historyUnreadCountJob: Job? = null
+    private var historyUnreadCountRequestSerial = 0L
     private var appPickerStateInput: GitHubTrackAppPickerInput? = null
     private val snapshotFlowManager = AppSnapshotFlowManager()
     private val sheetDerivationController =
@@ -159,6 +163,9 @@ internal class GitHubPageViewModel(
     private val _appPickerPreferences = MutableStateFlow(GitHubAppPickerPreferences())
     val appPickerPreferences: StateFlow<GitHubAppPickerPreferences> =
         _appPickerPreferences.asStateFlow()
+
+    private val _historyUnreadCount = MutableStateFlow(0)
+    val historyUnreadCount: StateFlow<Int> = _historyUnreadCount.asStateFlow()
 
     private val _appPickerDerivedState =
         MutableStateFlow(GitHubTrackAppPickerDerivedState.Empty)
@@ -219,7 +226,7 @@ internal class GitHubPageViewModel(
         )
 
     val uiState: StateFlow<GitHubPageUiSnapshot> =
-        combine(coreUiState, appPickerDerivedState) { core, appPicker ->
+        combine(coreUiState, appPickerDerivedState, historyUnreadCount) { core, appPicker, historyUnreadCount ->
             GitHubPageUiSnapshot(
                 transferState = core.runtimeState.transferState,
                 chromeState = core.runtimeState.chromeState,
@@ -229,6 +236,7 @@ internal class GitHubPageViewModel(
                 contentDerivedState = core.contentDerivedState,
                 appPickerDerivedState = appPicker,
                 appPickerPreferences = core.appPickerPreferences,
+                historyUnreadCount = historyUnreadCount,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -240,6 +248,7 @@ internal class GitHubPageViewModel(
         viewModelScope.launch {
             _appPickerPreferences.value = repository.loadAppPickerPreferences()
         }
+        refreshHistoryUnreadCount()
     }
 
     fun pageState(): GitHubPageState {
@@ -411,6 +420,25 @@ internal class GitHubPageViewModel(
         viewModelScope.launch {
             repository.saveAppPickerPreferences(preferences)
         }
+    }
+
+    fun refreshHistoryUnreadCount() {
+        val requestSerial = historyUnreadCountRequestSerial + 1L
+        historyUnreadCountRequestSerial = requestSerial
+        historyUnreadCountJob?.cancel()
+        historyUnreadCountJob =
+            viewModelScope.launch {
+                val nextCount =
+                    runCatching {
+                        repository.loadHistoryUnreadCount()
+                    }.getOrElse { error ->
+                        if (error is CancellationException) throw error
+                        _historyUnreadCount.value
+                    }
+                if (requestSerial == historyUnreadCountRequestSerial) {
+                    _historyUnreadCount.value = nextCount
+                }
+            }
     }
 
     suspend fun beginTrackedExport(

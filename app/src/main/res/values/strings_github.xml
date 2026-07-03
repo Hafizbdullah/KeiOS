@@ -44,6 +44,7 @@
     <string name="github_actions_history_title">Actions 历史</string>
     <string name="github_history_title">历史</string>
     <string name="github_history_cd_open">打开历史</string>
+    <string name="github_history_unread_badge_tooltip">有 %1$d 条新历史记录</string>
     <string name="github_history_mode_refresh">刷新历史</string>
     <string name="github_history_mode_actions">Actions 历史</string>
     <string name="github_history_mode_tracking">追踪历史</string>

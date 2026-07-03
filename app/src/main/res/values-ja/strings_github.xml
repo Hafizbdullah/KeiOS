@@ -44,6 +44,7 @@
     <string name="github_actions_history_title">Actions 履歴</string>
     <string name="github_history_title">履歴</string>
     <string name="github_history_cd_open">履歴を開く</string>
+    <string name="github_history_unread_badge_tooltip">新しい履歴 %1$d 件</string>
     <string name="github_history_mode_refresh">更新履歴</string>
     <string name="github_history_mode_actions">Actions 履歴</string>
     <string name="github_history_mode_tracking">追跡履歴</string>

@@ -44,6 +44,7 @@
     <string name="github_actions_history_title">Actions history</string>
     <string name="github_history_title">History</string>
     <string name="github_history_cd_open">Open history</string>
+    <string name="github_history_unread_badge_tooltip">%1$d new history records</string>
     <string name="github_history_mode_refresh">Refresh history</string>
     <string name="github_history_mode_actions">Actions history</string>
     <string name="github_history_mode_tracking">Tracking history</string>

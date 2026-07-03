@@ -7,6 +7,10 @@ import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.domain.GitHubAppInstallHistoryService
+import os.kei.feature.github.domain.GitHubHistoryUnreadBucket
+import os.kei.feature.github.domain.GitHubHistoryUnreadCounts
+import os.kei.feature.github.domain.GitHubHistoryUnreadEventTimes
+import os.kei.feature.github.domain.GitHubHistoryUnreadService
 import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubTrackChangeHistoryService
@@ -19,6 +23,7 @@ internal class GitHubActionsNotificationHistoryRepository(
     private val refreshHistoryService: GitHubRefreshHistoryService = GitHubRefreshHistoryService(),
     private val trackChangeHistoryService: GitHubTrackChangeHistoryService = GitHubTrackChangeHistoryService(),
     private val appInstallHistoryService: GitHubAppInstallHistoryService = GitHubAppInstallHistoryService(),
+    private val unreadService: GitHubHistoryUnreadService = GitHubHistoryUnreadService(),
     private val trackService: GitHubTrackService = GitHubTrackService(),
     private val fileIoDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
 ) {
@@ -88,6 +93,17 @@ internal class GitHubActionsNotificationHistoryRepository(
         return appInstallHistoryService.pruneBefore(cutoffMillis)
     }
 
+    suspend fun loadUnreadCounts(): GitHubHistoryUnreadCounts = unreadService.loadCounts()
+
+    suspend fun markHistoryModeRead(
+        mode: GitHubHistoryMode,
+        eventTimes: GitHubHistoryUnreadEventTimes,
+    ): GitHubHistoryUnreadCounts =
+        unreadService.markRead(
+            bucket = mode.toUnreadBucket(),
+            eventTimes = eventTimes,
+        )
+
     suspend fun buildRefreshHistoryExportJson(
         query: GitHubRefreshHistoryQuery,
     ): String {
@@ -107,3 +123,11 @@ internal class GitHubActionsNotificationHistoryRepository(
         }
     }
 }
+
+private fun GitHubHistoryMode.toUnreadBucket(): GitHubHistoryUnreadBucket =
+    when (this) {
+        GitHubHistoryMode.Refresh -> GitHubHistoryUnreadBucket.Refresh
+        GitHubHistoryMode.Actions -> GitHubHistoryUnreadBucket.Actions
+        GitHubHistoryMode.Tracking -> GitHubHistoryUnreadBucket.Tracking
+        GitHubHistoryMode.Apps -> GitHubHistoryUnreadBucket.Apps
+    }

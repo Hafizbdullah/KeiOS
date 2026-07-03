@@ -101,6 +101,9 @@ fun GitHubPage(
     val isGitHubSettledDataActive = runtime.isSettledDataActive
     LaunchedEffect(isGitHubPageDataActive) {
         githubPageViewModel.setPageDataActive(isGitHubPageDataActive)
+        if (isGitHubPageDataActive) {
+            githubPageViewModel.refreshHistoryUnreadCount()
+        }
     }
     DisposableEffect(githubPageViewModel) {
         onDispose { githubPageViewModel.setPageDataActive(false) }
@@ -260,6 +263,7 @@ fun GitHubPage(
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = launchAppListPermission,
         onActionBarInteractingChanged = onActionBarInteractingChanged,
+        onHistoryUnreadCountMayChange = githubPageViewModel::refreshHistoryUnreadCount,
     )
 
     BindGitHubTrackCardFocusCoordinator(
@@ -318,6 +322,7 @@ fun GitHubPage(
                     sortDirection = state.sortDirection,
                     trackedFilterMode = state.trackedFilterMode,
                     refreshIntervalHours = state.refreshIntervalHours,
+                    historyUnreadCount = pageUiState.historyUnreadCount,
                     showActionMenuPopup = state.showActionMenuPopup,
                     deleteInProgress = state.deleteInProgress,
                     tracksExporting = transferState.tracksExporting,

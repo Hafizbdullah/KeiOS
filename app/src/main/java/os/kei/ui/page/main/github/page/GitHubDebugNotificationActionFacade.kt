@@ -49,6 +49,7 @@ internal class GitHubDebugNotificationActionFacade(
                         context = env.context,
                         snapshot = routedSnapshot,
                     )
+                env.viewModel.refreshHistoryUnreadCount()
                 env.toast(
                     if (sent) {
                         R.string.github_actions_update_debug_toast_sent

@@ -45,6 +45,7 @@ import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.domain.GitHubReleaseAssetService
+import os.kei.feature.github.domain.GitHubHistoryUnreadService
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
@@ -160,6 +161,7 @@ internal class GitHubPageRepository(
             networkDispatcher = ioDispatcher,
             localDispatcher = localDispatcher,
         )
+    private val historyUnreadService = GitHubHistoryUnreadService(localDispatcher)
 
     suspend fun buildContentState(input: GitHubPageContentInput): GitHubPageContentDerivedState = contentStateDeriver.build(input)
 
@@ -299,6 +301,8 @@ internal class GitHubPageRepository(
     suspend fun loadAppPickerPreferences(): GitHubAppPickerPreferences = trackRepository.loadAppPickerPreferences()
 
     suspend fun saveAppPickerPreferences(preferences: GitHubAppPickerPreferences) = trackRepository.saveAppPickerPreferences(preferences)
+
+    suspend fun loadHistoryUnreadCount(): Int = historyUnreadService.loadCounts().totalCount
 
     suspend fun saveTrackedItems(
         context: Context,

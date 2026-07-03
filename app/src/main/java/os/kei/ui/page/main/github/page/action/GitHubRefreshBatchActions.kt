@@ -349,6 +349,7 @@ internal class GitHubRefreshBatchActions(
                         state.refreshTargetIds = emptySet()
                         state.refreshAllJob = null
                     }
+                    owner.env.viewModel.refreshHistoryUnreadCount()
                 }
             }
     }

@@ -48,6 +48,7 @@ internal data class GitHubMainContentControls(
     val sortDirection: GitHubSortDirection,
     val trackedFilterMode: GitHubTrackedFilterMode,
     val refreshIntervalHours: Int,
+    val historyUnreadCount: Int,
     val showActionMenuPopup: Boolean,
     val deleteInProgress: Boolean,
     val tracksExporting: Boolean,

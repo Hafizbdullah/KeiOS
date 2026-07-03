@@ -60,6 +60,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
                                 context = context,
                                 snapshot = current,
                             )
+                            env.viewModel.refreshHistoryUnreadCount()
                         }
                     }
                 }
@@ -116,6 +117,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
                         context = context,
                         snapshot = current,
                     )
+                    env.viewModel.refreshHistoryUnreadCount()
                 }
             }
         }
