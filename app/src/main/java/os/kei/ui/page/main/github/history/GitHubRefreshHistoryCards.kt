@@ -24,7 +24,6 @@ import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.ui.page.main.os.appLucideFilterIcon
-import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow
@@ -32,8 +31,6 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -46,18 +43,19 @@ import java.util.Locale
 @Composable
 internal fun GitHubHistoryOverviewCard(
     uiState: GitHubActionsNotificationHistoryUiState,
-    onHistoryModeChange: (GitHubHistoryMode) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val modeLabel = stringResource(uiState.historyMode.labelRes)
     val filterLabel =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> stringResource(uiState.refreshFilterMode.labelRes)
             GitHubHistoryMode.Actions -> stringResource(uiState.filterMode.labelRes)
+            GitHubHistoryMode.Tracking -> stringResource(uiState.trackChangeFilterMode.labelRes)
         }
     val sortLabel =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> stringResource(uiState.refreshSortMode.labelRes)
             GitHubHistoryMode.Actions -> stringResource(uiState.sortMode.labelRes)
+            GitHubHistoryMode.Tracking -> stringResource(uiState.trackChangeSortMode.labelRes)
         }
     val sortValue =
         stringResource(
@@ -69,13 +67,18 @@ internal fun GitHubHistoryOverviewCard(
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
             GitHubHistoryMode.Actions -> uiState.records.size
+            GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
         }
     val totalCount =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.totalRefreshRecordCount
             GitHubHistoryMode.Actions -> uiState.totalRecordCount
+            GitHubHistoryMode.Tracking -> uiState.totalTrackChangeRecordCount
         }
-    AppSurfaceCard(showIndication = false) {
+    AppSurfaceCard(
+        modifier = modifier,
+        showIndication = false,
+    ) {
         Column(
             modifier =
                 Modifier
@@ -123,22 +126,6 @@ internal fun GitHubHistoryOverviewCard(
                 verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                GitHubHistoryMode.entries.forEach { mode ->
-                    AppLiquidTextButton(
-                        backdrop = null,
-                        text = stringResource(mode.labelRes),
-                        leadingIcon = appLucideHistoryIcon(),
-                        variant = GlassVariant.Compact,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis,
-                        onClick = { onHistoryModeChange(mode) },
-                    )
-                }
-                GitHubHistorySummaryPill(
-                    label = stringResource(R.string.github_history_summary_label_mode),
-                    value = modeLabel,
-                    color = MiuixTheme.colorScheme.primary,
-                )
                 GitHubHistorySummaryPill(
                     label = stringResource(R.string.github_actions_history_summary_label_filter),
                     value = filterLabel,
@@ -180,6 +167,7 @@ internal fun GitHubHistorySummaryPill(
 internal fun GitHubRefreshHistoryRecordCard(
     item: GitHubRefreshHistoryUiRecord,
     expanded: Boolean,
+    modifier: Modifier = Modifier,
     onExpandedChange: (Boolean) -> Unit,
 ) {
     val record = item.record
@@ -202,6 +190,7 @@ internal fun GitHubRefreshHistoryRecordCard(
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
+        modifier = modifier,
         eyebrow = stringResource(R.string.github_history_refresh_time_finished, finishedAt),
         sectionStartAction = {
             Icon(

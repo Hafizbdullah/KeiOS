@@ -2,22 +2,28 @@
 
 package os.kei.ui.page.main.github.history
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,6 +38,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -43,15 +52,21 @@ import os.kei.feature.github.model.GitHubActionsNotificationHistoryRecord
 import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
-import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideListIcon
+import os.kei.ui.page.main.os.appLucideSearchIcon
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
+import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
+import os.kei.ui.page.main.widget.chrome.rememberTabbedPageContentSwitchState
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentItemModifier
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoRow
-import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -59,8 +74,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
@@ -76,27 +90,73 @@ internal fun GitHubActionsNotificationHistoryPage(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val appIconState by viewModel.appIconState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
+    val bottomBarBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
+    val categories = remember { GitHubHistoryMode.entries.toList() }
+    val selectedHistoryPage = categories.indexOf(uiState.historyMode).coerceAtLeast(0)
+    val historyContentSwitchState = rememberTabbedPageContentSwitchState(selectedHistoryPage)
+    var bottomBarVisible by remember { mutableStateOf(true) }
+    val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val bottomChromeScrollState =
+        rememberTabbedPageChromeScrollState(
+            visible = bottomBarVisible,
+            activeListStateProvider = { listState },
+            onVisibleChange = { bottomBarVisible = it },
+        )
+    val pageNestedScrollConnection =
+        remember(listState, bottomChromeScrollState, scrollBehavior.nestedScrollConnection) {
+            tabbedPageContentNestedScrollConnection(
+                listState = listState,
+                chrome = bottomChromeScrollState.chromeNestedScrollConnection,
+                delegate = scrollBehavior.nestedScrollConnection,
+            )
+        }
+    val selectHistoryCategory =
+        remember(categories, scope, listState, viewModel, bottomChromeScrollState) {
+            { index: Int ->
+                categories.getOrNull(index)?.let { mode ->
+                    viewModel.setHistoryMode(mode)
+                    bottomChromeScrollState.showNow()
+                    scope.launch { listState.animateScrollToItem(0) }
+                }
+                Unit
+            }
+        }
     var expandedRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var expandedRefreshRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var expandedTrackChangeRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var showActionMenuPopup by rememberSaveable { mutableStateOf(false) }
+    val refreshHistoryExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            viewModel.writePendingRefreshHistoryExport(
+                contentResolver = context.contentResolver,
+                uri = uri,
+            )
+        }
     val currentTotalRecordCount =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.totalRefreshRecordCount
             GitHubHistoryMode.Actions -> uiState.totalRecordCount
+            GitHubHistoryMode.Tracking -> uiState.totalTrackChangeRecordCount
         }
     val currentDisplayRecordCount =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
             GitHubHistoryMode.Actions -> uiState.records.size
+            GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
         }
+    val searchActive = uiState.searchQuery.trim().isNotEmpty()
     val iconPackageNames =
-        remember(uiState.records) {
-            uiState.records
-                .map { it.packageName.trim() }
+        remember(uiState.records, uiState.trackChangeRecords) {
+            (uiState.records.map { it.packageName.trim() } +
+                uiState.trackChangeRecords.map { it.record.packageName.trim() })
                 .filter { it.isNotBlank() }
                 .distinct()
         }
@@ -111,8 +171,49 @@ internal fun GitHubActionsNotificationHistoryPage(
         expandedRefreshRecordKeys = expandedRefreshRecordKeys.filter { it in activeKeys }
     }
 
+    LaunchedEffect(uiState.trackChangeRecords) {
+        val activeKeys = uiState.trackChangeRecords.map(::githubTrackChangeHistoryRecordKey).toSet()
+        expandedTrackChangeRecordKeys = expandedTrackChangeRecordKeys.filter { it in activeKeys }
+    }
+
     LaunchedEffect(context, iconPackageNames) {
         viewModel.requestAppIcons(context, iconPackageNames)
+    }
+
+    LaunchedEffect(context, lifecycleOwner, refreshHistoryExportLauncher, viewModel) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    is GitHubActionsNotificationHistoryEvent.LaunchRefreshHistoryExport ->
+                        refreshHistoryExportLauncher.launch(event.fileName)
+
+                    GitHubActionsNotificationHistoryEvent.RefreshHistoryExported ->
+                        context.showToast(context.getString(R.string.common_export_success))
+
+                    is GitHubActionsNotificationHistoryEvent.RefreshHistoryExportFailed ->
+                        context.showToast(
+                            context.getString(
+                                R.string.common_export_failed_with_reason,
+                                event.reason.ifBlank { context.getString(R.string.common_unknown) },
+                            ),
+                        )
+                }
+            }
+        }
+    }
+
+    BackHandler(enabled = uiState.searchExpanded) {
+        viewModel.setSearchExpanded(false)
+    }
+
+    LaunchedEffect(uiState.historyMode) {
+        bottomChromeScrollState.showNow()
+    }
+
+    LaunchedEffect(searchActive, uiState.searchQuery) {
+        if (searchActive) {
+            listState.scrollToItem(0)
+        }
     }
 
     AppPageScaffold(
@@ -125,6 +226,9 @@ internal fun GitHubActionsNotificationHistoryPage(
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
+        onTitleClick = {
+            scope.launch { listState.animateScrollToItem(0) }
+        },
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
@@ -136,27 +240,55 @@ internal fun GitHubActionsNotificationHistoryPage(
         actions = {
             GitHubActionsNotificationHistoryActionBar(
                 backdrop = pageBackdrop,
-                loading = uiState.loading,
+                loading = uiState.loading || uiState.exportInProgress,
                 hasRecords = currentTotalRecordCount > 0,
                 showActionMenuPopup = showActionMenuPopup,
                 historyMode = uiState.historyMode,
                 filterMode = uiState.filterMode,
                 refreshFilterMode = uiState.refreshFilterMode,
+                trackChangeFilterMode = uiState.trackChangeFilterMode,
                 sortMode = uiState.sortMode,
                 refreshSortMode = uiState.refreshSortMode,
+                trackChangeSortMode = uiState.trackChangeSortMode,
                 sortDirection = uiState.sortDirection,
                 onRefresh = viewModel::refresh,
                 onShowActionMenuPopupChange = { showActionMenuPopup = it },
-                onHistoryModeChange = viewModel::setHistoryMode,
                 onFilterModeChange = viewModel::setFilterMode,
                 onRefreshFilterModeChange = viewModel::setRefreshFilterMode,
+                onTrackChangeFilterModeChange = viewModel::setTrackChangeFilterMode,
                 onSortModeChange = viewModel::setSortMode,
                 onRefreshSortModeChange = viewModel::setRefreshSortMode,
+                onTrackChangeSortModeChange = viewModel::setTrackChangeSortMode,
                 onSortDirectionChange = viewModel::setSortDirection,
                 onCleanupAgeSelect = viewModel::pruneOlderThan,
+                onExportRefreshHistory = viewModel::requestRefreshHistoryExport,
             )
         },
         reserveTopEndActionSpace = true,
+        bottomBar = {
+            TabbedPageBottomChrome(
+                visible = bottomBarVisible,
+                navigationBarBottom = navigationBarBottom,
+                categories = categories,
+                selectedPage = selectedHistoryPage,
+                selectedPagePosition = null,
+                selectedPageProvider = { selectedHistoryPage },
+                searchExpanded = uiState.searchExpanded,
+                searchQuery = uiState.searchQuery,
+                onSearchQueryChange = viewModel::setSearchQuery,
+                onSearchExpandedChange = viewModel::setSearchExpanded,
+                searchIcon = appLucideSearchIcon(),
+                searchContentDescription = stringResource(R.string.github_history_search_placeholder),
+                searchPlaceholder = stringResource(R.string.github_history_search_placeholder),
+                backdrop = bottomBarBackdrop,
+                isLiquidEffectEnabled = true,
+                onSelectCategory = selectHistoryCategory,
+                onExpandDock = {
+                    bottomChromeScrollState.showNow()
+                },
+                labelPrefix = "github_history",
+            )
+        },
     ) { innerPadding ->
         AppPageLazyColumn(
             innerPadding = innerPadding,
@@ -164,8 +296,13 @@ internal fun GitHubActionsNotificationHistoryPage(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .layerBackdrop(pageBackdrop),
+                    .nestedScroll(pageNestedScrollConnection)
+                    .layerBackdrop(pageBackdrop)
+                    .layerBackdrop(bottomBarBackdrop),
+            bottomExtra =
+                appPageBottomPaddingWithFloatingOverlay(
+                    AppChromeTokens.floatingBottomBarOuterHeight,
+                ),
             sectionSpacing = CardLayoutRhythm.denseSectionGap,
         ) {
             when {
@@ -177,6 +314,11 @@ internal fun GitHubActionsNotificationHistoryPage(
                         GitHubActionsHistoryStateCard(
                             title = stringResource(R.string.github_actions_history_loading_title),
                             summary = stringResource(R.string.github_history_loading_summary),
+                            modifier =
+                                tabbedPageContentItemModifier(
+                                    switchState = historyContentSwitchState,
+                                    itemIndex = 0,
+                                ),
                         )
                     }
                 }
@@ -193,6 +335,11 @@ internal fun GitHubActionsNotificationHistoryPage(
                                     R.string.github_actions_history_error_summary,
                                     uiState.errorMessage,
                                 ),
+                            modifier =
+                                tabbedPageContentItemModifier(
+                                    switchState = historyContentSwitchState,
+                                    itemIndex = 0,
+                                ),
                         )
                     }
                 }
@@ -204,7 +351,11 @@ internal fun GitHubActionsNotificationHistoryPage(
                     ) {
                         GitHubHistoryOverviewCard(
                             uiState = uiState,
-                            onHistoryModeChange = viewModel::setHistoryMode,
+                            modifier =
+                                tabbedPageContentItemModifier(
+                                    switchState = historyContentSwitchState,
+                                    itemIndex = 0,
+                                ),
                         )
                     }
                     item(
@@ -215,15 +366,22 @@ internal fun GitHubActionsNotificationHistoryPage(
                             when (uiState.historyMode) {
                                 GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_title
                                 GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_title
+                                GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_title
                             }
                         val emptySummary =
                             when (uiState.historyMode) {
                                 GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_summary
                                 GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_summary
+                                GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_summary
                             }
                         GitHubActionsHistoryStateCard(
                             title = stringResource(emptyTitle),
                             summary = stringResource(emptySummary),
+                            modifier =
+                                tabbedPageContentItemModifier(
+                                    switchState = historyContentSwitchState,
+                                    itemIndex = 1,
+                                ),
                         )
                     }
                 }
@@ -235,7 +393,11 @@ internal fun GitHubActionsNotificationHistoryPage(
                     ) {
                         GitHubHistoryOverviewCard(
                             uiState = uiState,
-                            onHistoryModeChange = viewModel::setHistoryMode,
+                            modifier =
+                                tabbedPageContentItemModifier(
+                                    switchState = historyContentSwitchState,
+                                    itemIndex = 0,
+                                ),
                         )
                     }
                     if (currentDisplayRecordCount == 0) {
@@ -244,23 +406,43 @@ internal fun GitHubActionsNotificationHistoryPage(
                             contentType = "github-actions-history-state",
                         ) {
                             GitHubActionsHistoryStateCard(
-                                title = stringResource(R.string.github_actions_history_empty_filtered_title),
-                                summary = stringResource(R.string.github_actions_history_empty_filtered_summary),
+                                title =
+                                    if (searchActive) {
+                                        stringResource(R.string.common_no_matched_results)
+                                    } else {
+                                        stringResource(R.string.github_actions_history_empty_filtered_title)
+                                    },
+                                summary =
+                                    if (searchActive) {
+                                        stringResource(R.string.github_history_empty_search_summary)
+                                    } else {
+                                        stringResource(R.string.github_actions_history_empty_filtered_summary)
+                                    },
+                                modifier =
+                                    tabbedPageContentItemModifier(
+                                        switchState = historyContentSwitchState,
+                                        itemIndex = 1,
+                                    ),
                             )
                         }
                     }
                     when (uiState.historyMode) {
                         GitHubHistoryMode.Refresh -> {
-                            items(
+                            itemsIndexed(
                                 items = uiState.refreshRecords,
-                                key = ::githubRefreshHistoryRecordKey,
-                                contentType = { "github-refresh-history-record" },
-                            ) { item ->
+                                key = { _, item -> githubRefreshHistoryRecordKey(item) },
+                                contentType = { _, _ -> "github-refresh-history-record" },
+                            ) { index, item ->
                                 val recordKey = githubRefreshHistoryRecordKey(item)
                                 val expanded = recordKey in expandedRefreshRecordKeys
                                 GitHubRefreshHistoryRecordCard(
                                     item = item,
                                     expanded = expanded,
+                                    modifier =
+                                        tabbedPageContentItemModifier(
+                                            switchState = historyContentSwitchState,
+                                            itemIndex = index + 1,
+                                        ),
                                     onExpandedChange = { nextExpanded ->
                                         expandedRefreshRecordKeys =
                                             if (nextExpanded) {
@@ -273,17 +455,22 @@ internal fun GitHubActionsNotificationHistoryPage(
                             }
                         }
                         GitHubHistoryMode.Actions -> {
-                            items(
+                            itemsIndexed(
                                 items = uiState.records,
-                                key = ::githubActionsHistoryRecordKey,
-                                contentType = { "github-actions-history-record" },
-                            ) { item ->
+                                key = { _, item -> githubActionsHistoryRecordKey(item) },
+                                contentType = { _, _ -> "github-actions-history-record" },
+                            ) { index, item ->
                                 val recordKey = githubActionsHistoryRecordKey(item)
                                 val expanded = recordKey in expandedRecordKeys
                                 GitHubActionsHistoryRecordCard(
                                     item = item,
                                     appIconBitmap = appIconState.bitmaps[item.packageName.trim()],
                                     expanded = expanded,
+                                    modifier =
+                                        tabbedPageContentItemModifier(
+                                            switchState = historyContentSwitchState,
+                                            itemIndex = index + 1,
+                                        ),
                                     onExpandedChange = { nextExpanded ->
                                         expandedRecordKeys =
                                             if (nextExpanded) {
@@ -296,6 +483,34 @@ internal fun GitHubActionsNotificationHistoryPage(
                                 )
                             }
                         }
+                        GitHubHistoryMode.Tracking -> {
+                            itemsIndexed(
+                                items = uiState.trackChangeRecords,
+                                key = { _, item -> githubTrackChangeHistoryRecordKey(item) },
+                                contentType = { _, _ -> "github-track-change-history-record" },
+                            ) { index, item ->
+                                val recordKey = githubTrackChangeHistoryRecordKey(item)
+                                val expanded = recordKey in expandedTrackChangeRecordKeys
+                                GitHubTrackChangeHistoryRecordCard(
+                                    item = item,
+                                    appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
+                                    expanded = expanded,
+                                    modifier =
+                                        tabbedPageContentItemModifier(
+                                            switchState = historyContentSwitchState,
+                                            itemIndex = index + 1,
+                                        ),
+                                    onExpandedChange = { nextExpanded ->
+                                        expandedTrackChangeRecordKeys =
+                                            if (nextExpanded) {
+                                                (expandedTrackChangeRecordKeys + recordKey).distinct()
+                                            } else {
+                                                expandedTrackChangeRecordKeys - recordKey
+                                            }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -303,124 +518,16 @@ internal fun GitHubActionsNotificationHistoryPage(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun GitHubActionsHistorySummaryCard(
-    uiState: GitHubActionsNotificationHistoryUiState,
-) {
-    val filterLabel = stringResource(uiState.filterMode.labelRes)
-    val sortLabel = stringResource(uiState.sortMode.labelRes)
-    val sortDirectionLabel = stringResource(uiState.sortDirection.labelRes)
-    val sortValue =
-        stringResource(
-            R.string.github_actions_history_summary_sort_value,
-            sortLabel,
-            sortDirectionLabel,
-        )
-    AppSurfaceCard(
-        showIndication = false,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = CardLayoutRhythm.cardHorizontalPadding, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = appLucideFilterIcon(),
-                    contentDescription = null,
-                    modifier = Modifier.size(22.dp),
-                    tint = MiuixTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = stringResource(R.string.github_actions_history_summary_title),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = AppTypographyTokens.CompactTitle.fontSize,
-                    lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
-                    fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                StatusPill(
-                    label =
-                        stringResource(
-                            R.string.github_actions_history_summary_subtitle,
-                            uiState.records.size,
-                            uiState.totalRecordCount,
-                        ),
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    size = AppStatusPillSize.Compact,
-                    backgroundAlphaOverride = 0.12f,
-                    borderAlphaOverride = 0.22f,
-                )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-                itemVerticalAlignment = Alignment.CenterVertically,
-            ) {
-                GitHubActionsHistorySummaryPill(
-                    label = stringResource(R.string.github_actions_history_summary_label_filter),
-                    value = filterLabel,
-                    color = MiuixTheme.colorScheme.primary,
-                )
-                GitHubActionsHistorySummaryPill(
-                    label = stringResource(R.string.github_actions_history_summary_label_sort),
-                    value = sortValue,
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
-                uiState.lastCleanupRemovedCount?.let { removedCount ->
-                    GitHubActionsHistorySummaryPill(
-                        label = stringResource(R.string.github_actions_history_summary_label_cleanup),
-                        value =
-                            stringResource(
-                                R.string.github_actions_history_cleanup_removed,
-                                removedCount,
-                            ),
-                        color = MiuixTheme.colorScheme.error,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GitHubActionsHistorySummaryPill(
-    label: String,
-    value: String,
-    color: androidx.compose.ui.graphics.Color,
-) {
-    StatusPill(
-        label =
-            stringResource(
-                R.string.github_actions_history_summary_chip_value,
-                label,
-                value,
-            ),
-        color = color,
-        size = AppStatusPillSize.Compact,
-        backgroundAlphaOverride = 0.16f,
-        borderAlphaOverride = 0.28f,
-    )
-}
-
 @Composable
 private fun GitHubActionsHistoryStateCard(
     title: String,
     summary: String,
+    modifier: Modifier = Modifier,
 ) {
     AppFeatureCard(
         title = title,
         subtitle = summary,
+        modifier = modifier,
         sectionIcon = appLucideHistoryIcon(),
         showIndication = false,
     ) {
@@ -432,6 +539,7 @@ private fun GitHubActionsHistoryRecordCard(
     item: GitHubActionsNotificationHistoryUiRecord,
     appIconBitmap: android.graphics.Bitmap?,
     expanded: Boolean,
+    modifier: Modifier = Modifier,
     onExpandedChange: (Boolean) -> Unit,
     onOpenTrackActions: () -> Unit,
 ) {
@@ -482,6 +590,7 @@ private fun GitHubActionsHistoryRecordCard(
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
+        modifier = modifier,
         eyebrow =
             stringResource(
                 R.string.github_actions_history_time_notified,
@@ -738,6 +847,11 @@ private fun githubActionsHistoryRecordKey(record: GitHubActionsNotificationHisto
 private fun githubRefreshHistoryRecordKey(item: GitHubRefreshHistoryUiRecord): String =
     item.record.id.ifBlank {
         "${item.record.sessionId}|${item.record.source}|${item.record.scope}|${item.record.startedAtMillis}"
+    }
+
+private fun githubTrackChangeHistoryRecordKey(item: GitHubTrackChangeHistoryUiRecord): String =
+    item.record.id.ifBlank {
+        "${item.record.trackId}|${item.record.action}|${item.record.changedAtMillis}"
     }
 
 private val ColorSuccess = androidx.compose.ui.graphics.Color(0xFF22C55E)

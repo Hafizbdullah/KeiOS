@@ -149,6 +149,7 @@ fun AppBottomSearchDock(
         }
     val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
     val iconAlphaProvider = remember(iconAlphaState) { { iconAlphaState.value } }
+    val showSearchField = contentTransition.currentState || contentTransition.targetState
 
     LaunchedEffect(expanded) {
         if (!expanded) {
@@ -186,23 +187,25 @@ fun AppBottomSearchDock(
                         },
                     ),
         ) {
-            AppBottomSearchField(
-                query = query,
-                onQueryChange = onQueryChange,
-                focusRequester = focusRequester,
-                enabled = expanded,
-                autoFocus = expanded && searchAutoFocusEnabled,
-                onFocusActiveChange = { active ->
-                    if (active) onExpandedChange(true)
-                },
-                searchIcon = searchIcon,
-                placeholder = placeholder,
-                accent = accent,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = fieldAlphaProvider() },
-            )
+            if (showSearchField) {
+                AppBottomSearchField(
+                    query = query,
+                    onQueryChange = onQueryChange,
+                    focusRequester = focusRequester,
+                    enabled = expanded,
+                    autoFocus = expanded && searchAutoFocusEnabled,
+                    onFocusActiveChange = { active ->
+                        if (active) onExpandedChange(true)
+                    },
+                    searchIcon = searchIcon,
+                    placeholder = placeholder,
+                    accent = accent,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer { alpha = fieldAlphaProvider() },
+                )
+            }
             Icon(
                 imageVector = searchIcon,
                 contentDescription = if (expanded) null else contentDescription,

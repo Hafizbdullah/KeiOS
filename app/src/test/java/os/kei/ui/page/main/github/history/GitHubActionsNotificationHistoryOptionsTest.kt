@@ -2,6 +2,11 @@ package os.kei.ui.page.main.github.history
 
 import org.junit.Test
 import os.kei.feature.github.model.GitHubActionsNotificationHistoryRecord
+import os.kei.feature.github.model.GitHubTrackChangeField
+import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
+import os.kei.feature.github.model.GitHubTrackChangeHistoryRecord
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
+import os.kei.feature.github.model.GitHubTrackedSourceMode
 import kotlin.test.assertEquals
 
 class GitHubActionsNotificationHistoryOptionsTest {
@@ -85,6 +90,52 @@ class GitHubActionsNotificationHistoryOptionsTest {
         )
     }
 
+    @Test
+    fun `filters sorts and searches tracking history`() {
+        val records =
+            listOf(
+                createTrackChangeUiRecord(
+                    appLabel = "Beta",
+                    repo = "middle",
+                    action = GitHubTrackChangeHistoryAction.Updated,
+                    changedAtMillis = 2_000L,
+                    changedFields = listOf(GitHubTrackChangeField.UpdateInterval),
+                ),
+                createTrackChangeUiRecord(
+                    appLabel = "Alpha",
+                    repo = "omega",
+                    action = GitHubTrackChangeHistoryAction.Added,
+                    changedAtMillis = 1_000L,
+                ),
+                createTrackChangeUiRecord(
+                    appLabel = "Zulu",
+                    repo = "alpha",
+                    action = GitHubTrackChangeHistoryAction.Deleted,
+                    changedAtMillis = 3_000L,
+                ),
+            )
+
+        assertEquals(
+            listOf("Alpha"),
+            records.trackDisplay(filterMode = GitHubTrackChangeHistoryFilterMode.Added).trackAppLabels(),
+        )
+        assertEquals(
+            listOf("Zulu", "Beta", "Alpha"),
+            records.trackDisplay(sortMode = GitHubTrackChangeHistorySortMode.ChangedAt).trackAppLabels(),
+        )
+        assertEquals(
+            listOf("Alpha", "Beta", "Zulu"),
+            records.trackDisplay(
+                sortMode = GitHubTrackChangeHistorySortMode.App,
+                sortDirection = GitHubActionsHistorySortDirection.Ascending,
+            ).trackAppLabels(),
+        )
+        assertEquals(
+            listOf("Beta"),
+            records.trackDisplay(searchQuery = "updateinterval").trackAppLabels(),
+        )
+    }
+
     private fun List<GitHubActionsNotificationHistoryUiRecord>.display(
         filterMode: GitHubActionsHistoryFilterMode = GitHubActionsHistoryFilterMode.All,
         sortMode: GitHubActionsHistorySortMode = GitHubActionsHistorySortMode.NotifiedAt,
@@ -98,6 +149,23 @@ class GitHubActionsNotificationHistoryOptionsTest {
         )
 
     private fun List<GitHubActionsNotificationHistoryUiRecord>.appLabels(): List<String> =
+        map { item -> item.record.appLabel }
+
+    private fun List<GitHubTrackChangeHistoryUiRecord>.trackDisplay(
+        filterMode: GitHubTrackChangeHistoryFilterMode = GitHubTrackChangeHistoryFilterMode.All,
+        sortMode: GitHubTrackChangeHistorySortMode = GitHubTrackChangeHistorySortMode.ChangedAt,
+        sortDirection: GitHubActionsHistorySortDirection = GitHubActionsHistorySortDirection.Descending,
+        searchQuery: String = "",
+    ): List<GitHubTrackChangeHistoryUiRecord> =
+        buildGitHubTrackChangeHistoryDisplayRecords(
+            records = this,
+            filterMode = filterMode,
+            sortMode = sortMode,
+            sortDirection = sortDirection,
+            searchQuery = searchQuery,
+        )
+
+    private fun List<GitHubTrackChangeHistoryUiRecord>.trackAppLabels(): List<String> =
         map { item -> item.record.appLabel }
 
     private fun createUiRecord(
@@ -138,5 +206,30 @@ class GitHubActionsNotificationHistoryOptionsTest {
                     notificationContent = "$appLabel #$runNumber",
                 ),
             packageName = "pkg.$repo",
+        )
+
+    private fun createTrackChangeUiRecord(
+        appLabel: String,
+        repo: String = appLabel.lowercase(),
+        action: GitHubTrackChangeHistoryAction = GitHubTrackChangeHistoryAction.Updated,
+        changedAtMillis: Long = 1_000L,
+        changedFields: List<GitHubTrackChangeField> = emptyList(),
+    ): GitHubTrackChangeHistoryUiRecord =
+        GitHubTrackChangeHistoryUiRecord(
+            record =
+                GitHubTrackChangeHistoryRecord(
+                    id = "$repo-$changedAtMillis",
+                    trackId = "owner/$repo|pkg.$repo",
+                    action = action,
+                    source = GitHubTrackChangeHistorySource.Page,
+                    changedAtMillis = changedAtMillis,
+                    owner = "owner",
+                    repo = repo,
+                    repoUrl = "https://github.com/owner/$repo",
+                    packageName = "pkg.$repo",
+                    appLabel = appLabel,
+                    sourceMode = GitHubTrackedSourceMode.GitHubRepository,
+                    changedFields = changedFields,
+                ),
         )
 }

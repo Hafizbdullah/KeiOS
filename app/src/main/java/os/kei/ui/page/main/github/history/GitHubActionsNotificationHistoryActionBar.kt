@@ -10,8 +10,8 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
+import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
-import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
@@ -22,6 +22,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -43,52 +44,56 @@ internal fun GitHubActionsNotificationHistoryActionBar(
     historyMode: GitHubHistoryMode,
     filterMode: GitHubActionsHistoryFilterMode,
     refreshFilterMode: GitHubRefreshHistoryFilterMode,
+    trackChangeFilterMode: GitHubTrackChangeHistoryFilterMode,
     sortMode: GitHubActionsHistorySortMode,
     refreshSortMode: GitHubRefreshHistorySortMode,
+    trackChangeSortMode: GitHubTrackChangeHistorySortMode,
     sortDirection: GitHubActionsHistorySortDirection,
     onRefresh: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
-    onHistoryModeChange: (GitHubHistoryMode) -> Unit,
     onFilterModeChange: (GitHubActionsHistoryFilterMode) -> Unit,
     onRefreshFilterModeChange: (GitHubRefreshHistoryFilterMode) -> Unit,
+    onTrackChangeFilterModeChange: (GitHubTrackChangeHistoryFilterMode) -> Unit,
     onSortModeChange: (GitHubActionsHistorySortMode) -> Unit,
     onRefreshSortModeChange: (GitHubRefreshHistorySortMode) -> Unit,
+    onTrackChangeSortModeChange: (GitHubTrackChangeHistorySortMode) -> Unit,
     onSortDirectionChange: (GitHubActionsHistorySortDirection) -> Unit,
     onCleanupAgeSelect: (GitHubActionsHistoryCleanupAge) -> Unit,
+    onExportRefreshHistory: () -> Unit,
 ) {
     val refreshIcon = appLucideRefreshIcon()
     val moreIcon = appLucideMoreIcon()
     val filterIcon = appLucideFilterIcon()
     val sortIcon = appLucideSortIcon()
     val timeIcon = appLucideTimeIcon()
+    val exportIcon = appLucideDownloadIcon()
     val cleanupIcon = appLucideTrashIcon()
     val chevronRightIcon = appLucideChevronRightIcon()
     val refreshLabel = stringResource(R.string.common_refresh)
     val moreLabel = stringResource(R.string.github_actions_history_action_more)
-    val modeLabel = stringResource(R.string.github_history_action_mode)
     val filterLabel = stringResource(R.string.github_actions_history_action_filter)
     val sortLabel = stringResource(R.string.github_actions_history_action_sort)
     val sortDirectionLabel = stringResource(R.string.github_actions_history_action_sort_direction)
     val cleanupLabel = stringResource(R.string.github_actions_history_action_cleanup)
     val cleanupSubtitle = stringResource(R.string.github_actions_history_cleanup_subtitle)
-    val historyModes = GitHubHistoryMode.entries
-    val historyModeLabels = historyModes.map { mode -> stringResource(mode.labelRes) }
+    val exportRefreshLabel = stringResource(R.string.github_history_action_export_refresh)
+    val exportRefreshSubtitle = stringResource(R.string.github_history_action_export_refresh_summary)
     val filterModes = GitHubActionsHistoryFilterMode.entries
     val filterLabels = filterModes.map { mode -> stringResource(mode.labelRes) }
     val refreshFilterModes = GitHubRefreshHistoryFilterMode.entries
     val refreshFilterLabels = refreshFilterModes.map { mode -> stringResource(mode.labelRes) }
+    val trackChangeFilterModes = GitHubTrackChangeHistoryFilterMode.entries
+    val trackChangeFilterLabels = trackChangeFilterModes.map { mode -> stringResource(mode.labelRes) }
     val sortModes = GitHubActionsHistorySortMode.entries
     val sortLabels = sortModes.map { mode -> stringResource(mode.labelRes) }
     val refreshSortModes = GitHubRefreshHistorySortMode.entries
     val refreshSortLabels = refreshSortModes.map { mode -> stringResource(mode.labelRes) }
+    val trackChangeSortModes = GitHubTrackChangeHistorySortMode.entries
+    val trackChangeSortLabels = trackChangeSortModes.map { mode -> stringResource(mode.labelRes) }
     val sortDirections = GitHubActionsHistorySortDirection.entries
     val sortDirectionLabels = sortDirections.map { direction -> stringResource(direction.labelRes) }
     val cleanupAges = GitHubActionsHistoryCleanupAge.entries
     val cleanupAgeLabels = cleanupAges.map { age -> stringResource(age.labelRes) }
-    val selectedModeLabel =
-        historyModeLabels.getOrElse(historyModes.indexOf(historyMode)) {
-            stringResource(historyMode.labelRes)
-        }
     val selectedFilterLabel =
         when (historyMode) {
             GitHubHistoryMode.Refresh ->
@@ -98,6 +103,10 @@ internal fun GitHubActionsNotificationHistoryActionBar(
             GitHubHistoryMode.Actions ->
                 filterLabels.getOrElse(filterModes.indexOf(filterMode)) {
                     stringResource(filterMode.labelRes)
+                }
+            GitHubHistoryMode.Tracking ->
+                trackChangeFilterLabels.getOrElse(trackChangeFilterModes.indexOf(trackChangeFilterMode)) {
+                    stringResource(trackChangeFilterMode.labelRes)
                 }
         }
     val selectedSortLabel =
@@ -109,6 +118,10 @@ internal fun GitHubActionsNotificationHistoryActionBar(
             GitHubHistoryMode.Actions ->
                 sortLabels.getOrElse(sortModes.indexOf(sortMode)) {
                     stringResource(sortMode.labelRes)
+                }
+            GitHubHistoryMode.Tracking ->
+                trackChangeSortLabels.getOrElse(trackChangeSortModes.indexOf(trackChangeSortMode)) {
+                    stringResource(trackChangeSortMode.labelRes)
                 }
         }
     val selectedDirectionLabel =
@@ -179,24 +192,6 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                         items =
                             listOf(
                                 LiquidGlassActionMenuSubmenuRow(
-                                    id = "history_mode",
-                                    text = modeLabel,
-                                    subtitle = selectedModeLabel,
-                                    leadingIcon = appLucideHistoryIcon(),
-                                    trailingIcon = chevronRightIcon,
-                                    enabled = true,
-                                    submenuItems =
-                                        historyModes.mapIndexed { index, mode ->
-                                            LiquidGlassActionMenuSingleChoiceRow(
-                                                id = mode.name,
-                                                text = historyModeLabels[index],
-                                                selected = historyMode == mode,
-                                                leadingIcon = appLucideHistoryIcon(),
-                                                onClick = { onHistoryModeChange(mode) },
-                                            )
-                                        },
-                                ),
-                                LiquidGlassActionMenuSubmenuRow(
                                     id = "filter",
                                     text = filterLabel,
                                     subtitle = selectedFilterLabel,
@@ -223,6 +218,16 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         selected = filterMode == mode,
                                                         leadingIcon = filterIcon,
                                                         onClick = { onFilterModeChange(mode) },
+                                                    )
+                                                }
+                                            GitHubHistoryMode.Tracking ->
+                                                trackChangeFilterModes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = trackChangeFilterLabels[index],
+                                                        selected = trackChangeFilterMode == mode,
+                                                        leadingIcon = filterIcon,
+                                                        onClick = { onTrackChangeFilterModeChange(mode) },
                                                     )
                                                 }
                                         },
@@ -256,6 +261,16 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onSortModeChange(mode) },
                                                     )
                                                 }
+                                            GitHubHistoryMode.Tracking ->
+                                                trackChangeSortModes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = trackChangeSortLabels[index],
+                                                        selected = trackChangeSortMode == mode,
+                                                        leadingIcon = sortIcon,
+                                                        onClick = { onTrackChangeSortModeChange(mode) },
+                                                    )
+                                                }
                                         },
                                 ),
                                 LiquidGlassActionMenuSubmenuRow(
@@ -275,6 +290,17 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                 onClick = { onSortDirectionChange(direction) },
                                             )
                                         },
+                                ),
+                                LiquidGlassActionMenuActionRow(
+                                    id = "export_refresh",
+                                    text = exportRefreshLabel,
+                                    subtitle = exportRefreshSubtitle,
+                                    leadingIcon = exportIcon,
+                                    enabled = hasRecords && !loading && historyMode == GitHubHistoryMode.Refresh,
+                                    onClick = {
+                                        onShowActionMenuPopupChange(false)
+                                        onExportRefreshHistory()
+                                    },
                                 ),
                                 LiquidGlassActionMenuSubmenuRow(
                                     id = "cleanup",

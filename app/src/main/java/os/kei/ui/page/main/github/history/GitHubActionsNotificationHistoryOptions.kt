@@ -2,14 +2,19 @@ package os.kei.ui.page.main.github.history
 
 import androidx.annotation.StringRes
 import os.kei.R
+import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
+import os.kei.ui.page.main.widget.chrome.TabbedPageCategory
 import java.util.Locale
+import com.composables.icons.lucide.R as LucideR
 
 internal enum class GitHubHistoryMode(
-    @param:StringRes val labelRes: Int,
-) {
-    Refresh(R.string.github_history_mode_refresh),
-    Actions(R.string.github_history_mode_actions),
+    override val iconRes: Int,
+    @param:StringRes override val labelRes: Int,
+) : TabbedPageCategory {
+    Refresh(LucideR.drawable.lucide_ic_history, R.string.github_history_mode_refresh),
+    Actions(LucideR.drawable.lucide_ic_bell, R.string.github_history_mode_actions),
+    Tracking(LucideR.drawable.lucide_ic_git_branch, R.string.github_history_mode_tracking),
 }
 
 internal enum class GitHubActionsHistoryFilterMode(
@@ -32,6 +37,15 @@ internal enum class GitHubRefreshHistoryFilterMode(
     Cancelled(R.string.github_history_refresh_filter_cancelled),
 }
 
+internal enum class GitHubTrackChangeHistoryFilterMode(
+    @param:StringRes val labelRes: Int,
+) {
+    All(R.string.github_actions_history_filter_all),
+    Added(R.string.github_history_tracking_filter_added),
+    Updated(R.string.github_history_tracking_filter_updated),
+    Deleted(R.string.github_history_tracking_filter_deleted),
+}
+
 internal enum class GitHubRefreshHistorySortMode(
     @param:StringRes val labelRes: Int,
 ) {
@@ -40,6 +54,15 @@ internal enum class GitHubRefreshHistorySortMode(
     TargetCount(R.string.github_history_refresh_sort_target),
     UpdateCount(R.string.github_history_refresh_sort_updates),
     FailedCount(R.string.github_history_refresh_sort_failed),
+}
+
+internal enum class GitHubTrackChangeHistorySortMode(
+    @param:StringRes val labelRes: Int,
+) {
+    ChangedAt(R.string.github_history_tracking_sort_changed),
+    App(R.string.github_actions_history_sort_app),
+    Repository(R.string.github_actions_history_sort_repository),
+    Source(R.string.github_history_refresh_label_source),
 }
 
 internal enum class GitHubActionsHistorySortMode(
@@ -73,7 +96,9 @@ internal fun buildGitHubActionsHistoryDisplayRecords(
     filterMode: GitHubActionsHistoryFilterMode,
     sortMode: GitHubActionsHistorySortMode,
     sortDirection: GitHubActionsHistorySortDirection,
+    searchQuery: String = "",
 ): List<GitHubActionsNotificationHistoryUiRecord> {
+    val normalizedQuery = searchQuery.normalizedHistorySearchQuery()
     val filtered =
         records.filter { item ->
             val record = item.record
@@ -94,6 +119,8 @@ internal fun buildGitHubActionsHistoryDisplayRecords(
                         record.status.equals("pending", ignoreCase = true)
                 GitHubActionsHistoryFilterMode.AndroidArtifacts -> record.androidArtifactCount > 0
             }
+        }.filter { item ->
+            normalizedQuery.isBlank() || item.matchesActionsHistorySearch(normalizedQuery)
         }
     val comparator = gitHubActionsHistoryComparator(sortMode)
     val sorted = filtered.sortedWith(comparator)
@@ -108,7 +135,9 @@ internal fun buildGitHubRefreshHistoryDisplayRecords(
     filterMode: GitHubRefreshHistoryFilterMode,
     sortMode: GitHubRefreshHistorySortMode,
     sortDirection: GitHubActionsHistorySortDirection,
+    searchQuery: String = "",
 ): List<GitHubRefreshHistoryUiRecord> {
+    val normalizedQuery = searchQuery.normalizedHistorySearchQuery()
     val filtered =
         records.filter { item ->
             val record = item.record
@@ -123,6 +152,8 @@ internal fun buildGitHubRefreshHistoryDisplayRecords(
                 GitHubRefreshHistoryFilterMode.Cancelled ->
                     record.outcome == GitHubRefreshHistoryOutcome.Cancelled
             }
+        }.filter { item ->
+            normalizedQuery.isBlank() || item.matchesRefreshHistorySearch(normalizedQuery)
         }
     val comparator = gitHubRefreshHistoryComparator(sortMode)
     val sorted = filtered.sortedWith(comparator)
@@ -131,6 +162,114 @@ internal fun buildGitHubRefreshHistoryDisplayRecords(
         GitHubActionsHistorySortDirection.Ascending -> sorted.asReversed()
     }
 }
+
+internal fun buildGitHubTrackChangeHistoryDisplayRecords(
+    records: List<GitHubTrackChangeHistoryUiRecord>,
+    filterMode: GitHubTrackChangeHistoryFilterMode,
+    sortMode: GitHubTrackChangeHistorySortMode,
+    sortDirection: GitHubActionsHistorySortDirection,
+    searchQuery: String = "",
+): List<GitHubTrackChangeHistoryUiRecord> {
+    val normalizedQuery = searchQuery.normalizedHistorySearchQuery()
+    val filtered =
+        records.filter { item ->
+            val action = item.record.action
+            when (filterMode) {
+                GitHubTrackChangeHistoryFilterMode.All -> true
+                GitHubTrackChangeHistoryFilterMode.Added ->
+                    action == GitHubTrackChangeHistoryAction.Added
+                GitHubTrackChangeHistoryFilterMode.Updated ->
+                    action == GitHubTrackChangeHistoryAction.Updated
+                GitHubTrackChangeHistoryFilterMode.Deleted ->
+                    action == GitHubTrackChangeHistoryAction.Deleted
+            }
+        }.filter { item ->
+            normalizedQuery.isBlank() || item.matchesTrackChangeHistorySearch(normalizedQuery)
+        }
+    val comparator = gitHubTrackChangeHistoryComparator(sortMode)
+    val sorted = filtered.sortedWith(comparator)
+    return when (sortDirection) {
+        GitHubActionsHistorySortDirection.Descending -> sorted
+        GitHubActionsHistorySortDirection.Ascending -> sorted.asReversed()
+    }
+}
+
+private fun String.normalizedHistorySearchQuery(): String = trim().lowercase(Locale.ROOT)
+
+private fun GitHubActionsNotificationHistoryUiRecord.matchesActionsHistorySearch(query: String): Boolean {
+    val record = record
+    return listOf(
+        packageName,
+        record.trackId,
+        record.owner,
+        record.repo,
+        record.repositoryLabel,
+        record.appLabel,
+        record.workflowName,
+        record.workflowPath,
+        record.runLabel,
+        record.runDisplayName,
+        record.headBranch,
+        record.headSha,
+        record.event,
+        record.status,
+        record.conclusion,
+        record.notificationTitle,
+        record.notificationContent,
+    ).containsHistoryQuery(query)
+}
+
+private fun GitHubRefreshHistoryUiRecord.matchesRefreshHistorySearch(query: String): Boolean {
+    val record = record
+    val failureTokens =
+        record.failureSummaries.flatMap { failure ->
+            listOf(
+                failure.trackId,
+                failure.owner,
+                failure.repo,
+                "${failure.owner}/${failure.repo}",
+                failure.packageName,
+                failure.appLabel,
+                failure.sourceMode,
+                failure.message,
+            )
+        }
+    return (
+        listOf(
+            record.id,
+            record.sessionId.toString(),
+            record.scope.name,
+            record.source.name,
+            record.outcome.name,
+            record.note,
+        ) + failureTokens
+    ).containsHistoryQuery(query)
+}
+
+private fun GitHubTrackChangeHistoryUiRecord.matchesTrackChangeHistorySearch(query: String): Boolean {
+    val record = record
+    return (
+        listOf(
+            record.id,
+            record.trackId,
+            record.previousTrackId,
+            record.owner,
+            record.repo,
+            "${record.owner}/${record.repo}",
+            record.repoUrl,
+            record.packageName,
+            record.appLabel,
+            record.sourceMode.storageId,
+            record.sourceMode.name,
+            record.action.name,
+            record.source.name,
+            record.note,
+        ) + record.changedFields.map { it.name }
+    ).containsHistoryQuery(query)
+}
+
+private fun Iterable<String>.containsHistoryQuery(query: String): Boolean =
+    any { value -> value.lowercase(Locale.ROOT).contains(query) }
 
 private fun gitHubRefreshHistoryComparator(
     sortMode: GitHubRefreshHistorySortMode,
@@ -188,5 +327,33 @@ private fun gitHubActionsHistoryComparator(
             compareByDescending<GitHubActionsNotificationHistoryUiRecord> { it.record.runNumber }
                 .thenByDescending { it.record.runId }
                 .thenByDescending { it.record.notifiedAtMillis }
+    }
+}
+
+private fun gitHubTrackChangeHistoryComparator(
+    sortMode: GitHubTrackChangeHistorySortMode,
+): Comparator<GitHubTrackChangeHistoryUiRecord> {
+    val textComparator = compareByDescending<GitHubTrackChangeHistoryUiRecord> {
+        it.record.appLabel
+            .ifBlank { "${it.record.owner}/${it.record.repo}" }
+            .lowercase(Locale.ROOT)
+    }
+    val tieBreakers =
+        compareByDescending<GitHubTrackChangeHistoryUiRecord> { it.record.changedAtMillis }
+            .thenByDescending { it.record.trackId }
+    return when (sortMode) {
+        GitHubTrackChangeHistorySortMode.ChangedAt ->
+            compareByDescending<GitHubTrackChangeHistoryUiRecord> { it.record.changedAtMillis }
+                .thenByDescending { it.record.trackId }
+        GitHubTrackChangeHistorySortMode.App ->
+            textComparator.then(tieBreakers)
+        GitHubTrackChangeHistorySortMode.Repository ->
+            compareByDescending<GitHubTrackChangeHistoryUiRecord> {
+                "${it.record.owner}/${it.record.repo}".lowercase(Locale.ROOT)
+            }.then(tieBreakers)
+        GitHubTrackChangeHistorySortMode.Source ->
+            compareByDescending<GitHubTrackChangeHistoryUiRecord> {
+                it.record.source.name.lowercase(Locale.ROOT)
+            }.then(tieBreakers)
     }
 }
