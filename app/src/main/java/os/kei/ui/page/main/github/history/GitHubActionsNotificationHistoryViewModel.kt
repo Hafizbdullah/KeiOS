@@ -15,11 +15,16 @@ import os.kei.ui.page.main.github.page.GitHubAppIconUiState
 
 internal data class GitHubActionsNotificationHistoryUiState(
     val loading: Boolean = true,
+    val historyMode: GitHubHistoryMode = GitHubHistoryMode.Refresh,
     val records: List<GitHubActionsNotificationHistoryUiRecord> = emptyList(),
+    val refreshRecords: List<GitHubRefreshHistoryUiRecord> = emptyList(),
     val totalRecordCount: Int = 0,
+    val totalRefreshRecordCount: Int = 0,
     val errorMessage: String = "",
     val filterMode: GitHubActionsHistoryFilterMode = GitHubActionsHistoryFilterMode.All,
+    val refreshFilterMode: GitHubRefreshHistoryFilterMode = GitHubRefreshHistoryFilterMode.All,
     val sortMode: GitHubActionsHistorySortMode = GitHubActionsHistorySortMode.NotifiedAt,
+    val refreshSortMode: GitHubRefreshHistorySortMode = GitHubRefreshHistorySortMode.FinishedAt,
     val sortDirection: GitHubActionsHistorySortDirection = GitHubActionsHistorySortDirection.Descending,
     val lastCleanupRemovedCount: Int? = null,
 )
@@ -34,6 +39,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
     val uiState: StateFlow<GitHubActionsNotificationHistoryUiState> = _uiState.asStateFlow()
     val appIconState: StateFlow<GitHubAppIconUiState> = appIconLoader.state
     private var allRecords: List<GitHubActionsNotificationHistoryUiRecord> = emptyList()
+    private var allRefreshRecords: List<GitHubRefreshHistoryUiRecord> = emptyList()
 
     init {
         refresh()
@@ -48,14 +54,19 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         errorMessage = "",
                     )
                 }
-                val result = runCatching { repository.loadHistory() }
+                val result =
+                    runCatching {
+                        repository.loadRefreshHistory() to repository.loadHistory()
+                    }
                 result
-                    .onSuccess { records ->
+                    .onSuccess { (refreshRecords, records) ->
+                        allRefreshRecords = refreshRecords
                         allRecords = records
                         updateDisplayRecords {
                             copy(
                                 loading = false,
                                 totalRecordCount = records.size,
+                                totalRefreshRecordCount = refreshRecords.size,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = null,
                             )
@@ -65,7 +76,9 @@ internal class GitHubActionsNotificationHistoryViewModel(
                             state.copy(
                                 loading = false,
                                 records = emptyList(),
+                                refreshRecords = emptyList(),
                                 totalRecordCount = allRecords.size,
+                                totalRefreshRecordCount = allRefreshRecords.size,
                                 errorMessage = error.message.orEmpty(),
                             )
                         }
@@ -88,8 +101,20 @@ internal class GitHubActionsNotificationHistoryViewModel(
         updateDisplayRecords { copy(filterMode = value) }
     }
 
+    fun setHistoryMode(value: GitHubHistoryMode) {
+        updateDisplayRecords { copy(historyMode = value) }
+    }
+
+    fun setRefreshFilterMode(value: GitHubRefreshHistoryFilterMode) {
+        updateDisplayRecords { copy(refreshFilterMode = value) }
+    }
+
     fun setSortMode(value: GitHubActionsHistorySortMode) {
         updateDisplayRecords { copy(sortMode = value) }
+    }
+
+    fun setRefreshSortMode(value: GitHubRefreshHistorySortMode) {
+        updateDisplayRecords { copy(refreshSortMode = value) }
     }
 
     fun setSortDirection(value: GitHubActionsHistorySortDirection) {
@@ -105,15 +130,25 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         errorMessage = "",
                     )
                 }
-                val result = runCatching { repository.pruneOlderThanDays(age.days) }
+                val mode = _uiState.value.historyMode
+                val result =
+                    runCatching {
+                        when (mode) {
+                            GitHubHistoryMode.Refresh -> repository.pruneRefreshHistoryOlderThanDays(age.days)
+                            GitHubHistoryMode.Actions -> repository.pruneOlderThanDays(age.days)
+                        }
+                    }
                 result
                     .onSuccess { removedCount ->
+                        val refreshRecords = repository.loadRefreshHistory()
                         val records = repository.loadHistory()
+                        allRefreshRecords = refreshRecords
                         allRecords = records
                         updateDisplayRecords {
                             copy(
                                 loading = false,
                                 totalRecordCount = records.size,
+                                totalRefreshRecordCount = refreshRecords.size,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = removedCount,
                             )
@@ -143,7 +178,15 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         sortMode = next.sortMode,
                         sortDirection = next.sortDirection,
                     ),
+                refreshRecords =
+                    buildGitHubRefreshHistoryDisplayRecords(
+                        records = allRefreshRecords,
+                        filterMode = next.refreshFilterMode,
+                        sortMode = next.refreshSortMode,
+                        sortDirection = next.sortDirection,
+                    ),
                 totalRecordCount = allRecords.size,
+                totalRefreshRecordCount = allRefreshRecords.size,
             )
         }
     }

@@ -2,7 +2,15 @@ package os.kei.ui.page.main.github.history
 
 import androidx.annotation.StringRes
 import os.kei.R
+import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import java.util.Locale
+
+internal enum class GitHubHistoryMode(
+    @param:StringRes val labelRes: Int,
+) {
+    Refresh(R.string.github_history_mode_refresh),
+    Actions(R.string.github_history_mode_actions),
+}
 
 internal enum class GitHubActionsHistoryFilterMode(
     @param:StringRes val labelRes: Int,
@@ -12,6 +20,26 @@ internal enum class GitHubActionsHistoryFilterMode(
     Failed(R.string.github_actions_history_filter_failed),
     Running(R.string.github_actions_history_filter_running),
     AndroidArtifacts(R.string.github_actions_history_filter_android_artifacts),
+}
+
+internal enum class GitHubRefreshHistoryFilterMode(
+    @param:StringRes val labelRes: Int,
+) {
+    All(R.string.github_actions_history_filter_all),
+    Completed(R.string.github_history_refresh_filter_completed),
+    Updatable(R.string.github_history_refresh_filter_updatable),
+    Failed(R.string.github_actions_history_filter_failed),
+    Cancelled(R.string.github_history_refresh_filter_cancelled),
+}
+
+internal enum class GitHubRefreshHistorySortMode(
+    @param:StringRes val labelRes: Int,
+) {
+    FinishedAt(R.string.github_history_refresh_sort_finished),
+    Elapsed(R.string.github_history_refresh_sort_elapsed),
+    TargetCount(R.string.github_history_refresh_sort_target),
+    UpdateCount(R.string.github_history_refresh_sort_updates),
+    FailedCount(R.string.github_history_refresh_sort_failed),
 }
 
 internal enum class GitHubActionsHistorySortMode(
@@ -72,6 +100,61 @@ internal fun buildGitHubActionsHistoryDisplayRecords(
     return when (sortDirection) {
         GitHubActionsHistorySortDirection.Descending -> sorted
         GitHubActionsHistorySortDirection.Ascending -> sorted.asReversed()
+    }
+}
+
+internal fun buildGitHubRefreshHistoryDisplayRecords(
+    records: List<GitHubRefreshHistoryUiRecord>,
+    filterMode: GitHubRefreshHistoryFilterMode,
+    sortMode: GitHubRefreshHistorySortMode,
+    sortDirection: GitHubActionsHistorySortDirection,
+): List<GitHubRefreshHistoryUiRecord> {
+    val filtered =
+        records.filter { item ->
+            val record = item.record
+            when (filterMode) {
+                GitHubRefreshHistoryFilterMode.All -> true
+                GitHubRefreshHistoryFilterMode.Completed ->
+                    record.outcome == GitHubRefreshHistoryOutcome.Completed && record.failedCount == 0
+                GitHubRefreshHistoryFilterMode.Updatable ->
+                    record.updatableCount > 0 || record.preReleaseUpdateCount > 0
+                GitHubRefreshHistoryFilterMode.Failed ->
+                    record.outcome == GitHubRefreshHistoryOutcome.Failed || record.failedCount > 0
+                GitHubRefreshHistoryFilterMode.Cancelled ->
+                    record.outcome == GitHubRefreshHistoryOutcome.Cancelled
+            }
+        }
+    val comparator = gitHubRefreshHistoryComparator(sortMode)
+    val sorted = filtered.sortedWith(comparator)
+    return when (sortDirection) {
+        GitHubActionsHistorySortDirection.Descending -> sorted
+        GitHubActionsHistorySortDirection.Ascending -> sorted.asReversed()
+    }
+}
+
+private fun gitHubRefreshHistoryComparator(
+    sortMode: GitHubRefreshHistorySortMode,
+): Comparator<GitHubRefreshHistoryUiRecord> {
+    val tieBreakers =
+        compareByDescending<GitHubRefreshHistoryUiRecord> { it.record.finishedAtMillis }
+            .thenByDescending { it.record.startedAtMillis }
+    return when (sortMode) {
+        GitHubRefreshHistorySortMode.FinishedAt ->
+            compareByDescending<GitHubRefreshHistoryUiRecord> { it.record.finishedAtMillis }
+                .thenByDescending { it.record.sessionId }
+        GitHubRefreshHistorySortMode.Elapsed ->
+            compareByDescending<GitHubRefreshHistoryUiRecord> { it.record.elapsedMs }
+                .then(tieBreakers)
+        GitHubRefreshHistorySortMode.TargetCount ->
+            compareByDescending<GitHubRefreshHistoryUiRecord> { it.record.targetCount }
+                .then(tieBreakers)
+        GitHubRefreshHistorySortMode.UpdateCount ->
+            compareByDescending<GitHubRefreshHistoryUiRecord> {
+                it.record.updatableCount + it.record.preReleaseUpdateCount
+            }.then(tieBreakers)
+        GitHubRefreshHistorySortMode.FailedCount ->
+            compareByDescending<GitHubRefreshHistoryUiRecord> { it.record.failedCount }
+                .then(tieBreakers)
     }
 }
 

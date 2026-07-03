@@ -81,7 +81,18 @@ internal fun GitHubActionsNotificationHistoryPage(
     val pageBackdrop = rememberLayerBackdrop()
     val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     var expandedRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var expandedRefreshRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var showActionMenuPopup by rememberSaveable { mutableStateOf(false) }
+    val currentTotalRecordCount =
+        when (uiState.historyMode) {
+            GitHubHistoryMode.Refresh -> uiState.totalRefreshRecordCount
+            GitHubHistoryMode.Actions -> uiState.totalRecordCount
+        }
+    val currentDisplayRecordCount =
+        when (uiState.historyMode) {
+            GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
+            GitHubHistoryMode.Actions -> uiState.records.size
+        }
     val iconPackageNames =
         remember(uiState.records) {
             uiState.records
@@ -95,12 +106,17 @@ internal fun GitHubActionsNotificationHistoryPage(
         expandedRecordKeys = expandedRecordKeys.filter { it in activeKeys }
     }
 
+    LaunchedEffect(uiState.refreshRecords) {
+        val activeKeys = uiState.refreshRecords.map(::githubRefreshHistoryRecordKey).toSet()
+        expandedRefreshRecordKeys = expandedRefreshRecordKeys.filter { it in activeKeys }
+    }
+
     LaunchedEffect(context, iconPackageNames) {
         viewModel.requestAppIcons(context, iconPackageNames)
     }
 
     AppPageScaffold(
-        title = stringResource(R.string.github_actions_history_title),
+        title = stringResource(R.string.github_history_title),
         modifier =
             Modifier
                 .fillMaxSize()
@@ -121,15 +137,21 @@ internal fun GitHubActionsNotificationHistoryPage(
             GitHubActionsNotificationHistoryActionBar(
                 backdrop = pageBackdrop,
                 loading = uiState.loading,
-                hasRecords = uiState.totalRecordCount > 0,
+                hasRecords = currentTotalRecordCount > 0,
                 showActionMenuPopup = showActionMenuPopup,
+                historyMode = uiState.historyMode,
                 filterMode = uiState.filterMode,
+                refreshFilterMode = uiState.refreshFilterMode,
                 sortMode = uiState.sortMode,
+                refreshSortMode = uiState.refreshSortMode,
                 sortDirection = uiState.sortDirection,
                 onRefresh = viewModel::refresh,
                 onShowActionMenuPopupChange = { showActionMenuPopup = it },
+                onHistoryModeChange = viewModel::setHistoryMode,
                 onFilterModeChange = viewModel::setFilterMode,
+                onRefreshFilterModeChange = viewModel::setRefreshFilterMode,
                 onSortModeChange = viewModel::setSortMode,
+                onRefreshSortModeChange = viewModel::setRefreshSortMode,
                 onSortDirectionChange = viewModel::setSortDirection,
                 onCleanupAgeSelect = viewModel::pruneOlderThan,
             )
@@ -154,7 +176,7 @@ internal fun GitHubActionsNotificationHistoryPage(
                     ) {
                         GitHubActionsHistoryStateCard(
                             title = stringResource(R.string.github_actions_history_loading_title),
-                            summary = stringResource(R.string.github_actions_history_loading_summary),
+                            summary = stringResource(R.string.github_history_loading_summary),
                         )
                     }
                 }
@@ -175,14 +197,33 @@ internal fun GitHubActionsNotificationHistoryPage(
                     }
                 }
 
-                uiState.totalRecordCount == 0 -> {
+                currentTotalRecordCount == 0 -> {
+                    item(
+                        key = "github-history-empty-summary",
+                        contentType = "github-actions-history-summary",
+                    ) {
+                        GitHubHistoryOverviewCard(
+                            uiState = uiState,
+                            onHistoryModeChange = viewModel::setHistoryMode,
+                        )
+                    }
                     item(
                         key = "github-actions-history-empty",
                         contentType = "github-actions-history-state",
                     ) {
+                        val emptyTitle =
+                            when (uiState.historyMode) {
+                                GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_title
+                                GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_title
+                            }
+                        val emptySummary =
+                            when (uiState.historyMode) {
+                                GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_summary
+                                GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_summary
+                            }
                         GitHubActionsHistoryStateCard(
-                            title = stringResource(R.string.github_actions_history_empty_title),
-                            summary = stringResource(R.string.github_actions_history_empty_summary),
+                            title = stringResource(emptyTitle),
+                            summary = stringResource(emptySummary),
                         )
                     }
                 }
@@ -192,9 +233,12 @@ internal fun GitHubActionsNotificationHistoryPage(
                         key = "github-actions-history-summary",
                         contentType = "github-actions-history-summary",
                     ) {
-                        GitHubActionsHistorySummaryCard(uiState = uiState)
+                        GitHubHistoryOverviewCard(
+                            uiState = uiState,
+                            onHistoryModeChange = viewModel::setHistoryMode,
+                        )
                     }
-                    if (uiState.records.isEmpty()) {
+                    if (currentDisplayRecordCount == 0) {
                         item(
                             key = "github-actions-history-filtered-empty",
                             contentType = "github-actions-history-state",
@@ -205,27 +249,53 @@ internal fun GitHubActionsNotificationHistoryPage(
                             )
                         }
                     }
-                    items(
-                        items = uiState.records,
-                        key = ::githubActionsHistoryRecordKey,
-                        contentType = { "github-actions-history-record" },
-                    ) { item ->
-                        val recordKey = githubActionsHistoryRecordKey(item)
-                        val expanded = recordKey in expandedRecordKeys
-                        GitHubActionsHistoryRecordCard(
-                            item = item,
-                            appIconBitmap = appIconState.bitmaps[item.packageName.trim()],
-                            expanded = expanded,
-                            onExpandedChange = { nextExpanded ->
-                                expandedRecordKeys =
-                                    if (nextExpanded) {
-                                        (expandedRecordKeys + recordKey).distinct()
-                                    } else {
-                                        expandedRecordKeys - recordKey
-                                    }
-                            },
-                            onOpenTrackActions = { onOpenTrackActions(item.record.trackId) },
-                        )
+                    when (uiState.historyMode) {
+                        GitHubHistoryMode.Refresh -> {
+                            items(
+                                items = uiState.refreshRecords,
+                                key = ::githubRefreshHistoryRecordKey,
+                                contentType = { "github-refresh-history-record" },
+                            ) { item ->
+                                val recordKey = githubRefreshHistoryRecordKey(item)
+                                val expanded = recordKey in expandedRefreshRecordKeys
+                                GitHubRefreshHistoryRecordCard(
+                                    item = item,
+                                    expanded = expanded,
+                                    onExpandedChange = { nextExpanded ->
+                                        expandedRefreshRecordKeys =
+                                            if (nextExpanded) {
+                                                (expandedRefreshRecordKeys + recordKey).distinct()
+                                            } else {
+                                                expandedRefreshRecordKeys - recordKey
+                                            }
+                                    },
+                                )
+                            }
+                        }
+                        GitHubHistoryMode.Actions -> {
+                            items(
+                                items = uiState.records,
+                                key = ::githubActionsHistoryRecordKey,
+                                contentType = { "github-actions-history-record" },
+                            ) { item ->
+                                val recordKey = githubActionsHistoryRecordKey(item)
+                                val expanded = recordKey in expandedRecordKeys
+                                GitHubActionsHistoryRecordCard(
+                                    item = item,
+                                    appIconBitmap = appIconState.bitmaps[item.packageName.trim()],
+                                    expanded = expanded,
+                                    onExpandedChange = { nextExpanded ->
+                                        expandedRecordKeys =
+                                            if (nextExpanded) {
+                                                (expandedRecordKeys + recordKey).distinct()
+                                            } else {
+                                                expandedRecordKeys - recordKey
+                                            }
+                                    },
+                                    onOpenTrackActions = { onOpenTrackActions(item.record.trackId) },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -664,5 +734,10 @@ private fun githubActionsHistoryRecordKey(item: GitHubActionsNotificationHistory
 
 private fun githubActionsHistoryRecordKey(record: GitHubActionsNotificationHistoryRecord): String =
     "${record.trackId}|${record.runId}|${record.runNumber}|${record.notifiedAtMillis}"
+
+private fun githubRefreshHistoryRecordKey(item: GitHubRefreshHistoryUiRecord): String =
+    item.record.id.ifBlank {
+        "${item.record.sessionId}|${item.record.source}|${item.record.scope}|${item.record.startedAtMillis}"
+    }
 
 private val ColorSuccess = androidx.compose.ui.graphics.Color(0xFF22C55E)

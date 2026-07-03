@@ -1,12 +1,14 @@
 package os.kei.ui.page.main.github.history
 
 import os.kei.feature.github.domain.GitHubActionsService
+import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubTrackService
 
 private const val MILLIS_PER_DAY = 24L * 60L * 60L * 1000L
 
 internal class GitHubActionsNotificationHistoryRepository(
     private val actionsService: GitHubActionsService = GitHubActionsService(),
+    private val refreshHistoryService: GitHubRefreshHistoryService = GitHubRefreshHistoryService(),
     private val trackService: GitHubTrackService = GitHubTrackService(),
 ) {
     suspend fun loadHistory(): List<GitHubActionsNotificationHistoryUiRecord> {
@@ -34,5 +36,18 @@ internal class GitHubActionsNotificationHistoryRepository(
         if (days <= 0) return 0
         val cutoffMillis = nowMillis - days * MILLIS_PER_DAY
         return actionsService.pruneGitHubActionsNotificationHistoryBefore(cutoffMillis)
+    }
+
+    suspend fun loadRefreshHistory(): List<GitHubRefreshHistoryUiRecord> {
+        return refreshHistoryService.loadHistory().map(::GitHubRefreshHistoryUiRecord)
+    }
+
+    suspend fun pruneRefreshHistoryOlderThanDays(
+        days: Int,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Int {
+        if (days <= 0) return 0
+        val cutoffMillis = nowMillis - days * MILLIS_PER_DAY
+        return refreshHistoryService.pruneBefore(cutoffMillis)
     }
 }

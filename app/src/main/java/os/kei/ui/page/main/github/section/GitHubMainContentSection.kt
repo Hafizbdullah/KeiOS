@@ -86,7 +86,7 @@ internal fun GitHubMainContent(
         }
     val actionsHistoryIcon = appLucideHistoryIcon()
     val moreIcon = appLucideMoreIcon()
-    val actionsHistoryDescription = stringResource(R.string.github_actions_history_cd_open)
+    val actionsHistoryDescription = stringResource(R.string.github_history_cd_open)
     val expandDockDescription = stringResource(R.string.common_expand)
     val actionsHistoryTint = MiuixTheme.colorScheme.primary
     val refreshBadgeCount =
