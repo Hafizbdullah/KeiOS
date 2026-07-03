@@ -30,6 +30,8 @@
     <string name="ba_overview_server_label">サーバー</string>
     <string name="ba_overview_cd_ap_icon">AP アイコン</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | AP 全回復 %2$s</string>
+    <string name="ba_ap_regen_rate_format">+1/%1$d分</string>
+    <string name="ba_ap_full_remaining_format">Full AP %1$s</string>
     <string name="ba_overview_cafe_ap_title">AP</string>
     <string name="ba_overview_cd_claim_cafe_ap">カフェ AP を受け取る</string>
     <string name="ba_ap_card_title">AP</string>
@@ -38,8 +40,8 @@
     <string name="ba_ap_limit_tools_summary">自然回復、満タン時刻、AP 通知範囲の計算に使います。最大値は %1$d です。</string>
     <string name="ba_ap_limit_tools_limit_label">上限</string>
     <string name="ba_ap_limit_tools_set_max">最大値にする</string>
-    <string name="ba_metric_ap_sync">AP 同期</string>
-    <string name="ba_metric_ap_full">AP 全回復</string>
+    <string name="ba_metric_ap_sync">同期</string>
+    <string name="ba_metric_ap_full">全回復</string>
     <string name="ba_id_label_nickname">ニックネーム</string>
     <string name="ba_id_nickname_suffix">先生</string>
     <string name="ba_id_label_friend_code">フレンドコード</string>
@@ -73,8 +75,8 @@
     <string name="ba_pool_tag_recollection">復刻募集</string>
     <string name="ba_pool_tag_recruitment">募集</string>
     <string name="ba_cafe_title">カフェ</string>
-    <string name="ba_cafe_metric_tactical_challenge">戦術対抗戦</string>
-    <string name="ba_cafe_metric_student_visit">生徒訪問</string>
+    <string name="ba_cafe_metric_tactical_challenge">対抗戦</string>
+    <string name="ba_cafe_metric_student_visit">訪問</string>
     <string name="ba_cafe_ap_hourly_gain_format">+%1$.2f/h</string>
     <string name="ba_cafe_ap_full_remaining_format">Full AP %1$s</string>
     <string name="ba_cafe_ap_full_now">Full AP</string>

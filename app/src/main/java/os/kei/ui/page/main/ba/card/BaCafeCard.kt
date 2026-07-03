@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
-import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -44,6 +43,8 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -107,6 +108,7 @@ internal fun BaCafeCard(
     val invite2TimeText =
         formatBaDateTimeNoSeconds(if (invite2Ready) uiNowMs else invite2AvailableAt, notSyncedText)
     val headpatTimeText = if (coffeeHeadpatMs > 0L) formatBaDateTimeNoSeconds(coffeeHeadpatMs, notSyncedText) else "-"
+    val cafeHourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, cafeHourlyGain(cafeLevel))
 
     BaLiquidCard(
         backdrop = backdrop,
@@ -117,6 +119,12 @@ internal fun BaCafeCard(
             title = stringResource(R.string.ba_cafe_title),
             titleIconRes = R.drawable.mp_cafe_small,
             trailing = {
+                StatusPill(
+                    label = cafeHourlyText,
+                    color = accentPink,
+                    size = AppStatusPillSize.Compact,
+                    backdrop = backdrop,
+                )
                 AppDropdownSelector(
                     selectedText = "Lv$cafeLevel",
                     options = cafeLevelOptions.map { level -> "Lv$level" },
@@ -149,28 +157,15 @@ internal fun BaCafeCard(
             onClaimCafeStoredAp = onClaimCafeStoredAp,
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            BaLiquidMetricPanel(
-                backdrop = backdrop,
-                label = stringResource(R.string.ba_cafe_metric_tactical_challenge),
-                value = nextArenaRefreshText,
-                accentColor = accentPink,
-                valueColor = countdownBlue,
-                modifier = Modifier.weight(1f),
-            )
-            BaLiquidMetricPanel(
-                backdrop = backdrop,
-                label = stringResource(R.string.ba_cafe_metric_student_visit),
-                value = nextStudentRefreshText,
-                accentColor = accentPink,
-                valueColor = countdownBlue,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        BaCompactDualMetricPanel(
+            backdrop = backdrop,
+            firstLabel = stringResource(R.string.ba_cafe_metric_tactical_challenge),
+            firstValue = nextArenaRefreshText,
+            secondLabel = stringResource(R.string.ba_cafe_metric_student_visit),
+            secondValue = nextStudentRefreshText,
+            accentColor = accentPink,
+            valueColor = countdownBlue,
+        )
 
         BaInlineActionPanel(
             backdrop = backdrop,
@@ -226,7 +221,6 @@ private fun BaCafeApStockPanel(
 ) {
     val uiMinuteMs = clockState.uiMinuteMs.longValue
     val cafeCap = cafeDailyCapacity(cafeLevel)
-    val hourlyGain = cafeHourlyGain(cafeLevel)
     val isCafeFull = cafeStoredAp >= cafeCap.toDouble()
     val cafeFullAt =
         calculateCafeFullAtMs(
@@ -235,7 +229,6 @@ private fun BaCafeApStockPanel(
             cafeLastHourMs = cafeLastHourMs,
             nowMs = uiMinuteMs,
         )
-    val hourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, hourlyGain)
     val fullText =
         if (isCafeFull) {
             stringResource(R.string.ba_cafe_ap_full_now)
@@ -245,7 +238,6 @@ private fun BaCafeApStockPanel(
                 formatBaRemainingTime(cafeFullAt, uiMinuteMs),
             )
         }
-    val statusText = stringResource(R.string.ba_cafe_ap_panel_status, hourlyText, fullText)
 
     BaLiquidPanel(
         backdrop = backdrop,
@@ -316,7 +308,7 @@ private fun BaCafeApStockPanel(
             }
         }
         Text(
-            text = statusText,
+            text = fullText,
             color = accentPink,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba.card
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -66,6 +67,78 @@ internal fun BaCardHeader(
                 content = it,
             )
         }
+    }
+}
+
+@Composable
+internal fun BaCompactDualMetricPanel(
+    backdrop: Backdrop?,
+    firstLabel: String,
+    firstValue: String,
+    secondLabel: String,
+    secondValue: String,
+    accentColor: Color,
+    valueColor: Color = accentColor,
+    modifier: Modifier = Modifier,
+) {
+    BaLiquidPanel(
+        backdrop = backdrop,
+        modifier = modifier.fillMaxWidth(),
+        accentColor = accentColor,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BaCompactMetricLine(
+                label = firstLabel,
+                value = firstValue,
+                valueColor = valueColor,
+                modifier = Modifier.weight(1f),
+            )
+            BaCompactMetricLine(
+                label = secondLabel,
+                value = secondValue,
+                valueColor = valueColor,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BaCompactMetricLine(
+    label: String,
+    value: String,
+    valueColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.9f),
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = value,
+            color = valueColor,
+            fontSize = 16.sp,
+            lineHeight = 19.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

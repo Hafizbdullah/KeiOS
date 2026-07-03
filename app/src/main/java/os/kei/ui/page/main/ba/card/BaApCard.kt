@@ -24,16 +24,16 @@ import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidCard
-import os.kei.ui.page.main.ba.BaLiquidMetricPanel
 import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.ba.BaPageClockState
 import os.kei.ui.page.main.ba.support.calculateApFullAtMs
-import os.kei.ui.page.main.ba.support.calculateApNextPointAtMs
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -53,6 +53,15 @@ internal fun BaApCard(
     val notSyncedText = stringResource(R.string.ba_state_not_synced)
     val apSyncTimeText =
         if (apSyncMs > 0L) formatBaDateTimeNoSeconds(apSyncMs, notSyncedText) else notSyncedText
+    val apFullAt =
+        calculateApFullAtMs(
+            apLimit = apLimit,
+            apCurrent = apCurrent,
+            apRegenBaseMs = apRegenBaseMs,
+            nowMs = clockState.uiMinuteMs.longValue,
+        )
+    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
+    val apRegenRateText = stringResource(R.string.ba_ap_regen_rate_format, 6)
     val accentGreen = AppStatusColors.Fresh
     val accentBlue = AppStatusColors.Cached
 
@@ -64,6 +73,14 @@ internal fun BaApCard(
         BaCardHeader(
             title = stringResource(R.string.ba_ap_card_title),
             titleIconRes = R.drawable.ba_ap_icon_tight_small,
+            trailing = {
+                StatusPill(
+                    label = apRegenRateText,
+                    color = accentGreen,
+                    size = AppStatusPillSize.Compact,
+                    backdrop = backdrop,
+                )
+            },
         )
         BaApInputPanel(
             backdrop = backdrop,
@@ -77,29 +94,15 @@ internal fun BaApCard(
             onApCurrentDone = onApCurrentDone,
             onOpenApLimitTools = onOpenApLimitTools,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            BaLiquidMetricPanel(
-                backdrop = backdrop,
-                label = stringResource(R.string.ba_metric_ap_sync),
-                value = apSyncTimeText,
-                accentColor = accentBlue,
-                valueColor = accentBlue,
-                valueMaxLines = 2,
-                modifier = Modifier.weight(1f),
-            )
-            BaApFullMetric(
-                backdrop = backdrop,
-                clockState = clockState,
-                apLimit = apLimit,
-                apCurrent = apCurrent,
-                apRegenBaseMs = apRegenBaseMs,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        BaCompactDualMetricPanel(
+            backdrop = backdrop,
+            firstLabel = stringResource(R.string.ba_metric_ap_sync),
+            firstValue = apSyncTimeText,
+            secondLabel = stringResource(R.string.ba_metric_ap_full),
+            secondValue = apFullTimeText,
+            accentColor = accentBlue,
+            valueColor = accentBlue,
+        )
     }
 }
 
@@ -116,15 +119,7 @@ private fun BaApInputPanel(
     onApCurrentDone: () -> Unit,
     onOpenApLimitTools: () -> Unit,
 ) {
-    val uiNowMs = clockState.uiNowMs.longValue
     val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val apNextPointAt =
-        calculateApNextPointAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiNowMs,
-        )
     val apFullAt =
         calculateApFullAtMs(
             apLimit = apLimit,
@@ -132,8 +127,8 @@ private fun BaApInputPanel(
             apRegenBaseMs = apRegenBaseMs,
             nowMs = uiMinuteMs,
         )
-    val apNextPointRemain = formatBaRemainingTime(apNextPointAt, uiNowMs, includeSeconds = true)
     val apFullText = formatBaRemainingTime(apFullAt, uiMinuteMs)
+    val apFullStatusText = stringResource(R.string.ba_ap_full_remaining_format, apFullText)
 
     BaLiquidPanel(
         backdrop = backdrop,
@@ -190,40 +185,10 @@ private fun BaApInputPanel(
             }
         }
         Text(
-            text = stringResource(R.string.ba_overview_ap_regen_status, apNextPointRemain, apFullText),
+            text = apFullStatusText,
             color = Color(0xFF60A5FA),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
-}
-
-@Composable
-private fun BaApFullMetric(
-    backdrop: Backdrop?,
-    clockState: BaPageClockState,
-    apLimit: Int,
-    apCurrent: Double,
-    apRegenBaseMs: Long,
-    modifier: Modifier = Modifier,
-) {
-    val uiMinuteMs = clockState.uiMinuteMs.longValue
-    val notSyncedText = stringResource(R.string.ba_state_not_synced)
-    val apFullAt =
-        calculateApFullAtMs(
-            apLimit = apLimit,
-            apCurrent = apCurrent,
-            apRegenBaseMs = apRegenBaseMs,
-            nowMs = uiMinuteMs,
-        )
-    val apFullTimeText = formatBaDateTimeNoSeconds(apFullAt, notSyncedText)
-    BaLiquidMetricPanel(
-        backdrop = backdrop,
-        label = stringResource(R.string.ba_metric_ap_full),
-        value = apFullTimeText,
-        accentColor = Color(0xFF60A5FA),
-        valueColor = Color(0xFF60A5FA),
-        valueMaxLines = 2,
-        modifier = modifier,
-    )
 }

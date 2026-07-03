@@ -30,6 +30,8 @@
     <string name="ba_overview_server_label">Server</string>
     <string name="ba_overview_cd_ap_icon">AP icon</string>
     <string name="ba_overview_ap_regen_status">AP +1 %1$s | Full AP %2$s</string>
+    <string name="ba_ap_regen_rate_format">+1/%1$dmin</string>
+    <string name="ba_ap_full_remaining_format">Full AP %1$s</string>
     <string name="ba_overview_cafe_ap_title">AP</string>
     <string name="ba_overview_cd_claim_cafe_ap">Claim Cafe AP</string>
     <string name="ba_ap_card_title">AP</string>
@@ -38,8 +40,8 @@
     <string name="ba_ap_limit_tools_summary">Used for natural regen, full-time estimates, and AP notification range. Maximum: %1$d.</string>
     <string name="ba_ap_limit_tools_limit_label">Limit</string>
     <string name="ba_ap_limit_tools_set_max">Set max</string>
-    <string name="ba_metric_ap_sync">AP Sync</string>
-    <string name="ba_metric_ap_full">Full AP</string>
+    <string name="ba_metric_ap_sync">Sync</string>
+    <string name="ba_metric_ap_full">Full</string>
     <string name="ba_id_label_nickname">Nickname</string>
     <string name="ba_id_nickname_suffix">Sensei</string>
     <string name="ba_id_label_friend_code">Friend Code</string>
@@ -73,8 +75,8 @@
     <string name="ba_pool_tag_recollection">Recollection Recruitment</string>
     <string name="ba_pool_tag_recruitment">Recruitment</string>
     <string name="ba_cafe_title">Cafe</string>
-    <string name="ba_cafe_metric_tactical_challenge">Tactical Challenge</string>
-    <string name="ba_cafe_metric_student_visit">Student visits</string>
+    <string name="ba_cafe_metric_tactical_challenge">Arena</string>
+    <string name="ba_cafe_metric_student_visit">Visits</string>
     <string name="ba_cafe_ap_hourly_gain_format">+%1$.2f/h</string>
     <string name="ba_cafe_ap_full_remaining_format">Full AP %1$s</string>
     <string name="ba_cafe_ap_full_now">Full AP</string>
