@@ -2,6 +2,9 @@ package os.kei.ui.page.main.github.history
 
 import org.junit.Test
 import os.kei.feature.github.model.GitHubActionsNotificationHistoryRecord
+import os.kei.feature.github.model.GitHubAppInstallHistoryAction
+import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
+import os.kei.feature.github.model.GitHubAppInstallHistorySource
 import os.kei.feature.github.model.GitHubTrackChangeField
 import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
 import os.kei.feature.github.model.GitHubTrackChangeHistoryRecord
@@ -136,6 +139,56 @@ class GitHubActionsNotificationHistoryOptionsTest {
         )
     }
 
+    @Test
+    fun `filters sorts and searches app history`() {
+        val records =
+            listOf(
+                createAppInstallUiRecord(
+                    appLabel = "Beta",
+                    repo = "middle",
+                    action = GitHubAppInstallHistoryAction.Updated,
+                    changedAtMillis = 2_000L,
+                    previousVersionCode = 10L,
+                    currentVersionCode = 12L,
+                ),
+                createAppInstallUiRecord(
+                    appLabel = "Alpha",
+                    repo = "omega",
+                    action = GitHubAppInstallHistoryAction.Installed,
+                    changedAtMillis = 1_000L,
+                    currentVersionCode = 1L,
+                ),
+                createAppInstallUiRecord(
+                    appLabel = "Zulu",
+                    repo = "alpha",
+                    action = GitHubAppInstallHistoryAction.Downgraded,
+                    changedAtMillis = 3_000L,
+                    previousVersionCode = 30L,
+                    currentVersionCode = 20L,
+                ),
+            )
+
+        assertEquals(
+            listOf("Alpha"),
+            records.appDisplay(filterMode = GitHubAppInstallHistoryFilterMode.Installed).appInstallLabels(),
+        )
+        assertEquals(
+            listOf("Zulu", "Beta", "Alpha"),
+            records.appDisplay(sortMode = GitHubAppInstallHistorySortMode.ChangedAt).appInstallLabels(),
+        )
+        assertEquals(
+            listOf("Alpha", "Beta", "Zulu"),
+            records.appDisplay(
+                sortMode = GitHubAppInstallHistorySortMode.App,
+                sortDirection = GitHubActionsHistorySortDirection.Ascending,
+            ).appInstallLabels(),
+        )
+        assertEquals(
+            listOf("Beta"),
+            records.appDisplay(searchQuery = "v12").appInstallLabels(),
+        )
+    }
+
     private fun List<GitHubActionsNotificationHistoryUiRecord>.display(
         filterMode: GitHubActionsHistoryFilterMode = GitHubActionsHistoryFilterMode.All,
         sortMode: GitHubActionsHistorySortMode = GitHubActionsHistorySortMode.NotifiedAt,
@@ -166,6 +219,23 @@ class GitHubActionsNotificationHistoryOptionsTest {
         )
 
     private fun List<GitHubTrackChangeHistoryUiRecord>.trackAppLabels(): List<String> =
+        map { item -> item.record.appLabel }
+
+    private fun List<GitHubAppInstallHistoryUiRecord>.appDisplay(
+        filterMode: GitHubAppInstallHistoryFilterMode = GitHubAppInstallHistoryFilterMode.All,
+        sortMode: GitHubAppInstallHistorySortMode = GitHubAppInstallHistorySortMode.ChangedAt,
+        sortDirection: GitHubActionsHistorySortDirection = GitHubActionsHistorySortDirection.Descending,
+        searchQuery: String = "",
+    ): List<GitHubAppInstallHistoryUiRecord> =
+        buildGitHubAppInstallHistoryDisplayRecords(
+            records = this,
+            filterMode = filterMode,
+            sortMode = sortMode,
+            sortDirection = sortDirection,
+            searchQuery = searchQuery,
+        )
+
+    private fun List<GitHubAppInstallHistoryUiRecord>.appInstallLabels(): List<String> =
         map { item -> item.record.appLabel }
 
     private fun createUiRecord(
@@ -230,6 +300,36 @@ class GitHubActionsNotificationHistoryOptionsTest {
                     appLabel = appLabel,
                     sourceMode = GitHubTrackedSourceMode.GitHubRepository,
                     changedFields = changedFields,
+                ),
+        )
+
+    private fun createAppInstallUiRecord(
+        appLabel: String,
+        repo: String = appLabel.lowercase(),
+        action: GitHubAppInstallHistoryAction = GitHubAppInstallHistoryAction.Updated,
+        changedAtMillis: Long = 1_000L,
+        previousVersionCode: Long = -1L,
+        currentVersionCode: Long = 1L,
+    ): GitHubAppInstallHistoryUiRecord =
+        GitHubAppInstallHistoryUiRecord(
+            record =
+                GitHubAppInstallHistoryRecord(
+                    id = "$repo-$changedAtMillis",
+                    trackId = "owner/$repo|pkg.$repo",
+                    action = action,
+                    source = GitHubAppInstallHistorySource.PackageBroadcast,
+                    changedAtMillis = changedAtMillis,
+                    owner = "owner",
+                    repo = repo,
+                    repoUrl = "https://github.com/owner/$repo",
+                    packageName = "pkg.$repo",
+                    appLabel = appLabel,
+                    sourceMode = GitHubTrackedSourceMode.GitHubRepository,
+                    previousVersionName = previousVersionCode.takeIf { it >= 0L }?.let { "v$it" }.orEmpty(),
+                    previousVersionCode = previousVersionCode,
+                    currentVersionName = currentVersionCode.takeIf { it >= 0L }?.let { "v$it" }.orEmpty(),
+                    currentVersionCode = currentVersionCode,
+                    broadcastAction = "android.intent.action.PACKAGE_REPLACED",
                 ),
         )
 }

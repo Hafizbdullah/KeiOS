@@ -2,8 +2,9 @@ package os.kei.ui.page.main.github.history
 
 import androidx.annotation.StringRes
 import os.kei.R
-import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
+import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
+import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
 import os.kei.ui.page.main.widget.chrome.TabbedPageCategory
 import java.util.Locale
 import com.composables.icons.lucide.R as LucideR
@@ -15,6 +16,7 @@ internal enum class GitHubHistoryMode(
     Refresh(LucideR.drawable.lucide_ic_history, R.string.github_history_mode_refresh),
     Actions(LucideR.drawable.lucide_ic_bell, R.string.github_history_mode_actions),
     Tracking(LucideR.drawable.lucide_ic_git_branch, R.string.github_history_mode_tracking),
+    Apps(LucideR.drawable.lucide_ic_package, R.string.github_history_mode_apps),
 }
 
 internal enum class GitHubActionsHistoryFilterMode(
@@ -46,6 +48,16 @@ internal enum class GitHubTrackChangeHistoryFilterMode(
     Deleted(R.string.github_history_tracking_filter_deleted),
 }
 
+internal enum class GitHubAppInstallHistoryFilterMode(
+    @param:StringRes val labelRes: Int,
+) {
+    All(R.string.github_actions_history_filter_all),
+    Installed(R.string.github_history_apps_filter_installed),
+    Updated(R.string.github_history_apps_filter_updated),
+    Downgraded(R.string.github_history_apps_filter_downgraded),
+    Uninstalled(R.string.github_history_apps_filter_uninstalled),
+}
+
 internal enum class GitHubRefreshHistorySortMode(
     @param:StringRes val labelRes: Int,
 ) {
@@ -63,6 +75,15 @@ internal enum class GitHubTrackChangeHistorySortMode(
     App(R.string.github_actions_history_sort_app),
     Repository(R.string.github_actions_history_sort_repository),
     Source(R.string.github_history_refresh_label_source),
+}
+
+internal enum class GitHubAppInstallHistorySortMode(
+    @param:StringRes val labelRes: Int,
+) {
+    ChangedAt(R.string.github_history_apps_sort_changed),
+    App(R.string.github_actions_history_sort_app),
+    Repository(R.string.github_actions_history_sort_repository),
+    Version(R.string.github_history_apps_sort_version),
 }
 
 internal enum class GitHubActionsHistorySortMode(
@@ -194,6 +215,39 @@ internal fun buildGitHubTrackChangeHistoryDisplayRecords(
     }
 }
 
+internal fun buildGitHubAppInstallHistoryDisplayRecords(
+    records: List<GitHubAppInstallHistoryUiRecord>,
+    filterMode: GitHubAppInstallHistoryFilterMode,
+    sortMode: GitHubAppInstallHistorySortMode,
+    sortDirection: GitHubActionsHistorySortDirection,
+    searchQuery: String = "",
+): List<GitHubAppInstallHistoryUiRecord> {
+    val normalizedQuery = searchQuery.normalizedHistorySearchQuery()
+    val filtered =
+        records.filter { item ->
+            val action = item.record.action
+            when (filterMode) {
+                GitHubAppInstallHistoryFilterMode.All -> true
+                GitHubAppInstallHistoryFilterMode.Installed ->
+                    action == GitHubAppInstallHistoryAction.Installed
+                GitHubAppInstallHistoryFilterMode.Updated ->
+                    action == GitHubAppInstallHistoryAction.Updated
+                GitHubAppInstallHistoryFilterMode.Downgraded ->
+                    action == GitHubAppInstallHistoryAction.Downgraded
+                GitHubAppInstallHistoryFilterMode.Uninstalled ->
+                    action == GitHubAppInstallHistoryAction.Uninstalled
+            }
+        }.filter { item ->
+            normalizedQuery.isBlank() || item.matchesAppInstallHistorySearch(normalizedQuery)
+        }
+    val comparator = gitHubAppInstallHistoryComparator(sortMode)
+    val sorted = filtered.sortedWith(comparator)
+    return when (sortDirection) {
+        GitHubActionsHistorySortDirection.Descending -> sorted
+        GitHubActionsHistorySortDirection.Ascending -> sorted.asReversed()
+    }
+}
+
 private fun String.normalizedHistorySearchQuery(): String = trim().lowercase(Locale.ROOT)
 
 private fun GitHubActionsNotificationHistoryUiRecord.matchesActionsHistorySearch(query: String): Boolean {
@@ -265,6 +319,30 @@ private fun GitHubTrackChangeHistoryUiRecord.matchesTrackChangeHistorySearch(que
             record.source.name,
             record.note,
         ) + record.changedFields.map { it.name }
+    ).containsHistoryQuery(query)
+}
+
+private fun GitHubAppInstallHistoryUiRecord.matchesAppInstallHistorySearch(query: String): Boolean {
+    val record = record
+    return listOf(
+        record.id,
+        record.trackId,
+        record.owner,
+        record.repo,
+        "${record.owner}/${record.repo}",
+        record.repoUrl,
+        record.packageName,
+        record.appLabel,
+        record.sourceMode.storageId,
+        record.sourceMode.name,
+        record.action.name,
+        record.source.name,
+        record.previousVersionName,
+        record.previousVersionCode.toString(),
+        record.currentVersionName,
+        record.currentVersionCode.toString(),
+        record.broadcastAction,
+        record.note,
     ).containsHistoryQuery(query)
 }
 
@@ -354,6 +432,35 @@ private fun gitHubTrackChangeHistoryComparator(
         GitHubTrackChangeHistorySortMode.Source ->
             compareByDescending<GitHubTrackChangeHistoryUiRecord> {
                 it.record.source.name.lowercase(Locale.ROOT)
+            }.then(tieBreakers)
+    }
+}
+
+private fun gitHubAppInstallHistoryComparator(
+    sortMode: GitHubAppInstallHistorySortMode,
+): Comparator<GitHubAppInstallHistoryUiRecord> {
+    val textComparator = compareByDescending<GitHubAppInstallHistoryUiRecord> {
+        it.record.appLabel
+            .ifBlank { "${it.record.owner}/${it.record.repo}" }
+            .ifBlank { it.record.packageName }
+            .lowercase(Locale.ROOT)
+    }
+    val tieBreakers =
+        compareByDescending<GitHubAppInstallHistoryUiRecord> { it.record.changedAtMillis }
+            .thenByDescending { it.record.trackId }
+    return when (sortMode) {
+        GitHubAppInstallHistorySortMode.ChangedAt ->
+            compareByDescending<GitHubAppInstallHistoryUiRecord> { it.record.changedAtMillis }
+                .thenByDescending { it.record.trackId }
+        GitHubAppInstallHistorySortMode.App ->
+            textComparator.then(tieBreakers)
+        GitHubAppInstallHistorySortMode.Repository ->
+            compareByDescending<GitHubAppInstallHistoryUiRecord> {
+                "${it.record.owner}/${it.record.repo}".lowercase(Locale.ROOT)
+            }.then(tieBreakers)
+        GitHubAppInstallHistorySortMode.Version ->
+            compareByDescending<GitHubAppInstallHistoryUiRecord> {
+                maxOf(it.record.previousVersionCode, it.record.currentVersionCode)
             }.then(tieBreakers)
     }
 }

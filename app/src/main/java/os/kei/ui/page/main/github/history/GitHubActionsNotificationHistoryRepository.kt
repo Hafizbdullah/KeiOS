@@ -5,8 +5,9 @@ import android.net.Uri
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubActionsService
+import os.kei.feature.github.domain.GitHubAppInstallHistoryService
+import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubTrackChangeHistoryService
 import os.kei.feature.github.domain.GitHubTrackService
@@ -17,6 +18,7 @@ internal class GitHubActionsNotificationHistoryRepository(
     private val actionsService: GitHubActionsService = GitHubActionsService(),
     private val refreshHistoryService: GitHubRefreshHistoryService = GitHubRefreshHistoryService(),
     private val trackChangeHistoryService: GitHubTrackChangeHistoryService = GitHubTrackChangeHistoryService(),
+    private val appInstallHistoryService: GitHubAppInstallHistoryService = GitHubAppInstallHistoryService(),
     private val trackService: GitHubTrackService = GitHubTrackService(),
     private val fileIoDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
 ) {
@@ -71,6 +73,19 @@ internal class GitHubActionsNotificationHistoryRepository(
         if (days <= 0) return 0
         val cutoffMillis = nowMillis - days * MILLIS_PER_DAY
         return trackChangeHistoryService.pruneBefore(cutoffMillis)
+    }
+
+    suspend fun loadAppInstallHistory(): List<GitHubAppInstallHistoryUiRecord> {
+        return appInstallHistoryService.loadHistory().map(::GitHubAppInstallHistoryUiRecord)
+    }
+
+    suspend fun pruneAppInstallHistoryOlderThanDays(
+        days: Int,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Int {
+        if (days <= 0) return 0
+        val cutoffMillis = nowMillis - days * MILLIS_PER_DAY
+        return appInstallHistoryService.pruneBefore(cutoffMillis)
     }
 
     suspend fun buildRefreshHistoryExportJson(

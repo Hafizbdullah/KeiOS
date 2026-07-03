@@ -130,6 +130,7 @@ internal fun GitHubActionsNotificationHistoryPage(
     var expandedRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var expandedRefreshRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var expandedTrackChangeRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var expandedAppInstallRecordKeys by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var showActionMenuPopup by rememberSaveable { mutableStateOf(false) }
     val refreshHistoryExportLauncher =
         rememberLauncherForActivityResult(
@@ -145,18 +146,21 @@ internal fun GitHubActionsNotificationHistoryPage(
             GitHubHistoryMode.Refresh -> uiState.totalRefreshRecordCount
             GitHubHistoryMode.Actions -> uiState.totalRecordCount
             GitHubHistoryMode.Tracking -> uiState.totalTrackChangeRecordCount
+            GitHubHistoryMode.Apps -> uiState.totalAppInstallRecordCount
         }
     val currentDisplayRecordCount =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
             GitHubHistoryMode.Actions -> uiState.records.size
             GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
+            GitHubHistoryMode.Apps -> uiState.appInstallRecords.size
         }
     val searchActive = uiState.searchQuery.trim().isNotEmpty()
     val iconPackageNames =
-        remember(uiState.records, uiState.trackChangeRecords) {
+        remember(uiState.records, uiState.trackChangeRecords, uiState.appInstallRecords) {
             (uiState.records.map { it.packageName.trim() } +
-                uiState.trackChangeRecords.map { it.record.packageName.trim() })
+                uiState.trackChangeRecords.map { it.record.packageName.trim() } +
+                uiState.appInstallRecords.map { it.record.packageName.trim() })
                 .filter { it.isNotBlank() }
                 .distinct()
         }
@@ -174,6 +178,11 @@ internal fun GitHubActionsNotificationHistoryPage(
     LaunchedEffect(uiState.trackChangeRecords) {
         val activeKeys = uiState.trackChangeRecords.map(::githubTrackChangeHistoryRecordKey).toSet()
         expandedTrackChangeRecordKeys = expandedTrackChangeRecordKeys.filter { it in activeKeys }
+    }
+
+    LaunchedEffect(uiState.appInstallRecords) {
+        val activeKeys = uiState.appInstallRecords.map(::githubAppInstallHistoryRecordKey).toSet()
+        expandedAppInstallRecordKeys = expandedAppInstallRecordKeys.filter { it in activeKeys }
     }
 
     LaunchedEffect(context, iconPackageNames) {
@@ -247,18 +256,22 @@ internal fun GitHubActionsNotificationHistoryPage(
                 filterMode = uiState.filterMode,
                 refreshFilterMode = uiState.refreshFilterMode,
                 trackChangeFilterMode = uiState.trackChangeFilterMode,
+                appInstallFilterMode = uiState.appInstallFilterMode,
                 sortMode = uiState.sortMode,
                 refreshSortMode = uiState.refreshSortMode,
                 trackChangeSortMode = uiState.trackChangeSortMode,
+                appInstallSortMode = uiState.appInstallSortMode,
                 sortDirection = uiState.sortDirection,
                 onRefresh = viewModel::refresh,
                 onShowActionMenuPopupChange = { showActionMenuPopup = it },
                 onFilterModeChange = viewModel::setFilterMode,
                 onRefreshFilterModeChange = viewModel::setRefreshFilterMode,
                 onTrackChangeFilterModeChange = viewModel::setTrackChangeFilterMode,
+                onAppInstallFilterModeChange = viewModel::setAppInstallFilterMode,
                 onSortModeChange = viewModel::setSortMode,
                 onRefreshSortModeChange = viewModel::setRefreshSortMode,
                 onTrackChangeSortModeChange = viewModel::setTrackChangeSortMode,
+                onAppInstallSortModeChange = viewModel::setAppInstallSortMode,
                 onSortDirectionChange = viewModel::setSortDirection,
                 onCleanupAgeSelect = viewModel::pruneOlderThan,
                 onExportRefreshHistory = viewModel::requestRefreshHistoryExport,
@@ -367,12 +380,14 @@ internal fun GitHubActionsNotificationHistoryPage(
                                 GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_title
                                 GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_title
                                 GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_title
+                                GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_title
                             }
                         val emptySummary =
                             when (uiState.historyMode) {
                                 GitHubHistoryMode.Refresh -> R.string.github_history_refresh_empty_summary
                                 GitHubHistoryMode.Actions -> R.string.github_actions_history_empty_summary
                                 GitHubHistoryMode.Tracking -> R.string.github_history_tracking_empty_summary
+                                GitHubHistoryMode.Apps -> R.string.github_history_apps_empty_summary
                             }
                         GitHubActionsHistoryStateCard(
                             title = stringResource(emptyTitle),
@@ -506,6 +521,34 @@ internal fun GitHubActionsNotificationHistoryPage(
                                                 (expandedTrackChangeRecordKeys + recordKey).distinct()
                                             } else {
                                                 expandedTrackChangeRecordKeys - recordKey
+                                            }
+                                    },
+                                )
+                            }
+                        }
+                        GitHubHistoryMode.Apps -> {
+                            itemsIndexed(
+                                items = uiState.appInstallRecords,
+                                key = { _, item -> githubAppInstallHistoryRecordKey(item) },
+                                contentType = { _, _ -> "github-app-install-history-record" },
+                            ) { index, item ->
+                                val recordKey = githubAppInstallHistoryRecordKey(item)
+                                val expanded = recordKey in expandedAppInstallRecordKeys
+                                GitHubAppInstallHistoryRecordCard(
+                                    item = item,
+                                    appIconBitmap = appIconState.bitmaps[item.record.packageName.trim()],
+                                    expanded = expanded,
+                                    modifier =
+                                        tabbedPageContentItemModifier(
+                                            switchState = historyContentSwitchState,
+                                            itemIndex = index + 1,
+                                        ),
+                                    onExpandedChange = { nextExpanded ->
+                                        expandedAppInstallRecordKeys =
+                                            if (nextExpanded) {
+                                                (expandedAppInstallRecordKeys + recordKey).distinct()
+                                            } else {
+                                                expandedAppInstallRecordKeys - recordKey
                                             }
                                     },
                                 )
@@ -852,6 +895,11 @@ private fun githubRefreshHistoryRecordKey(item: GitHubRefreshHistoryUiRecord): S
 private fun githubTrackChangeHistoryRecordKey(item: GitHubTrackChangeHistoryUiRecord): String =
     item.record.id.ifBlank {
         "${item.record.trackId}|${item.record.action}|${item.record.changedAtMillis}"
+    }
+
+private fun githubAppInstallHistoryRecordKey(item: GitHubAppInstallHistoryUiRecord): String =
+    item.record.id.ifBlank {
+        "${item.record.trackId}|${item.record.action}|${item.record.packageName}|${item.record.changedAtMillis}"
     }
 
 private val ColorSuccess = androidx.compose.ui.graphics.Color(0xFF22C55E)

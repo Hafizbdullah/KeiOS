@@ -45,18 +45,22 @@ internal fun GitHubActionsNotificationHistoryActionBar(
     filterMode: GitHubActionsHistoryFilterMode,
     refreshFilterMode: GitHubRefreshHistoryFilterMode,
     trackChangeFilterMode: GitHubTrackChangeHistoryFilterMode,
+    appInstallFilterMode: GitHubAppInstallHistoryFilterMode,
     sortMode: GitHubActionsHistorySortMode,
     refreshSortMode: GitHubRefreshHistorySortMode,
     trackChangeSortMode: GitHubTrackChangeHistorySortMode,
+    appInstallSortMode: GitHubAppInstallHistorySortMode,
     sortDirection: GitHubActionsHistorySortDirection,
     onRefresh: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onFilterModeChange: (GitHubActionsHistoryFilterMode) -> Unit,
     onRefreshFilterModeChange: (GitHubRefreshHistoryFilterMode) -> Unit,
     onTrackChangeFilterModeChange: (GitHubTrackChangeHistoryFilterMode) -> Unit,
+    onAppInstallFilterModeChange: (GitHubAppInstallHistoryFilterMode) -> Unit,
     onSortModeChange: (GitHubActionsHistorySortMode) -> Unit,
     onRefreshSortModeChange: (GitHubRefreshHistorySortMode) -> Unit,
     onTrackChangeSortModeChange: (GitHubTrackChangeHistorySortMode) -> Unit,
+    onAppInstallSortModeChange: (GitHubAppInstallHistorySortMode) -> Unit,
     onSortDirectionChange: (GitHubActionsHistorySortDirection) -> Unit,
     onCleanupAgeSelect: (GitHubActionsHistoryCleanupAge) -> Unit,
     onExportRefreshHistory: () -> Unit,
@@ -84,12 +88,16 @@ internal fun GitHubActionsNotificationHistoryActionBar(
     val refreshFilterLabels = refreshFilterModes.map { mode -> stringResource(mode.labelRes) }
     val trackChangeFilterModes = GitHubTrackChangeHistoryFilterMode.entries
     val trackChangeFilterLabels = trackChangeFilterModes.map { mode -> stringResource(mode.labelRes) }
+    val appInstallFilterModes = GitHubAppInstallHistoryFilterMode.entries
+    val appInstallFilterLabels = appInstallFilterModes.map { mode -> stringResource(mode.labelRes) }
     val sortModes = GitHubActionsHistorySortMode.entries
     val sortLabels = sortModes.map { mode -> stringResource(mode.labelRes) }
     val refreshSortModes = GitHubRefreshHistorySortMode.entries
     val refreshSortLabels = refreshSortModes.map { mode -> stringResource(mode.labelRes) }
     val trackChangeSortModes = GitHubTrackChangeHistorySortMode.entries
     val trackChangeSortLabels = trackChangeSortModes.map { mode -> stringResource(mode.labelRes) }
+    val appInstallSortModes = GitHubAppInstallHistorySortMode.entries
+    val appInstallSortLabels = appInstallSortModes.map { mode -> stringResource(mode.labelRes) }
     val sortDirections = GitHubActionsHistorySortDirection.entries
     val sortDirectionLabels = sortDirections.map { direction -> stringResource(direction.labelRes) }
     val cleanupAges = GitHubActionsHistoryCleanupAge.entries
@@ -108,6 +116,10 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                 trackChangeFilterLabels.getOrElse(trackChangeFilterModes.indexOf(trackChangeFilterMode)) {
                     stringResource(trackChangeFilterMode.labelRes)
                 }
+            GitHubHistoryMode.Apps ->
+                appInstallFilterLabels.getOrElse(appInstallFilterModes.indexOf(appInstallFilterMode)) {
+                    stringResource(appInstallFilterMode.labelRes)
+                }
         }
     val selectedSortLabel =
         when (historyMode) {
@@ -122,6 +134,10 @@ internal fun GitHubActionsNotificationHistoryActionBar(
             GitHubHistoryMode.Tracking ->
                 trackChangeSortLabels.getOrElse(trackChangeSortModes.indexOf(trackChangeSortMode)) {
                     stringResource(trackChangeSortMode.labelRes)
+                }
+            GitHubHistoryMode.Apps ->
+                appInstallSortLabels.getOrElse(appInstallSortModes.indexOf(appInstallSortMode)) {
+                    stringResource(appInstallSortMode.labelRes)
                 }
         }
     val selectedDirectionLabel =
@@ -230,6 +246,16 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onTrackChangeFilterModeChange(mode) },
                                                     )
                                                 }
+                                            GitHubHistoryMode.Apps ->
+                                                appInstallFilterModes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = appInstallFilterLabels[index],
+                                                        selected = appInstallFilterMode == mode,
+                                                        leadingIcon = filterIcon,
+                                                        onClick = { onAppInstallFilterModeChange(mode) },
+                                                    )
+                                                }
                                         },
                                 ),
                                 LiquidGlassActionMenuSubmenuRow(
@@ -269,6 +295,16 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         selected = trackChangeSortMode == mode,
                                                         leadingIcon = sortIcon,
                                                         onClick = { onTrackChangeSortModeChange(mode) },
+                                                    )
+                                                }
+                                            GitHubHistoryMode.Apps ->
+                                                appInstallSortModes.mapIndexed { index, mode ->
+                                                    LiquidGlassActionMenuSingleChoiceRow(
+                                                        id = mode.name,
+                                                        text = appInstallSortLabels[index],
+                                                        selected = appInstallSortMode == mode,
+                                                        leadingIcon = sortIcon,
+                                                        onClick = { onAppInstallSortModeChange(mode) },
                                                     )
                                                 }
                                         },

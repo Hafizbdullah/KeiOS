@@ -50,12 +50,14 @@ internal fun GitHubHistoryOverviewCard(
             GitHubHistoryMode.Refresh -> stringResource(uiState.refreshFilterMode.labelRes)
             GitHubHistoryMode.Actions -> stringResource(uiState.filterMode.labelRes)
             GitHubHistoryMode.Tracking -> stringResource(uiState.trackChangeFilterMode.labelRes)
+            GitHubHistoryMode.Apps -> stringResource(uiState.appInstallFilterMode.labelRes)
         }
     val sortLabel =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> stringResource(uiState.refreshSortMode.labelRes)
             GitHubHistoryMode.Actions -> stringResource(uiState.sortMode.labelRes)
             GitHubHistoryMode.Tracking -> stringResource(uiState.trackChangeSortMode.labelRes)
+            GitHubHistoryMode.Apps -> stringResource(uiState.appInstallSortMode.labelRes)
         }
     val sortValue =
         stringResource(
@@ -68,12 +70,14 @@ internal fun GitHubHistoryOverviewCard(
             GitHubHistoryMode.Refresh -> uiState.refreshRecords.size
             GitHubHistoryMode.Actions -> uiState.records.size
             GitHubHistoryMode.Tracking -> uiState.trackChangeRecords.size
+            GitHubHistoryMode.Apps -> uiState.appInstallRecords.size
         }
     val totalCount =
         when (uiState.historyMode) {
             GitHubHistoryMode.Refresh -> uiState.totalRefreshRecordCount
             GitHubHistoryMode.Actions -> uiState.totalRecordCount
             GitHubHistoryMode.Tracking -> uiState.totalTrackChangeRecordCount
+            GitHubHistoryMode.Apps -> uiState.totalAppInstallRecordCount
         }
     AppSurfaceCard(
         modifier = modifier,

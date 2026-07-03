@@ -31,16 +31,20 @@ internal data class GitHubActionsNotificationHistoryUiState(
     val records: List<GitHubActionsNotificationHistoryUiRecord> = emptyList(),
     val refreshRecords: List<GitHubRefreshHistoryUiRecord> = emptyList(),
     val trackChangeRecords: List<GitHubTrackChangeHistoryUiRecord> = emptyList(),
+    val appInstallRecords: List<GitHubAppInstallHistoryUiRecord> = emptyList(),
     val totalRecordCount: Int = 0,
     val totalRefreshRecordCount: Int = 0,
     val totalTrackChangeRecordCount: Int = 0,
+    val totalAppInstallRecordCount: Int = 0,
     val errorMessage: String = "",
     val filterMode: GitHubActionsHistoryFilterMode = GitHubActionsHistoryFilterMode.All,
     val refreshFilterMode: GitHubRefreshHistoryFilterMode = GitHubRefreshHistoryFilterMode.All,
     val trackChangeFilterMode: GitHubTrackChangeHistoryFilterMode = GitHubTrackChangeHistoryFilterMode.All,
+    val appInstallFilterMode: GitHubAppInstallHistoryFilterMode = GitHubAppInstallHistoryFilterMode.All,
     val sortMode: GitHubActionsHistorySortMode = GitHubActionsHistorySortMode.NotifiedAt,
     val refreshSortMode: GitHubRefreshHistorySortMode = GitHubRefreshHistorySortMode.FinishedAt,
     val trackChangeSortMode: GitHubTrackChangeHistorySortMode = GitHubTrackChangeHistorySortMode.ChangedAt,
+    val appInstallSortMode: GitHubAppInstallHistorySortMode = GitHubAppInstallHistorySortMode.ChangedAt,
     val sortDirection: GitHubActionsHistorySortDirection = GitHubActionsHistorySortDirection.Descending,
     val lastCleanupRemovedCount: Int? = null,
     val exportInProgress: Boolean = false,
@@ -64,6 +68,13 @@ private data class PendingRefreshHistoryExport(
     val content: String,
 )
 
+private data class GitHubHistorySnapshot(
+    val refreshRecords: List<GitHubRefreshHistoryUiRecord>,
+    val actionRecords: List<GitHubActionsNotificationHistoryUiRecord>,
+    val trackChangeRecords: List<GitHubTrackChangeHistoryUiRecord>,
+    val appInstallRecords: List<GitHubAppInstallHistoryUiRecord>,
+)
+
 internal class GitHubActionsNotificationHistoryViewModel(
     private val repository: GitHubActionsNotificationHistoryRepository =
         GitHubActionsNotificationHistoryRepository(),
@@ -82,6 +93,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
     private var allRecords: List<GitHubActionsNotificationHistoryUiRecord> = emptyList()
     private var allRefreshRecords: List<GitHubRefreshHistoryUiRecord> = emptyList()
     private var allTrackChangeRecords: List<GitHubTrackChangeHistoryUiRecord> = emptyList()
+    private var allAppInstallRecords: List<GitHubAppInstallHistoryUiRecord> = emptyList()
     private var pendingRefreshHistoryExport: PendingRefreshHistoryExport? = null
 
     init {
@@ -99,23 +111,26 @@ internal class GitHubActionsNotificationHistoryViewModel(
                 }
                 val result =
                     runCatching {
-                        Triple(
-                            repository.loadRefreshHistory(),
-                            repository.loadHistory(),
-                            repository.loadTrackChangeHistory(),
+                        GitHubHistorySnapshot(
+                            refreshRecords = repository.loadRefreshHistory(),
+                            actionRecords = repository.loadHistory(),
+                            trackChangeRecords = repository.loadTrackChangeHistory(),
+                            appInstallRecords = repository.loadAppInstallHistory(),
                         )
                     }
                 result
-                    .onSuccess { (refreshRecords, records, trackChangeRecords) ->
-                        allRefreshRecords = refreshRecords
-                        allRecords = records
-                        allTrackChangeRecords = trackChangeRecords
+                    .onSuccess { snapshot ->
+                        allRefreshRecords = snapshot.refreshRecords
+                        allRecords = snapshot.actionRecords
+                        allTrackChangeRecords = snapshot.trackChangeRecords
+                        allAppInstallRecords = snapshot.appInstallRecords
                         updateDisplayRecords {
                             copy(
                                 loading = false,
-                                totalRecordCount = records.size,
-                                totalRefreshRecordCount = refreshRecords.size,
-                                totalTrackChangeRecordCount = trackChangeRecords.size,
+                                totalRecordCount = snapshot.actionRecords.size,
+                                totalRefreshRecordCount = snapshot.refreshRecords.size,
+                                totalTrackChangeRecordCount = snapshot.trackChangeRecords.size,
+                                totalAppInstallRecordCount = snapshot.appInstallRecords.size,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = null,
                             )
@@ -127,9 +142,11 @@ internal class GitHubActionsNotificationHistoryViewModel(
                                 records = emptyList(),
                                 refreshRecords = emptyList(),
                                 trackChangeRecords = emptyList(),
+                                appInstallRecords = emptyList(),
                                 totalRecordCount = allRecords.size,
                                 totalRefreshRecordCount = allRefreshRecords.size,
                                 totalTrackChangeRecordCount = allTrackChangeRecords.size,
+                                totalAppInstallRecordCount = allAppInstallRecords.size,
                                 errorMessage = error.message.orEmpty(),
                             )
                         }
@@ -172,6 +189,10 @@ internal class GitHubActionsNotificationHistoryViewModel(
         updateDisplayRecords { copy(trackChangeFilterMode = value) }
     }
 
+    fun setAppInstallFilterMode(value: GitHubAppInstallHistoryFilterMode) {
+        updateDisplayRecords { copy(appInstallFilterMode = value) }
+    }
+
     fun setSortMode(value: GitHubActionsHistorySortMode) {
         updateDisplayRecords { copy(sortMode = value) }
     }
@@ -182,6 +203,10 @@ internal class GitHubActionsNotificationHistoryViewModel(
 
     fun setTrackChangeSortMode(value: GitHubTrackChangeHistorySortMode) {
         updateDisplayRecords { copy(trackChangeSortMode = value) }
+    }
+
+    fun setAppInstallSortMode(value: GitHubAppInstallHistorySortMode) {
+        updateDisplayRecords { copy(appInstallSortMode = value) }
     }
 
     fun setSortDirection(value: GitHubActionsHistorySortDirection) {
@@ -204,6 +229,7 @@ internal class GitHubActionsNotificationHistoryViewModel(
                             GitHubHistoryMode.Refresh -> repository.pruneRefreshHistoryOlderThanDays(age.days)
                             GitHubHistoryMode.Actions -> repository.pruneOlderThanDays(age.days)
                             GitHubHistoryMode.Tracking -> repository.pruneTrackChangeHistoryOlderThanDays(age.days)
+                            GitHubHistoryMode.Apps -> repository.pruneAppInstallHistoryOlderThanDays(age.days)
                         }
                     }
                 result
@@ -211,15 +237,18 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         val refreshRecords = repository.loadRefreshHistory()
                         val records = repository.loadHistory()
                         val trackChangeRecords = repository.loadTrackChangeHistory()
+                        val appInstallRecords = repository.loadAppInstallHistory()
                         allRefreshRecords = refreshRecords
                         allRecords = records
                         allTrackChangeRecords = trackChangeRecords
+                        allAppInstallRecords = appInstallRecords
                         updateDisplayRecords {
                             copy(
                                 loading = false,
                                 totalRecordCount = records.size,
                                 totalRefreshRecordCount = refreshRecords.size,
                                 totalTrackChangeRecordCount = trackChangeRecords.size,
+                                totalAppInstallRecordCount = appInstallRecords.size,
                                 errorMessage = "",
                                 lastCleanupRemovedCount = removedCount,
                             )
@@ -338,9 +367,18 @@ internal class GitHubActionsNotificationHistoryViewModel(
                         sortDirection = next.sortDirection,
                         searchQuery = next.searchQuery,
                     ),
+                appInstallRecords =
+                    buildGitHubAppInstallHistoryDisplayRecords(
+                        records = allAppInstallRecords,
+                        filterMode = next.appInstallFilterMode,
+                        sortMode = next.appInstallSortMode,
+                        sortDirection = next.sortDirection,
+                        searchQuery = next.searchQuery,
+                    ),
                 totalRecordCount = allRecords.size,
                 totalRefreshRecordCount = allRefreshRecords.size,
                 totalTrackChangeRecordCount = allTrackChangeRecords.size,
+                totalAppInstallRecordCount = allAppInstallRecords.size,
             )
         }
     }
