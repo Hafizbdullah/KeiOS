@@ -128,9 +128,20 @@ internal fun GitHubMainContent(
     val refreshBadgeTooltip =
         when {
             overview.metrics.failedCount > 0 ->
-                stringResource(R.string.github_refresh_badge_failed_tooltip, overview.metrics.failedCount)
+                stringResource(
+                    R.string.github_refresh_badge_failed_tooltip,
+                    overview.metrics.failedCount,
+                    overview.metrics.totalUpdatableCount,
+                    overview.metrics.stableUpdateCount,
+                    overview.metrics.preReleaseUpdateCount,
+                )
             overview.metrics.totalUpdatableCount > 0 ->
-                stringResource(R.string.github_refresh_badge_updates_tooltip, overview.metrics.totalUpdatableCount)
+                stringResource(
+                    R.string.github_refresh_badge_updates_tooltip,
+                    overview.metrics.totalUpdatableCount,
+                    overview.metrics.stableUpdateCount,
+                    overview.metrics.preReleaseUpdateCount,
+                )
             else -> null
         }
     val dockExtraActions =

@@ -32,8 +32,8 @@
     <string name="github_refresh_island_cancelled">Cancelled</string>
     <string name="github_refresh_island_completed">Completed</string>
     <string name="github_refresh_failed_short_with_count">Failed %1$d</string>
-    <string name="github_refresh_badge_failed_tooltip">%1$d failed checks</string>
-    <string name="github_refresh_badge_updates_tooltip">%1$d updates available</string>
+    <string name="github_refresh_badge_failed_tooltip">Badge shows %1$d failed checks · %2$d updates available (stable %3$d · pre-release %4$d)</string>
+    <string name="github_refresh_badge_updates_tooltip">Badge shows %1$d updates available (stable %2$d · pre-release %3$d)</string>
     <string name="github_actions_update_notification_title">New GitHub Actions build</string>
     <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
     <string name="github_actions_update_island_content">Actions</string>
