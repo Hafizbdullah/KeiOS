@@ -14,8 +14,10 @@ import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
+import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
+import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaAccountNotificationKind
@@ -40,6 +42,7 @@ object AppForegroundInfoHandler {
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
 
     private val githubRefreshService = GitHubBackgroundRefreshService()
+    private val githubRefreshHistoryService = GitHubRefreshHistoryService()
     private val baApTickMutex = Mutex()
 
     suspend fun handleGitHubTick(context: Context) {
@@ -61,10 +64,18 @@ object AppForegroundInfoHandler {
                     },
                 )
             } catch (error: CancellationException) {
-                cleanupGitHubRefreshRuntimeAndNotification(context, "github tick cancelled")
+                cleanupGitHubRefreshRuntimeAndNotification(
+                    context = context,
+                    reason = "github tick cancelled",
+                    outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                )
                 throw error
             } catch (error: Throwable) {
-                cleanupGitHubRefreshRuntimeAndNotification(context, "github tick failed")
+                cleanupGitHubRefreshRuntimeAndNotification(
+                    context = context,
+                    reason = "github tick failed",
+                    outcome = GitHubRefreshHistoryOutcome.Failed,
+                )
                 AppLogger.w("AppForegroundInfoHandler", "github tick failed", error)
                 return
             }
@@ -92,7 +103,11 @@ object AppForegroundInfoHandler {
     }
 
     suspend fun handleGitHubTickTimeout(context: Context) {
-        cleanupGitHubRefreshRuntimeAndNotification(context, "github tick timed out")
+        cleanupGitHubRefreshRuntimeAndNotification(
+            context = context,
+            reason = "github tick timed out",
+            outcome = GitHubRefreshHistoryOutcome.Cancelled,
+        )
     }
 
     internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
@@ -182,13 +197,27 @@ object AppForegroundInfoHandler {
         }
     }
 
-    private fun cleanupGitHubRefreshRuntimeAndNotification(
+    private suspend fun cleanupGitHubRefreshRuntimeAndNotification(
         context: Context,
         reason: String,
+        outcome: GitHubRefreshHistoryOutcome,
     ) {
         val runtime = GitHubRefreshRuntimeStore.state.value
         val ownsRuntime = runtime.running && runtime.source == GitHubRefreshSource.BackgroundTick
         if (ownsRuntime) {
+            runCatching {
+                githubRefreshHistoryService.recordRuntimeState(
+                    runtime = runtime,
+                    outcome = outcome,
+                    note = reason,
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "$reason history record failed",
+                    error
+                )
+            }
             GitHubRefreshRuntimeStore.cancel(
                 sessionId = runtime.sessionId,
                 completedCount = runtime.completedCount,
@@ -196,6 +225,25 @@ object AppForegroundInfoHandler {
                 preReleaseUpdateCount = runtime.preReleaseUpdateCount,
                 failedCount = runtime.failedCount,
             )
+        } else if (
+            runtime.source == GitHubRefreshSource.BackgroundTick &&
+            runtime.startedAtMs > 0L &&
+            runtime.finishedAtMs > 0L
+        ) {
+            runCatching {
+                githubRefreshHistoryService.recordRuntimeState(
+                    runtime = runtime,
+                    outcome = outcome,
+                    note = reason,
+                    finishedAtMillis = runtime.finishedAtMs,
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "$reason finished history record failed",
+                    error
+                )
+            }
         }
         val shouldCancelNotification = !runtime.running || ownsRuntime
         if (!shouldCancelNotification) return

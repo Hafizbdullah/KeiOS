@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
@@ -15,6 +16,7 @@ import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
+import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -31,6 +33,7 @@ internal class GitHubRefreshBatchActions(
     private val state get() = owner.state
     private val repository get() = owner.repository
     private val clock get() = owner.clock
+    private val refreshHistoryService = GitHubRefreshHistoryService()
 
     fun refreshTrackedBatchInternal(
         requestedTargetIds: List<String>,
@@ -66,6 +69,7 @@ internal class GitHubRefreshBatchActions(
         state.refreshAllJob?.cancel()
         state.refreshAllJob =
             scope.launch {
+                val refreshStartedAtMs = clock.nowMs()
                 val runtimeSession =
                     checkNotNull(
                         GitHubRefreshRuntimeStore.begin(
@@ -73,7 +77,7 @@ internal class GitHubRefreshBatchActions(
                             source = GitHubRefreshSource.Page,
                             totalTrackedCount = state.trackedItems.size,
                             targetCount = snapshot.size,
-                            nowMs = clock.nowMs(),
+                            nowMs = refreshStartedAtMs,
                         ),
                     )
                 state.refreshSessionId = runtimeSession.id
@@ -279,6 +283,12 @@ internal class GitHubRefreshBatchActions(
                     } else {
                         owner.mergeCheckCacheNow(targetIds = targetIds.toSet())
                     }
+                    refreshHistoryService.recordCompleted(
+                        session = runtimeSession,
+                        totalTrackedCount = state.trackedItems.size,
+                        result = batchResult,
+                        startedAtMillis = refreshStartedAtMs,
+                    )
                     onFinished?.invoke()
                     repository.notifyRefreshCompleted(
                         context = context,
@@ -305,6 +315,11 @@ internal class GitHubRefreshBatchActions(
                         owner.syncSnapshotFromStore(forceRefreshApps = false)
                     }
                 } catch (error: CancellationException) {
+                    refreshHistoryService.recordRuntimeState(
+                        runtime = GitHubRefreshRuntimeStore.state.value,
+                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                        note = error.message.orEmpty(),
+                    )
                     GitHubRefreshRuntimeStore.cancel(
                         sessionId = runtimeSession.id,
                         completedCount = completedCount,
@@ -312,6 +327,21 @@ internal class GitHubRefreshBatchActions(
                         preReleaseUpdateCount = preReleaseUpdateCount,
                         failedCount = failedCount,
                     )
+                    throw error
+                } catch (error: Throwable) {
+                    refreshHistoryService.recordRuntimeState(
+                        runtime = GitHubRefreshRuntimeStore.state.value,
+                        outcome = GitHubRefreshHistoryOutcome.Failed,
+                        note = error.message ?: error.javaClass.simpleName,
+                    )
+                    GitHubRefreshRuntimeStore.cancel(
+                        sessionId = runtimeSession.id,
+                        completedCount = completedCount,
+                        updatableCount = updatableCount,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        failedCount = failedCount.coerceAtLeast(1),
+                    )
+                    AppLogger.w("GitHubRefreshActions", "github page refresh failed", error)
                     throw error
                 } finally {
                     if (state.refreshSessionId == runtimeSession.id) {

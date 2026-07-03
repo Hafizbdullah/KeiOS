@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubRefreshBeginPolicy
+import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
@@ -17,6 +18,7 @@ import os.kei.feature.github.domain.GitHubTrackedRefreshBatchScheduler
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
 import os.kei.feature.github.domain.GitHubTrackedRefreshPlanner
+import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -48,6 +50,7 @@ internal class GitHubBackgroundRefreshCoordinator(
     private val repository get() = env.repository
     private val clock get() = env.clock
     private val backgroundJobs = ConcurrentHashMap.newKeySet<Job>()
+    private val refreshHistoryService = GitHubRefreshHistoryService()
 
     fun cancel() {
         backgroundJobs.forEach { it.cancel() }
@@ -106,6 +109,7 @@ internal class GitHubBackgroundRefreshCoordinator(
         if (items.isEmpty()) return
         var runtimeSessionId = 0L
         val job = scope.launch {
+            val refreshStartedAtMs = clock.nowMs()
             val runtimeSession =
                 GitHubRefreshRuntimeStore.begin(
                     scope = refreshScope,
@@ -113,6 +117,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     totalTrackedCount = state.trackedItems.size,
                     targetCount = items.size,
                     policy = GitHubRefreshBeginPolicy.SkipWhenRunning,
+                    nowMs = refreshStartedAtMs,
                 )
             runtimeSessionId = runtimeSession?.id ?: 0L
             if (runtimeSession != null) {
@@ -194,6 +199,12 @@ internal class GitHubBackgroundRefreshCoordinator(
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     failedCount = failedCount,
                 )
+                refreshHistoryService.recordCompleted(
+                    session = runtimeSession,
+                    totalTrackedCount = state.trackedItems.size,
+                    result = batchResult,
+                    startedAtMillis = refreshStartedAtMs,
+                )
                 logTrackedRefreshFailures(batchResult.failures)
                 state.overviewRefreshState =
                     if (failedCount > 0) {
@@ -213,6 +224,13 @@ internal class GitHubBackgroundRefreshCoordinator(
             if (cause != null && runtimeSessionId > 0L) {
                 val current = GitHubRefreshRuntimeStore.state.value
                 if (current.sessionId == runtimeSessionId && current.running) {
+                    scope.launch {
+                        refreshHistoryService.recordRuntimeState(
+                            runtime = current,
+                            outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                            note = cause.message.orEmpty(),
+                        )
+                    }
                     GitHubRefreshRuntimeStore.cancel(
                         sessionId = runtimeSessionId,
                         completedCount = current.completedCount,

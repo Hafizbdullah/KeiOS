@@ -38,6 +38,7 @@ sealed interface GitHubShortcutRefreshExecution {
 
 class GitHubBackgroundRefreshService(
     private val actionsService: GitHubActionsService = GitHubActionsService(),
+    private val refreshHistoryService: GitHubRefreshHistoryService = GitHubRefreshHistoryService(),
 ) {
     private val mutex = Mutex()
 
@@ -138,6 +139,12 @@ class GitHubBackgroundRefreshService(
                                     result = result,
                                     replaceCache = trackedUpdateTargetItems.size == tracked.size,
                                 )
+                                refreshHistoryService.recordCompleted(
+                                    session = runtimeSession,
+                                    totalTrackedCount = tracked.size,
+                                    result = result,
+                                    startedAtMillis = nowMs,
+                                )
                             }
                     }
                 } else {
@@ -221,6 +228,12 @@ class GitHubBackgroundRefreshService(
             )
             logTrackedRefreshFailures(result.failures)
             persistRefreshResult(snapshot = snapshot, result = result)
+            refreshHistoryService.recordCompleted(
+                session = runtimeSession,
+                totalTrackedCount = tracked.size,
+                result = result,
+                startedAtMillis = nowMs,
+            )
             val actionsNotificationCount =
                 handleActionsUpdates(
                     snapshot = snapshot,
