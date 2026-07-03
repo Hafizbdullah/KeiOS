@@ -10,7 +10,7 @@ import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 
 internal class GitHubPageRefreshNotificationBridge(
-    private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
+    private val notificationDispatcher: CoroutineDispatcher = AppDispatchers.githubNotification
 ) {
     suspend fun notifyProgress(
         context: Context,
@@ -24,7 +24,7 @@ internal class GitHubPageRefreshNotificationBridge(
         source: GitHubRefreshSource,
         totalTrackedCount: Int
     ): Boolean {
-        return withContext(ioDispatcher) {
+        return withContext(notificationDispatcher) {
             runCatching {
                 GitHubRefreshNotificationHelper.notifyProgress(
                     context = context,
@@ -56,7 +56,7 @@ internal class GitHubPageRefreshNotificationBridge(
         source: GitHubRefreshSource,
         totalTrackedCount: Int
     ): Boolean {
-        return withContext(ioDispatcher) {
+        return withContext(notificationDispatcher) {
             val posted =
                 runCatching {
                     GitHubRefreshNotificationHelper.notifyCompleted(
@@ -96,7 +96,7 @@ internal class GitHubPageRefreshNotificationBridge(
         source: GitHubRefreshSource,
         totalTrackedCount: Int
     ): Boolean {
-        return withContext(ioDispatcher) {
+        return withContext(notificationDispatcher) {
             val posted =
                 runCatching {
                     GitHubRefreshNotificationHelper.notifyCancelled(

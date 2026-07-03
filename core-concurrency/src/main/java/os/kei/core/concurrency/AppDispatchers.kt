@@ -25,10 +25,17 @@ import os.kei.core.concurrency.AppDispatchers.media
 object AppDispatchers {
     /**
      * GitHub network operations: release checks, asset fetches, API calls.
-     * Bounded to 8 threads so large tracked-app refresh batches can finish quickly while
+     * Bounded to 10 threads so large tracked-app refresh batches can finish quickly while
      * Android 17 fair scheduling still keeps GitHub work inside a feature-local cap.
      */
-    val githubNetwork: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(8)
+    val githubNetwork: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(10)
+
+    /**
+     * GitHub notification operations: Live Updates, Xiaomi focus notification payloads, and
+     * notification cleanup. Kept separate from network checks so progress surfaces stay responsive
+     * while large refresh batches occupy the GitHub network dispatcher.
+     */
+    val githubNotification: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(2)
 
     /**
      * GitHub local IO: MMKV reads/writes, cache persistence, JSON parsing.

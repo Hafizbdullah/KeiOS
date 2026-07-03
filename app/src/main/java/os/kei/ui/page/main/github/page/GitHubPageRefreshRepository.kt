@@ -17,7 +17,7 @@ import os.kei.ui.page.main.github.state.toUi
 internal class GitHubPageRefreshRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork
 ) {
-    private val notificationBridge = GitHubPageRefreshNotificationBridge(ioDispatcher)
+    private val notificationBridge = GitHubPageRefreshNotificationBridge()
 
     suspend fun evaluateTrackedApp(
         context: Context,
