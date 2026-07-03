@@ -111,6 +111,7 @@ class GitHubRefreshHistoryStoreTest {
                         profileFromCache = true,
                         preciseApkElapsedMs = 500L,
                         preciseApkRequested = true,
+                        unclassifiedElapsedMs = 2_500L,
                         fallbackStrategyId = "fallback",
                     ),
                 ),

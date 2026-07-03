@@ -226,6 +226,7 @@ object GitHubRefreshHistoryStore {
                             profileFromCache = slowItem.profileFromCache,
                             preciseApkElapsedMs = slowItem.preciseApkElapsedMs.coerceAtLeast(0L),
                             preciseApkRequested = slowItem.preciseApkRequested,
+                            unclassifiedElapsedMs = slowItem.unclassifiedElapsedMs.coerceAtLeast(0L),
                             fallbackStrategyId = slowItem.fallbackStrategyId.trim(),
                         )
                     },
@@ -287,6 +288,7 @@ object GitHubRefreshHistoryStore {
             put("profileFromCache", slowItem.profileFromCache)
             put("preciseApkElapsedMs", slowItem.preciseApkElapsedMs)
             put("preciseApkRequested", slowItem.preciseApkRequested)
+            put("unclassifiedElapsedMs", slowItem.unclassifiedElapsedMs)
             put("fallbackStrategyId", slowItem.fallbackStrategyId)
         }
     }
@@ -309,6 +311,7 @@ object GitHubRefreshHistoryStore {
             profileFromCache = obj.optBoolean("profileFromCache", false),
             preciseApkElapsedMs = obj.optLong("preciseApkElapsedMs", 0L).coerceAtLeast(0L),
             preciseApkRequested = obj.optBoolean("preciseApkRequested", false),
+            unclassifiedElapsedMs = obj.optLong("unclassifiedElapsedMs", 0L).coerceAtLeast(0L),
             fallbackStrategyId = obj.optString("fallbackStrategyId").trim(),
         )
 

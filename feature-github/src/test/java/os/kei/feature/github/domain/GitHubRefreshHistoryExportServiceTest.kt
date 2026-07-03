@@ -72,6 +72,14 @@ class GitHubRefreshHistoryExportServiceTest {
                 ?.optObject(0)
                 ?.optLong("snapshotElapsedMs"),
         )
+        assertEquals(
+            7L,
+            root.optArray("records")
+                ?.optObject(0)
+                ?.optArray("slowItems")
+                ?.optObject(0)
+                ?.optLong("unclassifiedElapsedMs"),
+        )
     }
 
     @Test
@@ -203,6 +211,7 @@ class GitHubRefreshHistoryExportServiceTest {
                         snapshotElapsedMs = 30L,
                         profileElapsedMs = 10L,
                         profileFromCache = true,
+                        unclassifiedElapsedMs = 7L,
                     ),
                 ),
             failureSummaries =

@@ -233,6 +233,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
         )
         assertTrue(result.performance.slowItems.any { it.sourceMode == "fdroid_repository" })
         assertTrue(result.performance.slowItems.all { it.message.isNotBlank() })
+        assertTrue(result.performance.slowItems.all { it.unclassifiedElapsedMs == it.elapsedMs })
     }
 
     @Test
@@ -266,6 +267,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(120L, slowItem.snapshotElapsedMs)
         assertEquals(40L, slowItem.profileElapsedMs)
         assertEquals(8L, slowItem.preciseApkElapsedMs)
+        assertEquals(0L, slowItem.unclassifiedElapsedMs)
         assertTrue(slowItem.profileFromCache)
         assertTrue(slowItem.preciseApkRequested)
         assertEquals("github_api_token", slowItem.fallbackStrategyId)

@@ -96,6 +96,7 @@
     <string name="github_history_refresh_stage_profile">Profile %1$s</string>
     <string name="github_history_refresh_stage_profile_cache">Profile キャッシュ</string>
     <string name="github_history_refresh_stage_precise_apk">APK %1$s</string>
+    <string name="github_history_refresh_stage_other">その他 %1$s</string>
     <string name="github_history_refresh_stage_fallback">Fallback %1$s</string>
     <string name="github_history_refresh_purpose_value">%1$s · %2$s</string>
     <string name="github_history_refresh_source_purpose_page">ページから手動実行</string>

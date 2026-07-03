@@ -39,6 +39,7 @@ data class GitHubRefreshHistorySlowItem(
     val profileFromCache: Boolean = false,
     val preciseApkElapsedMs: Long = 0L,
     val preciseApkRequested: Boolean = false,
+    val unclassifiedElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
 )
 
@@ -102,5 +103,6 @@ fun GitHubTrackedRefreshSlowItem.toGitHubRefreshHistorySlowItem(): GitHubRefresh
         profileFromCache = profileFromCache,
         preciseApkElapsedMs = preciseApkElapsedMs,
         preciseApkRequested = preciseApkRequested,
+        unclassifiedElapsedMs = unclassifiedElapsedMs,
         fallbackStrategyId = fallbackStrategyId,
     )

@@ -309,6 +309,7 @@ private fun GitHubRefreshHistorySlowItem.toJson() =
         put("profileFromCache", profileFromCache)
         put("preciseApkElapsedMs", preciseApkElapsedMs)
         put("preciseApkRequested", preciseApkRequested)
+        put("unclassifiedElapsedMs", unclassifiedElapsedMs)
         put("fallbackStrategyId", fallbackStrategyId)
     }
 
