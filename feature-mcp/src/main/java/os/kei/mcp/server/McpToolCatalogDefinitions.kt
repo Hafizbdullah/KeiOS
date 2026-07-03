@@ -82,7 +82,8 @@ internal object McpToolCatalogDefinitions {
         return when {
             name == "keios.mcp.runtime.config" ||
                 name == "keios.os.cards.export" ||
-                name == "keios.github.tracks.export" -> McpToolOutputContract.JsonText
+                name == "keios.github.tracks.export" ||
+                name == "keios.github.refresh.history.export" -> McpToolOutputContract.JsonText
 
             name == "keios.mcp.claw.skill.guide" ||
                 name == "keios.mcp.workflow.blueprints" ||
@@ -121,6 +122,8 @@ internal object McpToolCatalogDefinitions {
             "keios.github.tracks.check" -> listOf("github_update_audit")
 
             "keios.github.actions.recommended" -> listOf("github_actions_audit")
+            "keios.github.refresh.history",
+            "keios.github.refresh.history.export" -> listOf("github_update_audit", "diagnostics")
             "keios.ba.snapshot",
             "keios.ba.calendar.cache",
             "keios.ba.pool.cache" -> listOf("ba_daily_brief")

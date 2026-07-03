@@ -147,6 +147,8 @@ internal object McpToolCatalogArguments {
             ),
             McpSchema.integer("limit")
         ),
+        "keios.github.refresh.history" to githubRefreshHistoryArguments(includeMode = true),
+        "keios.github.refresh.history.export" to githubRefreshHistoryArguments(includeMode = false),
         "keios.github.link.parse" to listOf(McpSchema.string("text", required = true)),
         "keios.github.link.resolve" to listOf(
             McpSchema.string("text", required = true),
@@ -252,6 +254,61 @@ internal object McpToolCatalogArguments {
             McpSchema.string("quality"),
             McpSchema.boolean("apply")
         )
+    }
+
+    private fun githubRefreshHistoryArguments(includeMode: Boolean): List<McpToolArgumentSpec> {
+        val base =
+            listOf(
+                McpSchema.string(
+                    name = "outcome",
+                    description = "Refresh outcome filter.",
+                    enumValues = listOf("all", "completed", "updatable", "failed", "cancelled", "partial_failed"),
+                    defaultValue = "all"
+                ),
+                McpSchema.string(
+                    name = "source",
+                    description = "Refresh source filter.",
+                    enumValues = listOf("all", "page", "background", "shortcut", "debug"),
+                    defaultValue = "all"
+                ),
+                McpSchema.string(
+                    name = "scope",
+                    description = "Refresh scope filter.",
+                    enumValues = listOf(
+                        "all",
+                        "all_tracked",
+                        "due_tracked",
+                        "visible_tracked",
+                        "requested_tracked",
+                        "missing_cache",
+                        "single_tracked",
+                        "shortcut_all_tracked"
+                    ),
+                    defaultValue = "all"
+                ),
+                McpSchema.string(
+                    name = "sinceMillis",
+                    description = "Only include records finished at or after this epoch millisecond."
+                ),
+                McpSchema.integer("limit")
+            )
+        return if (includeMode) {
+            listOf(
+                McpSchema.string(
+                    name = "mode",
+                    description = "History output mode.",
+                    enumValues = listOf("summary", "list", "detail"),
+                    defaultValue = "summary"
+                ),
+                McpSchema.boolean(
+                    name = "includeFailures",
+                    description = "Include compact per-track failure rows.",
+                    defaultValue = "false"
+                )
+            ) + base
+        } else {
+            base
+        }
     }
 
     private fun githubSourceModeArgument(): McpToolArgumentSpec {

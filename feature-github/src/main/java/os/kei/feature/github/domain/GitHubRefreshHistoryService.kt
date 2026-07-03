@@ -16,6 +16,43 @@ class GitHubRefreshHistoryService(
             GitHubRefreshHistoryStore.load()
         }
 
+    suspend fun queryHistory(
+        query: GitHubRefreshHistoryQuery,
+    ): List<GitHubRefreshHistoryRecord> =
+        withContext(localDispatcher) {
+            GitHubRefreshHistoryExportService.filterRecords(
+                records = GitHubRefreshHistoryStore.load(),
+                query = query,
+            )
+        }
+
+    suspend fun summarizeHistory(
+        query: GitHubRefreshHistoryQuery,
+    ): GitHubRefreshHistorySummary =
+        withContext(localDispatcher) {
+            val records = GitHubRefreshHistoryStore.load()
+            GitHubRefreshHistoryExportService.summarize(
+                allRecords = records,
+                records =
+                    GitHubRefreshHistoryExportService.filterRecords(
+                        records = records,
+                        query = query,
+                    ),
+            )
+        }
+
+    suspend fun buildExportJson(
+        query: GitHubRefreshHistoryQuery,
+        exportedAtMillis: Long = System.currentTimeMillis(),
+    ): String =
+        withContext(localDispatcher) {
+            GitHubRefreshHistoryExportService.buildExportJson(
+                allRecords = GitHubRefreshHistoryStore.load(),
+                query = query,
+                exportedAtMillis = exportedAtMillis,
+            )
+        }
+
     suspend fun recordCompleted(
         session: GitHubRefreshRuntimeSession,
         totalTrackedCount: Int,

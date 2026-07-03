@@ -27,6 +27,7 @@ object McpGitHubToolPlugins {
                 refreshScheduler = refreshScheduler,
             ).register(server)
             McpGitHubActionsTools(environment).register(server)
+            McpGitHubRefreshHistoryTools(environment).register(server)
         }
     }
 }

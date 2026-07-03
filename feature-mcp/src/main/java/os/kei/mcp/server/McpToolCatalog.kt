@@ -50,6 +50,8 @@ object McpToolCatalog {
         "keios.github.tracks.check",
         "keios.github.tracks.summary",
         "keios.github.actions.recommended",
+        "keios.github.refresh.history",
+        "keios.github.refresh.history.export",
         "keios.github.link.parse",
         "keios.github.link.resolve",
         "keios.github.link.pending",
