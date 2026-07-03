@@ -4,6 +4,7 @@ import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.feature.github.model.StarImportApplyResult
 
 private const val STAR_IMPORT_IMMEDIATE_REFRESH_REQUEST_LIMIT = 8
@@ -14,8 +15,9 @@ object GitHubStarImportApplier {
         onRefreshNeeded: () -> Unit,
     ): StarImportApplyResult {
         if (candidates.isEmpty()) return StarImportApplyResult()
+        val existingItems = GitHubTrackStore.load()
         val merge = GitHubStarImportMerger.merge(
-            existingItems = GitHubTrackStore.load(),
+            existingItems = existingItems,
             importedItems = candidates.map { it.trackedApp }
         )
         val result = merge.result
@@ -23,6 +25,11 @@ object GitHubStarImportApplier {
         GitHubTrackStore.save(merge.items)
         GitHubReleaseAssetCacheStore.clearAll()
         updateTrackedAddedAt(result)
+        GitHubTrackChangeHistoryService().recordChangesBlocking(
+            previousItems = existingItems,
+            nextItems = merge.items,
+            source = GitHubTrackChangeHistorySource.StarImport,
+        )
         result.affectedTrackIds.take(STAR_IMPORT_IMMEDIATE_REFRESH_REQUEST_LIMIT)
             .forEach { trackId ->
                 GitHubTrackStoreSignals.requestTrackRefresh(

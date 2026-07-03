@@ -35,6 +35,7 @@ import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
 import os.kei.feature.github.model.GitHubStarredRepositoryImportRequest
 import os.kei.feature.github.model.GitHubStrategyBenchmarkReport
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedIgnoreMode
@@ -46,6 +47,7 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.domain.GitHubReleaseAssetService
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -306,6 +308,8 @@ internal class GitHubPageRepository(
         trackedModifiedAtById: Map<String, Long>,
         refreshTrackIds: Set<String> = emptySet(),
         emitStoreSignal: Boolean = true,
+        trackChangeSource: GitHubTrackChangeHistorySource = GitHubTrackChangeHistorySource.Page,
+        semanticTrackUpdates: List<GitHubTrackChangeSemanticUpdate> = emptyList(),
     ) = trackRepository.saveTrackedItems(
         context = context,
         items = items,
@@ -314,6 +318,8 @@ internal class GitHubPageRepository(
         trackedModifiedAtById = trackedModifiedAtById,
         refreshTrackIds = refreshTrackIds,
         emitStoreSignal = emitStoreSignal,
+        trackChangeSource = trackChangeSource,
+        semanticTrackUpdates = semanticTrackUpdates,
     )
 
     suspend fun saveCheckCache(

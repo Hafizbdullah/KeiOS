@@ -5,6 +5,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.BuildConfig
 import os.kei.R
+import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidRepositoryPresets
@@ -745,6 +746,17 @@ internal class GitHubTrackActions(
                             setOf(newItem.id)
                         } else {
                             emptySet()
+                        },
+                    semanticTrackUpdates =
+                        if (itemChanged) {
+                            listOf(
+                                GitHubTrackChangeSemanticUpdate(
+                                    previous = editing,
+                                    next = newItem,
+                                ),
+                            )
+                        } else {
+                            emptyList()
                         },
                 )
                 env.toast(R.string.github_toast_track_updated)

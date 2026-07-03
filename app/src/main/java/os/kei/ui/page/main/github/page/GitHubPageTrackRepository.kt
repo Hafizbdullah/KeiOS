@@ -7,9 +7,12 @@ import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubTrackChangeHistoryService
+import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.share.GitHubShareImportResult
 import os.kei.ui.page.main.github.share.toRecord
@@ -22,6 +25,7 @@ internal class GitHubPageTrackRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal
 ) {
     private val trackService = GitHubTrackService(ioDispatcher)
+    private val trackChangeHistoryService = GitHubTrackChangeHistoryService(ioDispatcher)
 
     suspend fun loadTrackSnapshot(): GitHubTrackSnapshot = trackService.loadTrackSnapshot()
 
@@ -45,8 +49,11 @@ internal class GitHubPageTrackRepository(
         trackedAddedAtById: Map<String, Long>,
         trackedModifiedAtById: Map<String, Long>,
         refreshTrackIds: Set<String> = emptySet(),
-        emitStoreSignal: Boolean = true
+        emitStoreSignal: Boolean = true,
+        trackChangeSource: GitHubTrackChangeHistorySource = GitHubTrackChangeHistorySource.Page,
+        semanticTrackUpdates: List<GitHubTrackChangeSemanticUpdate> = emptyList(),
     ) {
+        val previousItems = trackService.loadTrackSnapshot().items
         trackService.saveTrackedItems(
             items = items,
             trackedFirstInstallAtByPackage = trackedFirstInstallAtByPackage,
@@ -54,6 +61,12 @@ internal class GitHubPageTrackRepository(
             trackedModifiedAtById = trackedModifiedAtById,
             refreshTrackIds = refreshTrackIds,
             emitStoreSignal = emitStoreSignal,
+        )
+        trackChangeHistoryService.recordChanges(
+            previousItems = previousItems,
+            nextItems = items,
+            source = trackChangeSource,
+            semanticUpdates = semanticTrackUpdates,
         )
         if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
             AppBackgroundScheduler.scheduleGitHubRefresh(context)

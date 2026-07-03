@@ -7,6 +7,7 @@ import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
 
@@ -83,6 +84,12 @@ object GitHubTrackedItemsImportApplier {
             GitHubTrackStore.save(mergedItems)
             GitHubTrackStore.saveTrackedAddedAtById(trackedAddedAt)
             GitHubTrackStore.saveTrackedModifiedAtById(trackedModifiedAt)
+            GitHubTrackChangeHistoryService().recordChangesBlocking(
+                previousItems = existingItems,
+                nextItems = mergedItems,
+                source = GitHubTrackChangeHistorySource.Import,
+                changedAtMillis = nowMillis,
+            )
             if (changedIds.isNotEmpty()) {
                 GitHubTrackStore.removeCheckCacheEntries(changedIds)
                 changedIds.forEach(FdroidMetadataSidecarStore::clear)

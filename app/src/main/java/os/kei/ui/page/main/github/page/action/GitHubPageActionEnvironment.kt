@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.ext.showToast
 import os.kei.feature.github.domain.GitHubActionsService
+import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
+import os.kei.feature.github.model.GitHubTrackChangeHistorySource
 import os.kei.ui.page.main.github.page.GitHubPageRepository
 import os.kei.ui.page.main.github.page.GitHubPageState
 import os.kei.ui.page.main.github.page.GitHubPageViewModel
@@ -42,6 +44,8 @@ internal class GitHubPageActionEnvironment(
     fun saveTrackedItems(
         refreshTrackIds: Set<String> = emptySet(),
         emitStoreSignal: Boolean = true,
+        trackChangeSource: GitHubTrackChangeHistorySource = GitHubTrackChangeHistorySource.Page,
+        semanticTrackUpdates: List<GitHubTrackChangeSemanticUpdate> = emptyList(),
     ) {
         state.retainTrackedFirstInstallAtByTrackedItems()
         state.retainTrackedAddedAtByTrackedItems()
@@ -59,6 +63,8 @@ internal class GitHubPageActionEnvironment(
                 trackedModifiedAtById = trackedModifiedAtById,
                 refreshTrackIds = refreshTrackIds,
                 emitStoreSignal = emitStoreSignal,
+                trackChangeSource = trackChangeSource,
+                semanticTrackUpdates = semanticTrackUpdates,
             )
         }
     }
