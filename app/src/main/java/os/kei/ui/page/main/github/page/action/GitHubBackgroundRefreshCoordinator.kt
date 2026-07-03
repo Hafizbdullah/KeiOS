@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -69,7 +70,6 @@ internal class GitHubBackgroundRefreshCoordinator(
             requestedTrackIds = requestedIds,
             activeItems = activeItems,
         )
-        requestedItems.forEach(::markItemChecking)
         refreshItemsInBackground(
             items = requestedItems,
             forceRefresh = true,
@@ -87,7 +87,6 @@ internal class GitHubBackgroundRefreshCoordinator(
             cachedTrackIds = state.checkStates.keys
         )
         if (missingItems.isEmpty()) return false
-        missingItems.forEach(::markItemChecking)
         refreshItemsInBackground(
             items = missingItems,
             refreshScope = GitHubRefreshScope.MissingCache,
@@ -119,13 +118,18 @@ internal class GitHubBackgroundRefreshCoordinator(
                     policy = GitHubRefreshBeginPolicy.SkipWhenRunning,
                     nowMs = refreshStartedAtMs,
                 )
-            runtimeSessionId = runtimeSession?.id ?: 0L
-            if (runtimeSession != null) {
-                state.refreshSessionId = runtimeSession.id
-                state.refreshTargetIds = items.mapTo(HashSet()) { it.id }
-                state.refreshProgress = 0f
-                state.overviewRefreshState = OverviewRefreshState.Refreshing
+            if (runtimeSession == null) {
+                AppLogger.i(
+                    "GitHubBackgroundRefresh",
+                    "skip page background refresh scope=$refreshScope target=${items.size} because another session is running",
+                )
+                return@launch
             }
+            runtimeSessionId = runtimeSession.id
+            state.refreshSessionId = runtimeSession.id
+            state.refreshTargetIds = items.mapTo(HashSet()) { it.id }
+            state.refreshProgress = 0f
+            state.overviewRefreshState = OverviewRefreshState.Refreshing
             val concurrency = items.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
             val batchEvaluator = GitHubTrackedRefreshBatchEvaluator(items)
             val progressMutex = Mutex()
@@ -133,68 +137,121 @@ internal class GitHubBackgroundRefreshCoordinator(
             var updatableCount = 0
             var preReleaseUpdateCount = 0
             var failedCount = 0
+            var lastProgressNotifyAtMs = clock.nowMs()
             val previousCheckStatesById = state.checkStates.toMap()
-            items.forEach { item ->
-                prepareItemRefresh(item, previousCheckStatesById[item.id] ?: VersionCheckUi())
-            }
-            val batchResult = GitHubTrackedRefreshBatchRunner.run(
-                context = context,
-                items = items,
-                maxConcurrency = concurrency,
-                onItemResult = { item, check, _ ->
-                    val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
-                    val itemState =
-                        mergeResolvedState(
-                            item,
-                            check.toUi(),
-                            previousState,
-                        ).copy(checkedAtMillis = clock.nowMs())
-                    withContext(Dispatchers.Main.immediate) {
-                        if (state.trackedItems.any { tracked -> tracked.id == item.id }) {
-                            state.checkStates[item.id] = itemState
+            try {
+                items.forEach(::markItemChecking)
+                repository.notifyRefreshProgress(
+                    context = context,
+                    current = 0,
+                    total = items.size,
+                    preReleaseUpdateCount = 0,
+                    updatableCount = 0,
+                    failedCount = 0,
+                    sessionId = runtimeSession.id,
+                    scope = runtimeSession.scope,
+                    source = runtimeSession.source,
+                    totalTrackedCount = state.trackedItems.size,
+                )
+                items.forEach { item ->
+                    prepareItemRefresh(item, previousCheckStatesById[item.id] ?: VersionCheckUi())
+                }
+                val batchResult = GitHubTrackedRefreshBatchRunner.run(
+                    context = context,
+                    items = items,
+                    maxConcurrency = concurrency,
+                    onItemResult = { item, check, _ ->
+                        val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
+                        val itemState =
+                            mergeResolvedState(
+                                item,
+                                check.toUi(),
+                                previousState,
+                            ).copy(checkedAtMillis = clock.nowMs())
+                        withContext(Dispatchers.Main.immediate) {
+                            if (state.trackedItems.any { tracked -> tracked.id == item.id }) {
+                                state.checkStates[item.id] = itemState
+                            }
                         }
-                    }
-                },
-                onProgress = { progress ->
-                    runtimeSession?.let { activeSession ->
+                    },
+                    onProgress = { progress ->
+                        var progressNotifySnapshot: GitHubRefreshProgressSnapshot? = null
+                        var totalTrackedCountForNotification = 0
                         withContext(Dispatchers.Main.immediate) {
                             progressMutex.withLock {
+                                totalTrackedCountForNotification = state.trackedItems.size
                                 completedCount = progress.current
                                 updatableCount = progress.updatableCount
                                 preReleaseUpdateCount = progress.preReleaseUpdateCount
                                 failedCount = progress.failedCount
                                 state.refreshProgress = completedCount.toFloat() / items.size.toFloat()
                                 GitHubRefreshRuntimeStore.progress(
-                                    sessionId = activeSession.id,
+                                    sessionId = runtimeSession.id,
                                     completedCount = completedCount,
                                     updatableCount = updatableCount,
                                     preReleaseUpdateCount = preReleaseUpdateCount,
                                     failedCount = failedCount,
                                 )
+                                val nowMs = clock.nowMs()
+                                val progressNotifyAgeMs = nowMs - lastProgressNotifyAtMs
+                                val shouldNotifyProgress =
+                                    completedCount < items.size &&
+                                        (
+                                            completedCount == 1 ||
+                                                progressNotifyAgeMs >= GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS ||
+                                                (
+                                                    completedCount % GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&
+                                                        progressNotifyAgeMs >=
+                                                        GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS
+                                                )
+                                        )
+                                if (shouldNotifyProgress) {
+                                    lastProgressNotifyAtMs = nowMs
+                                    progressNotifySnapshot =
+                                        GitHubRefreshProgressSnapshot(
+                                            current = completedCount,
+                                            total = items.size,
+                                            preReleaseUpdateCount = preReleaseUpdateCount,
+                                            updatableCount = updatableCount,
+                                            failedCount = failedCount,
+                                        )
+                                }
                             }
                         }
-                    }
-                },
-                evaluator = { _, item ->
-                    evaluateItemCheck(
-                        GitHubItemRefreshRequest(
-                            item = item,
-                            forceRefresh = forceRefresh,
-                            profilePurposeOverride = profilePurposeOverride,
-                            batchEvaluator = batchEvaluator
+                        progressNotifySnapshot?.let { progressSnapshot ->
+                            repository.notifyRefreshProgress(
+                                context = context,
+                                current = progressSnapshot.current,
+                                total = progressSnapshot.total,
+                                preReleaseUpdateCount = progressSnapshot.preReleaseUpdateCount,
+                                updatableCount = progressSnapshot.updatableCount,
+                                failedCount = progressSnapshot.failedCount,
+                                sessionId = runtimeSession.id,
+                                scope = runtimeSession.scope,
+                                source = runtimeSession.source,
+                                totalTrackedCount = totalTrackedCountForNotification,
+                            )
+                        }
+                    },
+                    evaluator = { _, item ->
+                        evaluateItemCheck(
+                            GitHubItemRefreshRequest(
+                                item = item,
+                                forceRefresh = forceRefresh,
+                                profilePurposeOverride = profilePurposeOverride,
+                                batchEvaluator = batchEvaluator
+                            )
                         )
-                    )
-                },
-            )
-            updatableCount = batchResult.updatableCount
-            preReleaseUpdateCount = batchResult.preReleaseUpdateCount
-            failedCount = batchResult.failedCount
-            persistCheckCache(items.mapTo(HashSet()) { it.id })
-            actionsRunRefreshCoordinator.refreshItems(items)
-            if (runtimeSession != null) {
+                    },
+                )
+                updatableCount = batchResult.updatableCount
+                preReleaseUpdateCount = batchResult.preReleaseUpdateCount
+                failedCount = batchResult.failedCount
+                persistCheckCache(items.mapTo(HashSet()) { it.id })
+                actionsRunRefreshCoordinator.refreshItems(items)
                 GitHubRefreshRuntimeStore.complete(
                     sessionId = runtimeSession.id,
-                    completedCount = completedCount,
+                    completedCount = batchResult.totalCount,
                     updatableCount = updatableCount,
                     preReleaseUpdateCount = preReleaseUpdateCount,
                     failedCount = failedCount,
@@ -205,14 +262,68 @@ internal class GitHubBackgroundRefreshCoordinator(
                     result = batchResult,
                     startedAtMillis = refreshStartedAtMs,
                 )
+                repository.notifyRefreshCompleted(
+                    context = context,
+                    total = items.size,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    updatableCount = updatableCount,
+                    failedCount = failedCount,
+                    sessionId = runtimeSession.id,
+                    scope = runtimeSession.scope,
+                    source = runtimeSession.source,
+                    totalTrackedCount = state.trackedItems.size,
+                )
                 logTrackedRefreshFailures(batchResult.failures)
                 state.overviewRefreshState =
                     if (failedCount > 0) {
                         OverviewRefreshState.Failed
                     } else {
                         OverviewRefreshState.Completed
-                    }
+                }
                 state.refreshProgress = 1f
+            } catch (error: CancellationException) {
+                restoreInterruptedItemStates(
+                    items = items,
+                    previousCheckStatesById = previousCheckStatesById,
+                )
+                cancelRuntimeSessionAndNotify(
+                    runtimeSessionId = runtimeSession.id,
+                    completedCount = completedCount,
+                    updatableCount = updatableCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    failedCount = failedCount,
+                    outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                    note = error.message.orEmpty(),
+                )
+                throw error
+            } catch (error: Throwable) {
+                val failedMessage = error.message?.takeIf { it.isNotBlank() }
+                    ?: error.javaClass.simpleName
+                val terminalFailedCount = failedCount.coerceAtLeast(1)
+                restoreInterruptedItemStates(
+                    items = items,
+                    previousCheckStatesById = previousCheckStatesById,
+                    failedMessage = failedMessage,
+                )
+                cancelRuntimeSessionAndNotify(
+                    runtimeSessionId = runtimeSession.id,
+                    completedCount = completedCount,
+                    updatableCount = updatableCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    failedCount = terminalFailedCount,
+                    outcome = GitHubRefreshHistoryOutcome.Failed,
+                    note = failedMessage,
+                )
+                if (state.refreshSessionId == runtimeSession.id) {
+                    state.overviewRefreshState = OverviewRefreshState.Failed
+                    state.refreshProgress = 0f
+                }
+                AppLogger.w(
+                    "GitHubBackgroundRefresh",
+                    "github page background refresh failed scope=$refreshScope target=${items.size}",
+                    error,
+                )
+            } finally {
                 if (state.refreshSessionId == runtimeSession.id) {
                     state.refreshSessionId = 0L
                     state.refreshTargetIds = emptySet()
@@ -222,30 +333,88 @@ internal class GitHubBackgroundRefreshCoordinator(
         backgroundJobs.add(job)
         job.invokeOnCompletion { cause ->
             if (cause != null && runtimeSessionId > 0L) {
-                val current = GitHubRefreshRuntimeStore.state.value
-                if (current.sessionId == runtimeSessionId && current.running) {
-                    scope.launch {
-                        refreshHistoryService.recordRuntimeState(
-                            runtime = current,
-                            outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                            note = cause.message.orEmpty(),
-                        )
-                    }
-                    GitHubRefreshRuntimeStore.cancel(
-                        sessionId = runtimeSessionId,
-                        completedCount = current.completedCount,
-                        updatableCount = current.updatableCount,
-                        preReleaseUpdateCount = current.preReleaseUpdateCount,
-                        failedCount = current.failedCount,
-                    )
-                }
-                if (state.refreshSessionId == runtimeSessionId) {
-                    state.refreshSessionId = 0L
-                    state.refreshTargetIds = emptySet()
-                    state.refreshProgress = 0f
-                }
+                AppLogger.d(
+                    "GitHubBackgroundRefresh",
+                    "page background refresh job completed with ${cause.javaClass.simpleName}",
+                )
             }
             backgroundJobs.remove(job)
+        }
+    }
+
+    private suspend fun cancelRuntimeSessionAndNotify(
+        runtimeSessionId: Long,
+        completedCount: Int,
+        updatableCount: Int,
+        preReleaseUpdateCount: Int,
+        failedCount: Int,
+        outcome: GitHubRefreshHistoryOutcome,
+        note: String,
+    ) {
+        val current = GitHubRefreshRuntimeStore.state.value
+        if (current.sessionId != runtimeSessionId) return
+        runCatching {
+            refreshHistoryService.recordRuntimeState(
+                runtime = current,
+                outcome = outcome,
+                note = note,
+            )
+        }.onFailure { error ->
+            AppLogger.w(
+                "GitHubBackgroundRefresh",
+                "github page background refresh history record failed",
+                error,
+            )
+        }
+        GitHubRefreshRuntimeStore.cancel(
+            sessionId = runtimeSessionId,
+            completedCount = completedCount,
+            updatableCount = updatableCount,
+            preReleaseUpdateCount = preReleaseUpdateCount,
+            failedCount = failedCount,
+        )
+        runCatching {
+            repository.notifyRefreshCancelled(
+                context = context,
+                current = completedCount,
+                total = current.targetCount,
+                preReleaseUpdateCount = preReleaseUpdateCount,
+                updatableCount = updatableCount,
+                failedCount = failedCount,
+                sessionId = runtimeSessionId,
+                scope = current.scope,
+                source = current.source,
+                totalTrackedCount = current.totalTrackedCount,
+            )
+        }.onFailure { error ->
+            AppLogger.w(
+                "GitHubBackgroundRefresh",
+                "github page background refresh cancel notification failed",
+                error,
+            )
+        }
+    }
+
+    private fun restoreInterruptedItemStates(
+        items: List<GitHubTrackedApp>,
+        previousCheckStatesById: Map<String, VersionCheckUi>,
+        failedMessage: String? = null,
+    ) {
+        items.forEach { item ->
+            val currentState = state.checkStates[item.id]
+            if (currentState?.loading != true) return@forEach
+            val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
+            state.checkStates[item.id] =
+                if (failedMessage == null) {
+                    previousState
+                } else {
+                    previousState.copy(
+                        loading = false,
+                        failed = true,
+                        message = failedMessage,
+                        checkedAtMillis = clock.nowMs(),
+                    )
+                }
         }
     }
 

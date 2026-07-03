@@ -36,7 +36,7 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.coroutines.coroutineContext
 
 object AppForegroundInfoHandler {
-    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 4
+    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 1
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE = 2
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
@@ -80,7 +80,7 @@ object AppForegroundInfoHandler {
                 return
             }
         val refreshResult = result.refreshResult
-        if (refreshResult?.hasNotifiableOutcome == true) {
+        if (refreshResult != null) {
             notifyGitHubRefreshCompletedOrCancel(
                 context = context,
                 total = refreshResult.totalCount,

@@ -500,7 +500,7 @@ object GitHubRefreshNotificationHelper {
             state = state,
             onlyAlertOnce = onlyAlertOnce
         )
-        return if (buildResult.style == RenderStyle.MI_ISLAND) {
+        val dispatched = if (buildResult.style == RenderStyle.MI_ISLAND) {
             McpNotificationHelper.dispatchNotification(
                 context = context,
                 notificationId = NOTIFICATION_ID,
@@ -515,6 +515,14 @@ object GitHubRefreshNotificationHelper {
                 useXiaomiMagic = false
             )
         }
+        if (!dispatched) {
+            AppLogger.w(
+                TAG,
+                "dispatch failed session=${state.sessionId} running=${state.running} " +
+                    "scope=${state.scope} source=${state.source} progress=${state.safeCurrent}/${state.safeTotal}"
+            )
+        }
+        return dispatched
     }
 
     private fun buildNotification(
