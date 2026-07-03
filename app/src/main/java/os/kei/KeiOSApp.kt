@@ -29,6 +29,7 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.core.system.AppBuildEnv
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.AppPackageChangedEvents
+import os.kei.feature.github.domain.GitHubAppInstallHistoryService
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
@@ -57,6 +58,7 @@ class KeiOSApp : Application() {
      * launching warm-up work does not steal the IO pool from in-flight network calls.
      */
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val appInstallHistoryService by lazy { GitHubAppInstallHistoryService() }
 
     private val packageChangedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -78,6 +80,15 @@ class KeiOSApp : Application() {
                             this@KeiOSApp,
                             event
                         )
+                        applicationScope.launch {
+                            appInstallHistoryService.recordPackageChanged(
+                                context = this@KeiOSApp,
+                                packageName = event.packageName,
+                                action = event.action,
+                                replacing = event.replacing,
+                                changedAtMillis = event.atMillis,
+                            )
+                        }
                     }
                     GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
                 }
@@ -140,6 +151,9 @@ class KeiOSApp : Application() {
             delay(DEFERRED_STARTUP_WORK_DELAY_MS)
             runCatching { AppBackgroundScheduler.scheduleAll(this@KeiOSApp) }
             runCatching { GitHubShareImportPendingScheduler.scheduleNext(this@KeiOSApp) }
+            runCatching {
+                appInstallHistoryService.refreshTrackedInstallSnapshots(this@KeiOSApp)
+            }
             runCatching {
                 withContext(AppDispatchers.fileIo) {
                     BaStudentGuideStore.migratePayloadsToFileStoreIfNeeded(this@KeiOSApp)

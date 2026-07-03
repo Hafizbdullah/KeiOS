@@ -7,6 +7,7 @@ import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
+import os.kei.feature.github.domain.GitHubAppInstallHistoryService
 import os.kei.feature.github.domain.GitHubTrackChangeHistoryService
 import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
 import os.kei.feature.github.domain.GitHubTrackService
@@ -26,6 +27,7 @@ internal class GitHubPageTrackRepository(
 ) {
     private val trackService = GitHubTrackService(ioDispatcher)
     private val trackChangeHistoryService = GitHubTrackChangeHistoryService(ioDispatcher)
+    private val appInstallHistoryService = GitHubAppInstallHistoryService(ioDispatcher)
 
     suspend fun loadTrackSnapshot(): GitHubTrackSnapshot = trackService.loadTrackSnapshot()
 
@@ -68,6 +70,7 @@ internal class GitHubPageTrackRepository(
             source = trackChangeSource,
             semanticUpdates = semanticTrackUpdates,
         )
+        appInstallHistoryService.refreshTrackedInstallSnapshots(context)
         if (emitStoreSignal || refreshTrackIds.isNotEmpty()) {
             AppBackgroundScheduler.scheduleGitHubRefresh(context)
         }
