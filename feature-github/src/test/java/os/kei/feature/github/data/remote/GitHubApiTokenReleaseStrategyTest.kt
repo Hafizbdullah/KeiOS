@@ -128,7 +128,7 @@ class GitHubApiTokenReleaseStrategyTest {
             assertEquals(GitHubApiAuthMode.Guest, trace.authMode)
             assertFalse(trace.fromCache)
             assertNull(server.takeRequest().getHeader("Authorization"))
-            assertNull(server.takeRequest().getHeader("Authorization"))
+            assertEquals(1, server.requestCount)
         }
     }
 
@@ -147,7 +147,7 @@ class GitHubApiTokenReleaseStrategyTest {
             assertTrue(trace.result.isSuccess)
             assertEquals(GitHubApiAuthMode.Token, trace.authMode)
             assertEquals("Bearer ghp_testtoken123", server.takeRequest().getHeader("Authorization"))
-            assertEquals("Bearer ghp_testtoken123", server.takeRequest().getHeader("Authorization"))
+            assertEquals(1, server.requestCount)
         }
     }
 
@@ -193,7 +193,7 @@ class GitHubApiTokenReleaseStrategyTest {
             assertTrue(second.result.isSuccess)
             assertFalse(first.fromCache)
             assertTrue(second.fromCache)
-            assertEquals(2, server.requestCount)
+            assertEquals(1, server.requestCount)
         }
     }
 

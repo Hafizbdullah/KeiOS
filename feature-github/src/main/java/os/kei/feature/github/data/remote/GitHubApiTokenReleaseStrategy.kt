@@ -61,7 +61,16 @@ class GitHubApiTokenReleaseStrategy(
                 authMode = authMode
             )
         }
-        val latestStableTrace = fetchLatestStableSignalTrace(owner, repo)
+        val fallbackStableEntry = pickLatestStableEntry(entries.filter { !it.isLikelyPreRelease })
+        val latestStableTrace =
+            fallbackStableEntry?.let { stableEntry ->
+                GitHubStrategyLoadTrace(
+                    result = Result.success(stableEntry.toReleaseSignal()),
+                    fromCache = entriesTrace.fromCache,
+                    elapsedMs = 0L,
+                    authMode = authMode,
+                )
+            } ?: fetchLatestStableSignalTrace(owner, repo)
         val result = runCatching {
             val latestPreEntry = pickLatestPreReleaseEntry(
                 entries.filter { entry ->
@@ -69,10 +78,9 @@ class GitHubApiTokenReleaseStrategy(
                         GitHubVersionUtils.hasMeaningfulPreReleaseVersionCandidates(
                             entry.versionCandidates,
                             GitHubVersionCandidateSource.Link.priority
-                        )
+                    )
                 }
             )
-            val fallbackStableEntry = pickLatestStableEntry(entries.filter { !it.isLikelyPreRelease })
             val latestStableSignal = latestStableTrace.result.getOrElse {
                 fallbackStableEntry?.toReleaseSignal()
                     ?: latestPreEntry?.toReleaseSignal()

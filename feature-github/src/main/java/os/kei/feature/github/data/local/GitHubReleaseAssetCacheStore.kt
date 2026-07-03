@@ -24,8 +24,11 @@ import java.security.MessageDigest
 object GitHubReleaseAssetCacheStore {
     private const val KV_ID = "github_release_asset_cache"
     private const val KEY_INDEX = "entry_index"
+    private const val IDENTICAL_SAVE_TOUCH_INTERVAL_MS = 10L * 60L * 1000L
 
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
+    private val indexLock = Any()
+    private var cachedIndex: MutableSet<String>? = null
 
     private fun kv(): MMKV = store
 
@@ -55,7 +58,12 @@ object GitHubReleaseAssetCacheStore {
 
     private fun entryStoreKey(id: String): String = "entry_$id"
 
-    private fun loadIndex(kv: MMKV = store): MutableSet<String> {
+    private fun loadIndex(kv: MMKV = store): MutableSet<String> =
+        synchronized(indexLock) {
+            cachedIndex?.toMutableSet() ?: readIndex(kv).also { cachedIndex = it.toMutableSet() }
+        }
+
+    private fun readIndex(kv: MMKV): MutableSet<String> {
         val raw = kv.decodeString(KEY_INDEX, "").orEmpty()
         if (raw.isBlank()) return mutableSetOf()
         return raw.split(',')
@@ -64,20 +72,28 @@ object GitHubReleaseAssetCacheStore {
             .toMutableSet()
     }
 
-    private fun saveIndex(index: Set<String>, kv: MMKV = store) {
-        kv.encode(KEY_INDEX, index.filter { it.isNotBlank() }.sorted().joinToString(","))
+    private fun saveIndexLocked(index: Set<String>, kv: MMKV = store) {
+        val normalized = index.filter { it.isNotBlank() }.toSortedSet()
+        kv.encode(KEY_INDEX, normalized.joinToString(","))
+        cachedIndex = normalized.toMutableSet()
     }
 
     private fun addIndex(id: String, kv: MMKV = store) {
-        val index = loadIndex(kv)
-        index.add(id)
-        saveIndex(index, kv)
+        synchronized(indexLock) {
+            val index = cachedIndex ?: readIndex(kv).also { cachedIndex = it.toMutableSet() }
+            if (index.add(id)) {
+                saveIndexLocked(index, kv)
+            }
+        }
     }
 
     private fun removeIndex(id: String, kv: MMKV = store) {
-        val index = loadIndex(kv)
-        index.remove(id)
-        saveIndex(index, kv)
+        synchronized(indexLock) {
+            val index = cachedIndex ?: readIndex(kv).also { cachedIndex = it.toMutableSet() }
+            if (index.remove(id)) {
+                saveIndexLocked(index, kv)
+            }
+        }
     }
 
     fun load(
@@ -115,13 +131,21 @@ object GitHubReleaseAssetCacheStore {
         val normalizedKey = cacheKey.trim()
         if (normalizedKey.isBlank()) return
         val id = keyId(normalizedKey)
+        val bundleJson = encodeBundle(bundle)
+        val bundleHash = sha1(bundleJson.encodeCompact())
         val payload = buildJsonObject {
             put("cacheKey", normalizedKey)
             put("syncedAtMs", syncedAtMs.coerceAtLeast(0L))
-            put("bundle", encodeBundle(bundle))
+            put("bundleHash", bundleHash)
+            put("bundle", bundleJson)
         }.encodeCompact()
-        kv().encode(entryStoreKey(id), payload)
-        addIndex(id)
+        val kv = kv()
+        if (shouldSkipIdenticalSave(kv, id, bundleHash, syncedAtMs)) {
+            addIndex(id, kv)
+            return
+        }
+        kv.encode(entryStoreKey(id), payload)
+        addIndex(id, kv)
     }
 
     fun clearAll() {
@@ -130,6 +154,9 @@ object GitHubReleaseAssetCacheStore {
             kv.removeValueForKey(entryStoreKey(id))
         }
         kv.removeValueForKey(KEY_INDEX)
+        synchronized(indexLock) {
+            cachedIndex = mutableSetOf()
+        }
         kv.trim()
     }
 
@@ -137,11 +164,27 @@ object GitHubReleaseAssetCacheStore {
         val normalizedKey = cacheKey.trim()
         if (normalizedKey.isBlank()) return
         val id = keyId(normalizedKey)
-        kv().removeValueForKey(entryStoreKey(id))
-        removeIndex(id)
+        val kv = kv()
+        kv.removeValueForKey(entryStoreKey(id))
+        removeIndex(id, kv)
     }
 
     fun cachedEntryCount(): Int = loadIndex().size
+
+    private fun shouldSkipIdenticalSave(
+        kv: MMKV,
+        id: String,
+        bundleHash: String,
+        syncedAtMs: Long,
+    ): Boolean {
+        val raw = kv.decodeString(entryStoreKey(id), "").orEmpty()
+        if (raw.isBlank()) return false
+        val root = raw.parseJsonObjectOrNull() ?: return false
+        if (root.optString("bundleHash").trim() != bundleHash) return false
+        val previousSyncedAt = root.optLong("syncedAtMs", 0L).coerceAtLeast(0L)
+        val touchAgeMs = (syncedAtMs.coerceAtLeast(0L) - previousSyncedAt).coerceAtLeast(0L)
+        return touchAgeMs < IDENTICAL_SAVE_TOUCH_INTERVAL_MS
+    }
 
     private fun encodeBundle(bundle: GitHubReleaseAssetBundle): JsonObject {
         return buildJsonObject {
