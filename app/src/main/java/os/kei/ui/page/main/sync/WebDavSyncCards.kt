@@ -181,6 +181,12 @@ internal fun WebDavConnectionCard(
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
             )
+            Text(
+                text = stringResource(R.string.webdav_sync_jianguoyun_quota_hint),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+            )
             SettingsNavigationItem(
                 title = stringResource(R.string.webdav_sync_jianguoyun_help_label),
                 summary = stringResource(R.string.webdav_sync_jianguoyun_help_summary),

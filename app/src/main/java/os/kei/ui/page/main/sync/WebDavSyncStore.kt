@@ -25,6 +25,7 @@ internal object WebDavSyncStore {
     private const val KEY_AUTO_SYNC = "auto_sync"
     private const val KEY_LAST_FULL_SYNC = "last_full_sync"
     private const val KEY_LAST_REMOTE_PROBE = "last_remote_probe"
+    private const val KEY_LAST_AUTO_SYNC_ATTEMPT = "last_auto_sync_attempt"
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
 
@@ -88,6 +89,7 @@ internal object WebDavSyncStore {
                 KEY_AUTO_SYNC,
                 KEY_LAST_FULL_SYNC,
                 KEY_LAST_REMOTE_PROBE,
+                KEY_LAST_AUTO_SYNC_ATTEMPT,
             ) + itemKeys).toTypedArray(),
         )
         WebDavSyncStoreSignals.notifyChanged()
@@ -182,6 +184,14 @@ internal object WebDavSyncStore {
     fun setLastFullSyncTime(timeMs: Long) {
         mmkv.encode(KEY_LAST_FULL_SYNC, timeMs)
         WebDavSyncStoreSignals.notifyChanged()
+    }
+
+    // ── Launch auto-sync throttle ──────────────────────────────────────
+
+    fun getLastAutoSyncAttemptTime(): Long = mmkv.decodeLong(KEY_LAST_AUTO_SYNC_ATTEMPT, 0L)
+
+    fun setLastAutoSyncAttemptTime(timeMs: Long) {
+        mmkv.encode(KEY_LAST_AUTO_SYNC_ATTEMPT, timeMs.coerceAtLeast(0L))
     }
 
     // ── Remote summary (read-only probe results) ───────────────────────

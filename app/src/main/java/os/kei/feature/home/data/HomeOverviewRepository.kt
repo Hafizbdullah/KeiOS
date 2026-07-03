@@ -170,11 +170,7 @@ internal class HomeOverviewRepository(
                             ),
                     )
                 }.onFailure { error ->
-                    AppLogger.w(
-                        TAG,
-                        "loadHomeBaOverview failed (reason=$reason)",
-                        error,
-                    )
+                    logOverviewLoadFailure("loadHomeBaOverview", reason, error)
                 }.getOrElse { HomeBaOverview(loaded = true) }
             val githubOverview =
                 runCatching {
@@ -185,16 +181,18 @@ internal class HomeOverviewRepository(
                         nowMs = nowMs,
                     )
                 }.onFailure { error ->
-                    AppLogger.w(
-                        TAG,
-                        "loadHomeGitHubOverview failed (reason=$reason)",
-                        error,
-                    )
+                    logOverviewLoadFailure("loadHomeGitHubOverview", reason, error)
                 }.getOrElse { HomeGitHubOverview(loaded = true) }
+            val webDavOverview =
+                runCatching {
+                    loadHomeWebDavOverview()
+                }.onFailure { error ->
+                    logOverviewLoadFailure("loadHomeWebDavOverview", reason, error)
+                }.getOrElse { HomeWebDavOverview() }
             StoredHomeOverview(
                 appOverview = loadHomeAppOverview(appContext),
                 githubOverview = githubOverview,
-                webDavOverview = loadHomeWebDavOverview(),
+                webDavOverview = webDavOverview,
                 baOverview = baOverview,
             )
         }
@@ -217,6 +215,14 @@ internal class HomeOverviewRepository(
         val githubOverview: HomeGitHubOverview,
         val webDavOverview: HomeWebDavOverview,
         val baOverview: HomeBaOverview,
+    )
+}
+
+private fun logOverviewLoadFailure(section: String, trigger: String, error: Throwable) {
+    AppLogger.w(
+        TAG,
+        "$section failed (trigger=$trigger)",
+        error,
     )
 }
 

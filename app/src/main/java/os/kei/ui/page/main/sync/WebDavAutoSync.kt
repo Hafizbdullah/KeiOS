@@ -6,7 +6,6 @@ import android.content.Context
 import android.os.Bundle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
@@ -15,9 +14,13 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.model.WebDavConfig
 import java.util.concurrent.atomic.AtomicInteger
+
+private const val JIANGUOYUN_LAUNCH_SYNC_COOLDOWN_MS = 30L * 60L * 1000L
+private const val CUSTOM_LAUNCH_SYNC_COOLDOWN_MS = 10L * 60L * 1000L
 
 /**
  * Application-scoped WebDAV auto-sync coordinator.
@@ -33,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger
  *     listeners (the stores that lack change signals are the reason "on-change" had to be moved
  *     here from the original plan).
  *
- * All work runs on [Dispatchers.IO] under a single [SupervisorJob] so individual item failures
+ * All work runs on a bounded WebDAV dispatcher under a single [SupervisorJob] so individual item failures
  * never tear down the whole pass. Concurrent triggers are serialised through [mutex] so two
  * lifecycle-driven passes never race the same engine + store state.
  */
@@ -43,7 +46,7 @@ internal object WebDavAutoSync {
     /** Wait this long after the app backgrounds before pushing — avoids thrashing on quick swaps. */
     private const val BACKGROUND_PUSH_DELAY_MS = 800L
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.webDavNetwork)
     private val engine = WebDavSyncEngine()
     private val mutex = Mutex()
     private val foregroundCount = AtomicInteger(0)
@@ -67,6 +70,21 @@ internal object WebDavAutoSync {
     private suspend fun runLaunchSync() {
         val config = WebDavSyncStore.loadConfig() ?: return
         if (!WebDavSyncStore.isAutoSyncEnabled()) return
+        val nowMs = System.currentTimeMillis()
+        val provider = WebDavSyncStore.loadProvider()
+        val cooldownMs = launchAutoSyncCooldownMs(provider)
+        if (
+            !shouldRunLaunchAutoSync(
+                nowMs = nowMs,
+                lastAutoAttemptMs = WebDavSyncStore.getLastAutoSyncAttemptTime(),
+                lastFullSyncMs = WebDavSyncStore.getLastFullSyncTime(),
+                cooldownMs = cooldownMs,
+            )
+        ) {
+            AppLogger.i(TAG, "auto-sync (launch) delayed by provider cooldown (${cooldownMs}ms)")
+            return
+        }
+        WebDavSyncStore.setLastAutoSyncAttemptTime(nowMs)
         runAutoSync(config, reason = "launch")
     }
 
@@ -221,4 +239,22 @@ internal object WebDavAutoSync {
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
         override fun onActivityDestroyed(activity: Activity) = Unit
     }
+}
+
+internal fun launchAutoSyncCooldownMs(provider: WebDavProvider): Long =
+    when (provider) {
+        WebDavProvider.Jianguoyun -> JIANGUOYUN_LAUNCH_SYNC_COOLDOWN_MS
+        WebDavProvider.Custom -> CUSTOM_LAUNCH_SYNC_COOLDOWN_MS
+    }
+
+internal fun shouldRunLaunchAutoSync(
+    nowMs: Long,
+    lastAutoAttemptMs: Long,
+    lastFullSyncMs: Long,
+    cooldownMs: Long,
+): Boolean {
+    if (cooldownMs <= 0L) return true
+    val lastTouchMs = maxOf(lastAutoAttemptMs, lastFullSyncMs)
+    if (lastTouchMs <= 0L) return true
+    return nowMs - lastTouchMs >= cooldownMs
 }
