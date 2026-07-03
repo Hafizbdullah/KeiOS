@@ -70,6 +70,19 @@ internal class GitHubAppIconLoader(
         }
     }
 
+    fun invalidatePackage(packageName: String) {
+        val normalizedPackage = packageName.trim()
+        if (normalizedPackage.isBlank()) return
+        repository.invalidatePackage(normalizedPackage)
+        loadingPackages -= normalizedPackage
+        mutableState.update { state ->
+            state.copy(
+                bitmaps = state.bitmaps - normalizedPackage,
+                missingPackages = state.missingPackages - normalizedPackage,
+            )
+        }
+    }
+
     fun clearLoadingState() {
         loadingPackages = emptySet()
     }

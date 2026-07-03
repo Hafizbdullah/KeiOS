@@ -43,6 +43,13 @@ object AppIconCache {
         }
     }
 
+    fun remove(packageName: String) {
+        val normalized = packageName.trim()
+        if (normalized.isBlank()) return
+        synchronized(cache) { cache.remove(normalized) }
+        lastUpdatedAtMs = System.currentTimeMillis()
+    }
+
     fun size(): Int = synchronized(cache) { cache.snapshot().size }
 
     fun estimatedMemoryBytes(): Long = synchronized(cache) {

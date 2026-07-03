@@ -40,6 +40,7 @@ internal class GitHubPackageChangedActionFacade(
         }
         handledAtByPackage[packageName] = event.atMillis
 
+        env.viewModel.invalidateAppIcon(packageName)
         refreshActions.reloadApps(forceRefresh = true)
         val uninstallAction =
             event.action == Intent.ACTION_PACKAGE_REMOVED ||

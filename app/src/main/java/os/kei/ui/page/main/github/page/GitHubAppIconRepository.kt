@@ -14,6 +14,10 @@ internal data class GitHubAppIconLoadResult(
 internal class GitHubAppIconRepository {
     fun cachedBitmap(packageName: String): Bitmap? = AppIconCache.get(packageName.trim())
 
+    fun invalidatePackage(packageName: String) {
+        AppIconCache.remove(packageName)
+    }
+
     suspend fun loadIcons(
         context: Context,
         packageNames: List<String>,

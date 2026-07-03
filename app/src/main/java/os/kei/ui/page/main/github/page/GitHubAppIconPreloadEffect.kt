@@ -56,7 +56,7 @@ internal fun buildGitHubAppIconPreloadPackages(
             packages.add(normalized)
         }
     }
-    trackedPackages.take(GITHUB_APP_ICON_PRELOAD_LIMIT).forEach(::addPackage)
+    trackedPackages.forEach(::addPackage)
     addPackage(selectedPackageName)
     if (pickerExpanded) {
         appPickerFilteredPackages

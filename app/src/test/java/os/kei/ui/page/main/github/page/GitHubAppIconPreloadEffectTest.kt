@@ -6,7 +6,7 @@ import kotlin.test.assertTrue
 
 class GitHubAppIconPreloadEffectTest {
     @Test
-    fun `picker expanded limits icon preload to visible budget`() {
+    fun `picker expanded keeps all tracked icons and limits picker lane`() {
         val packages =
             buildGitHubAppIconPreloadPackages(
                 trackedPackages = (0 until 40).map { "tracked.$it" },
@@ -17,11 +17,12 @@ class GitHubAppIconPreloadEffectTest {
             )
 
         assertEquals(
-            (0 until 32).map { "tracked.$it" } +
+            (0 until 40).map { "tracked.$it" } +
                 "selected.app" +
                 (0 until 32).map { "picker.$it" },
             packages
         )
+        assertTrue("tracked.39" in packages)
         assertTrue("installed.0" !in packages)
     }
 

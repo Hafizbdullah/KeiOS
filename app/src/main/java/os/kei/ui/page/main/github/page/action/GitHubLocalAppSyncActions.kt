@@ -31,10 +31,12 @@ internal class GitHubLocalAppSyncActions(
                         pinnedSystemPackageNames = trackedSystemPackageNames(),
                     )
                 syncTrackedLocalAppTypesFromAppList()
+                val trackedPackages = trackedPackageNames()
                 repository.preloadAppIcons(
                     context = context,
-                    packageNames = trackedPackageNames(),
+                    packageNames = trackedPackages,
                 )
+                env.viewModel.requestAppIcons(trackedPackages)
                 state.appListLoaded = true
             } finally {
                 state.appListRefreshing = false

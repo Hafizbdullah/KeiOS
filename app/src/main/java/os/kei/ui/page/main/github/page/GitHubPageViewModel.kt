@@ -365,6 +365,9 @@ internal class GitHubPageViewModel(
             packageNames = packageNames,
         )
 
+    fun invalidateAppIcon(packageName: String) =
+        appIconLoader.invalidatePackage(packageName)
+
     fun requestAppPickerState(input: GitHubTrackAppPickerInput) {
         val previousInput = appPickerStateInput
         if (previousInput == input && _appPickerDerivedState.value !== GitHubTrackAppPickerDerivedState.Empty) {

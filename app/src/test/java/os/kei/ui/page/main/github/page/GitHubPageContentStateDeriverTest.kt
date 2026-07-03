@@ -322,6 +322,29 @@ class GitHubPageContentStateDeriverTest {
         )
     }
 
+    @Test
+    fun `content derivation keeps all tracked icon preload packages beyond initial viewport`() = runBlocking {
+        val items =
+            (0 until 45).map { index ->
+                GitHubTrackedApp(
+                    repoUrl = "https://github.com/owner/repo-$index",
+                    owner = "owner",
+                    repo = "repo-$index",
+                    packageName = "demo.tracked.$index",
+                    appLabel = "Demo $index"
+                )
+            }
+        val derived = GitHubPageContentStateDeriver().build(
+            baseInput(trackedItems = items)
+        )
+
+        assertEquals(45, derived.trackedIconPreloadPackages.size)
+        assertEquals(
+            items.map { it.packageName }.toSet(),
+            derived.trackedIconPreloadPackages.toSet()
+        )
+    }
+
     private fun baseInput(
         trackedItems: List<GitHubTrackedApp> = emptyList(),
         trackedSearch: String = "",
