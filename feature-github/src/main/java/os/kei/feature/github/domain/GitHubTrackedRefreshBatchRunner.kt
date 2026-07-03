@@ -21,6 +21,7 @@ import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
+import os.kei.feature.github.model.isGitBackedRepositoryTrack
 
 data class GitHubTrackedRefreshBatchResult(
     val totalCount: Int,
@@ -40,7 +41,15 @@ data class GitHubTrackedRefreshBatchPerformance(
     val elapsedMs: Long = 0L,
     val p50ItemMs: Long = 0L,
     val p95ItemMs: Long = 0L,
-    val maxItemMs: Long = 0L
+    val maxItemMs: Long = 0L,
+    val maxConcurrency: Int = 0,
+    val directApkConcurrency: Int = 0,
+    val fdroidConcurrency: Int = 0,
+    val repositoryItemCount: Int = 0,
+    val directApkItemCount: Int = 0,
+    val fdroidItemCount: Int = 0,
+    val otherItemCount: Int = 0,
+    val slowItems: List<GitHubTrackedRefreshSlowItem> = emptyList(),
 )
 
 data class GitHubTrackedRefreshBatchProgress(
@@ -49,6 +58,18 @@ data class GitHubTrackedRefreshBatchProgress(
     val updatableCount: Int,
     val preReleaseUpdateCount: Int,
     val failedCount: Int
+)
+
+data class GitHubTrackedRefreshSlowItem(
+    val trackId: String,
+    val owner: String,
+    val repo: String,
+    val packageName: String,
+    val appLabel: String,
+    val sourceMode: String,
+    val elapsedMs: Long,
+    val status: String,
+    val message: String,
 )
 
 object GitHubTrackedRefreshBatchRunner {
@@ -213,21 +234,44 @@ object GitHubTrackedRefreshBatchRunner {
             failures = failures,
             performance = buildPerformance(
                 batchStartNs = batchStartNs,
-                itemElapsedMs = checks.map { it.elapsedMs }
+                itemResults = checks,
+                maxConcurrency = concurrency,
+                directApkConcurrency = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency),
+                fdroidConcurrency = GitHubTrackedRefreshBatchScheduler.fdroidConcurrency(concurrency),
             )
         )
     }
 
     private fun buildPerformance(
         batchStartNs: Long,
-        itemElapsedMs: List<Long>
+        itemResults: List<GitHubTrackedRefreshItemResult>,
+        maxConcurrency: Int,
+        directApkConcurrency: Int,
+        fdroidConcurrency: Int,
     ): GitHubTrackedRefreshBatchPerformance {
+        val itemElapsedMs = itemResults.map { it.elapsedMs }
         val sorted = itemElapsedMs.sorted()
         return GitHubTrackedRefreshBatchPerformance(
             elapsedMs = elapsedMsSince(batchStartNs),
             p50ItemMs = percentile(sorted, 50),
             p95ItemMs = percentile(sorted, 95),
-            maxItemMs = sorted.lastOrNull() ?: 0L
+            maxItemMs = sorted.lastOrNull() ?: 0L,
+            maxConcurrency = maxConcurrency,
+            directApkConcurrency = directApkConcurrency,
+            fdroidConcurrency = fdroidConcurrency,
+            repositoryItemCount = itemResults.count { result -> result.item.isGitBackedRepositoryTrack() },
+            directApkItemCount = itemResults.count { result -> result.item.isDirectApkTrack() },
+            fdroidItemCount = itemResults.count { result -> result.item.isFdroidRepositoryTrack() },
+            otherItemCount = itemResults.count { result ->
+                !result.item.isGitBackedRepositoryTrack() &&
+                    !result.item.isDirectApkTrack() &&
+                    !result.item.isFdroidRepositoryTrack()
+            },
+            slowItems =
+                itemResults
+                    .sortedByDescending { result -> result.elapsedMs }
+                    .take(SLOW_ITEM_HISTORY_LIMIT)
+                    .map { result -> result.toSlowItem() },
         )
     }
 
@@ -295,7 +339,21 @@ object GitHubTrackedRefreshBatchRunner {
         val elapsedMs: Long
     )
 
+    private fun GitHubTrackedRefreshItemResult.toSlowItem(): GitHubTrackedRefreshSlowItem =
+        GitHubTrackedRefreshSlowItem(
+            trackId = item.id,
+            owner = item.owner,
+            repo = item.repo,
+            packageName = item.packageName,
+            appLabel = item.appLabel,
+            sourceMode = item.sourceMode.storageId,
+            elapsedMs = elapsedMs,
+            status = check.status.name,
+            message = check.message,
+        )
+
     private const val REPOSITORY_REFRESH_ITEM_TIMEOUT_MS = 35_000L
     private const val DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS = 45_000L
     private const val FDROID_REFRESH_ITEM_TIMEOUT_MS = 45_000L
+    private const val SLOW_ITEM_HISTORY_LIMIT = 5
 }

@@ -12,6 +12,7 @@ import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 
 class GitHubRefreshHistoryExportServiceTest {
     @Test
@@ -52,7 +53,17 @@ class GitHubRefreshHistoryExportServiceTest {
         assertEquals("updatable", root.optObject("filters")?.optString("outcome"))
         assertEquals(2, root.optObject("summary")?.optInt("storedCount"))
         assertEquals(1, root.optObject("summary")?.optInt("matchedCount"))
+        assertEquals(3, root.optObject("summary")?.optInt("maxObservedConcurrency"))
         assertEquals("newer", root.optArray("records")?.optObject(0)?.optString("id"))
+        assertEquals(3, root.optArray("records")?.optObject(0)?.optInt("maxConcurrency"))
+        assertEquals(
+            "track-2",
+            root.optArray("records")
+                ?.optObject(0)
+                ?.optArray("slowItems")
+                ?.optObject(0)
+                ?.optString("trackId"),
+        )
     }
 
     @Test
@@ -122,6 +133,11 @@ class GitHubRefreshHistoryExportServiceTest {
         assertEquals(2, summary.totalFailedItemCount)
         assertEquals(1, summary.totalStableUpdateCount)
         assertEquals(2, summary.totalPreReleaseUpdateCount)
+        assertEquals(4, summary.totalRepositoryItemCount)
+        assertEquals(2, summary.totalDirectApkItemCount)
+        assertEquals(2, summary.totalFdroidItemCount)
+        assertEquals(0, summary.totalOtherItemCount)
+        assertEquals(3, summary.maxObservedConcurrency)
         assertEquals(200L, summary.averageElapsedMs)
         assertTrue(summary.latestFinishedAtMillis > 0L)
     }
@@ -156,6 +172,27 @@ class GitHubRefreshHistoryExportServiceTest {
             p50ItemMs = 10L,
             p95ItemMs = 20L,
             maxItemMs = 30L,
+            maxConcurrency = 3,
+            directApkConcurrency = 1,
+            fdroidConcurrency = 1,
+            repositoryItemCount = 2,
+            directApkItemCount = 1,
+            fdroidItemCount = 1,
+            otherItemCount = 0,
+            slowItems =
+                listOf(
+                    GitHubRefreshHistorySlowItem(
+                        trackId = "track-$sessionId",
+                        owner = "owner",
+                        repo = "repo",
+                        packageName = "dev.example",
+                        appLabel = "Example",
+                        sourceMode = "github_repository",
+                        elapsedMs = 30L,
+                        status = "UpToDate",
+                        message = "ok",
+                    ),
+                ),
             failureSummaries =
                 if (failedCount > 0) {
                     listOf(

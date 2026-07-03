@@ -7,6 +7,7 @@ import os.kei.feature.github.data.local.GitHubRefreshHistoryStore
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.feature.github.model.toGitHubRefreshHistoryFailureSummary
+import os.kei.feature.github.model.toGitHubRefreshHistorySlowItem
 
 class GitHubRefreshHistoryService(
     private val localDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
@@ -142,6 +143,14 @@ class GitHubRefreshHistoryService(
             p50ItemMs = result.performance.p50ItemMs,
             p95ItemMs = result.performance.p95ItemMs,
             maxItemMs = result.performance.maxItemMs,
+            maxConcurrency = result.performance.maxConcurrency,
+            directApkConcurrency = result.performance.directApkConcurrency,
+            fdroidConcurrency = result.performance.fdroidConcurrency,
+            repositoryItemCount = result.performance.repositoryItemCount,
+            directApkItemCount = result.performance.directApkItemCount,
+            fdroidItemCount = result.performance.fdroidItemCount,
+            otherItemCount = result.performance.otherItemCount,
+            slowItems = result.performance.slowItems.map { it.toGitHubRefreshHistorySlowItem() },
             failureSummaries = result.failures.map { it.toGitHubRefreshHistoryFailureSummary() },
         )
     }

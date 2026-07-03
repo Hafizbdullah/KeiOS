@@ -9,6 +9,7 @@ import os.kei.core.json.encodeCompact
 import os.kei.feature.github.model.GitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 
 private const val REFRESH_HISTORY_EXPORT_FORMAT = "keios.github.refresh-history"
 private const val REFRESH_HISTORY_EXPORT_SCHEMA_VERSION = 1
@@ -50,6 +51,11 @@ data class GitHubRefreshHistorySummary(
     val totalFailedItemCount: Int,
     val totalStableUpdateCount: Int,
     val totalPreReleaseUpdateCount: Int,
+    val totalRepositoryItemCount: Int,
+    val totalDirectApkItemCount: Int,
+    val totalFdroidItemCount: Int,
+    val totalOtherItemCount: Int,
+    val maxObservedConcurrency: Int,
     val averageElapsedMs: Long,
     val p95ElapsedMs: Long,
     val latestStartedAtMillis: Long,
@@ -104,6 +110,11 @@ object GitHubRefreshHistoryExportService {
             totalFailedItemCount = records.sumOf { it.failedCount.coerceAtLeast(0) },
             totalStableUpdateCount = records.sumOf { it.updatableCount.coerceAtLeast(0) },
             totalPreReleaseUpdateCount = records.sumOf { it.preReleaseUpdateCount.coerceAtLeast(0) },
+            totalRepositoryItemCount = records.sumOf { it.repositoryItemCount.coerceAtLeast(0) },
+            totalDirectApkItemCount = records.sumOf { it.directApkItemCount.coerceAtLeast(0) },
+            totalFdroidItemCount = records.sumOf { it.fdroidItemCount.coerceAtLeast(0) },
+            totalOtherItemCount = records.sumOf { it.otherItemCount.coerceAtLeast(0) },
+            maxObservedConcurrency = records.maxOfOrNull { it.maxConcurrency.coerceAtLeast(0) } ?: 0,
             averageElapsedMs =
                 if (elapsed.isEmpty()) 0L else elapsed.sum() / elapsed.size,
             p95ElapsedMs = elapsed.percentile95OrZero(),
@@ -228,6 +239,11 @@ private fun GitHubRefreshHistorySummary.toJson() =
         put("totalFailedItemCount", totalFailedItemCount)
         put("totalStableUpdateCount", totalStableUpdateCount)
         put("totalPreReleaseUpdateCount", totalPreReleaseUpdateCount)
+        put("totalRepositoryItemCount", totalRepositoryItemCount)
+        put("totalDirectApkItemCount", totalDirectApkItemCount)
+        put("totalFdroidItemCount", totalFdroidItemCount)
+        put("totalOtherItemCount", totalOtherItemCount)
+        put("maxObservedConcurrency", maxObservedConcurrency)
         put("averageElapsedMs", averageElapsedMs)
         put("p95ElapsedMs", p95ElapsedMs)
         put("latestStartedAtMillis", latestStartedAtMillis)
@@ -253,13 +269,39 @@ private fun GitHubRefreshHistoryRecord.toJson() =
         put("p50ItemMs", p50ItemMs)
         put("p95ItemMs", p95ItemMs)
         put("maxItemMs", maxItemMs)
+        put("maxConcurrency", maxConcurrency)
+        put("directApkConcurrency", directApkConcurrency)
+        put("fdroidConcurrency", fdroidConcurrency)
+        put("repositoryItemCount", repositoryItemCount)
+        put("directApkItemCount", directApkItemCount)
+        put("fdroidItemCount", fdroidItemCount)
+        put("otherItemCount", otherItemCount)
         put("note", note)
+        put(
+            "slowItems",
+            buildJsonArray {
+                slowItems.forEach { slowItem -> add(slowItem.toJson()) }
+            },
+        )
         put(
             "failureSummaries",
             buildJsonArray {
                 failureSummaries.forEach { failure -> add(failure.toJson()) }
             },
         )
+    }
+
+private fun GitHubRefreshHistorySlowItem.toJson() =
+    buildJsonObject {
+        put("trackId", trackId)
+        put("owner", owner)
+        put("repo", repo)
+        put("packageName", packageName)
+        put("appLabel", appLabel)
+        put("sourceMode", sourceMode)
+        put("elapsedMs", elapsedMs)
+        put("status", status)
+        put("message", message)
     }
 
 private fun GitHubRefreshHistoryFailureSummary.toJson() =

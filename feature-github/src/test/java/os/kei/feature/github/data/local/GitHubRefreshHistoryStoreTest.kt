@@ -6,6 +6,7 @@ import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
@@ -85,6 +86,27 @@ class GitHubRefreshHistoryStoreTest {
             p50ItemMs = 500L,
             p95ItemMs = 2_000L,
             maxItemMs = 5_000L,
+            maxConcurrency = 10,
+            directApkConcurrency = 2,
+            fdroidConcurrency = 2,
+            repositoryItemCount = 55,
+            directApkItemCount = 12,
+            fdroidItemCount = 8,
+            otherItemCount = 2,
+            slowItems =
+                listOf(
+                    GitHubRefreshHistorySlowItem(
+                        trackId = "fdroid|https://f-droid.org/repo|org.fdroid.fdroid",
+                        owner = "f-droid",
+                        repo = "fdroid",
+                        packageName = "org.fdroid.fdroid",
+                        appLabel = "F-Droid",
+                        sourceMode = "fdroid_repository",
+                        elapsedMs = 12_000L,
+                        status = "UpToDate",
+                        message = "remote index parsed",
+                    ),
+                ),
             failureSummaries =
                 listOf(
                     GitHubRefreshHistoryFailureSummary(

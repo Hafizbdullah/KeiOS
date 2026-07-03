@@ -60,6 +60,10 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals("demo/repo-3|demo.repo3", result.failures.single().trackId)
         assertTrue(result.performance.elapsedMs > 0L)
         assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
+        assertEquals(2, result.performance.maxConcurrency)
+        assertEquals(6, result.performance.repositoryItemCount)
+        assertEquals(0, result.performance.directApkItemCount)
+        assertEquals(0, result.performance.fdroidItemCount)
         assertTrue(result.hasNotifiableOutcome)
     }
 
@@ -181,7 +185,53 @@ class GitHubTrackedRefreshBatchRunnerTest {
             assertTrue(result.performance.p50ItemMs > 0L)
             assertTrue(result.performance.p95ItemMs >= result.performance.p50ItemMs)
             assertTrue(result.performance.maxItemMs >= result.performance.p95ItemMs)
+            assertEquals(8, result.performance.maxConcurrency)
+            assertEquals(count, result.performance.repositoryItemCount)
+            assertEquals(5, result.performance.slowItems.size)
+            assertTrue(
+                result.performance.slowItems.zipWithNext()
+                    .all { (left, right) -> left.elapsedMs >= right.elapsedMs }
+            )
         }
+    }
+
+    @Test
+    fun `run records source mix concurrency and slow item evidence`() = runBlocking {
+        val items =
+            listOf(
+                tracked(1, sourceMode = GitHubTrackedSourceMode.GitHubRepository),
+                tracked(2, sourceMode = GitHubTrackedSourceMode.GitRepository),
+                tracked(3, sourceMode = GitHubTrackedSourceMode.DirectApk),
+                tracked(4, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+                tracked(5, sourceMode = GitHubTrackedSourceMode.DirectApk),
+                tracked(6, sourceMode = GitHubTrackedSourceMode.FdroidRepository),
+            )
+
+        val result =
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = items,
+                maxConcurrency = 3,
+                dispatcher = Dispatchers.Default,
+                refreshTimestampMs = NOW_MS,
+            ) { item ->
+                Thread.sleep(item.repo.removePrefix("repo-").toLong() * 8L)
+                check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+            }
+
+        assertEquals(3, result.performance.maxConcurrency)
+        assertEquals(2, result.performance.directApkConcurrency)
+        assertEquals(2, result.performance.fdroidConcurrency)
+        assertEquals(2, result.performance.repositoryItemCount)
+        assertEquals(2, result.performance.directApkItemCount)
+        assertEquals(2, result.performance.fdroidItemCount)
+        assertEquals(0, result.performance.otherItemCount)
+        assertEquals(5, result.performance.slowItems.size)
+        assertTrue(
+            result.performance.slowItems.zipWithNext()
+                .all { (left, right) -> left.elapsedMs >= right.elapsedMs }
+        )
+        assertTrue(result.performance.slowItems.any { it.sourceMode == "fdroid_repository" })
+        assertTrue(result.performance.slowItems.all { it.message.isNotBlank() })
     }
 
     @Test
@@ -247,9 +297,9 @@ class GitHubTrackedRefreshBatchRunnerTest {
     @Test
     fun `scheduler increases refresh concurrency for larger batches`() {
         assertEquals(1, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(1))
-        assertEquals(4, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
-        assertEquals(6, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
-        assertEquals(8, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(48))
+        assertEquals(5, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(8))
+        assertEquals(7, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(16))
+        assertEquals(10, GitHubTrackedRefreshBatchScheduler.refreshConcurrency(48))
     }
 
     @Test

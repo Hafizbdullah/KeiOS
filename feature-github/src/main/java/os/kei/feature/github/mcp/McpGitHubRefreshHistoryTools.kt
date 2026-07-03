@@ -9,6 +9,7 @@ import os.kei.feature.github.domain.GitHubRefreshHistorySummary
 import os.kei.feature.github.model.GitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 import os.kei.mcp.server.McpToolEnvironment
 import os.kei.mcp.server.addMcpTextTool
 import os.kei.mcp.server.argBoolean
@@ -34,10 +35,12 @@ internal class McpGitHubRefreshHistoryTools(
                     .lowercase(Locale.ROOT)
                     .ifBlank { "summary" }
             val includeFailures = argBoolean(request.arguments?.get("includeFailures"), false)
+            val includeSlowItems = argBoolean(request.arguments?.get("includeSlowItems"), true)
             buildRefreshHistoryText(
                 query = query,
                 mode = mode,
                 includeFailures = includeFailures,
+                includeSlowItems = includeSlowItems,
             )
         }
 
@@ -57,6 +60,7 @@ internal class McpGitHubRefreshHistoryTools(
         query: GitHubRefreshHistoryQuery,
         mode: String,
         includeFailures: Boolean,
+        includeSlowItems: Boolean,
     ): String {
         val allRecords = refreshHistoryService.loadHistory()
         val records =
@@ -79,6 +83,11 @@ internal class McpGitHubRefreshHistoryTools(
             if (mode == "list" || mode == "detail") {
                 records.forEachIndexed { index, record ->
                     appendLine(record.toMcpLine("refresh[$index]"))
+                    if (includeSlowItems || mode == "detail") {
+                        record.slowItems.forEachIndexed { slowIndex, slowItem ->
+                            appendLine(slowItem.toMcpLine("refresh[$index].slow[$slowIndex]"))
+                        }
+                    }
                     if (includeFailures || mode == "detail") {
                         record.failureSummaries.forEachIndexed { failureIndex, failure ->
                             appendLine(failure.toMcpLine("refresh[$index].failure[$failureIndex]"))
@@ -103,6 +112,11 @@ internal class McpGitHubRefreshHistoryTools(
         appendLine("totalFailedItemCount=${summary.totalFailedItemCount}")
         appendLine("totalStableUpdateCount=${summary.totalStableUpdateCount}")
         appendLine("totalPreReleaseUpdateCount=${summary.totalPreReleaseUpdateCount}")
+        appendLine("totalRepositoryItemCount=${summary.totalRepositoryItemCount}")
+        appendLine("totalDirectApkItemCount=${summary.totalDirectApkItemCount}")
+        appendLine("totalFdroidItemCount=${summary.totalFdroidItemCount}")
+        appendLine("totalOtherItemCount=${summary.totalOtherItemCount}")
+        appendLine("maxObservedConcurrency=${summary.maxObservedConcurrency}")
         appendLine("averageElapsedMs=${summary.averageElapsedMs}")
         appendLine("p95ElapsedMs=${summary.p95ElapsedMs}")
         appendLine("latestStartedAtMillis=${summary.latestStartedAtMillis}")
@@ -115,7 +129,15 @@ internal class McpGitHubRefreshHistoryTools(
                 outcome == GitHubRefreshHistoryOutcome.Completed && failedCount > 0 -> "partial_failed"
                 else -> outcome.name.lowercase(Locale.ROOT)
             }
-        return "$prefix=id:$id | sessionId:$sessionId | source:${source.name} | scope:${scope.name} | outcome:$status | target:$targetCount | completed:$completedCount | updates:$updatableCount | preUpdates:$preReleaseUpdateCount | failed:$failedCount | elapsedMs:$elapsedMs | p50ItemMs:$p50ItemMs | p95ItemMs:$p95ItemMs | maxItemMs:$maxItemMs | startedAtMillis:$startedAtMillis | finishedAtMillis:$finishedAtMillis | note:${note.toMcpValue()}"
+        return "$prefix=id:$id | sessionId:$sessionId | source:${source.name} | scope:${scope.name} | outcome:$status | target:$targetCount | completed:$completedCount | updates:$updatableCount | preUpdates:$preReleaseUpdateCount | failed:$failedCount | elapsedMs:$elapsedMs | p50ItemMs:$p50ItemMs | p95ItemMs:$p95ItemMs | maxItemMs:$maxItemMs | maxConcurrency:$maxConcurrency | directApkConcurrency:$directApkConcurrency | fdroidConcurrency:$fdroidConcurrency | repositoryItems:$repositoryItemCount | directApkItems:$directApkItemCount | fdroidItems:$fdroidItemCount | otherItems:$otherItemCount | startedAtMillis:$startedAtMillis | finishedAtMillis:$finishedAtMillis | note:${note.toMcpValue()}"
+    }
+
+    private fun GitHubRefreshHistorySlowItem.toMcpLine(prefix: String): String {
+        val repoLabel =
+            listOf(owner, repo)
+                .filter { it.isNotBlank() }
+                .joinToString("/")
+        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | status:${status.toMcpValue()} | message:${message.toMcpValue()}"
     }
 
     private fun GitHubRefreshHistoryFailureSummary.toMcpLine(prefix: String): String {

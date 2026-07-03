@@ -20,6 +20,7 @@ import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 
 object GitHubRefreshHistoryStore {
     private const val KV_ID = "github_refresh_history"
@@ -102,7 +103,22 @@ object GitHubRefreshHistoryStore {
             put("p50ItemMs", record.p50ItemMs)
             put("p95ItemMs", record.p95ItemMs)
             put("maxItemMs", record.maxItemMs)
+            put("maxConcurrency", record.maxConcurrency)
+            put("directApkConcurrency", record.directApkConcurrency)
+            put("fdroidConcurrency", record.fdroidConcurrency)
+            put("repositoryItemCount", record.repositoryItemCount)
+            put("directApkItemCount", record.directApkItemCount)
+            put("fdroidItemCount", record.fdroidItemCount)
+            put("otherItemCount", record.otherItemCount)
             put("note", record.note)
+            put(
+                "slowItems",
+                buildJsonArray {
+                    record.slowItems.forEach { slowItem ->
+                        add(encodeSlowItem(slowItem))
+                    }
+                },
+            )
             put(
                 "failureSummaries",
                 buildJsonArray {
@@ -140,6 +156,17 @@ object GitHubRefreshHistoryStore {
                 p50ItemMs = obj.optLong("p50ItemMs", 0L).coerceAtLeast(0L),
                 p95ItemMs = obj.optLong("p95ItemMs", 0L).coerceAtLeast(0L),
                 maxItemMs = obj.optLong("maxItemMs", 0L).coerceAtLeast(0L),
+                maxConcurrency = obj.optInt("maxConcurrency", 0).coerceAtLeast(0),
+                directApkConcurrency = obj.optInt("directApkConcurrency", 0).coerceAtLeast(0),
+                fdroidConcurrency = obj.optInt("fdroidConcurrency", 0).coerceAtLeast(0),
+                repositoryItemCount = obj.optInt("repositoryItemCount", 0).coerceAtLeast(0),
+                directApkItemCount = obj.optInt("directApkItemCount", 0).coerceAtLeast(0),
+                fdroidItemCount = obj.optInt("fdroidItemCount", 0).coerceAtLeast(0),
+                otherItemCount = obj.optInt("otherItemCount", 0).coerceAtLeast(0),
+                slowItems =
+                    obj.optArray("slowItems")
+                        ?.mapNotNull { element -> (element as? JsonObject)?.let(::decodeSlowItem) }
+                        .orEmpty(),
                 failureSummaries =
                     obj.optArray("failureSummaries")
                         ?.mapNotNull { element -> (element as? JsonObject)?.let(::decodeFailureSummary) }
@@ -170,6 +197,29 @@ object GitHubRefreshHistoryStore {
             p50ItemMs = p50ItemMs.coerceAtLeast(0L),
             p95ItemMs = p95ItemMs.coerceAtLeast(0L),
             maxItemMs = maxItemMs.coerceAtLeast(0L),
+            maxConcurrency = maxConcurrency.coerceAtLeast(0),
+            directApkConcurrency = directApkConcurrency.coerceAtLeast(0),
+            fdroidConcurrency = fdroidConcurrency.coerceAtLeast(0),
+            repositoryItemCount = repositoryItemCount.coerceAtLeast(0),
+            directApkItemCount = directApkItemCount.coerceAtLeast(0),
+            fdroidItemCount = fdroidItemCount.coerceAtLeast(0),
+            otherItemCount = otherItemCount.coerceAtLeast(0),
+            slowItems =
+                slowItems
+                    .take(8)
+                    .map { slowItem ->
+                        slowItem.copy(
+                            trackId = slowItem.trackId.trim(),
+                            owner = slowItem.owner.trim(),
+                            repo = slowItem.repo.trim(),
+                            packageName = slowItem.packageName.trim(),
+                            appLabel = slowItem.appLabel.trim(),
+                            sourceMode = slowItem.sourceMode.trim(),
+                            elapsedMs = slowItem.elapsedMs.coerceAtLeast(0L),
+                            status = slowItem.status.trim(),
+                            message = compactHistoryText(slowItem.message, 240),
+                        )
+                    },
             failureSummaries =
                 failureSummaries
                     .take(12)
@@ -209,6 +259,33 @@ object GitHubRefreshHistoryStore {
         val finishedAt = record.finishedAtMillis.takeIf { it > 0L } ?: record.startedAtMillis
         return cutoffMillis > 0L && finishedAt in 1 until cutoffMillis
     }
+
+    private fun encodeSlowItem(slowItem: GitHubRefreshHistorySlowItem): JsonObject {
+        return buildJsonObject {
+            put("trackId", slowItem.trackId)
+            put("owner", slowItem.owner)
+            put("repo", slowItem.repo)
+            put("packageName", slowItem.packageName)
+            put("appLabel", slowItem.appLabel)
+            put("sourceMode", slowItem.sourceMode)
+            put("elapsedMs", slowItem.elapsedMs)
+            put("status", slowItem.status)
+            put("message", slowItem.message)
+        }
+    }
+
+    private fun decodeSlowItem(obj: JsonObject): GitHubRefreshHistorySlowItem =
+        GitHubRefreshHistorySlowItem(
+            trackId = obj.optString("trackId").trim(),
+            owner = obj.optString("owner").trim(),
+            repo = obj.optString("repo").trim(),
+            packageName = obj.optString("packageName").trim(),
+            appLabel = obj.optString("appLabel").trim(),
+            sourceMode = obj.optString("sourceMode").trim(),
+            elapsedMs = obj.optLong("elapsedMs", 0L).coerceAtLeast(0L),
+            status = obj.optString("status").trim(),
+            message = obj.optString("message").trim(),
+        )
 
     private fun encodeFailureSummary(failure: GitHubRefreshHistoryFailureSummary): JsonObject {
         return buildJsonObject {
