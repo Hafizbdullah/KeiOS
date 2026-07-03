@@ -288,6 +288,20 @@ private fun GitHubRefreshHistoryUiRecord.matchesRefreshHistorySearch(query: Stri
                 failure.message,
             )
         }
+    val slowItemTokens =
+        record.slowItems.flatMap { slowItem ->
+            listOf(
+                slowItem.trackId,
+                slowItem.owner,
+                slowItem.repo,
+                "${slowItem.owner}/${slowItem.repo}",
+                slowItem.packageName,
+                slowItem.appLabel,
+                slowItem.sourceMode,
+                slowItem.status,
+                slowItem.message,
+            )
+        }
     return (
         listOf(
             record.id,
@@ -296,7 +310,7 @@ private fun GitHubRefreshHistoryUiRecord.matchesRefreshHistorySearch(query: Stri
             record.source.name,
             record.outcome.name,
             record.note,
-        ) + failureTokens
+        ) + failureTokens + slowItemTokens
     ).containsHistoryQuery(query)
 }
 
