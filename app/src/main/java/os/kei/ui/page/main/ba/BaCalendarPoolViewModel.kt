@@ -99,6 +99,9 @@ internal class BaCalendarPoolViewModel(
     private val _chromeUiState = MutableStateFlow(BaCalendarPoolChromeUiState())
     val chromeUiState: StateFlow<BaCalendarPoolChromeUiState> = _chromeUiState.asStateFlow()
 
+    private val _unreadCounts = MutableStateFlow(BaCalendarPoolUnreadCounts())
+    val unreadCounts: StateFlow<BaCalendarPoolUnreadCounts> = _unreadCounts.asStateFlow()
+
     val routeState: StateFlow<BaCalendarPoolRouteState> =
         combine(calendarUiState, poolUiState) { calendar, pool ->
             BaCalendarPoolRouteState(
@@ -113,6 +116,7 @@ internal class BaCalendarPoolViewModel(
 
     private var calendarJob: Job? = null
     private var poolJob: Job? = null
+    private var unreadCountsJob: Job? = null
     private var lastCalendarRequestKey: BaCalendarRequestKey? = null
     private var lastPoolRequestKey: BaPoolRequestKey? = null
     private val imageWarmCoordinator =
@@ -136,6 +140,7 @@ internal class BaCalendarPoolViewModel(
                     snapshot = snapshot,
                     loaded = true,
                 )
+            refreshUnreadCounts(snapshot.serverIndex)
         }
     }
 
@@ -198,6 +203,7 @@ internal class BaCalendarPoolViewModel(
                         error = snapshot.error,
                         lastSyncMs = snapshot.lastSyncMs,
                     )
+                refreshUnreadCounts(serverIndex)
                 if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
                     imageWarmCoordinator.scheduleCalendar(
                         serverIndex = serverIndex,
@@ -266,6 +272,7 @@ internal class BaCalendarPoolViewModel(
                         error = snapshot.error,
                         lastSyncMs = snapshot.lastSyncMs,
                     )
+                refreshUnreadCounts(serverIndex)
                 if (!snapshot.loading && snapshot.imageWarmEntries.isNotEmpty()) {
                     imageWarmCoordinator.schedulePool(
                         serverIndex = serverIndex,
@@ -292,6 +299,7 @@ internal class BaCalendarPoolViewModel(
         viewModelScope.launch {
             BaCalendarPoolRepository.saveServerIndexAsync(normalizedIndex)
         }
+        refreshUnreadCounts(normalizedIndex)
     }
 
     fun requestCalendarReload() {
@@ -439,6 +447,40 @@ internal class BaCalendarPoolViewModel(
                 )
             }
         }
+    }
+
+    fun refreshUnreadCounts(serverIndex: Int = _chromeUiState.value.serverIndex) {
+        val normalizedServerIndex = serverIndex.coerceIn(0, 2)
+        unreadCountsJob?.cancel()
+        unreadCountsJob =
+            viewModelScope.launch {
+                val counts =
+                    BaCalendarPoolUnreadRepository.loadCountsAsync(
+                        serverIndex = normalizedServerIndex,
+                    )
+                if (_chromeUiState.value.serverIndex.coerceIn(0, 2) == normalizedServerIndex) {
+                    _unreadCounts.value = counts
+                }
+            }
+    }
+
+    fun markUnreadRead(
+        kind: BaCalendarPoolUnreadKind,
+        serverIndex: Int = _chromeUiState.value.serverIndex,
+    ) {
+        val normalizedServerIndex = serverIndex.coerceIn(0, 2)
+        unreadCountsJob?.cancel()
+        unreadCountsJob =
+            viewModelScope.launch {
+                val counts =
+                    BaCalendarPoolUnreadRepository.markReadAsync(
+                        kind = kind,
+                        serverIndex = normalizedServerIndex,
+                    )
+                if (_chromeUiState.value.serverIndex.coerceIn(0, 2) == normalizedServerIndex) {
+                    _unreadCounts.value = counts
+                }
+            }
     }
 
     suspend fun preparePoolGuideOpen(rawUrl: String): BaPoolGuideOpenPlan =

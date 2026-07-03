@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -66,6 +67,7 @@ enum class AppFloatingRefreshStatus {
     Danger,
 }
 
+@Immutable
 data class AppFloatingDockAction(
     val icon: ImageVector,
     val contentDescription: String,
@@ -467,6 +469,10 @@ fun AppFloatingVerticalActionDock(
     compact: Boolean = false,
     compactIcon: ImageVector? = null,
     compactContentDescription: String? = null,
+    compactBadgeLabel: String? = null,
+    compactBadgeColor: Color? = null,
+    compactBadgeContentColor: Color? = null,
+    compactTooltipText: String? = null,
     onCompactClick: (() -> Unit)? = null,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
@@ -531,10 +537,10 @@ fun AppFloatingVerticalActionDock(
                 size = size,
                 iconSize = iconSize,
                 iconTint = firstAction.iconTint,
-                tooltipText = firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
-                badgeLabel = firstAction.badgeLabel,
-                badgeColor = firstAction.badgeColor,
-                badgeContentColor = firstAction.badgeContentColor,
+                tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
+                badgeLabel = compactBadgeLabel ?: firstAction.badgeLabel,
+                badgeColor = compactBadgeColor ?: firstAction.badgeColor,
+                badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
                 modifier =
                     compactMotion.compactModifier
                         .align(Alignment.BottomCenter),

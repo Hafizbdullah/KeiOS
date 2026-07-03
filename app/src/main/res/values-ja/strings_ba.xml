@@ -46,6 +46,7 @@
     <string name="ba_calendar_title_format">イベントカレンダー | %1$s</string>
     <string name="ba_calendar_activity_title">イベントカレンダー</string>
     <string name="ba_calendar_cd_open_activity">イベントカレンダーを開く</string>
+    <string name="ba_calendar_unread_badge_tooltip">イベントカレンダーに %1$d 件の新しい変更</string>
     <string name="ba_calendar_cd_refresh">イベントカレンダーを更新</string>
     <string name="ba_calendar_empty_all">イベントはありません</string>
     <string name="ba_calendar_empty_active">開催中または開催予定のイベントはありません</string>
@@ -59,6 +60,8 @@
     <string name="ba_pool_title_format">募集 | %1$s</string>
     <string name="ba_pool_activity_title">募集</string>
     <string name="ba_pool_cd_open_activity">募集を開く</string>
+    <string name="ba_pool_unread_badge_tooltip">募集に %1$d 件の新しい変更</string>
+    <string name="ba_calendar_pool_unread_badge_tooltip">イベントと募集に %1$d 件の新しい変更</string>
     <string name="ba_pool_cd_refresh">募集を更新</string>
     <string name="ba_pool_empty_all">募集はありません</string>
     <string name="ba_pool_empty_active">開催中または開催予定の募集はありません</string>

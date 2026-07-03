@@ -169,6 +169,13 @@ private fun BaActivityCalendarPage(
         targetServerSelection.serverIndex?.let(calendarPoolViewModel::selectServer)
     }
 
+    LaunchedEffect(serverIndex, calendarPoolViewModel) {
+        calendarPoolViewModel.markUnreadRead(
+            kind = BaCalendarPoolUnreadKind.Calendar,
+            serverIndex = serverIndex,
+        )
+    }
+
     LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {
         calendarPoolViewModel.syncCalendar(
             isPageActive = true,

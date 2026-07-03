@@ -163,6 +163,13 @@ internal object BaCalendarPoolRepository {
             )
 
         if (!plan.shouldRequestNetwork) {
+            BaCalendarPoolSyncNotifier.recordCalendarUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -173,6 +180,13 @@ internal object BaCalendarPoolRepository {
         }
 
         if (!isPageActive && plan.hasCache) {
+            BaCalendarPoolSyncNotifier.recordCalendarUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -183,6 +197,13 @@ internal object BaCalendarPoolRepository {
         }
 
         if (!plan.networkAvailable) {
+            BaCalendarPoolSyncNotifier.recordCalendarUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -235,6 +256,13 @@ internal object BaCalendarPoolRepository {
                     imageWarmEntries = entries,
                 )
             }
+            BaCalendarPoolSyncNotifier.recordCalendarUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaCalendarSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -244,6 +272,13 @@ internal object BaCalendarPoolRepository {
             )
         }
 
+        BaCalendarPoolSyncNotifier.recordCalendarUnreadObservation(
+            serverIndex = serverIndex,
+            previousEntries = cachedEntries,
+            nextEntries = cachedEntries,
+            nowMs = now,
+            hadCache = plan.hasCache,
+        )
         return BaCalendarSyncSnapshot(
             entries = cachedEntriesWithLocalImages,
             loading = false,
@@ -314,6 +349,13 @@ internal object BaCalendarPoolRepository {
             )
 
         if (!plan.shouldRequestNetwork) {
+            BaCalendarPoolSyncNotifier.recordPoolUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -324,6 +366,13 @@ internal object BaCalendarPoolRepository {
         }
 
         if (!isPageActive && plan.hasCache) {
+            BaCalendarPoolSyncNotifier.recordPoolUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -334,6 +383,13 @@ internal object BaCalendarPoolRepository {
         }
 
         if (!plan.networkAvailable) {
+            BaCalendarPoolSyncNotifier.recordPoolUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -391,6 +447,13 @@ internal object BaCalendarPoolRepository {
                     imageWarmEntries = entries,
                 )
             }
+            BaCalendarPoolSyncNotifier.recordPoolUnreadObservation(
+                serverIndex = serverIndex,
+                previousEntries = cachedEntries,
+                nextEntries = cachedEntries,
+                nowMs = now,
+                hadCache = plan.hasCache,
+            )
             return BaPoolSyncSnapshot(
                 entries = cachedEntriesWithLocalImages,
                 loading = false,
@@ -400,6 +463,13 @@ internal object BaCalendarPoolRepository {
             )
         }
 
+        BaCalendarPoolSyncNotifier.recordPoolUnreadObservation(
+            serverIndex = serverIndex,
+            previousEntries = cachedEntries,
+            nextEntries = cachedEntries,
+            nowMs = now,
+            hadCache = plan.hasCache,
+        )
         return BaPoolSyncSnapshot(
             entries = cachedEntriesWithLocalImages,
             loading = false,

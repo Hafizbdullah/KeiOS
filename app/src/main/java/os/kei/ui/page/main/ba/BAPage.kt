@@ -93,6 +93,7 @@ fun BAPage(
     val ui = rememberBaPageUiController()
     val calendarPoolViewModel: BaCalendarPoolViewModel = applicationViewModel(create = ::BaCalendarPoolViewModel)
     val calendarPoolRouteState by calendarPoolViewModel.routeState.collectAsStateWithLifecycle()
+    val calendarPoolUnreadCounts by calendarPoolViewModel.unreadCounts.collectAsStateWithLifecycle()
     val calendarUiState = calendarPoolRouteState.calendarUiState
     val poolUiState = calendarPoolRouteState.poolUiState
     val baClockState = ui.clockState()
@@ -244,6 +245,7 @@ fun BAPage(
                 if (event == Lifecycle.Event.ON_RESUME) {
                     officeViewModel.refreshRuntimeSettingsFromStore()
                     officeViewModel.restoreServerFromStore()
+                    calendarPoolViewModel.refreshUnreadCounts(currentServerIndexState.value)
                 }
             }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -331,6 +333,9 @@ fun BAPage(
         syncPageActive = settledWorkActive,
         routeState = baRouteState,
     )
+    LaunchedEffect(baRouteState.serverIndex, calendarPoolViewModel) {
+        calendarPoolViewModel.refreshUnreadCounts(baRouteState.serverIndex)
+    }
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         Box(modifier = Modifier.fillMaxSize()) {
             AppScaffold(
@@ -371,8 +376,17 @@ fun BAPage(
             BaPageFloatingDock(
                 backdrop = backdrops.content,
                 runtime = runtime,
-                onOpenCalendar = { BaActivityCalendarActivity.launch(context) },
-                onOpenPool = { BaPoolActivity.launch(context) },
+                unreadCounts = calendarPoolUnreadCounts,
+                onOpenCalendar = {
+                    val serverIndex = currentServerIndexState.value
+                    calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Calendar, serverIndex)
+                    BaActivityCalendarActivity.launch(context, serverIndex)
+                },
+                onOpenPool = {
+                    val serverIndex = currentServerIndexState.value
+                    calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Pool, serverIndex)
+                    BaPoolActivity.launch(context, serverIndex)
+                },
                 onOpenGuideCatalog = onOpenGuideCatalog,
             )
         }

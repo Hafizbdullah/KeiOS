@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun BoxScope.BaPageFloatingDock(
     backdrop: Backdrop?,
     runtime: MainPageRuntime,
+    unreadCounts: BaCalendarPoolUnreadCounts = BaCalendarPoolUnreadCounts(),
     onOpenCalendar: () -> Unit,
     onOpenPool: () -> Unit,
     onOpenGuideCatalog: () -> Unit,
@@ -56,17 +58,42 @@ internal fun BoxScope.BaPageFloatingDock(
     val catalogDescription = stringResource(R.string.ba_overview_cd_open_catalog)
     val expandDescription = stringResource(R.string.common_expand)
     val primaryIconTint = MiuixTheme.colorScheme.primary
+    val currentOnOpenCalendar = rememberUpdatedState(onOpenCalendar)
+    val currentOnOpenPool = rememberUpdatedState(onOpenPool)
+    val currentOnOpenGuideCatalog = rememberUpdatedState(onOpenGuideCatalog)
+    val openCalendarClick = remember { { currentOnOpenCalendar.value() } }
+    val openPoolClick = remember { { currentOnOpenPool.value() } }
+    val openGuideCatalogClick = remember { { currentOnOpenGuideCatalog.value() } }
+    val calendarBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.calendarCount)
+    val poolBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.poolCount)
+    val compactBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.totalCount)
+    val calendarBadgeTooltip =
+        calendarBadgeLabel?.let {
+            stringResource(R.string.ba_calendar_unread_badge_tooltip, unreadCounts.calendarCount)
+        }
+    val poolBadgeTooltip =
+        poolBadgeLabel?.let {
+            stringResource(R.string.ba_pool_unread_badge_tooltip, unreadCounts.poolCount)
+        }
+    val compactBadgeTooltip =
+        compactBadgeLabel?.let {
+            stringResource(R.string.ba_calendar_pool_unread_badge_tooltip, unreadCounts.totalCount)
+        }
     val actions =
         remember(
             calendarIcon,
             calendarDescription,
-            onOpenCalendar,
+            calendarBadgeLabel,
+            calendarBadgeTooltip,
+            openCalendarClick,
             poolIcon,
             poolDescription,
-            onOpenPool,
+            poolBadgeLabel,
+            poolBadgeTooltip,
+            openPoolClick,
             catalogIcon,
             catalogDescription,
-            onOpenGuideCatalog,
+            openGuideCatalogClick,
             primaryIconTint,
         ) {
             listOf(
@@ -74,19 +101,23 @@ internal fun BoxScope.BaPageFloatingDock(
                     icon = calendarIcon,
                     contentDescription = calendarDescription,
                     iconTint = primaryIconTint,
-                    onClick = onOpenCalendar,
+                    badgeLabel = calendarBadgeLabel,
+                    tooltipText = calendarBadgeTooltip,
+                    onClick = openCalendarClick,
                 ),
                 AppFloatingDockAction(
                     icon = poolIcon,
                     contentDescription = poolDescription,
                     iconTint = primaryIconTint,
-                    onClick = onOpenPool,
+                    badgeLabel = poolBadgeLabel,
+                    tooltipText = poolBadgeTooltip,
+                    onClick = openPoolClick,
                 ),
                 AppFloatingDockAction(
                     icon = catalogIcon,
                     contentDescription = catalogDescription,
                     iconTint = primaryIconTint,
-                    onClick = onOpenGuideCatalog,
+                    onClick = openGuideCatalogClick,
                 ),
             )
         }
@@ -97,6 +128,8 @@ internal fun BoxScope.BaPageFloatingDock(
         compact = !runtime.bottomBarVisible,
         compactIcon = moreIcon,
         compactContentDescription = expandDescription,
+        compactBadgeLabel = compactBadgeLabel,
+        compactTooltipText = compactBadgeTooltip,
         onCompactClick = runtime.onShowBottomBar,
         modifier =
             Modifier
@@ -108,3 +141,12 @@ internal fun BoxScope.BaPageFloatingDock(
                 ),
     )
 }
+
+private const val BaCalendarPoolDockBadgeMaxCount = 99
+
+private fun baCalendarPoolDockBadgeLabel(count: Int): String? =
+    when {
+        count <= 0 -> null
+        count > BaCalendarPoolDockBadgeMaxCount -> "$BaCalendarPoolDockBadgeMaxCount+"
+        else -> count.toString()
+    }

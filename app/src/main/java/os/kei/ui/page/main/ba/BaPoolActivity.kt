@@ -214,6 +214,13 @@ private fun BaPoolPage(
         targetServerSelection.serverIndex?.let(calendarPoolViewModel::selectServer)
     }
 
+    LaunchedEffect(serverIndex, calendarPoolViewModel) {
+        calendarPoolViewModel.markUnreadRead(
+            kind = BaCalendarPoolUnreadKind.Pool,
+            serverIndex = serverIndex,
+        )
+    }
+
     LaunchedEffect(
         serverIndex,
         reloadSignal,

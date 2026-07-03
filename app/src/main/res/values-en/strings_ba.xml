@@ -46,6 +46,7 @@
     <string name="ba_calendar_title_format">Event Calendar | %1$s</string>
     <string name="ba_calendar_activity_title">Event Calendar</string>
     <string name="ba_calendar_cd_open_activity">Open event calendar</string>
+    <string name="ba_calendar_unread_badge_tooltip">Event calendar has %1$d new changes</string>
     <string name="ba_calendar_cd_refresh">Refresh event calendar</string>
     <string name="ba_calendar_empty_all">No events</string>
     <string name="ba_calendar_empty_active">No active or upcoming events</string>
@@ -59,6 +60,8 @@
     <string name="ba_pool_title_format">Recruitment Banners | %1$s</string>
     <string name="ba_pool_activity_title">Recruitment Banners</string>
     <string name="ba_pool_cd_open_activity">Open recruitment banners</string>
+    <string name="ba_pool_unread_badge_tooltip">Recruitment banners have %1$d new changes</string>
+    <string name="ba_calendar_pool_unread_badge_tooltip">Events and banners have %1$d new changes</string>
     <string name="ba_pool_cd_refresh">Refresh recruitment banners</string>
     <string name="ba_pool_empty_all">No recruitment banners</string>
     <string name="ba_pool_empty_active">No active or upcoming recruitment banners</string>
