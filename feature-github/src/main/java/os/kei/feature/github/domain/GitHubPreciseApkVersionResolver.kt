@@ -62,28 +62,15 @@ class GitHubPreciseApkVersionResolver(
                 .take(MAX_APK_INSPECT_CANDIDATES)
             check(apkAssets.isNotEmpty()) { "Release contains no APK asset" }
 
-            val inspected = GitHubExecution.mapOrderedBounded(
-                items = apkAssets,
-                maxConcurrency = MAX_PARALLEL_APK_INSPECTS
-            ) { asset ->
-                asset to source.inspectApk(asset = asset, lookupConfig = request.lookupConfig)
-            }
             val requestedPackageName = request.packageName.trim()
-            val firstSuccess = inspected.firstNotNullOfOrNull { (asset, result) ->
-                result.getOrNull()?.takeIf { it.hasRemoteVersion() }?.let { info -> asset to info }
-            }
-            val matchedSuccess = inspected.firstNotNullOfOrNull { (asset, result) ->
-                result.getOrNull()
-                    ?.takeIf { info ->
-                        info.hasRemoteVersion() &&
-                                requestedPackageName.isNotBlank() &&
-                                info.packageName.equals(requestedPackageName, ignoreCase = true)
-                    }
-                    ?.let { info -> asset to info }
-            }
-            val selected = matchedSuccess ?: firstSuccess
+            val inspected = inspectApkAssetsUntilSelected(
+                apkAssets = apkAssets,
+                requestedPackageName = requestedPackageName,
+                lookupConfig = request.lookupConfig
+            )
+            val selected = inspected.selected
             if (selected == null) {
-                throw inspected.firstNotNullOfOrNull { (_, result) -> result.exceptionOrNull() }
+                throw inspected.firstFailure
                     ?: IllegalStateException("No APK manifest could be inspected")
             }
             val (asset, info) = selected
@@ -104,10 +91,50 @@ class GitHubPreciseApkVersionResolver(
         return versionName.isNotBlank() || versionCode.isNotBlank()
     }
 
+    private suspend fun inspectApkAssetsUntilSelected(
+        apkAssets: List<GitHubReleaseAssetFile>,
+        requestedPackageName: String,
+        lookupConfig: GitHubLookupConfig
+    ): ApkInspectSelection {
+        var firstSuccess: Pair<GitHubReleaseAssetFile, GitHubApkManifestInfo>? = null
+        var firstFailure: Throwable? = null
+        apkAssets.chunked(MAX_PARALLEL_APK_INSPECTS).forEach { chunk ->
+            val inspected = GitHubExecution.mapOrderedBounded(
+                items = chunk,
+                maxConcurrency = MAX_PARALLEL_APK_INSPECTS
+            ) { asset ->
+                asset to source.inspectApk(asset = asset, lookupConfig = lookupConfig)
+            }
+            inspected.forEach { (asset, result) ->
+                val info = result.getOrNull()
+                if (info != null && info.hasRemoteVersion()) {
+                    if (firstSuccess == null) firstSuccess = asset to info
+                    if (
+                        requestedPackageName.isNotBlank() &&
+                        info.packageName.equals(requestedPackageName, ignoreCase = true)
+                    ) {
+                        return ApkInspectSelection(selected = asset to info, firstFailure = firstFailure)
+                    }
+                } else if (firstFailure == null) {
+                    firstFailure = result.exceptionOrNull()
+                }
+            }
+            if (requestedPackageName.isBlank() && firstSuccess != null) {
+                return ApkInspectSelection(selected = firstSuccess, firstFailure = firstFailure)
+            }
+        }
+        return ApkInspectSelection(selected = firstSuccess, firstFailure = firstFailure)
+    }
+
     private companion object {
         const val MAX_APK_INSPECT_CANDIDATES = 12
         const val MAX_PARALLEL_APK_INSPECTS = 4
     }
+
+    private data class ApkInspectSelection(
+        val selected: Pair<GitHubReleaseAssetFile, GitHubApkManifestInfo>?,
+        val firstFailure: Throwable?
+    )
 }
 
 private class DefaultGitHubPreciseApkVersionSource(

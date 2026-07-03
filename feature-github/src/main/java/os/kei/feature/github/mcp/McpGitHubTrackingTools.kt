@@ -156,7 +156,7 @@ internal class McpGitHubTrackingTools(
 
         server.addMcpTextTool(environment, name = "keios.github.cache.clear") { _ ->
             GitHubCacheService.clearGitHubMcpCaches()
-            "cleared=github_check_cache,github_release_asset_cache,github_fdroid_metadata_sidecar,github_star_import_apk_verification_cache"
+            "cleared=github_check_cache,github_release_asset_cache,github_apk_manifest_info_cache,github_fdroid_metadata_sidecar,github_star_import_apk_verification_cache"
         }
 
         server.addMcpTextTool(environment, name = "keios.github.link.parse") { request ->

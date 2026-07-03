@@ -44,7 +44,6 @@ class GitHubReleaseApiClient(
             .header("User-Agent", GITHUB_USER_AGENT)
             .header("Cache-Control", "no-store")
             .header("Pragma", "no-cache")
-            .header("Connection", "close")
             .build()
 
         return client.newCall(request).execute().use { response ->
@@ -157,7 +156,6 @@ class GitHubReleaseApiClient(
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
                 .header("User-Agent", GITHUB_USER_AGENT)
-                .header("Connection", "close")
             if (noStore) {
                 requestBuilder
                     .header("Cache-Control", "no-store")

@@ -87,6 +87,40 @@ class GitHubPreciseApkVersionResolverTest {
         assertEquals(12, source.inspectCount)
     }
 
+    @Test
+    fun `resolver stops inspecting apk assets after matching package chunk`() {
+        val assets = (1..8).map { index -> asset("demo-$index.apk") }
+        val source = FakePreciseSource(
+            assets = assets,
+            manifests = assets.withIndex().associate { (index, asset) ->
+                asset.name to manifest(
+                    packageName = if (index == 2) {
+                        "demo.target"
+                    } else {
+                        "other.${asset.name.removeSuffix(".apk").replace('-', '.')}"
+                    },
+                    versionName = "1.0.${index + 1}",
+                    versionCode = index + 1L
+                )
+            }
+        )
+
+        val result = runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
+                GitHubPreciseApkVersionRequest(
+                    owner = "demo",
+                    repo = "app",
+                    release = release("v1.0.0"),
+                    packageName = "demo.target",
+                    lookupConfig = GitHubLookupConfig()
+                )
+            )
+        }.getOrThrow()
+
+        assertEquals("demo-3.apk", result.assetName)
+        assertEquals(4, source.inspectCount)
+    }
+
     private fun release(
         tag: String,
         title: String = tag

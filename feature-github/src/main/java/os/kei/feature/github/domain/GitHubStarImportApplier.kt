@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.data.local.GitHubApkManifestInfoCacheStore
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
@@ -24,6 +25,7 @@ object GitHubStarImportApplier {
         if (!result.hasChanges) return result
         GitHubTrackStore.save(merge.items)
         GitHubReleaseAssetCacheStore.clearAll()
+        GitHubApkManifestInfoCacheStore.clearAll()
         updateTrackedAddedAt(result)
         GitHubTrackChangeHistoryService().recordChangesBlocking(
             previousItems = existingItems,

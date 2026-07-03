@@ -324,13 +324,18 @@ class RemoteZipEntryReader(
         check(eocdAbsoluteOffset >= centralDirectoryOffset) {
             "APK central directory offset is invalid"
         }
+        val centralDirectoryBytes = centralDirectoryBytesFromTail(
+            tail = tail,
+            centralDirectoryOffset = centralDirectoryOffset,
+            centralDirectorySize = centralDirectorySize
+        ) ?: fetchRange(
+            url = rangeUrl,
+            start = centralDirectoryOffset,
+            endInclusive = centralDirectoryOffset + centralDirectorySize - 1L,
+            apiToken = apiToken
+        ).bytes
         return CentralDirectoryBytes(
-            bytes = fetchRange(
-                url = rangeUrl,
-                start = centralDirectoryOffset,
-                endInclusive = centralDirectoryOffset + centralDirectorySize - 1L,
-                apiToken = apiToken
-            ).bytes,
+            bytes = centralDirectoryBytes,
             offset = centralDirectoryOffset,
             resolvedUrl = rangeUrl
         )
@@ -364,16 +369,32 @@ class RemoteZipEntryReader(
             "Nested APK central directory offset is invalid"
         }
         val centralDirectoryAbsoluteOffset = baseOffset + centralDirectoryOffset
+        val centralDirectoryBytes = centralDirectoryBytesFromTail(
+            tail = tail,
+            centralDirectoryOffset = centralDirectoryAbsoluteOffset,
+            centralDirectorySize = centralDirectorySize
+        ) ?: fetchRange(
+            url = url,
+            start = centralDirectoryAbsoluteOffset,
+            endInclusive = centralDirectoryAbsoluteOffset + centralDirectorySize - 1L,
+            apiToken = apiToken
+        ).bytes
         return CentralDirectoryBytes(
-            bytes = fetchRange(
-                url = url,
-                start = centralDirectoryAbsoluteOffset,
-                endInclusive = centralDirectoryAbsoluteOffset + centralDirectorySize - 1L,
-                apiToken = apiToken
-            ).bytes,
+            bytes = centralDirectoryBytes,
             offset = centralDirectoryAbsoluteOffset,
             resolvedUrl = url
         )
+    }
+
+    private fun centralDirectoryBytesFromTail(
+        tail: RangeBytes,
+        centralDirectoryOffset: Long,
+        centralDirectorySize: Long
+    ): ByteArray? {
+        val startInTail = centralDirectoryOffset - tail.start
+        val endInTail = startInTail + centralDirectorySize
+        if (startInTail < 0L || endInTail > tail.bytes.size.toLong()) return null
+        return tail.bytes.copyOfRange(startInTail.toInt(), endInTail.toInt())
     }
 
     private fun fetchEntryCompressedBytes(

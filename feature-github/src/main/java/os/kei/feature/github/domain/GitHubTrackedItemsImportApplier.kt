@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import os.kei.feature.github.data.local.GitHubApkManifestInfoCacheStore
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -95,6 +96,7 @@ object GitHubTrackedItemsImportApplier {
                 changedIds.forEach(FdroidMetadataSidecarStore::clear)
             }
             GitHubReleaseAssetCacheStore.clearAll()
+            GitHubApkManifestInfoCacheStore.clearAll()
             GitHubStarImportApkVerificationCacheStore.clearAll()
             changedIds.forEach { id ->
                 GitHubTrackStoreSignals.requestTrackRefresh(

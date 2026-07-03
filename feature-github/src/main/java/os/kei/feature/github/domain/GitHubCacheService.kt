@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.data.local.AppIconCache
+import os.kei.feature.github.data.local.GitHubApkManifestInfoCacheStore
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubStarImportApkVerificationCacheStore
 import os.kei.feature.github.data.local.GitHubTrackStore
@@ -41,6 +42,7 @@ object GitHubCacheService {
         GitHubTrackStore.clearCheckCache()
         GitHubTrackStoreSignals.notifyChanged()
         GitHubReleaseAssetCacheStore.clearAll()
+        GitHubApkManifestInfoCacheStore.clearAll()
         FdroidMetadataSidecarStore.clearAll()
         FdroidRepoIndexCacheStore.clear()
     }

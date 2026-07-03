@@ -6,11 +6,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
-import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecarStore
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
@@ -270,8 +268,6 @@ class GitHubBackgroundRefreshService(
             GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
             GitHubReleaseStrategyRegistry.clearAllCaches()
             GitHubTrackStore.clearCheckCache()
-            GitHubReleaseAssetCacheStore.clearAll()
-            FdroidMetadataSidecarStore.clearAll()
         }
     }
 

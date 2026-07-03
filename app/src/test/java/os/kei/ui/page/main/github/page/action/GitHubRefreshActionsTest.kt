@@ -194,8 +194,8 @@ class GitHubRefreshActionsTest {
     }
 
     @Test
-    fun `forced batch refresh clears apk asset cache`() {
-        assertTrue(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = true))
+    fun `forced batch refresh preserves apk asset cache`() {
+        assertFalse(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = true))
     }
 
     private fun tracked(name: String): GitHubTrackedApp =

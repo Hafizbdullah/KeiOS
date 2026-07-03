@@ -52,7 +52,7 @@ class GitHubApkManifestReaderTest {
             assertEquals("2.4.0", info.versionName)
             assertEquals("20400", info.versionCode)
             assertEquals(listOf("arm64-v8a"), info.nativeAbis)
-            assertTrue(server.requestCount <= 4)
+            assertTrue(server.requestCount <= 3)
         }
     }
 
@@ -168,6 +168,50 @@ class GitHubApkManifestReaderTest {
         }
     }
 
+    @Test
+    fun `repository reuses persistent manifest cache across repository instances`() = runBlocking {
+        val apkBytes = apkWithManifestAndNativeLib(
+            manifestBytes = BinaryManifestFixture.build(
+                packageName = "os.kei.inspect.persisted",
+                versionName = "5.0.0",
+                versionCode = 50000L
+            )
+        )
+        MockWebServer().use { server ->
+            server.dispatcher = rangeDispatcher(apkBytes)
+            val manifestCache = FakeManifestInfoCache()
+            val asset = GitHubReleaseAssetFile(
+                name = "inspect-persisted.apk",
+                downloadUrl = server.url("/download/inspect-persisted.apk").toString(),
+                sizeBytes = apkBytes.size.toLong(),
+                downloadCount = 1
+            )
+            val firstRepository = GitHubApkInfoRepository(
+                manifestReader = GitHubApkManifestReader(
+                    zipEntryReader = RemoteZipEntryReader(client = OkHttpClient())
+                ),
+                manifestCache = manifestCache
+            )
+
+            val first = firstRepository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
+                .getOrThrow()
+            GitHubApkInfoRepository.clearMemoryCachesForTest()
+            val requestsAfterFirstRead = server.requestCount
+            val secondRepository = GitHubApkInfoRepository(
+                manifestReader = GitHubApkManifestReader(
+                    zipEntryReader = RemoteZipEntryReader(client = OkHttpClient())
+                ),
+                manifestCache = manifestCache
+            )
+            val second = secondRepository.inspect(asset = asset, lookupConfig = GitHubLookupConfig())
+                .getOrThrow()
+
+            assertEquals("os.kei.inspect.persisted", first.packageName)
+            assertEquals("5.0.0", second.versionName)
+            assertEquals(requestsAfterFirstRead, server.requestCount)
+        }
+    }
+
     private fun apkWithManifestAndNativeLib(manifestBytes: ByteArray): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
@@ -181,4 +225,23 @@ class GitHubApkManifestReaderTest {
         return output.toByteArray()
     }
 
+    private class FakeManifestInfoCache : GitHubApkManifestInfoCache {
+        private val values = linkedMapOf<String, GitHubApkManifestInfo>()
+
+        override fun load(
+            cacheKey: String,
+            refreshIntervalHours: Int
+        ): GitHubApkManifestInfo? = values[cacheKey]
+
+        override fun save(
+            cacheKey: String,
+            info: GitHubApkManifestInfo
+        ) {
+            values[cacheKey] = info
+        }
+
+        override fun remove(cacheKey: String) {
+            values.remove(cacheKey)
+        }
+    }
 }

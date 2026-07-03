@@ -3,6 +3,7 @@ package os.kei.feature.github.domain
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.GitHubApkManifestInfoCacheStore
 import os.kei.feature.github.data.local.GitHubReleaseAssetCacheStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -164,6 +165,7 @@ class GitHubReleaseAssetService(
     suspend fun clearAllAssetCache() {
         withContext(localDispatcher) {
             GitHubReleaseAssetCacheStore.clearAll()
+            GitHubApkManifestInfoCacheStore.clearAll()
         }
     }
 }
