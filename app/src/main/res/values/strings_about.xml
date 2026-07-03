@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.9.2</string>
-    <string name="about_card_release_subtitle">F-Droid 来源、Miuix Nav、同步结构与构建链路收尾</string>
+    <string name="about_card_release_title">Release v1.10.0</string>
+    <string name="about_card_release_subtitle">F-Droid、历史中心、BA 记忆大厅、PiP 与同步性能升级</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -209,23 +209,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.9.2 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.10.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">新增 F-Droid 仓库追踪、按名称搜索、已安装应用反扫、v4 同步结构和 MCP 稳定性修复</string>
-    <string name="about_release_row_github">Git / GitHub</string>
-    <string name="about_release_value_github">GitHub、Gitee、通用 Git 与 F-Droid 共享追踪入口；F-Droid 支持 official / IzzyOnDroid 预设、versionCode 与 Anti-Features</string>
-    <string name="about_release_row_ba_guide">同步与数据</string>
-    <string name="about_release_value_ba_guide">导入导出、WebDAV、MCP tools 和预览摘要理解 v4 追踪结构，能保存 F-Droid 来源数据</string>
-    <string name="about_release_row_navigation">导航 / MCP</string>
-    <string name="about_release_value_navigation">主导航迁移到 Miuix Nav；MCP 页面适配 entry 级 ViewModel 作用域并修复打开崩溃</string>
-    <string name="about_release_row_icon">界面体验</string>
-    <string name="about_release_value_icon">F-Droid 新增/编辑 sheet、详情 sheet、来源筛选、WebDAV 预览和 Home 入口继续贴合现有页面节奏</string>
-    <string name="about_release_row_release_gate">发布门禁</string>
-    <string name="about_release_value_release_gate">Debug 编译、F-Droid 单元测试、Release/R8 构建、AVD 启动与严格崩溃日志过滤完成验证</string>
-    <string name="about_release_row_performance">性能基线</string>
-    <string name="about_release_value_performance">F-Droid 同仓库刷新合并、GitHub/F-Droid lane 调度、Direct APK 并发与页面缓存继续收敛</string>
+    <string name="about_release_value_focus">从 v1.9.0 起整合 F-Droid 来源、历史中心、WebDAV 安全同步、BA 图鉴缓存与记忆大厅视频体验</string>
+    <string name="about_release_row_github">GitHub / F-Droid</string>
+    <string name="about_release_value_github">F-Droid 支持常用源管理、应用名搜索、已安装应用反扫、详情 sheet、index 缓存和公平刷新调度</string>
+    <string name="about_release_row_ba_guide">历史与诊断</string>
+    <string name="about_release_value_ba_guide">历史页集中查看刷新、Actions、追踪变更和已安装 App 变化；新增未读角标、导出和 MCP 查询入口</string>
+    <string name="about_release_row_navigation">BA / 图鉴</string>
+    <string name="about_release_value_navigation">学生图鉴合并板块并记忆筛选；实装学生详情加入长期缓存；新增记忆大厅板块、收藏联动和视频 PiP 播放</string>
+    <string name="about_release_row_icon">同步与数据</string>
+    <string name="about_release_value_icon">WebDAV 同步先刷新远端并展示变更计划，支持 F-Droid v4 数据和 BA 多账号合并，降低误覆盖风险</string>
+    <string name="about_release_row_release_gate">导航与体验</string>
+    <string name="about_release_value_release_gate">主导航迁移到 Miuix Nav，底栏/ActionBar 手势、预测式返回、自定义背景和 sheet 链路继续收敛</string>
+    <string name="about_release_row_performance">性能与构建</string>
+    <string name="about_release_value_performance">图鉴、F-Droid 搜索/刷新、PiP、MCP 服务端和刷新历史链路做了异步调度、缓存复用与依赖升级</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.9.x 用户升级；需要追踪 F-Droid / IzzyOnDroid 应用、WebDAV 同步和 MCP/Claw 的用户优先升级</string>
+    <string name="about_release_value_next">建议所有 v1.9.x 用户升级；重度使用 GitHub/F-Droid 追踪、WebDAV、BA 图鉴和 MCP/Claw 的用户优先升级</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

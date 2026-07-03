@@ -39,7 +39,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 | UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
 | 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
 | 语言资源       | 简体中文、English、日本語                               |
-| 最新稳定标签     | `v1.9.2`                                       |
+| 最新稳定标签     | `v1.10.0`                                      |
 
 ## 常用入口
 
@@ -59,25 +59,26 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
   和卡片导入导出。
 - MCP 页面支持本地服务开关、配置复制、运行日志、前台保活、Claw 接入引导、本地化
   SKILL.md、工作流蓝图、结构化工具元数据，以及覆盖运行态、Home、OS、GitHub 发现/追踪、BA 缓存巡检的 45 个工具。
-- GitHub 页面支持 Releases 与 Actions artifact 追踪、Atom/API 策略对比、从 release APK
-  扫描包名、从本机包名反扫仓库、订阅项目追踪、分享链接导入、本机应用联动和 Star List 导入。
+- GitHub 页面支持 Releases、Actions artifact、通用 Git、Direct APK 和 F-Droid 仓库追踪，提供
+  Atom/API 策略对比、包名扫描、已安装应用反扫、订阅项目、分享链接导入、本机应用联动和 Star List 导入。
 - GitHub Star 导入 Activity 支持自己的 stars、他人的公开 stars 与公开 Star List
   链接，提供分类发现、质量筛选、多选导入、APK 验证和退出确认。
 - GitHub 托管安装与分享导入联动支持 Shizuku APK 交付，提供通知 / 超级岛进度、Manifest 检查、versionCode 展示和安装确认界面。
 - GitHub Actions 更新通知支持追踪应用图标、跳转到对应 Actions sheet、推荐 run 定位和调试通知测试。
-- JSON 导入支持多种 KeiOS 数据结构迁移，包括 OS 卡片迁移数据与导入结果跳转。
+- 历史中心支持 Actions、刷新诊断、追踪变更和已追踪 App 安装/更新记录，并提供未读角标、搜索、导出和 MCP 查询。
+- JSON 导入与 WebDAV 同步支持多种 KeiOS 数据结构迁移，包括 GitHub/F-Droid 追踪、OS 卡片、BA 多账号、预览摘要与导入结果跳转。
 - BA 办公室支持 AP、咖啡厅来访、竞技场刷新提醒、分服务器活动/卡池数据、分服务器 ID 卡、媒体设置、超级岛通知和学生图鉴入口。
-- 学生图鉴支持全页搜索、排序、媒体缓存、语音语言标签、BGM 收藏、鉴赏媒体、媒体导出、液态底栏和收藏导入导出。
+- 学生图鉴支持全页搜索、排序、实装学生详情长期缓存、媒体缓存、记忆大厅卡片与 PiP 视频播放、BGM 收藏、鉴赏媒体、媒体导出、液态底栏和收藏导入导出。
 - 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
   dock、背景图、应用语言、权限、缓存诊断、结构化日志、本地 GitHub Issue 反馈、无遥测诊断与通知兼容配置。
 
-## v1.9.2 重点变化
+## v1.10.0 重点变化
 
-- GitHub 追踪新增一等 F-Droid 仓库来源，覆盖官方 F-Droid、IzzyOnDroid、按名称搜索、已安装应用反扫、index 原生 versionCode、Anti-Feature 元数据和 F-Droid 详情页。
-- 导入导出、WebDAV 同步、MCP tools 和预览摘要已理解 v4 追踪数据结构，并能保存 F-Droid 来源配置。
-- 主导航迁移到 Miuix Nav 路径，预测式返回体验和 Baseline Profile 覆盖同步刷新。
-- 刷新调度和缓存链路针对 F-Droid 同仓库分组、GitHub 协程取消、Direct APK 工作和 chrome 动画做了收敛。
-- 构建链路升级到 Gradle Wrapper 9.6.1、Android Gradle Plugin 9.3.0-rc01、Ktor 3.5.1，并完成一轮 Gradle 10 兼容清理。
+- GitHub 追踪把 F-Droid 仓库作为一等来源，覆盖常用源管理、应用名搜索、已安装应用反扫、index 缓存、Anti-Feature 元数据和 F-Droid 详情页。
+- 历史中心集中显示 Actions、刷新诊断、追踪变更和已追踪 App 安装/更新记录，支持未读角标、搜索、导出和 MCP 查询。
+- WebDAV 同步会先刷新远端并展示变更计划，支持 F-Droid v4 数据和 BA 多账号合并，降低误覆盖风险。
+- BA 学生图鉴新增实装学生详情长期缓存、合并后的学生板块、记忆大厅卡片和可复用 PiP 视频播放。
+- 主导航、底栏、ActionBar、sheet 选择、自定义背景、图鉴滚动、F-Droid 刷新、MCP 服务端和依赖基线完成 v1.10.0 收尾。
 
 完整功能介绍：
 
@@ -87,7 +88,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2)。
+- 当前稳定标签：[v1.10.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.10.0)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.6.1`、Kotlin `2.4.0`、
   Compose `1.11.4`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
@@ -96,7 +97,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 文档
 
 - [文档索引](INDEX.md)
-- [Release Notes v1.9.2](RELEASE_V1.9.2.md)
+- [Release Notes v1.10.0](RELEASE_V1.10.0.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)

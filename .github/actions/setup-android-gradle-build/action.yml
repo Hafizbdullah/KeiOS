@@ -102,11 +102,31 @@ runs:
       run: |
         set -euo pipefail
 
+        release_target_version="1.10.0"
+        semver_ge() {
+          local left_major left_minor left_patch right_major right_minor right_patch
+          IFS='.' read -r left_major left_minor left_patch <<< "$1"
+          IFS='.' read -r right_major right_minor right_patch <<< "$2"
+
+          if ((left_major != right_major)); then
+            ((left_major > right_major))
+            return
+          fi
+          if ((left_minor != right_minor)); then
+            ((left_minor > right_minor))
+            return
+          fi
+          ((left_patch >= right_patch))
+        }
+
         latest_tag="$(git tag --merged HEAD --sort=-v:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
         if [[ -z "${latest_tag}" ]]; then
-          latest_tag="v1.8.3"
+          latest_tag="v${release_target_version}"
         fi
         release_version="${latest_tag#v}"
+        if semver_ge "${release_target_version}" "${release_version}"; then
+          release_version="${release_target_version}"
+        fi
 
         IFS='.' read -r major minor patch <<< "${release_version}"
         next_patch="$((patch + 1))"

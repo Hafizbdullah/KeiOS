@@ -18,6 +18,17 @@ data class AppSemVer(
             commitCount.coerceIn(0, 999)
 }
 
+fun maxSemVer(
+    first: AppSemVer,
+    second: AppSemVer,
+): AppSemVer =
+    when {
+        first.major != second.major -> if (first.major > second.major) first else second
+        first.minor != second.minor -> if (first.minor > second.minor) first else second
+        first.patch >= second.patch -> first
+        else -> second
+    }
+
 fun parseSemVerTagOrNull(raw: String?): AppSemVer? {
     val normalized = raw?.trim().orEmpty()
     val match = Regex("""^v?(\d+)\.(\d+)\.(\d+)$""").matchEntire(normalized) ?: return null
@@ -121,15 +132,16 @@ abstract class BuildTimestampValueSource : ValueSource<Long, ValueSourceParamete
     override fun obtain(): Long = System.currentTimeMillis()
 }
 
-val fallbackReleaseVersion = AppSemVer(major = 1, minor = 9, patch = 2)
+val fallbackReleaseVersion = AppSemVer(major = 1, minor = 10, patch = 0)
 val configuredReleaseVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.version.name", "KEIOS_VERSION_NAME"))
 val configuredVersionAnchorTag =
     readGradleEnvOrLocalPropertyOrNull("keios.version.anchorTag", "KEIOS_VERSION_ANCHOR_TAG")
 val discoveredVersionAnchorTag = configuredVersionAnchorTag ?: latestMergedSemVerTagOrNull()
+val discoveredReleaseVersion = parseSemVerTagOrNull(discoveredVersionAnchorTag)
 val releaseVersion =
     configuredReleaseVersion
-        ?: parseSemVerTagOrNull(discoveredVersionAnchorTag)
+        ?: discoveredReleaseVersion?.let { maxSemVer(it, fallbackReleaseVersion) }
         ?: fallbackReleaseVersion
 val benchmarkVersion =
     parseSemVerTagOrNull(readGradleEnvOrLocalPropertyOrNull("keios.nextVersion.name", "KEIOS_NEXT_VERSION_NAME"))

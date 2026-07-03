@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.9.2`                                             |
+| Latest stable tag | `v1.10.0`                                            |
 
 ## Quick Links
 
@@ -61,9 +61,9 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
   onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 45 tools
   across runtime, Home, OS, GitHub discovery/tracking, and BA cache inspection.
-- GitHub tracking for Releases and Actions artifacts, with Atom/API strategy comparison,
-  package-name scanning from release APKs, reverse repository scanning from installed packages,
-  subscription-project tracking, share-import links, app linkage, and Star List import.
+- GitHub tracking for Releases, Actions artifacts, generic Git sources, Direct APKs, and F-Droid
+  repositories, with Atom/API strategy comparison, package-name scanning, installed-app reverse
+  scan, subscription projects, share-import links, app linkage, and Star List import.
 - GitHub Star import activity for authenticated stars, public user stars, and public Star List URLs,
   with list discovery, quality filters, multi-select import, APK verification, and exit
   confirmation.
@@ -72,31 +72,34 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   confirmation surfaces.
 - GitHub Actions update notifications with tracked-app icons, deep links into the Actions sheet,
   recommended run targeting, and debug notification testing.
-- JSON import for multi-schema KeiOS data migration, including OS card transfer data and routed
-  result screens.
+- History Hub for Actions, refresh diagnostics, tracking changes, and tracked-app install/update
+  events, with unread badges, search, export, and MCP query support.
+- JSON import and WebDAV sync for multi-schema KeiOS data migration, including GitHub/F-Droid
+  tracking, OS card transfer data, BA multi-account data, previews, and routed result screens.
 - BA office helpers for AP, cafe visit, arena refresh reminders, server-aware calendar/pool data,
   per-server ID cards, media settings, AP/cafe Super Island notifications, and student-guide entry
   points.
-- Student Guide catalog with full-page search, sorting, media cache, voice-language labels, BGM
-  favorites, gallery viewing, media export, liquid bottom dock, and import/export for favorites.
+- Student Guide catalog with full-page search, sorting, long-lived implemented-student detail
+  cache, media cache, Memorial Lobby cards and PiP video playback, BGM favorites, gallery viewing,
+  media export, liquid bottom dock, and import/export for favorites.
 - Settings for theme, motion, v2 liquid-glass components, bottom-bar effect policy, search focus
   behavior, grip-aware floating docks, background images, app language, permissions, cache
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.9.2 Highlights
+## v1.10.0 Highlights
 
-- GitHub tracking now adds first-class F-Droid repository sources, including official F-Droid,
-  IzzyOnDroid, package-name search, installed-app reverse scan, index-native versionCode tracking,
-  Anti-Feature metadata, and F-Droid detail sheets.
-- Import/export, WebDAV sync, MCP tools, and preview summaries understand the v4 tracked-item schema
-  with F-Droid source data.
-- Main navigation moved to the Miuix Nav path, with refreshed predictive-back behavior and baseline
-  profile coverage.
-- Refresh scheduling and cache handling were tuned for grouped F-Droid repositories, GitHub
-  cancellation safety, Direct APK work, and smoother chrome motion.
-- Build tooling moved forward with Gradle Wrapper 9.6.1, Android Gradle Plugin 9.3.0-rc01, Ktor
-  3.5.1, refreshed Miuix dependencies, and Gradle 10 compatibility cleanup.
+- GitHub tracking now treats F-Droid repositories as first-class sources, with common source
+  management, app-name search, installed-app reverse scan, index cache, Anti-Feature metadata, and
+  F-Droid detail sheets.
+- History Hub groups Actions, refresh diagnostics, tracking changes, and tracked-app install/update
+  records with unread badges, search, export, and MCP access.
+- WebDAV sync refreshes the remote side before showing a change plan, supports F-Droid v4 data, and
+  merges BA multi-account data more safely.
+- BA Student Guide adds long-lived implemented-student detail cache, a merged Student tab, Memorial
+  Lobby cards, and reusable PiP video playback.
+- Main navigation, bottom bars, ActionBars, sheet selection, custom backgrounds, catalog scrolling,
+  F-Droid refresh, MCP service work, and dependency baselines were tightened for the v1.10.0 release.
 
 Read the full feature tour:
 
@@ -106,7 +109,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.9.2](https://github.com/hosizoraru/KeiOS/releases/tag/v1.9.2).
+- Current stable tag: [v1.10.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.10.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.6.1`, Kotlin `2.4.0`,
   Compose `1.11.4`, Android Gradle Plugin `9.3.0-rc01`, Ktor `3.5.1`.
@@ -115,7 +118,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.9.2](readme/RELEASE_V1.9.2.md)
+- [Release Notes v1.10.0](readme/RELEASE_V1.10.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)
