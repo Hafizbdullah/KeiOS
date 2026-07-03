@@ -634,18 +634,28 @@ internal class BaGuideCatalogViewModel(
         loadJob?.cancel()
         loadJob =
             viewModelScope.launch {
+                val currentCatalog = _dataState.value.catalog
+                val hasCurrentCatalogContent =
+                    currentCatalog.entriesByTab.values.any { entries -> entries.isNotEmpty() }
+                _dataState.update { state ->
+                    if (state.loading) {
+                        state
+                    } else {
+                        state.copy(loading = true)
+                    }
+                }
                 if (
+                    hasCurrentCatalogContent &&
                     allowInitialDelay &&
                     currentBinding.transitionAnimationsEnabled &&
                     currentBinding.initialFetchDelayMs > 0
                 ) {
                     delay(currentBinding.initialFetchDelayMs.milliseconds)
                 }
-                _dataState.update { state -> state.copy(loading = true) }
                 val result =
                     repository.loadCatalog(
                         context = appContext,
-                        currentCatalog = _dataState.value.catalog,
+                        currentCatalog = currentCatalog,
                         manualRefresh = manualRefresh,
                         loadFailedText = currentBinding.loadFailedText,
                         refreshFailedKeepCacheText = currentBinding.refreshFailedKeepCacheText,

@@ -6,6 +6,11 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,7 +118,7 @@ internal fun MainScreenNavHost(
     val navTransitionSpec =
         remember(routeAnimationsEnabled) {
             if (routeAnimationsEnabled) {
-                defaultTransitionSpec<NavKey>()
+                appNavTransitionSpec()
             } else {
                 noNavContentTransform()
             }
@@ -121,7 +126,7 @@ internal fun MainScreenNavHost(
     val navPopTransitionSpec =
         remember(routeAnimationsEnabled) {
             if (routeAnimationsEnabled) {
-                defaultPopTransitionSpec<NavKey>()
+                appNavPopTransitionSpec()
             } else {
                 noNavContentTransform()
             }
@@ -355,6 +360,56 @@ private fun <T : Any> noNavContentTransform():
     )
 }
 
+private fun appNavTransitionSpec():
+        AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+    if (targetState.key is KeiosRoute.BaGuideCatalog) {
+        baGuideCatalogEnterContentTransform()
+    } else {
+        defaultTransitionSpec<NavKey>().invoke(this)
+    }
+}
+
+private fun appNavPopTransitionSpec():
+        AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+    if (initialState.key is KeiosRoute.BaGuideCatalog) {
+        baGuideCatalogPopContentTransform()
+    } else {
+        defaultPopTransitionSpec<NavKey>().invoke(this)
+    }
+}
+
+private fun baGuideCatalogEnterContentTransform(): ContentTransform =
+    ContentTransform(
+        targetContentEnter =
+            fadeIn(animationSpec = tween(durationMillis = CatalogRouteEnterFadeMs)) +
+                slideInHorizontally(
+                    initialOffsetX = { width -> width / CatalogRouteEnterOffsetDivisor },
+                    animationSpec = tween(durationMillis = CatalogRouteEnterSlideMs),
+                ),
+        initialContentExit =
+            fadeOut(animationSpec = tween(durationMillis = CatalogRouteExitFadeMs)) +
+                slideOutHorizontally(
+                    targetOffsetX = { width -> -width / CatalogRouteExitOffsetDivisor },
+                    animationSpec = tween(durationMillis = CatalogRouteExitSlideMs),
+                ),
+    )
+
+private fun baGuideCatalogPopContentTransform(): ContentTransform =
+    ContentTransform(
+        targetContentEnter =
+            fadeIn(animationSpec = tween(durationMillis = CatalogRoutePopEnterFadeMs)) +
+                slideInHorizontally(
+                    initialOffsetX = { width -> -width / CatalogRoutePopEnterOffsetDivisor },
+                    animationSpec = tween(durationMillis = CatalogRoutePopEnterSlideMs),
+                ),
+        initialContentExit =
+            fadeOut(animationSpec = tween(durationMillis = CatalogRoutePopExitFadeMs)) +
+                slideOutHorizontally(
+                    targetOffsetX = { width -> width / CatalogRoutePopExitOffsetDivisor },
+                    animationSpec = tween(durationMillis = CatalogRoutePopExitSlideMs),
+                ),
+    )
+
 private fun <T : Any> noNavPredictiveContentTransform():
         AnimatedContentTransitionScope<Scene<T>>.(@NavigationEvent.SwipeEdge Int) -> ContentTransform = {
     ContentTransform(
@@ -382,3 +437,16 @@ private fun MainScreenRouteBackgroundHost(
         content = content,
     )
 }
+
+private const val CatalogRouteEnterFadeMs = 140
+private const val CatalogRouteEnterSlideMs = 220
+private const val CatalogRouteExitFadeMs = 110
+private const val CatalogRouteExitSlideMs = 180
+private const val CatalogRoutePopEnterFadeMs = 120
+private const val CatalogRoutePopEnterSlideMs = 190
+private const val CatalogRoutePopExitFadeMs = 120
+private const val CatalogRoutePopExitSlideMs = 210
+private const val CatalogRouteEnterOffsetDivisor = 7
+private const val CatalogRouteExitOffsetDivisor = 18
+private const val CatalogRoutePopEnterOffsetDivisor = 18
+private const val CatalogRoutePopExitOffsetDivisor = 7
