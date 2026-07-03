@@ -295,7 +295,7 @@ object GitHubTrackedRefreshBatchRunner {
         val elapsedMs: Long
     )
 
-    private const val REPOSITORY_REFRESH_ITEM_TIMEOUT_MS = 60_000L
-    private const val DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS = 90_000L
-    private const val FDROID_REFRESH_ITEM_TIMEOUT_MS = 120_000L
+    private const val REPOSITORY_REFRESH_ITEM_TIMEOUT_MS = 35_000L
+    private const val DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS = 45_000L
+    private const val FDROID_REFRESH_ITEM_TIMEOUT_MS = 45_000L
 }

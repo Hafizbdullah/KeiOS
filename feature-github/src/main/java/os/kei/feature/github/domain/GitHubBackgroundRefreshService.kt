@@ -16,11 +16,9 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.actionsUpdateIntervalMs
-import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
-import os.kei.feature.github.model.updateIntervalMs
 
 private const val GITHUB_BACKGROUND_REFRESH_TAG = "GitHubBackgroundRefresh"
+private const val GITHUB_BACKGROUND_ITEM_TIMEOUT_MS = 15_000L
 
 data class GitHubBackgroundTickResult(
     val refreshResult: GitHubTrackedRefreshBatchResult? = null,
@@ -54,11 +52,7 @@ class GitHubBackgroundRefreshService(
             if (tracked.isEmpty()) return@withLock GitHubBackgroundTickResult()
 
             val nowMs = System.currentTimeMillis()
-            val trackedUpdateTargetItems =
-                selectTrackedUpdateTargets(
-                    snapshot = snapshot,
-                    nowMs = nowMs,
-                )
+            val trackedUpdateTargetItems = selectGitHubBackgroundReleaseTargets(snapshot, nowMs)
             val actionsTargetItems =
                 selectActionsUpdateTargets(
                     snapshot = snapshot,
@@ -95,6 +89,7 @@ class GitHubBackgroundRefreshService(
                                     refreshTimestampMs = nowMs,
                                     maxConcurrency = GitHubTrackedRefreshBatchScheduler
                                         .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
+                                    itemTimeoutMs = { GITHUB_BACKGROUND_ITEM_TIMEOUT_MS },
                                     onProgress = { progress ->
                                         GitHubRefreshRuntimeStore.progress(
                                             sessionId = runtimeSession.id,
@@ -355,16 +350,7 @@ class GitHubBackgroundRefreshService(
         nowMs: Long,
     ): List<GitHubTrackedApp> {
         if (snapshot.items.isEmpty()) return emptyList()
-        return snapshot.items.filter { item ->
-            if (item.excludesAutomaticReleaseRefresh()) return@filter false
-            val checkedAtMillis =
-                snapshot.checkCache[item.id]?.checkedAtMillis
-                    ?.takeIf { it > 0L }
-                    ?: snapshot.lastRefreshMs
-            checkedAtMillis <= 0L ||
-                (nowMs - checkedAtMillis).coerceAtLeast(0L) >=
-                item.updateIntervalMs(snapshot.refreshIntervalHours)
-        }
+        return selectGitHubBackgroundReleaseTargets(snapshot, nowMs)
     }
 
     private suspend fun selectActionsUpdateTargets(
@@ -377,25 +363,11 @@ class GitHubBackgroundRefreshService(
             withContext(AppDispatchers.githubLocal) {
                 actionsService.loadRecommendedRunSnapshots()
             }
-        return enabledItems.filter { item ->
-            shouldCheckActionsUpdate(
-                item = item,
-                previous = previousById[item.id],
-                refreshIntervalHours = snapshot.refreshIntervalHours,
-                nowMs = nowMs,
-            )
-        }
-    }
-
-    private fun shouldCheckActionsUpdate(
-        item: GitHubTrackedApp,
-        previous: GitHubActionsRecommendedRunSnapshot?,
-        refreshIntervalHours: Int,
-        nowMs: Long,
-    ): Boolean {
-        val checkedAtMillis = previous?.checkedAtMillis ?: 0L
-        if (checkedAtMillis <= 0L) return true
-        val intervalMs = item.actionsUpdateIntervalMs(refreshIntervalHours)
-        return (nowMs - checkedAtMillis).coerceAtLeast(0L) >= intervalMs
+        return selectGitHubBackgroundActionsTargets(
+            items = enabledItems,
+            previousById = previousById,
+            refreshIntervalHours = snapshot.refreshIntervalHours,
+            nowMs = nowMs,
+        )
     }
 }

@@ -157,9 +157,9 @@ class FdroidRepositoryIndexClient(
         const val HTTP_NOT_MODIFIED = 304
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
         val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
-            .connectTimeout(12.seconds)
-            .readTimeout(60.seconds)
-            .callTimeout(90.seconds)
+            .connectTimeout(8.seconds)
+            .readTimeout(30.seconds)
+            .callTimeout(42.seconds)
             .build()
     }
 }
