@@ -3,6 +3,11 @@
 package os.kei.ui.page.main.student.catalog.page
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,8 +23,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -31,6 +38,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
@@ -45,7 +53,9 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
+import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -120,13 +130,44 @@ internal fun BaGuideCatalogPageContent(
             )
         }
 
-    LaunchedEffect(playbackForegroundImageUrls) {
-        requestVisibleCatalogImages(playbackForegroundImageUrls)
-    }
-
     BackHandler(enabled = pageState.searchVisible) {
         pageState.closeSearch()
     }
+    val initialContentCanReveal =
+        remember(
+            chromePresentation.activeTab,
+            chromePresentation.activeCatalogTab,
+            catalogDataState,
+            catalogListDerivedStates,
+            studentBgmListDerivedState,
+            memoryLobbyListDerivedState,
+            favoriteBgmListDerivedState,
+        ) {
+            isBaGuideCatalogInitialContentReady(
+                activeTab = chromePresentation.activeTab,
+                activeCatalogTab = chromePresentation.activeCatalogTab,
+                catalogDataState = catalogDataState,
+                catalogListDerivedStates = catalogListDerivedStates,
+                studentBgmListDerivedState = studentBgmListDerivedState,
+                memoryLobbyListDerivedState = memoryLobbyListDerivedState,
+                favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+            )
+        }
+    var initialContentRevealed by remember {
+        mutableStateOf(initialContentCanReveal)
+    }
+    LaunchedEffect(initialContentCanReveal) {
+        if (initialContentCanReveal) {
+            initialContentRevealed = true
+        }
+    }
+    LaunchedEffect(initialContentRevealed, playbackForegroundImageUrls) {
+        if (initialContentRevealed) {
+            requestVisibleCatalogImages(playbackForegroundImageUrls)
+        }
+    }
+    val initialContentFadeMs =
+        resolvedMotionDuration(CatalogInitialContentCrossfadeMs, transitionAnimationsEnabled)
 
     Box(
         modifier =
@@ -150,40 +191,50 @@ internal fun BaGuideCatalogPageContent(
                     .fillMaxSize()
                     .layerBackdrop(bottomChromeBackdrop),
         ) {
-            BaGuideCatalogPagePager(
-                pagerState = pagerState,
-                tabs = tabs,
-                pageState = pageState,
-                filterSortState = filterSortState,
-                catalogDataState = catalogDataState,
-                catalogListDerivedStates = catalogListDerivedStates,
-                catalogFavoriteEntries = catalogFavoriteEntries,
-                studentBgmListDerivedState = studentBgmListDerivedState,
-                memoryLobbyListDerivedState = memoryLobbyListDerivedState,
-                studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
-                favoriteBgmListDerivedState = favoriteBgmListDerivedState,
-                favoriteBgms = favoriteBgms,
-                favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
-                pageActions = pageActions,
-                playbackCoordinator = playbackCoordinator,
-                playbackUiState = playbackUiState,
-                chromeScrollState = chromeScrollState,
-                pageChromeBackdrop = pageChromeBackdrop,
-                transitionAnimationsEnabled = transitionAnimationsEnabled,
-                mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                accent = accent,
-                onOpenGuide = onOpenGuide,
-                onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
-                modifier =
-                    Modifier
-                        .drawWithContent {
-                            drawContent()
-                            val veilAlpha = pagerSwitchMotion.veilAlpha
-                            if (veilAlpha > 0f) {
-                                drawRect(panelBackground.copy(alpha = veilAlpha))
-                            }
-                        },
-            )
+            Crossfade(
+                targetState = initialContentRevealed,
+                animationSpec = tween(durationMillis = initialContentFadeMs),
+                label = "BaGuideCatalogInitialContent",
+            ) { contentReady ->
+                if (contentReady) {
+                    BaGuideCatalogPagePager(
+                        pagerState = pagerState,
+                        tabs = tabs,
+                        pageState = pageState,
+                        filterSortState = filterSortState,
+                        catalogDataState = catalogDataState,
+                        catalogListDerivedStates = catalogListDerivedStates,
+                        catalogFavoriteEntries = catalogFavoriteEntries,
+                        studentBgmListDerivedState = studentBgmListDerivedState,
+                        memoryLobbyListDerivedState = memoryLobbyListDerivedState,
+                        studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
+                        favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+                        favoriteBgms = favoriteBgms,
+                        favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
+                        pageActions = pageActions,
+                        playbackCoordinator = playbackCoordinator,
+                        playbackUiState = playbackUiState,
+                        chromeScrollState = chromeScrollState,
+                        pageChromeBackdrop = pageChromeBackdrop,
+                        transitionAnimationsEnabled = transitionAnimationsEnabled,
+                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                        accent = accent,
+                        onOpenGuide = onOpenGuide,
+                        onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
+                        modifier =
+                            Modifier
+                                .drawWithContent {
+                                    drawContent()
+                                    val veilAlpha = pagerSwitchMotion.veilAlpha
+                                    if (veilAlpha > 0f) {
+                                        drawRect(panelBackground.copy(alpha = veilAlpha))
+                                    }
+                                },
+                    )
+                } else {
+                    BaGuideCatalogInitialLoadingContent(accent = accent)
+                }
+            }
             Box(
                 modifier =
                     Modifier
@@ -292,37 +343,102 @@ internal fun BaGuideCatalogPageContent(
                         ),
             )
         }
-        BaGuideCatalogBottomChromeRoute(
-            accent = accent,
-            scrollState = chromeScrollState,
-            dockTabs = chromeTabs,
-            playbackFavorite = chromePresentation.playbackFavorite,
-            currentTitle = chromePresentation.currentTitle,
-            artworkImageUrl = chromePresentation.artworkImageUrl,
-            playbackUiState = playbackUiState,
-            searchEnabled = enableSearchBar,
-            pageState = pageState,
-            searchQuery = chromePresentation.searchQuery,
-            searchPlaceholder = chromePresentation.searchPlaceholder,
-            activeTab = chromePresentation.activeTab,
-            tabs = tabs,
-            pagerState = pagerState,
-            transitionAnimationsEnabled = transitionAnimationsEnabled,
-            searchAutoFocusEnabled = searchAutoFocusEnabled,
-            playbackCoordinator = playbackCoordinator,
-            pagerSwitchMotion = pagerSwitchMotion,
-            backdrop = bottomChromeBackdrop,
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(
-                        start = 12.dp,
-                        end = 12.dp,
-                        bottom = navigationBottom + 12.dp,
-                    ).offset {
-                        val lift = if (pageState.searchInputActive) keyboardLiftProvider() else 0.dp
-                        IntOffset(x = 0, y = -lift.roundToPx())
-                    },
-        )
+        AnimatedVisibility(
+            visible = initialContentRevealed,
+            enter = fadeIn(animationSpec = tween(durationMillis = initialContentFadeMs)),
+            exit = fadeOut(animationSpec = tween(durationMillis = initialContentFadeMs)),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            BaGuideCatalogBottomChromeRoute(
+                accent = accent,
+                scrollState = chromeScrollState,
+                dockTabs = chromeTabs,
+                playbackFavorite = chromePresentation.playbackFavorite,
+                currentTitle = chromePresentation.currentTitle,
+                artworkImageUrl = chromePresentation.artworkImageUrl,
+                playbackUiState = playbackUiState,
+                searchEnabled = enableSearchBar,
+                pageState = pageState,
+                searchQuery = chromePresentation.searchQuery,
+                searchPlaceholder = chromePresentation.searchPlaceholder,
+                activeTab = chromePresentation.activeTab,
+                tabs = tabs,
+                pagerState = pagerState,
+                transitionAnimationsEnabled = transitionAnimationsEnabled,
+                searchAutoFocusEnabled = searchAutoFocusEnabled,
+                playbackCoordinator = playbackCoordinator,
+                pagerSwitchMotion = pagerSwitchMotion,
+                backdrop = bottomChromeBackdrop,
+                modifier =
+                    Modifier
+                        .padding(
+                            start = 12.dp,
+                            end = 12.dp,
+                            bottom = navigationBottom + 12.dp,
+                        ).offset {
+                            val lift = if (pageState.searchInputActive) keyboardLiftProvider() else 0.dp
+                            IntOffset(x = 0, y = -lift.roundToPx())
+                        },
+            )
+        }
     }
 }
+
+@Composable
+private fun BaGuideCatalogInitialLoadingContent(accent: Color) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(
+                    top = CATALOG_MUSIC_CONTENT_TOP_PADDING + AppChromeTokens.topBarToHeaderGap,
+                    bottom = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
+                    start = AppChromeTokens.pageHorizontalPadding,
+                    end = AppChromeTokens.pageHorizontalPadding,
+                ),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        AppAronaLoadingPanel(accent = accent)
+    }
+}
+
+private fun isBaGuideCatalogInitialContentReady(
+    activeTab: BaGuideCatalogPageTab,
+    activeCatalogTab: BaGuideCatalogTab?,
+    catalogDataState: BaGuideCatalogDataUiState,
+    catalogListDerivedStates: Map<BaGuideCatalogTab, BaGuideCatalogListDerivedState>,
+    studentBgmListDerivedState: BaGuideStudentBgmListDerivedState,
+    memoryLobbyListDerivedState: BaGuideMemoryLobbyListDerivedState,
+    favoriteBgmListDerivedState: BaGuideFavoriteBgmListDerivedState,
+): Boolean {
+    if (!catalogDataState.error.isNullOrBlank()) return true
+    val catalog = catalogDataState.catalog
+    return when {
+        activeCatalogTab != null -> {
+            val derivedState = catalogListDerivedStates[activeCatalogTab]
+            catalog.entries(activeCatalogTab).isNotEmpty() &&
+                derivedState != null &&
+                !derivedState.deriving
+        }
+
+        activeTab.specialTab == BaGuideCatalogSpecialTab.MemoryLobby ->
+            catalog.hasAnyGuideCatalogEntry() &&
+                memoryLobbyListDerivedState.allStudentEntries.isNotEmpty() &&
+                !memoryLobbyListDerivedState.deriving
+
+        activeTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm ->
+            catalog.hasAnyGuideCatalogEntry() &&
+                studentBgmListDerivedState.allStudentEntries.isNotEmpty() &&
+                !studentBgmListDerivedState.deriving
+
+        activeTab.specialTab == BaGuideCatalogSpecialTab.FavoriteBgm ->
+            catalog.hasAnyGuideCatalogEntry() && !favoriteBgmListDerivedState.deriving
+
+        else -> catalog.hasAnyGuideCatalogEntry()
+    }
+}
+
+private fun BaGuideCatalogBundle.hasAnyGuideCatalogEntry(): Boolean =
+    entriesByTab.values.any { entries -> entries.isNotEmpty() }
+
+private const val CatalogInitialContentCrossfadeMs = 140
