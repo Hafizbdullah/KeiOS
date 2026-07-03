@@ -2,6 +2,7 @@ package os.kei.feature.home.data
 
 import android.content.Context
 import android.content.pm.PackageManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -220,6 +221,7 @@ internal class HomeOverviewRepository(
 }
 
 private fun logOverviewLoadFailure(section: String, trigger: String, error: Throwable) {
+    if (error is CancellationException) throw error
     AppLogger.w(
         TAG,
         "$section failed (trigger=$trigger)",

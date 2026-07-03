@@ -442,6 +442,46 @@ class WebDavSyncEngineTest {
     }
 
     @Test
+    fun `auto local change upload adopts refreshed etag when conflict remote already matches local fingerprint`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"value":"same","exportedAtMs":1}""", "etag-refreshed"),
+            ),
+            uploadResults = mutableListOf(WebDavUploadResult.Conflict),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 22_333L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"value":"same","exportedAtMs":2}""",
+            localFingerprintJson = """{"value":"same"}""",
+            remoteFingerprintJson = { """{"value":"same"}""" },
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.OsActivityCards,
+                port = port.port,
+                expectedRemoteEtag = "etag-stale",
+                expectedRemoteHash = WebDavSyncEngine.contentHash("""{"value":"old-algorithm"}"""),
+            )
+
+        assertEquals(WebDavItemStatus.UpToDate, outcome.status)
+        assertEquals(1, client.uploadCalls.size)
+        assertEquals("etag-stale", client.uploadCalls.single().etag)
+        assertEquals("etag-refreshed", metadata.etags[WebDavSyncItem.OsActivityCards])
+        assertEquals(
+            WebDavSyncEngine.contentHash("""{"value":"same"}"""),
+            metadata.hashes[WebDavSyncItem.OsActivityCards],
+        )
+        assertTrue(metadata.pendingStates.isEmpty())
+    }
+
+    @Test
     fun `auto local change upload refreshes etag when conflict keeps the same remote hash`() = runBlocking {
         val remoteFingerprint = """{"value":"remote-old"}"""
         val client = FakeWebDavSyncClientBridge(

@@ -363,23 +363,43 @@ internal class WebDavSyncEngine(
         local: String,
         expectedRemoteHash: String?,
     ): WebDavItemOutcome =
-        when (
-            val retryUpload =
-                uploadLocalChangeWithoutEtag(
-                    c = c,
-                    item = item,
-                    port = port,
-                    local = local,
-                    expectedRemoteHash = expectedRemoteHash,
-                )
-        ) {
-            is WebDavUploadResult.Success -> {
-                recordSynced(item, retryUpload.etag, port.fingerprintJson())
-                saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
-                WebDavItemOutcome(WebDavItemStatus.Uploaded)
+        when (val refreshed = c.download(item.fileName)) {
+            WebDavDownloadResult.Empty -> {
+                metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
+                when (val retryUpload = c.uploadIfAbsent(item.fileName, local)) {
+                    is WebDavUploadResult.Success -> {
+                        recordSynced(item, retryUpload.etag, port.fingerprintJson())
+                        saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
+                        WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                    }
+                    WebDavUploadResult.Conflict -> conflictOutcome(item)
+                    is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
+                }
             }
-            WebDavUploadResult.Conflict -> conflictOutcome(item)
-            is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
+            is WebDavDownloadResult.Success -> {
+                saveRemoteSummaryFromRemote(item, port, refreshed.content, refreshed.etag)
+                val localFingerprint = port.fingerprintJson()
+                val localHash = contentHash(localFingerprint)
+                val refreshedRemoteHash = contentHash(port.remoteFingerprintJson(refreshed.content))
+                when {
+                    refreshedRemoteHash == localHash -> {
+                        recordSynced(item, refreshed.etag, localFingerprint)
+                        WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                    }
+                    expectedRemoteHash != null && refreshedRemoteHash == expectedRemoteHash ->
+                        when (val retryUpload = c.upload(item.fileName, local, refreshed.etag)) {
+                            is WebDavUploadResult.Success -> {
+                                recordSynced(item, retryUpload.etag, localFingerprint)
+                                saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
+                                WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                            }
+                            WebDavUploadResult.Conflict -> conflictOutcome(item)
+                            is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
+                        }
+                    else -> conflictOutcome(item)
+                }
+            }
+            is WebDavDownloadResult.Error -> errorOutcome(refreshed.error)
         }
 
     // ── Manual upload (push local → remote, overwrite) ─────────────────

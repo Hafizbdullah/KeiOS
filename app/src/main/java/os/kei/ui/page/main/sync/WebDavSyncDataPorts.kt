@@ -5,9 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import os.kei.BuildConfig
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.json.KeiJson
+import os.kei.core.json.encodeCompact
 import os.kei.feature.github.data.local.GitHubTrackedItemsImportPayload
 import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -20,7 +25,10 @@ import os.kei.ui.page.main.os.shell.buildBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shell.rememberBuiltInShellCommandCards
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCardStore
+import os.kei.ui.page.main.os.shortcut.ShortcutIntentExtra
 import os.kei.ui.page.main.os.shortcut.buildBuiltInActivityShortcutCards
+import os.kei.ui.page.main.os.shortcut.normalizeActivityShortcutConfig
+import os.kei.ui.page.main.os.shortcut.osActivityShortcutMergeKey
 import os.kei.ui.page.main.os.shortcut.rememberBuiltInActivityShortcutCards
 import os.kei.ui.page.main.os.transfer.OsCardTransferService
 import os.kei.ui.page.main.os.transfer.parseOsCardImportRoot
@@ -30,6 +38,7 @@ import os.kei.ui.page.main.student.catalog.page.buildCatalogFavoritesExportJson
 import os.kei.ui.page.main.student.catalog.page.parseCatalogFavoritesExport
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.buildBaAccountsSyncFingerprintJson
+import java.util.Locale
 
 /**
  * Builds the [WebDavSyncDataPort] for every [WebDavSyncItem].
@@ -198,6 +207,25 @@ private fun buildWebDavSyncDataPorts(
                     defaults = googleSystemServiceDefaults,
                 )
             },
+            fingerprintJson = {
+                val cards = OsActivityShortcutCardStore.loadCards(
+                    defaults = googleSystemServiceDefaults,
+                    builtInSampleDefaults = googleSystemServiceDefaults,
+                    builtInActivityShortcutCards = builtInActivityShortcutCards,
+                )
+                buildOsActivityCardsSyncFingerprintJson(
+                    cards = cards,
+                    defaults = googleSystemServiceDefaults,
+                )
+            },
+            remoteFingerprintJson = { raw ->
+                buildRemoteOsActivityCardsSyncFingerprintJson(
+                    raw = raw,
+                    defaults = googleSystemServiceDefaults,
+                    builtInSampleDefaults = googleSystemServiceDefaults,
+                    builtInActivityShortcutCards = builtInActivityShortcutCards,
+                )
+            },
             merge = { raw ->
                 val payload =
                     OsCardTransferService.parseActivityImportPayload(
@@ -244,6 +272,14 @@ private fun buildWebDavSyncDataPorts(
                 )
                 OsCardTransferService.buildShellCardsExportJson(cards)
             },
+            fingerprintJson = {
+                buildOsShellCardsSyncFingerprintJson(
+                    OsShellCommandCardStore.loadCards(
+                        builtInShellCommandCards = builtInShellCommandCards,
+                    ),
+                )
+            },
+            remoteFingerprintJson = { raw -> buildRemoteOsShellCardsSyncFingerprintJson(raw) },
             merge = { raw ->
                 val payload = OsCardTransferService.parseShellImportPayload(raw)
                 OsCardTransferService.applyShellImport(
@@ -290,6 +326,147 @@ internal data class WebDavBuiltInCardSets(
     val activityShortcutCards: List<OsActivityShortcutCard>,
     val shellCommandCards: List<OsShellCommandCard>,
 )
+
+internal fun buildOsActivityCardsSyncFingerprintJson(
+    cards: List<OsActivityShortcutCard>,
+    defaults: OsGoogleSystemServiceConfig,
+): String =
+    buildJsonObject {
+        put("schema", "keios.os.activity.sync_fingerprint")
+        put("schemaVersion", 1)
+        put(
+            "items",
+            buildJsonArray {
+                cards
+                    .asActivitySyncFingerprintItems(defaults)
+                    .forEach { item ->
+                        add(
+                            buildJsonObject {
+                                put("identity", item.identity)
+                                put("builtIn", item.builtIn)
+                                put("visible", item.visible)
+                                item.config?.let { config ->
+                                    put("title", config.title)
+                                    put("subtitle", config.subtitle)
+                                    put("appName", config.appName)
+                                    put("packageName", config.packageName)
+                                    put("className", config.className)
+                                    put("intentAction", config.intentAction)
+                                    put("intentCategory", config.intentCategory)
+                                    put("intentFlags", config.intentFlags)
+                                    put("intentUriData", config.intentUriData)
+                                    put("intentMimeType", config.intentMimeType)
+                                    put(
+                                        "intentExtras",
+                                        buildJsonArray {
+                                            config.intentExtras.forEach { extra ->
+                                                add(
+                                                    buildJsonObject {
+                                                        put("key", extra.key)
+                                                        put("type", extra.type.rawValue)
+                                                        put("value", extra.value)
+                                                    },
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
+                            },
+                        )
+                    }
+            },
+        )
+    }.encodeCompact(KeiJson.pretty)
+
+internal fun buildRemoteOsActivityCardsSyncFingerprintJson(
+    raw: String,
+    defaults: OsGoogleSystemServiceConfig,
+    builtInSampleDefaults: OsGoogleSystemServiceConfig,
+    builtInActivityShortcutCards: List<OsActivityShortcutCard>,
+): String {
+    val payload =
+        OsCardTransferService.parseActivityImportPayload(
+            raw = raw,
+            defaults = defaults,
+            builtInSampleDefaults = builtInSampleDefaults,
+            builtInActivityShortcutCards = builtInActivityShortcutCards,
+        )
+    return buildOsActivityCardsSyncFingerprintJson(
+        cards = payload.cards,
+        defaults = defaults,
+    )
+}
+
+internal fun buildOsShellCardsSyncFingerprintJson(cards: List<OsShellCommandCard>): String =
+    OsShellCommandCardStore.buildCardsExportJson(
+        cards = cards.map(OsShellCommandCard::asSyncFingerprintCard),
+        exportedAtMillis = 0L,
+    )
+
+internal fun buildRemoteOsShellCardsSyncFingerprintJson(raw: String): String {
+    val payload = OsCardTransferService.parseShellImportPayload(raw)
+    return buildOsShellCardsSyncFingerprintJson(payload.cards)
+}
+
+private fun List<OsActivityShortcutCard>.asActivitySyncFingerprintItems(
+    defaults: OsGoogleSystemServiceConfig,
+): List<OsActivitySyncFingerprintItem> =
+    map { card ->
+        val normalizedConfig =
+            normalizeActivityShortcutConfig(card.config, defaults)
+                .copy(intentExtras = card.config.intentExtras.asActivitySyncFingerprintExtras())
+                .let { normalizeActivityShortcutConfig(it, defaults) }
+        val normalizedCard = card.copy(config = normalizedConfig)
+        if (normalizedCard.isBuiltInSample) {
+            OsActivitySyncFingerprintItem(
+                identity = "built-in:${normalizedCard.id.trim()}",
+                builtIn = true,
+                visible = normalizedCard.visible,
+                config = null,
+            )
+        } else {
+            OsActivitySyncFingerprintItem(
+                identity = "custom:${osActivityShortcutMergeKey(normalizedCard)}",
+                builtIn = false,
+                visible = normalizedCard.visible,
+                config = normalizedConfig,
+            )
+        }
+    }.sortedWith(
+        compareBy<OsActivitySyncFingerprintItem> { it.identity }
+            .thenBy { it.visible.toString() },
+    )
+
+private data class OsActivitySyncFingerprintItem(
+    val identity: String,
+    val builtIn: Boolean,
+    val visible: Boolean,
+    val config: OsGoogleSystemServiceConfig?,
+)
+
+private fun List<ShortcutIntentExtra>.asActivitySyncFingerprintExtras(): List<ShortcutIntentExtra> =
+    map { extra ->
+        extra.copy(
+            key = extra.key.trim(),
+            value = extra.value.trim(),
+        )
+    }
+        .filter { it.key.isNotBlank() }
+        .sortedWith(
+            compareBy<ShortcutIntentExtra> { it.key.lowercase(Locale.ROOT) }
+                .thenBy { it.type.rawValue }
+                .thenBy { it.value },
+        )
+
+private fun OsShellCommandCard.asSyncFingerprintCard(): OsShellCommandCard =
+    copy(
+        runOutput = "",
+        lastRunAtMillis = 0L,
+        createdAtMillis = OS_SHELL_CARD_SYNC_FINGERPRINT_TIMESTAMP_MS,
+        updatedAtMillis = OS_SHELL_CARD_SYNC_FINGERPRINT_TIMESTAMP_MS,
+    )
+
+private const val OS_SHELL_CARD_SYNC_FINGERPRINT_TIMESTAMP_MS = 1L
 
 internal fun normalizeGitHubTrackedItemsForSync(items: List<GitHubTrackedApp>): List<GitHubTrackedApp> {
     val deduplicated = LinkedHashMap<String, GitHubTrackedApp>()
