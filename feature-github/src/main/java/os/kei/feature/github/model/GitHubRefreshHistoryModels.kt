@@ -1,0 +1,56 @@
+package os.kei.feature.github.model
+
+import os.kei.feature.github.domain.GitHubRefreshScope
+import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubTrackedRefreshFailure
+
+enum class GitHubRefreshHistoryOutcome {
+    Completed,
+    Cancelled,
+    Failed,
+}
+
+data class GitHubRefreshHistoryFailureSummary(
+    val trackId: String,
+    val owner: String,
+    val repo: String,
+    val packageName: String,
+    val appLabel: String,
+    val sourceMode: String,
+    val message: String,
+    val elapsedMs: Long = 0L,
+)
+
+data class GitHubRefreshHistoryRecord(
+    val id: String,
+    val sessionId: Long,
+    val scope: GitHubRefreshScope,
+    val source: GitHubRefreshSource,
+    val outcome: GitHubRefreshHistoryOutcome,
+    val totalTrackedCount: Int,
+    val targetCount: Int,
+    val completedCount: Int,
+    val updatableCount: Int,
+    val preReleaseUpdateCount: Int,
+    val failedCount: Int,
+    val startedAtMillis: Long,
+    val finishedAtMillis: Long,
+    val elapsedMs: Long,
+    val p50ItemMs: Long = 0L,
+    val p95ItemMs: Long = 0L,
+    val maxItemMs: Long = 0L,
+    val failureSummaries: List<GitHubRefreshHistoryFailureSummary> = emptyList(),
+    val note: String = "",
+)
+
+fun GitHubTrackedRefreshFailure.toGitHubRefreshHistoryFailureSummary(): GitHubRefreshHistoryFailureSummary =
+    GitHubRefreshHistoryFailureSummary(
+        trackId = trackId,
+        owner = owner,
+        repo = repo,
+        packageName = packageName,
+        appLabel = appLabel,
+        sourceMode = sourceMode.storageId,
+        message = message,
+        elapsedMs = elapsedMs,
+    )

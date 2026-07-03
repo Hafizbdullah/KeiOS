@@ -1,0 +1,111 @@
+package os.kei.feature.github.domain
+
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.GitHubRefreshHistoryStore
+import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
+import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.toGitHubRefreshHistoryFailureSummary
+
+class GitHubRefreshHistoryService(
+    private val localDispatcher: CoroutineDispatcher = AppDispatchers.githubLocal,
+) {
+    suspend fun loadHistory(): List<GitHubRefreshHistoryRecord> =
+        withContext(localDispatcher) {
+            GitHubRefreshHistoryStore.load()
+        }
+
+    suspend fun recordCompleted(
+        session: GitHubRefreshRuntimeSession,
+        totalTrackedCount: Int,
+        result: GitHubTrackedRefreshBatchResult,
+        startedAtMillis: Long,
+        finishedAtMillis: Long = System.currentTimeMillis(),
+    ) {
+        record(
+            buildCompletedRecord(
+                session = session,
+                totalTrackedCount = totalTrackedCount,
+                result = result,
+                startedAtMillis = startedAtMillis,
+                finishedAtMillis = finishedAtMillis,
+            ),
+        )
+    }
+
+    suspend fun recordRuntimeState(
+        runtime: GitHubRefreshRuntimeState,
+        outcome: GitHubRefreshHistoryOutcome,
+        note: String = "",
+        finishedAtMillis: Long = System.currentTimeMillis(),
+    ) {
+        if (runtime.startedAtMs <= 0L) return
+        record(
+            GitHubRefreshHistoryRecord(
+                id = "",
+                sessionId = runtime.sessionId,
+                scope = runtime.scope,
+                source = runtime.source,
+                outcome = outcome,
+                totalTrackedCount = runtime.totalTrackedCount,
+                targetCount = runtime.targetCount,
+                completedCount = runtime.completedCount,
+                updatableCount = runtime.updatableCount,
+                preReleaseUpdateCount = runtime.preReleaseUpdateCount,
+                failedCount = runtime.failedCount,
+                startedAtMillis = runtime.startedAtMs,
+                finishedAtMillis = finishedAtMillis.coerceAtLeast(runtime.startedAtMs),
+                elapsedMs = (finishedAtMillis - runtime.startedAtMs).coerceAtLeast(0L),
+                note = note,
+            ),
+        )
+    }
+
+    suspend fun record(record: GitHubRefreshHistoryRecord) {
+        withContext(localDispatcher) {
+            GitHubRefreshHistoryStore.recordRefresh(record)
+        }
+    }
+
+    suspend fun pruneBefore(cutoffMillis: Long): Int =
+        withContext(localDispatcher) {
+            GitHubRefreshHistoryStore.pruneBefore(cutoffMillis)
+        }
+
+    private fun buildCompletedRecord(
+        session: GitHubRefreshRuntimeSession,
+        totalTrackedCount: Int,
+        result: GitHubTrackedRefreshBatchResult,
+        startedAtMillis: Long,
+        finishedAtMillis: Long,
+    ): GitHubRefreshHistoryRecord {
+        val outcome =
+            if (result.failedCount >= result.totalCount && result.totalCount > 0) {
+                GitHubRefreshHistoryOutcome.Failed
+            } else {
+                GitHubRefreshHistoryOutcome.Completed
+            }
+        return GitHubRefreshHistoryRecord(
+            id = "",
+            sessionId = session.id,
+            scope = session.scope,
+            source = session.source,
+            outcome = outcome,
+            totalTrackedCount = totalTrackedCount.coerceAtLeast(result.totalCount),
+            targetCount = result.totalCount,
+            completedCount = result.totalCount,
+            updatableCount = result.updatableCount,
+            preReleaseUpdateCount = result.preReleaseUpdateCount,
+            failedCount = result.failedCount,
+            startedAtMillis = startedAtMillis,
+            finishedAtMillis = finishedAtMillis.coerceAtLeast(startedAtMillis),
+            elapsedMs = result.performance.elapsedMs.takeIf { it > 0L }
+                ?: (finishedAtMillis - startedAtMillis).coerceAtLeast(0L),
+            p50ItemMs = result.performance.p50ItemMs,
+            p95ItemMs = result.performance.p95ItemMs,
+            maxItemMs = result.performance.maxItemMs,
+            failureSummaries = result.failures.map { it.toGitHubRefreshHistoryFailureSummary() },
+        )
+    }
+}
