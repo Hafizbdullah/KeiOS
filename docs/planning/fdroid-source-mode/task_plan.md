@@ -15,11 +15,11 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 
 | Phase | Status | Output |
 |---|---|---|
-| P0 Planning setup | Done | `.planning/2026-06-28-fdroid-source-mode/*` |
+| P0 Planning setup | Done | `docs/planning/fdroid-source-mode/*` |
 | P1 Official F-Droid research | Done | `findings.md` official-doc section |
 | P2 Third-party client research | Done | `findings.md` client section |
 | P3 KeiOS source-tracking map | Done | Existing source-mode, cache, release-check, sheet touch points identified |
-| P4 Plan document | Done | `docs/fdroid-source-mode-plan.md` |
+| P4 Plan document | Done | `docs/planning/fdroid-source-mode/plan.md` |
 | P5 Verification | Done | `git diff --check`, trailing-whitespace scan, and final status |
 | P6 Source capability refinement | Done | Added source capability matrix, F-Droid detail/menu plan, top-bar/MCP plan |
 | P7 Source parity and acceptance refinement | Done | Added source-surface parity, metadata priority, notification/deep-link plan, and first-release acceptance criteria |
@@ -69,7 +69,7 @@ Plan how to add an F-Droid repository source mode to the existing GitHub trackin
 
 ## Verification Checklist
 
-- `docs/fdroid-source-mode-plan.md` exists.
+- `docs/planning/fdroid-source-mode/plan.md` exists.
 - Planning files capture sources, findings, and progress.
 - F-Droid source mode is represented in model/store/cache signatures and JSON transfer.
 - F-Droid package API, v2 index parsing, repo cache models, candidate selection, and sidecar JSON have targeted tests.

@@ -48,7 +48,7 @@ Current strong points:
 - `LiquidGlassBottomBar`, `LiquidActionBar`, and BA BGM dock already follow the
   MIUIX pattern of provider lambdas plus `graphicsLayer` / Backdrop draw-time
   reads.
-- Prior reference work in `docs/performance-reference-priorities.md` landed the
+- Prior reference work in `docs/performance/reference-priorities.md` landed the
   first wave: Squircle pre-bake, nested Backdrop safety, MainScreen back
   coordination, glass gates, dynamic background node ticking, install/share state
   machines, color producers, popup reveal, and settings row specialization.
@@ -165,7 +165,7 @@ For install/smoke validation, target emulator packages:
   - Re-scanned KeiOS counts for derived state, draw caches, modifier nodes,
     shader paths, graphics layers, snapshot flows, lazy content types, Backdrop
     usage, Squircle usage, and movable content.
-  - Reconciled this plan with `docs/performance-reference-priorities.md` so
+  - Reconciled this plan with `docs/performance/reference-priorities.md` so
     already-landed work remains historical reference and this file tracks the
     next actionable backlog.
 - 2026-05-30 M1 / M6 / M9 first implementation pass:

@@ -93,7 +93,7 @@
   - `./gradlew :app:compileDebugKotlin`
   - `./gradlew :app:testDebugUnitTest`
   - `git diff --check`
-  - `rg "Remaining:|In progress" docs/performance-reference-priorities.md`
+  - `rg "Remaining:|In progress" docs/performance/reference-priorities.md`
   - `rg "collectAsState\\(" app/src/main/java/os/kei -g '*.kt'`
 - 2026-05-28 P2 final audit pass:
   - Rechecked the P2 table and implementation state: no `Remaining:` / `In progress` marker remains, no app `collectAsState(` usage remains, and direct `SettingsActionItem` use is confined to the settings support wrapper layer.

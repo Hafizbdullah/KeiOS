@@ -13,7 +13,7 @@
   - Foxy Droid
   - Obtainium
 - Scanned existing KeiOS GitHub tracking source-mode, release-check, cache, serializer, and edit sheet touch points.
-- Created `docs/fdroid-source-mode-plan.md`.
+- Created `docs/planning/fdroid-source-mode/plan.md`.
 - Compared existing GitHub/Git/Direct APK feature surfaces:
   - tracked card more menu
   - header asset action
@@ -22,13 +22,13 @@
   - top-bar filter/sort/import menu
   - content filtering
   - MCP tracking filters
-- Expanded `docs/fdroid-source-mode-plan.md` with:
+- Expanded `docs/planning/fdroid-source-mode/plan.md` with:
   - existing source capability matrix
   - F-Droid-specific card/menu/detail sheet plan
   - data/cache/trust model refinements
   - top-bar and MCP integration plan
   - revised implementation phases
-- Refined `docs/fdroid-source-mode-plan.md` with:
+- Refined `docs/planning/fdroid-source-mode/plan.md` with:
   - source surface parity across GitHub/Git/Direct APK/F-Droid
   - compact top-level F-Droid menu strategy
   - F-Droid metadata priority and warning severity

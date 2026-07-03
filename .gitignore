@@ -73,12 +73,15 @@ signing.properties
 # Temporary / local scratch
 tmp/
 /tmp/
+# Local planning scratch; publish durable plans under docs/planning/.
+/.planning/
 *.tmp
 *.temp
 *.bak
 *.orig
 
 # Local tooling state
+/.claude/
 /.codex/
 /AGENTS.md
 

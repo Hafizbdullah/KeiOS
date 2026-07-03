@@ -67,7 +67,7 @@ git diff --name-status v1.8.0..HEAD
 | OS / Shell | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/os` | 检查活动卡、shell、导入导出 |
 | BA | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/ba` | 检查图鉴、BGM、媒体缓存、通知 |
 | MCP | `git diff --name-only v1.8.0..HEAD -- app/src/main/java/os/kei/ui/page/main/mcp app/src/main/java/os/kei/mcp` | 检查页面、工具入口、Codex 接入 |
-| Build / R8 | `git diff --name-only v1.8.0..HEAD -- '*.gradle.kts' gradle.properties app/keepRules R8_Configuration_Analysis.md` | 检查 build type、keepRules、版本号、baseline profile |
+| Build / R8 | `git diff --name-only v1.8.0..HEAD -- '*.gradle.kts' gradle.properties app/keepRules docs/build/r8-configuration-analysis.md` | 检查 build type、keepRules、版本号、baseline profile |
 | 字符串资源 | `git diff --name-only v1.8.0..HEAD -- app/src/main/res/values*` | 检查新增文案和多语言覆盖 |
 
 ## 3. 审查原则
@@ -110,7 +110,7 @@ git diff --name-status v1.8.0..HEAD
 - `app/build.gradle.kts`
 - 根目录和模块 `build.gradle.kts`
 - `app/keepRules/**`
-- `R8_Configuration_Analysis.md`
+- `docs/build/r8-configuration-analysis.md`
 - `.github/actions/setup-android-gradle-build/action.yml`
 - `.github/workflows/ci-benchmark-apk.yml`
 
@@ -343,7 +343,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
   - `app/build.gradle.kts`
   - 根目录和模块 `build.gradle.kts`
   - `app/src/main/keepRules/proguard-rules.keep`
-  - `R8_Configuration_Analysis.md`
+  - `docs/build/r8-configuration-analysis.md`
   - `.github/actions/setup-android-gradle-build/action.yml`
   - `.github/workflows/ci-benchmark-apk.yml`
 - 主要风险:
