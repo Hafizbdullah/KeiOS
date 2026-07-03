@@ -137,7 +137,7 @@ internal class McpGitHubRefreshHistoryTools(
             listOf(owner, repo)
                 .filter { it.isNotBlank() }
                 .joinToString("/")
-        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | strategy:${strategyId.toMcpValue()} | snapshotElapsedMs:$snapshotElapsedMs | snapshotFromCache:$snapshotFromCache | profileElapsedMs:$profileElapsedMs | profileFromCache:$profileFromCache | preciseApkElapsedMs:$preciseApkElapsedMs | preciseApkRequested:$preciseApkRequested | unclassifiedElapsedMs:$unclassifiedElapsedMs | fallbackStrategy:${fallbackStrategyId.toMcpValue()} | status:${status.toMcpValue()} | message:${message.toMcpValue()}"
+        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | strategy:${strategyId.toMcpValue()} | localVersionElapsedMs:$localVersionElapsedMs | snapshotElapsedMs:$snapshotElapsedMs | snapshotFromCache:$snapshotFromCache | profileElapsedMs:$profileElapsedMs | profileFromCache:$profileFromCache | preciseApkElapsedMs:$preciseApkElapsedMs | preciseApkRequested:$preciseApkRequested | comparisonElapsedMs:$comparisonElapsedMs | unclassifiedElapsedMs:$unclassifiedElapsedMs | fallbackStrategy:${fallbackStrategyId.toMcpValue()} | status:${status.toMcpValue()} | message:${message.toMcpValue()}"
     }
 
     private fun GitHubRefreshHistoryFailureSummary.toMcpLine(prefix: String): String {

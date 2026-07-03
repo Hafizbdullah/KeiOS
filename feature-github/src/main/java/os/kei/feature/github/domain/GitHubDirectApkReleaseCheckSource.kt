@@ -65,19 +65,28 @@ class GitHubDirectApkReleaseCheckSource(
                 item.preferPreRelease ||
                 localChannel?.isPreRelease == true
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
+        var sourceElapsedMs = 0L
+        var manifestElapsedMs = 0L
+        var comparisonElapsedMs = 0L
+        var fallbackStrategyId = ""
+        val targetResolveStartNs = System.nanoTime()
         val targets = resolveDirectApkTargets(
             asset = asset,
             localVersion = localVersion,
             inspectPreRelease = shouldInspectPreRelease
         )
+        sourceElapsedMs += elapsedMsSince(targetResolveStartNs)
+        val primaryManifestStartNs = System.nanoTime()
         val manifestResults = inspectDirectApkTargets(
             targets = targets,
             lookupConfig = directLookupConfig
         )
+        manifestElapsedMs += elapsedMsSince(primaryManifestStartNs)
         val stableManifest = manifestResults.stable?.getOrNull()
         val preReleaseManifest = manifestResults.preRelease?.getOrNull()
         if (stableManifest != null || preReleaseManifest != null) {
-            return evaluateManifests(
+            val comparisonStartNs = System.nanoTime()
+            val check = evaluateManifests(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
@@ -85,6 +94,13 @@ class GitHubDirectApkReleaseCheckSource(
                 preReleaseManifest = preReleaseManifest,
                 checkAllTrackedPreReleases = shouldInspectPreRelease,
                 sourceConfigSignature = sourceConfigSignature
+            )
+            comparisonElapsedMs += elapsedMsSince(comparisonStartNs)
+            return check.withDirectApkDiagnostics(
+                sourceElapsedMs = sourceElapsedMs,
+                manifestElapsedMs = manifestElapsedMs,
+                comparisonElapsedMs = comparisonElapsedMs,
+                fallbackStrategyId = fallbackStrategyId
             )
         }
 
@@ -96,7 +112,9 @@ class GitHubDirectApkReleaseCheckSource(
             targets.preRelease?.asset?.downloadUrl
         ).toSet()
         val originalAsset = asset.takeIf { asset.downloadUrl !in attemptedUrls }
+        val fallbackResolveStartNs = System.nanoTime()
         val jsonFallback = jsonFallbackResolver.resolve(asset.downloadUrl).getOrNull()
+        sourceElapsedMs += elapsedMsSince(fallbackResolveStartNs)
         val fallbackTargets = buildList {
             originalAsset?.let { fallbackAsset ->
                 add(
@@ -116,13 +134,20 @@ class GitHubDirectApkReleaseCheckSource(
                 )
             }
         }
+        if (fallbackTargets.isNotEmpty()) {
+            fallbackStrategyId = DIRECT_APK_FALLBACK_STRATEGY_ID
+        }
         fallbackTargets.forEach { target ->
+            val fallbackManifestStartNs = System.nanoTime()
             inspectDirectApkTarget(
                 target = target,
                 lookupConfig = directLookupConfig,
                 forceRefresh = true
-            ).getOrNull()?.let { fallbackManifest ->
-                return evaluateManifest(
+            ).also {
+                manifestElapsedMs += elapsedMsSince(fallbackManifestStartNs)
+            }.getOrNull()?.let { fallbackManifest ->
+                val comparisonStartNs = System.nanoTime()
+                val check = evaluateManifest(
                     item = item,
                     localVersion = localVersion,
                     localVersionCode = localVersionCode,
@@ -130,6 +155,13 @@ class GitHubDirectApkReleaseCheckSource(
                     releaseChannel = target.channel,
                     checkAllTrackedPreReleases = shouldInspectPreRelease,
                     sourceConfigSignature = sourceConfigSignature
+                )
+                comparisonElapsedMs += elapsedMsSince(comparisonStartNs)
+                return check.withDirectApkDiagnostics(
+                    sourceElapsedMs = sourceElapsedMs,
+                    manifestElapsedMs = manifestElapsedMs,
+                    comparisonElapsedMs = comparisonElapsedMs,
+                    fallbackStrategyId = fallbackStrategyId
                 )
             }
         }
@@ -139,6 +171,11 @@ class GitHubDirectApkReleaseCheckSource(
             localVersionCode = localVersionCode,
             detail = directError.message.orEmpty().ifBlank { "remote APK manifest read failed" },
             sourceConfigSignature = sourceConfigSignature
+        ).withDirectApkDiagnostics(
+            sourceElapsedMs = sourceElapsedMs,
+            manifestElapsedMs = manifestElapsedMs,
+            comparisonElapsedMs = comparisonElapsedMs,
+            fallbackStrategyId = fallbackStrategyId
         )
     }
 
@@ -325,6 +362,7 @@ class GitHubDirectApkReleaseCheckSource(
 
     companion object {
         const val DIRECT_APK_STRATEGY_ID = GITHUB_DIRECT_APK_STRATEGY_ID
+        private const val DIRECT_APK_FALLBACK_STRATEGY_ID = "direct_apk_fallback"
 
         fun buildDirectApkAsset(item: GitHubTrackedApp): GitHubReleaseAssetFile? {
             val identity = buildDirectApkTrackIdentity(item.repoUrl) ?: return null
@@ -544,6 +582,34 @@ class GitHubDirectApkReleaseCheckSource(
         }
     }
 }
+
+private fun GitHubTrackedReleaseCheck.withDirectApkDiagnostics(
+    sourceElapsedMs: Long,
+    manifestElapsedMs: Long,
+    comparisonElapsedMs: Long,
+    fallbackStrategyId: String,
+): GitHubTrackedReleaseCheck {
+    val previous = diagnostics
+    return copy(
+        diagnostics =
+            previous.copy(
+                snapshotElapsedMs =
+                    (previous.snapshotElapsedMs + sourceElapsedMs.coerceAtLeast(0L))
+                        .coerceAtLeast(0L),
+                preciseApkElapsedMs =
+                    (previous.preciseApkElapsedMs + manifestElapsedMs.coerceAtLeast(0L))
+                        .coerceAtLeast(0L),
+                preciseApkRequested = previous.preciseApkRequested || manifestElapsedMs > 0L,
+                comparisonElapsedMs =
+                    (previous.comparisonElapsedMs + comparisonElapsedMs.coerceAtLeast(0L))
+                        .coerceAtLeast(0L),
+                fallbackStrategyId = fallbackStrategyId.ifBlank { previous.fallbackStrategyId },
+            )
+    )
+}
+
+private fun elapsedMsSince(startNs: Long): Long =
+    ((System.nanoTime() - startNs).coerceAtLeast(0L) / 1_000_000L).coerceAtLeast(0L)
 
 private fun GitHubDirectApkJsonFallback.releaseChannel(): GitHubReleaseChannel {
     return GitHubVersionUtils.classifyVersionChannel(

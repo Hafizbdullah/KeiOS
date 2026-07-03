@@ -1,10 +1,23 @@
 package os.kei.feature.github.domain
 
+import kotlinx.coroutines.runBlocking
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Test
+import os.kei.feature.github.data.apk.BinaryManifestFixture
+import os.kei.feature.github.data.apk.RemoteZipEntryReader
+import os.kei.feature.github.data.apk.ZipRangeTestFixtures.rangeDispatcher
+import os.kei.feature.github.data.remote.GitHubApkInfoRepository
+import os.kei.feature.github.data.remote.GitHubApkManifestInfoCache
+import os.kei.feature.github.data.remote.GitHubApkManifestReader
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileField
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
@@ -22,6 +35,10 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -571,6 +588,71 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `direct apk force refresh reads fixed url again and records diagnostics`() = runBlocking {
+        val firstApkBytes = apkWithManifest(
+            packageName = "org.telegram.messenger",
+            versionName = "12.0.0",
+            versionCode = 120000L
+        )
+        val secondApkBytes = apkWithManifest(
+            packageName = "org.telegram.messenger",
+            versionName = "12.1.0",
+            versionCode = 121000L
+        )
+        MockWebServer().use { server ->
+            val probeCount = AtomicInteger(0)
+            var activeApkBytes = firstApkBytes
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    if (request.getHeader("Range").orEmpty() == "bytes=0-0") {
+                        activeApkBytes = if (probeCount.incrementAndGet() == 1) {
+                            firstApkBytes
+                        } else {
+                            secondApkBytes
+                        }
+                    }
+                    return rangeDispatcher(activeApkBytes).dispatch(request)
+                }
+            }
+            val source =
+                GitHubDirectApkReleaseCheckSource(
+                    apkInfoRepository =
+                        GitHubApkInfoRepository(
+                            manifestReader =
+                                GitHubApkManifestReader(
+                                    zipEntryReader = RemoteZipEntryReader(client = OkHttpClient())
+                                ),
+                            manifestCache = FakeManifestInfoCache(),
+                        )
+                )
+            val item = directApkTrackedApp()
+                .copy(repoUrl = server.url("/dl/android/apk").toString())
+
+            val first = source.evaluate(
+                item = item,
+                lookupConfig = GitHubLookupConfig(),
+                localVersion = "12.0.0",
+                localVersionCode = 120000L,
+                forceRefresh = false
+            )
+            val refreshed = source.evaluate(
+                item = item,
+                lookupConfig = GitHubLookupConfig(),
+                localVersion = "12.0.0",
+                localVersionCode = 120000L,
+                forceRefresh = true
+            )
+
+            assertEquals(GitHubTrackedReleaseStatus.UpToDate, first.status)
+            assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, refreshed.status)
+            assertEquals("12.1.0", refreshed.preciseStableApkVersion?.versionName)
+            assertEquals(2, probeCount.get())
+            assertTrue(refreshed.diagnostics.preciseApkRequested)
+            assertTrue(refreshed.diagnostics.hasStageData)
+        }
+    }
+
+    @Test
     fun `direct apk manifest release notes propagate into cache entry`() {
         val item = directApkTrackedApp()
 
@@ -761,6 +843,46 @@ class GitHubReleaseCheckServiceTest {
             sourceMode = GitHubTrackedSourceMode.DirectApk,
             preferPreRelease = preferPreRelease
         )
+    }
+
+    private fun apkWithManifest(
+        packageName: String,
+        versionName: String,
+        versionCode: Long
+    ): ByteArray {
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            zip.putNextEntry(ZipEntry("AndroidManifest.xml"))
+            zip.write(
+                BinaryManifestFixture.build(
+                    packageName = packageName,
+                    versionName = versionName,
+                    versionCode = versionCode
+                )
+            )
+            zip.closeEntry()
+        }
+        return output.toByteArray()
+    }
+
+    private class FakeManifestInfoCache : GitHubApkManifestInfoCache {
+        private val values = linkedMapOf<String, GitHubApkManifestInfo>()
+
+        override fun load(
+            cacheKey: String,
+            refreshIntervalHours: Int
+        ): GitHubApkManifestInfo? = values[cacheKey]
+
+        override fun save(
+            cacheKey: String,
+            info: GitHubApkManifestInfo
+        ) {
+            values[cacheKey] = info
+        }
+
+        override fun remove(cacheKey: String) {
+            values.remove(cacheKey)
+        }
     }
 
     private fun snapshot(

@@ -309,16 +309,9 @@ internal fun GitHubRefreshHistoryRecordCard(
                 valueOverflow = TextOverflow.Ellipsis,
             )
             record.slowItems.take(5).forEachIndexed { index, slowItem ->
-                AppInfoRow(
-                    label =
-                        stringResource(
-                            R.string.github_history_refresh_label_slow_index,
-                            index + 1,
-                    ),
-                    value = rememberSlowRefreshItemValue(slowItem),
-                    stacked = true,
-                    valueMaxLines = 8,
-                    valueOverflow = TextOverflow.Clip,
+                GitHubRefreshSlowItemBlock(
+                    index = index,
+                    slowItem = slowItem,
                 )
             }
             if (record.note.isNotBlank()) {
@@ -352,6 +345,128 @@ internal fun GitHubRefreshHistoryRecordCard(
                     valueColor = MiuixTheme.colorScheme.error,
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GitHubRefreshSlowItemBlock(
+    index: Int,
+    slowItem: GitHubRefreshHistorySlowItem,
+) {
+    val displayName = rememberSlowRefreshItemDisplayName(slowItem)
+    val identity = buildSlowRefreshItemIdentity(slowItem, displayName)
+    val detail = rememberRefreshMessageDetail(slowItem.message)
+    val label =
+        stringResource(
+            R.string.github_history_refresh_label_slow_index,
+            index + 1,
+        )
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = CardLayoutRhythm.infoRowVerticalPadding),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = label,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = displayName,
+                color = MiuixTheme.colorScheme.onBackground,
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = AppTypographyTokens.Body.fontWeight,
+                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            StatusPill(
+                label = rememberRefreshSourceModeLabel(slowItem.sourceMode),
+                color = MiuixTheme.colorScheme.primary,
+                size = AppStatusPillSize.Compact,
+                backgroundAlphaOverride = 0.14f,
+                borderAlphaOverride = 0.24f,
+            )
+            StatusPill(
+                label = rememberDurationLabel(slowItem.elapsedMs),
+                color = Color(0xFFF59E0B),
+                size = AppStatusPillSize.Compact,
+                backgroundAlphaOverride = 0.14f,
+                borderAlphaOverride = 0.24f,
+            )
+            StatusPill(
+                label = rememberRefreshStatusLabel(slowItem.status),
+                color = refreshSlowItemStatusColor(slowItem.status),
+                size = AppStatusPillSize.Compact,
+                backgroundAlphaOverride = 0.14f,
+                borderAlphaOverride = 0.24f,
+            )
+        }
+        if (identity.isNotBlank()) {
+            Text(
+                text = identity,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (detail.isNotBlank()) {
+            Text(
+                text = detail,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                maxLines = Int.MAX_VALUE,
+                overflow = TextOverflow.Clip,
+            )
+        }
+        GitHubRefreshSlowItemDiagnosticPills(slowItem)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GitHubRefreshSlowItemDiagnosticPills(
+    slowItem: GitHubRefreshHistorySlowItem,
+) {
+    val pills = rememberSlowRefreshDiagnosticPillLabels(slowItem)
+    if (pills.isEmpty()) return
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        pills.forEach { pill ->
+            StatusPill(
+                label = pill.label,
+                color = pill.color,
+                size = AppStatusPillSize.Compact,
+                backgroundAlphaOverride = 0.12f,
+                borderAlphaOverride = 0.22f,
+            )
         }
     }
 }
@@ -439,100 +554,147 @@ private fun rememberRefreshScopePurposeLabel(scope: GitHubRefreshScope): String 
     }
 
 @Composable
-private fun rememberSlowRefreshItemValue(slowItem: GitHubRefreshHistorySlowItem): String {
-    val displayName =
-        slowItem.appLabel
-            .ifBlank {
-                listOf(slowItem.owner, slowItem.repo)
-                    .filter { it.isNotBlank() }
-                    .joinToString("/")
-            }
-            .ifBlank { slowItem.packageName }
-            .ifBlank { slowItem.trackId }
-    val identity = buildSlowRefreshItemIdentity(slowItem, displayName)
-    val statusLabel = rememberRefreshStatusLabel(slowItem.status)
-    val detail = rememberRefreshMessageDetail(slowItem.message)
-    val diagnostics = rememberSlowRefreshDiagnostics(slowItem)
-    return buildList {
-        add(
-            stringResource(
-                R.string.github_history_refresh_slow_item_value,
-                displayName,
-                rememberRefreshSourceModeLabel(slowItem.sourceMode),
-                rememberDurationLabel(slowItem.elapsedMs),
-                identity,
-                statusLabel,
-            ),
-        )
-        if (detail.isNotBlank()) {
-            add(detail)
+private fun rememberSlowRefreshItemDisplayName(slowItem: GitHubRefreshHistorySlowItem): String =
+    slowItem.appLabel
+        .ifBlank {
+            listOf(slowItem.owner, slowItem.repo)
+                .filter { it.isNotBlank() }
+                .joinToString("/")
         }
-        if (diagnostics.isNotBlank()) {
-            add(diagnostics)
-        }
-    }.joinToString("\n")
-}
+        .ifBlank { slowItem.packageName }
+        .ifBlank { slowItem.trackId }
+
+private data class SlowRefreshDiagnosticPill(
+    val label: String,
+    val color: Color,
+)
 
 @Composable
-private fun rememberSlowRefreshDiagnostics(slowItem: GitHubRefreshHistorySlowItem): String {
-    val stageLine =
-        buildList {
-            if (slowItem.strategyId.isNotBlank()) {
-                add(stringResource(R.string.github_history_refresh_stage_strategy, slowItem.strategyId))
-            }
-            if (slowItem.fallbackStrategyId.isNotBlank()) {
-                add(
-                    stringResource(
+private fun rememberSlowRefreshDiagnosticPillLabels(
+    slowItem: GitHubRefreshHistorySlowItem,
+): List<SlowRefreshDiagnosticPill> {
+    val neutral = MiuixTheme.colorScheme.onBackgroundVariant
+    val network = MiuixTheme.colorScheme.primary
+    val cached = Color(0xFF64748B)
+    val local = Color(0xFF14B8A6)
+    val apk = Color(0xFF8B5CF6)
+    val compare = Color(0xFF22C55E)
+    val other = Color(0xFFF59E0B)
+    return buildList {
+        if (slowItem.strategyId.isNotBlank()) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label = stringResource(R.string.github_history_refresh_stage_strategy, slowItem.strategyId),
+                    color = neutral,
+                ),
+            )
+        }
+        if (slowItem.fallbackStrategyId.isNotBlank()) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label = stringResource(
                         R.string.github_history_refresh_stage_fallback,
                         slowItem.fallbackStrategyId,
                     ),
-                )
-            }
-        }.joinToString(" · ")
-    val timingLine =
-        buildList {
-            if (slowItem.snapshotElapsedMs > 0L) {
-                add(
-                    stringResource(
-                        R.string.github_history_refresh_stage_snapshot,
-                        rememberDurationLabel(slowItem.snapshotElapsedMs),
-                    ),
-                )
-            }
-            if (slowItem.snapshotFromCache) {
-                add(stringResource(R.string.github_history_refresh_stage_snapshot_cache))
-            }
-            if (slowItem.profileElapsedMs > 0L) {
-                add(
-                    stringResource(
-                        R.string.github_history_refresh_stage_profile,
-                        rememberDurationLabel(slowItem.profileElapsedMs),
-                    ),
-                )
-            }
-            if (slowItem.profileFromCache) {
-                add(stringResource(R.string.github_history_refresh_stage_profile_cache))
-            }
-            if (slowItem.preciseApkRequested || slowItem.preciseApkElapsedMs > 0L) {
-                add(
-                    stringResource(
-                        R.string.github_history_refresh_stage_precise_apk,
-                        rememberDurationLabel(slowItem.preciseApkElapsedMs),
-                    ),
-                )
-            }
-            if (slowItem.unclassifiedElapsedMs >= SLOW_REFRESH_UNCLASSIFIED_VISIBLE_MS) {
-                add(
-                    stringResource(
-                        R.string.github_history_refresh_stage_other,
-                        rememberDurationLabel(slowItem.unclassifiedElapsedMs),
-                    ),
-                )
-            }
-        }.joinToString(" · ")
-    return listOf(stageLine, timingLine)
-        .filter { it.isNotBlank() }
-        .joinToString("\n")
+                    color = other,
+                ),
+            )
+        }
+        if (slowItem.localVersionElapsedMs > 0L) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_stage_local,
+                            rememberDurationLabel(slowItem.localVersionElapsedMs),
+                        ),
+                    color = local,
+                ),
+            )
+        }
+        if (slowItem.snapshotElapsedMs > 0L) {
+            val snapshotStageLabel =
+                if (slowItem.sourceMode == GitHubTrackedSourceMode.DirectApk.storageId) {
+                    R.string.github_history_refresh_stage_direct_source
+                } else {
+                    R.string.github_history_refresh_stage_snapshot
+                }
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            snapshotStageLabel,
+                            rememberDurationLabel(slowItem.snapshotElapsedMs),
+                        ),
+                    color = network,
+                ),
+            )
+        }
+        if (slowItem.snapshotFromCache) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label = stringResource(R.string.github_history_refresh_stage_snapshot_cache),
+                    color = cached,
+                ),
+            )
+        }
+        if (slowItem.profileElapsedMs > 0L) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_stage_profile,
+                            rememberDurationLabel(slowItem.profileElapsedMs),
+                        ),
+                    color = network,
+                ),
+            )
+        }
+        if (slowItem.profileFromCache) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label = stringResource(R.string.github_history_refresh_stage_profile_cache),
+                    color = cached,
+                ),
+            )
+        }
+        if (slowItem.preciseApkRequested || slowItem.preciseApkElapsedMs > 0L) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_stage_precise_apk,
+                            rememberDurationLabel(slowItem.preciseApkElapsedMs),
+                        ),
+                    color = apk,
+                ),
+            )
+        }
+        if (slowItem.comparisonElapsedMs > 0L) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_stage_compare,
+                            rememberDurationLabel(slowItem.comparisonElapsedMs),
+                        ),
+                    color = compare,
+                ),
+            )
+        }
+        if (slowItem.unclassifiedElapsedMs >= SLOW_REFRESH_UNCLASSIFIED_VISIBLE_MS) {
+            add(
+                SlowRefreshDiagnosticPill(
+                    label =
+                        stringResource(
+                            R.string.github_history_refresh_stage_other,
+                            rememberDurationLabel(slowItem.unclassifiedElapsedMs),
+                        ),
+                    color = other,
+                ),
+            )
+        }
+    }
 }
 
 @Composable
@@ -555,6 +717,18 @@ private fun rememberRefreshStatusLabel(status: String): String {
         null -> status.ifBlank { stringResource(R.string.github_item_value_check_pending) }
     }
 }
+
+@Composable
+private fun refreshSlowItemStatusColor(status: String): Color =
+    when (remember(status) { runCatching { enumValueOf<GitHubTrackedReleaseStatus>(status.trim()) }.getOrNull() }) {
+        GitHubTrackedReleaseStatus.UpdateAvailable,
+        GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable,
+        GitHubTrackedReleaseStatus.PreReleaseOptional -> MiuixTheme.colorScheme.primary
+
+        GitHubTrackedReleaseStatus.Failed -> MiuixTheme.colorScheme.error
+        GitHubTrackedReleaseStatus.Ignored -> Color(0xFF64748B)
+        else -> Color(0xFF22C55E)
+    }
 
 @Composable
 private fun rememberRefreshMessageDetail(message: String): String {

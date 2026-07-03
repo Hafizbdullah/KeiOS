@@ -88,14 +88,15 @@
     <string name="github_history_refresh_label_slow_index">慢项 %1$d</string>
     <string name="github_history_refresh_schedule_value">并发 %1$d · APK %2$d · F-Droid %3$d</string>
     <string name="github_history_refresh_source_mix_value">仓库 %1$d · APK %2$d · F-Droid %3$d · 其他 %4$d</string>
-    <string name="github_history_refresh_slow_item_value">%1$s · %2$s · %3$s\n%4$s · %5$s</string>
-    <string name="github_history_refresh_slow_item_value_with_detail">%1$s · %2$s · %3$s\n%4$s · %5$s · %6$s</string>
     <string name="github_history_refresh_stage_strategy">策略 %1$s</string>
+    <string name="github_history_refresh_stage_local">本地 %1$s</string>
     <string name="github_history_refresh_stage_snapshot">Release %1$s</string>
+    <string name="github_history_refresh_stage_direct_source">源 %1$s</string>
     <string name="github_history_refresh_stage_snapshot_cache">Release 缓存</string>
     <string name="github_history_refresh_stage_profile">Profile %1$s</string>
     <string name="github_history_refresh_stage_profile_cache">Profile 缓存</string>
     <string name="github_history_refresh_stage_precise_apk">APK %1$s</string>
+    <string name="github_history_refresh_stage_compare">比较 %1$s</string>
     <string name="github_history_refresh_stage_other">其他 %1$s</string>
     <string name="github_history_refresh_stage_fallback">Fallback %1$s</string>
     <string name="github_history_refresh_purpose_value">%1$s · %2$s</string>

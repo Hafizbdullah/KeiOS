@@ -220,12 +220,14 @@ object GitHubRefreshHistoryStore {
                             status = slowItem.status.trim(),
                             message = compactHistoryText(slowItem.message, 240),
                             strategyId = slowItem.strategyId.trim(),
+                            localVersionElapsedMs = slowItem.localVersionElapsedMs.coerceAtLeast(0L),
                             snapshotElapsedMs = slowItem.snapshotElapsedMs.coerceAtLeast(0L),
                             snapshotFromCache = slowItem.snapshotFromCache,
                             profileElapsedMs = slowItem.profileElapsedMs.coerceAtLeast(0L),
                             profileFromCache = slowItem.profileFromCache,
                             preciseApkElapsedMs = slowItem.preciseApkElapsedMs.coerceAtLeast(0L),
                             preciseApkRequested = slowItem.preciseApkRequested,
+                            comparisonElapsedMs = slowItem.comparisonElapsedMs.coerceAtLeast(0L),
                             unclassifiedElapsedMs = slowItem.unclassifiedElapsedMs.coerceAtLeast(0L),
                             fallbackStrategyId = slowItem.fallbackStrategyId.trim(),
                         )
@@ -282,12 +284,14 @@ object GitHubRefreshHistoryStore {
             put("status", slowItem.status)
             put("message", slowItem.message)
             put("strategyId", slowItem.strategyId)
+            put("localVersionElapsedMs", slowItem.localVersionElapsedMs)
             put("snapshotElapsedMs", slowItem.snapshotElapsedMs)
             put("snapshotFromCache", slowItem.snapshotFromCache)
             put("profileElapsedMs", slowItem.profileElapsedMs)
             put("profileFromCache", slowItem.profileFromCache)
             put("preciseApkElapsedMs", slowItem.preciseApkElapsedMs)
             put("preciseApkRequested", slowItem.preciseApkRequested)
+            put("comparisonElapsedMs", slowItem.comparisonElapsedMs)
             put("unclassifiedElapsedMs", slowItem.unclassifiedElapsedMs)
             put("fallbackStrategyId", slowItem.fallbackStrategyId)
         }
@@ -305,12 +309,14 @@ object GitHubRefreshHistoryStore {
             status = obj.optString("status").trim(),
             message = obj.optString("message").trim(),
             strategyId = obj.optString("strategyId").trim(),
+            localVersionElapsedMs = obj.optLong("localVersionElapsedMs", 0L).coerceAtLeast(0L),
             snapshotElapsedMs = obj.optLong("snapshotElapsedMs", 0L).coerceAtLeast(0L),
             snapshotFromCache = obj.optBoolean("snapshotFromCache", false),
             profileElapsedMs = obj.optLong("profileElapsedMs", 0L).coerceAtLeast(0L),
             profileFromCache = obj.optBoolean("profileFromCache", false),
             preciseApkElapsedMs = obj.optLong("preciseApkElapsedMs", 0L).coerceAtLeast(0L),
             preciseApkRequested = obj.optBoolean("preciseApkRequested", false),
+            comparisonElapsedMs = obj.optLong("comparisonElapsedMs", 0L).coerceAtLeast(0L),
             unclassifiedElapsedMs = obj.optLong("unclassifiedElapsedMs", 0L).coerceAtLeast(0L),
             fallbackStrategyId = obj.optString("fallbackStrategyId").trim(),
         )

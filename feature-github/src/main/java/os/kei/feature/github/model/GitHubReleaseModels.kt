@@ -164,19 +164,23 @@ data class GitHubRepositoryReleaseSnapshot(
 )
 
 data class GitHubReleaseCheckDiagnostics(
+    val localVersionElapsedMs: Long = 0L,
     val snapshotElapsedMs: Long = 0L,
     val snapshotFromCache: Boolean = false,
     val profileElapsedMs: Long = 0L,
     val profileFromCache: Boolean = false,
     val preciseApkElapsedMs: Long = 0L,
     val preciseApkRequested: Boolean = false,
+    val comparisonElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
 ) {
     val hasStageData: Boolean
         get() =
-            snapshotElapsedMs > 0L ||
+            localVersionElapsedMs > 0L ||
+                snapshotElapsedMs > 0L ||
                 profileElapsedMs > 0L ||
                 preciseApkElapsedMs > 0L ||
+                comparisonElapsedMs > 0L ||
                 snapshotFromCache ||
                 profileFromCache ||
                 preciseApkRequested ||

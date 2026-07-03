@@ -109,9 +109,11 @@ object GitHubReleaseCheckService {
         val lookupConfig = (lookupConfigOverride ?: GitHubReleaseStrategyRegistry.loadLookupConfig())
             .forTrackedItem(item)
         val sourceConfigSignature = item.checkSourceSignature(lookupConfig)
+        val localVersionStartNs = System.nanoTime()
         val localVersionInfo = runCatching {
             GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)
         }.getOrNull()
+        val localVersionElapsedMs = elapsedMsSince(localVersionStartNs)
         val localVersion = localVersionInfo?.versionName.orEmpty()
         val localVersionCode = localVersionInfo?.versionCode ?: -1L
         if (item.isDirectApkTrack()) {
@@ -121,7 +123,7 @@ object GitHubReleaseCheckService {
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 forceRefresh = forceRefresh
-            )
+            ).withLocalVersionDiagnostics(localVersionElapsedMs)
         }
         if (item.isFdroidRepositoryTrack()) {
             return fdroidReleaseCheckSource.evaluate(
@@ -130,7 +132,7 @@ object GitHubReleaseCheckService {
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
                 forceRefresh = forceRefresh
-            )
+            ).withLocalVersionDiagnostics(localVersionElapsedMs)
         }
         val releaseLookupItem = item.githubReleaseLookupItemOrNull()
         if (item.isGitRepositoryTrack() && releaseLookupItem == null) {
@@ -140,7 +142,7 @@ object GitHubReleaseCheckService {
                     localVersionCode = localVersionCode,
                     sourceConfigSignature = sourceConfigSignature,
                     detail = "invalid Git repository URL"
-                )
+                ).withLocalVersionDiagnostics(localVersionElapsedMs)
             val gitStrategy = GitRepositoryReleaseStrategy(gitIdentity)
             val gitSnapshotResult = loadSnapshotWithTransientRetry(
                 strategy = gitStrategy,
@@ -155,7 +157,7 @@ object GitHubReleaseCheckService {
                     detail = error.message ?: "unknown"
                 ).copy(
                     diagnostics = error.snapshotDiagnostics()
-                )
+                ).withLocalVersionDiagnostics(localVersionElapsedMs)
             }
             val gitSnapshot = gitSnapshotResult.snapshot
             val preciseStartNs = System.nanoTime()
@@ -171,7 +173,8 @@ object GitHubReleaseCheckService {
                 }
                 ?: PreciseApkVersionPair()
             val preciseElapsedMs = elapsedMsSince(preciseStartNs)
-            return evaluateSnapshot(
+            val comparisonStartNs = System.nanoTime()
+            val check = evaluateSnapshot(
                 item = item,
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
@@ -182,8 +185,14 @@ object GitHubReleaseCheckService {
                 sourceConfigSignature = sourceConfigSignature
             ).copy(
                 diagnostics = gitSnapshotResult.diagnostics.copy(
+                    localVersionElapsedMs = localVersionElapsedMs,
                     preciseApkElapsedMs = preciseElapsedMs,
                     preciseApkRequested = preciseVersions.requested
+                )
+            )
+            return check.copy(
+                diagnostics = check.diagnostics.copy(
+                    comparisonElapsedMs = elapsedMsSince(comparisonStartNs)
                 )
             )
         }
@@ -215,6 +224,7 @@ object GitHubReleaseCheckService {
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
                 diagnostics = GitHubReleaseCheckDiagnostics(
+                    localVersionElapsedMs = localVersionElapsedMs,
                     profileElapsedMs = profileResult.elapsedMs,
                     profileFromCache = profileResult.fromCache
                 )
@@ -255,6 +265,7 @@ object GitHubReleaseCheckService {
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
                 diagnostics = snapshotDiagnostics.copy(
+                    localVersionElapsedMs = localVersionElapsedMs,
                     profileElapsedMs = profileResult.elapsedMs,
                     profileFromCache = profileResult.fromCache
                 )
@@ -284,7 +295,8 @@ object GitHubReleaseCheckService {
         )
         val profile = profileResult.profile
 
-        return evaluateSnapshot(
+        val comparisonStartNs = System.nanoTime()
+        val check = evaluateSnapshot(
             item = item,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
@@ -303,10 +315,16 @@ object GitHubReleaseCheckService {
             repositoryProfile = profile
         ).copy(
             diagnostics = snapshotResult.diagnostics.copy(
+                localVersionElapsedMs = localVersionElapsedMs,
                 preciseApkElapsedMs = preciseElapsedMs,
                 preciseApkRequested = preciseVersions.requested,
                 profileElapsedMs = profileResult.elapsedMs,
                 profileFromCache = profileResult.fromCache
+            )
+        )
+        return check.copy(
+            diagnostics = check.diagnostics.copy(
+                comparisonElapsedMs = elapsedMsSince(comparisonStartNs)
             )
         )
     }
@@ -494,6 +512,16 @@ object GitHubReleaseCheckService {
             sourceConfigSignature = sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.Failed,
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+        )
+    }
+
+    private fun GitHubTrackedReleaseCheck.withLocalVersionDiagnostics(
+        localVersionElapsedMs: Long
+    ): GitHubTrackedReleaseCheck {
+        return copy(
+            diagnostics = diagnostics.copy(
+                localVersionElapsedMs = localVersionElapsedMs
+            )
         )
     }
 

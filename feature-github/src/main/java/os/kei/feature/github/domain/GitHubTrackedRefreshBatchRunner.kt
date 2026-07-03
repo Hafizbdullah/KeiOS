@@ -71,12 +71,14 @@ data class GitHubTrackedRefreshSlowItem(
     val status: String,
     val message: String,
     val strategyId: String = "",
+    val localVersionElapsedMs: Long = 0L,
     val snapshotElapsedMs: Long = 0L,
     val snapshotFromCache: Boolean = false,
     val profileElapsedMs: Long = 0L,
     val profileFromCache: Boolean = false,
     val preciseApkElapsedMs: Long = 0L,
     val preciseApkRequested: Boolean = false,
+    val comparisonElapsedMs: Long = 0L,
     val unclassifiedElapsedMs: Long = 0L,
     val fallbackStrategyId: String = "",
 )
@@ -360,12 +362,14 @@ object GitHubTrackedRefreshBatchRunner {
             status = check.status.name,
             message = check.message,
             strategyId = check.strategyId,
+            localVersionElapsedMs = check.diagnostics.localVersionElapsedMs,
             snapshotElapsedMs = check.diagnostics.snapshotElapsedMs,
             snapshotFromCache = check.diagnostics.snapshotFromCache,
             profileElapsedMs = check.diagnostics.profileElapsedMs,
             profileFromCache = check.diagnostics.profileFromCache,
             preciseApkElapsedMs = check.diagnostics.preciseApkElapsedMs,
             preciseApkRequested = check.diagnostics.preciseApkRequested,
+            comparisonElapsedMs = check.diagnostics.comparisonElapsedMs,
             unclassifiedElapsedMs = computeUnclassifiedElapsedMs(
                 elapsedMs = elapsedMs,
                 check = check,
@@ -378,9 +382,11 @@ object GitHubTrackedRefreshBatchRunner {
         check: GitHubTrackedReleaseCheck,
     ): Long {
         val stageElapsedMs =
-            check.diagnostics.snapshotElapsedMs.coerceAtLeast(0L) +
+            check.diagnostics.localVersionElapsedMs.coerceAtLeast(0L) +
+                check.diagnostics.snapshotElapsedMs.coerceAtLeast(0L) +
                 check.diagnostics.profileElapsedMs.coerceAtLeast(0L) +
-                check.diagnostics.preciseApkElapsedMs.coerceAtLeast(0L)
+                check.diagnostics.preciseApkElapsedMs.coerceAtLeast(0L) +
+                check.diagnostics.comparisonElapsedMs.coerceAtLeast(0L)
         return (elapsedMs.coerceAtLeast(0L) - stageElapsedMs).coerceAtLeast(0L)
     }
 

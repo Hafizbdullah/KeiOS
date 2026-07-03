@@ -73,6 +73,22 @@ class GitHubRefreshHistoryExportServiceTest {
                 ?.optLong("snapshotElapsedMs"),
         )
         assertEquals(
+            3L,
+            root.optArray("records")
+                ?.optObject(0)
+                ?.optArray("slowItems")
+                ?.optObject(0)
+                ?.optLong("localVersionElapsedMs"),
+        )
+        assertEquals(
+            2L,
+            root.optArray("records")
+                ?.optObject(0)
+                ?.optArray("slowItems")
+                ?.optObject(0)
+                ?.optLong("comparisonElapsedMs"),
+        )
+        assertEquals(
             7L,
             root.optArray("records")
                 ?.optObject(0)
@@ -208,9 +224,11 @@ class GitHubRefreshHistoryExportServiceTest {
                         status = "UpToDate",
                         message = "ok",
                         strategyId = "atom_feed",
+                        localVersionElapsedMs = 3L,
                         snapshotElapsedMs = 30L,
                         profileElapsedMs = 10L,
                         profileFromCache = true,
+                        comparisonElapsedMs = 2L,
                         unclassifiedElapsedMs = 7L,
                     ),
                 ),
