@@ -20,7 +20,7 @@ val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
         ?: "0.9.2"
-val composeVersion = "1.11.3"
+val composeVersion = "1.11.4"
 val activityComposeVersion = "1.13.0"
 val backdropVersion = "2.0.0"
 val capsuleVersion = "2.1.3"

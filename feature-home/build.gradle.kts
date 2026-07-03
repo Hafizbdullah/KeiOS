@@ -2,7 +2,7 @@ plugins {
     id("com.android.library")
 }
 
-val composeVersion = "1.11.3"
+val composeVersion = "1.11.4"
 
 android {
     namespace = "os.kei.feature.home"

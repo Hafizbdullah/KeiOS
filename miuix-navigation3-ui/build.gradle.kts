@@ -22,10 +22,10 @@ val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
         ?: "0.9.2"
-val composeVersion = "1.11.3"
+val composeVersion = "1.11.4"
 val activityComposeVersion = "1.13.0"
 val lifecycleRuntimeComposeVersion = "2.11.0"
-val navigation3Version = "1.1.3"
+val navigation3Version = "1.1.4"
 val navigationEventVersion = "1.1.2"
 val androidxCollectionVersion = "1.6.0"
 
