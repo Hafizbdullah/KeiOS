@@ -151,10 +151,8 @@ internal class GitHubRefreshBatchActions(
                                         resolvedState = check.toUi(),
                                         previousState = previousState,
                                     ).copy(checkedAtMillis = clock.nowMs())
-                            withContext(Dispatchers.Main.immediate) {
-                                progressMutex.withLock {
-                                    pendingUiResults += item to itemState
-                                }
+                            progressMutex.withLock {
+                                pendingUiResults += item to itemState
                             }
                         },
                         onProgress = { progress ->
