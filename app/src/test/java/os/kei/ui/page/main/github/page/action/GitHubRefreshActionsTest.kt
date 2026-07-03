@@ -188,6 +188,16 @@ class GitHubRefreshActionsTest {
         assertEquals(emptyList(), selected)
     }
 
+    @Test
+    fun `regular batch refresh preserves apk asset cache`() {
+        assertFalse(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = false))
+    }
+
+    @Test
+    fun `forced batch refresh clears apk asset cache`() {
+        assertTrue(shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh = true))
+    }
+
     private fun tracked(name: String): GitHubTrackedApp =
         GitHubTrackedApp(
             repoUrl = "https://github.com/owner/$name",

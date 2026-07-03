@@ -89,13 +89,15 @@ internal class GitHubRefreshBatchActions(
                 var completedCount = 0
                 try {
                     state.refreshTargetIds = targetIds.toSet()
-                    assetActions.clearApkAssetCachesForTargetsNow(
-                        targets =
-                            snapshot.map { item ->
-                                item to (previousCheckStatesById[item.id] ?: VersionCheckUi())
-                            },
-                        allowLatestReleaseFallback = true,
-                    )
+                    if (shouldClearApkAssetCacheBeforeBatchRefresh(forceRefresh)) {
+                        assetActions.clearApkAssetCachesForTargetsNow(
+                            targets =
+                                snapshot.map { item ->
+                                    item to (previousCheckStatesById[item.id] ?: VersionCheckUi())
+                                },
+                            allowLatestReleaseFallback = true,
+                        )
+                    }
                     if (clearAllCheckCache) {
                         repository.clearCheckCache()
                         state.lastRefreshMs = 0L
@@ -315,6 +317,10 @@ internal class GitHubRefreshBatchActions(
                         owner.syncSnapshotFromStore(forceRefreshApps = false)
                     }
                 } catch (error: CancellationException) {
+                    restoreInterruptedItemStates(
+                        snapshot = snapshot,
+                        previousCheckStatesById = previousCheckStatesById,
+                    )
                     refreshHistoryService.recordRuntimeState(
                         runtime = GitHubRefreshRuntimeStore.state.value,
                         outcome = GitHubRefreshHistoryOutcome.Cancelled,
@@ -329,20 +335,42 @@ internal class GitHubRefreshBatchActions(
                     )
                     throw error
                 } catch (error: Throwable) {
+                    val failedMessage = error.message?.takeIf { it.isNotBlank() }
+                        ?: error.javaClass.simpleName
+                    val terminalFailedCount = failedCount.coerceAtLeast(1)
+                    restoreInterruptedItemStates(
+                        snapshot = snapshot,
+                        previousCheckStatesById = previousCheckStatesById,
+                        failedMessage = failedMessage,
+                    )
                     refreshHistoryService.recordRuntimeState(
                         runtime = GitHubRefreshRuntimeStore.state.value,
                         outcome = GitHubRefreshHistoryOutcome.Failed,
-                        note = error.message ?: error.javaClass.simpleName,
+                        note = failedMessage,
                     )
                     GitHubRefreshRuntimeStore.cancel(
                         sessionId = runtimeSession.id,
                         completedCount = completedCount,
                         updatableCount = updatableCount,
                         preReleaseUpdateCount = preReleaseUpdateCount,
-                        failedCount = failedCount.coerceAtLeast(1),
+                        failedCount = terminalFailedCount,
                     )
+                    repository.notifyRefreshCompleted(
+                        context = context,
+                        total = totalCount,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = terminalFailedCount,
+                        sessionId = runtimeSession.id,
+                        scope = runtimeSession.scope,
+                        source = runtimeSession.source,
+                        totalTrackedCount = state.trackedItems.size,
+                    )
+                    if (state.refreshSessionId == runtimeSession.id) {
+                        state.overviewRefreshState = OverviewRefreshState.Failed
+                        state.refreshProgress = 0f
+                    }
                     AppLogger.w("GitHubRefreshActions", "github page refresh failed", error)
-                    throw error
                 } finally {
                     if (state.refreshSessionId == runtimeSession.id) {
                         state.refreshSessionId = 0L
@@ -351,7 +379,30 @@ internal class GitHubRefreshBatchActions(
                     }
                     owner.env.viewModel.refreshHistoryUnreadCount()
                 }
-            }
+        }
+    }
+
+    private fun restoreInterruptedItemStates(
+        snapshot: List<GitHubTrackedApp>,
+        previousCheckStatesById: Map<String, VersionCheckUi>,
+        failedMessage: String? = null,
+    ) {
+        snapshot.forEach { item ->
+            val currentState = state.checkStates[item.id]
+            if (currentState?.loading != true) return@forEach
+            val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
+            state.checkStates[item.id] =
+                if (failedMessage == null) {
+                    previousState
+                } else {
+                    previousState.copy(
+                        loading = false,
+                        failed = true,
+                        message = failedMessage,
+                        checkedAtMillis = clock.nowMs(),
+                    )
+                }
+        }
     }
 
     private fun logTrackedRefreshFailures(failures: List<GitHubTrackedRefreshFailure>) {
