@@ -83,6 +83,7 @@ class WebDavSyncClient(
     }
 
     private val baseUrl: Url by lazy { parseBaseUrl(config.serverUrl) }
+    private var collectionKnown = false
 
     fun close() {
         httpClient.close()
@@ -91,6 +92,7 @@ class WebDavSyncClient(
     suspend fun testConnection(): WebDavTestConnectionResult = withContext(ioDispatcher) {
         try {
             collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+            collectionKnown = true
             WebDavTestConnectionResult.Success(dirCreated = false)
         } catch (e: NotFoundException) {
             AppLogger.i(TAG, "Remote dir not found, creating...")
@@ -209,6 +211,7 @@ class WebDavSyncClient(
         headers: Headers?,
     ): WebDavUploadResult =
         try {
+            collectionKnown = false
             ensureCollection()
             putFile(fileName, content, headers)
         } catch (e: PreconditionFailedException) {
@@ -229,18 +232,23 @@ class WebDavSyncClient(
     }
 
     private suspend fun ensureCollection() {
+        if (collectionKnown) return
         try {
             collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+            collectionKnown = true
         } catch (_: NotFoundException) {
             createDirectorySync()
+            collectionKnown = true
         } catch (_: ConflictException) {
             createDirectorySync()
+            collectionKnown = true
         }
     }
 
     private suspend fun createDirectoryRecursive(): WebDavTestConnectionResult =
         try {
             createDirectorySync()
+            collectionKnown = true
             WebDavTestConnectionResult.Success(dirCreated = true)
         } catch (e: CancellationException) {
             throw e

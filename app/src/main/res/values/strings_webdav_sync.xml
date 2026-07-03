@@ -7,6 +7,7 @@
     <string name="webdav_sync_provider_label">Service Provider</string>
     <string name="webdav_sync_connection">Connection</string>
     <string name="webdav_sync_jianguoyun_hint">Use your Jianguoyun account email and an app-specific password (not your account password). Generate one at Account Settings → Security → Third-party App Management.</string>
+    <string name="webdav_sync_jianguoyun_quota_hint">Jianguoyun free accounts limit WebDAV request frequency and monthly traffic. KeiOS reduces launch auto-sync and repeated directory checks; for large migrations, run one manual sync and wait before retrying.</string>
     <string name="webdav_sync_jianguoyun_password_hint">Auto-generated alphanumeric string (letters + numbers)</string>
     <string name="webdav_sync_jianguoyun_server_label">Recommended Server</string>
     <string name="webdav_sync_server_url">Server URL</string>
@@ -91,7 +92,7 @@
     <string name="webdav_sync_status_permission_denied">Permission denied on the remote directory</string>
     <string name="webdav_sync_status_network_error">Network error</string>
     <string name="webdav_sync_status_invalid_url">Invalid server URL</string>
-    <string name="webdav_sync_status_conflict">Remote changed during sync — try again</string>
+    <string name="webdav_sync_status_conflict">Remote is still changing — local data kept, retry later</string>
     <string name="webdav_sync_status_baseline_required">Baseline required before auto sync</string>
     <string name="webdav_sync_status_error">Sync error</string>
     <string name="webdav_sync_status_unknown">Unknown error</string>
@@ -153,7 +154,7 @@
     <string name="webdav_sync_plan_item_upload_title">Review %1$s upload</string>
     <string name="webdav_sync_plan_item_download_title">Review %1$s download</string>
     <string name="webdav_sync_plan_sync_summary">Sync first refreshes the remote snapshot, then merges local and remote JSON. Local-only and remote-only items are both kept.</string>
-    <string name="webdav_sync_plan_upload_summary">Upload first refreshes the remote snapshot, then writes local JSON to the server. Existing remote files use ETag protection so changed remote data reports a conflict.</string>
+    <string name="webdav_sync_plan_upload_summary">Upload first refreshes the remote snapshot, then writes local JSON as the authoritative copy. KeiOS uses ETag protection for the preview write and refreshes the remote again before a confirmed overwrite, which also avoids providers that reject conditional PUT.</string>
     <string name="webdav_sync_plan_download_summary">Download first refreshes the remote snapshot, then merges remote JSON into local data.</string>
     <string name="webdav_sync_plan_remote_refreshed">Remote refreshed: %1$s</string>
     <string name="webdav_sync_plan_upload_shrink_warning">Some remote datasets currently contain more items than local. Uploading will make those remote files smaller.</string>

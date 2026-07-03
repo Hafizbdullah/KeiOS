@@ -7,6 +7,7 @@
     <string name="webdav_sync_provider_label">服务商</string>
     <string name="webdav_sync_connection">连接设置</string>
     <string name="webdav_sync_jianguoyun_hint">请使用坚果云账号邮箱和第三方应用密码（非账号密码）。在坚果云网页端：账户设置 → 安全选项 → 第三方应用管理 中生成。</string>
+    <string name="webdav_sync_jianguoyun_quota_hint">坚果云免费账号有 WebDAV 访问频率和月流量限制。KeiOS 会减少启动自动同步和重复目录检查；大量数据迁移建议完成一次手动同步后等待一段时间再重试。</string>
     <string name="webdav_sync_jianguoyun_password_hint">自动生成的英文字母与数字混合字符串</string>
     <string name="webdav_sync_jianguoyun_server_label">推荐服务器</string>
     <string name="webdav_sync_server_url">服务器地址</string>
@@ -91,7 +92,7 @@
     <string name="webdav_sync_status_permission_denied">远端目录无访问权限</string>
     <string name="webdav_sync_status_network_error">网络异常</string>
     <string name="webdav_sync_status_invalid_url">服务器地址无效</string>
-    <string name="webdav_sync_status_conflict">同步过程中远端有变动 — 请重试</string>
+    <string name="webdav_sync_status_conflict">远端仍在变化 — 本地数据已保留，稍后重试</string>
     <string name="webdav_sync_status_baseline_required">需要先建立同步基线</string>
     <string name="webdav_sync_status_error">同步出错</string>
     <string name="webdav_sync_status_unknown">未知错误</string>
@@ -153,7 +154,7 @@
     <string name="webdav_sync_plan_item_upload_title">确认上传「%1$s」</string>
     <string name="webdav_sync_plan_item_download_title">确认下载「%1$s」</string>
     <string name="webdav_sync_plan_sync_summary">同步会先刷新远端快照，再合并本地与远端 JSON。本地独有和远端独有项目都会保留。</string>
-    <string name="webdav_sync_plan_upload_summary">上传会先刷新远端快照，再把本地 JSON 写入服务器。远端已存在文件时使用 ETag 保护，远端发生变化会返回冲突。</string>
+    <string name="webdav_sync_plan_upload_summary">上传会先刷新远端快照，再以本地 JSON 作为权威副本写入服务器。KeiOS 会在预览写入时使用 ETag 保护，确认覆盖前会再次刷新远端，也能兼容拒绝条件 PUT 的服务商。</string>
     <string name="webdav_sync_plan_download_summary">下载会先刷新远端快照，再把远端 JSON 合并到本地数据。</string>
     <string name="webdav_sync_plan_remote_refreshed">远端已刷新：%1$s</string>
     <string name="webdav_sync_plan_upload_shrink_warning">部分远端数据集条目数多于本地。继续上传会让这些远端文件变小。</string>

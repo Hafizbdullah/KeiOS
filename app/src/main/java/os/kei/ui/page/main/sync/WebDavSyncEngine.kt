@@ -60,6 +60,12 @@ internal class WebDavSyncEngine(
         port: WebDavSyncDataPort,
     ) {
         recordSynced(item, etag, port.fingerprintJson())
+        saveRemoteSummaryFromLocal(
+            item = item,
+            port = port,
+            content = port.exportJson(),
+            etag = etag,
+        )
     }
 
     // ── Connection test ────────────────────────────────────────────────
@@ -193,6 +199,7 @@ internal class WebDavSyncEngine(
         return try {
             when (val download = c.download(item.fileName)) {
                 is WebDavDownloadResult.Success -> {
+                    saveRemoteSummaryFromRemote(item, port, download.content, download.etag)
                     val localBeforeHash = contentHash(port.fingerprintJson())
                     val remoteHash = contentHash(port.remoteFingerprintJson(download.content))
                     if (localBeforeHash == remoteHash) {
@@ -244,6 +251,7 @@ internal class WebDavSyncEngine(
         ) {
             is WebDavUploadResult.Success -> {
                 recordSynced(item, upload.etag, port.fingerprintJson())
+                saveRemoteSummaryFromLocal(item, port, content, upload.etag)
                 WebDavItemOutcome(statusWhenWritten)
             }
             WebDavUploadResult.Conflict -> {
@@ -255,6 +263,7 @@ internal class WebDavSyncEngine(
                         when (val second = c.upload(item.fileName, reMerged, retry.etag)) {
                             is WebDavUploadResult.Success -> {
                                 recordSynced(item, second.etag, port.fingerprintJson())
+                                saveRemoteSummaryFromLocal(item, port, reMerged, second.etag)
                                 WebDavItemOutcome(WebDavItemStatus.Merged)
                             }
                             else -> conflictOutcome(item)
@@ -282,7 +291,11 @@ internal class WebDavSyncEngine(
         return try {
             val local = port.exportJson()
             if (expectedRemoteEtag == null && expectedRemoteHash == null) {
-                metadataStore.setItemPendingState(item, WebDavSyncPendingState.BaselineRequired, nowMillis())
+                metadataStore.setItemPendingState(
+                    item = item,
+                    state = WebDavSyncPendingState.BaselineRequired,
+                    updatedAtMs = nowMillis(),
+                )
                 return WebDavItemOutcome(WebDavItemStatus.BaselineRequired)
             }
             val uploadResult =
@@ -300,6 +313,7 @@ internal class WebDavSyncEngine(
             when (val upload = uploadResult) {
                 is WebDavUploadResult.Success -> {
                     recordSynced(item, upload.etag, port.fingerprintJson())
+                    saveRemoteSummaryFromLocal(item, port, local, upload.etag)
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
                 }
                 WebDavUploadResult.Conflict ->
@@ -361,6 +375,7 @@ internal class WebDavSyncEngine(
         ) {
             is WebDavUploadResult.Success -> {
                 recordSynced(item, retryUpload.etag, port.fingerprintJson())
+                saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
                 WebDavItemOutcome(WebDavItemStatus.Uploaded)
             }
             WebDavUploadResult.Conflict -> conflictOutcome(item)
@@ -375,6 +390,7 @@ internal class WebDavSyncEngine(
         port: WebDavSyncDataPort,
         expectedRemoteEtag: String? = null,
         remoteKnownEmpty: Boolean = false,
+        confirmedOverwrite: Boolean = false,
     ): WebDavItemOutcome {
         val c = client(config)
         return try {
@@ -391,9 +407,20 @@ internal class WebDavSyncEngine(
             when (val upload = uploadResult) {
                 is WebDavUploadResult.Success -> {
                     recordSynced(item, upload.etag, port.fingerprintJson())
+                    saveRemoteSummaryFromLocal(item, port, local, upload.etag)
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
                 }
-                WebDavUploadResult.Conflict -> conflictOutcome(item)
+                WebDavUploadResult.Conflict ->
+                    if (confirmedOverwrite) {
+                        refreshRemoteAndOverwrite(
+                            c = c,
+                            item = item,
+                            port = port,
+                            local = local,
+                        )
+                    } else {
+                        conflictOutcome(item)
+                    }
                 is WebDavUploadResult.Error -> errorOutcome(upload.error)
             }
         } catch (e: CancellationException) {
@@ -411,6 +438,7 @@ internal class WebDavSyncEngine(
         return try {
             when (val download = c.download(item.fileName)) {
                 is WebDavDownloadResult.Success -> {
+                    saveRemoteSummaryFromRemote(item, port, download.content, download.etag)
                     val localBeforeHash = contentHash(port.fingerprintJson())
                     val remoteHash = contentHash(port.remoteFingerprintJson(download.content))
                     if (localBeforeHash == remoteHash) {
@@ -494,6 +522,70 @@ internal class WebDavSyncEngine(
         metadataStore.setItemContentHash(item, contentHash(content))
         metadataStore.setLastSyncTime(item, nowMillis())
         metadataStore.clearItemPendingState(item)
+    }
+
+    private suspend fun refreshRemoteAndOverwrite(
+        c: WebDavSyncClientBridge,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        local: String,
+    ): WebDavItemOutcome =
+        when (val refreshed = c.download(item.fileName)) {
+            is WebDavDownloadResult.Success -> {
+                saveRemoteSummaryFromRemote(item, port, refreshed.content, refreshed.etag)
+                when (val second = c.upload(item.fileName, local, etag = null)) {
+                    is WebDavUploadResult.Success -> {
+                        recordSynced(item, second.etag, port.fingerprintJson())
+                        saveRemoteSummaryFromLocal(item, port, local, second.etag)
+                        WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                    }
+                    WebDavUploadResult.Conflict -> conflictOutcome(item)
+                    is WebDavUploadResult.Error -> errorOutcome(second.error)
+                }
+            }
+            WebDavDownloadResult.Empty -> {
+                metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
+                when (val second = c.upload(item.fileName, local, etag = null)) {
+                    is WebDavUploadResult.Success -> {
+                        recordSynced(item, second.etag, port.fingerprintJson())
+                        saveRemoteSummaryFromLocal(item, port, local, second.etag)
+                        WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                    }
+                    WebDavUploadResult.Conflict -> conflictOutcome(item)
+                    is WebDavUploadResult.Error -> errorOutcome(second.error)
+                }
+            }
+            is WebDavDownloadResult.Error -> errorOutcome(refreshed.error)
+        }
+
+    private fun saveRemoteSummaryFromRemote(
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        content: String,
+        etag: String?,
+    ) {
+        metadataStore.saveRemoteSummaryFound(
+            item = item,
+            itemCount = runCatching { port.countRemoteItems(content) }.getOrDefault(-1),
+            byteSize = content.toByteArray(Charsets.UTF_8).size.toLong(),
+            etag = etag,
+            probedAtMs = nowMillis(),
+        )
+    }
+
+    private fun saveRemoteSummaryFromLocal(
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        content: String,
+        etag: String?,
+    ) {
+        metadataStore.saveRemoteSummaryFound(
+            item = item,
+            itemCount = runCatching { port.localCount() }.getOrDefault(-1),
+            byteSize = content.toByteArray(Charsets.UTF_8).size.toLong(),
+            etag = etag,
+            probedAtMs = nowMillis(),
+        )
     }
 
     private fun conflictOutcome(item: WebDavSyncItem): WebDavItemOutcome {

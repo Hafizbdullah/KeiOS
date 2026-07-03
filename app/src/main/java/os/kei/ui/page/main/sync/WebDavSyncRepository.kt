@@ -108,6 +108,7 @@ internal class WebDavSyncRepository(
                         expectedRemoteEtag =
                             (planItem?.remoteState as? WebDavSyncPlanRemoteState.Found)?.etag,
                         remoteKnownEmpty = planItem?.remoteState == WebDavSyncPlanRemoteState.Empty,
+                        confirmedOverwrite = planItem != null,
                     )
                 WebDavBatchKind.Download -> engine.download(config, item, port)
             }
