@@ -16,12 +16,18 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
                 AppBackgroundScheduler.onTickHandled(appContext, action)
             }
         }
+        val recoverTimeout: suspend (Context) -> Unit = { appContext ->
+            if (action == ACTION_GITHUB_TICK) {
+                AppForegroundInfoHandler.handleGitHubTickTimeout(appContext)
+            }
+            rescheduleOnce(appContext)
+        }
         BackgroundAsyncReceiverRunner.launch(
             receiver = this,
             context = context,
             tag = TAG,
             timeoutMs = timeoutForAction(action),
-            onTimeout = rescheduleOnce
+            onTimeout = recoverTimeout
         ) { appContext ->
             try {
                 when (action) {

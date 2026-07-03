@@ -1,7 +1,10 @@
 package os.kei.feature.github.domain
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -120,6 +123,34 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(result.updatableCount, finalProgress.updatableCount)
         assertEquals(result.preReleaseUpdateCount, finalProgress.preReleaseUpdateCount)
         assertEquals(result.failedCount, finalProgress.failedCount)
+    }
+
+    @Test
+    fun `run converts timed out evaluator into failed item and completes batch`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val items = (1..3).map { index -> tracked(index) }
+        val progressEvents = mutableListOf<GitHubTrackedRefreshBatchProgress>()
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = items,
+            maxConcurrency = 2,
+            dispatcher = dispatcher,
+            refreshTimestampMs = NOW_MS,
+            itemTimeoutMs = { 100L },
+            onProgress = { progressEvents += it }
+        ) { item ->
+            if (item.repo == "repo-1") {
+                delay(Long.MAX_VALUE)
+            }
+            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+        }
+
+        assertEquals(items.size, result.totalCount)
+        assertEquals(items.size, result.cacheEntries.size)
+        assertEquals(1, result.failedCount)
+        assertEquals("demo/repo-1|demo.repo1", result.failures.single().trackId)
+        assertTrue(result.failures.single().message.contains("Timed out"))
+        assertEquals(listOf(1, 2, 3), progressEvents.map { it.current }.sorted())
     }
 
     @Test

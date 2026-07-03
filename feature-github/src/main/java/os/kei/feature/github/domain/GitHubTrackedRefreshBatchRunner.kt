@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.model.GitHubCheckCacheEntry
@@ -57,6 +58,7 @@ object GitHubTrackedRefreshBatchRunner {
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+        itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: (suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck)? = null
@@ -67,6 +69,7 @@ object GitHubTrackedRefreshBatchRunner {
             refreshTimestampMs = refreshTimestampMs,
             maxConcurrency = maxConcurrency,
             dispatcher = dispatcher,
+            itemTimeoutMs = itemTimeoutMs,
             onProgress = onProgress,
             onItemResult = onItemResult,
             evaluator = { item ->
@@ -81,6 +84,7 @@ object GitHubTrackedRefreshBatchRunner {
         refreshTimestampMs: Long = System.currentTimeMillis(),
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+        itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
@@ -125,17 +129,22 @@ object GitHubTrackedRefreshBatchRunner {
                         val item = workItem.item
                         val itemStartNs = System.nanoTime()
                         val check = runCatching {
-                            when {
-                                item.isDirectApkTrack() -> {
-                                    directApkPermits.withPermit { evaluator(item) }
-                                }
+                            evaluateWithTimeout(
+                                item = item,
+                                timeoutMs = itemTimeoutMs(item),
+                            ) {
+                                when {
+                                    item.isDirectApkTrack() -> {
+                                        directApkPermits.withPermit { evaluator(item) }
+                                    }
 
-                                item.isFdroidRepositoryTrack() -> {
-                                    fdroidPermits.withPermit { evaluator(item) }
-                                }
+                                    item.isFdroidRepositoryTrack() -> {
+                                        fdroidPermits.withPermit { evaluator(item) }
+                                    }
 
-                                else -> {
-                                    evaluator(item)
+                                    else -> {
+                                        evaluator(item)
+                                    }
                                 }
                             }
                         }.getOrElse { error ->
@@ -245,9 +254,48 @@ object GitHubTrackedRefreshBatchRunner {
         )
     }
 
+    private suspend fun evaluateWithTimeout(
+        item: GitHubTrackedApp,
+        timeoutMs: Long,
+        evaluator: suspend () -> GitHubTrackedReleaseCheck
+    ): GitHubTrackedReleaseCheck {
+        val boundedTimeoutMs = timeoutMs.coerceAtLeast(0L)
+        if (boundedTimeoutMs == 0L) return evaluator()
+        return withTimeoutOrNull(boundedTimeoutMs) {
+            evaluator()
+        } ?: timedOutCheck(item, boundedTimeoutMs)
+    }
+
+    private fun timedOutCheck(
+        item: GitHubTrackedApp,
+        timeoutMs: Long
+    ): GitHubTrackedReleaseCheck {
+        val seconds = ((timeoutMs + 999L) / 1_000L).coerceAtLeast(1L)
+        return GitHubTrackedReleaseCheck(
+            strategyId = "",
+            localVersion = "",
+            localVersionCode = -1L,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                "Timed out after ${seconds}s (${item.owner}/${item.repo})"
+            )
+        )
+    }
+
+    private fun defaultItemTimeoutMs(item: GitHubTrackedApp): Long =
+        when {
+            item.isFdroidRepositoryTrack() -> FDROID_REFRESH_ITEM_TIMEOUT_MS
+            item.isDirectApkTrack() -> DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS
+            else -> REPOSITORY_REFRESH_ITEM_TIMEOUT_MS
+        }
+
     private data class GitHubTrackedRefreshItemResult(
         val item: GitHubTrackedApp,
         val check: GitHubTrackedReleaseCheck,
         val elapsedMs: Long
     )
+
+    private const val REPOSITORY_REFRESH_ITEM_TIMEOUT_MS = 60_000L
+    private const val DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS = 90_000L
+    private const val FDROID_REFRESH_ITEM_TIMEOUT_MS = 120_000L
 }

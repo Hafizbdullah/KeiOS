@@ -1,6 +1,7 @@
 package os.kei.core.background
 
 import android.content.Context
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -11,6 +12,7 @@ import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubBackgroundRefreshService
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
 import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
@@ -46,17 +48,26 @@ object AppForegroundInfoHandler {
             minTotalForInitialProgress = GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL,
         )
         val result =
-            githubRefreshService.runDueRefresh(
-                context = context,
-                onRefreshStart = progressNotifier::notifyInitial,
-                onRefreshProgress = progressNotifier::notifyProgress,
-                onActionsUpdateAvailable = { snapshot ->
-                    GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
-                        context = context,
-                        snapshot = snapshot,
-                    )
-                },
-            )
+            try {
+                githubRefreshService.runDueRefresh(
+                    context = context,
+                    onRefreshStart = progressNotifier::notifyInitial,
+                    onRefreshProgress = progressNotifier::notifyProgress,
+                    onActionsUpdateAvailable = { snapshot ->
+                        GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
+                            context = context,
+                            snapshot = snapshot,
+                        )
+                    },
+                )
+            } catch (error: CancellationException) {
+                cleanupGitHubRefreshRuntimeAndNotification(context, "github tick cancelled")
+                throw error
+            } catch (error: Throwable) {
+                cleanupGitHubRefreshRuntimeAndNotification(context, "github tick failed")
+                AppLogger.w("AppForegroundInfoHandler", "github tick failed", error)
+                return
+            }
         val refreshResult = result.refreshResult
         if (refreshResult?.hasNotifiableOutcome == true) {
             notifyGitHubRefreshCompletedOrCancel(
@@ -78,6 +89,10 @@ object AppForegroundInfoHandler {
                     )
                 }
         }
+    }
+
+    suspend fun handleGitHubTickTimeout(context: Context) {
+        cleanupGitHubRefreshRuntimeAndNotification(context, "github tick timed out")
     }
 
     internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
@@ -165,6 +180,33 @@ object AppForegroundInfoHandler {
                     )
                 }
         }
+    }
+
+    private fun cleanupGitHubRefreshRuntimeAndNotification(
+        context: Context,
+        reason: String,
+    ) {
+        val runtime = GitHubRefreshRuntimeStore.state.value
+        val ownsRuntime = runtime.running && runtime.source == GitHubRefreshSource.BackgroundTick
+        if (ownsRuntime) {
+            GitHubRefreshRuntimeStore.cancel(
+                sessionId = runtime.sessionId,
+                completedCount = runtime.completedCount,
+                updatableCount = runtime.updatableCount,
+                preReleaseUpdateCount = runtime.preReleaseUpdateCount,
+                failedCount = runtime.failedCount,
+            )
+        }
+        val shouldCancelNotification = !runtime.running || ownsRuntime
+        if (!shouldCancelNotification) return
+        runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+            .onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "$reason notification cleanup failed",
+                    error
+                )
+            }
     }
 
     private class GitHubRefreshProgressNotifier(
