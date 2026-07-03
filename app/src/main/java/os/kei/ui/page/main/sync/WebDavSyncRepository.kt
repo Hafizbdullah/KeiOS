@@ -31,6 +31,7 @@ internal class WebDavSyncRepository(
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
             lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
             lastAutoSyncSummary = WebDavSyncStore.loadLastAutoSyncSummary(),
+            history = WebDavSyncStore.loadHistory(),
             itemStates = buildItemStates(),
         )
     }
@@ -166,6 +167,22 @@ internal class WebDavSyncRepository(
         withContext(ioDispatcher) {
             WebDavSyncStore.setLastFullSyncTime(nowMs())
             WebDavSyncStore.getLastFullSyncTime()
+        }
+
+    suspend fun appendHistory(entry: WebDavSyncHistoryEntry): List<WebDavSyncHistoryEntry> =
+        withContext(ioDispatcher) {
+            WebDavSyncStore.appendHistory(entry)
+        }
+
+    suspend fun clearHistory(): List<WebDavSyncHistoryEntry> =
+        withContext(ioDispatcher) {
+            WebDavSyncStore.clearHistory()
+            WebDavSyncStore.loadHistory()
+        }
+
+    suspend fun loadHistory(): List<WebDavSyncHistoryEntry> =
+        withContext(ioDispatcher) {
+            WebDavSyncStore.loadHistory()
         }
 
     suspend fun loadItemStates(

@@ -1,8 +1,11 @@
 package os.kei.ui.page.main.sync
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import os.kei.core.json.KeiJson
+import os.kei.core.json.decodeFromStringOrNull
 import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.webdav.model.WebDavConfig
 
@@ -33,6 +36,7 @@ internal object WebDavSyncStore {
     private const val KEY_LAST_AUTO_SYNC_SUCCEEDED = "last_auto_sync_succeeded"
     private const val KEY_LAST_AUTO_SYNC_FAILED = "last_auto_sync_failed"
     private const val KEY_LAST_AUTO_SYNC_SKIPPED = "last_auto_sync_skipped"
+    private const val KEY_SYNC_HISTORY = "sync_history_v1"
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
 
@@ -231,6 +235,40 @@ internal object WebDavSyncStore {
         mmkv.encode(KEY_LAST_AUTO_SYNC_FAILED, summary.failedCount.coerceAtLeast(0))
         mmkv.encode(KEY_LAST_AUTO_SYNC_SKIPPED, summary.skippedCount.coerceAtLeast(0))
         WebDavSyncStoreSignals.notifyChanged()
+    }
+
+    // ── Local sync history ─────────────────────────────────────────────
+
+    fun loadHistory(): List<WebDavSyncHistoryEntry> {
+        val raw = mmkv.decodeString(KEY_SYNC_HISTORY, null).orEmpty()
+        return KeiJson.lenient
+            .decodeFromStringOrNull<WebDavSyncHistoryPayload>(raw)
+            ?.entries
+            ?.sortedWith(
+                compareByDescending<WebDavSyncHistoryEntry> { it.finishedAtMs }
+                    .thenByDescending { it.startedAtMs }
+                    .thenBy { it.id },
+            )
+            ?.take(WebDavSyncHistoryMaxEntries)
+            .orEmpty()
+    }
+
+    fun appendHistory(entry: WebDavSyncHistoryEntry): List<WebDavSyncHistoryEntry> {
+        val updated = appendWebDavSyncHistory(loadHistory(), entry)
+        mmkv.encode(
+            KEY_SYNC_HISTORY,
+            KeiJson.lenient.encodeToString(WebDavSyncHistoryPayload(entries = updated)),
+        )
+        WebDavSyncStoreSignals.notifyChanged()
+        return updated
+    }
+
+    fun clearHistory() {
+        val hadHistory = mmkv.containsKey(KEY_SYNC_HISTORY)
+        mmkv.removeValueForKey(KEY_SYNC_HISTORY)
+        if (hadHistory) {
+            WebDavSyncStoreSignals.notifyChanged()
+        }
     }
 
     // ── Remote summary (read-only probe results) ───────────────────────

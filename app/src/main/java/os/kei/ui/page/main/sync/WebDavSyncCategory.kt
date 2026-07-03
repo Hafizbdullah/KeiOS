@@ -10,5 +10,6 @@ internal enum class WebDavSyncCategory(
 ) : TabbedPageCategory {
     Connection(LucideR.drawable.lucide_ic_server_cog, R.string.webdav_sync_section_connection),
     Data(LucideR.drawable.lucide_ic_cloud_sync, R.string.webdav_sync_section_data),
+    History(LucideR.drawable.lucide_ic_history, R.string.webdav_sync_section_history),
     Advanced(LucideR.drawable.lucide_ic_database_backup, R.string.webdav_sync_section_advanced),
 }

@@ -67,4 +67,12 @@ class WebDavAutoSyncTest {
             ),
         )
     }
+
+    @Test
+    fun `pending conflict and missing baseline defer automatic sync`() {
+        assertTrue(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.RemoteConflict))
+        assertTrue(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.BaselineRequired))
+        assertFalse(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.LocalUploadPending))
+        assertFalse(shouldDeferPendingWebDavAutoSync(null))
+    }
 }

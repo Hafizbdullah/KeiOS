@@ -99,7 +99,14 @@ internal object WebDavAutoSync {
                 reason = "alarm-timeout",
                 finishedAtMs = nowMs,
                 targetCount = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
-            ),
+            ).also { summary ->
+                WebDavSyncStore.appendHistory(
+                    summary.toHistoryEntry(
+                        source = WebDavSyncHistorySource.Auto,
+                        startedAtMs = nowMs,
+                    ),
+                )
+            },
         )
         AppBackgroundScheduler.scheduleWebDavAutoSync(context.applicationContext)
     }
@@ -166,9 +173,14 @@ internal object WebDavAutoSync {
             val ports = buildWebDavSyncDataPorts(context)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             val outcomes = mutableListOf<WebDavItemOutcome>()
+            val itemOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var skippedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
+                if (shouldDeferPendingReview(item)) {
+                    skippedCount += 1
+                    continue
+                }
                 val port = ports[item]
                 if (port == null) {
                     skippedCount += 1
@@ -176,6 +188,7 @@ internal object WebDavAutoSync {
                 }
                 val outcome = reconcileItem(config, item, port)
                 outcomes += outcome
+                itemOutcomes += item to outcome
                 if (!outcome.isSuccess) {
                     AppLogger.w(TAG, "auto-sync ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
@@ -188,6 +201,18 @@ internal object WebDavAutoSync {
                 skippedCount = skippedCount,
             )
             WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            WebDavSyncStore.appendHistory(
+                buildWebDavSyncHistoryEntry(
+                    source = WebDavSyncHistorySource.Auto,
+                    kind = null,
+                    reason = reason,
+                    startedAtMs = startedAtMs,
+                    finishedAtMs = summary.finishedAtMs,
+                    targetCount = targets.size,
+                    outcomes = itemOutcomes,
+                    skippedCount = skippedCount,
+                ),
+            )
             if (summary.status == WebDavAutoSyncStatus.Success) {
                 WebDavSyncStore.setLastFullSyncTime(summary.finishedAtMs)
             }
@@ -201,6 +226,12 @@ internal object WebDavAutoSync {
                 finishedAtMs = System.currentTimeMillis(),
             )
             WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            WebDavSyncStore.appendHistory(
+                summary.toHistoryEntry(
+                    source = WebDavSyncHistorySource.Auto,
+                    startedAtMs = startedAtMs,
+                ),
+            )
             summary
         }
     }
@@ -216,9 +247,11 @@ internal object WebDavAutoSync {
             val ports = buildWebDavSyncDataPorts(context)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             val outcomes = mutableListOf<WebDavItemOutcome>()
+            val itemOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var changedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
+                if (shouldDeferPendingReview(item)) continue
                 val port = ports[item] ?: continue
                 val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                 val storedHash = WebDavSyncStore.getItemContentHash(item)
@@ -235,6 +268,7 @@ internal object WebDavAutoSync {
                     AppLogger.w(TAG, "auto-push ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
                 outcomes += outcome
+                itemOutcomes += item to outcome
             }
             val summary = buildAutoSyncSummary(
                 reason = reason,
@@ -246,6 +280,18 @@ internal object WebDavAutoSync {
             if (changedCount > 0 || summary.hasIssues) {
                 WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
                 WebDavSyncStore.saveLastAutoSyncSummary(summary)
+                WebDavSyncStore.appendHistory(
+                    buildWebDavSyncHistoryEntry(
+                        source = WebDavSyncHistorySource.Auto,
+                        kind = WebDavSyncHistoryKind.Upload,
+                        reason = reason,
+                        startedAtMs = startedAtMs,
+                        finishedAtMs = summary.finishedAtMs,
+                        targetCount = changedCount,
+                        outcomes = itemOutcomes,
+                        skippedCount = 0,
+                    ),
+                )
             }
             summary
         } catch (e: CancellationException) {
@@ -258,6 +304,12 @@ internal object WebDavAutoSync {
             )
             WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
             WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            WebDavSyncStore.appendHistory(
+                summary.toHistoryEntry(
+                    source = WebDavSyncHistorySource.Auto,
+                    startedAtMs = startedAtMs,
+                ),
+            )
             summary
         }
     }
@@ -333,6 +385,11 @@ internal object WebDavAutoSync {
         }
     }
 
+    private fun shouldDeferPendingReview(item: WebDavSyncItem): Boolean {
+        val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state ?: return false
+        return shouldDeferPendingWebDavAutoSync(pending)
+    }
+
     private object LifecycleObserver : Application.ActivityLifecycleCallbacks {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
         override fun onActivityStarted(activity: Activity) {
@@ -391,6 +448,10 @@ internal fun shouldRunLaunchAutoSync(
     if (lastTouchMs <= 0L) return true
     return nowMs - lastTouchMs >= cooldownMs
 }
+
+internal fun shouldDeferPendingWebDavAutoSync(pending: WebDavSyncPendingState?): Boolean =
+    pending == WebDavSyncPendingState.RemoteConflict ||
+        pending == WebDavSyncPendingState.BaselineRequired
 
 private fun buildAutoSyncSummary(
     reason: String,

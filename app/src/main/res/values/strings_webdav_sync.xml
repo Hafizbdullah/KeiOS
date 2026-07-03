@@ -3,6 +3,7 @@
     <string name="webdav_sync_title">WebDAV Sync</string>
     <string name="webdav_sync_section_connection">Connect</string>
     <string name="webdav_sync_section_data">Data</string>
+    <string name="webdav_sync_section_history">History</string>
     <string name="webdav_sync_section_advanced">Advanced</string>
     <string name="webdav_sync_provider_label">Service Provider</string>
     <string name="webdav_sync_connection">Connection</string>
@@ -26,7 +27,14 @@
     <string name="webdav_sync_test_failed">Connection failed: %1$s</string>
     <string name="webdav_sync_dir_created">Remote directory created automatically</string>
     <string name="webdav_sync_save">Save</string>
+    <string name="webdav_sync_overview_card_title">Sync overview</string>
+    <string name="webdav_sync_auto_card_title">Auto sync</string>
+    <string name="webdav_sync_remote_card_title">Remote snapshot</string>
+    <string name="webdav_sync_batch_card_title">Batch actions</string>
     <string name="webdav_sync_items_title">Sync Items</string>
+    <string name="webdav_sync_items_github_title">GitHub data</string>
+    <string name="webdav_sync_items_ba_title">BA data</string>
+    <string name="webdav_sync_items_os_title">OS data</string>
     <string name="webdav_sync_upload">Upload</string>
     <string name="webdav_sync_download">Download</string>
     <string name="webdav_sync_last_sync">Last sync: %1$s</string>
@@ -151,6 +159,48 @@
     <string name="webdav_sync_totals_remote_format">Remote: %1$d items · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">Remote: tap "Refresh remote" to load.</string>
     <string name="webdav_sync_actions_contract_summary">Sync merges local and remote; Upload writes local to remote; Download merges remote into local. Every action refreshes remote first and shows a review list.</string>
+
+    <!-- Local sync history -->
+    <string name="webdav_sync_history_summary_title">Sync history</string>
+    <string name="webdav_sync_history_summary_desc">Local diagnostic records for manual sync, remote refresh, and automatic WebDAV sync. These records stay on this device and are not uploaded to WebDAV.</string>
+    <string name="webdav_sync_history_total_format">%1$d records</string>
+    <string name="webdav_sync_history_latest_format">Latest %1$s</string>
+    <string name="webdav_sync_history_issues_format">%1$d issues</string>
+    <string name="webdav_sync_history_clear">Clear history</string>
+    <string name="webdav_sync_history_empty_title">No sync history</string>
+    <string name="webdav_sync_history_empty_summary">Manual sync, remote refresh, and automatic sync results will appear here after completion.</string>
+    <string name="webdav_sync_history_entry_title">%1$s · %2$s</string>
+    <string name="webdav_sync_history_entry_summary">Success %1$d/%2$d · failed %3$d · skipped %4$d</string>
+    <string name="webdav_sync_history_finished_format">Finished %1$s</string>
+    <string name="webdav_sync_history_label_reason">Reason</string>
+    <string name="webdav_sync_history_label_elapsed">Elapsed</string>
+    <string name="webdav_sync_history_label_progress">Result</string>
+    <string name="webdav_sync_history_progress_format">Success %1$d/%2$d · failed %3$d · skipped %4$d</string>
+    <string name="webdav_sync_history_items_empty">No item-level result was recorded.</string>
+    <string name="webdav_sync_history_source_manual">Manual</string>
+    <string name="webdav_sync_history_source_auto">Auto</string>
+    <string name="webdav_sync_history_source_remote_probe">Remote</string>
+    <string name="webdav_sync_history_kind_sync">Sync</string>
+    <string name="webdav_sync_history_kind_upload">Upload</string>
+    <string name="webdav_sync_history_kind_download">Download</string>
+    <string name="webdav_sync_history_kind_remote_probe">Refresh remote</string>
+    <string name="webdav_sync_history_kind_auto">Auto sync</string>
+    <string name="webdav_sync_history_status_success">Success</string>
+    <string name="webdav_sync_history_status_needs_review">Review</string>
+    <string name="webdav_sync_history_status_failed">Failed</string>
+    <string name="webdav_sync_history_status_skipped">Skipped</string>
+    <string name="webdav_sync_history_status_running">Running</string>
+    <string name="webdav_sync_history_reason_manual_batch">Manual batch action</string>
+    <string name="webdav_sync_history_reason_manual_item">Manual single-item action</string>
+    <string name="webdav_sync_history_reason_remote_probe">Manual remote refresh</string>
+    <string name="webdav_sync_history_reason_launch">Launch auto sync</string>
+    <string name="webdav_sync_history_reason_launch_dirty">Launch local-change upload</string>
+    <string name="webdav_sync_history_reason_background">Background local-change upload</string>
+    <string name="webdav_sync_history_reason_alarm">Scheduled auto sync</string>
+    <string name="webdav_sync_history_reason_alarm_timeout">Scheduled sync timeout</string>
+    <string name="webdav_sync_history_duration_minutes_seconds">%1$dm %2$ds</string>
+    <string name="webdav_sync_history_duration_seconds">%1$ds</string>
+    <string name="webdav_sync_history_duration_millis">%1$dms</string>
 
     <!-- Confirmable change plan -->
     <string name="webdav_sync_plan_sync_title">Review sync changes</string>

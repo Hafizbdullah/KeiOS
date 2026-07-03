@@ -121,15 +121,23 @@ internal class WebDavSyncViewModel(
             }
             val targets = repository.loadEnabledItems()
             if (targets.isEmpty()) return@launch
+            val startedAtMs = System.currentTimeMillis()
             _uiState.update { it.copy(refreshingRemote = true, missingConfig = false) }
             val updatedStates = _uiState.value.itemStates.toMutableMap()
+            val outcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
+            var skippedCount = 0
             for (item in targets) {
-                val port = dataPorts[item] ?: continue
+                val port =
+                    dataPorts[item] ?: run {
+                        skippedCount += 1
+                        continue
+                    }
                 val current = updatedStates[item] ?: WebDavSyncItemUiState()
                 updatedStates[item] = current.copy(remoteProbeError = null)
                 val result = repository.probeRemote(config, item, port)
                 updatedStates[item] = when (val outcome = result.outcome) {
                     is WebDavRemoteProbeOutcome.Error -> {
+                        outcomes += item to WebDavItemOutcome(outcome.status, outcome.detail)
                         current.copy(
                             remoteSummary = result.summary,
                             remoteProbeError = WebDavItemOutcome(outcome.status, outcome.detail),
@@ -137,6 +145,13 @@ internal class WebDavSyncViewModel(
                     }
 
                     else -> {
+                        val status =
+                            if (outcome == WebDavRemoteProbeOutcome.Empty) {
+                                WebDavItemStatus.RemoteEmpty
+                            } else {
+                                WebDavItemStatus.UpToDate
+                            }
+                        outcomes += item to WebDavItemOutcome(status)
                         current.copy(
                             remoteSummary = result.summary,
                             remoteProbeError = null,
@@ -148,12 +163,26 @@ internal class WebDavSyncViewModel(
             // batch so the UI can render "remote refreshed: <relative time>" without scanning all
             // five entries.
             val lastRemoteProbeTimeMs = repository.recordRemoteProbeBatch()
+            val history =
+                repository.appendHistory(
+                    buildWebDavSyncHistoryEntry(
+                        source = WebDavSyncHistorySource.RemoteProbe,
+                        kind = WebDavSyncHistoryKind.RemoteProbe,
+                        reason = "manual-remote-probe",
+                        startedAtMs = startedAtMs,
+                        finishedAtMs = lastRemoteProbeTimeMs,
+                        targetCount = targets.size,
+                        outcomes = outcomes,
+                        skippedCount = skippedCount,
+                    ),
+                )
             val itemStates = repository.loadItemStates(updatedStates)
             _uiState.update { state ->
                 state.copy(
                     refreshingRemote = false,
                     lastRemoteProbeTimeMs = lastRemoteProbeTimeMs,
                     itemStates = itemStates,
+                    history = history,
                 )
             }
         }
@@ -316,10 +345,17 @@ internal class WebDavSyncViewModel(
             }
             val targets = plan.items.map { it.item }
             if (targets.isEmpty()) return@launch
+            val startedAtMs = System.currentTimeMillis()
             _uiState.update { it.copy(runningKind = plan.kind, missingConfig = false) }
             targets.forEach { setItemRunning(it) }
+            val outcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
+            var skippedCount = 0
             for (planItem in plan.items) {
-                val port = dataPorts[planItem.item] ?: continue
+                val port =
+                    dataPorts[planItem.item] ?: run {
+                        skippedCount += 1
+                        continue
+                    }
                 val outcome =
                     repository.invoke(
                         kind = plan.kind,
@@ -328,18 +364,41 @@ internal class WebDavSyncViewModel(
                         port = port,
                         planItem = planItem,
                     )
+                outcomes += planItem.item to outcome
                 applyItemOutcome(planItem.item, outcome)
             }
             val lastFullSyncTimeMs = repository.recordFullSyncBatch()
+            val history =
+                repository.appendHistory(
+                    buildWebDavSyncHistoryEntry(
+                        source = WebDavSyncHistorySource.Manual,
+                        kind = plan.kind.toHistoryKind(),
+                        reason = plan.scope.historyReason(),
+                        startedAtMs = startedAtMs,
+                        finishedAtMs = lastFullSyncTimeMs,
+                        targetCount = targets.size,
+                        outcomes = outcomes,
+                        skippedCount = skippedCount,
+                    ),
+                )
             val itemStates = repository.loadItemStates(_uiState.value.itemStates)
             _uiState.update { state ->
                 state.copy(
                     runningKind = null,
                     lastFullSyncTimeMs = lastFullSyncTimeMs,
                     itemStates = itemStates,
+                    history = history,
                 )
             }
             refreshLocalCountsInternal(dataPorts)
+        }
+    }
+
+    fun clearHistory() {
+        if (_uiState.value.interactionLocked) return
+        viewModelScope.launch {
+            val history = repository.clearHistory()
+            _uiState.update { it.copy(history = history) }
         }
     }
 
@@ -459,6 +518,7 @@ internal data class WebDavSyncUiState(
     val lastFullSyncTimeMs: Long = 0L,
     val lastRemoteProbeTimeMs: Long = 0L,
     val lastAutoSyncSummary: WebDavAutoSyncSummary? = null,
+    val history: List<WebDavSyncHistoryEntry> = emptyList(),
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 ) {
     val busy: Boolean get() = runningKind != null || planningKind != null
@@ -468,6 +528,12 @@ internal data class WebDavSyncUiState(
         get() = username.isNotBlank() && appPassword.isNotBlank() &&
             (provider.serverUrlLocked || serverUrl.isNotBlank())
 }
+
+private fun WebDavSyncPlanScope.historyReason(): String =
+    when (this) {
+        WebDavSyncPlanScope.Batch -> "manual-batch"
+        is WebDavSyncPlanScope.Single -> "manual-${item.name}"
+    }
 
 internal data class WebDavSyncItemUiState(
     val enabled: Boolean = true,

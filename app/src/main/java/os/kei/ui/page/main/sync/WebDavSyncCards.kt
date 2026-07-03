@@ -241,25 +241,13 @@ internal fun WebDavConnectionCard(
 }
 
 @Composable
-internal fun WebDavSyncItemsCard(
+internal fun WebDavSyncOverviewCard(
     state: WebDavSyncUiState,
     cardColor: Color,
-    onToggleAutoSync: (Boolean) -> Unit,
-    onToggleItem: (WebDavSyncItem) -> Unit,
-    onRunItem: (WebDavSyncItem, WebDavBatchKind) -> Unit,
-    onSyncAll: () -> Unit,
-    onUploadAll: () -> Unit,
-    onDownloadAll: () -> Unit,
-    onRefreshRemote: () -> Unit,
 ) {
-    val hasEnabledItems = state.itemStates.values.any { it.enabled }
-    val syncReady = state.isConfigured
-    val actionEnabled = syncReady && !state.interactionLocked
-    val enabledActionTextColor = MiuixTheme.colorScheme.primary
-    val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_title),
-        title = stringResource(R.string.webdav_sync_items_title),
+        title = stringResource(R.string.webdav_sync_overview_card_title),
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = cardColor,
     ) {
@@ -272,7 +260,28 @@ internal fun WebDavSyncItemsCard(
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
             )
         }
+        if (state.lastFullSyncTimeMs > 0) {
+            SettingsInfoItem(
+                key = stringResource(R.string.webdav_sync_last_sync_label),
+                value = formatTime(state.lastFullSyncTimeMs),
+            )
+        }
+    }
+}
 
+@Composable
+internal fun WebDavSyncAutoSyncCard(
+    state: WebDavSyncUiState,
+    cardColor: Color,
+    onToggleAutoSync: (Boolean) -> Unit,
+) {
+    val syncReady = state.isConfigured
+    SettingsGroupCard(
+        header = stringResource(R.string.webdav_sync_title),
+        title = stringResource(R.string.webdav_sync_auto_card_title),
+        sectionIcon = appLucideDatabaseIcon(),
+        containerColor = cardColor,
+    ) {
         SettingsToggleItem(
             title = stringResource(R.string.webdav_sync_auto_sync_label),
             summary = stringResource(R.string.webdav_sync_auto_sync_summary),
@@ -286,8 +295,26 @@ internal fun WebDavSyncItemsCard(
                 value = autoSyncSummaryText(summary),
             )
         }
+    }
+}
 
-        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+@Composable
+internal fun WebDavSyncRemoteSnapshotCard(
+    state: WebDavSyncUiState,
+    cardColor: Color,
+    onRefreshRemote: () -> Unit,
+) {
+    val hasEnabledItems = state.itemStates.values.any { it.enabled }
+    val syncReady = state.isConfigured
+    val actionEnabled = syncReady && !state.interactionLocked
+    val enabledActionTextColor = MiuixTheme.colorScheme.primary
+    val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+    SettingsGroupCard(
+        header = stringResource(R.string.webdav_sync_title),
+        title = stringResource(R.string.webdav_sync_remote_card_title),
+        sectionIcon = appLucideDatabaseIcon(),
+        containerColor = cardColor,
+    ) {
         AppStandaloneLiquidTextButton(
             variant = if (actionEnabled && hasEnabledItems) GlassVariant.SheetAction else GlassVariant.Content,
             text = if (state.refreshingRemote) {
@@ -319,8 +346,28 @@ internal fun WebDavSyncItemsCard(
                 lineHeight = AppTypographyTokens.Caption.lineHeight,
             )
         }
+    }
+}
 
-        Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+@Composable
+internal fun WebDavSyncBatchActionsCard(
+    state: WebDavSyncUiState,
+    cardColor: Color,
+    onSyncAll: () -> Unit,
+    onUploadAll: () -> Unit,
+    onDownloadAll: () -> Unit,
+) {
+    val hasEnabledItems = state.itemStates.values.any { it.enabled }
+    val syncReady = state.isConfigured
+    val actionEnabled = syncReady && !state.interactionLocked
+    val enabledActionTextColor = MiuixTheme.colorScheme.primary
+    val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+    SettingsGroupCard(
+        header = stringResource(R.string.webdav_sync_title),
+        title = stringResource(R.string.webdav_sync_batch_card_title),
+        sectionIcon = appLucideDatabaseIcon(),
+        containerColor = cardColor,
+    ) {
         Text(
             text = stringResource(R.string.webdav_sync_actions_contract_summary),
             color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
@@ -377,22 +424,30 @@ internal fun WebDavSyncItemsCard(
             enabled = actionEnabled && hasEnabledItems,
             onClick = onDownloadAll,
         )
+    }
+}
 
-        WebDavSyncItem.entries.forEach { item ->
-            Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
+@Composable
+internal fun WebDavSyncItemListCard(
+    titleRes: Int,
+    items: List<WebDavSyncItem>,
+    state: WebDavSyncUiState,
+    cardColor: Color,
+    onToggleItem: (WebDavSyncItem) -> Unit,
+    onRunItem: (WebDavSyncItem, WebDavBatchKind) -> Unit,
+) {
+    SettingsGroupCard(
+        header = stringResource(R.string.webdav_sync_title),
+        title = stringResource(titleRes),
+        sectionIcon = appLucideDatabaseIcon(),
+        containerColor = cardColor,
+    ) {
+        items.forEach { item ->
             WebDavSyncItemRow(
                 item = item,
                 state = state,
                 onToggleItem = onToggleItem,
                 onRunItem = onRunItem,
-            )
-        }
-
-        if (state.lastFullSyncTimeMs > 0) {
-            Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
-            SettingsInfoItem(
-                key = stringResource(R.string.webdav_sync_last_sync_label),
-                value = formatTime(state.lastFullSyncTimeMs),
             )
         }
     }

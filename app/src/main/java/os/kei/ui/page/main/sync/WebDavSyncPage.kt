@@ -11,12 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -78,6 +80,7 @@ internal fun WebDavSyncPage(
         rememberWebDavSyncListStates(
             connection = rememberLazyListState(),
             data = rememberLazyListState(),
+            history = rememberLazyListState(),
             advanced = rememberLazyListState(),
         )
     var bottomBarVisible by remember { mutableStateOf(true) }
@@ -325,8 +328,14 @@ private fun LazyListScope.webDavCategoryItems(
         }
 
         WebDavSyncCategory.Data -> {
-            item(key = "webdav-sync-items", contentType = "webdav_card") {
-                WebDavSyncItemsCard(
+            item(key = "webdav-sync-overview", contentType = "webdav_card") {
+                WebDavSyncOverviewCard(
+                    state = state,
+                    cardColor = cardColor,
+                )
+            }
+            item(key = "webdav-sync-auto", contentType = "webdav_card") {
+                WebDavSyncAutoSyncCard(
                     state = state,
                     cardColor = cardColor,
                     onToggleAutoSync = { enabled ->
@@ -334,19 +343,70 @@ private fun LazyListScope.webDavCategoryItems(
                             AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
                         }
                     },
-                    onToggleItem = { item ->
-                        viewModel.toggleItem(item) {
-                            AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
-                        }
-                    },
-                    onRunItem = { item, kind ->
-                        viewModel.requestItemPlan(item, kind, dataPorts)
-                    },
+                )
+            }
+            item(key = "webdav-sync-remote", contentType = "webdav_card") {
+                WebDavSyncRemoteSnapshotCard(
+                    state = state,
+                    cardColor = cardColor,
+                    onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
+                )
+            }
+            item(key = "webdav-sync-batch", contentType = "webdav_card") {
+                WebDavSyncBatchActionsCard(
+                    state = state,
+                    cardColor = cardColor,
                     onSyncAll = { viewModel.requestBatchPlan(WebDavBatchKind.Sync, dataPorts) },
                     onUploadAll = { viewModel.requestBatchPlan(WebDavBatchKind.Upload, dataPorts) },
                     onDownloadAll = { viewModel.requestBatchPlan(WebDavBatchKind.Download, dataPorts) },
-                    onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
                 )
+            }
+            WebDavSyncDataGroup.entries.forEach { group ->
+                item(key = "webdav-sync-items-${group.name}", contentType = "webdav_card") {
+                    WebDavSyncItemListCard(
+                        titleRes = group.titleRes,
+                        items = group.items,
+                        state = state,
+                        cardColor = cardColor,
+                        onToggleItem = { item ->
+                            viewModel.toggleItem(item) {
+                                AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                            }
+                        },
+                        onRunItem = { item, kind ->
+                            viewModel.requestItemPlan(item, kind, dataPorts)
+                        },
+                    )
+                }
+            }
+        }
+
+        WebDavSyncCategory.History -> {
+            item(key = "webdav-history-summary", contentType = "webdav_card") {
+                WebDavSyncHistorySummaryCard(
+                    history = state.history,
+                    cardColor = cardColor,
+                    onClearHistory = viewModel::clearHistory,
+                )
+            }
+            if (state.history.isEmpty()) {
+                item(key = "webdav-history-empty", contentType = "webdav_card") {
+                    WebDavSyncHistoryEmptyCard(cardColor = cardColor)
+                }
+            } else {
+                items(
+                    items = state.history,
+                    key = { entry -> "webdav-history-${entry.id}" },
+                    contentType = { "webdav_history_entry" },
+                ) { entry ->
+                    var expanded by rememberSaveable(entry.id) { mutableStateOf(false) }
+                    WebDavSyncHistoryEntryCard(
+                        entry = entry,
+                        expanded = expanded,
+                        cardColor = cardColor,
+                        onExpandedChange = { expanded = it },
+                    )
+                }
             }
         }
 
@@ -373,12 +433,14 @@ private fun LazyListScope.webDavCategoryItems(
 private fun rememberWebDavSyncListStates(
     connection: LazyListState,
     data: LazyListState,
+    history: LazyListState,
     advanced: LazyListState,
 ): WebDavSyncListStates =
-    remember(connection, data, advanced) {
+    remember(connection, data, history, advanced) {
         WebDavSyncListStates(
             connection = connection,
             data = data,
+            history = history,
             advanced = advanced,
         )
     }
@@ -386,12 +448,14 @@ private fun rememberWebDavSyncListStates(
 private data class WebDavSyncListStates(
     val connection: LazyListState,
     val data: LazyListState,
+    val history: LazyListState,
     val advanced: LazyListState,
 ) {
     fun forCategory(category: WebDavSyncCategory): LazyListState =
         when (category) {
             WebDavSyncCategory.Connection -> connection
             WebDavSyncCategory.Data -> data
+            WebDavSyncCategory.History -> history
             WebDavSyncCategory.Advanced -> advanced
         }
 }
@@ -407,3 +471,28 @@ private fun webDavActiveCategoryIndex(
     } else {
         settledPage
     }.coerceIn(0, lastIndex.coerceAtLeast(0))
+
+private enum class WebDavSyncDataGroup(
+    val titleRes: Int,
+    val items: List<WebDavSyncItem>,
+) {
+    GitHub(
+        titleRes = R.string.webdav_sync_items_github_title,
+        items = listOf(WebDavSyncItem.GitHubTracked),
+    ),
+    Ba(
+        titleRes = R.string.webdav_sync_items_ba_title,
+        items = listOf(
+            WebDavSyncItem.BaAccounts,
+            WebDavSyncItem.BaCatalogFavorites,
+            WebDavSyncItem.BaBgmFavorites,
+        ),
+    ),
+    Os(
+        titleRes = R.string.webdav_sync_items_os_title,
+        items = listOf(
+            WebDavSyncItem.OsActivityCards,
+            WebDavSyncItem.OsShellCards,
+        ),
+    ),
+}

@@ -3,6 +3,7 @@
     <string name="webdav_sync_title">WebDAV 同步</string>
     <string name="webdav_sync_section_connection">连接</string>
     <string name="webdav_sync_section_data">数据</string>
+    <string name="webdav_sync_section_history">历史</string>
     <string name="webdav_sync_section_advanced">高级</string>
     <string name="webdav_sync_provider_label">服务商</string>
     <string name="webdav_sync_connection">连接设置</string>
@@ -26,7 +27,14 @@
     <string name="webdav_sync_test_failed">连接失败：%1$s</string>
     <string name="webdav_sync_dir_created">已自动创建远程目录</string>
     <string name="webdav_sync_save">保存</string>
+    <string name="webdav_sync_overview_card_title">同步总览</string>
+    <string name="webdav_sync_auto_card_title">自动同步</string>
+    <string name="webdav_sync_remote_card_title">远端快照</string>
+    <string name="webdav_sync_batch_card_title">批量操作</string>
     <string name="webdav_sync_items_title">同步项目</string>
+    <string name="webdav_sync_items_github_title">GitHub 数据</string>
+    <string name="webdav_sync_items_ba_title">BA 数据</string>
+    <string name="webdav_sync_items_os_title">OS 数据</string>
     <string name="webdav_sync_upload">上传</string>
     <string name="webdav_sync_download">下载</string>
     <string name="webdav_sync_last_sync">上次同步：%1$s</string>
@@ -151,6 +159,48 @@
     <string name="webdav_sync_totals_remote_format">远端：%1$d 项 · %2$s</string>
     <string name="webdav_sync_totals_remote_unknown">远端：点击"刷新远端"载入。</string>
     <string name="webdav_sync_actions_contract_summary">同步会合并本地与远端；上传会以本地写入远端；下载会把远端合并到本地。每次操作都会先刷新远端并显示确认清单。</string>
+
+    <!-- 本地同步历史 -->
+    <string name="webdav_sync_history_summary_title">同步历史</string>
+    <string name="webdav_sync_history_summary_desc">记录手动同步、远端刷新、自动 WebDAV 同步的本地诊断结果。这些记录只保存在本机，不会上传到 WebDAV。</string>
+    <string name="webdav_sync_history_total_format">%1$d 条记录</string>
+    <string name="webdav_sync_history_latest_format">最新 %1$s</string>
+    <string name="webdav_sync_history_issues_format">%1$d 项需处理</string>
+    <string name="webdav_sync_history_clear">清理历史</string>
+    <string name="webdav_sync_history_empty_title">暂无同步历史</string>
+    <string name="webdav_sync_history_empty_summary">手动同步、远端刷新和自动同步完成后，结果会显示在这里。</string>
+    <string name="webdav_sync_history_entry_title">%1$s · %2$s</string>
+    <string name="webdav_sync_history_entry_summary">成功 %1$d/%2$d · 失败 %3$d · 跳过 %4$d</string>
+    <string name="webdav_sync_history_finished_format">完成 %1$s</string>
+    <string name="webdav_sync_history_label_reason">原因</string>
+    <string name="webdav_sync_history_label_elapsed">耗时</string>
+    <string name="webdav_sync_history_label_progress">结果</string>
+    <string name="webdav_sync_history_progress_format">成功 %1$d/%2$d · 失败 %3$d · 跳过 %4$d</string>
+    <string name="webdav_sync_history_items_empty">本次没有记录具体项目结果。</string>
+    <string name="webdav_sync_history_source_manual">手动</string>
+    <string name="webdav_sync_history_source_auto">自动</string>
+    <string name="webdav_sync_history_source_remote_probe">远端</string>
+    <string name="webdav_sync_history_kind_sync">同步</string>
+    <string name="webdav_sync_history_kind_upload">上传</string>
+    <string name="webdav_sync_history_kind_download">下载</string>
+    <string name="webdav_sync_history_kind_remote_probe">刷新远端</string>
+    <string name="webdav_sync_history_kind_auto">自动同步</string>
+    <string name="webdav_sync_history_status_success">成功</string>
+    <string name="webdav_sync_history_status_needs_review">需处理</string>
+    <string name="webdav_sync_history_status_failed">失败</string>
+    <string name="webdav_sync_history_status_skipped">跳过</string>
+    <string name="webdav_sync_history_status_running">运行中</string>
+    <string name="webdav_sync_history_reason_manual_batch">手动批量操作</string>
+    <string name="webdav_sync_history_reason_manual_item">手动单项操作</string>
+    <string name="webdav_sync_history_reason_remote_probe">手动刷新远端</string>
+    <string name="webdav_sync_history_reason_launch">启动自动同步</string>
+    <string name="webdav_sync_history_reason_launch_dirty">启动时上传本地变更</string>
+    <string name="webdav_sync_history_reason_background">后台上传本地变更</string>
+    <string name="webdav_sync_history_reason_alarm">定时自动同步</string>
+    <string name="webdav_sync_history_reason_alarm_timeout">定时同步超时</string>
+    <string name="webdav_sync_history_duration_minutes_seconds">%1$d分 %2$d秒</string>
+    <string name="webdav_sync_history_duration_seconds">%1$d秒</string>
+    <string name="webdav_sync_history_duration_millis">%1$d毫秒</string>
 
     <!-- 可确认的变更计划 -->
     <string name="webdav_sync_plan_sync_title">确认同步变更</string>
