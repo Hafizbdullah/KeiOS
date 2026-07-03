@@ -135,6 +135,8 @@ internal fun deriveHomePageContentState(
     val webDavStatusLine =
         when {
             !webDavOverview.configured -> text.webDavUnconfigured
+            webDavOverview.autoSyncFailed -> text.webDavAutoSyncFailed
+            webDavOverview.autoSyncNeedsReview -> text.webDavAutoSyncNeedsReview
             webDavOverview.autoSyncEnabled -> text.webDavAutoSync
             else -> text.webDavManualSync
         }
@@ -142,6 +144,11 @@ internal fun deriveHomePageContentState(
         text.fraction(webDavOverview.enabledItemCount, webDavOverview.totalItemCount)
     val webDavLastFullSyncLine =
         webDavOverview.lastFullSyncTimeMs
+            .takeIf { it > 0L }
+            ?.let(::formatHomeWebDavSyncTime)
+            ?: text.webDavNeverSynced
+    val webDavLastAutoSyncLine =
+        webDavOverview.lastAutoSyncTimeMs
             .takeIf { it > 0L }
             ?.let(::formatHomeWebDavSyncTime)
             ?: text.webDavNeverSynced
@@ -266,8 +273,10 @@ internal fun deriveHomePageContentState(
         githubLastUpdateLine = githubLastUpdateLine,
         webDavStatusLine = webDavStatusLine,
         webDavSyncItemsLine = webDavSyncItemsLine,
+        webDavLastAutoSyncLine = webDavLastAutoSyncLine,
         webDavLastFullSyncLine = webDavLastFullSyncLine,
         homeStatSyncItems = text.statSyncItems,
+        homeStatLastAutoSync = text.statLastAutoSync,
         homeStatLastFullSync = text.statLastFullSync,
         baActivationLine = baActivationLine,
         homeStatAp = text.statAp,

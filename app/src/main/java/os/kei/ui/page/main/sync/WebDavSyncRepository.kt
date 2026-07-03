@@ -30,6 +30,7 @@ internal class WebDavSyncRepository(
             autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
             lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
+            lastAutoSyncSummary = WebDavSyncStore.loadLastAutoSyncSummary(),
             itemStates = buildItemStates(),
         )
     }

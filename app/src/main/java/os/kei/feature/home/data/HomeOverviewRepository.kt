@@ -45,6 +45,7 @@ import os.kei.ui.page.main.ba.support.BASettingsStoreSignals
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaCacheSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
 import os.kei.ui.page.main.sync.WebDavSyncItem
 import os.kei.ui.page.main.sync.WebDavSyncStore
 import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
@@ -469,10 +470,15 @@ private fun estimateHomeBaCalendarPoolCacheBytes(
 private fun refreshIntervalMs(hours: Int): Long = hours.coerceAtLeast(1) * 60L * 60L * 1000L
 
 private fun loadHomeWebDavOverview(): HomeWebDavOverview =
-    HomeWebDavOverview(
-        configured = WebDavSyncStore.hasConfig(),
-        autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
-        enabledItemCount = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
-        totalItemCount = WebDavSyncItem.entries.size,
-        lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
-    )
+    WebDavSyncStore.loadLastAutoSyncSummary().let { autoSummary ->
+        HomeWebDavOverview(
+            configured = WebDavSyncStore.hasConfig(),
+            autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
+            enabledItemCount = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
+            totalItemCount = WebDavSyncItem.entries.size,
+            lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
+            lastAutoSyncTimeMs = autoSummary?.finishedAtMs ?: 0L,
+            autoSyncNeedsReview = autoSummary?.status == WebDavAutoSyncStatus.NeedsReview,
+            autoSyncFailed = autoSummary?.status == WebDavAutoSyncStatus.Failed,
+        )
+    }

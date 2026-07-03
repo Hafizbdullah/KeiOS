@@ -75,6 +75,9 @@ data class HomeWebDavOverview(
     val enabledItemCount: Int = 0,
     val totalItemCount: Int = 0,
     val lastFullSyncTimeMs: Long = 0L,
+    val lastAutoSyncTimeMs: Long = 0L,
+    val autoSyncNeedsReview: Boolean = false,
+    val autoSyncFailed: Boolean = false,
 )
 
 @Immutable

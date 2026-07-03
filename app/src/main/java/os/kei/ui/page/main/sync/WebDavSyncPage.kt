@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.sync
 
 import android.content.Intent
+import android.content.Context
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -33,6 +34,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.feature.webdav.jianguoyun.JianguoyunPreset
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
@@ -199,6 +201,7 @@ internal fun WebDavSyncPage(
             chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,
             topBarNestedScrollConnection = scrollBehavior.nestedScrollConnection,
             cardColor = cardColor,
+            appContext = context.applicationContext,
             onOpenJianguoyunHelp = openJianguoyunHelp,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
         )
@@ -233,6 +236,7 @@ private fun WebDavSyncPagerContent(
     chromeNestedScrollConnection: NestedScrollConnection,
     topBarNestedScrollConnection: NestedScrollConnection,
     cardColor: Color,
+    appContext: Context,
     onOpenJianguoyunHelp: () -> Unit,
     transitionAnimationsEnabled: Boolean,
 ) {
@@ -275,6 +279,7 @@ private fun WebDavSyncPagerContent(
                 dataPorts = dataPorts,
                 viewModel = viewModel,
                 cardColor = cardColor,
+                appContext = appContext,
                 onOpenJianguoyunHelp = onOpenJianguoyunHelp,
             )
         }
@@ -287,6 +292,7 @@ private fun LazyListScope.webDavCategoryItems(
     dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
     viewModel: WebDavSyncViewModel,
     cardColor: Color,
+    appContext: Context,
     onOpenJianguoyunHelp: () -> Unit,
 ) {
     when (category) {
@@ -308,7 +314,11 @@ private fun LazyListScope.webDavCategoryItems(
                     onUpdateRemoteDir = viewModel::updateRemoteDir,
                     onTogglePasswordVisible = viewModel::togglePasswordVisible,
                     onTestConnection = viewModel::testConnection,
-                    onSave = viewModel::saveConfig,
+                    onSave = {
+                        viewModel.saveConfig {
+                            AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                        }
+                    },
                     onOpenJianguoyunHelp = onOpenJianguoyunHelp,
                 )
             }
@@ -319,8 +329,16 @@ private fun LazyListScope.webDavCategoryItems(
                 WebDavSyncItemsCard(
                     state = state,
                     cardColor = cardColor,
-                    onToggleAutoSync = viewModel::setAutoSyncEnabled,
-                    onToggleItem = viewModel::toggleItem,
+                    onToggleAutoSync = { enabled ->
+                        viewModel.setAutoSyncEnabled(enabled) {
+                            AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                        }
+                    },
+                    onToggleItem = { item ->
+                        viewModel.toggleItem(item) {
+                            AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                        }
+                    },
                     onRunItem = { item, kind ->
                         viewModel.requestItemPlan(item, kind, dataPorts)
                     },
@@ -337,7 +355,11 @@ private fun LazyListScope.webDavCategoryItems(
                 if (state.isConfigured) {
                     WebDavClearCard(
                         cardColor = cardColor,
-                        onClear = viewModel::clearConfig,
+                        onClear = {
+                            viewModel.clearConfig {
+                                AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                            }
+                        },
                     )
                 } else {
                     WebDavAdvancedInfoCard(cardColor = cardColor)

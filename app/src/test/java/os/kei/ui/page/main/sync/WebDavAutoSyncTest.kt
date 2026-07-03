@@ -12,6 +12,19 @@ class WebDavAutoSyncTest {
     }
 
     @Test
+    fun `failed auto sync uses shorter retry cooldown`() {
+        assertEquals(5L * 60L * 1000L, retryAutoSyncCooldownMs(WebDavProvider.Jianguoyun))
+        assertEquals(
+            retryAutoSyncCooldownMs(WebDavProvider.Jianguoyun),
+            autoSyncScheduleCooldownMs(WebDavProvider.Jianguoyun, WebDavAutoSyncStatus.Failed),
+        )
+        assertEquals(
+            launchAutoSyncCooldownMs(WebDavProvider.Jianguoyun),
+            autoSyncScheduleCooldownMs(WebDavProvider.Jianguoyun, WebDavAutoSyncStatus.Success),
+        )
+    }
+
+    @Test
     fun `launch auto sync runs when no previous attempt or sync exists`() {
         assertTrue(
             shouldRunLaunchAutoSync(

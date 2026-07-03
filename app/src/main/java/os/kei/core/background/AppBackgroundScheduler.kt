@@ -11,6 +11,10 @@ import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
+import os.kei.ui.page.main.sync.WebDavProvider
+import os.kei.ui.page.main.sync.WebDavSyncStore
+import os.kei.ui.page.main.sync.autoSyncScheduleCooldownMs
 
 object AppBackgroundScheduler {
     private val githubTrackService = GitHubTrackService()
@@ -18,6 +22,7 @@ object AppBackgroundScheduler {
     fun scheduleAll(context: Context) {
         scheduleGitHubRefresh(context)
         scheduleBaApThreshold(context)
+        scheduleWebDavAutoSync(context)
     }
 
     fun scheduleGitHubRefresh(context: Context) {
@@ -117,10 +122,52 @@ object AppBackgroundScheduler {
         scheduleWithAlarmManager(alarmManager, schedule, pending)
     }
 
+    fun scheduleWebDavAutoSync(context: Context) {
+        val appContext = context.applicationContext
+        val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
+        val pending = AppBackgroundTickReceiver.webDavSyncPendingIntent(appContext)
+        val config = WebDavSyncStore.loadConfig()
+        if (config == null || !WebDavSyncStore.isAutoSyncEnabled()) {
+            alarmManager.cancel(pending)
+            pending.cancel()
+            return
+        }
+        val provider = WebDavSyncStore.loadProvider()
+        val summary = WebDavSyncStore.loadLastAutoSyncSummary()
+        val cooldownMs = autoSyncScheduleCooldownMs(provider, summary?.status)
+        val lastTouchMs = maxOf(
+            WebDavSyncStore.getLastAutoSyncAttemptTime(),
+            WebDavSyncStore.getLastFullSyncTime(),
+            summary?.finishedAtMs ?: 0L,
+        )
+        val nowMs = System.currentTimeMillis()
+        val dueAtMs = if (lastTouchMs > 0L) {
+            lastTouchMs + cooldownMs
+        } else {
+            nowMs + firstWebDavAutoSyncDelayMs(provider)
+        }
+        val precision =
+            if (summary?.status == WebDavAutoSyncStatus.Failed) {
+                BackgroundAlarmPrecision.Prompt
+            } else {
+                BackgroundAlarmPrecision.Windowed
+            }
+        scheduleWithAlarmManager(
+            alarmManager = alarmManager,
+            schedule = BackgroundAlarmSchedule(
+                triggerAtMillis = dueAtMs.coerceAtLeast(nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS),
+                workload = BackgroundAlarmWorkload.RoutineSync,
+                precision = precision,
+            ),
+            pendingIntent = pending,
+        )
+    }
+
     internal fun onTickHandled(context: Context, action: String) {
         when (action) {
             AppBackgroundTickReceiver.ACTION_GITHUB_TICK -> scheduleGitHubRefresh(context)
             AppBackgroundTickReceiver.ACTION_BA_AP_TICK -> scheduleBaApThreshold(context)
+            AppBackgroundTickReceiver.ACTION_WEBDAV_SYNC -> scheduleWebDavAutoSync(context)
         }
     }
 
@@ -174,4 +221,10 @@ object AppBackgroundScheduler {
             )
         }
     }
+
+    private fun firstWebDavAutoSyncDelayMs(provider: WebDavProvider): Long =
+        when (provider) {
+            WebDavProvider.Jianguoyun -> 5L * 60L * 1000L
+            WebDavProvider.Custom -> 2L * 60L * 1000L
+        }
 }

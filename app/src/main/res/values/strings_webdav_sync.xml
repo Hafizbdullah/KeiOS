@@ -70,6 +70,12 @@
 
     <string name="webdav_sync_auto_sync_label">Auto sync</string>
     <string name="webdav_sync_auto_sync_summary">Check remote on launch; safely upload local changes; keep conflicts for review.</string>
+    <string name="webdav_sync_last_auto_sync_label">Last auto sync</string>
+    <string name="webdav_sync_auto_summary_success">Success %1$d/%2$d · %3$s</string>
+    <string name="webdav_sync_auto_summary_needs_review">Needs review %1$d · success %2$d/%3$d · %4$s</string>
+    <string name="webdav_sync_auto_summary_failed">Failed %1$d · success %2$d/%3$d · %4$s</string>
+    <string name="webdav_sync_auto_summary_skipped">No local changes · %1$s</string>
+    <string name="webdav_sync_auto_summary_running">Running · %1$s</string>
 
     <string name="webdav_sync_sync_all">Sync all</string>
     <string name="webdav_sync_upload_all">Upload all</string>

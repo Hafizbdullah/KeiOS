@@ -70,6 +70,12 @@
 
     <string name="webdav_sync_auto_sync_label">自动同步</string>
     <string name="webdav_sync_auto_sync_summary">启动时检查远端；本地变更会安全上传；冲突会保留本地等待处理。</string>
+    <string name="webdav_sync_last_auto_sync_label">上次自动同步</string>
+    <string name="webdav_sync_auto_summary_success">成功 %1$d/%2$d · %3$s</string>
+    <string name="webdav_sync_auto_summary_needs_review">需处理 %1$d 项 · 成功 %2$d/%3$d · %4$s</string>
+    <string name="webdav_sync_auto_summary_failed">失败 %1$d 项 · 成功 %2$d/%3$d · %4$s</string>
+    <string name="webdav_sync_auto_summary_skipped">无本地变更 · %1$s</string>
+    <string name="webdav_sync_auto_summary_running">运行中 · %1$s</string>
 
     <string name="webdav_sync_sync_all">全部同步</string>
     <string name="webdav_sync_upload_all">全部上传</string>

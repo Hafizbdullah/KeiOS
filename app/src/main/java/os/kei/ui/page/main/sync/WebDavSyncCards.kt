@@ -280,6 +280,12 @@ internal fun WebDavSyncItemsCard(
             onCheckedChange = onToggleAutoSync,
             enabled = syncReady && !state.interactionLocked,
         )
+        state.lastAutoSyncSummary?.let { summary ->
+            SettingsInfoItem(
+                key = stringResource(R.string.webdav_sync_last_auto_sync_label),
+                value = autoSyncSummaryText(summary),
+            )
+        }
 
         Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
         AppStandaloneLiquidTextButton(
@@ -662,6 +668,48 @@ private fun itemContractSummary(item: WebDavSyncItem): String = when (item) {
     WebDavSyncItem.BaBgmFavorites -> stringResource(item.descriptionRes)
     WebDavSyncItem.OsActivityCards -> stringResource(R.string.webdav_sync_item_os_activity_contract)
     WebDavSyncItem.OsShellCards -> stringResource(R.string.webdav_sync_item_os_shell_contract)
+}
+
+@Composable
+private fun autoSyncSummaryText(summary: WebDavAutoSyncSummary): String {
+    val time =
+        summary.finishedAtMs
+            .takeIf { it > 0L }
+            ?.let(::formatTime)
+            ?: stringResource(R.string.webdav_sync_last_sync_never)
+    return when (summary.status) {
+        WebDavAutoSyncStatus.Success ->
+            stringResource(
+                R.string.webdav_sync_auto_summary_success,
+                summary.succeededCount,
+                summary.targetCount,
+                time,
+            )
+
+        WebDavAutoSyncStatus.NeedsReview ->
+            stringResource(
+                R.string.webdav_sync_auto_summary_needs_review,
+                summary.failedCount,
+                summary.succeededCount,
+                summary.targetCount,
+                time,
+            )
+
+        WebDavAutoSyncStatus.Failed ->
+            stringResource(
+                R.string.webdav_sync_auto_summary_failed,
+                summary.failedCount,
+                summary.succeededCount,
+                summary.targetCount,
+                time,
+            )
+
+        WebDavAutoSyncStatus.Skipped ->
+            stringResource(R.string.webdav_sync_auto_summary_skipped, time)
+
+        WebDavAutoSyncStatus.Running ->
+            stringResource(R.string.webdav_sync_auto_summary_running, time)
+    }
 }
 
 @Composable

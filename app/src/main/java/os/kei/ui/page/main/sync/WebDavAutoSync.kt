@@ -14,6 +14,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.model.WebDavConfig
@@ -21,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 private const val JIANGUOYUN_LAUNCH_SYNC_COOLDOWN_MS = 30L * 60L * 1000L
 private const val CUSTOM_LAUNCH_SYNC_COOLDOWN_MS = 10L * 60L * 1000L
+private const val JIANGUOYUN_RETRY_SYNC_COOLDOWN_MS = 5L * 60L * 1000L
+private const val CUSTOM_RETRY_SYNC_COOLDOWN_MS = 2L * 60L * 1000L
 
 /**
  * Application-scoped WebDAV auto-sync coordinator.
@@ -63,16 +66,52 @@ internal object WebDavAutoSync {
         initialized = true
         appContext = application.applicationContext
         application.registerActivityLifecycleCallbacks(LifecycleObserver)
-        scope.launch { runLaunchSync() }
+        scope.launch { runLaunchSync(appContext) }
     }
 
-    /** First app start (cold launch) → baseline-aware sync if config + auto-sync allow it. */
-    private suspend fun runLaunchSync() {
+    suspend fun handleScheduledTick(context: Context) {
+        val appContext = context.applicationContext
         val config = WebDavSyncStore.loadConfig() ?: return
         if (!WebDavSyncStore.isAutoSyncEnabled()) return
         val nowMs = System.currentTimeMillis()
         val provider = WebDavSyncStore.loadProvider()
-        val cooldownMs = launchAutoSyncCooldownMs(provider)
+        val summary = WebDavSyncStore.loadLastAutoSyncSummary()
+        val cooldownMs = autoSyncScheduleCooldownMs(provider, summary?.status)
+        if (
+            !shouldRunLaunchAutoSync(
+                nowMs = nowMs,
+                lastAutoAttemptMs = WebDavSyncStore.getLastAutoSyncAttemptTime(),
+                lastFullSyncMs = WebDavSyncStore.getLastFullSyncTime(),
+                cooldownMs = cooldownMs,
+            )
+        ) {
+            return
+        }
+        runAutoSync(appContext, config, reason = "alarm")
+    }
+
+    fun handleScheduledTickTimeout(context: Context) {
+        if (WebDavSyncStore.loadConfig() == null || !WebDavSyncStore.isAutoSyncEnabled()) return
+        val nowMs = System.currentTimeMillis()
+        WebDavSyncStore.setLastAutoSyncAttemptTime(nowMs)
+        WebDavSyncStore.saveLastAutoSyncSummary(
+            failedAutoSyncSummary(
+                reason = "alarm-timeout",
+                finishedAtMs = nowMs,
+                targetCount = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
+            ),
+        )
+        AppBackgroundScheduler.scheduleWebDavAutoSync(context.applicationContext)
+    }
+
+    /** First app start (cold launch) → baseline-aware sync if config + auto-sync allow it. */
+    private suspend fun runLaunchSync(context: Context) {
+        val config = WebDavSyncStore.loadConfig() ?: return
+        if (!WebDavSyncStore.isAutoSyncEnabled()) return
+        val nowMs = System.currentTimeMillis()
+        val provider = WebDavSyncStore.loadProvider()
+        val summary = WebDavSyncStore.loadLastAutoSyncSummary()
+        val cooldownMs = autoSyncScheduleCooldownMs(provider, summary?.status)
         if (
             !shouldRunLaunchAutoSync(
                 nowMs = nowMs,
@@ -82,55 +121,109 @@ internal object WebDavAutoSync {
             )
         ) {
             AppLogger.i(TAG, "auto-sync (launch) delayed by provider cooldown (${cooldownMs}ms)")
+            pushChangedItems(context, config, reason = "launch-dirty")
             return
         }
-        WebDavSyncStore.setLastAutoSyncAttemptTime(nowMs)
-        runAutoSync(config, reason = "launch")
+        runAutoSync(context, config, reason = "launch")
     }
 
     /** App moved to background → push the items whose local content has drifted since last sync. */
     private fun schedulePushIfChanged() {
         pendingBackgroundJob?.cancel()
+        val context = appContext
         pendingBackgroundJob = scope.launch {
-            delay(BACKGROUND_PUSH_DELAY_MS)
-            val config = WebDavSyncStore.loadConfig() ?: return@launch
-            if (!WebDavSyncStore.isAutoSyncEnabled()) return@launch
-            pushChangedItems(config)
+            try {
+                delay(BACKGROUND_PUSH_DELAY_MS)
+                val config = WebDavSyncStore.loadConfig() ?: return@launch
+                if (!WebDavSyncStore.isAutoSyncEnabled()) return@launch
+                pushChangedItems(context, config, reason = "background")
+            } finally {
+                AppBackgroundScheduler.scheduleWebDavAutoSync(context)
+            }
         }
     }
 
-    private suspend fun runAutoSync(config: WebDavConfig, reason: String) = mutex.withLock {
+    private suspend fun runAutoSync(
+        context: Context,
+        config: WebDavConfig,
+        reason: String,
+    ): WebDavAutoSyncSummary = mutex.withLock {
+        val startedAtMs = System.currentTimeMillis()
+        WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
+        WebDavSyncStore.saveLastAutoSyncSummary(
+            WebDavAutoSyncSummary(
+                status = WebDavAutoSyncStatus.Running,
+                reason = reason,
+                finishedAtMs = startedAtMs,
+                targetCount = 0,
+                succeededCount = 0,
+                failedCount = 0,
+                skippedCount = 0,
+            ),
+        )
         try {
             val coroutineContext = currentCoroutineContext()
-            val ports = buildWebDavSyncDataPorts(appContext)
+            val ports = buildWebDavSyncDataPorts(context)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+            val outcomes = mutableListOf<WebDavItemOutcome>()
+            var skippedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
-                val port = ports[item] ?: continue
+                val port = ports[item]
+                if (port == null) {
+                    skippedCount += 1
+                    continue
+                }
                 val outcome = reconcileItem(config, item, port)
+                outcomes += outcome
                 if (!outcome.isSuccess) {
-                    AppLogger.w(TAG, "auto-sync ($reason) ${item.name} → ${outcome.status} ${outcome.detail.orEmpty()}")
+                    AppLogger.w(TAG, "auto-sync ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
             }
-            WebDavSyncStore.setLastFullSyncTime(System.currentTimeMillis())
+            val summary = buildAutoSyncSummary(
+                reason = reason,
+                finishedAtMs = System.currentTimeMillis(),
+                targetCount = targets.size,
+                outcomes = outcomes,
+                skippedCount = skippedCount,
+            )
+            WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            if (summary.status == WebDavAutoSyncStatus.Success) {
+                WebDavSyncStore.setLastFullSyncTime(summary.finishedAtMs)
+            }
+            summary
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "auto-sync ($reason) failed", e)
+            val summary = failedAutoSyncSummary(
+                reason = reason,
+                finishedAtMs = System.currentTimeMillis(),
+            )
+            WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            summary
         }
     }
 
-    private suspend fun pushChangedItems(config: WebDavConfig) = mutex.withLock {
+    private suspend fun pushChangedItems(
+        context: Context,
+        config: WebDavConfig,
+        reason: String,
+    ): WebDavAutoSyncSummary = mutex.withLock {
+        val startedAtMs = System.currentTimeMillis()
         try {
             val coroutineContext = currentCoroutineContext()
-            val ports = buildWebDavSyncDataPorts(appContext)
+            val ports = buildWebDavSyncDataPorts(context)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+            val outcomes = mutableListOf<WebDavItemOutcome>()
+            var changedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
                 val port = ports[item] ?: continue
                 val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                 val storedHash = WebDavSyncStore.getItemContentHash(item)
                 if (currentHash == storedHash) continue
+                changedCount += 1
                 val outcome =
                     pushLocalChange(
                         config = config,
@@ -139,13 +232,33 @@ internal object WebDavAutoSync {
                         storedHash = storedHash,
                     )
                 if (!outcome.isSuccess) {
-                    AppLogger.w(TAG, "auto-push ${item.name} → ${outcome.status} ${outcome.detail.orEmpty()}")
+                    AppLogger.w(TAG, "auto-push ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
+                outcomes += outcome
             }
+            val summary = buildAutoSyncSummary(
+                reason = reason,
+                finishedAtMs = System.currentTimeMillis(),
+                targetCount = changedCount,
+                outcomes = outcomes,
+                skippedCount = 0,
+            )
+            if (changedCount > 0 || summary.hasIssues) {
+                WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
+                WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            }
+            summary
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             AppLogger.w(TAG, "auto-push failed", e)
+            val summary = failedAutoSyncSummary(
+                reason = reason,
+                finishedAtMs = System.currentTimeMillis(),
+            )
+            WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
+            WebDavSyncStore.saveLastAutoSyncSummary(summary)
+            summary
         }
     }
 
@@ -232,7 +345,10 @@ internal object WebDavAutoSync {
         override fun onActivityResumed(activity: Activity) = Unit
         override fun onActivityPaused(activity: Activity) = Unit
         override fun onActivityStopped(activity: Activity) {
-            if (foregroundCount.decrementAndGet() == 0) {
+            val remaining = foregroundCount.updateAndGet { current ->
+                (current - 1).coerceAtLeast(0)
+            }
+            if (remaining == 0) {
                 schedulePushIfChanged()
             }
         }
@@ -247,6 +363,23 @@ internal fun launchAutoSyncCooldownMs(provider: WebDavProvider): Long =
         WebDavProvider.Custom -> CUSTOM_LAUNCH_SYNC_COOLDOWN_MS
     }
 
+internal fun autoSyncScheduleCooldownMs(
+    provider: WebDavProvider,
+    lastStatus: WebDavAutoSyncStatus?,
+): Long =
+    when (lastStatus) {
+        WebDavAutoSyncStatus.Failed,
+        WebDavAutoSyncStatus.Running,
+        -> retryAutoSyncCooldownMs(provider)
+        else -> launchAutoSyncCooldownMs(provider)
+    }
+
+internal fun retryAutoSyncCooldownMs(provider: WebDavProvider): Long =
+    when (provider) {
+        WebDavProvider.Jianguoyun -> JIANGUOYUN_RETRY_SYNC_COOLDOWN_MS
+        WebDavProvider.Custom -> CUSTOM_RETRY_SYNC_COOLDOWN_MS
+    }
+
 internal fun shouldRunLaunchAutoSync(
     nowMs: Long,
     lastAutoAttemptMs: Long,
@@ -258,3 +391,50 @@ internal fun shouldRunLaunchAutoSync(
     if (lastTouchMs <= 0L) return true
     return nowMs - lastTouchMs >= cooldownMs
 }
+
+private fun buildAutoSyncSummary(
+    reason: String,
+    finishedAtMs: Long,
+    targetCount: Int,
+    outcomes: List<WebDavItemOutcome>,
+    skippedCount: Int,
+): WebDavAutoSyncSummary {
+    val succeededCount = outcomes.count { it.isSuccess }
+    val reviewCount = outcomes.count { outcome ->
+        outcome.status == WebDavItemStatus.BaselineRequired ||
+            outcome.status == WebDavItemStatus.ConflictUnresolved
+    }
+    val failedCount = outcomes.size - succeededCount
+    val technicalFailureCount = failedCount - reviewCount
+    val status =
+        when {
+            targetCount <= 0 || outcomes.isEmpty() -> WebDavAutoSyncStatus.Skipped
+            technicalFailureCount > 0 -> WebDavAutoSyncStatus.Failed
+            reviewCount > 0 -> WebDavAutoSyncStatus.NeedsReview
+            else -> WebDavAutoSyncStatus.Success
+        }
+    return WebDavAutoSyncSummary(
+        status = status,
+        reason = reason,
+        finishedAtMs = finishedAtMs,
+        targetCount = targetCount,
+        succeededCount = succeededCount,
+        failedCount = failedCount,
+        skippedCount = skippedCount,
+    )
+}
+
+private fun failedAutoSyncSummary(
+    reason: String,
+    finishedAtMs: Long,
+    targetCount: Int = 1,
+): WebDavAutoSyncSummary =
+    WebDavAutoSyncSummary(
+        status = WebDavAutoSyncStatus.Failed,
+        reason = reason,
+        finishedAtMs = finishedAtMs,
+        targetCount = targetCount.coerceAtLeast(1),
+        succeededCount = 0,
+        failedCount = 1,
+        skippedCount = 0,
+    )

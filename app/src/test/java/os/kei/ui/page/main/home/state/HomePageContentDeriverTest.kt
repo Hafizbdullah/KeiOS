@@ -92,7 +92,40 @@ class HomePageContentDeriverTest {
         assertEquals("stale", state.baCacheFreshnessLine)
         assertEquals("auto sync", state.webDavStatusLine)
         assertEquals("4/5", state.webDavSyncItemsLine)
+        assertEquals("never", state.webDavLastAutoSyncLine)
         assertEquals("v1.8.0 (80)", state.appVersionText)
+    }
+
+    @Test
+    fun webDavAutoSyncIssuesOverrideNormalAutoSyncStatus() {
+        val state =
+            deriveHomePageContentState(
+                shizukuStatus = "granted",
+                appOverview = HomeAppOverview(loaded = true),
+                mcpOverview = HomeMcpOverview(),
+                githubOverview = HomeGitHubOverview(loaded = true),
+                webDavOverview =
+                    HomeWebDavOverview(
+                        configured = true,
+                        autoSyncEnabled = true,
+                        enabledItemCount = 4,
+                        totalItemCount = 6,
+                        lastAutoSyncTimeMs = 60_000L,
+                        autoSyncNeedsReview = true,
+                    ),
+                baOverview = HomeBaOverview(loaded = true),
+                runtimeNowMs = 120_000L,
+                text = testTextBundle(),
+                colors =
+                    HomePageContentColors(
+                        runningColor = Color.Green,
+                        stoppedColor = Color.Red,
+                        inactiveColor = Color.Gray,
+                        githubCacheColor = Color.Yellow,
+                    ),
+            )
+
+        assertEquals("review", state.webDavStatusLine)
     }
 
     @Test
@@ -213,6 +246,8 @@ class HomePageContentDeriverTest {
             baStatusInactive = "inactive",
             webDavUnconfigured = "unconfigured",
             webDavAutoSync = "auto sync",
+            webDavAutoSyncNeedsReview = "review",
+            webDavAutoSyncFailed = "auto failed",
             webDavManualSync = "manual sync",
             webDavNeverSynced = "never",
             valueOn = "on",
@@ -247,6 +282,7 @@ class HomePageContentDeriverTest {
             statLastUpdate = "last",
             statSyncItems = "datasets",
             statLastFullSync = "full sync",
+            statLastAutoSync = "auto",
             statAp = "ap",
             statCafeAp = "cafe",
             statApRemaining = "remaining",

@@ -292,6 +292,8 @@ internal fun rememberHomePageOverviewCardState(
     webDavStatusLine: String,
     homeStatSyncItems: String,
     webDavSyncItemsLine: String,
+    homeStatLastAutoSync: String,
+    webDavLastAutoSyncLine: String,
     homeStatLastFullSync: String,
     webDavLastFullSyncLine: String,
     baActivationLine: String,
@@ -455,6 +457,8 @@ internal fun rememberHomePageOverviewCardState(
             webDavStatusLine,
             homeStatSyncItems,
             webDavSyncItemsLine,
+            homeStatLastAutoSync,
+            webDavLastAutoSyncLine,
             homeStatLastFullSync,
             webDavLastFullSyncLine,
         ) {
@@ -465,6 +469,7 @@ internal fun rememberHomePageOverviewCardState(
                     emphasize = true
                 ),
                 HomeCardStatItem(label = homeStatSyncItems, value = webDavSyncItemsLine),
+                HomeCardStatItem(label = homeStatLastAutoSync, value = webDavLastAutoSyncLine),
                 HomeCardStatItem(label = homeStatLastFullSync, value = webDavLastFullSyncLine),
             )
         }

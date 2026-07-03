@@ -26,6 +26,13 @@ internal object WebDavSyncStore {
     private const val KEY_LAST_FULL_SYNC = "last_full_sync"
     private const val KEY_LAST_REMOTE_PROBE = "last_remote_probe"
     private const val KEY_LAST_AUTO_SYNC_ATTEMPT = "last_auto_sync_attempt"
+    private const val KEY_LAST_AUTO_SYNC_STATUS = "last_auto_sync_status"
+    private const val KEY_LAST_AUTO_SYNC_REASON = "last_auto_sync_reason"
+    private const val KEY_LAST_AUTO_SYNC_FINISHED = "last_auto_sync_finished"
+    private const val KEY_LAST_AUTO_SYNC_TARGETS = "last_auto_sync_targets"
+    private const val KEY_LAST_AUTO_SYNC_SUCCEEDED = "last_auto_sync_succeeded"
+    private const val KEY_LAST_AUTO_SYNC_FAILED = "last_auto_sync_failed"
+    private const val KEY_LAST_AUTO_SYNC_SKIPPED = "last_auto_sync_skipped"
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
 
@@ -90,6 +97,13 @@ internal object WebDavSyncStore {
                 KEY_LAST_FULL_SYNC,
                 KEY_LAST_REMOTE_PROBE,
                 KEY_LAST_AUTO_SYNC_ATTEMPT,
+                KEY_LAST_AUTO_SYNC_STATUS,
+                KEY_LAST_AUTO_SYNC_REASON,
+                KEY_LAST_AUTO_SYNC_FINISHED,
+                KEY_LAST_AUTO_SYNC_TARGETS,
+                KEY_LAST_AUTO_SYNC_SUCCEEDED,
+                KEY_LAST_AUTO_SYNC_FAILED,
+                KEY_LAST_AUTO_SYNC_SKIPPED,
             ) + itemKeys).toTypedArray(),
         )
         WebDavSyncStoreSignals.notifyChanged()
@@ -194,6 +208,31 @@ internal object WebDavSyncStore {
         mmkv.encode(KEY_LAST_AUTO_SYNC_ATTEMPT, timeMs.coerceAtLeast(0L))
     }
 
+    fun loadLastAutoSyncSummary(): WebDavAutoSyncSummary? {
+        val rawStatus = mmkv.decodeString(KEY_LAST_AUTO_SYNC_STATUS, null).orEmpty()
+        val status = WebDavAutoSyncStatus.entries.firstOrNull { it.name == rawStatus } ?: return null
+        return WebDavAutoSyncSummary(
+            status = status,
+            reason = mmkv.decodeString(KEY_LAST_AUTO_SYNC_REASON, null).orEmpty(),
+            finishedAtMs = mmkv.decodeLong(KEY_LAST_AUTO_SYNC_FINISHED, 0L).coerceAtLeast(0L),
+            targetCount = mmkv.decodeInt(KEY_LAST_AUTO_SYNC_TARGETS, 0).coerceAtLeast(0),
+            succeededCount = mmkv.decodeInt(KEY_LAST_AUTO_SYNC_SUCCEEDED, 0).coerceAtLeast(0),
+            failedCount = mmkv.decodeInt(KEY_LAST_AUTO_SYNC_FAILED, 0).coerceAtLeast(0),
+            skippedCount = mmkv.decodeInt(KEY_LAST_AUTO_SYNC_SKIPPED, 0).coerceAtLeast(0),
+        )
+    }
+
+    fun saveLastAutoSyncSummary(summary: WebDavAutoSyncSummary) {
+        mmkv.encode(KEY_LAST_AUTO_SYNC_STATUS, summary.status.name)
+        mmkv.encode(KEY_LAST_AUTO_SYNC_REASON, summary.reason)
+        mmkv.encode(KEY_LAST_AUTO_SYNC_FINISHED, summary.finishedAtMs.coerceAtLeast(0L))
+        mmkv.encode(KEY_LAST_AUTO_SYNC_TARGETS, summary.targetCount.coerceAtLeast(0))
+        mmkv.encode(KEY_LAST_AUTO_SYNC_SUCCEEDED, summary.succeededCount.coerceAtLeast(0))
+        mmkv.encode(KEY_LAST_AUTO_SYNC_FAILED, summary.failedCount.coerceAtLeast(0))
+        mmkv.encode(KEY_LAST_AUTO_SYNC_SKIPPED, summary.skippedCount.coerceAtLeast(0))
+        WebDavSyncStoreSignals.notifyChanged()
+    }
+
     // ── Remote summary (read-only probe results) ───────────────────────
     //
     // Captured by [WebDavSyncEngine.probeRemote] without touching local state. Lets the page
@@ -289,3 +328,24 @@ internal data class WebDavSyncPendingSummary(
     val state: WebDavSyncPendingState,
     val updatedAtMs: Long,
 )
+
+internal enum class WebDavAutoSyncStatus {
+    Success,
+    NeedsReview,
+    Failed,
+    Skipped,
+    Running,
+}
+
+internal data class WebDavAutoSyncSummary(
+    val status: WebDavAutoSyncStatus,
+    val reason: String,
+    val finishedAtMs: Long,
+    val targetCount: Int,
+    val succeededCount: Int,
+    val failedCount: Int,
+    val skippedCount: Int,
+) {
+    val hasIssues: Boolean
+        get() = status == WebDavAutoSyncStatus.NeedsReview || status == WebDavAutoSyncStatus.Failed
+}

@@ -58,7 +58,7 @@ internal class WebDavSyncViewModel(
 
     // ── Save / clear ───────────────────────────────────────────────────
 
-    fun saveConfig() {
+    fun saveConfig(onPersisted: () -> Unit = {}) {
         val s = _uiState.value
         if (s.interactionLocked) return
         if (!validate()) return
@@ -79,21 +79,27 @@ internal class WebDavSyncViewModel(
                     urlError = null,
                 )
             }
+            onPersisted()
         }
     }
 
-    fun clearConfig() {
+    fun clearConfig(onPersisted: () -> Unit = {}) {
         if (_uiState.value.interactionLocked) return
         viewModelScope.launch {
             _uiState.value = repository.clearConfig()
+            onPersisted()
         }
     }
 
-    fun setAutoSyncEnabled(enabled: Boolean) {
+    fun setAutoSyncEnabled(
+        enabled: Boolean,
+        onPersisted: () -> Unit = {},
+    ) {
         if (_uiState.value.interactionLocked) return
         _uiState.update { it.copy(autoSyncEnabled = enabled) }
         viewModelScope.launch {
             repository.setAutoSyncEnabled(enabled)
+            onPersisted()
         }
     }
 
@@ -169,7 +175,10 @@ internal class WebDavSyncViewModel(
 
     // ── Item enable toggle ─────────────────────────────────────────────
 
-    fun toggleItem(item: WebDavSyncItem) {
+    fun toggleItem(
+        item: WebDavSyncItem,
+        onPersisted: () -> Unit = {},
+    ) {
         val currentState = _uiState.value
         if (currentState.interactionLocked) return
         val enabled = !(currentState.itemStates[item]?.enabled ?: true)
@@ -189,6 +198,7 @@ internal class WebDavSyncViewModel(
                     previous = _uiState.value.itemStates,
                 )
             _uiState.update { it.copy(itemStates = itemStates) }
+            onPersisted()
         }
     }
 
@@ -448,6 +458,7 @@ internal data class WebDavSyncUiState(
     val pendingPlan: WebDavSyncPlan? = null,
     val lastFullSyncTimeMs: Long = 0L,
     val lastRemoteProbeTimeMs: Long = 0L,
+    val lastAutoSyncSummary: WebDavAutoSyncSummary? = null,
     val itemStates: Map<WebDavSyncItem, WebDavSyncItemUiState> = emptyMap(),
 ) {
     val busy: Boolean get() = runningKind != null || planningKind != null

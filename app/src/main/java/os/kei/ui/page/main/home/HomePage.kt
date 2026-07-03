@@ -246,6 +246,8 @@ fun HomePage(
             webDavStatusLine = contentState.webDavStatusLine,
             homeStatSyncItems = contentState.homeStatSyncItems,
             webDavSyncItemsLine = contentState.webDavSyncItemsLine,
+            homeStatLastAutoSync = contentState.homeStatLastAutoSync,
+            webDavLastAutoSyncLine = contentState.webDavLastAutoSyncLine,
             homeStatLastFullSync = contentState.homeStatLastFullSync,
             webDavLastFullSyncLine = contentState.webDavLastFullSyncLine,
             baActivationLine = contentState.baActivationLine,
