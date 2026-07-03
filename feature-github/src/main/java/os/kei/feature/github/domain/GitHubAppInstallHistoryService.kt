@@ -2,6 +2,8 @@ package os.kei.feature.github.domain
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
@@ -11,6 +13,7 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedAppInstallSnapshot
 import java.util.Locale
@@ -28,6 +31,10 @@ class GitHubAppInstallHistoryService(
         packageName: String,
         action: String,
         replacing: Boolean,
+        broadcastUid: Int = -1,
+        broadcastDataRemoved: Boolean = false,
+        broadcastUserInitiated: Boolean = false,
+        broadcastArchival: Boolean = false,
         changedAtMillis: Long = System.currentTimeMillis(),
     ) {
         withContext(localDispatcher) {
@@ -36,6 +43,10 @@ class GitHubAppInstallHistoryService(
                 packageName = packageName,
                 action = action,
                 replacing = replacing,
+                broadcastUid = broadcastUid,
+                broadcastDataRemoved = broadcastDataRemoved,
+                broadcastUserInitiated = broadcastUserInitiated,
+                broadcastArchival = broadcastArchival,
                 changedAtMillis = changedAtMillis,
             )
         }
@@ -46,6 +57,10 @@ class GitHubAppInstallHistoryService(
         packageName: String,
         action: String,
         replacing: Boolean,
+        broadcastUid: Int = -1,
+        broadcastDataRemoved: Boolean = false,
+        broadcastUserInitiated: Boolean = false,
+        broadcastArchival: Boolean = false,
         changedAtMillis: Long = System.currentTimeMillis(),
     ) {
         val normalizedPackage = packageName.normalizedPackageName()
@@ -56,6 +71,7 @@ class GitHubAppInstallHistoryService(
         if (trackedItems.isEmpty()) return
 
         val previousSnapshot = GitHubAppInstallHistoryStore.loadSnapshot(normalizedPackage)
+        val installSourceLabelCache = mutableMapOf<String, String>()
         val currentSnapshot =
             if (action.isPackageRemovalAction() && !replacing) {
                 null
@@ -65,6 +81,7 @@ class GitHubAppInstallHistoryService(
                     packageName = normalizedPackage,
                     appLabel = trackedItems.firstOrNull()?.appLabel.orEmpty(),
                     observedAtMillis = changedAtMillis,
+                    installSourceLabelCache = installSourceLabelCache,
                 )
             }
         val result =
@@ -75,6 +92,10 @@ class GitHubAppInstallHistoryService(
                 packageName = normalizedPackage,
                 action = action,
                 replacing = replacing,
+                broadcastUid = broadcastUid,
+                broadcastDataRemoved = broadcastDataRemoved,
+                broadcastUserInitiated = broadcastUserInitiated,
+                broadcastArchival = broadcastArchival,
                 changedAtMillis = changedAtMillis,
             )
         GitHubAppInstallHistoryStore.recordEvents(result.records)
@@ -92,6 +113,7 @@ class GitHubAppInstallHistoryService(
 
     fun refreshTrackedInstallSnapshotsBlocking(context: Context) {
         val now = System.currentTimeMillis()
+        val installSourceLabelCache = mutableMapOf<String, String>()
         val snapshots =
             GitHubTrackStore.load()
                 .asSequence()
@@ -103,6 +125,7 @@ class GitHubAppInstallHistoryService(
                         packageName = item.packageName,
                         appLabel = item.appLabel,
                         observedAtMillis = now,
+                        installSourceLabelCache = installSourceLabelCache,
                     )
                 }
                 .toList()
@@ -119,6 +142,7 @@ class GitHubAppInstallHistoryService(
         packageName: String,
         appLabel: String,
         observedAtMillis: Long,
+        installSourceLabelCache: MutableMap<String, String> = mutableMapOf(),
     ): GitHubTrackedAppInstallSnapshot? {
         val normalizedPackage = packageName.normalizedPackageName()
         if (normalizedPackage.isBlank()) return null
@@ -133,6 +157,11 @@ class GitHubAppInstallHistoryService(
             isSystemApp = info.isSystemApp,
             appLabel = appLabel.trim(),
             observedAtMillis = observedAtMillis,
+            installSourceInfo =
+                context.packageManager.resolveInstallSourceInfo(
+                    packageName = normalizedPackage,
+                    labelCache = installSourceLabelCache,
+                ),
         )
     }
 
@@ -150,6 +179,10 @@ class GitHubAppInstallHistoryService(
             packageName: String,
             action: String,
             replacing: Boolean,
+            broadcastUid: Int = -1,
+            broadcastDataRemoved: Boolean = false,
+            broadcastUserInitiated: Boolean = false,
+            broadcastArchival: Boolean = false,
             changedAtMillis: Long,
         ): PackageChangeResult {
             val normalizedPackage = packageName.normalizedPackageName()
@@ -177,6 +210,10 @@ class GitHubAppInstallHistoryService(
                             previousSnapshot = effectivePrevious,
                             currentSnapshot = null,
                             broadcastAction = action,
+                            broadcastUid = broadcastUid,
+                            broadcastDataRemoved = broadcastDataRemoved,
+                            broadcastUserInitiated = broadcastUserInitiated,
+                            broadcastArchival = broadcastArchival,
                             replacing = replacing,
                         )
                     }
@@ -205,6 +242,8 @@ class GitHubAppInstallHistoryService(
                         GitHubAppInstallHistoryAction.Downgraded
                     currentSnapshot.versionName.trim() != previousSnapshot.versionName.trim() ->
                         GitHubAppInstallHistoryAction.Updated
+                    currentSnapshot.installSourceInfo != previousSnapshot.installSourceInfo ->
+                        GitHubAppInstallHistoryAction.Updated
                     else -> null
                 }
             val records =
@@ -216,6 +255,10 @@ class GitHubAppInstallHistoryService(
                             previousSnapshot = previousSnapshot,
                             currentSnapshot = currentSnapshot,
                             broadcastAction = action,
+                            broadcastUid = broadcastUid,
+                            broadcastDataRemoved = broadcastDataRemoved,
+                            broadcastUserInitiated = broadcastUserInitiated,
+                            broadcastArchival = broadcastArchival,
                             replacing = replacing,
                         )
                     }
@@ -233,6 +276,10 @@ class GitHubAppInstallHistoryService(
             previousSnapshot: GitHubTrackedAppInstallSnapshot?,
             currentSnapshot: GitHubTrackedAppInstallSnapshot?,
             broadcastAction: String,
+            broadcastUid: Int,
+            broadcastDataRemoved: Boolean,
+            broadcastUserInitiated: Boolean,
+            broadcastArchival: Boolean,
             replacing: Boolean,
         ): GitHubAppInstallHistoryRecord =
             GitHubAppInstallHistoryRecord(
@@ -258,7 +305,15 @@ class GitHubAppInstallHistoryService(
                 currentVersionName = currentSnapshot?.versionName.orEmpty(),
                 currentVersionCode = currentSnapshot?.versionCode ?: -1L,
                 broadcastAction = broadcastAction,
+                broadcastUid = broadcastUid,
+                broadcastDataRemoved = broadcastDataRemoved,
+                broadcastUserInitiated = broadcastUserInitiated,
+                broadcastArchival = broadcastArchival,
                 replacing = replacing,
+                previousInstallSourceInfo =
+                    previousSnapshot?.installSourceInfo ?: GitHubAppInstallSourceInfo(),
+                currentInstallSourceInfo =
+                    currentSnapshot?.installSourceInfo ?: GitHubAppInstallSourceInfo(),
             )
 
         private fun String.isPackageRemovalAction(): Boolean =
@@ -267,5 +322,49 @@ class GitHubAppInstallHistoryService(
 
         private fun String.normalizedPackageName(): String =
             trim().lowercase(Locale.ROOT)
+
+        private fun PackageManager.resolveInstallSourceInfo(
+            packageName: String,
+            labelCache: MutableMap<String, String>,
+        ): GitHubAppInstallSourceInfo {
+            val sourceInfo =
+                runCatching {
+                    getInstallSourceInfo(packageName)
+                }.getOrNull() ?: return GitHubAppInstallSourceInfo()
+            return GitHubAppInstallSourceInfo(
+                installingPackageName = sourceInfo.installingPackageName.orEmpty(),
+                installingPackageLabel = sourceLabel(sourceInfo.installingPackageName, labelCache),
+                initiatingPackageName = sourceInfo.initiatingPackageName.orEmpty(),
+                initiatingPackageLabel = sourceLabel(sourceInfo.initiatingPackageName, labelCache),
+                originatingPackageName = sourceInfo.originatingPackageName.orEmpty(),
+                originatingPackageLabel = sourceLabel(sourceInfo.originatingPackageName, labelCache),
+                updateOwnerPackageName = sourceInfo.updateOwnerPackageName.orEmpty(),
+                updateOwnerPackageLabel = sourceLabel(sourceInfo.updateOwnerPackageName, labelCache),
+                packageSource = sourceInfo.packageSource.takeIf { it >= 0 } ?: PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED,
+            )
+        }
+
+        private fun PackageManager.sourceLabel(
+            packageName: String?,
+            labelCache: MutableMap<String, String>,
+        ): String {
+            val sourcePackageName = packageName?.trim().orEmpty()
+            if (sourcePackageName.isBlank()) return ""
+            return labelCache.getOrPut(sourcePackageName) {
+                resolvePackageLabel(sourcePackageName)
+            }
+        }
+
+        private fun PackageManager.resolvePackageLabel(packageName: String): String =
+            runCatching {
+                val appInfo =
+                    getApplicationInfo(
+                        packageName,
+                        PackageManager.ApplicationInfoFlags.of(0),
+                    )
+                getApplicationLabel(appInfo).toString()
+            }.getOrDefault(packageName)
+                .trim()
+                .ifBlank { packageName }
     }
 }

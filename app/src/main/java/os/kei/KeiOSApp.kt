@@ -73,7 +73,11 @@ class KeiOSApp : Application() {
                         val event = AppPackageChangedEvent(
                             packageName = pkg,
                             action = intent.action.orEmpty(),
-                            replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+                            replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false),
+                            uid = intent.getIntExtra(Intent.EXTRA_UID, -1),
+                            dataRemoved = intent.getBooleanExtra(Intent.EXTRA_DATA_REMOVED, false),
+                            userInitiated = intent.getBooleanExtra(Intent.EXTRA_USER_INITIATED, false),
+                            archival = intent.getBooleanExtra(Intent.EXTRA_ARCHIVAL, false),
                         )
                         AppPackageChangedEvents.publish(event)
                         GitHubShareImportFlowCoordinator.handlePackageChangedAsync(
@@ -86,6 +90,10 @@ class KeiOSApp : Application() {
                                 packageName = event.packageName,
                                 action = event.action,
                                 replacing = event.replacing,
+                                broadcastUid = event.uid,
+                                broadcastDataRemoved = event.dataRemoved,
+                                broadcastUserInitiated = event.userInitiated,
+                                broadcastArchival = event.archival,
                                 changedAtMillis = event.atMillis,
                             )
                         }

@@ -5,6 +5,7 @@ import os.kei.feature.github.model.GitHubActionsNotificationHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.feature.github.model.GitHubTrackChangeField
 import os.kei.feature.github.model.GitHubTrackChangeHistoryAction
 import os.kei.feature.github.model.GitHubTrackChangeHistoryRecord
@@ -150,6 +151,12 @@ class GitHubActionsNotificationHistoryOptionsTest {
                     changedAtMillis = 2_000L,
                     previousVersionCode = 10L,
                     currentVersionCode = 12L,
+                    currentInstallSourceInfo =
+                        GitHubAppInstallSourceInfo(
+                            installingPackageName = "com.android.packageinstaller",
+                            installingPackageLabel = "Package Installer",
+                            packageSource = 4,
+                        ),
                 ),
                 createAppInstallUiRecord(
                     appLabel = "Alpha",
@@ -186,6 +193,10 @@ class GitHubActionsNotificationHistoryOptionsTest {
         assertEquals(
             listOf("Beta"),
             records.appDisplay(searchQuery = "v12").appInstallLabels(),
+        )
+        assertEquals(
+            listOf("Beta"),
+            records.appDisplay(searchQuery = "packageinstaller").appInstallLabels(),
         )
     }
 
@@ -310,6 +321,7 @@ class GitHubActionsNotificationHistoryOptionsTest {
         changedAtMillis: Long = 1_000L,
         previousVersionCode: Long = -1L,
         currentVersionCode: Long = 1L,
+        currentInstallSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
     ): GitHubAppInstallHistoryUiRecord =
         GitHubAppInstallHistoryUiRecord(
             record =
@@ -330,6 +342,7 @@ class GitHubActionsNotificationHistoryOptionsTest {
                     currentVersionName = currentVersionCode.takeIf { it >= 0L }?.let { "v$it" }.orEmpty(),
                     currentVersionCode = currentVersionCode,
                     broadcastAction = "android.intent.action.PACKAGE_REPLACED",
+                    currentInstallSourceInfo = currentInstallSourceInfo,
                 ),
         )
 }

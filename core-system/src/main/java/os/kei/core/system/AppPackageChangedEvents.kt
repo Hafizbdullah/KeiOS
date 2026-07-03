@@ -9,6 +9,10 @@ data class AppPackageChangedEvent(
     val action: String,
     val atMillis: Long = System.currentTimeMillis(),
     val replacing: Boolean = false,
+    val uid: Int = -1,
+    val dataRemoved: Boolean = false,
+    val userInitiated: Boolean = false,
+    val archival: Boolean = false,
 )
 
 object AppPackageChangedEvents {

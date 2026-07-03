@@ -7,6 +7,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.junit.Test
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedAppInstallSnapshot
 
@@ -127,6 +128,50 @@ class GitHubAppInstallHistoryServiceTest {
         assertEquals(current, result.nextSnapshot)
     }
 
+    @Test
+    fun `package replaced records update when install source changes`() {
+        val previous =
+            snapshot(
+                versionName = "1.1",
+                versionCode = 11L,
+                installSourceInfo =
+                    GitHubAppInstallSourceInfo(
+                        installingPackageName = "com.example.store",
+                        installingPackageLabel = "Example Store",
+                        packageSource = 2,
+                    ),
+            )
+        val current =
+            snapshot(
+                versionName = "1.1",
+                versionCode = 11L,
+                installSourceInfo =
+                    GitHubAppInstallSourceInfo(
+                        installingPackageName = "com.android.packageinstaller",
+                        installingPackageLabel = "Package Installer",
+                        packageSource = 4,
+                    ),
+            )
+
+        val result =
+            GitHubAppInstallHistoryService.buildPackageChangeResult(
+                trackedItems = listOf(trackedApp()),
+                previousSnapshot = previous,
+                currentSnapshot = current,
+                packageName = "dev.example.app",
+                action = Intent.ACTION_PACKAGE_REPLACED,
+                replacing = true,
+                broadcastUid = 12_345,
+                changedAtMillis = 1_000L,
+            )
+
+        val record = result.records.single()
+        assertEquals(GitHubAppInstallHistoryAction.Updated, record.action)
+        assertEquals(previous.installSourceInfo, record.previousInstallSourceInfo)
+        assertEquals(current.installSourceInfo, record.currentInstallSourceInfo)
+        assertEquals(12_345, record.broadcastUid)
+    }
+
     private fun trackedApp(): GitHubTrackedApp =
         GitHubTrackedApp(
             repoUrl = "https://github.com/owner/repo",
@@ -139,6 +184,7 @@ class GitHubAppInstallHistoryServiceTest {
     private fun snapshot(
         versionName: String,
         versionCode: Long,
+        installSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
     ): GitHubTrackedAppInstallSnapshot =
         GitHubTrackedAppInstallSnapshot(
             packageName = "dev.example.app",
@@ -147,5 +193,6 @@ class GitHubAppInstallHistoryServiceTest {
             isSystemApp = false,
             appLabel = "Example",
             observedAtMillis = 1_000L,
+            installSourceInfo = installSourceInfo,
         )
 }

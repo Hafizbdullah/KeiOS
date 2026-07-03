@@ -11,6 +11,18 @@ enum class GitHubAppInstallHistorySource {
     PackageBroadcast,
 }
 
+data class GitHubAppInstallSourceInfo(
+    val installingPackageName: String = "",
+    val installingPackageLabel: String = "",
+    val initiatingPackageName: String = "",
+    val initiatingPackageLabel: String = "",
+    val originatingPackageName: String = "",
+    val originatingPackageLabel: String = "",
+    val updateOwnerPackageName: String = "",
+    val updateOwnerPackageLabel: String = "",
+    val packageSource: Int = -1,
+)
+
 data class GitHubTrackedAppInstallSnapshot(
     val packageName: String,
     val versionName: String,
@@ -18,6 +30,7 @@ data class GitHubTrackedAppInstallSnapshot(
     val isSystemApp: Boolean = false,
     val appLabel: String = "",
     val observedAtMillis: Long,
+    val installSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
 )
 
 data class GitHubAppInstallHistoryRecord(
@@ -37,6 +50,12 @@ data class GitHubAppInstallHistoryRecord(
     val currentVersionName: String = "",
     val currentVersionCode: Long = -1L,
     val broadcastAction: String = "",
+    val broadcastUid: Int = -1,
+    val broadcastDataRemoved: Boolean = false,
+    val broadcastUserInitiated: Boolean = false,
+    val broadcastArchival: Boolean = false,
     val replacing: Boolean = false,
+    val previousInstallSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
+    val currentInstallSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
     val note: String = "",
 )

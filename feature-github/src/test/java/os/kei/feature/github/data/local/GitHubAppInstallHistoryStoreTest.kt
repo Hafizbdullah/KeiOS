@@ -8,6 +8,7 @@ import org.junit.Test
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.feature.github.model.GitHubTrackedAppInstallSnapshot
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 
@@ -23,6 +24,14 @@ class GitHubAppInstallHistoryStoreTest {
                 currentVersionName = "1.1.0",
                 currentVersionCode = 11L,
                 replacing = true,
+                currentInstallSourceInfo =
+                    GitHubAppInstallSourceInfo(
+                        installingPackageName = "com.android.packageinstaller",
+                        installingPackageLabel = "Package Installer",
+                        initiatingPackageName = "com.android.packageinstaller",
+                        initiatingPackageLabel = "Package Installer",
+                        packageSource = 4,
+                    ),
             )
 
         val decoded =
@@ -38,10 +47,11 @@ class GitHubAppInstallHistoryStoreTest {
         assertEquals(record.currentVersionName, decoded.currentVersionName)
         assertEquals(record.currentVersionCode, decoded.currentVersionCode)
         assertEquals(record.replacing, decoded.replacing)
+        assertEquals(record.currentInstallSourceInfo, decoded.currentInstallSourceInfo)
     }
 
     @Test
-    fun `snapshot round trip normalizes package name`() {
+    fun `snapshot round trip keeps install source info`() {
         val snapshot =
             GitHubTrackedAppInstallSnapshot(
                 packageName = "Dev.Example.App",
@@ -50,6 +60,12 @@ class GitHubAppInstallHistoryStoreTest {
                 isSystemApp = false,
                 appLabel = "Example",
                 observedAtMillis = 1_000L,
+                installSourceInfo =
+                    GitHubAppInstallSourceInfo(
+                        installingPackageName = "Com.Android.PackageInstaller",
+                        installingPackageLabel = "Package Installer",
+                        packageSource = 3,
+                    ),
             )
 
         val decoded =
@@ -62,6 +78,9 @@ class GitHubAppInstallHistoryStoreTest {
         assertEquals("2.0", decoded.versionName)
         assertEquals(20L, decoded.versionCode)
         assertEquals("Example", decoded.appLabel)
+        assertEquals("com.android.packageinstaller", decoded.installSourceInfo.installingPackageName)
+        assertEquals("Package Installer", decoded.installSourceInfo.installingPackageLabel)
+        assertEquals(3, decoded.installSourceInfo.packageSource)
     }
 
     @Test
@@ -90,6 +109,7 @@ class GitHubAppInstallHistoryStoreTest {
         currentVersionName: String = "1.0.0",
         currentVersionCode: Long = 10L,
         replacing: Boolean = false,
+        currentInstallSourceInfo: GitHubAppInstallSourceInfo = GitHubAppInstallSourceInfo(),
     ): GitHubAppInstallHistoryRecord =
         GitHubAppInstallHistoryRecord(
             id = id,
@@ -109,5 +129,6 @@ class GitHubAppInstallHistoryStoreTest {
             currentVersionCode = currentVersionCode,
             broadcastAction = "android.intent.action.PACKAGE_ADDED",
             replacing = replacing,
+            currentInstallSourceInfo = currentInstallSourceInfo,
         )
 }

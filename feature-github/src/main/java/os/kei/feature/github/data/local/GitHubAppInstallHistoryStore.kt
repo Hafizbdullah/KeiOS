@@ -8,13 +8,16 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import os.kei.core.json.encodeCompact
 import os.kei.core.json.optBoolean
+import os.kei.core.json.optInt
 import os.kei.core.json.optLong
+import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.feature.github.model.GitHubTrackedAppInstallSnapshot
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 
@@ -154,7 +157,13 @@ object GitHubAppInstallHistoryStore {
             put("currentVersionName", record.currentVersionName)
             put("currentVersionCode", record.currentVersionCode)
             put("broadcastAction", record.broadcastAction)
+            put("broadcastUid", record.broadcastUid)
+            put("broadcastDataRemoved", record.broadcastDataRemoved)
+            put("broadcastUserInitiated", record.broadcastUserInitiated)
+            put("broadcastArchival", record.broadcastArchival)
             put("replacing", record.replacing)
+            put("previousInstallSourceInfo", encodeInstallSourceInfo(record.previousInstallSourceInfo))
+            put("currentInstallSourceInfo", encodeInstallSourceInfo(record.currentInstallSourceInfo))
             put("note", record.note)
         }
     }
@@ -198,7 +207,15 @@ object GitHubAppInstallHistoryStore {
                 currentVersionName = obj.optString("currentVersionName").trim(),
                 currentVersionCode = obj.optLong("currentVersionCode", -1L),
                 broadcastAction = obj.optString("broadcastAction").trim(),
+                broadcastUid = obj.optInt("broadcastUid", -1),
+                broadcastDataRemoved = obj.optBoolean("broadcastDataRemoved", false),
+                broadcastUserInitiated = obj.optBoolean("broadcastUserInitiated", false),
+                broadcastArchival = obj.optBoolean("broadcastArchival", false),
                 replacing = obj.optBoolean("replacing", false),
+                previousInstallSourceInfo =
+                    decodeInstallSourceInfo(obj.optObject("previousInstallSourceInfo")),
+                currentInstallSourceInfo =
+                    decodeInstallSourceInfo(obj.optObject("currentInstallSourceInfo")),
                 note = obj.optString("note").trim(),
             )
         }.getOrNull()
@@ -212,6 +229,7 @@ object GitHubAppInstallHistoryStore {
             put("isSystemApp", snapshot.isSystemApp)
             put("appLabel", snapshot.appLabel)
             put("observedAtMillis", snapshot.observedAtMillis)
+            put("installSourceInfo", encodeInstallSourceInfo(snapshot.installSourceInfo))
         }
     }
 
@@ -229,6 +247,7 @@ object GitHubAppInstallHistoryStore {
                 isSystemApp = obj.optBoolean("isSystemApp", false),
                 appLabel = obj.optString("appLabel").trim(),
                 observedAtMillis = observedAtMillis,
+                installSourceInfo = decodeInstallSourceInfo(obj.optObject("installSourceInfo")),
             )
         }.getOrNull()
     }
@@ -248,6 +267,9 @@ object GitHubAppInstallHistoryStore {
             currentVersionName = compactHistoryText(currentVersionName, 120),
             currentVersionCode = currentVersionCode.takeIf { it >= 0L } ?: -1L,
             broadcastAction = compactHistoryText(broadcastAction, 120),
+            broadcastUid = broadcastUid.takeIf { it >= 0 } ?: -1,
+            previousInstallSourceInfo = previousInstallSourceInfo.normalizedForStorage(),
+            currentInstallSourceInfo = currentInstallSourceInfo.normalizedForStorage(),
             note = compactHistoryText(note, 320),
         )
 
@@ -258,6 +280,20 @@ object GitHubAppInstallHistoryStore {
             versionCode = versionCode.takeIf { it >= 0L } ?: -1L,
             appLabel = compactHistoryText(appLabel, 160),
             observedAtMillis = observedAtMillis.coerceAtLeast(0L),
+            installSourceInfo = installSourceInfo.normalizedForStorage(),
+        )
+
+    internal fun GitHubAppInstallSourceInfo.normalizedForStorage(): GitHubAppInstallSourceInfo =
+        copy(
+            installingPackageName = normalizePackageName(installingPackageName),
+            installingPackageLabel = compactHistoryText(installingPackageLabel, 160),
+            initiatingPackageName = normalizePackageName(initiatingPackageName),
+            initiatingPackageLabel = compactHistoryText(initiatingPackageLabel, 160),
+            originatingPackageName = normalizePackageName(originatingPackageName),
+            originatingPackageLabel = compactHistoryText(originatingPackageLabel, 160),
+            updateOwnerPackageName = normalizePackageName(updateOwnerPackageName),
+            updateOwnerPackageLabel = compactHistoryText(updateOwnerPackageLabel, 160),
+            packageSource = packageSource.takeIf { it >= 0 } ?: -1,
         )
 
     internal fun recordId(record: GitHubAppInstallHistoryRecord): String =
@@ -271,6 +307,10 @@ object GitHubAppInstallHistoryStore {
                 record.currentVersionCode.toString(),
                 record.changedAtMillis.toString(),
                 record.broadcastAction,
+                record.broadcastUid.toString(),
+                record.currentInstallSourceInfo.installingPackageName,
+                record.currentInstallSourceInfo.initiatingPackageName,
+                record.currentInstallSourceInfo.packageSource.toString(),
             ).joinToString("|"),
         )
 
@@ -352,4 +392,34 @@ object GitHubAppInstallHistoryStore {
 
     private fun normalizePackageName(packageName: String): String =
         packageName.trim().lowercase(Locale.ROOT)
+
+    private fun encodeInstallSourceInfo(info: GitHubAppInstallSourceInfo): JsonObject {
+        val normalized = info.normalizedForStorage()
+        return buildJsonObject {
+            put("installingPackageName", normalized.installingPackageName)
+            put("installingPackageLabel", normalized.installingPackageLabel)
+            put("initiatingPackageName", normalized.initiatingPackageName)
+            put("initiatingPackageLabel", normalized.initiatingPackageLabel)
+            put("originatingPackageName", normalized.originatingPackageName)
+            put("originatingPackageLabel", normalized.originatingPackageLabel)
+            put("updateOwnerPackageName", normalized.updateOwnerPackageName)
+            put("updateOwnerPackageLabel", normalized.updateOwnerPackageLabel)
+            put("packageSource", normalized.packageSource)
+        }
+    }
+
+    private fun decodeInstallSourceInfo(obj: JsonObject?): GitHubAppInstallSourceInfo {
+        if (obj == null) return GitHubAppInstallSourceInfo()
+        return GitHubAppInstallSourceInfo(
+            installingPackageName = obj.optString("installingPackageName").trim(),
+            installingPackageLabel = obj.optString("installingPackageLabel").trim(),
+            initiatingPackageName = obj.optString("initiatingPackageName").trim(),
+            initiatingPackageLabel = obj.optString("initiatingPackageLabel").trim(),
+            originatingPackageName = obj.optString("originatingPackageName").trim(),
+            originatingPackageLabel = obj.optString("originatingPackageLabel").trim(),
+            updateOwnerPackageName = obj.optString("updateOwnerPackageName").trim(),
+            updateOwnerPackageLabel = obj.optString("updateOwnerPackageLabel").trim(),
+            packageSource = obj.optInt("packageSource", -1),
+        ).normalizedForStorage()
+    }
 }

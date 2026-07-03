@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.github.history
 
+import android.content.pm.PackageInstaller
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +17,7 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
+import os.kei.feature.github.model.GitHubAppInstallSourceInfo
 import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.github.sheet.trackedSourceModeLabel
 import os.kei.ui.page.main.os.appLucideAddIcon
@@ -58,6 +60,19 @@ internal fun GitHubAppInstallHistoryRecordCard(
             actionLabel,
             versionChange,
         )
+    val installSourceInfo = effectiveInstallSourceInfo(record)
+    val currentInstaller = rememberInstallSourcePackageLabel(
+        packageName = installSourceInfo.installingPackageName,
+        label = installSourceInfo.installingPackageLabel,
+    )
+    val previousInstaller = rememberInstallSourcePackageLabel(
+        packageName = record.previousInstallSourceInfo.installingPackageName,
+        label = record.previousInstallSourceInfo.installingPackageLabel,
+    )
+    val showPreviousInstaller =
+        record.previousInstallSourceInfo.hasInstallSourceDetails() &&
+            record.currentInstallSourceInfo.hasInstallSourceDetails() &&
+            previousInstaller != currentInstaller
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
@@ -139,6 +154,53 @@ internal fun GitHubAppInstallHistoryRecordCard(
                 valueOverflow = TextOverflow.Ellipsis,
             )
             AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_install_source_type),
+                value = rememberInstallSourceTypeLabel(installSourceInfo.packageSource),
+                valueMaxLines = 1,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_installer),
+                value = currentInstaller,
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_initiating_installer),
+                value = rememberInstallSourcePackageLabel(
+                    packageName = installSourceInfo.initiatingPackageName,
+                    label = installSourceInfo.initiatingPackageLabel,
+                ),
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_originating_source),
+                value = rememberInstallSourcePackageLabel(
+                    packageName = installSourceInfo.originatingPackageName,
+                    label = installSourceInfo.originatingPackageLabel,
+                ),
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_update_owner),
+                value = rememberInstallSourcePackageLabel(
+                    packageName = installSourceInfo.updateOwnerPackageName,
+                    label = installSourceInfo.updateOwnerPackageLabel,
+                ),
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            if (showPreviousInstaller) {
+                AppInfoRow(
+                    label = stringResource(R.string.github_history_apps_label_previous_installer),
+                    value = previousInstaller,
+                    valueMaxLines = 2,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+            }
+            AppInfoRow(
                 label = stringResource(R.string.github_history_refresh_label_source),
                 value = rememberAppInstallSourceLabel(record.source),
                 valueMaxLines = 1,
@@ -152,6 +214,18 @@ internal fun GitHubAppInstallHistoryRecordCard(
                 valueOverflow = TextOverflow.Ellipsis,
             )
             AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_broadcast_uid),
+                value = rememberBroadcastUidLabel(record.broadcastUid),
+                valueMaxLines = 1,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
+                label = stringResource(R.string.github_history_apps_label_broadcast_flags),
+                value = rememberBroadcastFlagsLabel(record),
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+            AppInfoRow(
                 label = stringResource(R.string.github_history_tracking_label_track_id),
                 value = record.trackId,
                 stacked = true,
@@ -161,6 +235,22 @@ internal fun GitHubAppInstallHistoryRecordCard(
         }
     }
 }
+
+private fun effectiveInstallSourceInfo(
+    record: GitHubAppInstallHistoryRecord,
+): GitHubAppInstallSourceInfo =
+    when {
+        record.currentInstallSourceInfo.hasInstallSourceDetails() -> record.currentInstallSourceInfo
+        record.previousInstallSourceInfo.hasInstallSourceDetails() -> record.previousInstallSourceInfo
+        else -> GitHubAppInstallSourceInfo()
+    }
+
+private fun GitHubAppInstallSourceInfo.hasInstallSourceDetails(): Boolean =
+    installingPackageName.isNotBlank() ||
+        initiatingPackageName.isNotBlank() ||
+        originatingPackageName.isNotBlank() ||
+        updateOwnerPackageName.isNotBlank() ||
+        packageSource >= 0
 
 @Composable
 private fun rememberAppInstallVersionChange(record: GitHubAppInstallHistoryRecord): String {
@@ -189,6 +279,71 @@ private fun rememberAppInstallVersionLabel(
         name.isNotBlank() -> name
         versionCode >= 0L -> versionCode.toString()
         else -> stringResource(R.string.common_na)
+    }
+}
+
+@Composable
+private fun rememberInstallSourceTypeLabel(packageSource: Int): String {
+    val label =
+        when (packageSource) {
+            PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED ->
+                stringResource(R.string.github_history_apps_install_source_unspecified)
+            PackageInstaller.PACKAGE_SOURCE_OTHER ->
+                stringResource(R.string.github_history_apps_install_source_other)
+            PackageInstaller.PACKAGE_SOURCE_STORE ->
+                stringResource(R.string.github_history_apps_install_source_store)
+            PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE ->
+                stringResource(R.string.github_history_apps_install_source_local_file)
+            PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE ->
+                stringResource(R.string.github_history_apps_install_source_downloaded_file)
+            else ->
+                stringResource(R.string.github_history_apps_install_source_unknown)
+        }
+    return if (packageSource >= 0) {
+        stringResource(R.string.github_history_apps_install_source_value, label, packageSource)
+    } else {
+        label
+    }
+}
+
+@Composable
+private fun rememberInstallSourcePackageLabel(
+    packageName: String,
+    label: String,
+): String {
+    val normalizedPackage = packageName.trim()
+    val normalizedLabel = label.trim()
+    return when {
+        normalizedPackage.isBlank() && normalizedLabel.isBlank() -> stringResource(R.string.common_na)
+        normalizedPackage.isBlank() -> normalizedLabel
+        normalizedLabel.isBlank() || normalizedLabel == normalizedPackage -> normalizedPackage
+        else -> stringResource(
+            R.string.github_history_apps_package_label_value,
+            normalizedLabel,
+            normalizedPackage,
+        )
+    }
+}
+
+@Composable
+private fun rememberBroadcastUidLabel(uid: Int): String =
+    if (uid >= 0) uid.toString() else stringResource(R.string.common_na)
+
+@Composable
+private fun rememberBroadcastFlagsLabel(record: GitHubAppInstallHistoryRecord): String {
+    val flags =
+        buildList {
+            if (record.replacing) add(stringResource(R.string.github_history_apps_broadcast_flag_replacing))
+            if (record.broadcastDataRemoved) {
+                add(stringResource(R.string.github_history_apps_broadcast_flag_data_removed))
+            }
+            if (record.broadcastUserInitiated) {
+                add(stringResource(R.string.github_history_apps_broadcast_flag_user_initiated))
+            }
+            if (record.broadcastArchival) add(stringResource(R.string.github_history_apps_broadcast_flag_archival))
+        }
+    return flags.joinToString(" · ").ifBlank {
+        stringResource(R.string.github_history_apps_broadcast_flag_none)
     }
 }
 
