@@ -19,6 +19,7 @@ internal class BaOfficeActionCoordinator(
     private val onCafeLevelPopupChange: (Boolean) -> Unit,
     private val onOpenApLimitTools: () -> Unit,
     private val onOpenCafeApTools: () -> Unit,
+    private val onOpenCafeCooldownEditSheet: (BaCafeCooldownEditTarget) -> Unit,
     private val onAccountSelected: (BaAccountId) -> Unit,
     private val onEditAccount: (BaAccountId) -> Unit,
     private val onRefreshCalendar: () -> Unit,
@@ -41,11 +42,17 @@ internal class BaOfficeActionCoordinator(
             onCafeLevelChange = ::selectCafeLevel,
             onClaimCafeStoredAp = ::claimCafeStoredAp,
             onTouchHead = { persistCooldown(office.touchHead(serverIndexProvider())) },
-            onForceResetHeadpatCooldown = { persistCooldown(office.forceResetHeadpatCooldown()) },
+            onEditHeadpatCooldown = {
+                onOpenCafeCooldownEditSheet(BaCafeCooldownEditTarget.Headpat)
+            },
             onUseInviteTicket1 = { persistCooldown(office.useInviteTicket1()) },
-            onForceResetInviteTicket1Cooldown = { persistCooldown(office.forceResetInviteTicket1Cooldown()) },
+            onEditInviteTicket1Cooldown = {
+                onOpenCafeCooldownEditSheet(BaCafeCooldownEditTarget.InviteTicket1)
+            },
             onUseInviteTicket2 = { persistCooldown(office.useInviteTicket2()) },
-            onForceResetInviteTicket2Cooldown = { persistCooldown(office.forceResetInviteTicket2Cooldown()) },
+            onEditInviteTicket2Cooldown = {
+                onOpenCafeCooldownEditSheet(BaCafeCooldownEditTarget.InviteTicket2)
+            },
             onRefreshCalendar = onRefreshCalendar,
             onOpenCalendarLink = onOpenCalendarLink,
             onRefreshPool = onRefreshPool,

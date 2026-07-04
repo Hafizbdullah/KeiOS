@@ -8,12 +8,16 @@ import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
+import os.kei.ui.page.main.ba.support.BA_HEADPAT_COOLDOWN_MS
+import os.kei.ui.page.main.ba.support.BA_INVITE_COOLDOWN_MS
 import os.kei.ui.page.main.ba.support.cafeHourlyGain
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
 import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
+import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.support.fractionalApPart
+import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import os.kei.ui.page.main.ba.support.normalizeAp
 import kotlin.math.roundToInt
 
@@ -139,4 +143,96 @@ internal fun consumeBaInviteTicket(
     val availableAt = calculateInviteTicketAvailableMs(usedMs)
     if (usedMs > 0L && availableAt > nowMs) return null
     return nowMs
+}
+
+internal fun calculateBaCafeCooldownRemainingMs(
+    target: BaCafeCooldownEditTarget,
+    coffeeHeadpatMs: Long,
+    coffeeInvite1UsedMs: Long,
+    coffeeInvite2UsedMs: Long,
+    serverIndex: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): Long {
+    val availableAt =
+        when (target) {
+            BaCafeCooldownEditTarget.Headpat -> calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
+            BaCafeCooldownEditTarget.InviteTicket1 -> calculateInviteTicketAvailableMs(coffeeInvite1UsedMs)
+            BaCafeCooldownEditTarget.InviteTicket2 -> calculateInviteTicketAvailableMs(coffeeInvite2UsedMs)
+        }
+    return (availableAt - nowMs).coerceAtLeast(0L)
+}
+
+internal fun maxBaCafeCooldownRemainingMs(
+    target: BaCafeCooldownEditTarget,
+    serverIndex: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): Long =
+    when (target) {
+        BaCafeCooldownEditTarget.Headpat ->
+            minOf(
+                BA_HEADPAT_COOLDOWN_MS,
+                nextCafeStudentRefreshMs(nowMs, serverIndex) - nowMs,
+            ).coerceAtLeast(0L)
+
+        BaCafeCooldownEditTarget.InviteTicket1,
+        BaCafeCooldownEditTarget.InviteTicket2,
+        -> BA_INVITE_COOLDOWN_MS
+    }
+
+internal fun coerceBaCafeCooldownRemainingMs(
+    target: BaCafeCooldownEditTarget,
+    remainingMs: Long,
+    serverIndex: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): Long =
+    remainingMs.coerceIn(
+        minimumValue = 0L,
+        maximumValue = maxBaCafeCooldownRemainingMs(
+            target = target,
+            serverIndex = serverIndex,
+            nowMs = nowMs,
+        ),
+    )
+
+internal fun applyBaHeadpatRemainingCooldown(
+    remainingMs: Long,
+    serverIndex: Int,
+    nowMs: Long = System.currentTimeMillis(),
+): Long {
+    val clampedRemainingMs =
+        coerceBaCafeCooldownRemainingMs(
+            target = BaCafeCooldownEditTarget.Headpat,
+            remainingMs = remainingMs,
+            serverIndex = serverIndex,
+            nowMs = nowMs,
+        )
+    if (clampedRemainingMs <= 0L) return 0L
+
+    val currentSlotMs = currentCafeStudentRefreshSlotMs(nowMs, serverIndex).coerceAtMost(nowMs)
+    val earliestActiveRemainingMs =
+        (currentSlotMs + BA_HEADPAT_COOLDOWN_MS - nowMs)
+            .coerceIn(0L, maxBaCafeCooldownRemainingMs(BaCafeCooldownEditTarget.Headpat, serverIndex, nowMs))
+    val representableRemainingMs =
+        if (earliestActiveRemainingMs > 0L && clampedRemainingMs < earliestActiveRemainingMs) {
+            earliestActiveRemainingMs
+        } else {
+            clampedRemainingMs
+        }
+    return (nowMs + representableRemainingMs - BA_HEADPAT_COOLDOWN_MS)
+        .coerceIn(currentSlotMs, nowMs)
+}
+
+internal fun applyBaInviteTicketRemainingCooldown(
+    remainingMs: Long,
+    nowMs: Long = System.currentTimeMillis(),
+): Long {
+    val clampedRemainingMs =
+        coerceBaCafeCooldownRemainingMs(
+            target = BaCafeCooldownEditTarget.InviteTicket1,
+            remainingMs = remainingMs,
+            serverIndex = 0,
+            nowMs = nowMs,
+        )
+    if (clampedRemainingMs <= 0L) return 0L
+    return (nowMs + clampedRemainingMs - BA_INVITE_COOLDOWN_MS).coerceAtLeast(0L)
 }

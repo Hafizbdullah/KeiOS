@@ -69,6 +69,35 @@ internal fun BaPageSheetHost(
         office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }
 
+    fun persistCooldown(update: BaOfficeCooldownPersistenceUpdate?) {
+        if (update == null) return
+        sheetScope.launch {
+            update.persistAsync()
+        }
+    }
+
+    fun saveCafeCooldownRemaining(
+        target: BaCafeCooldownEditTarget,
+        remainingMs: Long,
+    ) {
+        val update =
+            when (target) {
+                BaCafeCooldownEditTarget.Headpat ->
+                    office.updateHeadpatRemainingCooldown(
+                        remainingMs = remainingMs,
+                        serverIndex = routeState.serverIndex,
+                    )
+
+                BaCafeCooldownEditTarget.InviteTicket1 ->
+                    office.updateInviteTicket1RemainingCooldown(remainingMs)
+
+                BaCafeCooldownEditTarget.InviteTicket2 ->
+                    office.updateInviteTicket2RemainingCooldown(remainingMs)
+            }
+        persistCooldown(update)
+        viewModel.hideCafeCooldownEditSheet()
+    }
+
     BaSettingsSheet(
         show = routeState.showSettingsSheet,
         backdrop = backdrop,
@@ -194,6 +223,25 @@ internal fun BaPageSheetHost(
             persistCafeStoredApCalibration(office.fillCafeStoredAp())
         },
         onDismissRequest = viewModel::hideCafeApToolsSheet,
+    )
+    BaCafeCooldownEditSheet(
+        show = routeState.cafeCooldownEditTarget != null,
+        target = routeState.cafeCooldownEditTarget,
+        backdrop = backdrop,
+        coffeeHeadpatMs = office.coffeeHeadpatMs,
+        coffeeInvite1UsedMs = office.coffeeInvite1UsedMs,
+        coffeeInvite2UsedMs = office.coffeeInvite2UsedMs,
+        serverIndex = routeState.serverIndex,
+        uiNowMs = uiNowMsProvider(),
+        onSaveRemaining = { remainingMs ->
+            routeState.cafeCooldownEditTarget?.let { target ->
+                saveCafeCooldownRemaining(
+                    target = target,
+                    remainingMs = remainingMs,
+                )
+            }
+        },
+        onDismissRequest = viewModel::hideCafeCooldownEditSheet,
     )
 }
 

@@ -211,6 +211,20 @@ internal class BaOfficeViewModel(
         }
     }
 
+    fun showCafeCooldownEditSheet(target: BaCafeCooldownEditTarget) {
+        _chromeUiState.update { state ->
+            state
+                .withoutFloatingPopups()
+                .copy(cafeCooldownEditTarget = target)
+        }
+    }
+
+    fun hideCafeCooldownEditSheet() {
+        _chromeUiState.update { state ->
+            state.copy(cafeCooldownEditTarget = null)
+        }
+    }
+
     fun updateDebugUseRealCalendarPoolData(enabled: Boolean) {
         _chromeUiState.update { state ->
             if (state.debugUseRealCalendarPoolData == enabled) {

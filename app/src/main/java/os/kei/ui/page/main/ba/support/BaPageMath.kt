@@ -198,6 +198,13 @@ internal fun formatBaDateTimeNoSeconds(epochMillis: Long, fallbackText: String):
     }.getOrDefault(fallbackText)
 }
 
+internal fun formatBaDateTimeWithSeconds(epochMillis: Long, fallbackText: String): String {
+    if (epochMillis <= 0L) return fallbackText
+    return runCatching {
+        SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date(epochMillis))
+    }.getOrDefault(fallbackText)
+}
+
 internal fun formatBaRemainingTime(
     targetMs: Long,
     nowMs: Long = System.currentTimeMillis(),

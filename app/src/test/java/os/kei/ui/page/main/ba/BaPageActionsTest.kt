@@ -1,12 +1,18 @@
 package os.kei.ui.page.main.ba
 
 import org.junit.Test
+import os.kei.ui.page.main.ba.support.BA_HEADPAT_COOLDOWN_MS
+import os.kei.ui.page.main.ba.support.BA_INVITE_COOLDOWN_MS
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.cafeStorageCap
+import os.kei.ui.page.main.ba.support.calculateInviteTicketAvailableMs
+import os.kei.ui.page.main.ba.support.calculateNextHeadpatAvailableMs
+import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
+import os.kei.ui.page.main.ba.support.nextCafeStudentRefreshMs
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -175,6 +181,62 @@ class BaPageActionsTest {
         assertFalse(plan.shouldSendThresholdNotification)
         assertTrue(plan.shouldRefreshActiveNotification)
         assertEquals(-1, plan.nextLastNotifiedLevel)
+    }
+
+    @Test
+    fun `invite cooldown edit stores timestamp for desired remaining time`() {
+        val nowMs = BA_INVITE_COOLDOWN_MS + 1_000_000L
+        val remainingMs = 10 * 60 * 1000L
+
+        val usedMs = applyBaInviteTicketRemainingCooldown(remainingMs, nowMs)
+
+        assertEquals(nowMs + remainingMs, calculateInviteTicketAvailableMs(usedMs))
+    }
+
+    @Test
+    fun `invite cooldown edit clears cooldown for zero remaining time`() {
+        val nowMs = BA_INVITE_COOLDOWN_MS + 1_000_000L
+
+        val usedMs = applyBaInviteTicketRemainingCooldown(0L, nowMs)
+
+        assertEquals(0L, usedMs)
+    }
+
+    @Test
+    fun `headpat cooldown edit stores timestamp for representable remaining time`() {
+        val serverIndex = 1
+        val seedMs = 1_783_003_200_000L
+        val currentSlotMs = currentCafeStudentRefreshSlotMs(seedMs, serverIndex)
+        val nowMs = currentSlotMs + 2 * 60 * 60 * 1000L
+        val remainingMs = 90 * 60 * 1000L
+
+        val lastHeadpatMs = applyBaHeadpatRemainingCooldown(remainingMs, serverIndex, nowMs)
+
+        assertEquals(nowMs + remainingMs, calculateNextHeadpatAvailableMs(lastHeadpatMs, serverIndex))
+    }
+
+    @Test
+    fun `headpat cooldown edit clamps to next student refresh`() {
+        val serverIndex = 1
+        val seedMs = 1_783_003_200_000L
+        val nextRefreshMs = nextCafeStudentRefreshMs(seedMs, serverIndex)
+        val nowMs = nextRefreshMs - 10 * 60 * 1000L
+
+        val lastHeadpatMs = applyBaHeadpatRemainingCooldown(BA_HEADPAT_COOLDOWN_MS, serverIndex, nowMs)
+
+        assertEquals(nextRefreshMs, calculateNextHeadpatAvailableMs(lastHeadpatMs, serverIndex))
+    }
+
+    @Test
+    fun `headpat cooldown edit clamps positive input to current slot minimum when needed`() {
+        val serverIndex = 1
+        val seedMs = 1_783_003_200_000L
+        val currentSlotMs = currentCafeStudentRefreshSlotMs(seedMs, serverIndex)
+        val nowMs = currentSlotMs + 2 * 60 * 60 * 1000L
+
+        val lastHeadpatMs = applyBaHeadpatRemainingCooldown(10 * 60 * 1000L, serverIndex, nowMs)
+
+        assertEquals(currentSlotMs + BA_HEADPAT_COOLDOWN_MS, calculateNextHeadpatAvailableMs(lastHeadpatMs, serverIndex))
     }
 }
 

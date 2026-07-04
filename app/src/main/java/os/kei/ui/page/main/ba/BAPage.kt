@@ -290,6 +290,7 @@ fun BAPage(
                 onCafeLevelPopupChange = officeViewModel::updateCafeLevelPopupExpanded,
                 onOpenApLimitTools = officeViewModel::showApLimitToolsSheet,
                 onOpenCafeApTools = officeViewModel::showCafeApToolsSheet,
+                onOpenCafeCooldownEditSheet = officeViewModel::showCafeCooldownEditSheet,
                 onAccountSelected = { accountId ->
                     officeViewModel.selectActiveAccount(
                         accountId = accountId,

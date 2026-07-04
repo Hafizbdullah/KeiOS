@@ -70,11 +70,11 @@ internal fun BaCafeCard(
     coffeeInvite1UsedMs: Long,
     coffeeInvite2UsedMs: Long,
     onTouchHead: () -> Unit,
-    onForceResetHeadpatCooldown: () -> Unit,
+    onEditHeadpatCooldown: () -> Unit,
     onUseInviteTicket1: () -> Unit,
-    onForceResetInviteTicket1Cooldown: () -> Unit,
+    onEditInviteTicket1Cooldown: () -> Unit,
     onUseInviteTicket2: () -> Unit,
-    onForceResetInviteTicket2Cooldown: () -> Unit,
+    onEditInviteTicket2Cooldown: () -> Unit,
 ) {
     val uiNowMs = clockState.uiMinuteMs.longValue
     val accentPink = Color(0xFFF472B6)
@@ -195,7 +195,7 @@ internal fun BaCafeCard(
             accentColor = accentPink,
             enabled = coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs,
             onClick = onTouchHead,
-            onLongClick = onForceResetHeadpatCooldown,
+            onLongClick = onEditHeadpatCooldown,
         )
 
         BaInlineActionPanel(
@@ -207,7 +207,7 @@ internal fun BaCafeCard(
             accentColor = invite1Color,
             enabled = invite1Ready,
             onClick = onUseInviteTicket1,
-            onLongClick = onForceResetInviteTicket1Cooldown,
+            onLongClick = onEditInviteTicket1Cooldown,
         )
 
         BaInlineActionPanel(
@@ -219,7 +219,7 @@ internal fun BaCafeCard(
             accentColor = invite2Color,
             enabled = invite2Ready,
             onClick = onUseInviteTicket2,
-            onLongClick = onForceResetInviteTicket2Cooldown,
+            onLongClick = onEditInviteTicket2Cooldown,
         )
     }
 }

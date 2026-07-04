@@ -483,9 +483,18 @@ internal class BaOfficeController(
         return BaOfficeCooldownPersistenceUpdate(headpatMs = consumedAt)
     }
 
-    fun forceResetHeadpatCooldown(): BaOfficeCooldownPersistenceUpdate {
-        coffeeHeadpatMs = 0L
-        return BaOfficeCooldownPersistenceUpdate(headpatMs = 0L)
+    fun updateHeadpatRemainingCooldown(
+        remainingMs: Long,
+        serverIndex: Int,
+    ): BaOfficeCooldownPersistenceUpdate {
+        val updatedAt =
+            applyBaHeadpatRemainingCooldown(
+                remainingMs = remainingMs,
+                serverIndex = serverIndex,
+                nowMs = clock.nowMs(),
+            )
+        coffeeHeadpatMs = updatedAt
+        return BaOfficeCooldownPersistenceUpdate(headpatMs = updatedAt)
     }
 
     fun useInviteTicket1(): BaOfficeCooldownPersistenceUpdate? {
@@ -494,9 +503,10 @@ internal class BaOfficeController(
         return BaOfficeCooldownPersistenceUpdate(invite1Ms = consumedAt)
     }
 
-    fun forceResetInviteTicket1Cooldown(): BaOfficeCooldownPersistenceUpdate {
-        coffeeInvite1UsedMs = 0L
-        return BaOfficeCooldownPersistenceUpdate(invite1Ms = 0L)
+    fun updateInviteTicket1RemainingCooldown(remainingMs: Long): BaOfficeCooldownPersistenceUpdate {
+        val usedMs = applyBaInviteTicketRemainingCooldown(remainingMs, nowMs = clock.nowMs())
+        coffeeInvite1UsedMs = usedMs
+        return BaOfficeCooldownPersistenceUpdate(invite1Ms = usedMs)
     }
 
     fun useInviteTicket2(): BaOfficeCooldownPersistenceUpdate? {
@@ -505,9 +515,10 @@ internal class BaOfficeController(
         return BaOfficeCooldownPersistenceUpdate(invite2Ms = consumedAt)
     }
 
-    fun forceResetInviteTicket2Cooldown(): BaOfficeCooldownPersistenceUpdate {
-        coffeeInvite2UsedMs = 0L
-        return BaOfficeCooldownPersistenceUpdate(invite2Ms = 0L)
+    fun updateInviteTicket2RemainingCooldown(remainingMs: Long): BaOfficeCooldownPersistenceUpdate {
+        val usedMs = applyBaInviteTicketRemainingCooldown(remainingMs, nowMs = clock.nowMs())
+        coffeeInvite2UsedMs = usedMs
+        return BaOfficeCooldownPersistenceUpdate(invite2Ms = usedMs)
     }
 
     fun sendApTestNotification(
