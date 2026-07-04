@@ -2,6 +2,7 @@ package os.kei.ui.page.main.sync
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class WebDavSyncHistoryTest {
     @Test
@@ -39,6 +40,43 @@ class WebDavSyncHistoryTest {
         assertEquals(listOf("same", "other"), updated.map { it.id })
         assertEquals("background", updated.first().reason)
         assertEquals(2, updated.size)
+    }
+
+    @Test
+    fun `skipped pending review item keeps item details and marks history for review`() {
+        val entry =
+            buildWebDavSyncHistoryEntry(
+                source = WebDavSyncHistorySource.Auto,
+                kind = null,
+                reason = "alarm",
+                startedAtMs = 1_000L,
+                finishedAtMs = 2_000L,
+                targetCount = 6,
+                outcomes =
+                    listOf(
+                        WebDavSyncItem.GitHubTracked to WebDavItemOutcome(WebDavItemStatus.UpToDate),
+                        WebDavSyncItem.BaAccounts to WebDavItemOutcome(WebDavItemStatus.UpToDate),
+                        WebDavSyncItem.BaCatalogFavorites to WebDavItemOutcome(WebDavItemStatus.UpToDate),
+                        WebDavSyncItem.BaBgmFavorites to WebDavItemOutcome(WebDavItemStatus.UpToDate),
+                        WebDavSyncItem.OsShellCards to WebDavItemOutcome(WebDavItemStatus.UpToDate),
+                    ),
+                skippedCount = 1,
+                skippedOutcomes =
+                    listOf(
+                        WebDavSyncItem.OsActivityCards to WebDavItemOutcome(WebDavItemStatus.ConflictUnresolved),
+                    ),
+            )
+
+        assertEquals(WebDavAutoSyncStatus.NeedsReview, entry.status)
+        assertEquals(5, entry.succeededCount)
+        assertEquals(0, entry.failedCount)
+        assertEquals(1, entry.skippedCount)
+        assertTrue(
+            entry.items.any {
+                it.item == WebDavSyncItem.OsActivityCards &&
+                    it.status == WebDavItemStatus.ConflictUnresolved
+            },
+        )
     }
 }
 

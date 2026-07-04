@@ -174,16 +174,20 @@ internal object WebDavAutoSync {
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
             val outcomes = mutableListOf<WebDavItemOutcome>()
             val itemOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
+            val skippedOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var skippedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
-                if (shouldDeferPendingReview(item)) {
-                    skippedCount += 1
-                    continue
-                }
                 val port = ports[item]
                 if (port == null) {
                     skippedCount += 1
+                    skippedOutcomes += item to WebDavItemOutcome(WebDavItemStatus.Error)
+                    continue
+                }
+                val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state
+                if (shouldDeferPendingWebDavAutoSync(pending, port)) {
+                    skippedCount += 1
+                    skippedOutcomes += item to pending.toDeferredAutoSyncOutcome()
                     continue
                 }
                 val outcome = reconcileItem(config, item, port)
@@ -199,6 +203,7 @@ internal object WebDavAutoSync {
                 targetCount = targets.size,
                 outcomes = outcomes,
                 skippedCount = skippedCount,
+                skippedOutcomes = skippedOutcomes,
             )
             WebDavSyncStore.saveLastAutoSyncSummary(summary)
             WebDavSyncStore.appendHistory(
@@ -211,6 +216,7 @@ internal object WebDavAutoSync {
                     targetCount = targets.size,
                     outcomes = itemOutcomes,
                     skippedCount = skippedCount,
+                    skippedOutcomes = skippedOutcomes,
                 ),
             )
             if (summary.status == WebDavAutoSyncStatus.Success) {
@@ -251,8 +257,9 @@ internal object WebDavAutoSync {
             var changedCount = 0
             for (item in targets) {
                 coroutineContext.ensureActive()
-                if (shouldDeferPendingReview(item)) continue
                 val port = ports[item] ?: continue
+                val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state
+                if (shouldDeferPendingWebDavAutoSync(pending, port)) continue
                 val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                 val storedHash = WebDavSyncStore.getItemContentHash(item)
                 if (currentHash == storedHash) continue
@@ -372,6 +379,8 @@ internal object WebDavAutoSync {
                 if (planItem.localHash == remote.contentHash) {
                     engine.recordCurrentLocalAsSynced(item, remote.etag, port)
                     WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                } else if (port.mergeRemoteOnAutoConflict) {
+                    engine.sync(config, item, port)
                 } else {
                     WebDavSyncStore.setItemPendingState(
                         item = item,
@@ -383,11 +392,6 @@ internal object WebDavAutoSync {
             is WebDavSyncPlanRemoteState.Error ->
                 WebDavItemOutcome(remote.status, remote.detail)
         }
-    }
-
-    private fun shouldDeferPendingReview(item: WebDavSyncItem): Boolean {
-        val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state ?: return false
-        return shouldDeferPendingWebDavAutoSync(pending)
     }
 
     private object LifecycleObserver : Application.ActivityLifecycleCallbacks {
@@ -453,12 +457,18 @@ internal fun shouldDeferPendingWebDavAutoSync(pending: WebDavSyncPendingState?):
     pending == WebDavSyncPendingState.RemoteConflict ||
         pending == WebDavSyncPendingState.BaselineRequired
 
+internal fun shouldDeferPendingWebDavAutoSync(
+    pending: WebDavSyncPendingState?,
+    port: WebDavSyncDataPort,
+): Boolean = shouldDeferPendingWebDavAutoSync(pending) && !port.mergeRemoteOnAutoConflict
+
 private fun buildAutoSyncSummary(
     reason: String,
     finishedAtMs: Long,
     targetCount: Int,
     outcomes: List<WebDavItemOutcome>,
     skippedCount: Int,
+    skippedOutcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>> = emptyList(),
 ): WebDavAutoSyncSummary {
     val succeededCount = outcomes.count { it.isSuccess }
     val reviewCount = outcomes.count { outcome ->
@@ -467,11 +477,15 @@ private fun buildAutoSyncSummary(
     }
     val failedCount = outcomes.size - succeededCount
     val technicalFailureCount = failedCount - reviewCount
+    val skippedReviewCount = skippedOutcomes.count { (_, outcome) -> outcome.requiresReview }
+    val skippedTechnicalFailureCount = skippedOutcomes.count { (_, outcome) ->
+        !outcome.isSuccess && !outcome.requiresReview
+    }
     val status =
         when {
-            targetCount <= 0 || outcomes.isEmpty() -> WebDavAutoSyncStatus.Skipped
-            technicalFailureCount > 0 -> WebDavAutoSyncStatus.Failed
-            reviewCount > 0 -> WebDavAutoSyncStatus.NeedsReview
+            targetCount <= 0 || (outcomes.isEmpty() && skippedOutcomes.isEmpty()) -> WebDavAutoSyncStatus.Skipped
+            technicalFailureCount > 0 || skippedTechnicalFailureCount > 0 -> WebDavAutoSyncStatus.Failed
+            reviewCount > 0 || skippedReviewCount > 0 -> WebDavAutoSyncStatus.NeedsReview
             else -> WebDavAutoSyncStatus.Success
         }
     return WebDavAutoSyncSummary(
@@ -484,6 +498,20 @@ private fun buildAutoSyncSummary(
         skippedCount = skippedCount,
     )
 }
+
+private val WebDavItemOutcome.requiresReview: Boolean
+    get() =
+        status == WebDavItemStatus.BaselineRequired ||
+            status == WebDavItemStatus.ConflictUnresolved
+
+private fun WebDavSyncPendingState?.toDeferredAutoSyncOutcome(): WebDavItemOutcome =
+    when (this) {
+        WebDavSyncPendingState.BaselineRequired -> WebDavItemOutcome(WebDavItemStatus.BaselineRequired)
+        WebDavSyncPendingState.RemoteConflict -> WebDavItemOutcome(WebDavItemStatus.ConflictUnresolved)
+        WebDavSyncPendingState.LocalUploadPending,
+        null,
+        -> WebDavItemOutcome(WebDavItemStatus.UpToDate)
+    }
 
 private fun failedAutoSyncSummary(
     reason: String,

@@ -184,6 +184,7 @@ private fun buildWebDavSyncDataPorts(
             countRemoteItems = { raw ->
                 runCatching { parseCatalogFavoritesExport(raw).size }.getOrDefault(0)
             },
+            mergeRemoteOnAutoConflict = true,
         ),
         WebDavSyncItem.BaBgmFavorites to WebDavSyncDataPort(
             exportJson = { GuideBgmFavoriteStore.buildFavoritesExportJson() },
@@ -195,6 +196,7 @@ private fun buildWebDavSyncDataPorts(
                 runCatching { GuideBgmFavoriteStore.previewFavoritesJsonImport(raw).importedCount }
                     .getOrDefault(0)
             },
+            mergeRemoteOnAutoConflict = true,
         ),
         WebDavSyncItem.OsActivityCards to WebDavSyncDataPort(
             exportJson = {
@@ -265,6 +267,7 @@ private fun buildWebDavSyncDataPorts(
                     ).cards.size
                 }.getOrDefault(0)
             },
+            mergeRemoteOnAutoConflict = true,
         ),
         WebDavSyncItem.OsShellCards to WebDavSyncDataPort(
             exportJson = {
@@ -303,6 +306,7 @@ private fun buildWebDavSyncDataPorts(
                     ).cards.size
                 }.getOrDefault(0)
             },
+            mergeRemoteOnAutoConflict = true,
         ),
     )
 

@@ -165,7 +165,7 @@
     <string name="webdav_sync_history_summary_desc">记录手动同步、远端刷新、自动 WebDAV 同步的本地诊断结果。这些记录只保存在本机，不会上传到 WebDAV。</string>
     <string name="webdav_sync_history_total_format">%1$d 条记录</string>
     <string name="webdav_sync_history_latest_format">最新 %1$s</string>
-    <string name="webdav_sync_history_issues_format">%1$d 项需处理</string>
+    <string name="webdav_sync_history_issues_format">%1$d 条异常记录</string>
     <string name="webdav_sync_history_clear">清理历史</string>
     <string name="webdav_sync_history_empty_title">暂无同步历史</string>
     <string name="webdav_sync_history_empty_summary">手动同步、远端刷新和自动同步完成后，结果会显示在这里。</string>

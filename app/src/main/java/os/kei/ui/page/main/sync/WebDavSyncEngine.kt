@@ -266,7 +266,17 @@ internal class WebDavSyncEngine(
                                 saveRemoteSummaryFromLocal(item, port, reMerged, second.etag)
                                 WebDavItemOutcome(WebDavItemStatus.Merged)
                             }
-                            else -> conflictOutcome(item)
+                            WebDavUploadResult.Conflict ->
+                                if (port.mergeRemoteOnAutoConflict) {
+                                    refreshMergeAndOverwrite(
+                                        c = c,
+                                        item = item,
+                                        port = port,
+                                    )
+                                } else {
+                                    conflictOutcome(item)
+                                }
+                            is WebDavUploadResult.Error -> errorOutcome(second.error)
                         }
                     }
                     else -> conflictOutcome(item)
@@ -411,7 +421,12 @@ internal class WebDavSyncEngine(
                                     saveRemoteSummaryFromLocal(item, port, merged, retryUpload.etag)
                                     WebDavItemOutcome(WebDavItemStatus.Merged)
                                 }
-                                WebDavUploadResult.Conflict -> conflictOutcome(item)
+                                WebDavUploadResult.Conflict ->
+                                    refreshMergeAndOverwrite(
+                                        c = c,
+                                        item = item,
+                                        port = port,
+                                    )
                                 is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
                             }
                         }
@@ -596,6 +611,50 @@ internal class WebDavSyncEngine(
                 }
             }
             is WebDavDownloadResult.Error -> errorOutcome(refreshed.error)
+        }
+
+    private suspend fun refreshMergeAndOverwrite(
+        c: WebDavSyncClientBridge,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome =
+        when (val latest = c.download(item.fileName)) {
+            is WebDavDownloadResult.Success -> {
+                saveRemoteSummaryFromRemote(item, port, latest.content, latest.etag)
+                port.merge(latest.content)
+                val merged = port.exportJson()
+                val mergedFingerprint = port.fingerprintJson()
+                val latestRemoteHash = contentHash(port.remoteFingerprintJson(latest.content))
+                if (contentHash(mergedFingerprint) == latestRemoteHash) {
+                    recordSynced(item, latest.etag, mergedFingerprint)
+                    WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                } else {
+                    when (val upload = c.upload(item.fileName, merged, etag = null)) {
+                        is WebDavUploadResult.Success -> {
+                            recordSynced(item, upload.etag, mergedFingerprint)
+                            saveRemoteSummaryFromLocal(item, port, merged, upload.etag)
+                            AppLogger.i(TAG, "merge-safe overwrite resolved ${item.name} after refreshed ETag conflict")
+                            WebDavItemOutcome(WebDavItemStatus.Merged)
+                        }
+                        WebDavUploadResult.Conflict -> conflictOutcome(item)
+                        is WebDavUploadResult.Error -> errorOutcome(upload.error)
+                    }
+                }
+            }
+            WebDavDownloadResult.Empty -> {
+                metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
+                val local = port.exportJson()
+                when (val upload = c.upload(item.fileName, local, etag = null)) {
+                    is WebDavUploadResult.Success -> {
+                        recordSynced(item, upload.etag, port.fingerprintJson())
+                        saveRemoteSummaryFromLocal(item, port, local, upload.etag)
+                        WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                    }
+                    WebDavUploadResult.Conflict -> conflictOutcome(item)
+                    is WebDavUploadResult.Error -> errorOutcome(upload.error)
+                }
+            }
+            is WebDavDownloadResult.Error -> errorOutcome(latest.error)
         }
 
     private fun saveRemoteSummaryFromRemote(
@@ -833,8 +892,8 @@ internal sealed interface WebDavRemoteProbeOutcome {
  * - [countRemoteItems] parses a downloaded JSON payload and returns its item count *without*
  *   touching local state. Used by the refresh-remote-summary flow so other devices can see
  *   what's on the server before deciding to sync.
- * - [mergeRemoteOnAutoConflict] allows stores with entity-level merge clocks to resolve a
- *   background upload conflict by merging the refreshed remote payload before retrying upload.
+ * - [mergeRemoteOnAutoConflict] allows stores with lossless union-merge semantics to resolve a
+ *   background conflict by merging the refreshed remote payload before retrying upload.
  */
 internal data class WebDavSyncDataPort(
     val exportJson: () -> String,

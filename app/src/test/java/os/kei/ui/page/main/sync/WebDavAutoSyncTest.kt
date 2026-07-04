@@ -75,4 +75,24 @@ class WebDavAutoSyncTest {
         assertFalse(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.LocalUploadPending))
         assertFalse(shouldDeferPendingWebDavAutoSync(null))
     }
+
+    @Test
+    fun `auto merge ports can recover pending review during automatic sync`() {
+        val guardedPort = webDavAutoSyncTestPort(mergeRemoteOnAutoConflict = false)
+        val mergePort = webDavAutoSyncTestPort(mergeRemoteOnAutoConflict = true)
+
+        assertTrue(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.RemoteConflict, guardedPort))
+        assertTrue(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.BaselineRequired, guardedPort))
+        assertFalse(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.RemoteConflict, mergePort))
+        assertFalse(shouldDeferPendingWebDavAutoSync(WebDavSyncPendingState.BaselineRequired, mergePort))
+    }
 }
+
+private fun webDavAutoSyncTestPort(mergeRemoteOnAutoConflict: Boolean): WebDavSyncDataPort =
+    WebDavSyncDataPort(
+        exportJson = { "{}" },
+        merge = {},
+        localCount = { 0 },
+        countRemoteItems = { 0 },
+        mergeRemoteOnAutoConflict = mergeRemoteOnAutoConflict,
+    )

@@ -77,6 +77,7 @@ internal fun buildWebDavSyncHistoryEntry(
     targetCount: Int,
     outcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>>,
     skippedCount: Int,
+    skippedOutcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>> = emptyList(),
 ): WebDavSyncHistoryEntry {
     val succeededCount = outcomes.count { (_, outcome) -> outcome.isSuccess }
     val reviewCount = outcomes.count { (_, outcome) ->
@@ -85,11 +86,15 @@ internal fun buildWebDavSyncHistoryEntry(
     }
     val failedCount = outcomes.size - succeededCount
     val technicalFailureCount = failedCount - reviewCount
+    val skippedReviewCount = skippedOutcomes.count { (_, outcome) -> outcome.requiresReview }
+    val skippedTechnicalFailureCount = skippedOutcomes.count { (_, outcome) ->
+        !outcome.isSuccess && !outcome.requiresReview
+    }
     val status =
         when {
-            targetCount <= 0 || outcomes.isEmpty() -> WebDavAutoSyncStatus.Skipped
-            technicalFailureCount > 0 -> WebDavAutoSyncStatus.Failed
-            reviewCount > 0 -> WebDavAutoSyncStatus.NeedsReview
+            targetCount <= 0 || (outcomes.isEmpty() && skippedOutcomes.isEmpty()) -> WebDavAutoSyncStatus.Skipped
+            technicalFailureCount > 0 || skippedTechnicalFailureCount > 0 -> WebDavAutoSyncStatus.Failed
+            reviewCount > 0 || skippedReviewCount > 0 -> WebDavAutoSyncStatus.NeedsReview
             else -> WebDavAutoSyncStatus.Success
         }
     return WebDavSyncHistoryEntry(
@@ -105,7 +110,7 @@ internal fun buildWebDavSyncHistoryEntry(
         failedCount = failedCount.coerceAtLeast(0),
         skippedCount = skippedCount.coerceAtLeast(0),
         items =
-            outcomes.map { (item, outcome) ->
+            (outcomes + skippedOutcomes).map { (item, outcome) ->
                 WebDavSyncHistoryItem(
                     item = item,
                     status = outcome.status,
@@ -178,3 +183,8 @@ private fun buildWebDavSyncHistoryId(
         startedAtMs.coerceAtLeast(0L).toString(),
         finishedAtMs.coerceAtLeast(0L).toString(),
     ).joinToString(separator = ":")
+
+private val WebDavItemOutcome.requiresReview: Boolean
+    get() =
+        status == WebDavItemStatus.BaselineRequired ||
+            status == WebDavItemStatus.ConflictUnresolved

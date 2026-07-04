@@ -487,6 +487,53 @@ class WebDavSyncEngineTest {
     }
 
     @Test
+    fun `auto local change upload refreshes and overwrites merged payload when refreshed etag is rejected`() = runBlocking {
+        val client = FakeWebDavSyncClientBridge(
+            downloadResults = mutableListOf(
+                WebDavDownloadResult.Success("""{"account":"device-1"}""", "etag-device-1"),
+                WebDavDownloadResult.Success("""{"account":"device-3"}""", "etag-device-3"),
+            ),
+            uploadResults = mutableListOf(
+                WebDavUploadResult.Conflict,
+                WebDavUploadResult.Conflict,
+                WebDavUploadResult.Success("etag-final"),
+            ),
+        )
+        val metadata = FakeWebDavSyncMetadataStore()
+        val engine = WebDavSyncEngine(
+            clientFactory = { client },
+            metadataStore = metadata,
+            nowMillis = { 22_275L },
+        )
+        val port = FakeWebDavSyncDataPort(
+            localJson = """{"account":"device-2"}""",
+            mergeRemoteOnAutoConflict = true,
+        )
+
+        val outcome =
+            engine.uploadLocalChange(
+                config = fakeConfig(),
+                item = WebDavSyncItem.BaAccounts,
+                port = port.port,
+                expectedRemoteEtag = "etag-base",
+                expectedRemoteHash = WebDavSyncEngine.contentHash("""{"account":"base"}"""),
+            )
+
+        assertEquals(WebDavItemStatus.Merged, outcome.status)
+        assertEquals(
+            listOf("""{"account":"device-1"}""", """{"account":"device-3"}"""),
+            port.mergeCalls,
+        )
+        assertEquals(listOf("etag-base", "etag-device-1", null), client.uploadCalls.map { it.etag })
+        assertEquals(
+            """{"account":"device-2"}+merge({"account":"device-1"})+merge({"account":"device-3"})""",
+            client.uploadCalls.last().content,
+        )
+        assertEquals("etag-final", metadata.etags[WebDavSyncItem.BaAccounts])
+        assertTrue(metadata.pendingStates.isEmpty())
+    }
+
+    @Test
     fun `auto local change upload adopts refreshed etag when conflict remote already matches local fingerprint`() = runBlocking {
         val client = FakeWebDavSyncClientBridge(
             downloadResults = mutableListOf(
