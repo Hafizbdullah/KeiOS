@@ -153,6 +153,7 @@ private fun buildWebDavSyncDataPorts(
             countRemoteItems = { raw ->
                 runCatching { BASettingsStore.countAccountsSyncJson(raw) }.getOrDefault(0)
             },
+            mergeRemoteOnAutoConflict = true,
         ),
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(
             exportJson = {

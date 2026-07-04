@@ -396,6 +396,26 @@ internal class WebDavSyncEngine(
                             WebDavUploadResult.Conflict -> conflictOutcome(item)
                             is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
                         }
+                    port.mergeRemoteOnAutoConflict -> {
+                        port.merge(refreshed.content)
+                        val merged = port.exportJson()
+                        val mergedFingerprint = port.fingerprintJson()
+                        val mergedHash = contentHash(mergedFingerprint)
+                        if (mergedHash == refreshedRemoteHash) {
+                            recordSynced(item, refreshed.etag, mergedFingerprint)
+                            WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                        } else {
+                            when (val retryUpload = c.upload(item.fileName, merged, refreshed.etag)) {
+                                is WebDavUploadResult.Success -> {
+                                    recordSynced(item, retryUpload.etag, mergedFingerprint)
+                                    saveRemoteSummaryFromLocal(item, port, merged, retryUpload.etag)
+                                    WebDavItemOutcome(WebDavItemStatus.Merged)
+                                }
+                                WebDavUploadResult.Conflict -> conflictOutcome(item)
+                                is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
+                            }
+                        }
+                    }
                     else -> conflictOutcome(item)
                 }
             }
@@ -813,6 +833,8 @@ internal sealed interface WebDavRemoteProbeOutcome {
  * - [countRemoteItems] parses a downloaded JSON payload and returns its item count *without*
  *   touching local state. Used by the refresh-remote-summary flow so other devices can see
  *   what's on the server before deciding to sync.
+ * - [mergeRemoteOnAutoConflict] allows stores with entity-level merge clocks to resolve a
+ *   background upload conflict by merging the refreshed remote payload before retrying upload.
  */
 internal data class WebDavSyncDataPort(
     val exportJson: () -> String,
@@ -821,4 +843,5 @@ internal data class WebDavSyncDataPort(
     val countRemoteItems: (raw: String) -> Int,
     val fingerprintJson: () -> String = exportJson,
     val remoteFingerprintJson: (raw: String) -> String = { it },
+    val mergeRemoteOnAutoConflict: Boolean = false,
 )

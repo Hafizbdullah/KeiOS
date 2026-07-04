@@ -160,6 +160,87 @@ class BaAccountTransferTest {
     }
 
     @Test
+    fun `merge preserves different account edits from two devices for a third device`() {
+        val base =
+            BaAccountStoreSnapshot(
+                accounts =
+                    listOf(
+                        testAccount(
+                            id = "cn-main",
+                            serverIndex = 0,
+                            nickname = "Base 1",
+                            runtime = BaAccountRuntime(apCurrent = 10.0),
+                            profileUpdatedAtMs = 100L,
+                            runtimeUpdatedAtMs = 100L,
+                        ),
+                        testAccount(
+                            id = "jp-alt",
+                            serverIndex = 2,
+                            nickname = "Base 2",
+                            runtime = BaAccountRuntime(apCurrent = 20.0),
+                            profileUpdatedAtMs = 100L,
+                            runtimeUpdatedAtMs = 100L,
+                        ),
+                    ),
+                activeAccountId = BaAccountId("cn-main"),
+                allAccountsFollowGlobalNotificationSettings = true,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+        val device1 =
+            base.copy(
+                accounts =
+                    listOf(
+                        testAccount(
+                            id = "cn-main",
+                            serverIndex = 0,
+                            nickname = "Device 1",
+                            runtime = BaAccountRuntime(apCurrent = 66.0),
+                            profileUpdatedAtMs = 1_000L,
+                            runtimeUpdatedAtMs = 1_000L,
+                        ),
+                        base.accounts[1],
+                    ),
+            )
+        val device2 =
+            base.copy(
+                accounts =
+                    listOf(
+                        base.accounts[0],
+                        testAccount(
+                            id = "jp-alt",
+                            serverIndex = 2,
+                            nickname = "Device 2",
+                            runtime = BaAccountRuntime(apCurrent = 88.0),
+                            profileUpdatedAtMs = 2_000L,
+                            runtimeUpdatedAtMs = 2_000L,
+                        ),
+                    ),
+            )
+
+        val remoteAfterDevice1 =
+            parseBaAccountsExportJson(buildBaAccountsExportJson(snapshot = device1, nowMs = 1_100L))
+        val remoteAfterDevice2 =
+            mergeBaAccountsForSync(
+                local = device2,
+                remote = remoteAfterDevice1,
+                nowMs = 2_100L,
+            )
+        val device3Merged =
+            mergeBaAccountsForSync(
+                local = base,
+                remote = remoteAfterDevice2,
+                nowMs = 3_100L,
+            )
+
+        val account1 = device3Merged.accounts.first { it.profile.id.value == "cn-main" }
+        val account2 = device3Merged.accounts.first { it.profile.id.value == "jp-alt" }
+        assertEquals("Device 1", account1.profile.nickname)
+        assertEquals(66.0, account1.runtime.apCurrent)
+        assertEquals("Device 2", account2.profile.nickname)
+        assertEquals(88.0, account2.runtime.apCurrent)
+    }
+
+    @Test
     fun `stable sync fingerprint ignores export time metadata`() {
         val snapshot =
             BaAccountStoreSnapshot(
