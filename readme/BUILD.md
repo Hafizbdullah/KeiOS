@@ -6,8 +6,8 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.10.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.10.0).
-- `master` is the v1.10.0 release baseline for GitHub/Git/F-Droid tracking, WebDAV sync,
+  is [KeiOS v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0).
+- `master` is the v1.11.0 release baseline for GitHub/Git/F-Droid tracking, WebDAV sync,
   MCP service modules, BA guide/cache/PiP helpers, History Hub, and UI/performance polish.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
@@ -35,8 +35,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
 - Release builds use the newer value between the latest merged semver tag and the current release
-  target, for example `1.10.0`.
-- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.10.1+12.gabcdef0`.
+  target, for example `1.11.0`.
+- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.11.1+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, using the latest merged tag
   as the commit-count anchor and the current release target as the release base when it is newer.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -91,7 +91,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.10.0 Release Gate
+### v1.11.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -110,7 +110,7 @@ Recommended focused checks for this release:
 - MCP local server starts, rejects unauthorized requests, serves Claw setup resources, exposes history queries, and keeps logs responsive.
 - Miuix/Liquid sheet selection follows the current setting, and custom backgrounds remain readable on supported pages.
 - Release APK signing, version metadata, R8/minify output, dependencies, startup, and PiP lifecycle are verified.
-- GitHub release upload notes copied from [Release Notes v1.10.0](RELEASE_V1.10.0.md).
+- GitHub release upload notes copied from [Release Notes v1.11.0](RELEASE_V1.11.0.md).
 
 ### Screenshot Baseline
 

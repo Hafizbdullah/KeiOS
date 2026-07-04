@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.10.0</string>
-    <string name="about_card_release_subtitle">F-Droid、历史中心、BA 记忆大厅、PiP 与同步性能升级</string>
+    <string name="about_card_release_title">Release v1.11.0</string>
+    <string name="about_card_release_subtitle">GitHub 刷新、WebDAV 自动同步与 BA 咖啡厅冷却精修</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -209,23 +209,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.10.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.11.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">从 v1.9.0 起整合 F-Droid 来源、历史中心、WebDAV 安全同步、BA 图鉴缓存与记忆大厅视频体验</string>
+    <string name="about_release_value_focus">v1.11.0 聚焦 GitHub 全量/增量刷新速度、Live Updates 会话、WebDAV 自动同步和 BA 咖啡厅冷却编辑</string>
     <string name="about_release_row_github">GitHub / F-Droid</string>
-    <string name="about_release_value_github">F-Droid 支持常用源管理、应用名搜索、已安装应用反扫、详情 sheet、index 缓存和公平刷新调度</string>
+    <string name="about_release_value_github">刷新调度复用仓库与 APK 元数据缓存，降低 70+ 追踪项全量刷新耗时，并补齐长列表 App 图标加载</string>
     <string name="about_release_row_ba_guide">历史与诊断</string>
-    <string name="about_release_value_ba_guide">历史页集中查看刷新、Actions、追踪变更和已安装 App 变化；新增未读角标、导出和 MCP 查询入口</string>
+    <string name="about_release_value_ba_guide">刷新历史加入更完整的耗时、目的、失败原因和慢项诊断，方便定位自动刷新和后台刷新问题</string>
     <string name="about_release_row_navigation">BA / 图鉴</string>
-    <string name="about_release_value_navigation">学生图鉴合并板块并记忆筛选；实装学生详情加入长期缓存；新增记忆大厅板块、收藏联动和视频 PiP 播放</string>
+    <string name="about_release_value_navigation">BA 咖啡厅摸摸头与邀请券支持长按精确编辑剩余冷却时间，保留短按使用动作</string>
     <string name="about_release_row_icon">同步与数据</string>
-    <string name="about_release_value_icon">WebDAV 同步先刷新远端并展示变更计划，支持 F-Droid v4 数据和 BA 多账号合并，降低误覆盖风险</string>
+    <string name="about_release_value_icon">WebDAV 自动同步减少启动抢占与旧摘要误判，支持跨设备按账号合并 BA 数据，并记录同步历史</string>
     <string name="about_release_row_release_gate">导航与体验</string>
-    <string name="about_release_value_release_gate">主导航迁移到 Miuix Nav，底栏/ActionBar 手势、预测式返回、自定义背景和 sheet 链路继续收敛</string>
+    <string name="about_release_value_release_gate">GitHub 刷新通知、Live Updates 和超级岛会话生命周期继续收敛，失败或超时后会正确结束刷新状态</string>
     <string name="about_release_row_performance">性能与构建</string>
-    <string name="about_release_value_performance">图鉴、F-Droid 搜索/刷新、PiP、MCP 服务端和刷新历史链路做了异步调度、缓存复用与依赖升级</string>
+    <string name="about_release_value_performance">GitHub 刷新 UI 派发、APK profile 复用、WebDAV 请求链路和 BA sheet 状态流做了针对性性能整理</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.9.x 用户升级；重度使用 GitHub/F-Droid 追踪、WebDAV、BA 图鉴和 MCP/Claw 的用户优先升级</string>
+    <string name="about_release_value_next">建议所有 v1.10.x 用户升级；重度使用 GitHub/F-Droid 追踪、WebDAV 自动同步和 BA 多账号的用户优先升级</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

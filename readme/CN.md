@@ -39,7 +39,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 | UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
 | 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
 | 语言资源       | 简体中文、English、日本語                               |
-| 最新稳定标签     | `v1.10.0`                                      |
+| 最新稳定标签     | `v1.11.0`                                      |
 
 ## 常用入口
 
@@ -72,13 +72,13 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 - 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
   dock、背景图、应用语言、权限、缓存诊断、结构化日志、本地 GitHub Issue 反馈、无遥测诊断与通知兼容配置。
 
-## v1.10.0 重点变化
+## v1.11.0 重点变化
 
-- GitHub 追踪把 F-Droid 仓库作为一等来源，覆盖常用源管理、应用名搜索、已安装应用反扫、index 缓存、Anti-Feature 元数据和 F-Droid 详情页。
-- 历史中心集中显示 Actions、刷新诊断、追踪变更和已追踪 App 安装/更新记录，支持未读角标、搜索、导出和 MCP 查询。
-- WebDAV 同步会先刷新远端并展示变更计划，支持 F-Droid v4 数据和 BA 多账号合并，降低误覆盖风险。
-- BA 学生图鉴新增实装学生详情长期缓存、合并后的学生板块、记忆大厅卡片和可复用 PiP 视频播放。
-- 主导航、底栏、ActionBar、sheet 选择、自定义背景、图鉴滚动、F-Droid 刷新、MCP 服务端和依赖基线完成 v1.10.0 收尾。
+- GitHub 全量与增量刷新更快，刷新历史会记录更完整的慢项原因、失败原因、耗时和会话目的。
+- GitHub 长列表滚动时会继续加载已安装 App 图标，靠后的追踪项目也能显示真实应用图标。
+- WebDAV 自动同步增强启动刷新、确认上传、远端摘要和冲突恢复链路，并新增同步历史记录。
+- BA 多账号 WebDAV 合并支持按账号保留多设备独立修改，减少不同设备编辑不同账号时的覆盖风险。
+- BA 咖啡厅摸摸头与邀请券支持长按精确编辑剩余冷却时间，短按仍保留原本的使用动作。
 
 完整功能介绍：
 
@@ -88,7 +88,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.10.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.10.0)。
+- 当前稳定标签：[v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.6.1`、Kotlin `2.4.0`、
   Compose `1.11.4`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
@@ -97,7 +97,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 文档
 
 - [文档索引](INDEX.md)
-- [Release Notes v1.10.0](RELEASE_V1.10.0.md)
+- [Release Notes v1.11.0](RELEASE_V1.11.0.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)
