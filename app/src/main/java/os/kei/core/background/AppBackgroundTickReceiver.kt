@@ -11,6 +11,13 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         val action = intent?.action ?: return
         if (action != ACTION_GITHUB_TICK && action != ACTION_BA_AP_TICK && action != ACTION_WEBDAV_SYNC) return
+        if (action == ACTION_GITHUB_TICK) {
+            val enqueued = GitHubBackgroundRefreshJobService.enqueueNow(context)
+            if (!enqueued) {
+                AppBackgroundScheduler.onTickHandled(context.applicationContext, action)
+            }
+            return
+        }
         val rescheduled = AtomicBoolean(false)
         val rescheduleOnce: suspend (Context) -> Unit = { appContext ->
             if (rescheduled.compareAndSet(false, true)) {
@@ -19,7 +26,6 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         }
         val recoverTimeout: suspend (Context) -> Unit = { appContext ->
             when (action) {
-                ACTION_GITHUB_TICK -> AppForegroundInfoHandler.handleGitHubTickTimeout(appContext)
                 ACTION_WEBDAV_SYNC -> WebDavAutoSync.handleScheduledTickTimeout(appContext)
                 else -> Unit
             }
@@ -34,7 +40,6 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         ) { appContext ->
             try {
                 when (action) {
-                    ACTION_GITHUB_TICK -> AppForegroundInfoHandler.handleGitHubTick(appContext)
                     ACTION_BA_AP_TICK -> AppForegroundInfoHandler.handleBaApTick(appContext)
                     ACTION_WEBDAV_SYNC -> WebDavAutoSync.handleScheduledTick(appContext)
                 }
@@ -51,17 +56,15 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         private const val REQUEST_CODE_GITHUB_TICK = 42001
         private const val REQUEST_CODE_BA_AP_TICK = 42002
         private const val REQUEST_CODE_WEBDAV_SYNC = 42003
-        private const val GITHUB_TICK_TIMEOUT_MS = 45_000L
         private const val BA_AP_TICK_TIMEOUT_MS = 12_000L
         private const val WEBDAV_SYNC_TIMEOUT_MS = 45_000L
         private const val TAG = "AppBackgroundTickReceiver"
 
         private fun timeoutForAction(action: String): Long {
             return when (action) {
-                ACTION_GITHUB_TICK -> GITHUB_TICK_TIMEOUT_MS
                 ACTION_BA_AP_TICK -> BA_AP_TICK_TIMEOUT_MS
                 ACTION_WEBDAV_SYNC -> WEBDAV_SYNC_TIMEOUT_MS
-                else -> GITHUB_TICK_TIMEOUT_MS
+                else -> BA_AP_TICK_TIMEOUT_MS
             }
         }
 

@@ -276,6 +276,11 @@ private fun GitHubRefreshHistoryRecord.toJson() =
         put("directApkItemCount", directApkItemCount)
         put("fdroidItemCount", fdroidItemCount)
         put("otherItemCount", otherItemCount)
+        put("schedulerJobId", schedulerJobId)
+        put("schedulerEnqueuedAtMillis", schedulerEnqueuedAtMillis)
+        put("schedulerStartedAtMillis", schedulerStartedAtMillis)
+        put("schedulerStopReason", schedulerStopReason)
+        put("schedulerRescheduled", schedulerRescheduled)
         put("note", note)
         put(
             "slowItems",

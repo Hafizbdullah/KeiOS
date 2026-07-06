@@ -111,6 +111,11 @@ object GitHubRefreshHistoryStore {
             put("directApkItemCount", record.directApkItemCount)
             put("fdroidItemCount", record.fdroidItemCount)
             put("otherItemCount", record.otherItemCount)
+            put("schedulerJobId", record.schedulerJobId)
+            put("schedulerEnqueuedAtMillis", record.schedulerEnqueuedAtMillis)
+            put("schedulerStartedAtMillis", record.schedulerStartedAtMillis)
+            put("schedulerStopReason", record.schedulerStopReason)
+            put("schedulerRescheduled", record.schedulerRescheduled)
             put("note", record.note)
             put(
                 "slowItems",
@@ -164,6 +169,11 @@ object GitHubRefreshHistoryStore {
                 directApkItemCount = obj.optInt("directApkItemCount", 0).coerceAtLeast(0),
                 fdroidItemCount = obj.optInt("fdroidItemCount", 0).coerceAtLeast(0),
                 otherItemCount = obj.optInt("otherItemCount", 0).coerceAtLeast(0),
+                schedulerJobId = obj.optInt("schedulerJobId", 0).coerceAtLeast(0),
+                schedulerEnqueuedAtMillis = obj.optLong("schedulerEnqueuedAtMillis", 0L).coerceAtLeast(0L),
+                schedulerStartedAtMillis = obj.optLong("schedulerStartedAtMillis", 0L).coerceAtLeast(0L),
+                schedulerStopReason = obj.optString("schedulerStopReason").trim(),
+                schedulerRescheduled = obj.optBoolean("schedulerRescheduled", false),
                 slowItems =
                     obj.optArray("slowItems")
                         ?.mapNotNull { element -> (element as? JsonObject)?.let(::decodeSlowItem) }
@@ -205,6 +215,11 @@ object GitHubRefreshHistoryStore {
             directApkItemCount = directApkItemCount.coerceAtLeast(0),
             fdroidItemCount = fdroidItemCount.coerceAtLeast(0),
             otherItemCount = otherItemCount.coerceAtLeast(0),
+            schedulerJobId = schedulerJobId.coerceAtLeast(0),
+            schedulerEnqueuedAtMillis = schedulerEnqueuedAtMillis.coerceAtLeast(0L),
+            schedulerStartedAtMillis = schedulerStartedAtMillis.coerceAtLeast(0L),
+            schedulerStopReason = schedulerStopReason.trim(),
+            schedulerRescheduled = schedulerRescheduled,
             slowItems =
                 slowItems
                     .take(8)

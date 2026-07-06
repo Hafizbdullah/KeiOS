@@ -6,6 +6,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubRefreshHistoryStore
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
 import os.kei.feature.github.model.GitHubRefreshHistoryRecord
+import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.model.toGitHubRefreshHistoryFailureSummary
 import os.kei.feature.github.model.toGitHubRefreshHistorySlowItem
 
@@ -60,6 +61,7 @@ class GitHubRefreshHistoryService(
         result: GitHubTrackedRefreshBatchResult,
         startedAtMillis: Long,
         finishedAtMillis: Long = System.currentTimeMillis(),
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ) {
         record(
             buildCompletedRecord(
@@ -68,6 +70,7 @@ class GitHubRefreshHistoryService(
                 result = result,
                 startedAtMillis = startedAtMillis,
                 finishedAtMillis = finishedAtMillis,
+                schedulerDiagnostics = schedulerDiagnostics,
             ),
         )
     }
@@ -77,6 +80,7 @@ class GitHubRefreshHistoryService(
         outcome: GitHubRefreshHistoryOutcome,
         note: String = "",
         finishedAtMillis: Long = System.currentTimeMillis(),
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ) {
         if (runtime.startedAtMs <= 0L) return
         record(
@@ -95,6 +99,11 @@ class GitHubRefreshHistoryService(
                 startedAtMillis = runtime.startedAtMs,
                 finishedAtMillis = finishedAtMillis.coerceAtLeast(runtime.startedAtMs),
                 elapsedMs = (finishedAtMillis - runtime.startedAtMs).coerceAtLeast(0L),
+                schedulerJobId = schedulerDiagnostics.jobId,
+                schedulerEnqueuedAtMillis = schedulerDiagnostics.enqueuedAtMillis,
+                schedulerStartedAtMillis = schedulerDiagnostics.startedAtMillis,
+                schedulerStopReason = schedulerDiagnostics.stopReason,
+                schedulerRescheduled = schedulerDiagnostics.rescheduled,
                 note = note,
             ),
         )
@@ -117,6 +126,7 @@ class GitHubRefreshHistoryService(
         result: GitHubTrackedRefreshBatchResult,
         startedAtMillis: Long,
         finishedAtMillis: Long,
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics,
     ): GitHubRefreshHistoryRecord {
         val outcome =
             if (result.failedCount >= result.totalCount && result.totalCount > 0) {
@@ -150,6 +160,11 @@ class GitHubRefreshHistoryService(
             directApkItemCount = result.performance.directApkItemCount,
             fdroidItemCount = result.performance.fdroidItemCount,
             otherItemCount = result.performance.otherItemCount,
+            schedulerJobId = schedulerDiagnostics.jobId,
+            schedulerEnqueuedAtMillis = schedulerDiagnostics.enqueuedAtMillis,
+            schedulerStartedAtMillis = schedulerDiagnostics.startedAtMillis,
+            schedulerStopReason = schedulerDiagnostics.stopReason,
+            schedulerRescheduled = schedulerDiagnostics.rescheduled,
             slowItems = result.performance.slowItems.map { it.toGitHubRefreshHistorySlowItem() },
             failureSummaries = result.failures.map { it.toGitHubRefreshHistoryFailureSummary() },
         )

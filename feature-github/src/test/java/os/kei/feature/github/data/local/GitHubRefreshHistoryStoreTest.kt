@@ -93,6 +93,11 @@ class GitHubRefreshHistoryStoreTest {
             directApkItemCount = 12,
             fdroidItemCount = 8,
             otherItemCount = 2,
+            schedulerJobId = 42_101,
+            schedulerEnqueuedAtMillis = 1_777_999_990_000L,
+            schedulerStartedAtMillis = 1_778_000_000_000L,
+            schedulerStopReason = "timeout",
+            schedulerRescheduled = true,
             slowItems =
                 listOf(
                     GitHubRefreshHistorySlowItem(

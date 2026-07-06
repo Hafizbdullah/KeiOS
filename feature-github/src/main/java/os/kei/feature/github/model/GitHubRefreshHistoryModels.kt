@@ -70,9 +70,22 @@ data class GitHubRefreshHistoryRecord(
     val directApkItemCount: Int = 0,
     val fdroidItemCount: Int = 0,
     val otherItemCount: Int = 0,
+    val schedulerJobId: Int = 0,
+    val schedulerEnqueuedAtMillis: Long = 0L,
+    val schedulerStartedAtMillis: Long = 0L,
+    val schedulerStopReason: String = "",
+    val schedulerRescheduled: Boolean = false,
     val slowItems: List<GitHubRefreshHistorySlowItem> = emptyList(),
     val failureSummaries: List<GitHubRefreshHistoryFailureSummary> = emptyList(),
     val note: String = "",
+)
+
+data class GitHubRefreshSchedulerDiagnostics(
+    val jobId: Int = 0,
+    val enqueuedAtMillis: Long = 0L,
+    val startedAtMillis: Long = 0L,
+    val stopReason: String = "",
+    val rescheduled: Boolean = false,
 )
 
 fun GitHubTrackedRefreshFailure.toGitHubRefreshHistoryFailureSummary(): GitHubRefreshHistoryFailureSummary =

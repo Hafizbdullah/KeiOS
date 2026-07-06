@@ -9,6 +9,7 @@ import os.kei.feature.github.domain.GitHubBackgroundScheduleSnapshot
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.actionsUpdateIntervalMs
+import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
 import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
@@ -47,19 +48,24 @@ object AppBackgroundScheduler {
         nowMs: Long,
     ): BackgroundAlarmSchedule? {
         val snapshot = scheduleSnapshot.trackSnapshot
+        val nextTrackedUpdateDueAtMs = nextGitHubTrackedUpdateDueAtMs(
+            snapshot = snapshot,
+            nowMs = nowMs,
+        )
+        val nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
+            snapshot = snapshot,
+            previousById = scheduleSnapshot.actionsRecommendedRunsByTrackId,
+            nowMs = nowMs,
+        )
+        if (nextTrackedUpdateDueAtMs == null && nextActionsUpdateDueAtMs == null) {
+            return null
+        }
         return AppBackgroundSchedulePolicy.nextGitHubRefreshSchedule(
             trackedItemCount = snapshot.items.size,
             lastRefreshMs = snapshot.lastRefreshMs,
             refreshIntervalHours = snapshot.refreshIntervalHours,
-            nextTrackedUpdateDueAtMs = nextGitHubTrackedUpdateDueAtMs(
-                snapshot = snapshot,
-                nowMs = nowMs,
-            ),
-            nextActionsUpdateDueAtMs = nextGitHubActionsUpdateDueAtMs(
-                snapshot = snapshot,
-                previousById = scheduleSnapshot.actionsRecommendedRunsByTrackId,
-                nowMs = nowMs,
-            ),
+            nextTrackedUpdateDueAtMs = nextTrackedUpdateDueAtMs,
+            nextActionsUpdateDueAtMs = nextActionsUpdateDueAtMs,
             nowMs = nowMs,
         )
     }
@@ -69,16 +75,19 @@ object AppBackgroundScheduler {
         nowMs: Long
     ): Long? {
         if (snapshot.items.isEmpty()) return null
-        return snapshot.items.minOfOrNull { item ->
-            val checkedAtMillis = snapshot.checkCache[item.id]?.checkedAtMillis
-                ?.takeIf { it > 0L }
-                ?: snapshot.lastRefreshMs
-            if (checkedAtMillis > 0L) {
-                checkedAtMillis + item.updateIntervalMs(snapshot.refreshIntervalHours)
-            } else {
-                nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS
+        return snapshot.items
+            .asSequence()
+            .filterNot { item -> item.excludesAutomaticReleaseRefresh() }
+            .minOfOrNull { item ->
+                val checkedAtMillis = snapshot.checkCache[item.id]?.checkedAtMillis
+                    ?.takeIf { it > 0L }
+                    ?: snapshot.lastRefreshMs
+                if (checkedAtMillis > 0L) {
+                    checkedAtMillis + item.updateIntervalMs(snapshot.refreshIntervalHours)
+                } else {
+                    nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS
+                }
             }
-        }
     }
 
     private fun nextGitHubActionsUpdateDueAtMs(

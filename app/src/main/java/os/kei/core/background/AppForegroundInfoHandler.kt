@@ -18,6 +18,7 @@ import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
+import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.notification.GitHubActionsUpdateNotificationHelper
 import os.kei.feature.github.notification.GitHubRefreshNotificationHelper
 import os.kei.ui.page.main.ba.BaAccountNotificationKind
@@ -36,7 +37,8 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.coroutines.coroutineContext
 
 object AppForegroundInfoHandler {
-    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 1
+    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL = 8
+    private const val GITHUB_BACKGROUND_PROGRESS_NOTIFY_FIRST_DELAY_MS = 12_000L
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE = 2
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
     private const val GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS = 850L
@@ -45,10 +47,15 @@ object AppForegroundInfoHandler {
     private val githubRefreshHistoryService = GitHubRefreshHistoryService()
     private val baApTickMutex = Mutex()
 
-    suspend fun handleGitHubTick(context: Context) {
+    suspend fun handleGitHubTick(
+        context: Context,
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
+        suppressQuietBackgroundCompletion: Boolean = false,
+    ) {
         val progressNotifier = GitHubRefreshProgressNotifier(
             context = context,
             minTotalForInitialProgress = GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL,
+            initialProgressDelayMs = GITHUB_BACKGROUND_PROGRESS_NOTIFY_FIRST_DELAY_MS,
         )
         val result =
             try {
@@ -62,12 +69,14 @@ object AppForegroundInfoHandler {
                             snapshot = snapshot,
                         )
                     },
+                    schedulerDiagnostics = schedulerDiagnostics,
                 )
             } catch (error: CancellationException) {
                 cleanupGitHubRefreshRuntimeAndNotification(
                     context = context,
                     reason = "github tick cancelled",
                     outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                    schedulerDiagnostics = schedulerDiagnostics,
                 )
                 throw error
             } catch (error: Throwable) {
@@ -75,21 +84,37 @@ object AppForegroundInfoHandler {
                     context = context,
                     reason = "github tick failed",
                     outcome = GitHubRefreshHistoryOutcome.Failed,
+                    schedulerDiagnostics = schedulerDiagnostics,
                 )
                 AppLogger.w("AppForegroundInfoHandler", "github tick failed", error)
                 return
             }
         val refreshResult = result.refreshResult
         if (refreshResult != null) {
-            notifyGitHubRefreshCompletedOrCancel(
-                context = context,
-                total = refreshResult.totalCount,
-                preReleaseUpdateCount = refreshResult.preReleaseUpdateCount,
-                updatableCount = refreshResult.updatableCount,
-                failedCount = refreshResult.failedCount,
-                session = progressNotifier.session,
-                totalTrackedCount = progressNotifier.totalTrackedCount,
-            )
+            if (
+                suppressQuietBackgroundCompletion &&
+                progressNotifier.session?.source == GitHubRefreshSource.BackgroundTick &&
+                !refreshResult.hasNotifiableOutcome
+            ) {
+                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                    .onFailure { error ->
+                        AppLogger.w(
+                            "AppForegroundInfoHandler",
+                            "github quiet background completion notification cancel failed",
+                            error,
+                        )
+                    }
+            } else {
+                notifyGitHubRefreshCompletedOrCancel(
+                    context = context,
+                    total = refreshResult.totalCount,
+                    preReleaseUpdateCount = refreshResult.preReleaseUpdateCount,
+                    updatableCount = refreshResult.updatableCount,
+                    failedCount = refreshResult.failedCount,
+                    session = progressNotifier.session,
+                    totalTrackedCount = progressNotifier.totalTrackedCount,
+                )
+            }
         } else if (progressNotifier.didNotify) {
             runCatching { GitHubRefreshNotificationHelper.cancel(context) }
                 .onFailure { error ->
@@ -102,11 +127,15 @@ object AppForegroundInfoHandler {
         }
     }
 
-    suspend fun handleGitHubTickTimeout(context: Context) {
+    suspend fun handleGitHubTickTimeout(
+        context: Context,
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
+    ) {
         cleanupGitHubRefreshRuntimeAndNotification(
             context = context,
             reason = "github tick timed out",
             outcome = GitHubRefreshHistoryOutcome.Cancelled,
+            schedulerDiagnostics = schedulerDiagnostics,
         )
     }
 
@@ -201,6 +230,7 @@ object AppForegroundInfoHandler {
         context: Context,
         reason: String,
         outcome: GitHubRefreshHistoryOutcome,
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ) {
         val runtime = GitHubRefreshRuntimeStore.state.value
         val ownsRuntime = runtime.running && runtime.source == GitHubRefreshSource.BackgroundTick
@@ -210,6 +240,7 @@ object AppForegroundInfoHandler {
                     runtime = runtime,
                     outcome = outcome,
                     note = reason,
+                    schedulerDiagnostics = schedulerDiagnostics,
                 )
             }.onFailure { error ->
                 AppLogger.w(
@@ -236,6 +267,7 @@ object AppForegroundInfoHandler {
                     outcome = outcome,
                     note = reason,
                     finishedAtMillis = runtime.finishedAtMs,
+                    schedulerDiagnostics = schedulerDiagnostics,
                 )
             }.onFailure { error ->
                 AppLogger.w(
@@ -260,8 +292,10 @@ object AppForegroundInfoHandler {
     private class GitHubRefreshProgressNotifier(
         private val context: Context,
         private val minTotalForInitialProgress: Int = 1,
+        private val initialProgressDelayMs: Long = 0L,
     ) {
         private val mutex = Mutex()
+        private var startedAtMs = 0L
         private var lastNotifyAtMs = 0L
         @Volatile
         var session: GitHubRefreshRuntimeSession? = null
@@ -280,8 +314,11 @@ object AppForegroundInfoHandler {
         ) {
             this.session = session
             this.totalTrackedCount = totalTrackedCount
+            val nowMs = System.currentTimeMillis()
+            startedAtMs = nowMs
+            lastNotifyAtMs = nowMs
             if (total < minTotalForInitialProgress) return
-            lastNotifyAtMs = System.currentTimeMillis()
+            if (initialProgressDelayMs > 0L) return
             runCatching {
                 GitHubRefreshNotificationHelper.notifyProgress(
                     context = context,
@@ -314,9 +351,22 @@ object AppForegroundInfoHandler {
             val shouldNotify = mutex.withLock {
                 if (progress.current >= progress.total) return@withLock false
                 val nowMs = System.currentTimeMillis()
+                val hasVisibleOutcome =
+                    progress.updatableCount > 0 ||
+                        progress.preReleaseUpdateCount > 0 ||
+                        progress.failedCount > 0
+                if (
+                    !didNotify &&
+                    initialProgressDelayMs > 0L &&
+                    !hasVisibleOutcome &&
+                    nowMs - startedAtMs < initialProgressDelayMs
+                ) {
+                    return@withLock false
+                }
                 val elapsedMs = (nowMs - lastNotifyAtMs).coerceAtLeast(0L)
                 val shouldEmit =
-                    progress.current == 1 ||
+                    !didNotify ||
+                        progress.current == 1 ||
                         elapsedMs >= GITHUB_SHORTCUT_PROGRESS_NOTIFY_INTERVAL_MS ||
                         (
                             progress.current % GITHUB_SHORTCUT_PROGRESS_NOTIFY_BATCH_SIZE == 0 &&

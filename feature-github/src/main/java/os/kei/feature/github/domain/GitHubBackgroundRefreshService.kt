@@ -13,6 +13,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
+import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
 
 private const val GITHUB_BACKGROUND_REFRESH_TAG = "GitHubBackgroundRefresh"
@@ -43,6 +44,7 @@ class GitHubBackgroundRefreshService(
         onRefreshStart: (GitHubRefreshRuntimeSession, Int, Int) -> Unit = { _, _, _ -> },
         onRefreshProgress: suspend (GitHubRefreshRuntimeSession, GitHubTrackedRefreshBatchProgress) -> Unit = { _, _ -> },
         onActionsUpdateAvailable: suspend (GitHubActionsRecommendedRunSnapshot) -> Boolean,
+        schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ): GitHubBackgroundTickResult =
         mutex.withLock {
             val snapshot = withContext(AppDispatchers.githubLocal) { GitHubTrackStore.loadSnapshot() }
@@ -143,6 +145,7 @@ class GitHubBackgroundRefreshService(
                                     totalTrackedCount = tracked.size,
                                     result = result,
                                     startedAtMillis = nowMs,
+                                    schedulerDiagnostics = schedulerDiagnostics,
                                 )
                             }
                     }
@@ -351,14 +354,6 @@ class GitHubBackgroundRefreshService(
             )
         }
         return notifiedCount
-    }
-
-    private fun selectTrackedUpdateTargets(
-        snapshot: GitHubTrackSnapshot,
-        nowMs: Long,
-    ): List<GitHubTrackedApp> {
-        if (snapshot.items.isEmpty()) return emptyList()
-        return selectGitHubBackgroundReleaseTargets(snapshot, nowMs)
     }
 
     private suspend fun selectActionsUpdateTargets(
