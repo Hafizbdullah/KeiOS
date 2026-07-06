@@ -308,6 +308,15 @@ internal fun GitHubRefreshHistoryRecordCard(
                 valueMaxLines = 2,
                 valueOverflow = TextOverflow.Ellipsis,
             )
+            if (record.hasSchedulerDiagnostics()) {
+                AppInfoRow(
+                    label = stringResource(R.string.github_history_refresh_label_scheduler),
+                    value = rememberSchedulerDiagnosticsLabel(record),
+                    stacked = true,
+                    valueMaxLines = 3,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+            }
             record.slowItems.take(5).forEachIndexed { index, slowItem ->
                 GitHubRefreshSlowItemBlock(
                     index = index,
@@ -788,6 +797,56 @@ private fun GitHubRefreshHistoryRecord.hasSourceMixDiagnostics(): Boolean {
         directApkItemCount > 0 ||
         fdroidItemCount > 0 ||
         otherItemCount > 0
+}
+
+@Composable
+private fun rememberSchedulerDiagnosticsLabel(record: GitHubRefreshHistoryRecord): String {
+    val unknown = stringResource(R.string.common_unknown)
+    val jobId = record.schedulerJobId.takeIf { it > 0 }?.toString() ?: unknown
+    val startedAt =
+        if (record.schedulerStartedAtMillis > 0L) {
+            rememberGitHubHistoryDateTime(record.schedulerStartedAtMillis)
+        } else {
+            unknown
+        }
+    val queuedFor =
+        if (record.schedulerEnqueuedAtMillis > 0L && record.schedulerStartedAtMillis > 0L) {
+            rememberDurationLabel(record.schedulerStartedAtMillis - record.schedulerEnqueuedAtMillis)
+        } else {
+            unknown
+        }
+    val rescheduled =
+        stringResource(
+            if (record.schedulerRescheduled) {
+                R.string.github_history_refresh_scheduler_rescheduled_yes
+            } else {
+                R.string.github_history_refresh_scheduler_rescheduled_no
+            }
+        )
+    return if (record.schedulerStopReason.isBlank()) {
+        stringResource(
+            R.string.github_history_refresh_scheduler_value,
+            jobId,
+            queuedFor,
+            startedAt,
+        )
+    } else {
+        stringResource(
+            R.string.github_history_refresh_scheduler_stopped_value,
+            jobId,
+            queuedFor,
+            startedAt,
+            record.schedulerStopReason,
+            rescheduled,
+        )
+    }
+}
+
+private fun GitHubRefreshHistoryRecord.hasSchedulerDiagnostics(): Boolean {
+    return schedulerJobId > 0 ||
+        schedulerEnqueuedAtMillis > 0L ||
+        schedulerStartedAtMillis > 0L ||
+        schedulerStopReason.isNotBlank()
 }
 
 private const val SLOW_REFRESH_UNCLASSIFIED_VISIBLE_MS = 500L

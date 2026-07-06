@@ -424,6 +424,9 @@
     <string name="about_component_background_tick_receiver_title">Background Tick receiver</string>
     <string name="about_component_background_tick_receiver_purpose">Receives AlarmManager broadcasts and triggers background task processing</string>
     <string name="about_component_background_tick_receiver_used_in">GitHub auto refresh and BA AP threshold checks</string>
+    <string name="about_component_github_background_refresh_job_title">GitHub background refresh job</string>
+    <string name="about_component_github_background_refresh_job_purpose">Runs GitHub auto refresh batches inside the system JobScheduler lifecycle</string>
+    <string name="about_component_github_background_refresh_job_used_in">GitHub due tracking, Actions recommended runs, and refresh history records</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Connects Shizuku permission bridge capabilities</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku status checks and capability calls</string>

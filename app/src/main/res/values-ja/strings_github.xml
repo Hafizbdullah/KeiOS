@@ -85,9 +85,14 @@
     <string name="github_history_refresh_performance_value">P50 %1$s · P95 %2$s · Max %3$s</string>
     <string name="github_history_refresh_label_schedule">スケジュール</string>
     <string name="github_history_refresh_label_source_mix">確認内容</string>
+    <string name="github_history_refresh_label_scheduler">バックグラウンド実行</string>
     <string name="github_history_refresh_label_slow_index">低速 %1$d</string>
     <string name="github_history_refresh_schedule_value">並行 %1$d · APK %2$d · F-Droid %3$d</string>
     <string name="github_history_refresh_source_mix_value">リポジトリ %1$d · APK %2$d · F-Droid %3$d · その他 %4$d</string>
+    <string name="github_history_refresh_scheduler_value">Job %1$s · 待機 %2$s · 開始 %3$s</string>
+    <string name="github_history_refresh_scheduler_stopped_value">Job %1$s · 待機 %2$s · 開始 %3$s · 停止 %4$s · 再実行 %5$s</string>
+    <string name="github_history_refresh_scheduler_rescheduled_yes">はい</string>
+    <string name="github_history_refresh_scheduler_rescheduled_no">いいえ</string>
     <string name="github_history_refresh_stage_strategy">方式 %1$s</string>
     <string name="github_history_refresh_stage_local">ローカル %1$s</string>
     <string name="github_history_refresh_stage_snapshot">Release %1$s</string>

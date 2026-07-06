@@ -415,6 +415,9 @@
     <string name="about_component_background_tick_receiver_title">Background Tick レシーバー</string>
     <string name="about_component_background_tick_receiver_purpose">AlarmManager ブロードキャストを受信し、バックグラウンドタスク処理を起動します</string>
     <string name="about_component_background_tick_receiver_used_in">GitHub 自動更新と BA AP しきい値確認</string>
+    <string name="about_component_github_background_refresh_job_title">GitHub バックグラウンド更新ジョブ</string>
+    <string name="about_component_github_background_refresh_job_purpose">GitHub 自動更新バッチをシステム JobScheduler のライフサイクル内で実行します</string>
+    <string name="about_component_github_background_refresh_job_used_in">GitHub 期限到来トラッキング、Actions 推奨実行、更新履歴記録</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Shizuku 権限ブリッジ機能へ接続します</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状態確認と機能呼び出し</string>

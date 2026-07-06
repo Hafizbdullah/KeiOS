@@ -433,6 +433,9 @@
     <string name="about_component_background_tick_receiver_title">后台 Tick 接收器</string>
     <string name="about_component_background_tick_receiver_purpose">接收 AlarmManager 广播并触发后台任务处理</string>
     <string name="about_component_background_tick_receiver_used_in">GitHub 自动刷新与 BA AP 阈值检查</string>
+    <string name="about_component_github_background_refresh_job_title">GitHub 后台刷新任务</string>
+    <string name="about_component_github_background_refresh_job_purpose">承接 GitHub 自动刷新并在系统 JobScheduler 生命周期内完成批量检查</string>
+    <string name="about_component_github_background_refresh_job_used_in">GitHub 到期追踪、Actions 推荐运行与刷新历史记录</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">接入 Shizuku 权限桥接能力</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状态检查与能力调用</string>

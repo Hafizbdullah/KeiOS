@@ -114,6 +114,11 @@ private val componentExplainMap = mapOf(
         purposeRes = R.string.about_component_background_tick_receiver_purpose,
         usedInRes = R.string.about_component_background_tick_receiver_used_in
     ),
+    "os.kei.core.background.GitHubBackgroundRefreshJobService" to AboutExplainRes(
+        titleRes = R.string.about_component_github_background_refresh_job_title,
+        purposeRes = R.string.about_component_github_background_refresh_job_purpose,
+        usedInRes = R.string.about_component_github_background_refresh_job_used_in
+    ),
     "rikka.shizuku.ShizukuProvider" to AboutExplainRes(
         titleRes = R.string.about_component_shizuku_provider_title,
         purposeRes = R.string.about_component_shizuku_provider_purpose,

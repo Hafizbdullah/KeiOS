@@ -85,9 +85,14 @@
     <string name="github_history_refresh_performance_value">P50 %1$s · P95 %2$s · Max %3$s</string>
     <string name="github_history_refresh_label_schedule">Schedule</string>
     <string name="github_history_refresh_label_source_mix">Checked content</string>
+    <string name="github_history_refresh_label_scheduler">Background scheduler</string>
     <string name="github_history_refresh_label_slow_index">Slow %1$d</string>
     <string name="github_history_refresh_schedule_value">Concurrency %1$d · APK %2$d · F-Droid %3$d</string>
     <string name="github_history_refresh_source_mix_value">Repos %1$d · APK %2$d · F-Droid %3$d · other %4$d</string>
+    <string name="github_history_refresh_scheduler_value">Job %1$s · queued %2$s · started %3$s</string>
+    <string name="github_history_refresh_scheduler_stopped_value">Job %1$s · queued %2$s · started %3$s · stop %4$s · reschedule %5$s</string>
+    <string name="github_history_refresh_scheduler_rescheduled_yes">yes</string>
+    <string name="github_history_refresh_scheduler_rescheduled_no">no</string>
     <string name="github_history_refresh_stage_strategy">Strategy %1$s</string>
     <string name="github_history_refresh_stage_local">Local %1$s</string>
     <string name="github_history_refresh_stage_snapshot">Release %1$s</string>
