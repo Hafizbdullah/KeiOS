@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.ba.support
 
 import os.kei.R
+import os.kei.feature.ba.identity.BA_FALLBACK_FRIEND_CODE
+import os.kei.feature.ba.identity.BA_FALLBACK_NICKNAME
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -18,8 +20,8 @@ internal const val BA_CAFE_STUDENT_REFRESH_INTERVAL_MS = 12 * 60 * 60 * 1000L
 internal const val BA_ARENA_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000L
 internal const val BA_HEADPAT_COOLDOWN_MS = 3 * 60 * 60 * 1000L
 internal const val BA_INVITE_COOLDOWN_MS = 20 * 60 * 60 * 1000L
-internal const val BA_DEFAULT_NICKNAME = "Kei"
-internal const val BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
+internal const val BA_DEFAULT_NICKNAME = BA_FALLBACK_NICKNAME
+internal const val BA_DEFAULT_FRIEND_CODE = BA_FALLBACK_FRIEND_CODE
 internal val BA_CAFE_DAILY_AP_BY_LEVEL = intArrayOf(92, 152, 222, 302, 390, 460, 530, 600, 670, 740)
 
 internal fun displayAp(apExact: Double): Int = apExact.coerceAtLeast(0.0).toInt()

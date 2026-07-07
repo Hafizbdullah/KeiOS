@@ -128,7 +128,7 @@
     <string name="ba_account_management_editor_display_name">Display name</string>
     <string name="ba_account_management_editor_nickname">Nickname</string>
     <string name="ba_account_management_editor_friend_code">Friend code</string>
-    <string name="ba_account_management_editor_friend_code_summary">China server uses 7 lowercase letters or digits; Global and JP use 8 uppercase letters or digits.</string>
+    <string name="ba_account_management_editor_friend_code_summary">China server uses 7 lowercase letters or digits; Global and JP use 8 uppercase English letters.</string>
     <string name="ba_account_management_editor_server">Server</string>
     <string name="ba_account_management_editor_cancel">Cancel</string>
     <string name="ba_account_management_editor_save">Save</string>
@@ -196,7 +196,7 @@
     <string name="ba_settings_label_show_ended_pool">Show ended recruitment banners</string>
     <string name="ba_settings_label_show_images">Show event/banner images</string>
     <string name="ba_settings_note_timezone">Server time zones differ. Pick the server you actually play on.</string>
-    <string name="ba_toast_friend_code_invalid">China server friend codes must be 7 lowercase letters or digits; Global and JP require 8 uppercase letters or digits.</string>
+    <string name="ba_toast_friend_code_invalid">China server friend codes must be 7 lowercase letters or digits; Global and JP require 8 uppercase English letters.</string>
     <string name="ba_toast_cafe_no_ap">No Cafe AP to claim.</string>
     <string name="ba_toast_cafe_claimed_ap">Claimed %1$d AP.</string>
     <string name="ba_toast_cafe_debug_added">Added +3h Cafe AP (+%1$d).</string>

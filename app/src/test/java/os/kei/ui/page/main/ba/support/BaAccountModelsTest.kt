@@ -24,8 +24,9 @@ class BaAccountModelsTest {
 
     @Test
     fun `global and jp friend code normalize to uppercase`() {
-        assertEquals("ABCD1234", normalizeBaAccountFriendCodeInput(" abcd1234z ", serverIndex = 1))
-        assertEquals("YUKI0001", sanitizeBaAccountFriendCode(" yuki0001z ", serverIndex = 2))
+        assertEquals("ABCDWXYZ", normalizeBaAccountFriendCodeInput(" abcd1234wxyz ", serverIndex = 1))
+        assertEquals("YUKIARIS", sanitizeBaAccountFriendCode(" yuki-aris ", serverIndex = 2))
+        assertEquals(BA_DEFAULT_FRIEND_CODE, sanitizeBaAccountFriendCode(" yuki0001z ", serverIndex = 2))
     }
 
     @Test

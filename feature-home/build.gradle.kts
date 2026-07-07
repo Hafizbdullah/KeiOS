@@ -24,6 +24,7 @@ android {
 
 dependencies {
     implementation(project(":core-prefs"))
+    implementation(project(":feature-ba"))
     implementation(project(":feature-mcp"))
     implementation(project(":feature-github"))
 

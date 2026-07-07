@@ -12,7 +12,10 @@ class HomeOverviewModelsTest {
         assertFalse(isHomeBaActivated("arisukei"))
         assertFalse(isHomeBaActivated(""))
         assertFalse(isHomeBaActivated("A1B2"))
+        assertFalse(isHomeBaActivated("GL12CD34", serverIndex = 1))
         assertTrue(isHomeBaActivated("ab12cd3"))
-        assertTrue(isHomeBaActivated("GL12CD34"))
+        assertTrue(isHomeBaActivated("ab12cd3", serverIndex = 0))
+        assertTrue(isHomeBaActivated("GLOBALAB"))
+        assertTrue(isHomeBaActivated("GLOBALAB", serverIndex = 1))
     }
 }

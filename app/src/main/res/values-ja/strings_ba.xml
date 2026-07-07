@@ -128,7 +128,7 @@
     <string name="ba_account_management_editor_display_name">表示名</string>
     <string name="ba_account_management_editor_nickname">ニックネーム</string>
     <string name="ba_account_management_editor_friend_code">フレンドコード</string>
-    <string name="ba_account_management_editor_friend_code_summary">中国版は 7 文字の小文字英字または数字、グローバル版と日本版は 8 文字の大文字英字または数字です。</string>
+    <string name="ba_account_management_editor_friend_code_summary">中国版は 7 文字の小文字英字または数字、グローバル版と日本版は 8 文字の大文字英字です。</string>
     <string name="ba_account_management_editor_server">サーバー</string>
     <string name="ba_account_management_editor_cancel">キャンセル</string>
     <string name="ba_account_management_editor_save">保存</string>
@@ -196,7 +196,7 @@
     <string name="ba_settings_label_show_ended_pool">終了した募集を表示</string>
     <string name="ba_settings_label_show_images">イベント/募集画像を表示</string>
     <string name="ba_settings_note_timezone">サーバーごとに時刻が異なります。実際に遊んでいるサーバーを選んでください。</string>
-    <string name="ba_toast_friend_code_invalid">中国版は 7 文字の小文字英字または数字、グローバル版と日本版は 8 文字の大文字英字または数字で入力してください。</string>
+    <string name="ba_toast_friend_code_invalid">中国版は 7 文字の小文字英字または数字、グローバル版と日本版は 8 文字の大文字英字で入力してください。</string>
     <string name="ba_toast_cafe_no_ap">受け取れるカフェ AP はありません。</string>
     <string name="ba_toast_cafe_claimed_ap">%1$d AP を受け取りました。</string>
     <string name="ba_toast_cafe_debug_added">カフェ AP +3h を追加しました（+%1$d）。</string>

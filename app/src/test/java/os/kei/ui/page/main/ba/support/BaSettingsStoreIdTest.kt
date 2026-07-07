@@ -49,12 +49,12 @@ class BaSettingsStoreIdTest {
         accessor.saveNickname("ABCDEFGHIJKL", serverIndex = 0)
         accessor.saveFriendCode("AB12cd34", serverIndex = 0)
         accessor.saveNickname("ABCDEFGHIJKLM", serverIndex = 1)
-        accessor.saveFriendCode("gl12cd34", serverIndex = 1)
+        accessor.saveFriendCode("glarisuv", serverIndex = 1)
 
         assertEquals("ABCDEFGHIJ", accessor.loadNickname(0))
         assertEquals("ab12cd3", accessor.loadFriendCode(0))
         assertEquals("ABCDEFGHIJKL", accessor.loadNickname(1))
-        assertEquals("GL12CD34", accessor.loadFriendCode(1))
+        assertEquals("GLARISUV", accessor.loadFriendCode(1))
     }
 
     @Test

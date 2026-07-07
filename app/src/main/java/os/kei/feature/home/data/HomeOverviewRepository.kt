@@ -365,7 +365,7 @@ private fun loadHomeBaOverview(
     accountState: BaAccountStoreSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
 ): HomeBaOverview {
-    val activated = isHomeBaActivated(snapshot.idFriendCode)
+    val activated = isHomeBaActivated(snapshot.idFriendCode, snapshot.serverIndex)
     var enabledAccountCount = 0
     var activeAccountName = ""
     accountState.accounts.forEach { account ->

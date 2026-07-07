@@ -99,8 +99,8 @@ class BaAccountMigrationTest {
         val idSettings = BaIdSettingsAccessor(backingStore)
         idSettings.saveIndependentByServerEnabled(true)
         idSettings.saveFriendCode("AB12cd34", serverIndex = 0)
-        idSettings.saveFriendCode("gl12cd34", serverIndex = 1)
-        idSettings.saveFriendCode("jp12cd34", serverIndex = 2)
+        idSettings.saveFriendCode("glarisuv", serverIndex = 1)
+        idSettings.saveFriendCode("jparisuv", serverIndex = 2)
 
         val accountStore = BaAccountStore(backingStore)
 
@@ -108,8 +108,8 @@ class BaAccountMigrationTest {
 
         val accounts = accountStore.loadAccounts()
         assertEquals("ab12cd3", accounts[0].profile.friendCode)
-        assertEquals("GL12CD34", accounts[1].profile.friendCode)
-        assertEquals("JP12CD34", accounts[2].profile.friendCode)
+        assertEquals("GLARISUV", accounts[1].profile.friendCode)
+        assertEquals("JPARISUV", accounts[2].profile.friendCode)
     }
 
     @Test

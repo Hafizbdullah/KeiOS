@@ -2,10 +2,13 @@ package os.kei.feature.home.model
 
 import androidx.compose.runtime.Immutable
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.feature.ba.identity.BA_CN_FRIEND_CODE_LENGTH
+import os.kei.feature.ba.identity.BA_DEFAULT_FRIEND_CODE_LENGTH
+import os.kei.feature.ba.identity.BA_FALLBACK_FRIEND_CODE
+import os.kei.feature.ba.identity.isBaFriendCodeConfigured
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import java.util.Locale
 
 @Immutable
 data class HomeMcpOverview(
@@ -109,23 +112,15 @@ data class HomeOverviewSnapshot(
 
 const val HOME_BA_AP_LIMIT_MAX = 240
 const val HOME_BA_AP_MAX = 999
-const val HOME_BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
+const val HOME_BA_DEFAULT_FRIEND_CODE = BA_FALLBACK_FRIEND_CODE
 
-fun isHomeBaActivated(friendCode: String): Boolean {
-    val normalized = friendCode.trim()
-    val supportedLength =
-        normalized.length == HOME_BA_CN_FRIEND_CODE_LENGTH ||
-            normalized.length == HOME_BA_DEFAULT_FRIEND_CODE_LENGTH
-    return supportedLength && normalized.uppercase(Locale.ROOT) !in HOME_BA_DEFAULT_FRIEND_CODES
-}
+fun isHomeBaActivated(
+    friendCode: String,
+    serverIndex: Int? = null,
+): Boolean = isBaFriendCodeConfigured(friendCode, serverIndex)
 
-const val HOME_BA_CN_FRIEND_CODE_LENGTH = 7
-const val HOME_BA_DEFAULT_FRIEND_CODE_LENGTH = 8
-private val HOME_BA_DEFAULT_FRIEND_CODES =
-    setOf(
-        HOME_BA_DEFAULT_FRIEND_CODE,
-        HOME_BA_DEFAULT_FRIEND_CODE.take(HOME_BA_CN_FRIEND_CODE_LENGTH),
-    )
+const val HOME_BA_CN_FRIEND_CODE_LENGTH = BA_CN_FRIEND_CODE_LENGTH
+const val HOME_BA_DEFAULT_FRIEND_CODE_LENGTH = BA_DEFAULT_FRIEND_CODE_LENGTH
 val HOME_BA_CAFE_DAILY_AP_BY_LEVEL =
     intArrayOf(
         92,
