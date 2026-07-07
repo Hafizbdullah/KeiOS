@@ -87,6 +87,15 @@
     <string name="github_history_refresh_label_source_mix">检查内容</string>
     <string name="github_history_refresh_label_scheduler">后台调度</string>
     <string name="github_history_refresh_label_slow_index">慢项 %1$d</string>
+    <string name="github_history_refresh_label_failure_repo">仓库</string>
+    <string name="github_history_refresh_label_failure_package">包名</string>
+    <string name="github_history_refresh_label_failure_track_id">Track ID</string>
+    <string name="github_history_refresh_pill_failed_count">失败 %1$d</string>
+    <string name="github_history_refresh_pill_failure_detail_count">明细 %1$d</string>
+    <string name="github_history_refresh_pill_slow_count">慢项 %1$d</string>
+    <string name="github_history_refresh_pill_slowest">最慢 %1$s</string>
+    <string name="github_history_refresh_pill_stop_reason">停止 %1$s</string>
+    <string name="github_history_refresh_pill_rescheduled">已重排</string>
     <string name="github_history_refresh_schedule_value">并发 %1$d · APK %2$d · F-Droid %3$d</string>
     <string name="github_history_refresh_source_mix_value">仓库 %1$d · APK %2$d · F-Droid %3$d · 其他 %4$d</string>
     <string name="github_history_refresh_scheduler_value">Job %1$s · 排队 %2$s · 启动 %3$s</string>

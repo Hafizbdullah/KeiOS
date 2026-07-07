@@ -223,6 +223,7 @@ internal fun GitHubRefreshHistoryRecordCard(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
         ) {
+            GitHubRefreshHistoryDiagnosticPills(record)
             AppInfoRow(
                 label = stringResource(R.string.github_history_refresh_label_purpose),
                 value = rememberRefreshPurposeLabel(record),
@@ -333,25 +334,9 @@ internal fun GitHubRefreshHistoryRecordCard(
                 )
             }
             record.failureSummaries.take(4).forEachIndexed { index, failure ->
-                val label =
-                    stringResource(
-                        R.string.github_history_refresh_label_failure_index,
-                        index + 1,
-                    )
-                val value =
-                    listOf(
-                        failure.appLabel.ifBlank { "${failure.owner}/${failure.repo}" },
-                        failure.packageName,
-                        failure.message,
-                    ).filter { it.isNotBlank() }
-                        .joinToString(" · ")
-                AppInfoRow(
-                    label = label,
-                    value = value,
-                    stacked = true,
-                    valueMaxLines = 3,
-                    valueOverflow = TextOverflow.Ellipsis,
-                    valueColor = MiuixTheme.colorScheme.error,
+                GitHubRefreshFailureSummaryBlock(
+                    index = index,
+                    failure = failure,
                 )
             }
         }
@@ -707,7 +692,7 @@ private fun rememberSlowRefreshDiagnosticPillLabels(
 }
 
 @Composable
-private fun rememberRefreshSourceModeLabel(sourceMode: String): String =
+internal fun rememberRefreshSourceModeLabel(sourceMode: String): String =
     trackedSourceModeLabel(GitHubTrackedSourceMode.fromStorageId(sourceMode))
 
 @Composable
@@ -740,7 +725,7 @@ private fun refreshSlowItemStatusColor(status: String): Color =
     }
 
 @Composable
-private fun rememberRefreshMessageDetail(message: String): String {
+internal fun rememberRefreshMessageDetail(message: String): String {
     val raw = message.trim()
     if (raw.isBlank()) return ""
     if (GitHubTrackedReleaseStatus.isOnlyPreReleasesHint(raw)) {
@@ -759,7 +744,7 @@ private fun rememberRefreshMessageDetail(message: String): String {
 }
 
 @Composable
-private fun rememberDurationLabel(millis: Long): String {
+internal fun rememberDurationLabel(millis: Long): String {
     val safe = millis.coerceAtLeast(0L)
     return when {
         safe >= 60_000L -> {
