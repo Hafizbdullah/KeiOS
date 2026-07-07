@@ -16,9 +16,10 @@ class BaAccountModelsTest {
     }
 
     @Test
-    fun `cn friend code keeps lowercase letters and digits`() {
-        assertEquals("ab12cd34", normalizeBaAccountFriendCodeInput(" AB12cd34Z ", serverIndex = 0))
-        assertEquals("ab12cd34", sanitizeBaAccountFriendCode(" AB12cd34Z ", serverIndex = 0))
+    fun `cn friend code keeps seven lowercase letters and digits`() {
+        assertEquals("ab12cd3", normalizeBaAccountFriendCodeInput(" AB12cd34Z ", serverIndex = 0))
+        assertEquals("ab12cd3", sanitizeBaAccountFriendCode(" AB12cd34Z ", serverIndex = 0))
+        assertEquals("arisuke", sanitizeBaAccountFriendCode("A1B2", serverIndex = 0))
     }
 
     @Test
@@ -42,14 +43,14 @@ class BaAccountModelsTest {
                         serverIndex = 0,
                         displayName = "",
                         nickname = "ABCDEFGHIJKL",
-                        friendCode = "AB12cd34",
+                        friendCode = "AB12cd3",
                     ),
             )
 
         val normalized = record.normalized(defaultSortOrder = 0)
 
         assertEquals("ABCDEFGHIJ", normalized?.profile?.nickname)
-        assertEquals("ab12cd34", normalized?.profile?.friendCode)
+        assertEquals("ab12cd3", normalized?.profile?.friendCode)
     }
 
     @Test

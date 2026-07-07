@@ -128,22 +128,24 @@ internal fun sanitizeBaAccountNickname(name: String, serverIndex: Int? = null): 
 internal fun normalizeBaAccountFriendCodeInput(code: String, serverIndex: Int? = null): String {
     val trimmed = code.trim()
     val normalizedServerIndex = serverIndex?.coerceIn(0, 2)
+    val maxLength = baAccountFriendCodeLength(normalizedServerIndex)
     return if (normalizedServerIndex == BA_SERVER_INDEX_CN) {
         trimmed
             .lowercase(Locale.ROOT)
             .filter { it in 'a'..'z' || it in '0'..'9' }
-            .take(BA_FRIEND_CODE_LENGTH)
+            .take(maxLength)
     } else {
         trimmed
             .uppercase(Locale.ROOT)
             .filter { it in 'A'..'Z' || it in '0'..'9' }
-            .take(BA_FRIEND_CODE_LENGTH)
+            .take(maxLength)
     }
 }
 
 internal fun sanitizeBaAccountFriendCode(code: String, serverIndex: Int? = null): String {
+    val requiredLength = baAccountFriendCodeLength(serverIndex)
     val normalized = normalizeBaAccountFriendCodeInput(code, serverIndex)
-    return if (normalized.length == BA_FRIEND_CODE_LENGTH) {
+    return if (normalized.length == requiredLength) {
         normalized
     } else {
         normalizeBaAccountFriendCodeInput(BA_DEFAULT_FRIEND_CODE, serverIndex)
@@ -198,11 +200,19 @@ private fun baAccountNicknameMaxLength(serverIndex: Int?): Int =
         BA_DEFAULT_NICKNAME_MAX_LENGTH
     }
 
+private fun baAccountFriendCodeLength(serverIndex: Int?): Int =
+    if (serverIndex?.coerceIn(0, 2) == BA_SERVER_INDEX_CN) {
+        BA_CN_FRIEND_CODE_LENGTH
+    } else {
+        BA_DEFAULT_FRIEND_CODE_LENGTH
+    }
+
 private const val BA_SERVER_INDEX_CN = 0
 private const val BA_SERVER_INDEX_GLOBAL = 1
 private const val BA_DEFAULT_NICKNAME_MAX_LENGTH = 10
 private const val BA_GLOBAL_NICKNAME_MAX_LENGTH = 12
-private const val BA_FRIEND_CODE_LENGTH = 8
+private const val BA_CN_FRIEND_CODE_LENGTH = 7
+private const val BA_DEFAULT_FRIEND_CODE_LENGTH = 8
 
 internal fun BaAccountRuntime.normalized(): BaAccountRuntime =
     cafeLevel.coerceIn(1, 10).let { safeCafeLevel ->

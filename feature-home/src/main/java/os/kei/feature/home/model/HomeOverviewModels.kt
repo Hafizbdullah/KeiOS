@@ -5,6 +5,7 @@ import os.kei.core.prefs.CacheFreshnessSnapshot
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubLookupStrategyOption
+import java.util.Locale
 
 @Immutable
 data class HomeMcpOverview(
@@ -112,11 +113,19 @@ const val HOME_BA_DEFAULT_FRIEND_CODE = "ARISUKEI"
 
 fun isHomeBaActivated(friendCode: String): Boolean {
     val normalized = friendCode.trim()
-    return normalized.length == HOME_BA_FRIEND_CODE_LENGTH &&
-        !normalized.equals(HOME_BA_DEFAULT_FRIEND_CODE, ignoreCase = true)
+    val supportedLength =
+        normalized.length == HOME_BA_CN_FRIEND_CODE_LENGTH ||
+            normalized.length == HOME_BA_DEFAULT_FRIEND_CODE_LENGTH
+    return supportedLength && normalized.uppercase(Locale.ROOT) !in HOME_BA_DEFAULT_FRIEND_CODES
 }
 
-const val HOME_BA_FRIEND_CODE_LENGTH = 8
+const val HOME_BA_CN_FRIEND_CODE_LENGTH = 7
+const val HOME_BA_DEFAULT_FRIEND_CODE_LENGTH = 8
+private val HOME_BA_DEFAULT_FRIEND_CODES =
+    setOf(
+        HOME_BA_DEFAULT_FRIEND_CODE,
+        HOME_BA_DEFAULT_FRIEND_CODE.take(HOME_BA_CN_FRIEND_CODE_LENGTH),
+    )
 val HOME_BA_CAFE_DAILY_AP_BY_LEVEL =
     intArrayOf(
         92,

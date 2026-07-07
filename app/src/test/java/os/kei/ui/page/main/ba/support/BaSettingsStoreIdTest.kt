@@ -52,7 +52,7 @@ class BaSettingsStoreIdTest {
         accessor.saveFriendCode("gl12cd34", serverIndex = 1)
 
         assertEquals("ABCDEFGHIJ", accessor.loadNickname(0))
-        assertEquals("ab12cd34", accessor.loadFriendCode(0))
+        assertEquals("ab12cd3", accessor.loadFriendCode(0))
         assertEquals("ABCDEFGHIJKL", accessor.loadNickname(1))
         assertEquals("GL12CD34", accessor.loadFriendCode(1))
     }

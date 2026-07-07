@@ -8,10 +8,11 @@ class HomeOverviewModelsTest {
     @Test
     fun `ba activation accepts server-specific friend code formats`() {
         assertFalse(isHomeBaActivated("ARISUKEI"))
+        assertFalse(isHomeBaActivated("arisuke"))
         assertFalse(isHomeBaActivated("arisukei"))
         assertFalse(isHomeBaActivated(""))
         assertFalse(isHomeBaActivated("A1B2"))
-        assertTrue(isHomeBaActivated("ab12cd34"))
+        assertTrue(isHomeBaActivated("ab12cd3"))
         assertTrue(isHomeBaActivated("GL12CD34"))
     }
 }

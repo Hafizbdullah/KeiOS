@@ -141,7 +141,7 @@
     <string name="ba_account_management_editor_display_name">显示名</string>
     <string name="ba_account_management_editor_nickname">昵称</string>
     <string name="ba_account_management_editor_friend_code">好友码</string>
-    <string name="ba_account_management_editor_friend_code_summary">国服保留小写字母和数字；国际服与日服会保存为大写。</string>
+    <string name="ba_account_management_editor_friend_code_summary">国服为 7 位小写字母或数字；国际服与日服为 8 位大写字母或数字。</string>
     <string name="ba_account_management_editor_server">服务器</string>
     <string name="ba_account_management_editor_cancel">取消</string>
     <string name="ba_account_management_editor_save">保存</string>
@@ -211,7 +211,7 @@
     <string name="ba_settings_label_show_ended_pool">显示已结束卡池</string>
     <string name="ba_settings_label_show_images">显示活动/卡池图片</string>
     <string name="ba_settings_note_timezone">不同服务器时区不同，建议按实际游玩服务器设置。</string>
-    <string name="ba_toast_friend_code_invalid">好友码需为 8 位大写字母或数字</string>
+    <string name="ba_toast_friend_code_invalid">国服好友码需为 7 位小写字母或数字；国际服与日服需为 8 位大写字母或数字</string>
     <string name="ba_toast_cafe_no_ap">咖啡厅暂无可领取体力</string>
     <string name="ba_toast_cafe_claimed_ap">已领取 %1$d 体力</string>
     <string name="ba_toast_cafe_debug_added">已增加 +3h 咖啡厅体力（+%1$d）</string>

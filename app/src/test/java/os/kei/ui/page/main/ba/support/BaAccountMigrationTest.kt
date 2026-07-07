@@ -78,7 +78,7 @@ class BaAccountMigrationTest {
         val accounts = accountStore.loadAccounts()
         assertEquals(listOf("legacy-server-0", "legacy-server-1", "legacy-server-2"), accounts.map { it.profile.id.value })
         assertEquals("Shared", accounts[0].profile.nickname)
-        assertEquals("abcdefgh", accounts[0].profile.friendCode)
+        assertEquals("abcdefg", accounts[0].profile.friendCode)
         assertEquals("Global", accounts[1].profile.nickname)
         assertEquals("GLFRIEND", accounts[1].profile.friendCode)
         assertEquals("JP", accounts[2].profile.nickname)
@@ -107,7 +107,7 @@ class BaAccountMigrationTest {
         BaAccountMigration(accountStore, backingStore).migrateLegacyIfNeeded()
 
         val accounts = accountStore.loadAccounts()
-        assertEquals("ab12cd34", accounts[0].profile.friendCode)
+        assertEquals("ab12cd3", accounts[0].profile.friendCode)
         assertEquals("GL12CD34", accounts[1].profile.friendCode)
         assertEquals("JP12CD34", accounts[2].profile.friendCode)
     }
