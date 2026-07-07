@@ -767,4 +767,21 @@
     <string name="ba_catalog_bgm_native_media_notification">Native media notification</string>
     <string name="ba_catalog_bgm_native_media_notification_summary">When enabled, BGM playback joins the system media session so notification controls can play, pause, skip previous, and skip next.</string>
     <string name="ba_catalog_bgm_native_media_notification_permission_summary">Requires notification permission. The system permission prompt appears before enabling it.</string>
+    <string name="ba_cafe_cooldown_edit_headpat_title">Headpat time calibration</string>
+    <string name="ba_cafe_cooldown_edit_invite1_title">Invite ticket 1 time calibration</string>
+    <string name="ba_cafe_cooldown_edit_invite2_title">Invite ticket 2 time calibration</string>
+    <string name="ba_cafe_cooldown_edit_section_title">Remaining time</string>
+    <string name="ba_cafe_cooldown_edit_summary">Calibrate against the current in-game remaining time, down to seconds.</string>
+    <string name="ba_cafe_cooldown_edit_headpat_summary">Headpat availability can be affected by student visit refreshes, so saving clamps it to the range the current server can represent.</string>
+    <string name="ba_cafe_cooldown_edit_current_label">Current remaining</string>
+    <string name="ba_cafe_cooldown_edit_available_at_label">Available at</string>
+    <string name="ba_cafe_cooldown_edit_max_label">Maximum</string>
+    <string name="ba_cafe_cooldown_edit_hours_label">h</string>
+    <string name="ba_cafe_cooldown_edit_minutes_label">m</string>
+    <string name="ba_cafe_cooldown_edit_seconds_label">s</string>
+    <string name="ba_cafe_cooldown_action_ready_now">Ready now</string>
+    <string name="ba_calendar_pool_data_settings_title">Data and display settings</string>
+    <string name="ba_calendar_pool_cd_data_settings">Event and banner data settings</string>
+    <string name="ba_ap_notification_title">AP ready</string>
+    <string name="ba_account_notification_content">%1$s · %2$s</string>
 </resources>

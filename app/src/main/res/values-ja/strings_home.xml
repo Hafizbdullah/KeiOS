@@ -101,4 +101,7 @@
     <string name="home_cache_state_fresh">新鮮</string>
     <string name="home_cache_state_stale">期限切れ</string>
     <string name="home_cache_state_empty">空</string>
+    <string name="home_webdav_status_auto_sync_needs_review">確認必要</string>
+    <string name="home_webdav_status_auto_sync_failed">自動異常</string>
+    <string name="home_stat_last_auto_sync">自動</string>
 </resources>

@@ -101,4 +101,7 @@
     <string name="home_cache_state_fresh">Fresh</string>
     <string name="home_cache_state_stale">Stale</string>
     <string name="home_cache_state_empty">Empty</string>
+    <string name="home_webdav_status_auto_sync_needs_review">Review</string>
+    <string name="home_webdav_status_auto_sync_failed">Auto issue</string>
+    <string name="home_stat_last_auto_sync">Auto</string>
 </resources>

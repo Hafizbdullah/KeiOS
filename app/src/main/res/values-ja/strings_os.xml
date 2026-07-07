@@ -456,4 +456,6 @@
     <string name="os_google_system_service_intent_extra_type_float">Float</string>
     <string name="os_google_system_service_intent_extra_type_double">Double</string>
     <string name="os_google_system_service_intent_extra_type_uri">Uri</string>
+    <string name="os_shell_card_toast_run_completed">Shell カードの実行が完了しました</string>
+    <string name="os_shell_toast_output_cleared">出力履歴を消去しました</string>
 </resources>

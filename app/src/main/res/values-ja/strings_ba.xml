@@ -763,4 +763,23 @@
     <string name="guide_simulate_empty_ability_release">能力解放データは解析されていません。</string>
     <string name="guide_simulate_empty_bond">絆ランク報酬データは解析されていません。</string>
     <string name="guide_simulate_empty_unique_weapon">固有武器データは解析されていません。</string>
+    <string name="ba_cafe_cooldown_edit_headpat_title">なでなで時間の補正</string>
+    <string name="ba_cafe_cooldown_edit_invite1_title">招待券1の時間補正</string>
+    <string name="ba_cafe_cooldown_edit_invite2_title">招待券2の時間補正</string>
+    <string name="ba_cafe_cooldown_edit_section_title">残り時間</string>
+    <string name="ba_cafe_cooldown_edit_summary">ゲーム内の現在の残り時間に合わせて、秒単位で補正できます。</string>
+    <string name="ba_cafe_cooldown_edit_headpat_summary">なでなでは生徒訪問の更新に影響されるため、保存時に現在のサーバーで表現できる範囲へ収めます。</string>
+    <string name="ba_cafe_cooldown_edit_current_label">現在の残り</string>
+    <string name="ba_cafe_cooldown_edit_available_at_label">利用可能時刻</string>
+    <string name="ba_cafe_cooldown_edit_max_label">設定上限</string>
+    <string name="ba_cafe_cooldown_edit_hours_label">h</string>
+    <string name="ba_cafe_cooldown_edit_minutes_label">m</string>
+    <string name="ba_cafe_cooldown_edit_seconds_label">s</string>
+    <string name="ba_cafe_cooldown_action_ready_now">今すぐ利用可</string>
+    <string name="ba_calendar_pool_data_settings_title">データと表示設定</string>
+    <string name="ba_calendar_pool_cd_data_settings">イベントと募集データ設定</string>
+    <string name="ba_ap_notification_title">AP 受け取り可能</string>
+    <string name="ba_account_notification_content">%1$s · %2$s</string>
+    <string name="guide_gallery_memorial_lobby_pip_loop_enable">ループ再生</string>
+    <string name="guide_gallery_memorial_lobby_pip_loop_disable">ループ解除</string>
 </resources>

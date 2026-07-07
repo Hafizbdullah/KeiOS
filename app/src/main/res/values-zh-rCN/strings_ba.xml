@@ -782,4 +782,6 @@
     <string name="guide_simulate_empty_ability_release">暂无能力解放数据。</string>
     <string name="guide_simulate_empty_bond">暂无羁绊等级奖励数据。</string>
     <string name="guide_simulate_empty_unique_weapon">暂无专武数据。</string>
+    <string name="ba_calendar_pool_data_settings_title">数据与显示设置</string>
+    <string name="ba_calendar_pool_cd_data_settings">活动与卡池数据设置</string>
 </resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KeiOS</string>
+    <string name="common_acknowledge">知道了</string>
+    <string name="common_mark_read">标记已读</string>
+    <string name="common_open">打开</string>
+    <string name="common_port_invalid">端口无效</string>
+    <string name="common_refresh">刷新</string>
+    <string name="common_status_running">运行中</string>
+
+    <string name="settings_cache_entry_mcp_detail">端口 %1$d · %2$s · %3$s</string>
+    <string name="settings_cache_entry_mcp_network_lan">局域网</string>
+    <string name="settings_cache_entry_mcp_network_local">本机</string>
+    <string name="settings_cache_entry_mcp_token_empty">无 Token</string>
+    <string name="settings_cache_entry_mcp_token_saved">Token 已保存</string>
+
+    <string name="ba_arena_refresh_notification_content">竞技场已刷新。</string>
+    <string name="ba_arena_refresh_notification_island_text">竞技场</string>
+    <string name="ba_arena_refresh_notification_title">竞技场刷新</string>
+    <string name="ba_cafe_ap_notification_content">当前 %1$d AP，阈值 %2$s，上限 %3$d</string>
+    <string name="ba_cafe_ap_notification_island_text">咖啡厅</string>
+    <string name="ba_cafe_ap_notification_title">咖啡厅 AP</string>
+    <string name="ba_cafe_visit_notification_content">咖啡厅学生来访问啦。</string>
+    <string name="ba_cafe_visit_notification_island_text">咖啡厅</string>
+    <string name="ba_cafe_visit_notification_title">咖啡厅访问</string>
+    <string name="ba_notification_ap_island_text">AP</string>
+
+    <string name="github_page_install_confirm_action_install">安装</string>
+    <string name="github_share_import_notify_action_confirm_track">追踪</string>
+    <string name="github_share_import_notify_action_continue_install">继续安装</string>
+    <string name="github_share_import_notify_action_send_install">发送安装</string>
+    <string name="github_share_import_pending_action_cancel">取消关联</string>
+
+    <string name="os_activity_builtin_google_settings_app_name">设置</string>
+    <string name="os_activity_builtin_google_settings_class">com.android.settings.Settings</string>
+    <string name="os_activity_builtin_google_settings_package">com.android.settings</string>
+    <string name="os_activity_builtin_google_settings_subtitle">打开 Android 设置。</string>
+    <string name="os_activity_builtin_google_settings_title">Android 设置</string>
+    <string name="os_google_system_service_default_app_name">Google Play 服务</string>
+    <string name="os_google_system_service_default_intent_flags">0x10000000</string>
+    <string name="os_google_system_service_default_subtitle">打开 Google Play 服务详情。</string>
+    <string name="os_section_google_system_service_title">Google 系统服务</string>
+    <string name="os_shell_card_subtitle">通过 Shizuku 运行 Shell 命令。</string>
+    <string name="os_shell_card_title">Shell Runner</string>
+</resources>
