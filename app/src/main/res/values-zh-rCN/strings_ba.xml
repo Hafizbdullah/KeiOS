@@ -137,11 +137,13 @@
     <string name="ba_account_management_new_account_default_name">Kei</string>
     <string name="ba_account_management_editor_add_title">新增账号资料</string>
     <string name="ba_account_management_editor_edit_title">编辑账号资料</string>
-    <string name="ba_account_management_editor_summary">服务器决定活动与卡池默认上下文；昵称和好友码会显示在账号卡与提醒文本中。</string>
+    <string name="ba_account_management_editor_summary">服务器决定活动、卡池默认上下文，以及昵称和好友码规则；昵称和好友码会显示在账号卡与提醒文本中。</string>
     <string name="ba_account_management_editor_display_name">显示名</string>
     <string name="ba_account_management_editor_nickname">昵称</string>
+    <string name="ba_account_management_editor_nickname_rule">当前服务器昵称最多 %1$d 个字符。</string>
     <string name="ba_account_management_editor_friend_code">好友码</string>
-    <string name="ba_account_management_editor_friend_code_summary">国服为 7 位小写字母或数字；国际服与日服为 8 位大写英文字母。</string>
+    <string name="ba_account_management_editor_friend_code_rule_cn">当前服务器好友码为 7 位小写英文字母或数字。</string>
+    <string name="ba_account_management_editor_friend_code_rule_default">当前服务器好友码为 8 位大写英文字母。</string>
     <string name="ba_account_management_editor_server">服务器</string>
     <string name="ba_account_management_editor_cancel">取消</string>
     <string name="ba_account_management_editor_save">保存</string>

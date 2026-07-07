@@ -124,11 +124,13 @@
     <string name="ba_account_management_new_account_default_name">Kei</string>
     <string name="ba_account_management_editor_add_title">New account profile</string>
     <string name="ba_account_management_editor_edit_title">Edit account profile</string>
-    <string name="ba_account_management_editor_summary">The server controls the default events and banners context. Nickname and friend code appear on account cards and reminder text.</string>
+    <string name="ba_account_management_editor_summary">The server controls default events, banners, and identity rules. Nickname and friend code appear on account cards and reminder text.</string>
     <string name="ba_account_management_editor_display_name">Display name</string>
     <string name="ba_account_management_editor_nickname">Nickname</string>
+    <string name="ba_account_management_editor_nickname_rule">Current server nickname limit: %1$d characters.</string>
     <string name="ba_account_management_editor_friend_code">Friend code</string>
-    <string name="ba_account_management_editor_friend_code_summary">China server uses 7 lowercase letters or digits; Global and JP use 8 uppercase English letters.</string>
+    <string name="ba_account_management_editor_friend_code_rule_cn">Current server friend code: 7 lowercase English letters or digits.</string>
+    <string name="ba_account_management_editor_friend_code_rule_default">Current server friend code: 8 uppercase English letters.</string>
     <string name="ba_account_management_editor_server">Server</string>
     <string name="ba_account_management_editor_cancel">Cancel</string>
     <string name="ba_account_management_editor_save">Save</string>

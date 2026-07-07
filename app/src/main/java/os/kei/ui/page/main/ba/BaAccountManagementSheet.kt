@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.feature.ba.identity.BA_SERVER_INDEX_CN
+import os.kei.feature.ba.identity.baIdentityPolicy
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
@@ -256,6 +258,13 @@ private fun BaAccountEditorCard(
     var reminderModeDropdownExpanded by remember(draft.editingAccountId) { mutableStateOf(false) }
     var reminderModeDropdownAnchorBounds by remember(draft.editingAccountId) { mutableStateOf<IntRect?>(null) }
     val canSave = draft.displayName.isNotBlank() || draft.nickname.isNotBlank()
+    val identityPolicy = remember(draft.serverIndex) { baIdentityPolicy(draft.serverIndex) }
+    val friendCodeRuleRes =
+        if (identityPolicy.serverIndex == BA_SERVER_INDEX_CN) {
+            R.string.ba_account_management_editor_friend_code_rule_cn
+        } else {
+            R.string.ba_account_management_editor_friend_code_rule_default
+        }
     val reminderModeOptions =
         listOf(
             stringResource(R.string.ba_account_management_notification_mode_follow_global),
@@ -287,6 +296,12 @@ private fun BaAccountEditorCard(
             variant = GlassVariant.SheetInput,
             singleLine = true,
         )
+        SheetDescriptionText(
+            stringResource(
+                R.string.ba_account_management_editor_nickname_rule,
+                identityPolicy.nicknameMaxLength,
+            ),
+        )
         AppLiquidSearchField(
             value = draft.friendCode,
             onValueChange = { value ->
@@ -301,7 +316,7 @@ private fun BaAccountEditorCard(
             variant = GlassVariant.SheetInput,
             singleLine = true,
         )
-        SheetDescriptionText(stringResource(R.string.ba_account_management_editor_friend_code_summary))
+        SheetDescriptionText(stringResource(friendCodeRuleRes))
         SheetControlRow(
             label = stringResource(R.string.ba_account_management_editor_server),
         ) {

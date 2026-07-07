@@ -124,11 +124,13 @@
     <string name="ba_account_management_new_account_default_name">Kei</string>
     <string name="ba_account_management_editor_add_title">新しいアカウント情報</string>
     <string name="ba_account_management_editor_edit_title">アカウント情報を編集</string>
-    <string name="ba_account_management_editor_summary">サーバーはイベントと募集情報の既定コンテキストに使われます。ニックネームとフレンドコードはアカウントカードと通知文に表示されます。</string>
+    <string name="ba_account_management_editor_summary">サーバーはイベント、募集情報、ID ルールの既定コンテキストに使われます。ニックネームとフレンドコードはアカウントカードと通知文に表示されます。</string>
     <string name="ba_account_management_editor_display_name">表示名</string>
     <string name="ba_account_management_editor_nickname">ニックネーム</string>
+    <string name="ba_account_management_editor_nickname_rule">現在のサーバーではニックネームは最大 %1$d 文字です。</string>
     <string name="ba_account_management_editor_friend_code">フレンドコード</string>
-    <string name="ba_account_management_editor_friend_code_summary">中国版は 7 文字の小文字英字または数字、グローバル版と日本版は 8 文字の大文字英字です。</string>
+    <string name="ba_account_management_editor_friend_code_rule_cn">現在のサーバーではフレンドコードは 7 文字の小文字英字または数字です。</string>
+    <string name="ba_account_management_editor_friend_code_rule_default">現在のサーバーではフレンドコードは 8 文字の大文字英字です。</string>
     <string name="ba_account_management_editor_server">サーバー</string>
     <string name="ba_account_management_editor_cancel">キャンセル</string>
     <string name="ba_account_management_editor_save">保存</string>
