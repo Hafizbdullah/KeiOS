@@ -3,11 +3,8 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.launch
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
-import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
-import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
-import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.feature.github.model.hasSameGitHubTrackingConfigIgnoringLocalAppType
@@ -95,22 +92,6 @@ internal fun VersionCheckUi.hasDirectApkReusableRemoteResult(): Boolean =
         latestStableName.isNotBlank()
 
 internal fun elapsedMsSince(startNs: Long): Long = ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
-
-internal suspend fun GitHubRefreshActions.resolveItemState(
-    item: GitHubTrackedApp,
-    profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
-    forceRefresh: Boolean = false,
-    existingRepositoryProfile: GitHubRepositoryProfileSnapshot? = null,
-    batchEvaluator: GitHubTrackedRefreshBatchEvaluator? = null,
-): VersionCheckUi =
-    repository.evaluateTrackedApp(
-        context = context,
-        item = item,
-        profilePurposeOverride = profilePurposeOverride,
-        forceRefresh = forceRefresh,
-        existingRepositoryProfile = existingRepositoryProfile,
-        batchEvaluator = batchEvaluator,
-    )
 
 internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitHubTrackSnapshot) {
     val previousItemsById = state.trackedItems.associateBy { it.id }

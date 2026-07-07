@@ -2,6 +2,7 @@ package os.kei.ui.page.main.github.page.action
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -142,6 +143,7 @@ internal class GitHubRefreshBatchActions(
                         items = snapshot,
                         refreshTimestampMs = clock.nowMs(),
                         maxConcurrency = concurrency,
+                        batchTimeoutMs = GITHUB_REFRESH_PAGE_BATCH_TIMEOUT_MS,
                         onItemResult = { item, check, _ ->
                             val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
                             val itemState =
@@ -325,18 +327,32 @@ internal class GitHubRefreshBatchActions(
                         snapshot = snapshot,
                         previousCheckStatesById = previousCheckStatesById,
                     )
-                    refreshHistoryService.recordRuntimeState(
-                        runtime = GitHubRefreshRuntimeStore.state.value,
-                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                        note = error.message.orEmpty(),
-                    )
-                    GitHubRefreshRuntimeStore.cancel(
-                        sessionId = runtimeSession.id,
-                        completedCount = completedCount,
-                        updatableCount = updatableCount,
-                        preReleaseUpdateCount = preReleaseUpdateCount,
-                        failedCount = failedCount,
-                    )
+                    withContext(NonCancellable) {
+                        refreshHistoryService.recordRuntimeState(
+                            runtime = GitHubRefreshRuntimeStore.state.value,
+                            outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                            note = error.message.orEmpty(),
+                        )
+                        GitHubRefreshRuntimeStore.cancel(
+                            sessionId = runtimeSession.id,
+                            completedCount = completedCount,
+                            updatableCount = updatableCount,
+                            preReleaseUpdateCount = preReleaseUpdateCount,
+                            failedCount = failedCount,
+                        )
+                        repository.notifyRefreshCancelled(
+                            context = context,
+                            current = completedCount,
+                            total = totalCount,
+                            preReleaseUpdateCount = preReleaseUpdateCount,
+                            updatableCount = updatableCount,
+                            failedCount = failedCount,
+                            sessionId = runtimeSession.id,
+                            scope = runtimeSession.scope,
+                            source = runtimeSession.source,
+                            totalTrackedCount = state.trackedItems.size,
+                        )
+                    }
                     throw error
                 } catch (error: Throwable) {
                     val failedMessage = error.message?.takeIf { it.isNotBlank() }

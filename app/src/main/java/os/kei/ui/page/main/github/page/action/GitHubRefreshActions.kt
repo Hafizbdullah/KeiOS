@@ -102,6 +102,7 @@ internal class GitHubRefreshActions(
         val refreshSource = runtimeState?.source ?: GitHubRefreshSource.Page
         val totalTrackedCount = runtimeState?.totalTrackedCount ?: state.trackedItems.size
         if (trackedCount > 0) {
+            markActiveRefreshItemsCancelled(activeRefreshIds)
             val checkedCount =
                 (state.refreshProgress * trackedCount.toFloat())
                     .toInt()
@@ -157,6 +158,18 @@ internal class GitHubRefreshActions(
         state.refreshTargetIds = emptySet()
         launchDeferredTrackStoreSyncIfNeeded()
         env.toast(reason)
+    }
+
+    private fun markActiveRefreshItemsCancelled(activeRefreshIds: Set<String>) {
+        val message = context.getString(os.kei.R.string.github_refresh_island_cancelled)
+        activeRefreshIds.forEach { trackId ->
+            val current = state.checkStates[trackId] ?: return@forEach
+            if (!current.loading) return@forEach
+            state.checkStates[trackId] = current.copy(
+                loading = false,
+                message = message,
+            )
+        }
     }
 
     fun applyRefreshRuntimeDisplay(runtime: GitHubRefreshRuntimeState) {

@@ -4,10 +4,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchEvaluator
+import os.kei.feature.github.domain.GitHubTrackedRefreshBatchRunner
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.statusMessage
+import os.kei.ui.page.main.github.state.toUi
 
 internal class GitHubSingleRefreshActions(
     private val owner: GitHubRefreshActions,
@@ -69,14 +71,13 @@ internal class GitHubSingleRefreshActions(
             owner
                 .mergeDirectApkRemoteFallback(
                     item = item,
-                    resolvedState =
-                        owner.resolveItemState(
-                            item = item,
-                            profilePurposeOverride = profilePurposeOverride,
-                            forceRefresh = forceRefresh,
-                            existingRepositoryProfile = previousState.repositoryProfile,
-                            batchEvaluator = batchEvaluator,
-                        ),
+                    resolvedState = resolveSingleItemState(
+                        item = item,
+                        profilePurposeOverride = profilePurposeOverride,
+                        forceRefresh = forceRefresh,
+                        previousState = previousState,
+                        batchEvaluator = batchEvaluator,
+                    ),
                     previousState = previousState,
                 ).copy(checkedAtMillis = clock.nowMs())
         if (state.trackedItems.none { it.id == item.id }) return
@@ -87,5 +88,35 @@ internal class GitHubSingleRefreshActions(
         if (persistAfterUpdate) owner.mergeCheckCacheNow(targetIds = setOf(item.id))
         if (refreshActionsAfterUpdate) actionsRunRefreshCoordinator.refreshItemInBackground(item)
         onUpdated?.invoke(itemState)
+    }
+
+    private suspend fun resolveSingleItemState(
+        item: GitHubTrackedApp,
+        profilePurposeOverride: GitHubRepositoryProfilePurpose?,
+        forceRefresh: Boolean,
+        previousState: VersionCheckUi,
+        batchEvaluator: GitHubTrackedRefreshBatchEvaluator?,
+    ): VersionCheckUi {
+        val evaluator =
+            batchEvaluator ?: GitHubTrackedRefreshBatchEvaluator(
+                trackedItems = listOf(item),
+                existingRepositoryProfileProvider = { previousState.repositoryProfile },
+            )
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            context = context,
+            items = listOf(item),
+            maxConcurrency = 1,
+            batchTimeoutMs = GITHUB_REFRESH_PAGE_BACKGROUND_BATCH_TIMEOUT_MS,
+            refreshTimestampMs = clock.nowMs(),
+            evaluator = { _, tracked ->
+                evaluator.evaluateTrackedApp(
+                    context = context,
+                    item = tracked,
+                    profilePurposeOverride = profilePurposeOverride,
+                    forceRefresh = forceRefresh,
+                )
+            },
+        )
+        return result.cacheEntries.getValue(item.id).toUi()
     }
 }

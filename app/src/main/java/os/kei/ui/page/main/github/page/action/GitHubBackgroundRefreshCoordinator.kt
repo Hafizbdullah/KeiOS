@@ -3,6 +3,7 @@ package os.kei.ui.page.main.github.page.action
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -166,6 +167,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     context = context,
                     items = items,
                     maxConcurrency = concurrency,
+                    batchTimeoutMs = GITHUB_REFRESH_PAGE_BACKGROUND_BATCH_TIMEOUT_MS,
                     onItemResult = { item, check, _ ->
                         val previousState = previousCheckStatesById[item.id] ?: VersionCheckUi()
                         val itemState =
@@ -357,47 +359,49 @@ internal class GitHubBackgroundRefreshCoordinator(
         outcome: GitHubRefreshHistoryOutcome,
         note: String,
     ) {
-        val current = GitHubRefreshRuntimeStore.state.value
-        if (current.sessionId != runtimeSessionId) return
-        runCatching {
-            refreshHistoryService.recordRuntimeState(
-                runtime = current,
-                outcome = outcome,
-                note = note,
-            )
-        }.onFailure { error ->
-            AppLogger.w(
-                "GitHubBackgroundRefresh",
-                "github page background refresh history record failed",
-                error,
-            )
-        }
-        GitHubRefreshRuntimeStore.cancel(
-            sessionId = runtimeSessionId,
-            completedCount = completedCount,
-            updatableCount = updatableCount,
-            preReleaseUpdateCount = preReleaseUpdateCount,
-            failedCount = failedCount,
-        )
-        runCatching {
-            repository.notifyRefreshCancelled(
-                context = context,
-                current = completedCount,
-                total = current.targetCount,
-                preReleaseUpdateCount = preReleaseUpdateCount,
-                updatableCount = updatableCount,
-                failedCount = failedCount,
+        withContext(NonCancellable) {
+            val current = GitHubRefreshRuntimeStore.state.value
+            if (current.sessionId != runtimeSessionId) return@withContext
+            runCatching {
+                refreshHistoryService.recordRuntimeState(
+                    runtime = current,
+                    outcome = outcome,
+                    note = note,
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "GitHubBackgroundRefresh",
+                    "github page background refresh history record failed",
+                    error,
+                )
+            }
+            GitHubRefreshRuntimeStore.cancel(
                 sessionId = runtimeSessionId,
-                scope = current.scope,
-                source = current.source,
-                totalTrackedCount = current.totalTrackedCount,
+                completedCount = completedCount,
+                updatableCount = updatableCount,
+                preReleaseUpdateCount = preReleaseUpdateCount,
+                failedCount = failedCount,
             )
-        }.onFailure { error ->
-            AppLogger.w(
-                "GitHubBackgroundRefresh",
-                "github page background refresh cancel notification failed",
-                error,
-            )
+            runCatching {
+                repository.notifyRefreshCancelled(
+                    context = context,
+                    current = completedCount,
+                    total = current.targetCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    updatableCount = updatableCount,
+                    failedCount = failedCount,
+                    sessionId = runtimeSessionId,
+                    scope = current.scope,
+                    source = current.source,
+                    totalTrackedCount = current.totalTrackedCount,
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "GitHubBackgroundRefresh",
+                    "github page background refresh cancel notification failed",
+                    error,
+                )
+            }
         }
     }
 

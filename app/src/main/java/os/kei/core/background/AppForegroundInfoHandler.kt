@@ -2,6 +2,7 @@ package os.kei.core.background
 
 import android.content.Context
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -72,12 +73,14 @@ object AppForegroundInfoHandler {
                     schedulerDiagnostics = schedulerDiagnostics,
                 )
             } catch (error: CancellationException) {
-                cleanupGitHubRefreshRuntimeAndNotification(
-                    context = context,
-                    reason = "github tick cancelled",
-                    outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                    schedulerDiagnostics = schedulerDiagnostics,
-                )
+                withContext(NonCancellable) {
+                    cleanupGitHubRefreshRuntimeAndNotification(
+                        context = context,
+                        reason = "github tick cancelled",
+                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                        schedulerDiagnostics = schedulerDiagnostics,
+                    )
+                }
                 throw error
             } catch (error: Throwable) {
                 cleanupGitHubRefreshRuntimeAndNotification(

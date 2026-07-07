@@ -4,6 +4,8 @@ internal const val GITHUB_REFRESH_UI_BATCH_SIZE = 4
 internal const val GITHUB_REFRESH_PROGRESS_NOTIFY_BATCH_SIZE = 2
 internal const val GITHUB_REFRESH_PROGRESS_NOTIFY_MIN_INTERVAL_MS = 500L
 internal const val GITHUB_REFRESH_PROGRESS_NOTIFY_INTERVAL_MS = 850L
+internal const val GITHUB_REFRESH_PAGE_BATCH_TIMEOUT_MS = 4L * 60L * 1000L
+internal const val GITHUB_REFRESH_PAGE_BACKGROUND_BATCH_TIMEOUT_MS = 2L * 60L * 1000L
 
 internal data class GitHubRefreshProgressSnapshot(
     val current: Int,
