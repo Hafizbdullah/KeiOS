@@ -134,12 +134,14 @@ object AppForegroundInfoHandler {
         context: Context,
         schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ) {
-        cleanupGitHubRefreshRuntimeAndNotification(
-            context = context,
-            reason = "github tick timed out",
-            outcome = GitHubRefreshHistoryOutcome.Cancelled,
-            schedulerDiagnostics = schedulerDiagnostics,
-        )
+        withContext(NonCancellable) {
+            cleanupGitHubRefreshRuntimeAndNotification(
+                context = context,
+                reason = "github tick timed out",
+                outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                schedulerDiagnostics = schedulerDiagnostics,
+            )
+        }
     }
 
     internal suspend fun handleGitHubShortcutRefresh(context: Context): AppShortcutGitHubRefreshResult {
@@ -259,26 +261,6 @@ object AppForegroundInfoHandler {
                 preReleaseUpdateCount = runtime.preReleaseUpdateCount,
                 failedCount = runtime.failedCount,
             )
-        } else if (
-            runtime.source == GitHubRefreshSource.BackgroundTick &&
-            runtime.startedAtMs > 0L &&
-            runtime.finishedAtMs > 0L
-        ) {
-            runCatching {
-                githubRefreshHistoryService.recordRuntimeState(
-                    runtime = runtime,
-                    outcome = outcome,
-                    note = reason,
-                    finishedAtMillis = runtime.finishedAtMs,
-                    schedulerDiagnostics = schedulerDiagnostics,
-                )
-            }.onFailure { error ->
-                AppLogger.w(
-                    "AppForegroundInfoHandler",
-                    "$reason finished history record failed",
-                    error
-                )
-            }
         }
         val shouldCancelNotification = !runtime.running || ownsRuntime
         if (!shouldCancelNotification) return

@@ -1,7 +1,10 @@
 package os.kei.feature.github.domain
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -112,18 +115,86 @@ class GitHubActionsRecommendedRunRefreshServiceTest {
         assertNull(source.loadRecommendedRunSnapshot(removed.id))
     }
 
+    @Test
+    fun `refresh converts timed out actions item into failed outcome`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val item = trackedApp("timeout")
+        val previous = snapshot(item, runId = 8L)
+        val source = FakeRecommendedRunRefreshSource().apply {
+            snapshots[item.id] = previous
+            responseDelays[item.id] = Long.MAX_VALUE
+            responses[item.id] = Result.success(snapshot(item, runId = 9L))
+        }
+
+        val result =
+            service(
+                source = source,
+                dispatcher = dispatcher,
+            ).refreshItems(
+                items = listOf(item),
+                lookupConfig = GitHubLookupConfig(),
+                maxConcurrency = 1,
+                itemTimeoutMs = 100L,
+                batchTimeoutMs = 0L,
+            )
+        val outcome = result.outcomes.single()
+
+        assertEquals(1, result.checkedCount)
+        assertEquals(1, result.failedCount)
+        assertFalse(outcome.succeeded)
+        assertTrue(outcome.errorMessage.contains("timed out"))
+        assertEquals(previous, outcome.previous)
+        assertEquals(previous, source.loadRecommendedRunSnapshot(item.id))
+    }
+
+    @Test
+    fun `refresh stops starting actions items after batch timeout`() = runBlocking {
+        val items = listOf(
+            trackedApp("first"),
+            trackedApp("second"),
+            trackedApp("third"),
+        )
+        val source = FakeRecommendedRunRefreshSource().apply {
+            responses[items[0].id] = Result.success(snapshot(items[0], runId = 1L))
+            blockingDelays[items[0].id] = 30L
+            snapshots[items[1].id] = snapshot(items[1], runId = 20L)
+            responses[items[1].id] = Result.success(snapshot(items[1], runId = 2L))
+            responses[items[2].id] = Result.success(snapshot(items[2], runId = 3L))
+        }
+
+        val result = service(source).refreshItems(
+            items = items,
+            lookupConfig = GitHubLookupConfig(),
+            maxConcurrency = 1,
+            itemTimeoutMs = 1_000L,
+            batchTimeoutMs = 10L,
+        )
+
+        assertEquals(listOf(items[0].id), source.fetchRequests.map { request -> request.trackId })
+        assertEquals(3, result.checkedCount)
+        assertEquals(1, result.succeededCount)
+        assertEquals(2, result.failedCount)
+        assertTrue(result.outcomes.drop(1).all { outcome ->
+            outcome.errorMessage.contains("batch timed out")
+        })
+        assertEquals(snapshot(items[1], runId = 20L), result.outcomes[1].previous)
+    }
+
     private fun service(
         source: GitHubActionsRecommendedRunRefreshSource,
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     ): GitHubActionsRecommendedRunRefreshService =
         GitHubActionsRecommendedRunRefreshService(
             source = source,
-            networkDispatcher = Dispatchers.Default,
-            localDispatcher = Dispatchers.Default,
+            networkDispatcher = dispatcher,
+            localDispatcher = dispatcher,
         )
 
     private class FakeRecommendedRunRefreshSource : GitHubActionsRecommendedRunRefreshSource {
         val snapshots = ConcurrentHashMap<String, GitHubActionsRecommendedRunSnapshot>()
         val responses = ConcurrentHashMap<String, Result<GitHubActionsRecommendedRunSnapshot>>()
+        val responseDelays = ConcurrentHashMap<String, Long>()
+        val blockingDelays = ConcurrentHashMap<String, Long>()
         val fetchRequests = Collections.synchronizedList(mutableListOf<FetchRequest>())
         val retainedTrackIds = Collections.synchronizedList(mutableListOf<Set<String>>())
 
@@ -144,6 +215,12 @@ class GitHubActionsRecommendedRunRefreshServiceTest {
                 previousWorkflowId = previousWorkflowId,
                 nowMs = nowMs,
             )
+            blockingDelays[item.id]?.let { delayMs ->
+                Thread.sleep(delayMs)
+            }
+            responseDelays[item.id]?.let { delayMs ->
+                delay(delayMs)
+            }
             return responses[item.id]
                 ?: Result.failure(IllegalStateException("missing fake response"))
         }

@@ -102,10 +102,6 @@ class GitHubBackgroundRefreshJobService : JobService() {
     override fun onStopJob(params: JobParameters): Boolean {
         val current = activeJob?.takeIf { it.params == params } ?: return false
         current.stopped.set(true)
-        current.worker.cancel(
-            CancellationException("GitHub background refresh job stopped: ${params.stopReason}")
-        )
-        jobRunning.set(false)
         val schedulerDiagnostics = buildSchedulerDiagnostics(
             params = params,
             startedAtMillis = current.startedAtMillis,
@@ -113,6 +109,10 @@ class GitHubBackgroundRefreshJobService : JobService() {
             rescheduled = true,
         )
         current.stopDiagnostics = schedulerDiagnostics
+        current.worker.cancel(
+            CancellationException("GitHub background refresh job stopped: ${params.stopReason}")
+        )
+        jobRunning.set(false)
         return true
     }
 
