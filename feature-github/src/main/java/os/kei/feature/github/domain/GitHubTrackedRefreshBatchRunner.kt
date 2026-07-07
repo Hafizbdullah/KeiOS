@@ -2,11 +2,13 @@ package os.kei.feature.github.domain
 
 import android.content.Context
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -22,6 +24,10 @@ import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitBackedRepositoryTrack
+import kotlin.coroutines.coroutineContext
+
+private const val DEFAULT_MAX_ITEM_ATTEMPTS = 2
+private const val DEFAULT_RETRY_DELAY_MS = 450L
 
 data class GitHubTrackedRefreshBatchResult(
     val totalCount: Int,
@@ -60,6 +66,22 @@ data class GitHubTrackedRefreshBatchProgress(
     val failedCount: Int
 )
 
+data class GitHubTrackedRefreshRetryPolicy(
+    val maxAttempts: Int = DEFAULT_MAX_ITEM_ATTEMPTS,
+    val retryDelayMs: Long = DEFAULT_RETRY_DELAY_MS,
+) {
+    val safeMaxAttempts: Int
+        get() = maxAttempts.coerceAtLeast(1)
+
+    val safeRetryDelayMs: Long
+        get() = retryDelayMs.coerceAtLeast(0L)
+
+    companion object {
+        val None: GitHubTrackedRefreshRetryPolicy =
+            GitHubTrackedRefreshRetryPolicy(maxAttempts = 1, retryDelayMs = 0L)
+    }
+}
+
 data class GitHubTrackedRefreshSlowItem(
     val trackId: String,
     val owner: String,
@@ -91,6 +113,8 @@ object GitHubTrackedRefreshBatchRunner {
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(items.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
+        batchTimeoutMs: Long = 0L,
+        retryPolicy: GitHubTrackedRefreshRetryPolicy = GitHubTrackedRefreshRetryPolicy(),
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: (suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck)? = null
@@ -102,6 +126,8 @@ object GitHubTrackedRefreshBatchRunner {
             maxConcurrency = maxConcurrency,
             dispatcher = dispatcher,
             itemTimeoutMs = itemTimeoutMs,
+            batchTimeoutMs = batchTimeoutMs,
+            retryPolicy = retryPolicy,
             onProgress = onProgress,
             onItemResult = onItemResult,
             evaluator = { item ->
@@ -117,6 +143,8 @@ object GitHubTrackedRefreshBatchRunner {
         maxConcurrency: Int = GitHubTrackedRefreshBatchScheduler.refreshConcurrency(trackedItems.size),
         dispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
         itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
+        batchTimeoutMs: Long = 0L,
+        retryPolicy: GitHubTrackedRefreshRetryPolicy = GitHubTrackedRefreshRetryPolicy(),
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
@@ -136,6 +164,11 @@ object GitHubTrackedRefreshBatchRunner {
 
         val batchStartNs = System.nanoTime()
         val concurrency = trackedItems.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
+        val batchDeadlineNs = batchDeadlineNs(
+            batchStartNs = batchStartNs,
+            batchTimeoutMs = batchTimeoutMs,
+        )
+        val batchTimedOut = AtomicBoolean(false)
         val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(trackedItems)
         val directApkPermits = Semaphore(
             permits = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
@@ -150,67 +183,113 @@ object GitHubTrackedRefreshBatchRunner {
         var preReleaseUpdateCount = 0
         var failedCount = 0
         val results = arrayOfNulls<GitHubTrackedRefreshItemResult>(trackedItems.size)
+        suspend fun publishResult(result: GitHubTrackedRefreshItemResult): GitHubTrackedRefreshBatchProgress {
+            onItemResult(result.item, result.check, result.elapsedMs)
+            val progress = progressMutex.withLock {
+                if (result.check.hasUpdate == true) updatableCount += 1
+                if (result.check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
+                if (result.check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
+                completedCount += 1
+                GitHubTrackedRefreshBatchProgress(
+                    current = completedCount,
+                    total = trackedItems.size,
+                    updatableCount = updatableCount,
+                    preReleaseUpdateCount = preReleaseUpdateCount,
+                    failedCount = failedCount
+                )
+            }
+            onProgress(progress)
+            return progress
+        }
         coroutineScope {
             List(concurrency) {
                 async(dispatcher) {
                     while (true) {
+                        if (isBatchDeadlineReached(batchDeadlineNs)) {
+                            batchTimedOut.set(true)
+                            break
+                        }
                         val index = nextIndex.getAndIncrement()
                         if (index >= workItems.size) break
                         ensureActive()
                         val workItem = workItems[index]
                         val item = workItem.item
                         val itemStartNs = System.nanoTime()
-                        val check = runCatching {
-                            evaluateWithTimeout(
+                        val check =
+                            evaluateWithRetry(
                                 item = item,
                                 timeoutMs = itemTimeoutMs(item),
+                                retryPolicy = retryPolicy,
                             ) {
-                                when {
-                                    item.isDirectApkTrack() -> {
-                                        directApkPermits.withPermit { evaluator(item) }
-                                    }
+                                runCatching {
+                                    evaluateWithTimeout(
+                                        item = item,
+                                        timeoutMs = itemTimeoutMs(item),
+                                    ) {
+                                        when {
+                                            item.isDirectApkTrack() -> {
+                                                directApkPermits.withPermit { evaluator(item) }
+                                            }
 
-                                    item.isFdroidRepositoryTrack() -> {
-                                        fdroidPermits.withPermit { evaluator(item) }
-                                    }
+                                            item.isFdroidRepositoryTrack() -> {
+                                                fdroidPermits.withPermit { evaluator(item) }
+                                            }
 
-                                    else -> {
-                                        evaluator(item)
+                                            else -> {
+                                                evaluator(item)
+                                            }
+                                        }
                                     }
+                                }.getOrElse { error ->
+                                    if (error is CancellationException) throw error
+                                    failedCheck(error)
                                 }
                             }
-                        }.getOrElse { error ->
-                            if (error is CancellationException) throw error
-                            failedCheck(error)
-                        }
                         val itemElapsedMs = elapsedMsSince(itemStartNs)
-                        results[workItem.originalIndex] = GitHubTrackedRefreshItemResult(
+                        val result = GitHubTrackedRefreshItemResult(
                             item = item,
                             check = check,
                             elapsedMs = itemElapsedMs
                         )
-                        onItemResult(item, check, itemElapsedMs)
-                        val progress = progressMutex.withLock {
-                            if (check.hasUpdate == true) updatableCount += 1
-                            if (check.hasPreReleaseUpdate) preReleaseUpdateCount += 1
-                            if (check.status == GitHubTrackedReleaseStatus.Failed) failedCount += 1
-                            completedCount += 1
-                            GitHubTrackedRefreshBatchProgress(
-                                current = completedCount,
-                                total = trackedItems.size,
-                                updatableCount = updatableCount,
-                                preReleaseUpdateCount = preReleaseUpdateCount,
-                                failedCount = failedCount
-                            )
-                        }
-                        onProgress(progress)
+                        results[workItem.originalIndex] = result
+                        publishResult(result)
                         yield()
                     }
                 }
             }.awaitAll()
         }
-        val checks = results.map { result ->
-            checkNotNull(result) { "Tracked refresh result was not produced" }
+        results.forEachIndexed { index, result ->
+            if (result == null) {
+                val item = trackedItems[index]
+                val timedOutResult =
+                    GitHubTrackedRefreshItemResult(
+                        item = item,
+                        check =
+                            if (batchTimedOut.get() && batchTimeoutMs > 0L) {
+                                batchTimedOutCheck(
+                                    item = item,
+                                    timeoutMs = batchTimeoutMs,
+                                )
+                            } else {
+                                batchIncompleteCheck(item)
+                            },
+                        elapsedMs = elapsedMsSince(batchStartNs),
+                    )
+                results[index] = timedOutResult
+                publishResult(timedOutResult)
+            }
+        }
+        val checks = results.mapIndexed { index, result ->
+            result ?: GitHubTrackedRefreshItemResult(
+                item = trackedItems[index],
+                check = batchIncompleteCheck(trackedItems[index]),
+                elapsedMs = elapsedMsSince(batchStartNs),
+            )
+        }
+        val finalUpdatableCount = checks.count { result -> result.check.hasUpdate == true }
+        val finalPreReleaseUpdateCount = checks.count { result -> result.check.hasPreReleaseUpdate }
+        val finalFailedCount = checks.count { result ->
+            result.check.status == GitHubTrackedReleaseStatus.Failed
         }
 
         val cacheEntries = LinkedHashMap<String, GitHubCheckCacheEntry>(trackedItems.size)
@@ -239,9 +318,9 @@ object GitHubTrackedRefreshBatchRunner {
             totalCount = trackedItems.size,
             cacheEntries = cacheEntries,
             refreshTimestampMs = refreshTimestampMs,
-            updatableCount = updatableCount,
-            preReleaseUpdateCount = preReleaseUpdateCount,
-            failedCount = failedCount,
+            updatableCount = finalUpdatableCount,
+            preReleaseUpdateCount = finalPreReleaseUpdateCount,
+            failedCount = finalFailedCount,
             failures = failures,
             performance = buildPerformance(
                 batchStartNs = batchStartNs,
@@ -297,6 +376,19 @@ object GitHubTrackedRefreshBatchRunner {
         return ((System.nanoTime() - startNs) / 1_000_000L).coerceAtLeast(0L)
     }
 
+    private fun batchDeadlineNs(
+        batchStartNs: Long,
+        batchTimeoutMs: Long,
+    ): Long {
+        if (batchTimeoutMs <= 0L) return Long.MAX_VALUE
+        val timeoutNs = batchTimeoutMs.saturatingMsToNs()
+        if (batchStartNs > Long.MAX_VALUE - timeoutNs) return Long.MAX_VALUE
+        return batchStartNs + timeoutNs
+    }
+
+    private fun isBatchDeadlineReached(deadlineNs: Long): Boolean =
+        deadlineNs != Long.MAX_VALUE && System.nanoTime() >= deadlineNs
+
     private fun failedCheck(error: Throwable): GitHubTrackedReleaseCheck {
         val detail = error.message?.takeIf { it.isNotBlank() }
             ?: error.javaClass.simpleName
@@ -307,6 +399,29 @@ object GitHubTrackedRefreshBatchRunner {
             status = GitHubTrackedReleaseStatus.Failed,
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
         )
+    }
+
+    private suspend fun evaluateWithRetry(
+        item: GitHubTrackedApp,
+        timeoutMs: Long,
+        retryPolicy: GitHubTrackedRefreshRetryPolicy,
+        evaluateOnce: suspend () -> GitHubTrackedReleaseCheck,
+    ): GitHubTrackedReleaseCheck {
+        val maxAttempts = retryPolicy.safeMaxAttempts
+        var attempt = 1
+        while (true) {
+            coroutineContext.ensureActive()
+            val check = evaluateOnce()
+            if (attempt >= maxAttempts || !check.isRetryableRefreshFailure()) {
+                return check.withAttemptSuffix(
+                    attempt = attempt,
+                    maxAttempts = maxAttempts,
+                    timeoutMs = timeoutMs,
+                )
+            }
+            delay(retryPolicy.safeRetryDelayMs * attempt)
+            attempt += 1
+        }
     }
 
     private suspend fun evaluateWithTimeout(
@@ -334,6 +449,73 @@ object GitHubTrackedRefreshBatchRunner {
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(
                 "Timed out after ${seconds}s (${item.owner}/${item.repo})"
             )
+        )
+    }
+
+    private fun batchTimedOutCheck(
+        item: GitHubTrackedApp,
+        timeoutMs: Long,
+    ): GitHubTrackedReleaseCheck {
+        val seconds = ((timeoutMs + 999L) / 1_000L).coerceAtLeast(1L)
+        return GitHubTrackedReleaseCheck(
+            strategyId = "",
+            localVersion = "",
+            localVersionCode = -1L,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                "Batch timed out after ${seconds}s before ${item.owner}/${item.repo} could refresh"
+            ),
+        )
+    }
+
+    private fun batchIncompleteCheck(item: GitHubTrackedApp): GitHubTrackedReleaseCheck =
+        GitHubTrackedReleaseCheck(
+            strategyId = "",
+            localVersion = "",
+            localVersionCode = -1L,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                "Batch stopped before ${item.owner}/${item.repo} could refresh"
+            ),
+        )
+
+    private fun GitHubTrackedReleaseCheck.isRetryableRefreshFailure(): Boolean {
+        if (status != GitHubTrackedReleaseStatus.Failed) return false
+        val lower = message.lowercase()
+        if (
+            "rate limited" in lower ||
+            "http 401" in lower ||
+            "http 403" in lower ||
+            "http 404" in lower ||
+            "invalid or expired" in lower
+        ) {
+            return false
+        }
+        return "timed out" in lower ||
+            "timeout" in lower ||
+            "connection" in lower ||
+            "network" in lower ||
+            "closed" in lower ||
+            "reset" in lower ||
+            "unavailable" in lower ||
+            "temporarily" in lower ||
+            "socket" in lower ||
+            "unexpected end" in lower ||
+            "http 500" in lower ||
+            "http 502" in lower ||
+            "http 503" in lower ||
+            "http 504" in lower
+    }
+
+    private fun GitHubTrackedReleaseCheck.withAttemptSuffix(
+        attempt: Int,
+        maxAttempts: Int,
+        timeoutMs: Long,
+    ): GitHubTrackedReleaseCheck {
+        if (status != GitHubTrackedReleaseStatus.Failed || attempt <= 1 || maxAttempts <= 1) return this
+        val seconds = ((timeoutMs + 999L) / 1_000L).coerceAtLeast(1L)
+        return copy(
+            message = "$message (attempt $attempt/$maxAttempts, timeout ${seconds}s)",
         )
     }
 
@@ -394,4 +576,11 @@ object GitHubTrackedRefreshBatchRunner {
     private const val DIRECT_APK_REFRESH_ITEM_TIMEOUT_MS = 45_000L
     private const val FDROID_REFRESH_ITEM_TIMEOUT_MS = 45_000L
     private const val SLOW_ITEM_HISTORY_LIMIT = 5
+}
+
+private fun Long.saturatingMsToNs(): Long {
+    val value = coerceAtLeast(0L)
+    val multiplier = 1_000_000L
+    if (value > Long.MAX_VALUE / multiplier) return Long.MAX_VALUE
+    return value * multiplier
 }

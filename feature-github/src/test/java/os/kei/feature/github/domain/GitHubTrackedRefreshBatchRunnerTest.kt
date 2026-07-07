@@ -159,6 +159,91 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `run retries transient timed out item and keeps completed batch`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val item = tracked(1)
+        val attempts = AtomicInteger(0)
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = listOf(item),
+            maxConcurrency = 1,
+            dispatcher = dispatcher,
+            refreshTimestampMs = NOW_MS,
+            itemTimeoutMs = { 100L },
+            retryPolicy = GitHubTrackedRefreshRetryPolicy(maxAttempts = 2, retryDelayMs = 10L),
+        ) {
+            if (attempts.incrementAndGet() == 1) {
+                delay(Long.MAX_VALUE)
+            }
+            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+        }
+
+        assertEquals(2, attempts.get())
+        assertEquals(1, result.totalCount)
+        assertEquals(0, result.failedCount)
+        assertEquals(1, result.cacheEntries.size)
+    }
+
+    @Test
+    fun `run stops starting new items after batch timeout and returns failed skipped items`() = runBlocking {
+        val items = (1..5).map { index -> tracked(index) }
+        val started = Collections.synchronizedList(mutableListOf<String>())
+        val itemResults = Collections.synchronizedList(mutableListOf<String>())
+        val progressEvents = Collections.synchronizedList(
+            mutableListOf<GitHubTrackedRefreshBatchProgress>()
+        )
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = items,
+            maxConcurrency = 1,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS,
+            itemTimeoutMs = { 1_000L },
+            batchTimeoutMs = 10L,
+            retryPolicy = GitHubTrackedRefreshRetryPolicy(maxAttempts = 1),
+            onItemResult = { item, _, _ -> itemResults += item.repo },
+            onProgress = { progress -> progressEvents += progress },
+        ) { item ->
+            started += item.repo
+            Thread.sleep(30L)
+            check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+        }
+
+        assertEquals(listOf("repo-1"), started.toList())
+        assertEquals(items.size, result.totalCount)
+        assertEquals(items.size, result.cacheEntries.size)
+        assertEquals(4, result.failedCount)
+        assertEquals(listOf("repo-1", "repo-2", "repo-3", "repo-4", "repo-5"), itemResults.toList())
+        assertEquals(listOf(1, 2, 3, 4, 5), progressEvents.map { progress -> progress.current })
+        assertEquals(4, progressEvents.last().failedCount)
+        assertTrue(result.failures.all { failure -> failure.message.contains("Batch timed out") })
+    }
+
+    @Test
+    fun `run keeps non retryable failure message without attempt suffix`() = runBlocking {
+        val item = tracked(1)
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = listOf(item),
+            maxConcurrency = 1,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS,
+            retryPolicy = GitHubTrackedRefreshRetryPolicy(maxAttempts = 2, retryDelayMs = 1L),
+        ) {
+            check(
+                status = GitHubTrackedReleaseStatus.Failed,
+                message = GitHubTrackedReleaseStatus.Failed.failureMessage("HTTP 404 not found"),
+            )
+        }
+
+        assertEquals(1, result.failedCount)
+        assertEquals(
+            GitHubTrackedReleaseStatus.Failed.failureMessage("HTTP 404 not found"),
+            result.failures.single().message,
+        )
+    }
+
+    @Test
     fun `run exposes performance evidence for 30 and 100 item fixtures`() = runBlocking {
         listOf(30, 100).forEach { count ->
             val result = GitHubTrackedRefreshBatchRunner.run(
@@ -434,7 +519,8 @@ class GitHubTrackedRefreshBatchRunnerTest {
         status: GitHubTrackedReleaseStatus,
         hasUpdate: Boolean? = null,
         hasPreReleaseUpdate: Boolean = false,
-        diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics()
+        diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics(),
+        message: String = status.defaultMessage,
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
             strategyId = "test",
@@ -442,7 +528,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
             hasUpdate = hasUpdate,
             hasPreReleaseUpdate = hasPreReleaseUpdate,
             status = status,
-            message = status.defaultMessage,
+            message = message,
             diagnostics = diagnostics
         )
     }

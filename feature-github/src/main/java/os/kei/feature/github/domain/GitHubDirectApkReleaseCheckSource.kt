@@ -67,6 +67,7 @@ class GitHubDirectApkReleaseCheckSource(
         // Direct APK URLs often keep the same URL and filename while serving a newer APK.
         var sourceElapsedMs = 0L
         var manifestElapsedMs = 0L
+        var manifestRequested = false
         var comparisonElapsedMs = 0L
         var fallbackStrategyId = ""
         val targetResolveStartNs = System.nanoTime()
@@ -77,6 +78,7 @@ class GitHubDirectApkReleaseCheckSource(
         )
         sourceElapsedMs += elapsedMsSince(targetResolveStartNs)
         val primaryManifestStartNs = System.nanoTime()
+        manifestRequested = manifestRequested || targets.hasInspectableTarget
         val manifestResults = inspectDirectApkTargets(
             targets = targets,
             lookupConfig = directLookupConfig
@@ -99,6 +101,7 @@ class GitHubDirectApkReleaseCheckSource(
             return check.withDirectApkDiagnostics(
                 sourceElapsedMs = sourceElapsedMs,
                 manifestElapsedMs = manifestElapsedMs,
+                manifestRequested = manifestRequested,
                 comparisonElapsedMs = comparisonElapsedMs,
                 fallbackStrategyId = fallbackStrategyId
             )
@@ -139,6 +142,7 @@ class GitHubDirectApkReleaseCheckSource(
         }
         fallbackTargets.forEach { target ->
             val fallbackManifestStartNs = System.nanoTime()
+            manifestRequested = true
             inspectDirectApkTarget(
                 target = target,
                 lookupConfig = directLookupConfig,
@@ -160,6 +164,7 @@ class GitHubDirectApkReleaseCheckSource(
                 return check.withDirectApkDiagnostics(
                     sourceElapsedMs = sourceElapsedMs,
                     manifestElapsedMs = manifestElapsedMs,
+                    manifestRequested = manifestRequested,
                     comparisonElapsedMs = comparisonElapsedMs,
                     fallbackStrategyId = fallbackStrategyId
                 )
@@ -174,6 +179,7 @@ class GitHubDirectApkReleaseCheckSource(
         ).withDirectApkDiagnostics(
             sourceElapsedMs = sourceElapsedMs,
             manifestElapsedMs = manifestElapsedMs,
+            manifestRequested = manifestRequested,
             comparisonElapsedMs = comparisonElapsedMs,
             fallbackStrategyId = fallbackStrategyId
         )
@@ -321,6 +327,9 @@ class GitHubDirectApkReleaseCheckSource(
         val stable: DirectApkResolvedTarget?,
         val preRelease: DirectApkResolvedTarget?
     ) {
+        val hasInspectableTarget: Boolean
+            get() = stable != null || preRelease != null
+
         companion object {
             fun fromSingle(target: DirectApkResolvedTarget): DirectApkResolvedTargets {
                 return if (target.channel.isPreRelease) {
@@ -586,6 +595,7 @@ class GitHubDirectApkReleaseCheckSource(
 private fun GitHubTrackedReleaseCheck.withDirectApkDiagnostics(
     sourceElapsedMs: Long,
     manifestElapsedMs: Long,
+    manifestRequested: Boolean,
     comparisonElapsedMs: Long,
     fallbackStrategyId: String,
 ): GitHubTrackedReleaseCheck {
@@ -599,7 +609,7 @@ private fun GitHubTrackedReleaseCheck.withDirectApkDiagnostics(
                 preciseApkElapsedMs =
                     (previous.preciseApkElapsedMs + manifestElapsedMs.coerceAtLeast(0L))
                         .coerceAtLeast(0L),
-                preciseApkRequested = previous.preciseApkRequested || manifestElapsedMs > 0L,
+                preciseApkRequested = previous.preciseApkRequested || manifestRequested,
                 comparisonElapsedMs =
                     (previous.comparisonElapsedMs + comparisonElapsedMs.coerceAtLeast(0L))
                         .coerceAtLeast(0L),

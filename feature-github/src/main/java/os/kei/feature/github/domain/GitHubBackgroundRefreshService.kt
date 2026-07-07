@@ -18,6 +18,8 @@ import os.kei.feature.github.model.GitHubTrackedApp
 
 private const val GITHUB_BACKGROUND_REFRESH_TAG = "GitHubBackgroundRefresh"
 private const val GITHUB_BACKGROUND_ITEM_TIMEOUT_MS = 15_000L
+private const val GITHUB_BACKGROUND_BATCH_TIMEOUT_MS = 3L * 60L * 1000L
+private const val GITHUB_SHORTCUT_BATCH_TIMEOUT_MS = 4L * 60L * 1000L
 
 data class GitHubBackgroundTickResult(
     val refreshResult: GitHubTrackedRefreshBatchResult? = null,
@@ -96,6 +98,11 @@ class GitHubBackgroundRefreshService(
                                     maxConcurrency = GitHubTrackedRefreshBatchScheduler
                                         .backgroundRefreshConcurrency(trackedUpdateTargetItems.size),
                                     itemTimeoutMs = { GITHUB_BACKGROUND_ITEM_TIMEOUT_MS },
+                                    batchTimeoutMs = GITHUB_BACKGROUND_BATCH_TIMEOUT_MS,
+                                    retryPolicy = GitHubTrackedRefreshRetryPolicy(
+                                        maxAttempts = 2,
+                                        retryDelayMs = 350L,
+                                    ),
                                     onProgress = { progress ->
                                         GitHubRefreshRuntimeStore.progress(
                                             sessionId = runtimeSession.id,
@@ -201,6 +208,7 @@ class GitHubBackgroundRefreshService(
                     GitHubTrackedRefreshBatchRunner.run(
                         trackedItems = tracked,
                         refreshTimestampMs = nowMs,
+                        batchTimeoutMs = GITHUB_SHORTCUT_BATCH_TIMEOUT_MS,
                         onProgress = { progress ->
                             GitHubRefreshRuntimeStore.progress(
                                 sessionId = runtimeSession.id,
