@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_guard_notification_channel_name">Keep-alive guard</string>
+    <string name="accessibility_guard_notification_channel_description">Shows foreground service status for the accessibility keep-alive guard</string>
+    <string name="accessibility_guard_notification_title">KeiOS keep-alive guard</string>
+    <string name="accessibility_guard_notification_content">Monitoring selected accessibility services</string>
+</resources>

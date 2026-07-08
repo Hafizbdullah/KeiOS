@@ -288,14 +288,15 @@ Reference files used for analysis:
   - `os.kei.keepalive.action.STOP_ACCESSIBILITY_GUARD`
   - `os.kei.keepalive.action.CHECK_ACCESSIBILITY_GUARD`
 
-- [ ] Build a foreground notification through existing app notification helper entry points after confirming the proper channel owner.
-- [ ] Register a `ContentObserver` for `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` while service is running.
-- [ ] On observer change, call restore through coordinator with debounce of 2 seconds.
-- [ ] Receiver handles `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, and explicit check action.
-- [ ] Enable screen-on checks only when user has turned on the screen-on policy.
-- [ ] Use a 12-second receiver timeout and always record timeout as history.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
-- [ ] Commit with `feat: add accessibility guard service`.
+- [x] Build a foreground notification through existing app notification helper entry points after confirming the proper channel owner.
+  - Implementation note: MCP/GitHub notification channel owners stay isolated; `feature-keepalive` owns a low-importance foreground-service channel for accessibility guard runtime status.
+- [x] Register a `ContentObserver` for `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` while service is running.
+- [x] On observer change, call restore through coordinator with debounce of 2 seconds.
+- [x] Receiver handles `BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, and explicit check action.
+- [x] Enable screen-on checks only when user has turned on the screen-on policy.
+- [x] Use a 12-second receiver timeout and always record timeout as history.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
+- [x] Commit with `feat: add accessibility guard service`.
 
 ## Task 7: Integrate Settings UI
 

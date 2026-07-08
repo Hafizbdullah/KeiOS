@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_guard_notification_channel_name">保活守护</string>
+    <string name="accessibility_guard_notification_channel_description">显示无障碍保活守护的前台服务状态</string>
+    <string name="accessibility_guard_notification_title">KeiOS 保活守护</string>
+    <string name="accessibility_guard_notification_content">正在监控已选择的无障碍服务</string>
+</resources>

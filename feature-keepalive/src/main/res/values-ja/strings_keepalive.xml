@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_guard_notification_channel_name">常駐ガード</string>
+    <string name="accessibility_guard_notification_channel_description">アクセシビリティ常駐ガードのフォアグラウンドサービス状態を表示します</string>
+    <string name="accessibility_guard_notification_title">KeiOS 常駐ガード</string>
+    <string name="accessibility_guard_notification_content">選択したアクセシビリティサービスを監視しています</string>
+</resources>
