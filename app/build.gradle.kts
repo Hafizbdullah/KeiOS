@@ -559,6 +559,7 @@ dependencies {
     implementation(project(":ui-liquid-glass"))
     implementation(project(":miuix-navigation3-ui"))
     implementation(project(":feature-mcp"))
+    implementation(project(":feature-keepalive"))
     implementation(project(":feature-home"))
     implementation(project(":feature-os"))
     implementation(project(":feature-ba"))
