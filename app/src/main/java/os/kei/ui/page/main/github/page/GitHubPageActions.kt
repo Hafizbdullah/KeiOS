@@ -71,6 +71,7 @@ internal class GitHubPageActions(
     private val shareImportActions = GitHubShareImportActionFacade(env)
     private val packageChangedActions = GitHubPackageChangedActionFacade(env, refreshActions, assetActions)
     private val trackedRefreshActions = GitHubTrackedRefreshActionFacade(env, refreshActions, assetActions)
+    private val debugRefreshActions = GitHubDebugRefreshActionFacade(env, refreshActions)
 
     fun openStrategySheet() = configActions.openStrategySheet()
 
@@ -98,6 +99,15 @@ internal class GitHubPageActions(
     fun openDroidSourcesSheet() = configActions.openDroidSourcesSheet()
 
     fun closeDroidSourcesSheet() = configActions.closeDroidSourcesSheet()
+
+    fun openDebugSheet() {
+        env.state.showActionMenuPopup = false
+        env.state.showDebugSheet = true
+    }
+
+    fun closeDebugSheet() {
+        env.state.showDebugSheet = false
+    }
 
     fun setCheckAllTrackedPreReleasesInput(value: Boolean) = configActions.setCheckAllTrackedPreReleasesInput(value)
 
@@ -147,6 +157,13 @@ internal class GitHubPageActions(
         configActions.setShareImportFlowModePopupAnchorBounds(value)
 
     fun sendDebugActionsUpdateNotification() = debugNotificationActions.sendActionsUpdateNotification()
+
+    fun runDebugBackgroundFullRefresh() = debugRefreshActions.runBackgroundFullRefresh()
+
+    fun runDebugBackgroundDueRefresh() = debugRefreshActions.runBackgroundDueRefresh()
+
+    fun refreshDebugVisibleIncremental(items: List<GitHubTrackedApp>) =
+        debugRefreshActions.refreshVisibleIncremental(items)
 
     fun openActionsSheet(item: GitHubTrackedApp) = actionsActions.openActionsSheet(item)
 

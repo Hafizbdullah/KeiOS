@@ -59,11 +59,9 @@ internal fun GitHubCheckLogicSheet(
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
     importInProgress: Boolean,
-    debugActionsUpdateNotificationLoading: Boolean,
     onDismissRequest: () -> Unit,
     onApply: () -> Unit,
     onEnsureKeiOsSelfTrack: () -> Unit,
-    onSendDebugActionsUpdateNotification: () -> Unit,
     onCheckAllTrackedPreReleasesInputChange: (Boolean) -> Unit,
     onCheckAllDirectApkPreReleasesInputChange: (Boolean) -> Unit,
     onAggressiveApkFilteringInputChange: (Boolean) -> Unit,
@@ -229,11 +227,6 @@ internal fun GitHubCheckLogicSheet(
                 exportInProgress = exportInProgress,
                 importInProgress = importInProgress,
                 onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
-            )
-            GitHubCheckDebugSection(
-                backdrop = backdrop,
-                loading = debugActionsUpdateNotificationLoading,
-                onSendDebugActionsUpdateNotification = onSendDebugActionsUpdateNotification,
             )
             GitHubCheckNotesSection()
         }

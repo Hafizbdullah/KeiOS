@@ -18,6 +18,7 @@ import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
+import os.kei.ui.page.main.os.appLucideFlaskIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
@@ -79,6 +80,7 @@ internal fun GitHubTopBarActions(
     onOpenStrategySheet: () -> Unit,
     onOpenCheckLogicSheet: () -> Unit,
     onOpenDroidSourcesSheet: () -> Unit,
+    onOpenDebugSheet: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onSortDirectionChange: (GitHubSortDirection) -> Unit,
@@ -98,6 +100,7 @@ internal fun GitHubTopBarActions(
     val filterIcon = appLucideFilterIcon()
     val intervalIcon = appLucideTimeIcon()
     val droidSourcesIcon = appLucideDatabaseIcon()
+    val debugIcon = appLucideFlaskIcon()
     val moreIcon = appLucideMoreIcon()
     val chevronRightIcon = appLucideChevronRightIcon()
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
@@ -109,6 +112,8 @@ internal fun GitHubTopBarActions(
     val droidSourcesLabel = stringResource(R.string.github_topbar_droid_sources)
     val droidSourcesCountLabel =
         stringResource(R.string.github_topbar_droid_sources_count, fdroidCommonRepoCount)
+    val debugLabel = stringResource(R.string.github_topbar_debug_tools)
+    val debugSummary = stringResource(R.string.github_topbar_debug_tools_summary)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
     val exportTracksLabel =
         if (tracksExporting) {
@@ -263,6 +268,16 @@ internal fun GitHubTopBarActions(
                                             subtitle = droidSourcesCountLabel,
                                             leadingIcon = droidSourcesIcon,
                                             onClick = onOpenDroidSourcesSheet,
+                                        ),
+                                        LiquidGlassActionMenuActionRow(
+                                            id = "debug",
+                                            text = debugLabel,
+                                            subtitle = debugSummary,
+                                            leadingIcon = debugIcon,
+                                            onClick = {
+                                                onShowActionMenuPopupChange(false)
+                                                onOpenDebugSheet()
+                                            },
                                         ),
                                         LiquidGlassActionMenuSubmenuRow(
                                             id = "sort",

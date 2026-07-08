@@ -16,6 +16,7 @@ import os.kei.ui.page.main.github.query.OnlineShareTargetOption
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 import os.kei.ui.page.main.github.sheet.GitHubCheckLogicSheet
+import os.kei.ui.page.main.github.sheet.GitHubDebugSheet
 import os.kei.ui.page.main.github.sheet.GitHubDeleteTrackDialog
 import os.kei.ui.page.main.github.sheet.GitHubDroidSourcesSheet
 import os.kei.ui.page.main.github.sheet.GitHubFdroidDetailSheet
@@ -139,11 +140,9 @@ internal fun GitHubPageSheetHost(
         hasKeiOsSelfTrack = hasKeiOsSelfTrack,
         exportInProgress = tracksExporting,
         importInProgress = tracksImporting,
-        debugActionsUpdateNotificationLoading = state.debugActionsUpdateNotificationLoading,
         onDismissRequest = actions::closeCheckLogicSheet,
         onApply = { actions.applyCheckLogicSheet(installedOnlineShareTargets) },
         onEnsureKeiOsSelfTrack = onEnsureKeiOsSelfTrack,
-        onSendDebugActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
         onCheckAllTrackedPreReleasesInputChange = actions::setCheckAllTrackedPreReleasesInput,
         onCheckAllDirectApkPreReleasesInputChange = actions::setCheckAllDirectApkPreReleasesInput,
         onAggressiveApkFilteringInputChange = actions::setAggressiveApkFilteringInput,
@@ -173,6 +172,34 @@ internal fun GitHubPageSheetHost(
         onDismissRequest = actions::closeDroidSourcesSheet,
         onApply = actions::applyDroidSourcesSheet,
         onRepoEnabledChange = actions::setFdroidCommonRepoEnabled,
+    )
+
+    GitHubDebugSheet(
+        show = state.showDebugSheet,
+        backdrop = backdrops.sheet,
+        trackedCount = contentDerivedState.trackedUi.overviewMetrics.trackedCount,
+        visibleIncrementalTargetCount =
+            selectGitHubDebugVisibleRefreshTargets(
+                contentDerivedState.trackedUi.sortedTracked,
+            ).size,
+        failedCount =
+            state.trackedItems.count { item ->
+                state.checkStates[item.id]?.failed == true
+            },
+        backgroundFullRefreshLoading = state.debugBackgroundFullRefreshLoading,
+        backgroundDueRefreshLoading = state.debugBackgroundDueRefreshLoading,
+        visibleIncrementalRefreshLoading = state.debugVisibleIncrementalRefreshLoading,
+        actionsUpdateNotificationLoading = state.debugActionsUpdateNotificationLoading,
+        onDismissRequest = actions::closeDebugSheet,
+        onRunBackgroundFullRefresh = actions::runDebugBackgroundFullRefresh,
+        onRunBackgroundDueRefresh = actions::runDebugBackgroundDueRefresh,
+        onRefreshVisibleIncremental = {
+            actions.refreshDebugVisibleIncremental(contentDerivedState.trackedUi.sortedTracked)
+        },
+        onRefreshFailedIncremental = {
+            actions.refreshFailedTrackedItems(showToast = true)
+        },
+        onSendActionsUpdateNotification = actions::sendDebugActionsUpdateNotification,
     )
 
     GitHubActionsSheet(

@@ -481,34 +481,6 @@ internal fun GitHubCheckTracksSection(
     }
 }
 
-@Composable
-internal fun GitHubCheckDebugSection(
-    backdrop: LayerBackdrop,
-    loading: Boolean,
-    onSendDebugActionsUpdateNotification: () -> Unit,
-) {
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_debug))
-    SheetSectionCard {
-        SheetControlRow(
-            label = stringResource(R.string.github_check_sheet_label_debug_actions_update_notification),
-            summary = stringResource(R.string.github_check_sheet_summary_debug_actions_update_notification),
-        ) {
-            AppLiquidTextButton(
-                backdrop = backdrop,
-                text =
-                    if (loading) {
-                        stringResource(R.string.github_check_sheet_action_debug_actions_update_notification_loading)
-                    } else {
-                        stringResource(R.string.github_check_sheet_action_debug_actions_update_notification)
-                    },
-                onClick = onSendDebugActionsUpdateNotification,
-                enabled = !loading,
-                variant = GlassVariant.SheetAction,
-            )
-        }
-    }
-}
-
 internal fun GitHubShareImportFlowMode.labelRes(): Int =
     when (this) {
         GitHubShareImportFlowMode.SheetAssisted -> R.string.github_share_import_flow_mode_sheet

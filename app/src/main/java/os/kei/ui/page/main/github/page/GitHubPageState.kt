@@ -53,6 +53,7 @@ internal class GitHubPageState(
     var showStrategySheet by sheetState::showStrategySheet
     var showCheckLogicSheet by sheetState::showCheckLogicSheet
     var showDroidSourcesSheet by sheetState::showDroidSourcesSheet
+    var showDebugSheet by sheetState::showDebugSheet
     var showActionsSheet by sheetState::showActionsSheet
     var showOverviewEntrySheet by sheetState::showOverviewEntrySheet
     var showDownloaderPopup by sheetState::showDownloaderPopup
@@ -86,6 +87,9 @@ internal class GitHubPageState(
     var actionsArtifactDownloadLoadingId by actionsState::actionsArtifactDownloadLoadingId
     var actionsArtifactShareLoadingId by actionsState::actionsArtifactShareLoadingId
     var actionsRunWatchJob by actionsState::actionsRunWatchJob
+    var debugBackgroundFullRefreshLoading by actionsState::debugBackgroundFullRefreshLoading
+    var debugBackgroundDueRefreshLoading by actionsState::debugBackgroundDueRefreshLoading
+    var debugVisibleIncrementalRefreshLoading by actionsState::debugVisibleIncrementalRefreshLoading
     var preferPreReleaseInput by trackEditorState::preferPreReleaseInput
     var alwaysShowLatestReleaseDownloadButtonInput by trackEditorState::alwaysShowLatestReleaseDownloadButtonInput
     var checkActionsUpdatesInput by trackEditorState::checkActionsUpdatesInput

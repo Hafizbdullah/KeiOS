@@ -383,6 +383,7 @@ fun GitHubPage(
                     onOpenStrategySheet = actions::openStrategySheet,
                     onOpenCheckLogicSheet = actions::openCheckLogicSheet,
                     onOpenDroidSourcesSheet = actions::openDroidSourcesSheet,
+                    onOpenDebugSheet = actions::openDebugSheet,
                     onOpenActionsNotificationHistory = onOpenActionsNotificationHistory,
                     onOverviewExpandedChange = actions::setOverviewExpanded,
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
