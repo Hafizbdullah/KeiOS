@@ -1,11 +1,14 @@
 package os.kei.ui.page.main.settings.support
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -15,6 +18,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.background.AppBackgroundRecoverySnapshot
+import os.kei.core.background.AppBackgroundRecoveryStore
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.findPropString
@@ -34,10 +39,27 @@ internal enum class SettingsOemAutoStartState {
     Unsupported,
 }
 
+internal enum class SettingsAppStandbyBucketState {
+    Exempted,
+    Active,
+    WorkingSet,
+    Frequent,
+    Rare,
+    Restricted,
+    Never,
+    Unknown,
+}
+
 @Immutable
 internal data class SettingsPermissionKeepAliveSnapshot(
     val notificationsEnabled: Boolean = false,
     val notificationSettingsActionAvailable: Boolean = false,
+    val androidBackgroundRestricted: Boolean = false,
+    val androidPowerSaveMode: Boolean = false,
+    val androidDeviceIdleMode: Boolean = false,
+    val appStandbyBucket: SettingsAppStandbyBucketState = SettingsAppStandbyBucketState.Unknown,
+    val androidBackgroundSettingsActionAvailable: Boolean = false,
+    val backgroundRecoverySnapshot: AppBackgroundRecoverySnapshot = AppBackgroundRecoverySnapshot(),
     val shizukuGranted: Boolean = false,
     val shizukuStatusText: String = "",
     val appListAccessMode: SettingsAppListAccessMode = SettingsAppListAccessMode.Restricted,
@@ -61,6 +83,8 @@ internal class SettingsPermissionKeepAliveController(
             notificationPermissionGranted &&
                 NotificationManagerCompat.from(appContext).areNotificationsEnabled()
         val notificationSettingsActionAvailable = buildNotificationSettingsIntent(appContext) != null
+        val androidBackgroundSnapshot = resolveAndroidBackgroundSnapshot(appContext)
+        val backgroundRecoverySnapshot = AppBackgroundRecoveryStore.loadSnapshot()
 
         val shizukuGranted = shizukuApiUtils.canUseCommand()
         val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
@@ -74,6 +98,12 @@ internal class SettingsPermissionKeepAliveController(
         return SettingsPermissionKeepAliveSnapshot(
             notificationsEnabled = notificationsEnabled,
             notificationSettingsActionAvailable = notificationSettingsActionAvailable,
+            androidBackgroundRestricted = androidBackgroundSnapshot.backgroundRestricted,
+            androidPowerSaveMode = androidBackgroundSnapshot.powerSaveMode,
+            androidDeviceIdleMode = androidBackgroundSnapshot.deviceIdleMode,
+            appStandbyBucket = androidBackgroundSnapshot.appStandbyBucket,
+            androidBackgroundSettingsActionAvailable = androidBackgroundSnapshot.settingsActionAvailable,
+            backgroundRecoverySnapshot = backgroundRecoverySnapshot,
             shizukuGranted = shizukuGranted,
             shizukuStatusText = shizukuStatusText,
             appListAccessMode = appListState.mode,
@@ -87,6 +117,11 @@ internal class SettingsPermissionKeepAliveController(
 
     fun openNotificationSettings(): Boolean {
         val intent = buildNotificationSettingsIntent(appContext) ?: return false
+        return runCatching { appContext.startActivity(intent) }.isSuccess
+    }
+
+    fun openAndroidBackgroundSettings(): Boolean {
+        val intent = buildAndroidBackgroundSettingsIntent(appContext) ?: return false
         return runCatching { appContext.startActivity(intent) }.isSuccess
     }
 
@@ -126,6 +161,14 @@ private data class SettingsAppListAccessState(
 private data class SettingsOemAutoStartSnapshot(
     val state: SettingsOemAutoStartState,
     val vendorLabel: String,
+    val settingsActionAvailable: Boolean,
+)
+
+private data class SettingsAndroidBackgroundSnapshot(
+    val backgroundRestricted: Boolean,
+    val powerSaveMode: Boolean,
+    val deviceIdleMode: Boolean,
+    val appStandbyBucket: SettingsAppStandbyBucketState,
     val settingsActionAvailable: Boolean,
 )
 
@@ -176,6 +219,40 @@ private suspend fun queryShizukuPackageCount(shizukuApiUtils: ShizukuApiUtils): 
         .count { line -> line.startsWith("package:") }
         .coerceAtLeast(0)
 }
+
+private fun resolveAndroidBackgroundSnapshot(context: Context): SettingsAndroidBackgroundSnapshot {
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    val powerManager = context.getSystemService(PowerManager::class.java)
+    val usageStatsManager = context.getSystemService(UsageStatsManager::class.java)
+    return SettingsAndroidBackgroundSnapshot(
+        backgroundRestricted =
+            runCatching { activityManager?.isBackgroundRestricted == true }
+                .getOrDefault(false),
+        powerSaveMode =
+            runCatching { powerManager?.isPowerSaveMode == true }
+                .getOrDefault(false),
+        deviceIdleMode =
+            runCatching { powerManager?.isDeviceIdleMode == true }
+                .getOrDefault(false),
+        appStandbyBucket =
+            runCatching { usageStatsManager?.appStandbyBucket }
+                .getOrNull()
+                .toSettingsAppStandbyBucketState(),
+        settingsActionAvailable = buildAndroidBackgroundSettingsIntent(context) != null,
+    )
+}
+
+private fun Int?.toSettingsAppStandbyBucketState(): SettingsAppStandbyBucketState =
+    when (this) {
+        APP_STANDBY_BUCKET_EXEMPTED -> SettingsAppStandbyBucketState.Exempted
+        UsageStatsManager.STANDBY_BUCKET_ACTIVE -> SettingsAppStandbyBucketState.Active
+        UsageStatsManager.STANDBY_BUCKET_WORKING_SET -> SettingsAppStandbyBucketState.WorkingSet
+        UsageStatsManager.STANDBY_BUCKET_FREQUENT -> SettingsAppStandbyBucketState.Frequent
+        UsageStatsManager.STANDBY_BUCKET_RARE -> SettingsAppStandbyBucketState.Rare
+        UsageStatsManager.STANDBY_BUCKET_RESTRICTED -> SettingsAppStandbyBucketState.Restricted
+        APP_STANDBY_BUCKET_NEVER -> SettingsAppStandbyBucketState.Never
+        else -> SettingsAppStandbyBucketState.Unknown
+    }
 
 private fun resolveOemAutoStartSnapshot(context: Context): SettingsOemAutoStartSnapshot {
     val launchPlan = buildOemAutoStartLaunchPlan(context)
@@ -507,6 +584,23 @@ private fun buildNotificationSettingsIntent(context: Context): Intent? {
         }
 }
 
+private fun buildAndroidBackgroundSettingsIntent(context: Context): Intent? {
+    val packageManager = context.packageManager
+    val packageUri = "package:${context.packageName}".toUri()
+    val candidateIntents =
+        buildList {
+            add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri))
+            add(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            add(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+        }
+    return candidateIntents
+        .firstOrNull { intent ->
+            intent.resolveActivity(packageManager) != null
+        }?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+}
+
 private fun Intent.putMiuiPermissionExtras(context: Context): Intent {
     putExtra("extra_pkgname", context.packageName)
     putExtra("packageName", context.packageName)
@@ -589,3 +683,5 @@ private const val OEM_PERMISSIONS_EDITOR_ACTIVITY =
 private const val OEM_OP_AUTO_START = 10008
 private const val OEM_APP_OPS_MODE_ALLOWED = 0
 private const val OEM_APP_OPS_MODE_IGNORED = 1
+private const val APP_STANDBY_BUCKET_EXEMPTED = 5
+private const val APP_STANDBY_BUCKET_NEVER = 50

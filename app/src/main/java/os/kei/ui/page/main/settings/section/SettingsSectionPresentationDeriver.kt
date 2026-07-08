@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 
 @Immutable
@@ -22,11 +23,20 @@ internal fun derivePermissionKeepAlivePresentation(state: SettingsPermissionKeep
     SettingsSectionPresentationState(
         active =
             state.notificationsEnabled ||
+                state.isAndroidBackgroundReliable ||
                 state.ignoringBatteryOptimizations ||
                 state.oemAutoStartState == SettingsOemAutoStartState.Allowed ||
                 state.shizukuGranted ||
                 state.appListAccessMode != SettingsAppListAccessMode.Restricted,
     )
+
+private val SettingsPermissionKeepAliveSectionState.isAndroidBackgroundReliable: Boolean
+    get() =
+        !androidBackgroundRestricted &&
+            !androidPowerSaveMode &&
+            appStandbyBucket != SettingsAppStandbyBucketState.Rare &&
+            appStandbyBucket != SettingsAppStandbyBucketState.Restricted &&
+            appStandbyBucket != SettingsAppStandbyBucketState.Never
 
 internal fun deriveVisualPresentation(state: SettingsVisualSectionState): SettingsSectionPresentationState =
     SettingsSectionPresentationState(

@@ -393,6 +393,9 @@
     <string name="about_permission_post_promoted_notifications_title">Promoted notification capability</string>
     <string name="about_permission_post_promoted_notifications_purpose">Extends notification presentation when supported by the system</string>
     <string name="about_permission_post_promoted_notifications_used_in">Live Update / Super Island style notification adaptation</string>
+    <string name="about_permission_receive_boot_completed_title">Boot completed event</string>
+    <string name="about_permission_receive_boot_completed_purpose">Receives the system event after reboot to restore existing background schedules</string>
+    <string name="about_permission_receive_boot_completed_used_in">Schedule recovery for GitHub auto refresh, BA reminders, and WebDAV auto sync</string>
     <string name="about_permission_foreground_service_title">Foreground service</string>
     <string name="about_permission_foreground_service_purpose">Allows foreground services to start and keep running</string>
     <string name="about_permission_foreground_service_used_in">MCP KeepAlive and notification heartbeat</string>
@@ -424,6 +427,9 @@
     <string name="about_component_background_tick_receiver_title">Background Tick receiver</string>
     <string name="about_component_background_tick_receiver_purpose">Receives AlarmManager broadcasts and triggers background task processing</string>
     <string name="about_component_background_tick_receiver_used_in">GitHub auto refresh and BA AP threshold checks</string>
+    <string name="about_component_background_system_event_receiver_title">Background recovery receiver</string>
+    <string name="about_component_background_system_event_receiver_purpose">Receives reboot, app update, time, and time-zone change events, then restores background schedules</string>
+    <string name="about_component_background_system_event_receiver_used_in">Schedule recovery for GitHub auto refresh, BA reminders, and WebDAV auto sync</string>
     <string name="about_component_github_background_refresh_job_title">GitHub background refresh job</string>
     <string name="about_component_github_background_refresh_job_purpose">Runs GitHub auto refresh batches inside the system JobScheduler lifecycle</string>
     <string name="about_component_github_background_refresh_job_used_in">GitHub due tracking, Actions recommended runs, and refresh history records</string>

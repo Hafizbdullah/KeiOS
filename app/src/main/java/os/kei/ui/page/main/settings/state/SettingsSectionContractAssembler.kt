@@ -4,8 +4,9 @@ package os.kei.ui.page.main.settings.state
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import os.kei.core.prefs.LauncherIconDesign
+import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionActions
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionState
 import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSectionActions
@@ -19,6 +20,7 @@ import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionSt
 import os.kei.ui.page.main.settings.section.SettingsVisualSectionActions
 import os.kei.ui.page.main.settings.section.SettingsVisualSectionState
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 
 internal data class SettingsSectionContractBundle(
@@ -41,6 +43,12 @@ internal fun rememberSettingsSectionContractBundle(
     notificationPermissionGranted: Boolean,
     notificationsEnabled: Boolean,
     notificationSettingsActionAvailable: Boolean,
+    androidBackgroundRestricted: Boolean,
+    androidPowerSaveMode: Boolean,
+    androidDeviceIdleMode: Boolean,
+    appStandbyBucket: SettingsAppStandbyBucketState,
+    androidBackgroundSettingsActionAvailable: Boolean,
+    backgroundRecoverySnapshot: AppBackgroundRecoverySnapshot,
     preloadingEnabled: Boolean,
     launcherIconDesign: LauncherIconDesign,
     homeIconHdrEnabled: Boolean,
@@ -74,6 +82,7 @@ internal fun rememberSettingsSectionContractBundle(
     pageUiState: SettingsPageUiState,
     onRequestNotificationPermission: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
+    onOpenAndroidBackgroundSettings: () -> Unit,
     onPreloadingEnabledChanged: (Boolean) -> Unit,
     onLauncherIconDesignChanged: (LauncherIconDesign) -> Unit,
     onHomeIconHdrChanged: (Boolean) -> Unit,
@@ -104,6 +113,12 @@ internal fun rememberSettingsSectionContractBundle(
             notificationPermissionGranted,
             notificationsEnabled,
             notificationSettingsActionAvailable,
+            androidBackgroundRestricted,
+            androidPowerSaveMode,
+            androidDeviceIdleMode,
+            appStandbyBucket,
+            androidBackgroundSettingsActionAvailable,
+            backgroundRecoverySnapshot,
             ignoringBatteryOptimizations,
             batteryOptimizationActionAvailable,
             oemAutoStartState,
@@ -119,6 +134,12 @@ internal fun rememberSettingsSectionContractBundle(
                 notificationPermissionGranted = notificationPermissionGranted,
                 notificationsEnabled = notificationsEnabled,
                 notificationSettingsActionAvailable = notificationSettingsActionAvailable,
+                androidBackgroundRestricted = androidBackgroundRestricted,
+                androidPowerSaveMode = androidPowerSaveMode,
+                androidDeviceIdleMode = androidDeviceIdleMode,
+                appStandbyBucket = appStandbyBucket,
+                androidBackgroundSettingsActionAvailable = androidBackgroundSettingsActionAvailable,
+                backgroundRecoverySnapshot = backgroundRecoverySnapshot,
                 ignoringBatteryOptimizations = ignoringBatteryOptimizations,
                 batteryOptimizationActionAvailable = batteryOptimizationActionAvailable,
                 oemAutoStartState = oemAutoStartState,
@@ -135,6 +156,7 @@ internal fun rememberSettingsSectionContractBundle(
         remember(
             onRequestNotificationPermission,
             onOpenNotificationSettings,
+            onOpenAndroidBackgroundSettings,
             onOpenBatteryOptimizationSettings,
             onOpenOemAutoStartSettings,
             onOpenAppListPermissionSettings,
@@ -143,6 +165,7 @@ internal fun rememberSettingsSectionContractBundle(
             SettingsPermissionKeepAliveSectionActions(
                 onRequestNotificationPermission = onRequestNotificationPermission,
                 onOpenNotificationSettings = onOpenNotificationSettings,
+                onOpenAndroidBackgroundSettings = onOpenAndroidBackgroundSettings,
                 onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings,
                 onOpenOemAutoStartSettings = onOpenOemAutoStartSettings,
                 onOpenAppListPermissionSettings = onOpenAppListPermissionSettings,

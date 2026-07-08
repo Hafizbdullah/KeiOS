@@ -2,9 +2,11 @@ package os.kei.ui.page.main.settings.section
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
-import os.kei.core.prefs.LauncherIconDesign
+import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.LauncherIconDesign
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
 
 @Immutable
@@ -12,6 +14,12 @@ internal data class SettingsPermissionKeepAliveSectionState(
     val notificationPermissionGranted: Boolean,
     val notificationsEnabled: Boolean,
     val notificationSettingsActionAvailable: Boolean,
+    val androidBackgroundRestricted: Boolean,
+    val androidPowerSaveMode: Boolean,
+    val androidDeviceIdleMode: Boolean,
+    val appStandbyBucket: SettingsAppStandbyBucketState,
+    val androidBackgroundSettingsActionAvailable: Boolean,
+    val backgroundRecoverySnapshot: AppBackgroundRecoverySnapshot,
     val ignoringBatteryOptimizations: Boolean,
     val batteryOptimizationActionAvailable: Boolean,
     val oemAutoStartState: SettingsOemAutoStartState,
@@ -27,6 +35,7 @@ internal data class SettingsPermissionKeepAliveSectionState(
 internal data class SettingsPermissionKeepAliveSectionActions(
     val onRequestNotificationPermission: () -> Unit,
     val onOpenNotificationSettings: () -> Unit,
+    val onOpenAndroidBackgroundSettings: () -> Unit,
     val onOpenBatteryOptimizationSettings: () -> Unit,
     val onOpenOemAutoStartSettings: () -> Unit,
     val onOpenAppListPermissionSettings: () -> Unit,

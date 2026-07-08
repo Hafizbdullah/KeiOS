@@ -86,6 +86,11 @@ private val permissionExplainMap = mapOf(
         purposeRes = R.string.about_permission_post_promoted_notifications_purpose,
         usedInRes = R.string.about_permission_post_promoted_notifications_used_in
     ),
+    "android.permission.RECEIVE_BOOT_COMPLETED" to AboutExplainRes(
+        titleRes = R.string.about_permission_receive_boot_completed_title,
+        purposeRes = R.string.about_permission_receive_boot_completed_purpose,
+        usedInRes = R.string.about_permission_receive_boot_completed_used_in
+    ),
     "android.permission.FOREGROUND_SERVICE" to AboutExplainRes(
         titleRes = R.string.about_permission_foreground_service_title,
         purposeRes = R.string.about_permission_foreground_service_purpose,
@@ -113,6 +118,11 @@ private val componentExplainMap = mapOf(
         titleRes = R.string.about_component_background_tick_receiver_title,
         purposeRes = R.string.about_component_background_tick_receiver_purpose,
         usedInRes = R.string.about_component_background_tick_receiver_used_in
+    ),
+    "os.kei.core.background.AppBackgroundSystemEventReceiver" to AboutExplainRes(
+        titleRes = R.string.about_component_background_system_event_receiver_title,
+        purposeRes = R.string.about_component_background_system_event_receiver_purpose,
+        usedInRes = R.string.about_component_background_system_event_receiver_used_in
     ),
     "os.kei.core.background.GitHubBackgroundRefreshJobService" to AboutExplainRes(
         titleRes = R.string.about_component_github_background_refresh_job_title,

@@ -2,17 +2,22 @@
 
 package os.kei.ui.page.main.settings.section
 
+import android.content.Intent
+import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideLockIcon
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
+import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsButtonActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
+import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import java.util.Locale
 
 @Composable
 internal fun SettingsPermissionKeepAliveSection(
@@ -67,6 +72,26 @@ internal fun SettingsPermissionKeepAliveSection(
                     },
                 )
             },
+        )
+        SettingsButtonActionItem(
+            title = stringResource(R.string.settings_android_background_title),
+            summary = androidBackgroundSummary(state),
+            infoKey = stringResource(R.string.settings_permissions_info_status),
+            infoValue = androidBackgroundStatus(state),
+            trailing = {
+                AppStandaloneLiquidTextButton(
+                    variant = GlassVariant.Compact,
+                    text = stringResource(R.string.common_open),
+                    enabled = state.androidBackgroundSettingsActionAvailable,
+                    onClick = actions.onOpenAndroidBackgroundSettings,
+                )
+            },
+        )
+        SettingsValueItem(
+            title = stringResource(R.string.settings_background_recovery_title),
+            summary = backgroundRecoverySummary(state),
+            infoKey = stringResource(R.string.settings_background_recovery_info_count),
+            infoValue = backgroundRecoveryStatus(state),
         )
         SettingsButtonActionItem(
             title = stringResource(R.string.settings_battery_optimization_title),
@@ -269,6 +294,194 @@ internal fun SettingsPermissionKeepAliveSection(
         )
     }
 }
+
+@Composable
+private fun androidBackgroundSummary(state: SettingsPermissionKeepAliveSectionState): String =
+    when {
+        state.androidBackgroundRestricted -> {
+            stringResource(R.string.settings_android_background_summary_restricted)
+        }
+
+        state.androidPowerSaveMode -> {
+            stringResource(R.string.settings_android_background_summary_power_save)
+        }
+
+        state.appStandbyBucket.isStandbyLimited() -> {
+            stringResource(
+                R.string.settings_android_background_summary_standby_limited,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+
+        state.androidDeviceIdleMode -> {
+            stringResource(R.string.settings_android_background_summary_idle)
+        }
+
+        else -> {
+            stringResource(R.string.settings_android_background_summary_normal)
+        }
+    }
+
+@Composable
+private fun androidBackgroundStatus(state: SettingsPermissionKeepAliveSectionState): String =
+    when {
+        state.androidBackgroundRestricted -> {
+            stringResource(
+                R.string.settings_android_background_status_restricted,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+
+        state.androidPowerSaveMode -> {
+            stringResource(
+                R.string.settings_android_background_status_power_save,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+
+        state.appStandbyBucket.isStandbyLimited() -> {
+            stringResource(
+                R.string.settings_android_background_status_standby_limited,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+
+        state.androidDeviceIdleMode -> {
+            stringResource(
+                R.string.settings_android_background_status_idle,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+
+        else -> {
+            stringResource(
+                R.string.settings_android_background_status_normal,
+                appStandbyBucketLabel(state.appStandbyBucket),
+            )
+        }
+    }
+
+@Composable
+private fun appStandbyBucketLabel(bucket: SettingsAppStandbyBucketState): String =
+    when (bucket) {
+        SettingsAppStandbyBucketState.Exempted -> {
+            stringResource(R.string.settings_app_standby_bucket_exempted)
+        }
+
+        SettingsAppStandbyBucketState.Active -> {
+            stringResource(R.string.settings_app_standby_bucket_active)
+        }
+
+        SettingsAppStandbyBucketState.WorkingSet -> {
+            stringResource(R.string.settings_app_standby_bucket_working_set)
+        }
+
+        SettingsAppStandbyBucketState.Frequent -> {
+            stringResource(R.string.settings_app_standby_bucket_frequent)
+        }
+
+        SettingsAppStandbyBucketState.Rare -> {
+            stringResource(R.string.settings_app_standby_bucket_rare)
+        }
+
+        SettingsAppStandbyBucketState.Restricted -> {
+            stringResource(R.string.settings_app_standby_bucket_restricted)
+        }
+
+        SettingsAppStandbyBucketState.Never -> {
+            stringResource(R.string.settings_app_standby_bucket_never)
+        }
+
+        SettingsAppStandbyBucketState.Unknown -> {
+            stringResource(R.string.settings_app_standby_bucket_unknown)
+        }
+    }
+
+private fun SettingsAppStandbyBucketState.isStandbyLimited(): Boolean =
+    this == SettingsAppStandbyBucketState.Rare ||
+        this == SettingsAppStandbyBucketState.Restricted ||
+        this == SettingsAppStandbyBucketState.Never
+
+@Composable
+private fun backgroundRecoverySummary(state: SettingsPermissionKeepAliveSectionState): String {
+    val snapshot = state.backgroundRecoverySnapshot
+    if (snapshot.lastFinishedAtMs <= 0L) {
+        return stringResource(R.string.settings_background_recovery_summary_empty)
+    }
+    val action = backgroundRecoveryActionLabel(snapshot.lastAction)
+    val time = formatBackgroundRecoveryTime(snapshot.lastFinishedAtMs)
+    val elapsed = formatBackgroundRecoveryElapsed(snapshot.lastElapsedMs)
+    val failureReason =
+        if (snapshot.lastFailureReason.isBlank()) {
+            stringResource(R.string.common_unknown)
+        } else {
+            snapshot.lastFailureReason
+        }
+    return if (snapshot.lastFailed) {
+        stringResource(
+            R.string.settings_background_recovery_summary_failed,
+            action,
+            time,
+            failureReason,
+        )
+    } else {
+        stringResource(
+            R.string.settings_background_recovery_summary_succeeded,
+            action,
+            time,
+            elapsed,
+        )
+    }
+}
+
+@Composable
+private fun backgroundRecoveryStatus(state: SettingsPermissionKeepAliveSectionState): String {
+    val snapshot = state.backgroundRecoverySnapshot
+    if (snapshot.recoveryCount <= 0) {
+        return stringResource(R.string.settings_background_recovery_status_empty)
+    }
+    return if (snapshot.lastFailed) {
+        stringResource(R.string.settings_background_recovery_status_failed, snapshot.recoveryCount)
+    } else {
+        stringResource(R.string.settings_background_recovery_status_succeeded, snapshot.recoveryCount)
+    }
+}
+
+@Composable
+private fun backgroundRecoveryActionLabel(action: String): String =
+    when (action) {
+        Intent.ACTION_BOOT_COMPLETED -> {
+            stringResource(R.string.settings_background_recovery_action_boot_completed)
+        }
+
+        Intent.ACTION_MY_PACKAGE_REPLACED -> {
+            stringResource(R.string.settings_background_recovery_action_package_replaced)
+        }
+
+        Intent.ACTION_TIME_CHANGED -> {
+            stringResource(R.string.settings_background_recovery_action_time_changed)
+        }
+
+        Intent.ACTION_TIMEZONE_CHANGED -> {
+            stringResource(R.string.settings_background_recovery_action_timezone_changed)
+        }
+
+        else -> {
+            stringResource(R.string.settings_background_recovery_action_unknown)
+        }
+    }
+
+private fun formatBackgroundRecoveryTime(epochMs: Long): String =
+    DateFormat.format(DateFormat.getBestDateTimePattern(Locale.getDefault(), "MMMdHm"), epochMs)
+        .toString()
+
+@Composable
+private fun formatBackgroundRecoveryElapsed(elapsedMs: Long): String =
+    if (elapsedMs < 1000L) {
+        stringResource(R.string.settings_background_recovery_elapsed_ms, elapsedMs.coerceAtLeast(0L))
+    } else {
+        stringResource(R.string.settings_background_recovery_elapsed_s, elapsedMs / 1000L)
+    }
 
 @Composable
 private fun localizedShizukuStatusText(

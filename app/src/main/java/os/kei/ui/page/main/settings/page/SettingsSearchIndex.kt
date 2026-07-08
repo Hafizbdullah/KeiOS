@@ -36,10 +36,15 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val accessCategoryLabel = resolveString(R.string.settings_category_access)
     val permissionsGroupLabel = resolveString(R.string.settings_group_permissions_title)
     val notificationPermissionLabel = resolveString(R.string.settings_notification_permission_title)
+    val androidBackgroundLabel = resolveString(R.string.settings_android_background_title)
+    val backgroundRecoveryLabel = resolveString(R.string.settings_background_recovery_title)
     val batteryOptimizationLabel = resolveString(R.string.settings_battery_optimization_title)
     val oemAutostartLabel = resolveString(R.string.settings_oem_autostart_title)
     val appListAccessLabel = resolveString(R.string.settings_app_list_access_title)
     val shizukuPermissionLabel = resolveString(R.string.settings_shizuku_permission_title)
+    val appStandbyActiveLabel = resolveString(R.string.settings_app_standby_bucket_active)
+    val appStandbyRareLabel = resolveString(R.string.settings_app_standby_bucket_rare)
+    val appStandbyRestrictedLabel = resolveString(R.string.settings_app_standby_bucket_restricted)
 
     val appearanceCategoryLabel = resolveString(R.string.settings_category_appearance)
     val visualGroupLabel = resolveString(R.string.settings_group_visual_title)
@@ -122,10 +127,17 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     accessCategoryLabel,
                     permissionsGroupLabel,
                     notificationPermissionLabel,
+                    androidBackgroundLabel,
+                    backgroundRecoveryLabel,
                     batteryOptimizationLabel,
                     oemAutostartLabel,
                     appListAccessLabel,
                     shizukuPermissionLabel,
+                    appStandbyActiveLabel,
+                    appStandbyRareLabel,
+                    appStandbyRestrictedLabel,
+                    "Doze",
+                    "standby",
                 ),
         ),
         SettingsSearchTarget(

@@ -70,6 +70,13 @@ internal fun rememberSettingsPageSectionContracts(
         notificationPermissionGranted = notificationPermissionGranted,
         notificationsEnabled = permissionKeepAliveState.notificationsEnabled,
         notificationSettingsActionAvailable = permissionKeepAliveState.notificationSettingsActionAvailable,
+        androidBackgroundRestricted = permissionKeepAliveState.androidBackgroundRestricted,
+        androidPowerSaveMode = permissionKeepAliveState.androidPowerSaveMode,
+        androidDeviceIdleMode = permissionKeepAliveState.androidDeviceIdleMode,
+        appStandbyBucket = permissionKeepAliveState.appStandbyBucket,
+        androidBackgroundSettingsActionAvailable =
+            permissionKeepAliveState.androidBackgroundSettingsActionAvailable,
+        backgroundRecoverySnapshot = permissionKeepAliveState.backgroundRecoverySnapshot,
         preloadingEnabled = preloadingEnabled,
         launcherIconDesign = launcherIconDesign,
         homeIconHdrEnabled = homeIconHdrEnabled,
@@ -107,6 +114,13 @@ internal fun rememberSettingsPageSectionContracts(
                 context = context,
                 opened = permissionKeepAliveController.openNotificationSettings(),
                 messageRes = R.string.settings_notification_permission_toast_open_failed,
+            )
+        },
+        onOpenAndroidBackgroundSettings = {
+            showSettingsToastIfClosed(
+                context = context,
+                opened = permissionKeepAliveController.openAndroidBackgroundSettings(),
+                messageRes = R.string.settings_android_background_toast_open_failed,
             )
         },
         onPreloadingEnabledChanged = onPreloadingEnabledChanged,
