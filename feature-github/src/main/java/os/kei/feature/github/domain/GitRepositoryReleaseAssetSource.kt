@@ -6,6 +6,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
@@ -61,7 +63,7 @@ internal class GitRepositoryReleaseAssetSource(
         ).joinToString("|")
     }
 
-    fun fetchReleaseNotesTargets(
+    suspend fun fetchReleaseNotesTargets(
         stableLimit: Int = 2,
         prereleaseLimit: Int = 2,
     ): Result<List<GitHubReleaseNotesTarget>> {
@@ -154,7 +156,7 @@ internal class GitRepositoryReleaseAssetSource(
         }
     }
 
-    private fun loadGiteeReleaseBundle(
+    private suspend fun loadGiteeReleaseBundle(
         rawTag: String,
         releaseUrl: String,
         lookupConfig: GitHubLookupConfig,
@@ -181,7 +183,7 @@ internal class GitRepositoryReleaseAssetSource(
         }
     }
 
-    private fun loadGiteaReleaseBundle(
+    private suspend fun loadGiteaReleaseBundle(
         rawTag: String,
         releaseUrl: String,
         lookupConfig: GitHubLookupConfig,
@@ -208,7 +210,7 @@ internal class GitRepositoryReleaseAssetSource(
         }
     }
 
-    private fun loadGitLabReleaseBundle(
+    private suspend fun loadGitLabReleaseBundle(
         rawTag: String,
         releaseUrl: String,
         lookupConfig: GitHubLookupConfig,
@@ -359,20 +361,20 @@ internal class GitRepositoryReleaseAssetSource(
             .sortedByDescending { it.updatedAtMillis ?: 0L }
     }
 
-    private fun fetchGiteeReleaseList(limit: Int): Result<JsonArray> {
+    private suspend fun fetchGiteeReleaseList(limit: Int): Result<JsonArray> {
         val url =
             "${giteeApiBaseUrl.trimEnd('/')}/repos/${repositoryApiPath()}/releases?per_page=${limit.coerceIn(1, 100)}&direction=desc"
         return fetchJsonArray(url)
     }
 
-    private fun fetchGitLabReleaseList(limit: Int): Result<JsonArray> {
+    private suspend fun fetchGitLabReleaseList(limit: Int): Result<JsonArray> {
         val projectId = urlEncode("${identity.namespace}/${identity.repo}")
         val url =
             "${gitLabApiBaseUrl.trimEnd('/')}/projects/$projectId/releases?per_page=${limit.coerceIn(1, 100)}"
         return fetchJsonArray(url)
     }
 
-    private fun fetchGiteaReleaseList(limit: Int): Result<JsonArray> {
+    private suspend fun fetchGiteaReleaseList(limit: Int): Result<JsonArray> {
         val url =
             "${giteaApiBaseUrl.trimEnd('/')}/repos/${repositoryApiPath()}/releases?limit=${limit.coerceIn(1, 100)}"
         return fetchJsonArray(url)
@@ -421,26 +423,26 @@ internal class GitRepositoryReleaseAssetSource(
         return "https://${identity.host}/${identity.namespace}/${identity.repo}/releases/tag/${rawTag.urlEncodePathSegment()}"
     }
 
-    private fun fetchJsonObject(url: String): Result<JsonObject> {
+    private suspend fun fetchJsonObject(url: String): Result<JsonObject> {
         return fetchText(url).mapCatching { body ->
             body.parseJsonObjectOrNull() ?: error("Git release response is not a JSON object")
         }
     }
 
-    private fun fetchJsonArray(url: String): Result<JsonArray> {
+    private suspend fun fetchJsonArray(url: String): Result<JsonArray> {
         return fetchText(url).mapCatching { body ->
             body.parseJsonArrayOrNull() ?: error("Git release response is not a JSON array")
         }
     }
 
-    private fun fetchText(url: String): Result<String> = runCatching {
+    private suspend fun fetchText(url: String): Result<String> = cancellableResult {
         val request = Request.Builder()
             .url(url)
             .get()
             .header("Accept", "application/json,*/*")
             .header("User-Agent", GIT_USER_AGENT)
             .build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))

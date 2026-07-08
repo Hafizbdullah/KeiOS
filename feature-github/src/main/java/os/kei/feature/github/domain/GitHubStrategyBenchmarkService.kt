@@ -591,7 +591,7 @@ data class GitHubStrategyBenchmarkRunner(
 
 private class GitHubBenchmarkReleaseAssetFetcher(
     private val lookupConfig: GitHubLookupConfig,
-    private val loadSnapshotTrace: (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot>
+    private val loadSnapshotTrace: suspend (GitHubRepoTarget) -> GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot>
 ) {
     private val snapshotCache =
         ConcurrentHashMap<String, Result<GitHubRepositoryReleaseSnapshot>>()
@@ -636,9 +636,10 @@ private class GitHubBenchmarkReleaseAssetFetcher(
         return (bundleCache[key] ?: result).getOrThrow()
     }
 
-    private fun loadSnapshotResult(target: GitHubRepoTarget): Result<GitHubRepositoryReleaseSnapshot> {
-        return snapshotCache.computeIfAbsent(target.id) {
-            loadSnapshotTrace.invoke(target).result
-        }
+    private suspend fun loadSnapshotResult(target: GitHubRepoTarget): Result<GitHubRepositoryReleaseSnapshot> {
+        snapshotCache[target.id]?.let { cached -> return cached }
+        val result = loadSnapshotTrace.invoke(target).result
+        snapshotCache.putIfAbsent(target.id, result)
+        return snapshotCache[target.id] ?: result
     }
 }

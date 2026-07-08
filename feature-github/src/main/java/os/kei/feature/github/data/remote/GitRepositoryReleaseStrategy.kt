@@ -7,6 +7,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optObject
@@ -43,7 +45,7 @@ class GitRepositoryReleaseStrategy(
 ) : GitHubReleaseLookupStrategy {
     override val id: String = "git_repository_${identity.platform.storageId}"
 
-    override fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
+    override suspend fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
         val key = "${identity.platform.storageId}|${identity.displayName}|$gitLabApiBaseUrl|$giteeApiBaseUrl|$giteaApiBaseUrl|$genericRepositoryBaseUrl"
         val now = System.currentTimeMillis()
         snapshotCache[key]?.takeIf { now - it.timestamp < CACHE_TTL_MS }?.let { return it.value }
@@ -81,7 +83,7 @@ class GitRepositoryReleaseStrategy(
         snapshotCache.clear()
     }
 
-    private fun loadGitLabSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
+    private suspend fun loadGitLabSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
         val projectId = urlEncode("${identity.namespace}/${identity.repo}")
         val releasesUrl =
             "${gitLabApiBaseUrl.trimEnd('/')}/projects/$projectId/releases?per_page=30"
@@ -95,7 +97,7 @@ class GitRepositoryReleaseStrategy(
         )
     }
 
-    private fun loadGiteeSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
+    private suspend fun loadGiteeSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
         val ownerPath = identity.namespace
             .split('/')
             .joinToString("/") { it.urlEncodePathSegment() }
@@ -112,7 +114,7 @@ class GitRepositoryReleaseStrategy(
         )
     }
 
-    private fun loadGiteaSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
+    private suspend fun loadGiteaSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
         val ownerPath = identity.namespace
             .split('/')
             .joinToString("/") { it.urlEncodePathSegment() }
@@ -129,7 +131,7 @@ class GitRepositoryReleaseStrategy(
         )
     }
 
-    private fun loadGenericGitSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
+    private suspend fun loadGenericGitSnapshot(): Result<GitHubRepositoryReleaseSnapshot> {
         val refsUrl = genericGitRefsUrl()
         return fetchGitRefsTagEntries(sourceBaseUrl = genericRepositoryWebBaseUrl())
             .let { result ->
@@ -142,7 +144,7 @@ class GitRepositoryReleaseStrategy(
             }
     }
 
-    private fun loadApiSnapshotWithGitFallback(
+    private suspend fun loadApiSnapshotWithGitFallback(
         releasesUrl: String,
         tagsUrl: String,
         releaseBodyKey: String,
@@ -158,7 +160,7 @@ class GitRepositoryReleaseStrategy(
             }
             .getOrElse { emptyList() }
         var refsFallback: Result<List<GitHubAtomReleaseEntry>>? = null
-        fun loadRefsFallback(): Result<List<GitHubAtomReleaseEntry>> {
+        suspend fun loadRefsFallback(): Result<List<GitHubAtomReleaseEntry>> {
             refsFallback?.let { return it }
             return fetchGitRefsTagEntries(sourceBaseUrl = sourceBaseUrl)
                 .also { refsFallback = it }
@@ -403,20 +405,20 @@ class GitRepositoryReleaseStrategy(
         return entriesByTag.values.toList()
     }
 
-    private fun fetchJsonArray(url: String): Result<JsonArray> {
+    private suspend fun fetchJsonArray(url: String): Result<JsonArray> {
         return fetchText(url).mapCatching { body ->
             body.parseJsonArrayOrNull() ?: error("Git repository response is not a JSON array")
         }
     }
 
-    private fun fetchText(url: String): Result<String> = runCatching {
+    private suspend fun fetchText(url: String): Result<String> = cancellableResult {
         val request = Request.Builder()
             .url(url)
             .get()
             .header("Accept", "application/json,text/plain,text/html,*/*")
             .header("User-Agent", GIT_USER_AGENT)
             .build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))
@@ -425,7 +427,7 @@ class GitRepositoryReleaseStrategy(
         }
     }
 
-    private fun fetchGitRefsTagEntries(sourceBaseUrl: String): Result<List<GitHubAtomReleaseEntry>> {
+    private suspend fun fetchGitRefsTagEntries(sourceBaseUrl: String): Result<List<GitHubAtomReleaseEntry>> {
         return fetchText(genericGitRefsUrl())
             .map { refs -> parseGitRefsTagEntries(refs, sourceBaseUrl = sourceBaseUrl) }
     }

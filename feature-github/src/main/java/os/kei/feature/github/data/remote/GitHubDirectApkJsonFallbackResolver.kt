@@ -7,6 +7,8 @@ import kotlinx.serialization.json.contentOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
 import os.kei.core.json.optObject
@@ -36,8 +38,8 @@ data class GitHubDirectApkJsonFallback(
 class GitHubDirectApkJsonFallbackResolver(
     private val client: OkHttpClient = defaultClient
 ) {
-    fun resolve(directApkUrl: String): Result<GitHubDirectApkJsonFallback?> = runCatching {
-        val jsonUrl = directApkUrl.jsonFeedUrl() ?: return@runCatching null
+    suspend fun resolve(directApkUrl: String): Result<GitHubDirectApkJsonFallback?> = cancellableResult {
+        val jsonUrl = directApkUrl.jsonFeedUrl() ?: return@cancellableResult null
         val request = Request.Builder()
             .url(jsonUrl)
             .get()
@@ -46,19 +48,19 @@ class GitHubDirectApkJsonFallbackResolver(
             .header("Cache-Control", "no-store")
             .header("Pragma", "no-cache")
             .build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             check(response.isSuccessful) {
                 "direct APK companion JSON failed (HTTP ${response.code})"
             }
             val raw = response.body.string()
-            val obj = parseJsonFeedObject(raw) ?: return@use null
+            val obj = parseJsonFeedObject(raw) ?: return@executeCancellable null
             val fileUrl = obj.firstNonBlankString(
                 "file_url",
                 "download_url",
                 "apk_url",
                 "url"
             )
-            if (fileUrl.isBlank()) return@use null
+            if (fileUrl.isBlank()) return@executeCancellable null
             GitHubDirectApkJsonFallback(
                 sourceUrl = jsonUrl,
                 fileUrl = fileUrl,

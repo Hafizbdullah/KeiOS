@@ -3,6 +3,8 @@ package os.kei.feature.github.data.remote
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -37,7 +39,7 @@ data class GitHubDirectApkDirectoryIndexTargets(
 class GitHubDirectApkDirectoryIndexResolver(
     private val client: OkHttpClient = defaultClient
 ) {
-    fun resolve(
+    suspend fun resolve(
         rawUrl: String,
         localVersion: String = "",
         preferPreRelease: Boolean = false
@@ -55,13 +57,13 @@ class GitHubDirectApkDirectoryIndexResolver(
         }
     }
 
-    fun resolveTargets(
+    suspend fun resolveTargets(
         rawUrl: String,
         localVersion: String = "",
         includePreRelease: Boolean = false
-    ): Result<GitHubDirectApkDirectoryIndexTargets?> = runCatching {
+    ): Result<GitHubDirectApkDirectoryIndexTargets?> = cancellableResult {
         val pattern = DirectApkDirectoryIndexPattern.from(rawUrl)
-            ?: return@runCatching null
+            ?: return@cancellableResult null
         val request = Request.Builder()
             .url(pattern.indexUrl)
             .get()
@@ -70,68 +72,68 @@ class GitHubDirectApkDirectoryIndexResolver(
             .header("Cache-Control", "no-store")
             .header("Pragma", "no-cache")
             .build()
-        client.newCall(request).execute().use { response ->
+        val html = client.executeCancellable(request) { response ->
             check(response.isSuccessful) {
                 "direct APK directory index failed (HTTP ${response.code})"
             }
-            val html = response.body.string()
-            check(html.length <= MAX_INDEX_HTML_CHARS) {
-                "direct APK directory index is too large"
+            response.body.string()
+        }
+        check(html.length <= MAX_INDEX_HTML_CHARS) {
+            "direct APK directory index is too large"
+        }
+        val candidates = parseApkCandidates(
+            indexUri = pattern.indexUri,
+            indexPath = pattern.indexPath,
+            html = html
+        )
+        val familyCandidates = pattern.referenceFamilyKey
+            ?.let { familyKey ->
+                candidates
+                    .filter { it.familyKey == familyKey }
+                    .takeIf { it.isNotEmpty() }
             }
-            val candidates = parseApkCandidates(
+            ?: candidates
+        val variantPreference = DirectApkVariantPreference.from(
+            referenceFileName = pattern.referenceFileName,
+            localVersion = localVersion
+        )
+        val variantCandidates = variantPreference
+            .preferredCandidates(familyCandidates)
+            .takeIf { it.isNotEmpty() }
+            ?: familyCandidates
+        val latestStable = variantCandidates
+            .preferredReleaseChannelCandidates(preferPreRelease = false)
+            .maxWithOrNull(ApkFileCandidateComparator)
+        val latestPreRelease = variantCandidates
+            .preferredReleaseChannelCandidates(preferPreRelease = true)
+            .maxWithOrNull(ApkFileCandidateComparator)
+        val fallbackLatest = variantCandidates.maxWithOrNull(ApkFileCandidateComparator)
+        val stableCandidate = latestStable
+        val preReleaseCandidate = when {
+            includePreRelease -> latestPreRelease
+            stableCandidate == null -> latestPreRelease ?: fallbackLatest
+                ?.takeIf { it.version.channel.isPreRelease }
+
+            else -> null
+        }
+        val selectedVersions = listOfNotNull(stableCandidate, preReleaseCandidate)
+            .map { candidate -> candidate.version.raw }
+            .distinct()
+        val releaseNotesByVersion = loadReleaseNotesByVersion(
+            logUrl = parseReleaseLogUrl(
                 indexUri = pattern.indexUri,
                 indexPath = pattern.indexPath,
                 html = html
-            )
-            val familyCandidates = pattern.referenceFamilyKey
-                ?.let { familyKey ->
-                    candidates
-                        .filter { it.familyKey == familyKey }
-                        .takeIf { it.isNotEmpty() }
-                }
-                ?: candidates
-            val variantPreference = DirectApkVariantPreference.from(
-                referenceFileName = pattern.referenceFileName,
-                localVersion = localVersion
-            )
-            val variantCandidates = variantPreference
-                .preferredCandidates(familyCandidates)
-                .takeIf { it.isNotEmpty() }
-                ?: familyCandidates
-            val latestStable = variantCandidates
-                .preferredReleaseChannelCandidates(preferPreRelease = false)
-                .maxWithOrNull(ApkFileCandidateComparator)
-            val latestPreRelease = variantCandidates
-                .preferredReleaseChannelCandidates(preferPreRelease = true)
-                .maxWithOrNull(ApkFileCandidateComparator)
-            val fallbackLatest = variantCandidates.maxWithOrNull(ApkFileCandidateComparator)
-            val stableCandidate = latestStable
-            val preReleaseCandidate = when {
-                includePreRelease -> latestPreRelease
-                stableCandidate == null -> latestPreRelease ?: fallbackLatest
-                    ?.takeIf { it.version.channel.isPreRelease }
-
-                else -> null
-            }
-            val selectedVersions = listOfNotNull(stableCandidate, preReleaseCandidate)
-                .map { candidate -> candidate.version.raw }
-                .distinct()
-            val releaseNotesByVersion = loadReleaseNotesByVersion(
-                logUrl = parseReleaseLogUrl(
-                    indexUri = pattern.indexUri,
-                    indexPath = pattern.indexPath,
-                    html = html
-                ),
-                versions = selectedVersions
-            )
-            val stable = stableCandidate?.toResolution(pattern, releaseNotesByVersion)
-            val preRelease = preReleaseCandidate?.toResolution(pattern, releaseNotesByVersion)
-            if (stable == null && preRelease == null) return@use null
-            GitHubDirectApkDirectoryIndexTargets(
-                stable = stable,
-                preRelease = preRelease
-            )
-        }
+            ),
+            versions = selectedVersions
+        )
+        val stable = stableCandidate?.toResolution(pattern, releaseNotesByVersion)
+        val preRelease = preReleaseCandidate?.toResolution(pattern, releaseNotesByVersion)
+        if (stable == null && preRelease == null) return@cancellableResult null
+        GitHubDirectApkDirectoryIndexTargets(
+            stable = stable,
+            preRelease = preRelease
+        )
     }
 
     private fun ApkFileCandidate.toResolution(
@@ -164,7 +166,7 @@ class GitHubDirectApkDirectoryIndexResolver(
             ?.toString()
     }
 
-    private fun loadReleaseNotesByVersion(
+    private suspend fun loadReleaseNotesByVersion(
         logUrl: String?,
         versions: List<String>
     ): Map<String, String> {
@@ -178,7 +180,7 @@ class GitHubDirectApkDirectoryIndexResolver(
                 .header("Cache-Control", "no-store")
                 .header("Pragma", "no-cache")
                 .build()
-            client.newCall(request).execute().use { response ->
+            client.executeCancellable(request) { response ->
                 check(response.isSuccessful) {
                     "direct APK release logs failed (HTTP ${response.code})"
                 }

@@ -5,6 +5,8 @@ import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseSignalSource
@@ -50,11 +52,11 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             .build()
     }
 
-    override fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
+    override suspend fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
         return loadSnapshotTrace(owner, repo).result
     }
 
-    fun loadSnapshotTrace(
+    suspend fun loadSnapshotTrace(
         owner: String,
         repo: String,
         atomFeedUrl: String = buildFeedUrl(owner, repo),
@@ -127,11 +129,11 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         )
     }
 
-    fun fetchAtomFeed(owner: String, repo: String): Result<GitHubAtomFeed> {
+    suspend fun fetchAtomFeed(owner: String, repo: String): Result<GitHubAtomFeed> {
         return fetchAtomFeedTrace(owner, repo).result
     }
 
-    internal fun fetchAtomFeedTrace(
+    internal suspend fun fetchAtomFeedTrace(
         owner: String,
         repo: String,
         atomFeedUrl: String = buildFeedUrl(owner, repo),
@@ -163,11 +165,11 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         )
     }
 
-    fun fetchReleaseEntries(owner: String, repo: String, limit: Int = 30): Result<List<GitHubAtomReleaseEntry>> {
+    suspend fun fetchReleaseEntries(owner: String, repo: String, limit: Int = 30): Result<List<GitHubAtomReleaseEntry>> {
         return fetchAtomFeed(owner, repo).map { it.entries.take(limit) }
     }
 
-    private fun fetchLatestStableSignalTrace(
+    private suspend fun fetchLatestStableSignalTrace(
         owner: String,
         repo: String,
         feed: GitHubAtomFeed,
@@ -191,8 +193,8 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             .header("User-Agent", GITHUB_USER_AGENT)
             .build()
 
-        val result = runCatching {
-            noRedirectRequestClient.newCall(request).execute().use { response ->
+        val result = cancellableResult {
+            noRedirectRequestClient.executeCancellable(request) { response ->
                 val location = response.header("Location").orEmpty()
                 val finalUrl = when {
                     location.isNotBlank() -> location
@@ -270,13 +272,13 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
         stableCache.clear()
     }
 
-    private fun fetch(url: String, requestClient: OkHttpClient = githubClient): Result<String> = runCatching {
+    private suspend fun fetch(url: String, requestClient: OkHttpClient = githubClient): Result<String> = cancellableResult {
         val request = Request.Builder()
             .url(url)
             .get()
             .header("User-Agent", GITHUB_USER_AGENT)
             .build()
-        requestClient.newCall(request).execute().use { response ->
+        requestClient.executeCancellable(request) { response ->
             if (!response.isSuccessful) error("HTTP ${response.code}")
             response.body.string()
         }

@@ -164,7 +164,7 @@ object GitHubShareImportResolver {
         }
     }
 
-    private fun resolveReleaseTarget(
+    private suspend fun resolveReleaseTarget(
         parsedLink: GitHubSharedReleaseLink,
         lookupConfig: GitHubLookupConfig
     ): ResolvedReleaseTarget {
@@ -214,7 +214,7 @@ object GitHubShareImportResolver {
         }
     }
 
-    private fun resolveLatestStableReleaseTarget(
+    private suspend fun resolveLatestStableReleaseTarget(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
@@ -245,7 +245,7 @@ object GitHubShareImportResolver {
         )
     }
 
-    private fun resolveLatestReleaseEntry(
+    private suspend fun resolveLatestReleaseEntry(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig

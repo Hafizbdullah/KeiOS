@@ -368,11 +368,11 @@ class GitHubRepositoryProfileRepository(
         val availability: GitHubRepositoryProfileSourceState
     )
 
-    private fun fetchSnapshotSource(
+    private suspend fun fetchSnapshotSource(
         source: GitHubRepositoryProfileSource,
         fetchedAtMillis: Long,
         required: Boolean,
-        fetch: () -> Result<GitHubRepositoryProfileSnapshot>
+        fetch: suspend () -> Result<GitHubRepositoryProfileSnapshot>
     ): TimedSnapshotResult {
         val startNs = System.nanoTime()
         val result = fetch()

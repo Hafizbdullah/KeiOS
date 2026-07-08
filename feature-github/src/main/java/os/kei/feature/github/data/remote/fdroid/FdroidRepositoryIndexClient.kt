@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.executeCancellable
 import os.kei.feature.github.data.local.fdroid.FdroidRepoCacheRecord
 import os.kei.feature.github.data.local.fdroid.FdroidRepoCacheRequestKey
 import os.kei.feature.github.data.local.fdroid.FdroidRepoIndexCacheStore
@@ -109,7 +110,7 @@ class FdroidRepositoryIndexClient(
             repoUrl = cacheKey.repoUrl,
             cached = cached
         ).build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request).use { response ->
             if (response.code == HTTP_NOT_MODIFIED) {
                 val reusable = cached ?: error("$failurePrefix (HTTP 304 without local cache)")
                 val refreshed = reusable.withFetchedAt(nowMillis)

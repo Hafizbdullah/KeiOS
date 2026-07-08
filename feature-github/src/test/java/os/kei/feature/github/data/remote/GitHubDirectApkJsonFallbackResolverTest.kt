@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
@@ -7,7 +8,7 @@ import kotlin.test.assertEquals
 
 class GitHubDirectApkJsonFallbackResolverTest {
     @Test
-    fun `resolve reads companion json and exposes apk asset`() {
+    fun `resolve reads companion json and exposes apk asset`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -41,7 +42,7 @@ class GitHubDirectApkJsonFallbackResolverTest {
     }
 
     @Test
-    fun `resolve reads json feed url directly`() {
+    fun `resolve reads json feed url directly`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -75,7 +76,7 @@ class GitHubDirectApkJsonFallbackResolverTest {
     }
 
     @Test
-    fun `resolve reads nested release array`() {
+    fun `resolve reads nested release array`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()

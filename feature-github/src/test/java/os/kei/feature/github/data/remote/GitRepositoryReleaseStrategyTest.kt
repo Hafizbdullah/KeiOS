@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -18,7 +19,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `gitlab release api builds stable and prerelease snapshot`() {
+    fun `gitlab release api builds stable and prerelease snapshot`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -54,7 +55,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `gitee strategy merges releases and newer tags`() {
+    fun `gitee strategy merges releases and newer tags`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -93,7 +94,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `gitee strategy falls back to tags when releases are empty`() {
+    fun `gitee strategy falls back to tags when releases are empty`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -125,7 +126,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `gitee strategy falls back to git refs when api is rate limited`() {
+    fun `gitee strategy falls back to git refs when api is rate limited`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -167,7 +168,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `gitea release api builds stable and prerelease snapshot`() {
+    fun `gitea release api builds stable and prerelease snapshot`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -207,7 +208,7 @@ class GitRepositoryReleaseStrategyTest {
     }
 
     @Test
-    fun `generic strategy parses smart http tag refs`() {
+    fun `generic strategy parses smart http tag refs`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()

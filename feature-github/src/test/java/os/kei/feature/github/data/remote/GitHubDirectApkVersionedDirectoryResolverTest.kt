@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
@@ -9,7 +10,7 @@ import kotlin.test.assertNull
 
 class GitHubDirectApkVersionedDirectoryResolverTest {
     @Test
-    fun `resolve picks latest version directory and keeps apk suffix`() {
+    fun `resolve picks latest version directory and keeps apk suffix`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -42,7 +43,7 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
-    fun `resolve can prefer latest pre-release version directory`() {
+    fun `resolve can prefer latest pre-release version directory`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -78,7 +79,7 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
-    fun `resolve targets returns stable and pre-release with one index request`() {
+    fun `resolve targets returns stable and pre-release with one index request`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -110,7 +111,7 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
-    fun `resolve returns null when url has no version segment`() {
+    fun `resolve returns null when url has no version segment`() = runBlocking {
         MockWebServer().use { server ->
             val result = GitHubDirectApkVersionedDirectoryResolver()
                 .resolve(server.url("/dl/android/apk").toString())

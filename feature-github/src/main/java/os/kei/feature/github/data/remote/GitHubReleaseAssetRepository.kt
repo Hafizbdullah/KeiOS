@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optString
 import os.kei.feature.github.GitHubExecution
@@ -490,7 +491,7 @@ object GitHubReleaseAssetRepository {
             if (token.isNotBlank()) {
                 requestBuilder.header("Authorization", "Bearer $token")
             }
-            client.newCall(requestBuilder.build()).execute().use { response ->
+            client.executeCancellable(requestBuilder.build()) { response ->
                 val bodyText = response.body.string()
                 if (!response.isSuccessful) {
                     error("GitHub release page request failed (HTTP ${response.code})")

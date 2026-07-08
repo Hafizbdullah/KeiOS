@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.apk
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -29,7 +30,7 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
-    fun `reader fetches AndroidManifest entry through explicit byte ranges`() {
+    fun `reader fetches AndroidManifest entry through explicit byte ranges`() = runBlocking {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.remote")
         val apkBytes = zipWithManifest(manifest)
         MockWebServer().use { server ->
@@ -59,7 +60,7 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
-    fun `reader lists entries and reads selected entries from one central directory`() {
+    fun `reader lists entries and reads selected entries from one central directory`() = runBlocking {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.batch")
         val apkBytes = zipWithManifest(manifest)
         MockWebServer().use { server ->
@@ -83,7 +84,7 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
-    fun `reader fails without downloading full body when range is ignored`() {
+    fun `reader fails without downloading full body when range is ignored`() = runBlocking {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.remote")
         val apkBytes = zipWithManifest(manifest)
         MockWebServer().use { server ->
@@ -105,7 +106,7 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
-    fun `reader reuses redirected range url after probe`() {
+    fun `reader reuses redirected range url after probe`() = runBlocking {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.redirect")
         val apkBytes = zipWithManifest(manifest)
         MockWebServer().use { server ->
@@ -142,7 +143,7 @@ class RemoteZipEntryReaderTest {
     }
 
     @Test
-    fun `reader fetches manifest from nested stored apk entry through ranges`() {
+    fun `reader fetches manifest from nested stored apk entry through ranges`() = runBlocking {
         val manifest = BinaryManifestFixture.build(packageName = "os.kei.nested")
         val apkBytes = zipWithManifest(manifest)
         val artifactBytes = zipWithStoredEntry(

@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
@@ -10,7 +11,7 @@ import kotlin.test.assertTrue
 
 class GitHubDirectApkDirectoryIndexResolverTest {
     @Test
-    fun `resolve directory index picks latest stable standard apk by default`() {
+    fun `resolve directory index picks latest stable standard apk by default`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -30,7 +31,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve directory index can prefer latest pre-release standard apk`() {
+    fun `resolve directory index can prefer latest pre-release standard apk`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -52,7 +53,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve apk url keeps standard variant from reference file`() {
+    fun `resolve apk url keeps standard variant from reference file`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -69,7 +70,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve apk url keeps core variant from reference file`() {
+    fun `resolve apk url keeps core variant from reference file`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -85,7 +86,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve apk url keeps core variant and can prefer pre-release`() {
+    fun `resolve apk url keeps core variant and can prefer pre-release`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -105,7 +106,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve directory index can use local core variant`() {
+    fun `resolve directory index can use local core variant`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -124,7 +125,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve directory index can use local core variant with pre-release preference`() {
+    fun `resolve directory index can use local core variant with pre-release preference`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())
 
@@ -145,7 +146,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve targets reads Scene release logs for stable and pre-release`() {
+    fun `resolve targets reads Scene release logs for stable and pre-release`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse(includeLogs = true))
             server.enqueue(sceneLogsResponse())
@@ -167,7 +168,7 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
-    fun `resolve skips non directory non apk url`() {
+    fun `resolve skips non directory non apk url`() = runBlocking {
         MockWebServer().use { server ->
             val result = GitHubDirectApkDirectoryIndexResolver()
                 .resolve(server.url("/dl/android/apk").toString())

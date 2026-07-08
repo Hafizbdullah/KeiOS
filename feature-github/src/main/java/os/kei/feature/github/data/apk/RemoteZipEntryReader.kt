@@ -2,7 +2,10 @@ package os.kei.feature.github.data.apk
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.io.SharedHttpClient
+import kotlin.coroutines.cancellation.CancellationException
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.util.zip.Inflater
@@ -42,19 +45,19 @@ data class RemoteZipSelectedEntries(
 class RemoteZipEntryReader(
     private val client: OkHttpClient = defaultClient
 ) {
-    fun listEntryNames(
+    suspend fun listEntryNames(
         url: String,
         apiToken: String = ""
-    ): Result<List<String>> = runCatching {
+    ): Result<List<String>> = cancellableResult {
         val centralDirectory = fetchCentralDirectory(url = url, apiToken = apiToken).bytes
         parseCentralDirectoryEntries(centralDirectory).map { it.name }
     }
 
-    fun readSelectedEntries(
+    suspend fun readSelectedEntries(
         url: String,
         apiToken: String = "",
         selectEntryNames: (List<String>) -> List<String>
-    ): Result<RemoteZipSelectedEntries> = runCatching {
+    ): Result<RemoteZipSelectedEntries> = cancellableResult {
         val directory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val directoryEntries = parseCentralDirectoryEntries(directory.bytes)
         val entriesByName = directoryEntries.associateBy { it.name }
@@ -76,12 +79,12 @@ class RemoteZipEntryReader(
         )
     }
 
-    fun readNestedStoredZipEntry(
+    suspend fun readNestedStoredZipEntry(
         url: String,
         outerEntryName: String,
         innerEntryName: String,
         apiToken: String = ""
-    ): Result<ByteArray> = runCatching {
+    ): Result<ByteArray> = cancellableResult {
         val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val outerEntry = findCentralDirectoryEntry(outerDirectory.bytes, outerEntryName)
             ?: error("$outerEntryName was not found in ZIP")
@@ -93,12 +96,12 @@ class RemoteZipEntryReader(
         )
     }
 
-    fun readSelectedNestedStoredZipEntry(
+    suspend fun readSelectedNestedStoredZipEntry(
         url: String,
         innerEntryName: String,
         apiToken: String = "",
         selectOuterEntryNames: (List<String>) -> List<String>
-    ): Result<ByteArray> = runCatching {
+    ): Result<ByteArray> = cancellableResult {
         val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val outerEntries = parseCentralDirectoryEntries(outerDirectory.bytes)
         val entriesByName = outerEntries.associateBy { it.name }
@@ -114,27 +117,27 @@ class RemoteZipEntryReader(
                 lastFailure = IllegalStateException("$outerEntryName was not found in ZIP")
                 return@forEach
             }
-            runCatching {
-                readNestedStoredZipEntryFromDirectory(
+            try {
+                return@cancellableResult readNestedStoredZipEntryFromDirectory(
                     outerDirectory = outerDirectory,
                     outerEntry = outerEntry,
                     innerEntryName = innerEntryName,
                     apiToken = apiToken
                 )
-            }.fold(
-                onSuccess = { return@runCatching it },
-                onFailure = { error -> lastFailure = error }
-            )
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                lastFailure = error
+            }
         }
         throw lastFailure ?: IllegalStateException("No readable nested ZIP entry was found")
     }
 
-    fun readSelectedNestedStoredZipEntries(
+    suspend fun readSelectedNestedStoredZipEntries(
         url: String,
         apiToken: String = "",
         selectOuterEntryNames: (List<String>) -> List<String>,
         selectInnerEntryNames: (List<String>) -> List<String>
-    ): Result<RemoteZipSelectedEntries> = runCatching {
+    ): Result<RemoteZipSelectedEntries> = cancellableResult {
         val outerDirectory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val outerEntries = parseCentralDirectoryEntries(outerDirectory.bytes)
         val entriesByName = outerEntries.associateBy { it.name }
@@ -150,22 +153,22 @@ class RemoteZipEntryReader(
                 lastFailure = IllegalStateException("$outerEntryName was not found in ZIP")
                 return@forEach
             }
-            runCatching {
-                readSelectedNestedStoredZipEntriesFromDirectory(
+            try {
+                return@cancellableResult readSelectedNestedStoredZipEntriesFromDirectory(
                     outerDirectory = outerDirectory,
                     outerEntry = outerEntry,
                     apiToken = apiToken,
                     selectInnerEntryNames = selectInnerEntryNames
                 )
-            }.fold(
-                onSuccess = { return@runCatching it },
-                onFailure = { error -> lastFailure = error }
-            )
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                lastFailure = error
+            }
         }
         throw lastFailure ?: IllegalStateException("No readable nested ZIP entry was found")
     }
 
-    private fun readNestedStoredZipEntryFromDirectory(
+    private suspend fun readNestedStoredZipEntryFromDirectory(
         outerDirectory: CentralDirectoryBytes,
         outerEntry: CentralDirectoryEntry,
         innerEntryName: String,
@@ -209,7 +212,7 @@ class RemoteZipEntryReader(
         }
     }
 
-    private fun readSelectedNestedStoredZipEntriesFromDirectory(
+    private suspend fun readSelectedNestedStoredZipEntriesFromDirectory(
         outerDirectory: CentralDirectoryBytes,
         outerEntry: CentralDirectoryEntry,
         apiToken: String,
@@ -260,11 +263,11 @@ class RemoteZipEntryReader(
         )
     }
 
-    fun readEntry(
+    suspend fun readEntry(
         url: String,
         entryName: String,
         apiToken: String = ""
-    ): Result<ByteArray> = runCatching {
+    ): Result<ByteArray> = cancellableResult {
         val directory = fetchCentralDirectory(url = url, apiToken = apiToken)
         val entry = findCentralDirectoryEntry(directory.bytes, entryName)
             ?: error("$entryName was not found in APK")
@@ -276,7 +279,7 @@ class RemoteZipEntryReader(
         )
     }
 
-    private fun readEntryFromDirectory(
+    private suspend fun readEntryFromDirectory(
         directory: CentralDirectoryBytes,
         entry: CentralDirectoryEntry,
         apiToken: String,
@@ -296,7 +299,7 @@ class RemoteZipEntryReader(
         }
     }
 
-    private fun fetchCentralDirectory(
+    private suspend fun fetchCentralDirectory(
         url: String,
         apiToken: String
     ): CentralDirectoryBytes {
@@ -341,7 +344,7 @@ class RemoteZipEntryReader(
         )
     }
 
-    private fun fetchCentralDirectoryAtBase(
+    private suspend fun fetchCentralDirectoryAtBase(
         url: String,
         baseOffset: Long,
         zipSize: Long,
@@ -397,7 +400,7 @@ class RemoteZipEntryReader(
         return tail.bytes.copyOfRange(startInTail.toInt(), endInTail.toInt())
     }
 
-    private fun fetchEntryCompressedBytes(
+    private suspend fun fetchEntryCompressedBytes(
         url: String,
         entry: CentralDirectoryEntry,
         centralDirectoryOffset: Long,
@@ -445,7 +448,7 @@ class RemoteZipEntryReader(
         ).bytes
     }
 
-    private fun fetchEntryDataStart(
+    private suspend fun fetchEntryDataStart(
         url: String,
         entry: CentralDirectoryEntry,
         baseOffset: Long,
@@ -471,27 +474,27 @@ class RemoteZipEntryReader(
         )
     }
 
-    private fun fetchRangeProbe(
+    private suspend fun fetchRangeProbe(
         url: String,
         apiToken: String
     ): RangeProbe {
         val request = requestBuilder(url, apiToken)
             .header("Range", "bytes=0-0")
             .build()
-        client.newCall(request).execute().use { response ->
+        return client.executeCancellable(request) { response ->
             val contentRange = response.header("Content-Range").parseContentRange()
             check(response.code == 206 && contentRange != null) {
                 "APK byte-range probe failed (HTTP ${response.code})"
             }
             check(contentRange.totalSize > 0L) { "APK size is invalid" }
-            return RangeProbe(
+            RangeProbe(
                 totalSize = contentRange.totalSize,
                 resolvedUrl = response.request.url.toString()
             )
         }
     }
 
-    private fun fetchRange(
+    private suspend fun fetchRange(
         url: String,
         start: Long,
         endInclusive: Long,
@@ -501,7 +504,7 @@ class RemoteZipEntryReader(
         val request = requestBuilder(url, apiToken)
             .header("Range", "bytes=$start-$endInclusive")
             .build()
-        client.newCall(request).execute().use { response ->
+        return client.executeCancellable(request) { response ->
             val contentRange = response.header("Content-Range").parseContentRange()
             check(response.code == 206 && contentRange != null) {
                 "APK byte-range request failed (HTTP ${response.code})"
@@ -514,7 +517,7 @@ class RemoteZipEntryReader(
             check(body.size.toLong() == expectedSize) {
                 "APK byte-range response size is invalid"
             }
-            return RangeBytes(
+            RangeBytes(
                 bytes = body,
                 start = contentRange.start
             )

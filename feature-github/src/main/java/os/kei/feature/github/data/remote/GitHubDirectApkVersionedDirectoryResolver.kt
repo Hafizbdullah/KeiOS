@@ -3,6 +3,8 @@ package os.kei.feature.github.data.remote
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -36,7 +38,7 @@ data class GitHubDirectApkVersionedDirectoryTargets(
 class GitHubDirectApkVersionedDirectoryResolver(
     private val client: OkHttpClient = defaultClient
 ) {
-    fun resolve(
+    suspend fun resolve(
         directApkUrl: String,
         preferPreRelease: Boolean = false
     ): Result<GitHubDirectApkVersionedDirectoryResolution?> {
@@ -52,13 +54,13 @@ class GitHubDirectApkVersionedDirectoryResolver(
         }
     }
 
-    fun resolveTargets(
+    suspend fun resolveTargets(
         directApkUrl: String,
         includePreRelease: Boolean = false
     ): Result<GitHubDirectApkVersionedDirectoryTargets?> =
-        runCatching {
+        cancellableResult {
             val pattern = DirectApkVersionedDirectoryPattern.from(directApkUrl)
-                ?: return@runCatching null
+                ?: return@cancellableResult null
             val request = Request.Builder()
                 .url(pattern.indexUrl)
                 .get()
@@ -67,42 +69,42 @@ class GitHubDirectApkVersionedDirectoryResolver(
                 .header("Cache-Control", "no-store")
                 .header("Pragma", "no-cache")
                 .build()
-            client.newCall(request).execute().use { response ->
+            val html = client.executeCancellable(request) { response ->
                 check(response.isSuccessful) {
                     "direct APK version directory failed (HTTP ${response.code})"
                 }
-                val html = response.body.string()
-                check(html.length <= MAX_INDEX_HTML_CHARS) {
-                    "direct APK version directory is too large"
-                }
-                val candidates = parseVersionDirectories(
-                    indexUri = pattern.indexUri,
-                    indexPath = pattern.indexPath,
-                    html = html
-                )
-                val latestStable = candidates
-                    .preferredReleaseChannelCandidates(preferPreRelease = false)
-                    .maxWithOrNull(VersionDirectoryCandidateComparator)
-                val latestPreRelease = candidates
-                    .preferredReleaseChannelCandidates(preferPreRelease = true)
-                    .maxWithOrNull(VersionDirectoryCandidateComparator)
-                val fallbackLatest = candidates.maxWithOrNull(VersionDirectoryCandidateComparator)
-                val stableCandidate = latestStable
-                val preReleaseCandidate = when {
-                    includePreRelease -> latestPreRelease
-                    stableCandidate == null -> latestPreRelease ?: fallbackLatest
-                        ?.takeIf { it.version.channel.isPreRelease }
-
-                    else -> null
-                }
-                val stable = stableCandidate?.toResolution(pattern)
-                val preRelease = preReleaseCandidate?.toResolution(pattern)
-                if (stable == null && preRelease == null) return@use null
-                GitHubDirectApkVersionedDirectoryTargets(
-                    stable = stable,
-                    preRelease = preRelease
-                )
+                response.body.string()
             }
+            check(html.length <= MAX_INDEX_HTML_CHARS) {
+                "direct APK version directory is too large"
+            }
+            val candidates = parseVersionDirectories(
+                indexUri = pattern.indexUri,
+                indexPath = pattern.indexPath,
+                html = html
+            )
+            val latestStable = candidates
+                .preferredReleaseChannelCandidates(preferPreRelease = false)
+                .maxWithOrNull(VersionDirectoryCandidateComparator)
+            val latestPreRelease = candidates
+                .preferredReleaseChannelCandidates(preferPreRelease = true)
+                .maxWithOrNull(VersionDirectoryCandidateComparator)
+            val fallbackLatest = candidates.maxWithOrNull(VersionDirectoryCandidateComparator)
+            val stableCandidate = latestStable
+            val preReleaseCandidate = when {
+                includePreRelease -> latestPreRelease
+                stableCandidate == null -> latestPreRelease ?: fallbackLatest
+                    ?.takeIf { it.version.channel.isPreRelease }
+
+                else -> null
+            }
+            val stable = stableCandidate?.toResolution(pattern)
+            val preRelease = preReleaseCandidate?.toResolution(pattern)
+            if (stable == null && preRelease == null) return@cancellableResult null
+            GitHubDirectApkVersionedDirectoryTargets(
+                stable = stable,
+                preRelease = preRelease
+            )
         }
 
     private fun VersionDirectoryCandidate.toResolution(

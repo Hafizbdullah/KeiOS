@@ -3,6 +3,8 @@ package os.kei.feature.github.data.remote
 import os.kei.feature.github.data.apk.AndroidBinaryXmlPackageNameParser
 import os.kei.feature.github.data.apk.RemoteZipEntryReader
 import os.kei.feature.github.data.apk.RemoteZipSelectedEntries
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.resultPreservingCancellation
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubApkSignatureInfo
 import os.kei.feature.github.model.GitHubLookupConfig
@@ -18,7 +20,7 @@ class GitHubApkManifestReader(
     suspend fun inspect(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig
-    ): Result<GitHubApkManifestInfo> = runCatching {
+    ): Result<GitHubApkManifestInfo> = cancellableResult {
         val inspectPayload = readInspectPayload(asset, lookupConfig).getOrThrow()
         inspectPayload.toManifestInfo(asset.name).getOrThrow()
     }
@@ -141,11 +143,11 @@ class GitHubApkManifestReader(
     private fun parseSignatureInfo(
         signatureEntry: String,
         certBytes: ByteArray
-    ): Result<GitHubApkSignatureInfo?> = runCatching {
+    ): Result<GitHubApkSignatureInfo?> = resultPreservingCancellation {
         val certificates = CertificateFactory.getInstance("X.509")
             .generateCertificates(ByteArrayInputStream(certBytes))
         val certificate = certificates.firstOrNull() as? X509Certificate
-            ?: return@runCatching null
+            ?: return@resultPreservingCancellation null
         GitHubApkSignatureInfo(
             entryName = signatureEntry,
             subject = certificate.subjectX500Principal.name,
@@ -160,7 +162,7 @@ class GitHubApkManifestReader(
 
     private fun ManifestReadPayload<RemoteZipSelectedEntries>.toManifestInfo(
         assetName: String
-    ): Result<GitHubApkManifestInfo> = runCatching {
+    ): Result<GitHubApkManifestInfo> = resultPreservingCancellation {
         val entries = value
         val manifest = entries.entries[ANDROID_MANIFEST_ENTRY]
             ?: error("$ANDROID_MANIFEST_ENTRY was not found in APK")
@@ -182,7 +184,7 @@ class GitHubApkManifestReader(
     private suspend fun <T> readWithFallback(
         asset: GitHubReleaseAssetFile,
         lookupConfig: GitHubLookupConfig,
-        read: (String, String) -> Result<T>
+        read: suspend (String, String) -> Result<T>
     ): Result<ManifestReadPayload<T>> {
         val targets = resolveReadTargets(asset, lookupConfig)
         var firstFailure: Result<T>? = null

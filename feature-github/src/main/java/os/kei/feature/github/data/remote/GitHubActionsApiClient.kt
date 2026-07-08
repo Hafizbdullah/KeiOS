@@ -3,6 +3,8 @@ package os.kei.feature.github.data.remote
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubApiAuthMode
@@ -20,14 +22,14 @@ class GitHubActionsApiClient(
     val authMode: GitHubApiAuthMode
         get() = if (sanitizedToken.isBlank()) GitHubApiAuthMode.Guest else GitHubApiAuthMode.Token
 
-    fun fetchJson(
+    suspend fun fetchJson(
         url: String,
         cacheTtlMillis: Long = 0L
-    ): Result<String> = runCatching {
+    ): Result<String> = cancellableResult {
         val cacheKey = jsonResponseCacheKey(url)
         if (cacheTtlMillis > 0L) {
             cachedValue(jsonResponseCache[cacheKey], cacheTtlMillis)?.let { cached ->
-                return@runCatching cached
+                return@cancellableResult cached
             }
         }
         val requestBuilder = Request.Builder()
@@ -39,7 +41,7 @@ class GitHubActionsApiClient(
         if (sanitizedToken.isNotBlank()) {
             requestBuilder.header("Authorization", "Bearer $sanitizedToken")
         }
-        client.newCall(requestBuilder.build()).execute().use { response ->
+        client.executeCancellable(requestBuilder.build()) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))
@@ -51,7 +53,7 @@ class GitHubActionsApiClient(
         }
     }
 
-    fun resolveRedirectDownloadUrl(url: String): Result<String> = runCatching {
+    suspend fun resolveRedirectDownloadUrl(url: String): Result<String> = cancellableResult {
         val request = Request.Builder()
             .url(url)
             .get()
@@ -60,7 +62,7 @@ class GitHubActionsApiClient(
             .header("X-GitHub-Api-Version", GITHUB_API_VERSION)
             .header("User-Agent", GITHUB_USER_AGENT)
             .build()
-        noRedirectClient.newCall(request).execute().use { response ->
+        noRedirectClient.executeCancellable(request) { response ->
             when {
                 response.isRedirect -> response.header("Location").orEmpty().ifBlank {
                     error("GitHub Actions artifact download returned no redirect URL")

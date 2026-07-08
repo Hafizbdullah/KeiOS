@@ -82,7 +82,7 @@ class GitHubActionsRepository(
     val authMode: GitHubApiAuthMode
         get() = apiClient.authMode
 
-    fun fetchRepositoryInfo(
+    suspend fun fetchRepositoryInfo(
         owner: String,
         repo: String
     ): GitHubStrategyLoadTrace<GitHubActionsRepositoryInfo> {
@@ -101,7 +101,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchRepositoryDefaultBranch(
+    suspend fun fetchRepositoryDefaultBranch(
         owner: String,
         repo: String
     ): GitHubStrategyLoadTrace<String> {
@@ -120,7 +120,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchWorkflows(
+    suspend fun fetchWorkflows(
         owner: String,
         repo: String,
         limit: Int = DEFAULT_WORKFLOW_LIMIT
@@ -140,7 +140,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchWorkflowRuns(
+    suspend fun fetchWorkflowRuns(
         owner: String,
         repo: String,
         workflowId: String,
@@ -184,7 +184,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchRecentRepositoryWorkflowRuns(
+    suspend fun fetchRecentRepositoryWorkflowRuns(
         owner: String,
         repo: String,
         limit: Int = DEFAULT_RUN_LIMIT
@@ -199,7 +199,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchWorkflowRun(
+    suspend fun fetchWorkflowRun(
         owner: String,
         repo: String,
         runId: Long
@@ -216,7 +216,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchRunArtifacts(
+    suspend fun fetchRunArtifacts(
         owner: String,
         repo: String,
         runId: Long,
@@ -237,7 +237,7 @@ class GitHubActionsRepository(
         return result.toTrace(startedAt)
     }
 
-    fun fetchRecentRepositoryArtifacts(
+    suspend fun fetchRecentRepositoryArtifacts(
         owner: String,
         repo: String,
         limit: Int = DEFAULT_ARTIFACT_LIMIT
@@ -268,7 +268,7 @@ class GitHubActionsRepository(
         )
     }
 
-    private fun fetchRunStatusSnapshotOnCurrentDispatcher(
+    private suspend fun fetchRunStatusSnapshotOnCurrentDispatcher(
         owner: String,
         repo: String,
         runId: Long,
@@ -491,7 +491,7 @@ class GitHubActionsRepository(
         ).toTrace(startedAt)
     }
 
-    fun resolveArtifactDownloadUrl(
+    suspend fun resolveArtifactDownloadUrl(
         artifact: GitHubActionsArtifact,
         owner: String = "",
         repo: String = "",
@@ -547,7 +547,7 @@ class GitHubActionsRepository(
         }
     }
 
-    fun resolveArtifactShareUrl(
+    suspend fun resolveArtifactShareUrl(
         artifact: GitHubActionsArtifact,
         owner: String = "",
         repo: String = ""
@@ -588,10 +588,10 @@ class GitHubActionsRepository(
     ): List<GitHubActionsArtifact> =
         GitHubActionsJsonParser.parseArtifacts(json, fallbackWorkflowRunId)
 
-    private fun resolveArtifactDownloadUrl(url: String): Result<String> =
+    private suspend fun resolveArtifactDownloadUrl(url: String): Result<String> =
         apiClient.resolveRedirectDownloadUrl(url)
 
-    private fun fetchJson(
+    private suspend fun fetchJson(
         url: String,
         cacheTtlMillis: Long = 0L
     ): Result<String> = apiClient.fetchJson(url, cacheTtlMillis)

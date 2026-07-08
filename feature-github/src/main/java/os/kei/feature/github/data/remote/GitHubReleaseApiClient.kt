@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
@@ -31,7 +32,7 @@ class GitHubReleaseApiClient(
         }
     }
 
-    private fun resolveApiAssetDownloadUrlInternal(
+    private suspend fun resolveApiAssetDownloadUrlInternal(
         apiAssetUrl: String,
         apiToken: String
     ): String {
@@ -46,7 +47,7 @@ class GitHubReleaseApiClient(
             .header("Pragma", "no-cache")
             .build()
 
-        return client.newCall(request).execute().use { response ->
+        return client.executeCancellable(request) { response ->
             val redirectedUrl = response.request.url.toString()
             when {
                 response.isSuccessful && redirectedUrl.isNotBlank() -> redirectedUrl
@@ -164,7 +165,7 @@ class GitHubReleaseApiClient(
             if (token.isNotBlank()) {
                 requestBuilder.header("Authorization", "Bearer $token")
             }
-            client.newCall(requestBuilder.build()).execute().use { response ->
+            client.executeCancellable(requestBuilder.build()) { response ->
                 val bodyText = response.body.string()
                 if (!response.isSuccessful) {
                     val apiMessage = runCatching {

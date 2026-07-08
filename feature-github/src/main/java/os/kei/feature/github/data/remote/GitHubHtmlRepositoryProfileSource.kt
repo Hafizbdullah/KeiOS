@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 class GitHubHtmlRepositoryProfileSource(
     private val http: GitHubRepositoryProfileHttpClient
 ) {
-    fun fetch(
+    suspend fun fetch(
         owner: String,
         repo: String,
         fetchedAtMillis: Long,

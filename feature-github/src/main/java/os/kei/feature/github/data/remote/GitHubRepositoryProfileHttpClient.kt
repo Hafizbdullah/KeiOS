@@ -4,6 +4,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import kotlin.time.Duration.Companion.seconds
@@ -13,7 +15,7 @@ class GitHubRepositoryProfileHttpClient(
     private val apiBaseUrl: String = DEFAULT_GITHUB_API_BASE_URL,
     private val htmlBaseUrl: String = DEFAULT_GITHUB_HTML_BASE_URL
 ) {
-    fun fetchJson(url: String, apiToken: String): Result<String> = runCatching {
+    suspend fun fetchJson(url: String, apiToken: String): Result<String> = cancellableResult {
         val requestBuilder = Request.Builder()
             .url(url)
             .get()
@@ -24,7 +26,7 @@ class GitHubRepositoryProfileHttpClient(
         if (token.isNotBlank()) {
             requestBuilder.header("Authorization", "Bearer $token")
         }
-        client.newCall(requestBuilder.build()).execute().use { response ->
+        client.executeCancellable(requestBuilder.build()) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(response.buildErrorMessage(bodyText))
@@ -33,14 +35,14 @@ class GitHubRepositoryProfileHttpClient(
         }
     }
 
-    fun fetchHtml(url: String): Result<String> = runCatching {
+    suspend fun fetchHtml(url: String): Result<String> = cancellableResult {
         val request = Request.Builder()
             .url(url)
             .get()
             .header("Accept", "text/html,application/xhtml+xml")
             .header("User-Agent", GITHUB_USER_AGENT)
             .build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error("GitHub repository page request failed (HTTP ${response.code})")

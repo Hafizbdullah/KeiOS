@@ -33,7 +33,7 @@ class GitHubDeepRepositoryProfileSource(
         lifecycle: GitHubRepositoryLifecycleProfile,
         fetchedAtMillis: Long
     ): GitHubDeepRepositoryProfileResult {
-        val tasks = listOf<() -> GitHubDeepProfileChunk>(
+        val tasks = listOf<suspend () -> GitHubDeepProfileChunk>(
             { fetchTrafficViews(request, fetchedAtMillis) },
             { fetchTrafficClones(request, fetchedAtMillis) },
             { fetchForkCompareChunk(request, identity, lifecycle, fetchedAtMillis) },
@@ -217,7 +217,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchTrafficViews(
+    private suspend fun fetchTrafficViews(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long
     ): GitHubDeepProfileChunk {
@@ -256,7 +256,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchTrafficClones(
+    private suspend fun fetchTrafficClones(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long
     ): GitHubDeepProfileChunk {
@@ -295,7 +295,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchForkCompareChunk(
+    private suspend fun fetchForkCompareChunk(
         request: GitHubRepositoryProfileRequest,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,
@@ -319,7 +319,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchDependabotAlerts(
+    private suspend fun fetchDependabotAlerts(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long
     ): GitHubDeepProfileChunk {
@@ -359,7 +359,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchCodeScanningAlerts(
+    private suspend fun fetchCodeScanningAlerts(
         request: GitHubRepositoryProfileRequest,
         fetchedAtMillis: Long
     ): GitHubDeepProfileChunk {
@@ -399,7 +399,7 @@ class GitHubDeepRepositoryProfileSource(
         )
     }
 
-    private fun fetchForkCompare(
+    private suspend fun fetchForkCompare(
         request: GitHubRepositoryProfileRequest,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,

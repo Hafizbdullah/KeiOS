@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 
 class GitHubActionsRepositoryTest {
     @Test
-    fun `guest metadata request lists workflows without authorization header`() {
+    fun `guest metadata request lists workflows without authorization header`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -40,7 +40,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `token metadata request sends bearer authorization`() {
+    fun `token metadata request sends bearer authorization`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -74,7 +74,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `repository info parser keeps default branch`() {
+    fun `repository info parser keeps default branch`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -195,7 +195,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `api run artifact request reuses short cache`() {
+    fun `api run artifact request reuses short cache`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(200).setBody(sampleArtifactsJson(runId = 101)))
             val repository = GitHubActionsRepository(
@@ -271,7 +271,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `parsers keep core workflow run and artifact fields`() {
+    fun `parsers keep core workflow run and artifact fields`() = runBlocking {
         val repository = GitHubActionsRepository(apiToken = "")
 
         val workflows = repository.parseWorkflows(sampleWorkflowsJson())
@@ -299,7 +299,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `download resolver requires token`() {
+    fun `download resolver requires token`() = runBlocking {
         val repository = GitHubActionsRepository(apiToken = "")
         val result = repository.resolveArtifactDownloadUrl(
             artifact = GitHubActionsArtifact(
@@ -314,7 +314,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `download resolver returns redirect location with token`() {
+    fun `download resolver returns redirect location with token`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -341,7 +341,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link strategy discovers workflow files from public github page`() {
+    fun `nightly link strategy discovers workflow files from public github page`() = runBlocking {
         MockWebServer().use { github ->
             github.enqueue(
                 MockResponse()
@@ -749,7 +749,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link dev preview workflow tries dev page before default branch`() {
+    fun `nightly link dev preview workflow tries dev page before default branch`() = runBlocking {
         MockWebServer().use { server ->
             val nightlyBaseUrl = server.url("/nightly/").toString()
             val base = nightlyBaseUrl.trimEnd('/')
@@ -1091,7 +1091,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link run artifacts reuse public github run metadata`() {
+    fun `nightly link run artifacts reuse public github run metadata`() = runBlocking {
         MockWebServer().use { nightly ->
             val githubBaseUrl = nightly.url("/github/").toString()
             val nightlyBaseUrl = nightly.url("/nightly/").toString()
@@ -1141,7 +1141,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link download resolver returns shareable link without token`() {
+    fun `nightly link download resolver returns shareable link without token`() = runBlocking {
         MockWebServer().use { nightly ->
             val url = nightly.url("/demo/app/workflows/android/master/Foss.zip").toString()
             val repository = GitHubActionsRepository(
@@ -1167,7 +1167,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link raw apk artifact asks for api token instead of returning dead link`() {
+    fun `nightly link raw apk artifact asks for api token instead of returning dead link`() = runBlocking {
         MockWebServer().use { nightly ->
             val repository = GitHubActionsRepository(
                 apiToken = "",
@@ -1192,7 +1192,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link share resolver returns raw apk public link without token`() {
+    fun `nightly link share resolver returns raw apk public link without token`() = runBlocking {
         MockWebServer().use { nightly ->
             val publicLink = "https://nightly.link/demo/app/actions/runs/25115668266/app-online-Unstable-release.apk.zip"
             val repository = GitHubActionsRepository(
@@ -1218,7 +1218,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `nightly link download resolver uses api artifact redirect when token exists`() {
+    fun `nightly link download resolver uses api artifact redirect when token exists`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -1252,7 +1252,7 @@ class GitHubActionsRepositoryTest {
     }
 
     @Test
-    fun `guest rate limit error asks for token`() {
+    fun `guest rate limit error asks for token`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()

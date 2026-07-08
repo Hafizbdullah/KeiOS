@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 
 class GitRepositoryPreciseApkVersionSourceTest {
     @Test
-    fun `gitee source falls back to release list and matches tag without leading version prefix`() {
+    fun `gitee source falls back to release list and matches tag without leading version prefix`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -63,7 +63,7 @@ class GitRepositoryPreciseApkVersionSourceTest {
     }
 
     @Test
-    fun `gitlab source reads release asset links`() {
+    fun `gitlab source reads release asset links`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -103,7 +103,7 @@ class GitRepositoryPreciseApkVersionSourceTest {
     }
 
     @Test
-    fun `gitee release asset source exposes release notes targets and body`() {
+    fun `gitee release asset source exposes release notes targets and body`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -153,7 +153,7 @@ class GitRepositoryPreciseApkVersionSourceTest {
     }
 
     @Test
-    fun `gitea release asset source reads release notes and assets`() {
+    fun `gitea release asset source reads release notes and assets`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()

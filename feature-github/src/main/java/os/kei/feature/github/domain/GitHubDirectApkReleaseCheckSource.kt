@@ -185,7 +185,7 @@ class GitHubDirectApkReleaseCheckSource(
         )
     }
 
-    private fun resolveDirectApkTargets(
+    private suspend fun resolveDirectApkTargets(
         asset: GitHubReleaseAssetFile,
         localVersion: String,
         inspectPreRelease: Boolean

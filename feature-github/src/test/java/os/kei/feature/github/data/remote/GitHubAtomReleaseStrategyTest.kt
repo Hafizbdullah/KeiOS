@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -16,7 +17,7 @@ class GitHubAtomReleaseStrategyTest {
     }
 
     @Test
-    fun `atom snapshot keeps stable redirect and prerelease entry`() {
+    fun `atom snapshot keeps stable redirect and prerelease entry`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -45,7 +46,7 @@ class GitHubAtomReleaseStrategyTest {
     }
 
     @Test
-    fun `atom snapshot keeps forward prerelease when it outruns stable`() {
+    fun `atom snapshot keeps forward prerelease when it outruns stable`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -97,7 +98,7 @@ class GitHubAtomReleaseStrategyTest {
     }
 
     @Test
-    fun `atom latest redirect matches exact stable tag instead of newer alpha entry`() {
+    fun `atom latest redirect matches exact stable tag instead of newer alpha entry`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -157,7 +158,7 @@ class GitHubAtomReleaseStrategyTest {
     }
 
     @Test
-    fun `atom keeps rc prerelease visible when stable redirect points to same base final release`() {
+    fun `atom keeps rc prerelease visible when stable redirect points to same base final release`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -210,7 +211,7 @@ class GitHubAtomReleaseStrategyTest {
 
 
     @Test
-    fun `atom snapshot keeps prerelease only repos explicit instead of faking stable channel`() {
+    fun `atom snapshot keeps prerelease only repos explicit instead of faking stable channel`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -263,7 +264,7 @@ class GitHubAtomReleaseStrategyTest {
     }
 
     @Test
-    fun `second atom snapshot hits both caches`() {
+    fun `second atom snapshot hits both caches`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()

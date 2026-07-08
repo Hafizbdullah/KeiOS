@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubReleaseChannel
 import okhttp3.mockwebserver.MockResponse
@@ -21,7 +22,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `parser filters drafts and keeps newest release first`() {
+    fun `parser filters drafts and keeps newest release first`() = runBlocking {
         val entries = strategy.parseReleaseEntries(
             json = """
                 [
@@ -83,7 +84,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `prerelease flag upgrades stable looking tag to preview channel`() {
+    fun `prerelease flag upgrades stable looking tag to preview channel`() = runBlocking {
         val entry = strategy.parseReleaseEntries(
             json = """
                 [
@@ -113,7 +114,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `blank token uses guest api without authorization header`() {
+    fun `blank token uses guest api without authorization header`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(successReleaseListResponse())
             server.enqueue(successLatestReleaseResponse())
@@ -133,7 +134,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `token api sends bearer authorization header`() {
+    fun `token api sends bearer authorization header`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(successReleaseListResponse())
             server.enqueue(successLatestReleaseResponse())
@@ -152,7 +153,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `guest api rate limit error is actionable`() {
+    fun `guest api rate limit error is actionable`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -177,7 +178,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `second api load hits cache and avoids extra network request`() {
+    fun `second api load hits cache and avoids extra network request`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(successReleaseListResponse())
             server.enqueue(successLatestReleaseResponse())
@@ -198,7 +199,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `latest api endpoint decides stable release while list still exposes prerelease`() {
+    fun `latest api endpoint decides stable release while list still exposes prerelease`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -264,7 +265,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `stable latest release is not downgraded by rc words in changelog`() {
+    fun `stable latest release is not downgraded by rc words in changelog`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -331,7 +332,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `placeholder prerelease without version candidate is ignored`() {
+    fun `placeholder prerelease without version candidate is ignored`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -397,7 +398,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `latest api failure falls back to stable selection from releases list while keeping newest prerelease visible`() {
+    fun `latest api failure falls back to stable selection from releases list while keeping newest prerelease visible`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -460,7 +461,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `newer prerelease ahead of stable is kept visible`() {
+    fun `newer prerelease ahead of stable is kept visible`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -526,7 +527,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `branch like historical prerelease does not surface as latest prerelease`() {
+    fun `branch like historical prerelease does not surface as latest prerelease`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -592,7 +593,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `latest prerelease selection prefers newer animeko beta over older major branch beta`() {
+    fun `latest prerelease selection prefers newer animeko beta over older major branch beta`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -669,7 +670,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `prerelease only repository exposes newest build as prerelease without faking a stable channel`() {
+    fun `prerelease only repository exposes newest build as prerelease without faking a stable channel`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -723,7 +724,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `credential check reports guest quota without authorization header`() {
+    fun `credential check reports guest quota without authorization header`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(rateLimitResponse(limit = 60, remaining = 57, used = 3, reset = 1_901_000_000L))
             val guestStrategy = GitHubApiTokenReleaseStrategy(
@@ -743,7 +744,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `credential check reports token quota with authorization header`() {
+    fun `credential check reports token quota with authorization header`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(rateLimitResponse(limit = 5000, remaining = 4988, used = 12, reset = 1_901_000_000L))
             val tokenStrategy = GitHubApiTokenReleaseStrategy(
@@ -762,7 +763,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `credential check surfaces invalid token`() {
+    fun `credential check surfaces invalid token`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(
                 MockResponse()
@@ -782,7 +783,7 @@ class GitHubApiTokenReleaseStrategyTest {
     }
 
     @Test
-    fun `second credential check hits cache`() {
+    fun `second credential check hits cache`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(rateLimitResponse(limit = 5000, remaining = 4999, used = 1, reset = 1_901_000_000L))
             val tokenStrategy = GitHubApiTokenReleaseStrategy(

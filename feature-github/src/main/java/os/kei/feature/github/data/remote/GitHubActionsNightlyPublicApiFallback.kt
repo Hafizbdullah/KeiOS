@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import os.kei.core.io.cancellableResult
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsRunArtifacts
 import os.kei.feature.github.model.GitHubActionsWorkflow
@@ -7,13 +8,13 @@ import os.kei.feature.github.model.GitHubActionsWorkflowArtifactsSnapshot
 
 class GitHubActionsNightlyPublicApiFallback(
     private val apiUrls: GitHubActionsApiUrlBuilder,
-    private val fetchJson: (url: String, cacheTtlMillis: Long) -> Result<String>,
+    private val fetchJson: suspend (url: String, cacheTtlMillis: Long) -> Result<String>,
     private val defaultWorkflowLimit: Int,
     private val runsCacheTtlMillis: Long,
     private val artifactCacheTtlMillis: Long,
     private val metadataCacheTtlMillis: Long
 ) {
-    fun fetchWorkflowArtifactSnapshot(
+    suspend fun fetchWorkflowArtifactSnapshot(
         owner: String,
         repo: String,
         workflowId: String,
@@ -27,7 +28,7 @@ class GitHubActionsNightlyPublicApiFallback(
         created: String,
         headSha: String,
         excludePullRequests: Boolean
-    ): Result<GitHubActionsWorkflowArtifactsSnapshot> = runCatching {
+    ): Result<GitHubActionsWorkflowArtifactsSnapshot> = cancellableResult {
         val workflow = findPublicApiWorkflow(owner, repo, workflowId).getOrThrow()
         val runs = fetchJson(
             apiUrls.workflowRuns(
@@ -83,13 +84,13 @@ class GitHubActionsNightlyPublicApiFallback(
         )
     }
 
-    private fun findPublicApiWorkflow(
+    private suspend fun findPublicApiWorkflow(
         owner: String,
         repo: String,
         workflowId: String
-    ): Result<GitHubActionsWorkflow> = runCatching {
+    ): Result<GitHubActionsWorkflow> = cancellableResult {
         workflowId.trim().toLongOrNull()?.takeIf { it > 0L }?.let { id ->
-            return@runCatching GitHubActionsWorkflow(
+            return@cancellableResult GitHubActionsWorkflow(
                 id = id,
                 name = id.toString(),
                 path = workflowId.trim()

@@ -2,6 +2,8 @@ package os.kei.feature.github.data.remote
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
 import os.kei.feature.github.model.GitHubActionsRepositoryInfo
@@ -21,12 +23,12 @@ class GitHubActionsNightlyLinkRepository(
     private val githubHtmlBaseUrl: String,
     private val nightlyLinkBaseUrl: String
 ) {
-    fun fetchRepositoryInfo(
+    suspend fun fetchRepositoryInfo(
         owner: String,
         repo: String
-    ): Result<GitHubActionsRepositoryInfo> = runCatching {
+    ): Result<GitHubActionsRepositoryInfo> = cancellableResult {
         val cacheKey = metadataCacheKey(owner, repo)
-        cachedValue(repositoryInfoCache[cacheKey], PUBLIC_METADATA_CACHE_TTL_MS)?.let { return@runCatching it }
+        cachedValue(repositoryInfoCache[cacheKey], PUBLIC_METADATA_CACHE_TTL_MS)?.let { return@cancellableResult it }
         val html = fetchPublicHtml(buildGitHubRepoUrl(owner, repo)).getOrThrow()
         val defaultBranch = defaultBranchRegex.find(html)
             ?.groupValues
@@ -43,11 +45,11 @@ class GitHubActionsNightlyLinkRepository(
         ).also { info -> putCachedValue(repositoryInfoCache, cacheKey, info) }
     }
 
-    fun fetchWorkflows(
+    suspend fun fetchWorkflows(
         owner: String,
         repo: String,
         limit: Int
-    ): Result<List<GitHubActionsWorkflow>> = runCatching {
+    ): Result<List<GitHubActionsWorkflow>> = cancellableResult {
         val workflowFiles = fetchWorkflowFiles(owner, repo)
             .take(limit.coerceIn(1, 100))
         workflowFiles.map { fileName ->
@@ -63,7 +65,7 @@ class GitHubActionsNightlyLinkRepository(
         }
     }
 
-    fun fetchWorkflowRuns(
+    suspend fun fetchWorkflowRuns(
         owner: String,
         repo: String,
         workflowId: String,
@@ -79,11 +81,11 @@ class GitHubActionsNightlyLinkRepository(
         ).mapCatching { snapshot -> snapshot.runs.map { it.run } }
     }
 
-    fun fetchWorkflowRun(
+    suspend fun fetchWorkflowRun(
         owner: String,
         repo: String,
         runId: Long
-    ): Result<GitHubActionsWorkflowRun> = runCatching {
+    ): Result<GitHubActionsWorkflowRun> = cancellableResult {
         val publicDetail = fetchPublicRunDetail(owner, repo, runId).getOrNull()
         buildNightlyRun(
             owner = owner,
@@ -97,12 +99,12 @@ class GitHubActionsNightlyLinkRepository(
         )
     }
 
-    fun fetchRunArtifacts(
+    suspend fun fetchRunArtifacts(
         owner: String,
         repo: String,
         runId: Long,
         limit: Int
-    ): Result<List<GitHubActionsArtifact>> = runCatching {
+    ): Result<List<GitHubActionsArtifact>> = cancellableResult {
         val publicDetail = fetchPublicRunDetail(owner, repo, runId).getOrNull()
         val html = fetchPublicHtml(buildNightlyRunDashboardUrl(owner, repo, runId)).getOrThrow()
         parseNightlyRunArtifacts(
@@ -114,13 +116,13 @@ class GitHubActionsNightlyLinkRepository(
         ).take(limit.coerceIn(1, 100))
     }
 
-    fun fetchRunStatusSnapshot(
+    suspend fun fetchRunStatusSnapshot(
         owner: String,
         repo: String,
         runId: Long,
         artifactsLimit: Int,
         includeArtifactsWhenCompleted: Boolean
-    ): Result<GitHubActionsRunStatusSnapshot> = runCatching {
+    ): Result<GitHubActionsRunStatusSnapshot> = cancellableResult {
         val publicDetail = fetchPublicRunDetail(owner, repo, runId).getOrNull()
         val artifacts = if (includeArtifactsWhenCompleted) {
             fetchRunArtifacts(owner, repo, runId, artifactsLimit).getOrThrow()
@@ -144,14 +146,14 @@ class GitHubActionsNightlyLinkRepository(
         )
     }
 
-    fun fetchWorkflowArtifactSnapshot(
+    suspend fun fetchWorkflowArtifactSnapshot(
         owner: String,
         repo: String,
         workflowId: String,
         branch: String,
         artifactsPerRun: Int,
         resolveRunDetail: Boolean
-    ): Result<GitHubActionsWorkflowArtifactsSnapshot> = runCatching {
+    ): Result<GitHubActionsWorkflowArtifactsSnapshot> = cancellableResult {
         val resolvedBranch = branch.trim().ifBlank {
             fetchRepositoryInfo(owner, repo).getOrThrow().defaultBranch
         }.ifBlank { DEFAULT_PUBLIC_BRANCH }
@@ -257,7 +259,7 @@ class GitHubActionsNightlyLinkRepository(
         )
     }
 
-    private fun fetchWorkflowFiles(owner: String, repo: String): List<String> {
+    private suspend fun fetchWorkflowFiles(owner: String, repo: String): List<String> {
         val cacheKey = metadataCacheKey(owner, repo)
         cachedValue(workflowFilesCache[cacheKey], PUBLIC_METADATA_CACHE_TTL_MS)?.let { return it }
         val workflowsTreeUrl = "${githubHtmlBaseUrl.trimEnd('/')}/$owner/$repo/tree/HEAD/.github/workflows"
@@ -273,7 +275,7 @@ class GitHubActionsNightlyLinkRepository(
         }
     }
 
-    private fun fetchNightlyWorkflowArtifactNames(
+    private suspend fun fetchNightlyWorkflowArtifactNames(
         owner: String,
         repo: String,
         workflowFile: String,
@@ -410,7 +412,7 @@ class GitHubActionsNightlyLinkRepository(
             .toList()
     }
 
-    private fun fetchArtifactDetail(
+    private suspend fun fetchArtifactDetail(
         owner: String,
         repo: String,
         workflowSlug: String,
@@ -503,12 +505,12 @@ class GitHubActionsNightlyLinkRepository(
         )
     }
 
-    private fun fetchPublicRunDetail(
+    private suspend fun fetchPublicRunDetail(
         owner: String,
         repo: String,
         runId: Long
-    ): Result<GitHubActionsNightlyRunPublicDetail?> = runCatching {
-        if (runId <= 0L) return@runCatching null
+    ): Result<GitHubActionsNightlyRunPublicDetail?> = cancellableResult {
+        if (runId <= 0L) return@cancellableResult null
         fetchPublicHtml(buildGitHubRunUrl(owner, repo, runId)).getOrThrow()
             .let { html ->
                 GitHubActionsNightlyLinkHtmlParser.parsePublicRunDetail(
@@ -520,13 +522,13 @@ class GitHubActionsNightlyLinkRepository(
             }
     }
 
-    private fun fetchPublicHtml(
+    private suspend fun fetchPublicHtml(
         url: String,
         cacheTtlMillis: Long = PUBLIC_HTML_CACHE_TTL_MS
-    ): Result<String> = runCatching {
+    ): Result<String> = cancellableResult {
         if (cacheTtlMillis > 0L) {
             cachedValue(publicHtmlCache[url], cacheTtlMillis)?.let { cached ->
-                return@runCatching cached
+                return@cancellableResult cached
             }
         }
         val request = Request.Builder()
@@ -535,7 +537,7 @@ class GitHubActionsNightlyLinkRepository(
             .header("Accept", "text/html,application/xhtml+xml")
             .header("User-Agent", USER_AGENT)
             .build()
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(buildPublicHtmlErrorMessage(url = url, httpCode = response.code))

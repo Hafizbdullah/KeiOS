@@ -6,6 +6,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.cancellableResult
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
@@ -46,11 +48,11 @@ class GitHubApiTokenReleaseStrategy(
     val authMode: GitHubApiAuthMode
         get() = if (sanitizedToken.isBlank()) GitHubApiAuthMode.Guest else GitHubApiAuthMode.Token
 
-    override fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
+    override suspend fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot> {
         return loadSnapshotTrace(owner, repo).result
     }
 
-    fun loadSnapshotTrace(owner: String, repo: String): GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot> {
+    suspend fun loadSnapshotTrace(owner: String, repo: String): GitHubStrategyLoadTrace<GitHubRepositoryReleaseSnapshot> {
         val startedAt = System.currentTimeMillis()
         val entriesTrace = fetchReleaseEntriesTrace(owner, repo)
         val entries = entriesTrace.result.getOrElse { error ->
@@ -119,11 +121,11 @@ class GitHubApiTokenReleaseStrategy(
         )
     }
 
-    fun fetchReleaseEntries(owner: String, repo: String, limit: Int = 30): Result<List<GitHubAtomReleaseEntry>> {
+    suspend fun fetchReleaseEntries(owner: String, repo: String, limit: Int = 30): Result<List<GitHubAtomReleaseEntry>> {
         return fetchReleaseEntriesTrace(owner, repo, limit).result
     }
 
-    internal fun fetchReleaseEntriesTrace(
+    internal suspend fun fetchReleaseEntriesTrace(
         owner: String,
         repo: String,
         limit: Int = 30
@@ -164,7 +166,7 @@ class GitHubApiTokenReleaseStrategy(
         clearSharedCaches()
     }
 
-    private fun fetchLatestStableSignalTrace(
+    private suspend fun fetchLatestStableSignalTrace(
         owner: String,
         repo: String
     ): GitHubStrategyLoadTrace<GitHubReleaseVersionSignals> {
@@ -203,11 +205,11 @@ class GitHubApiTokenReleaseStrategy(
         )
     }
 
-    fun checkCredential(): Result<GitHubApiCredentialStatus> {
+    suspend fun checkCredential(): Result<GitHubApiCredentialStatus> {
         return checkCredentialTrace().result
     }
 
-    fun checkCredentialTrace(): GitHubStrategyLoadTrace<GitHubApiCredentialStatus> {
+    suspend fun checkCredentialTrace(): GitHubStrategyLoadTrace<GitHubApiCredentialStatus> {
         val startedAt = System.currentTimeMillis()
         val key = "credential|${cacheKey(owner = "_", repo = "_")}"
         val now = System.currentTimeMillis()
@@ -236,7 +238,7 @@ class GitHubApiTokenReleaseStrategy(
         )
     }
 
-    private fun fetch(url: String): Result<String> = runCatching {
+    private suspend fun fetch(url: String): Result<String> = cancellableResult {
         val requestBuilder = Request.Builder()
             .url(url)
             .get()
@@ -248,7 +250,7 @@ class GitHubApiTokenReleaseStrategy(
         }
         val request = requestBuilder.build()
 
-        client.newCall(request).execute().use { response ->
+        client.executeCancellable(request) { response ->
             val bodyText = response.body.string()
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))

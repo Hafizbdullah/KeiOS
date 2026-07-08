@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
+import os.kei.core.io.executeCancellable
 import os.kei.core.json.jsonArrayOrNull
 import os.kei.core.json.jsonObjectOrNull
 import os.kei.core.json.jsonPrimitiveOrNull
@@ -43,7 +44,7 @@ class FdroidPackageApiClient(
                 .header("User-Agent", USER_AGENT)
                 .header("Accept", "application/json,*/*")
                 .build()
-            client.newCall(request).execute().use { response ->
+            client.executeCancellable(request) { response ->
                 check(response.isSuccessful) {
                     "F-Droid package API failed (HTTP ${response.code})"
                 }

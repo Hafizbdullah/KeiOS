@@ -10,7 +10,7 @@ import os.kei.feature.github.model.GitHubActionsWorkflowRun
 class GitHubActionsRunArtifactFetcher(
     private val maxConcurrency: Int,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
-    private val fetchRunArtifacts: (
+    private val fetchRunArtifacts: suspend (
         owner: String,
         repo: String,
         runId: Long,

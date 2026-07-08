@@ -5,7 +5,7 @@ import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 interface GitHubReleaseLookupStrategy {
     val id: String
 
-    fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot>
+    suspend fun loadSnapshot(owner: String, repo: String): Result<GitHubRepositoryReleaseSnapshot>
 
     fun clearCaches()
 }

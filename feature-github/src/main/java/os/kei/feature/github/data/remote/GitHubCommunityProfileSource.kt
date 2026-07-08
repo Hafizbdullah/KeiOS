@@ -11,7 +11,7 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSource
 class GitHubCommunityProfileSource(
     private val http: GitHubRepositoryProfileHttpClient
 ) {
-    fun fetch(
+    suspend fun fetch(
         owner: String,
         repo: String,
         apiToken: String,

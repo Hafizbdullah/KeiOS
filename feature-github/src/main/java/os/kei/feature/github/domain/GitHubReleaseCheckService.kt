@@ -43,6 +43,7 @@ import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
 import os.kei.feature.github.model.suppressesAllReleaseUpdates
 import java.io.IOException
+import kotlin.coroutines.cancellation.CancellationException
 
 object GitHubReleaseCheckService {
     private const val transientRetryCount = 1
@@ -614,7 +615,7 @@ object GitHubReleaseCheckService {
                 fromCache = true
             )
         }
-        val profile = runCatching {
+        val profile = try {
             profileRepository.fetchProfile(
                 GitHubRepositoryProfileRequest(
                     owner = item.owner,
@@ -629,7 +630,10 @@ object GitHubReleaseCheckService {
                     precisePreReleaseApkVersion = precisePreReleaseApkVersion
                 )
             )
-        }.getOrNull()
+        } catch (error: Throwable) {
+            if (error is CancellationException) throw error
+            null
+        }
         return RepositoryProfileLoadResult(
             profile = profile,
             elapsedMs = elapsedMsSince(startedNs),
@@ -725,7 +729,7 @@ object GitHubReleaseCheckService {
         return latestResult
     }
 
-    private fun GitHubReleaseLookupStrategy.loadSnapshotTraceCompat(
+    private suspend fun GitHubReleaseLookupStrategy.loadSnapshotTraceCompat(
         owner: String,
         repo: String
     ): Result<SnapshotLoadResult> {
@@ -735,8 +739,13 @@ object GitHubReleaseCheckService {
                 is GitHubApiTokenReleaseStrategy -> loadSnapshotTrace(owner, repo)
                 else -> {
                     val startedNs = System.nanoTime()
-                    val result = runCatching { loadSnapshot(owner, repo) }
-                        .getOrElse { error -> Result.failure(error) }
+                    val result =
+                        try {
+                            loadSnapshot(owner, repo)
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            Result.failure(error)
+                        }
                     GitHubStrategyLoadTrace(
                         result = result,
                         fromCache = false,

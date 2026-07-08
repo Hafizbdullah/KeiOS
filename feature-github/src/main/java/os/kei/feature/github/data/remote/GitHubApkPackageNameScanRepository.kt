@@ -1,5 +1,6 @@
 package os.kei.feature.github.data.remote
 
+import os.kei.core.io.cancellableResult
 import os.kei.feature.github.domain.GitHubApkPackageNameScanSource
 import os.kei.feature.github.domain.GitHubStableReleaseApkAssets
 import os.kei.feature.github.domain.GitHubStableReleaseTarget
@@ -14,7 +15,7 @@ class GitHubApkPackageNameScanRepository(
         owner: String,
         repo: String,
         lookupConfig: GitHubLookupConfig
-    ): Result<GitHubStableReleaseTarget> = runCatching {
+    ): Result<GitHubStableReleaseTarget> = cancellableResult {
         val snapshot = when (lookupConfig.selectedStrategy) {
             GitHubLookupStrategyOption.AtomFeed -> {
                 GitHubAtomReleaseStrategy.loadSnapshot(owner, repo).getOrThrow()
