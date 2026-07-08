@@ -91,7 +91,12 @@ internal class BaOfficeController(
     fun matchesSnapshot(snapshot: BaPageSnapshot): Boolean =
         cafeLevel == snapshot.cafeLevel &&
             cafeStoredAp == snapshot.cafeStoredAp &&
-            cafeLastHourMs == snapshot.cafeLastHourMs &&
+            matchesInitialRuntimeBase(
+                currentValue = cafeLastHourMs,
+                snapshotValue = snapshot.cafeLastHourMs,
+                currentAmount = cafeStoredAp,
+                snapshotAmount = snapshot.cafeStoredAp,
+            ) &&
             cafeApNotifyEnabled == snapshot.cafeApNotifyEnabled &&
             cafeApNotifyThreshold == snapshot.cafeApNotifyThreshold &&
             cafeApLastNotifiedLevel == snapshot.cafeApLastNotifiedLevel &&
@@ -99,7 +104,12 @@ internal class BaOfficeController(
             idFriendCode == snapshot.idFriendCode &&
             apLimit == snapshot.apLimit &&
             apCurrent == snapshot.apCurrent.coerceAtLeast(0.0) &&
-            apRegenBaseMs == snapshot.apRegenBaseMs &&
+            matchesInitialRuntimeBase(
+                currentValue = apRegenBaseMs,
+                snapshotValue = snapshot.apRegenBaseMs,
+                currentAmount = apCurrent,
+                snapshotAmount = snapshot.apCurrent.coerceAtLeast(0.0),
+            ) &&
             apSyncMs == snapshot.apSyncMs &&
             apNotifyEnabled == snapshot.apNotifyEnabled &&
             apNotifyThreshold == snapshot.apNotifyThreshold &&
@@ -114,6 +124,19 @@ internal class BaOfficeController(
             apLimitInput == snapshot.apLimit.toString() &&
             cafeStoredApInput == displayAp(snapshot.cafeStoredAp.coerceAtLeast(0.0)).toString() &&
             apLastNotifiedLevel == snapshot.apLastNotifiedLevel
+
+    private fun matchesInitialRuntimeBase(
+        currentValue: Long,
+        snapshotValue: Long,
+        currentAmount: Double,
+        snapshotAmount: Double,
+    ): Boolean =
+        currentValue == snapshotValue ||
+            (
+                snapshotValue <= 0L &&
+                    currentValue >= 0L &&
+                    currentAmount == snapshotAmount
+            )
 
     fun applySnapshot(snapshot: BaPageSnapshot) {
         cafeLevel = snapshot.cafeLevel

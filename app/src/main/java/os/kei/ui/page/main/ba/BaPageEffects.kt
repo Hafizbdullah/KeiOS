@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.displayAp
@@ -40,6 +41,7 @@ internal fun BaPageCommonEffects(
     onServerChanged: suspend () -> Unit,
     context: Context,
     accountUiState: BaOfficeAccountUiState,
+    runtimeEffectsActive: Boolean,
 ) {
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
@@ -90,15 +92,15 @@ internal fun BaPageCommonEffects(
             }
     }
 
-    LaunchedEffect(isPageActive, listState, office, runtimeTickerCoordinator) {
-        if (isPageActive) {
+    LaunchedEffect(runtimeEffectsActive, listState, office, runtimeTickerCoordinator) {
+        if (runtimeEffectsActive) {
             runtimePersistenceCoordinator.submit(office.normalizeRuntimeState())
             val nowMs = System.currentTimeMillis()
             onUiNowMsChange(nowMs)
             onUiMinuteMsChange(nowMs)
         }
         runtimeTickerCoordinator.run(
-            isPageActive = { isPageActive },
+            isPageActive = { runtimeEffectsActive },
             isScrollInProgress = { listState.isScrollInProgress },
         ) { frame ->
             if (frame.applyRuntimeTick) {
@@ -113,11 +115,11 @@ internal fun BaPageCommonEffects(
         }
     }
 
-    LaunchedEffect(isPageActive, listState) {
+    LaunchedEffect(runtimeEffectsActive, listState) {
         snapshotFlow { listState.isScrollInProgress }
             .distinctUntilChanged()
             .collectLatest { scrolling ->
-                if (isPageActive && !scrolling) {
+                if (runtimeEffectsActive && !scrolling) {
                     val nowMs = System.currentTimeMillis()
                     onUiNowMsChange(nowMs)
                     onUiMinuteMsChange(nowMs)
@@ -144,7 +146,8 @@ internal fun BaPageCommonEffects(
         onServerChanged()
     }
 
-    LaunchedEffect(context, office, accountUiState) {
+    LaunchedEffect(context, office, accountUiState, runtimeEffectsActive) {
+        if (!runtimeEffectsActive) return@LaunchedEffect
         val notificationContext = context.applicationContext
         snapshotFlow {
             val accountNotificationContext = accountUiState.activeNotificationContext()
@@ -173,6 +176,11 @@ internal fun BaPageCommonEffects(
             }
     }
 }
+
+internal fun shouldRunBaRuntimeEffects(
+    isPageActive: Boolean,
+    activeAccountId: BaAccountId?,
+): Boolean = isPageActive && activeAccountId != null
 
 @Composable
 internal fun BaCalendarPoolSyncEffects(

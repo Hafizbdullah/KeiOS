@@ -87,6 +87,57 @@ class BaPageActionsTest {
     }
 
     @Test
+    fun `default runtime normalization keeps office eligible for initial snapshot hydration`() {
+        val defaultSnapshot = BaPageSnapshot()
+        val office =
+            BaOfficeController(
+                snapshot = defaultSnapshot,
+                clock = FixedBaOfficeClock(1_800_000L),
+            )
+
+        office.normalizeRuntimeState()
+
+        assertTrue(office.matchesSnapshot(defaultSnapshot))
+    }
+
+    @Test
+    fun `runtime effects wait for active account hydration`() {
+        assertFalse(
+            shouldRunBaRuntimeEffects(
+                isPageActive = true,
+                activeAccountId = null,
+            ),
+        )
+        assertFalse(
+            shouldRunBaRuntimeEffects(
+                isPageActive = false,
+                activeAccountId = BaAccountId("main"),
+            ),
+        )
+        assertTrue(
+            shouldRunBaRuntimeEffects(
+                isPageActive = true,
+                activeAccountId = BaAccountId("main"),
+            ),
+        )
+    }
+
+    @Test
+    fun `runtime amount changes keep office ineligible for initial snapshot hydration`() {
+        val defaultSnapshot = BaPageSnapshot()
+        val office =
+            BaOfficeController(
+                snapshot = defaultSnapshot,
+                clock = FixedBaOfficeClock(1_800_000L),
+            )
+
+        office.normalizeRuntimeState()
+        office.addCurrentAp(delta = 1.0, markSync = false)
+
+        assertFalse(office.matchesSnapshot(defaultSnapshot))
+    }
+
+    @Test
     fun `cafe rank nine daily capacity uses current known cap`() {
         assertEquals(670, cafeDailyCapacity(9))
     }

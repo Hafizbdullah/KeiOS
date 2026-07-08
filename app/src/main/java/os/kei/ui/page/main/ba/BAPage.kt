@@ -135,6 +135,11 @@ fun BAPage(
         rememberBaPageSettledWorkActive(
             active = runtime.isSettledDataActive,
         )
+    val runtimeEffectsActive =
+        shouldRunBaRuntimeEffects(
+            isPageActive = settledWorkActive,
+            activeAccountId = accountUiState.activeAccountId,
+        )
     val baGlassRuntime = LocalGlassEffectRuntime.current
     val runtimePersistenceCoordinator =
         rememberBaRuntimePersistenceCoordinator(
@@ -327,6 +332,7 @@ fun BAPage(
         },
         context = context,
         accountUiState = accountUiState,
+        runtimeEffectsActive = runtimeEffectsActive,
     )
 
     BaCalendarPoolSyncEffects(

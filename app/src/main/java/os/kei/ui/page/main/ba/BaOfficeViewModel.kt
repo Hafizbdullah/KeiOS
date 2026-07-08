@@ -98,17 +98,18 @@ internal class BaOfficeViewModel(
             val snapshot = repository.loadInitialSnapshot()
             val accountState = repository.loadAccountState()
             if (office.matchesSnapshot(defaultSnapshot)) {
-                office.applySnapshot(snapshot)
-            }
-            _accountUiState.value = accountState.toOfficeAccountUiState()
-            _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
-            _runtimeUiState.value = snapshot.toRuntimeUiState()
-            _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
-            _notificationDraftUiState.value =
-                BaOfficeNotificationDraftUiState(
-                    draft = snapshot.toNotificationDraftState(),
-                    savedDraft = snapshot.toNotificationDraftState(),
+                applyOfficeSnapshot(
+                    snapshot = snapshot,
+                    accountState = accountState,
+                    persistRuntimeTick = true,
                 )
+            } else {
+                updateOfficeUiStateFromSnapshot(
+                    snapshot = snapshot,
+                    accountState = accountState,
+                    updateNotificationDraft = true,
+                )
+            }
         }
     }
 
@@ -358,21 +359,12 @@ internal class BaOfficeViewModel(
         viewModelScope.launch {
             val snapshot = repository.loadInitialSnapshot()
             val accountState = repository.loadAccountState()
-            _accountUiState.value = accountState.toOfficeAccountUiState()
-            _runtimeUiState.update { state ->
-                state.copy(
-                    showEndedPools = snapshot.showEndedPools,
-                    showEndedActivities = snapshot.showEndedActivities,
-                    showCalendarPoolImages = snapshot.showCalendarPoolImages,
-                    mediaAdaptiveRotationEnabled = snapshot.mediaAdaptiveRotationEnabled,
-                    mediaSaveCustomEnabled = snapshot.mediaSaveCustomEnabled,
-                    mediaSaveFixedTreeUri = snapshot.mediaSaveFixedTreeUri,
-                    calendarRefreshIntervalHours = snapshot.calendarRefreshIntervalHours,
-                )
-            }
-            if (!_chromeUiState.value.showSettingsSheet) {
-                _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
-            }
+            applyOfficeSnapshot(
+                snapshot = snapshot,
+                accountState = accountState,
+                persistRuntimeTick = true,
+            )
+            AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
         }
     }
 
@@ -386,17 +378,11 @@ internal class BaOfficeViewModel(
                 currentRuntimeUpdate?.persistAsync()
                 val snapshot = repository.selectActiveAccount(accountId) ?: return@launch
                 val accountState = repository.loadAccountState()
-                office.applySnapshot(snapshot)
-                _accountUiState.value = accountState.toOfficeAccountUiState()
-                _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
-                _runtimeUiState.value = snapshot.toRuntimeUiState()
-                _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
-                val notificationDraft = snapshot.toNotificationDraftState()
-                _notificationDraftUiState.value =
-                    BaOfficeNotificationDraftUiState(
-                        draft = notificationDraft,
-                        savedDraft = notificationDraft,
-                    )
+                applyOfficeSnapshot(
+                    snapshot = snapshot,
+                    accountState = accountState,
+                    persistRuntimeTick = true,
+                )
                 refreshCalendar(force = true)
                 refreshPool(force = true)
                 AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
@@ -610,14 +596,52 @@ internal class BaOfficeViewModel(
         refreshData: Boolean = true,
     ) {
         val snapshot = repository.loadInitialSnapshot()
+        applyOfficeSnapshot(
+            snapshot = snapshot,
+            accountState = accountState,
+            persistRuntimeTick = true,
+        )
+        if (refreshData) {
+            refreshCalendar(force = true)
+            refreshPool(force = true)
+        }
+        AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+    }
+
+    private suspend fun applyOfficeSnapshot(
+        snapshot: BaPageSnapshot,
+        accountState: BaAccountStoreSnapshot,
+        persistRuntimeTick: Boolean,
+    ) {
         office.applySnapshot(snapshot)
+        val runtimeUpdate =
+            if (persistRuntimeTick) {
+                office
+                    .applyRuntimeTick()
+                    ?.withAccountId(accountState.activeAccountId)
+            } else {
+                null
+            }
+        runtimeUpdate?.persistAsync()
+        updateOfficeUiStateFromSnapshot(
+            snapshot = snapshot,
+            accountState = accountState,
+            updateNotificationDraft = !_chromeUiState.value.showNotificationSettingsSheet,
+        )
+    }
+
+    private fun updateOfficeUiStateFromSnapshot(
+        snapshot: BaPageSnapshot,
+        accountState: BaAccountStoreSnapshot,
+        updateNotificationDraft: Boolean,
+    ) {
         _accountUiState.value = accountState.toOfficeAccountUiState()
         _serverUiState.value = BaOfficeServerUiState(snapshot.serverIndex)
         _runtimeUiState.value = snapshot.toRuntimeUiState()
         if (!_chromeUiState.value.showSettingsSheet) {
             _settingsDraftUiState.value = BaOfficeSettingsDraftUiState(snapshot.toSettingsDraftState())
         }
-        if (!_chromeUiState.value.showNotificationSettingsSheet) {
+        if (updateNotificationDraft) {
             val notificationDraft = snapshot.toNotificationDraftState()
             _notificationDraftUiState.value =
                 BaOfficeNotificationDraftUiState(
@@ -625,10 +649,5 @@ internal class BaOfficeViewModel(
                     savedDraft = notificationDraft,
                 )
         }
-        if (refreshData) {
-            refreshCalendar(force = true)
-            refreshPool(force = true)
-        }
-        AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
     }
 }
