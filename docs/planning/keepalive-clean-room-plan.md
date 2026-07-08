@@ -216,14 +216,14 @@ Reference files used for analysis:
   - `AccessibilitySecureSettingRead(rawValue, ids, success, reason)`
   - `AccessibilitySecureSettingWrite(success, changed, reason)`
 
-- [ ] Add a fake command runner wrapper for tests so shell outputs can be injected.
-- [ ] Test successful read from `settings get secure enabled_accessibility_services`.
-- [ ] Test write command quoting for flattened component names.
-- [ ] Test timeout and permission-denied result mapping.
-- [ ] Implement read/write using existing Shizuku timeout and cancellation behavior.
-- [ ] Set `accessibility_enabled` to `1` only when the final selected service set is non-empty.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest :core-system:testDebugUnitTest`.
-- [ ] Commit with `feat: add shizuku accessibility settings bridge`.
+- [x] Add a fake command runner wrapper for tests so shell outputs can be injected.
+- [x] Test successful read from `settings get secure enabled_accessibility_services`.
+- [x] Test write command quoting for flattened component names.
+- [x] Test timeout and permission-denied result mapping.
+- [x] Implement read/write using existing Shizuku timeout and cancellation behavior.
+- [x] Set `accessibility_enabled` to `1` only when the final selected service set is non-empty.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest :core-system:testDebugUnitTest`.
+- [x] Commit with `feat: add shizuku accessibility settings bridge`.
 
 ## Task 4: Add Guard Store, Coordinator, and Rate Limits
 
