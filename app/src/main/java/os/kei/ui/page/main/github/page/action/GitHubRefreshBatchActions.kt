@@ -299,9 +299,8 @@ internal class GitHubRefreshBatchActions(
                         startedAtMillis = refreshStartedAtMs,
                     )
                     onFinished?.invoke()
-                    repository.notifyRefreshFailed(
+                    repository.notifyRefreshCompleted(
                         context = context,
-                        current = completedCount,
                         total = totalCount,
                         preReleaseUpdateCount = preReleaseUpdateCount,
                         updatableCount = updatableCount,
