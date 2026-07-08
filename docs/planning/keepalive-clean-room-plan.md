@@ -175,12 +175,12 @@ Reference files used for analysis:
 - Produces `AccessibilityServiceId`, `AccessibilityGuardCapability`, `AccessibilityGuardRestoreReason`, `AccessibilityGuardRestoreResult`, and `AccessibilityGuardHistoryEntry`.
 - Later tasks consume these models from app UI and service logic.
 
-- [ ] Add module include and app dependency.
-- [ ] Add `build.gradle.kts` with Android library config, namespace `os.kei.feature.keepalive`, compile SDK 37, min SDK 35, Java 21.
-- [ ] Add a minimal module manifest that compiles before service classes exist.
-- [ ] Add model file with immutable data classes and enums.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
-- [ ] Commit with `feat: scaffold keepalive feature module`.
+- [x] Add module include and app dependency.
+- [x] Add `build.gradle.kts` with Android library config, namespace `os.kei.feature.keepalive`, compile SDK 37, min SDK 35, Java 21.
+- [x] Add a minimal module manifest that compiles before service classes exist.
+- [x] Add model file with immutable data classes and enums.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
+- [x] Commit with `feat: scaffold keepalive feature module`.
 
 ## Task 2: Implement Read-Only Accessibility Diagnostics
 
@@ -196,12 +196,12 @@ Reference files used for analysis:
   - `suspend fun listInstalledServices(context: Context): List<AccessibilityServiceSnapshot>`
   - `fun deriveEnabledState(installed, enabledIds, guardedIds): List<AccessibilityServiceSnapshot>`
 
-- [ ] Add tests for parsing empty values, colon-separated component names, duplicate entries, malformed entries, and legacy slash formats.
-- [ ] Implement parser with `ComponentName.unflattenFromString()` and stable sorting by package then service.
-- [ ] Add repository method using `AccessibilityManager.installedAccessibilityServiceList`.
-- [ ] Keep all heavy derivation on `AppDispatchers.uiDerivation` or `AppDispatchers.fileIo`.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
-- [ ] Commit with `feat: add accessibility diagnostics model`.
+- [x] Add tests for parsing empty values, colon-separated component names, duplicate entries, malformed entries, and legacy slash formats.
+- [x] Implement parser with `ComponentName.unflattenFromString()` and stable sorting by package then service.
+- [x] Add repository method using `AccessibilityManager.installedAccessibilityServiceList`.
+- [x] Keep all heavy derivation on `AppDispatchers.uiDerivation` or `AppDispatchers.fileIo`.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
+- [x] Commit with `feat: add accessibility diagnostics model`.
 
 ## Task 3: Add Narrow Shizuku Secure Settings Bridge
 

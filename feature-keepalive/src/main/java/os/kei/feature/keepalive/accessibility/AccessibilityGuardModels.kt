@@ -1,9 +1,13 @@
 package os.kei.feature.keepalive.accessibility
 
+import android.content.ComponentName
+
 data class AccessibilityServiceId(
     val packageName: String,
     val serviceName: String,
-)
+) {
+    fun flatten(): String = ComponentName(packageName, serviceName).flattenToString()
+}
 
 data class AccessibilityServiceSnapshot(
     val id: AccessibilityServiceId,
@@ -74,3 +78,27 @@ data class AccessibilityGuardHistoryEntry(
     val failureReason: String,
     val serviceIds: List<AccessibilityServiceId>,
 )
+
+fun parseAccessibilityServiceIds(raw: String): Set<AccessibilityServiceId> {
+    if (raw.isBlank()) return emptySet()
+    return raw
+        .split(':')
+        .asSequence()
+        .mapNotNull { token -> token.toAccessibilityServiceIdOrNull() }
+        .distinct()
+        .sortedWith(compareBy<AccessibilityServiceId> { it.packageName }.thenBy { it.serviceName })
+        .toCollection(LinkedHashSet())
+}
+
+internal fun String.toAccessibilityServiceIdOrNull(): AccessibilityServiceId? {
+    val flattened = trim()
+    if (flattened.isBlank()) return null
+    val component = ComponentName.unflattenFromString(flattened) ?: return null
+    val packageName = component.packageName.trim()
+    val serviceName = component.className.trim()
+    if (packageName.isBlank() || serviceName.isBlank()) return null
+    return AccessibilityServiceId(
+        packageName = packageName,
+        serviceName = serviceName,
+    )
+}
