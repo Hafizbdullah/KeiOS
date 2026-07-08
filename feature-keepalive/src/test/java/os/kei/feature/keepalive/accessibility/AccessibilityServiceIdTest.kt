@@ -52,36 +52,4 @@ class AccessibilityServiceIdTest {
         assertEquals("com.example/com.example.Service", id.flatten())
     }
 
-    @Test
-    fun `derive enabled state applies enabled and guarded sets with stable ordering`() {
-        val beta = serviceSnapshot("com.example.beta", "com.example.beta.BetaService")
-        val alpha = serviceSnapshot("com.example.alpha", "com.example.alpha.AlphaService")
-
-        val derived =
-            deriveEnabledState(
-                installed = listOf(beta, alpha),
-                enabledIds = setOf(alpha.id),
-                guardedIds = setOf(beta.id),
-            )
-
-        assertEquals(listOf(alpha.id, beta.id), derived.map { it.id })
-        assertEquals(true, derived[0].enabled)
-        assertEquals(false, derived[0].guarded)
-        assertEquals(false, derived[1].enabled)
-        assertEquals(true, derived[1].guarded)
-    }
-
-    private fun serviceSnapshot(
-        packageName: String,
-        serviceName: String,
-    ): AccessibilityServiceSnapshot =
-        AccessibilityServiceSnapshot(
-            id = AccessibilityServiceId(packageName, serviceName),
-            label = serviceName.substringAfterLast('.'),
-            packageLabel = packageName,
-            enabled = false,
-            guarded = false,
-            installed = true,
-            system = false,
-        )
 }

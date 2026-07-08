@@ -39,43 +39,6 @@ class ShizukuAccessibilitySecureSettingsBridge(
         )
     }
 
-    override suspend fun writeEnabledServiceIds(ids: Set<AccessibilityServiceId>): AccessibilitySecureSettingWrite {
-        val sortedIds = ids.sortedWith(compareBy<AccessibilityServiceId> { it.packageName }.thenBy { it.serviceName })
-        val flattened = sortedIds.joinToString(separator = ":") { it.flatten() }
-        val writeServices =
-            commandRunner.run(
-                command = "settings put secure enabled_accessibility_services ${flattened.shellQuote()}",
-                timeoutMs = timeoutMs,
-            )
-        if (!writeServices.succeeded) {
-            return writeServices.toWriteResult()
-        }
-        val accessibilityEnabled = setAccessibilityEnabled(sortedIds.isNotEmpty())
-        if (!accessibilityEnabled.success) return accessibilityEnabled
-        return AccessibilitySecureSettingWrite(
-            success = true,
-            changed = true,
-            reason = "",
-        )
-    }
-
-    override suspend fun setAccessibilityEnabled(enabled: Boolean): AccessibilitySecureSettingWrite {
-        val enabledValue = if (enabled) "1" else "0"
-        val result =
-            commandRunner.run(
-                command = "settings put secure accessibility_enabled $enabledValue",
-                timeoutMs = timeoutMs,
-            )
-        return result.toWriteResult()
-    }
-
-    private fun AppCommandResult.toWriteResult(): AccessibilitySecureSettingWrite =
-        AccessibilitySecureSettingWrite(
-            success = succeeded,
-            changed = succeeded,
-            reason = if (succeeded) "" else toFailureReason(),
-        )
-
     private fun AppCommandResult.toFailureReason(): String =
         when {
             timedOut -> "timeout"
@@ -84,13 +47,6 @@ class ShizukuAccessibilitySecureSettingsBridge(
             stdout.isNotBlank() -> stdout.trim()
             exitCode != null -> "exit_$exitCode"
             else -> "command_failed"
-        }
-
-    private fun String.shellQuote(): String =
-        if (isEmpty()) {
-            "''"
-        } else {
-            "'${replace("'", "'\\''")}'"
         }
 
     companion object {

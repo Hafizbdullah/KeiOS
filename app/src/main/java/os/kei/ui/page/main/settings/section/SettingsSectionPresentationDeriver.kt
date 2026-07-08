@@ -41,9 +41,9 @@ internal fun deriveAccessibilityGuardPresentation(state: SettingsAccessibilityGu
     SettingsSectionPresentationState(
         active =
             state.daemonEnabled ||
-                state.bootRestoreEnabled ||
+                state.bootCheckEnabled ||
                 state.screenOnCheckEnabled ||
-                state.guardedCount > 0 ||
+                state.secureSettingsReadable ||
                 state.historyCount > 0,
     )
 

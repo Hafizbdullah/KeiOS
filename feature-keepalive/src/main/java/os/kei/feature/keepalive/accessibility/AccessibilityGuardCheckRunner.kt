@@ -4,14 +4,13 @@ import android.os.SystemClock
 import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.log.AppLogger
 
-fun interface AccessibilityGuardRestoreOperation {
-    suspend fun restoreMissing(reason: AccessibilityGuardRestoreReason): AccessibilityGuardRestoreResult
+fun interface AccessibilityGuardCheckOperation {
+    suspend fun checkSelf(reason: AccessibilityGuardCheckReason): AccessibilityGuardCheckResult
 }
 
-class AccessibilityGuardRestoreRunner(
-    private val restoreOperation: AccessibilityGuardRestoreOperation,
+class AccessibilityGuardCheckRunner(
+    private val checkOperation: AccessibilityGuardCheckOperation,
     private val historyStore: AccessibilityGuardHistoryStore,
-    private val selectedIdsProvider: () -> Set<AccessibilityServiceId> = { emptySet() },
     private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     private val wallClockMs: () -> Long = System::currentTimeMillis,
     private val elapsedClockMs: () -> Long = SystemClock::elapsedRealtime,
@@ -19,28 +18,26 @@ class AccessibilityGuardRestoreRunner(
     constructor(
         coordinator: AccessibilityGuardCoordinator,
         historyStore: AccessibilityGuardHistoryStore,
-        selectedIdsProvider: () -> Set<AccessibilityServiceId> = { emptySet() },
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
         wallClockMs: () -> Long = System::currentTimeMillis,
         elapsedClockMs: () -> Long = SystemClock::elapsedRealtime,
     ) : this(
-        restoreOperation = AccessibilityGuardRestoreOperation { reason -> coordinator.restoreMissing(reason) },
+        checkOperation = AccessibilityGuardCheckOperation { reason -> coordinator.checkSelf(reason) },
         historyStore = historyStore,
-        selectedIdsProvider = selectedIdsProvider,
         timeoutMs = timeoutMs,
         wallClockMs = wallClockMs,
         elapsedClockMs = elapsedClockMs,
     )
 
-    suspend fun restoreAndRecord(
-        reason: AccessibilityGuardRestoreReason,
+    suspend fun checkAndRecord(
+        reason: AccessibilityGuardCheckReason,
         triggerAction: String,
-    ): AccessibilityGuardRestoreResult {
+    ): AccessibilityGuardCheckResult {
         val startedAtMs = wallClockMs()
         val startedElapsedMs = elapsedClockMs()
         val result =
             withTimeoutOrNull(timeoutMs.coerceAtLeast(1L)) {
-                restoreOperation.restoreMissing(reason)
+                checkOperation.checkSelf(reason)
             } ?: timeoutResult(
                 reason = reason,
                 startedAtMs = startedAtMs,
@@ -51,9 +48,9 @@ class AccessibilityGuardRestoreRunner(
     }
 
     suspend fun recordTimeout(
-        reason: AccessibilityGuardRestoreReason,
+        reason: AccessibilityGuardCheckReason,
         triggerAction: String,
-    ): AccessibilityGuardRestoreResult {
+    ): AccessibilityGuardCheckResult {
         val startedAtMs = wallClockMs()
         val startedElapsedMs = elapsedClockMs()
         val result =
@@ -67,7 +64,7 @@ class AccessibilityGuardRestoreRunner(
     }
 
     private suspend fun recordHistory(
-        result: AccessibilityGuardRestoreResult,
+        result: AccessibilityGuardCheckResult,
         triggerAction: String,
     ) {
         runCatching {
@@ -83,33 +80,25 @@ class AccessibilityGuardRestoreRunner(
     }
 
     private fun timeoutResult(
-        reason: AccessibilityGuardRestoreReason,
+        reason: AccessibilityGuardCheckReason,
         startedAtMs: Long,
         startedElapsedMs: Long,
-    ): AccessibilityGuardRestoreResult {
-        val selectedIds = selectedIdsProvider().sortedServiceIdSet()
-        return AccessibilityGuardRestoreResult(
-            status = AccessibilityGuardRestoreStatus.TimedOut,
+    ): AccessibilityGuardCheckResult =
+        AccessibilityGuardCheckResult(
+            status = AccessibilityGuardCheckStatus.TimedOut,
             reason = reason,
-            selectedIds = selectedIds,
-            beforeEnabledIds = emptySet(),
-            afterEnabledIds = emptySet(),
-            restoredIds = emptySet(),
-            skippedIds = selectedIds,
+            checkCount = AccessibilityGuardCoordinator.SELF_CAPABILITY_CHECK_COUNT,
+            healthyCount = 0,
+            warningCount = AccessibilityGuardCoordinator.SELF_CAPABILITY_CHECK_COUNT,
             startedAtMs = startedAtMs,
             finishedAtMs = wallClockMs().coerceAtLeast(startedAtMs),
             elapsedMs = (elapsedClockMs() - startedElapsedMs).coerceAtLeast(timeoutMs.coerceAtLeast(1L)),
             shizukuStatus = "",
             failureReason = "timeout",
         )
-    }
 
     companion object {
         const val DEFAULT_TIMEOUT_MS = 12_000L
         private const val TAG = "AccessibilityGuardRunner"
     }
 }
-
-private fun Set<AccessibilityServiceId>.sortedServiceIdSet(): Set<AccessibilityServiceId> =
-    sortedWith(compareBy<AccessibilityServiceId> { it.packageName }.thenBy { it.serviceName })
-        .toCollection(LinkedHashSet())

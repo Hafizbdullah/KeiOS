@@ -44,47 +44,6 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
     }
 
     @Test
-    fun `write enabled services writes sorted component list and accessibility flag`() =
-        kotlinx.coroutines.test.runTest {
-            val runner = RecordingCommandRunner(result = commandResult())
-            val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
-
-            val write =
-                bridge.writeEnabledServiceIds(
-                    setOf(
-                        AccessibilityServiceId("com.zeta", "com.zeta.Service"),
-                        AccessibilityServiceId("com.alpha", "com.alpha.Service"),
-                    ),
-                )
-
-            assertEquals(true, write.success)
-            assertEquals(
-                listOf(
-                    "settings put secure enabled_accessibility_services 'com.alpha/com.alpha.Service:com.zeta/com.zeta.Service'" to 2_500L,
-                    "settings put secure accessibility_enabled 1" to 2_500L,
-                ),
-                runner.commands,
-            )
-        }
-
-    @Test
-    fun `write empty services clears accessibility flag`() = kotlinx.coroutines.test.runTest {
-        val runner = RecordingCommandRunner(result = commandResult())
-        val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
-
-        val write = bridge.writeEnabledServiceIds(emptySet())
-
-        assertEquals(true, write.success)
-        assertEquals(
-            listOf(
-                "settings put secure enabled_accessibility_services ''" to 2_500L,
-                "settings put secure accessibility_enabled 0" to 2_500L,
-            ),
-            runner.commands,
-        )
-    }
-
-    @Test
     fun `timeout maps to read failure reason`() = kotlinx.coroutines.test.runTest {
         val runner =
             RecordingCommandRunner(
@@ -102,7 +61,7 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
     }
 
     @Test
-    fun `permission denied maps stderr to write failure reason`() = kotlinx.coroutines.test.runTest {
+    fun `permission denied maps stderr to read failure reason`() = kotlinx.coroutines.test.runTest {
         val runner =
             RecordingCommandRunner(
                 result = commandResult(
@@ -112,13 +71,10 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
             )
         val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
 
-        val write =
-            bridge.writeEnabledServiceIds(
-                setOf(AccessibilityServiceId("com.example", "com.example.Service")),
-            )
+        val read = bridge.readEnabledServiceIds()
 
-        assertEquals(false, write.success)
-        assertEquals("Permission denial", write.reason)
+        assertEquals(false, read.success)
+        assertEquals("Permission denial", read.reason)
         assertEquals(1, runner.commands.size)
     }
 

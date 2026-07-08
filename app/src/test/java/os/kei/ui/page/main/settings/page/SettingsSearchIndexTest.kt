@@ -49,8 +49,7 @@ class SettingsSearchIndexTest {
         val targets =
             buildSettingsSearchTargets { resId ->
                 when (resId) {
-                    R.string.settings_accessibility_guard_policy_title -> "Guard Policy"
-                    R.string.settings_accessibility_guard_services_title -> "Guarded Services"
+                    R.string.settings_accessibility_guard_policy_title -> "Self Guard Policy"
                     R.string.settings_accessibility_guard_history_title -> "Guard History"
                     else -> "label-$resId"
                 }
@@ -59,7 +58,6 @@ class SettingsSearchIndexTest {
         assertEquals(
             listOf(
                 SettingsSearchCard.AccessibilityGuardPolicy,
-                SettingsSearchCard.AccessibilityGuardServices,
                 SettingsSearchCard.AccessibilityGuardHistory,
             ),
             deriveSettingsSearchTargets(targets, "guard").map { it.card },

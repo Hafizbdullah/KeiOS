@@ -13,9 +13,8 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
-class AccessibilityGuardRestoreRunnerTest {
+class AccessibilityGuardCheckRunnerTest {
     private val tempDirs = mutableListOf<File>()
-    private val alpha = AccessibilityServiceId("com.alpha", "com.alpha.Service")
 
     @After
     fun cleanup() {
@@ -24,85 +23,83 @@ class AccessibilityGuardRestoreRunnerTest {
     }
 
     @Test
-    fun `restore and record writes successful history`() = runTest {
+    fun `check and record writes successful history`() = runTest {
         val historyStore = historyStore()
         val runner =
-            AccessibilityGuardRestoreRunner(
-                restoreOperation =
-                    AccessibilityGuardRestoreOperation {
-                        result(status = AccessibilityGuardRestoreStatus.Restored)
+            AccessibilityGuardCheckRunner(
+                checkOperation =
+                    AccessibilityGuardCheckOperation {
+                        result(status = AccessibilityGuardCheckStatus.Healthy)
                     },
                 historyStore = historyStore,
-                selectedIdsProvider = { setOf(alpha) },
             )
 
         val result =
-            runner.restoreAndRecord(
-                reason = AccessibilityGuardRestoreReason.Manual,
+            runner.checkAndRecord(
+                reason = AccessibilityGuardCheckReason.Manual,
                 triggerAction = "manual_check",
             )
 
-        assertEquals(AccessibilityGuardRestoreStatus.Restored, result.status)
+        assertEquals(AccessibilityGuardCheckStatus.Healthy, result.status)
         val history = historyStore.latest(1).single()
-        assertEquals(AccessibilityGuardRestoreStatus.Restored, history.status)
+        assertEquals(AccessibilityGuardCheckStatus.Healthy, history.status)
         assertEquals("manual_check", history.triggerAction)
-        assertEquals(1, history.selectedCount)
+        assertEquals(1, history.checkCount)
+        assertEquals(1, history.healthyCount)
     }
 
     @Test
-    fun `restore and record writes timeout history`() = runTest {
+    fun `check and record writes timeout history`() = runTest {
         val historyStore = historyStore()
         val runner =
-            AccessibilityGuardRestoreRunner(
-                restoreOperation =
-                    AccessibilityGuardRestoreOperation {
+            AccessibilityGuardCheckRunner(
+                checkOperation =
+                    AccessibilityGuardCheckOperation {
                         delay(10_000L)
-                        result(status = AccessibilityGuardRestoreStatus.Restored)
+                        result(status = AccessibilityGuardCheckStatus.Healthy)
                     },
                 historyStore = historyStore,
-                selectedIdsProvider = { setOf(alpha) },
                 timeoutMs = 100L,
                 wallClockMs = { 1_000L },
                 elapsedClockMs = { 1_000L },
             )
 
         val result =
-            runner.restoreAndRecord(
-                reason = AccessibilityGuardRestoreReason.BootCompleted,
+            runner.checkAndRecord(
+                reason = AccessibilityGuardCheckReason.BootCompleted,
                 triggerAction = "boot",
             )
 
-        assertEquals(AccessibilityGuardRestoreStatus.TimedOut, result.status)
+        assertEquals(AccessibilityGuardCheckStatus.TimedOut, result.status)
         assertEquals("timeout", result.failureReason)
         val history = historyStore.latest(1).single()
-        assertEquals(AccessibilityGuardRestoreStatus.TimedOut, history.status)
+        assertEquals(AccessibilityGuardCheckStatus.TimedOut, history.status)
         assertEquals("boot", history.triggerAction)
-        assertEquals(1, history.skippedCount)
+        assertEquals(1, history.warningCount)
     }
 
     @Test
-    fun `record timeout writes history without running restore operation`() = runTest {
+    fun `record timeout writes history without running check operation`() = runTest {
         val historyStore = historyStore()
         var called = false
         val runner =
-            AccessibilityGuardRestoreRunner(
-                restoreOperation =
-                    AccessibilityGuardRestoreOperation {
+            AccessibilityGuardCheckRunner(
+                checkOperation =
+                    AccessibilityGuardCheckOperation {
                         called = true
-                        result(status = AccessibilityGuardRestoreStatus.Restored)
+                        result(status = AccessibilityGuardCheckStatus.Healthy)
                     },
                 historyStore = historyStore,
-                selectedIdsProvider = { setOf(alpha) },
             )
 
         val result =
             runner.recordTimeout(
-                reason = AccessibilityGuardRestoreReason.PackageReplaced,
+                reason = AccessibilityGuardCheckReason.PackageReplaced,
                 triggerAction = "package:timeout",
             )
 
         assertEquals(false, called)
-        assertEquals(AccessibilityGuardRestoreStatus.TimedOut, result.status)
+        assertEquals(AccessibilityGuardCheckStatus.TimedOut, result.status)
         assertEquals("package:timeout", historyStore.latest(1).single().triggerAction)
     }
 
@@ -112,15 +109,13 @@ class AccessibilityGuardRestoreRunnerTest {
         return AccessibilityGuardHistoryStore(File(dir, "history.jsonl"))
     }
 
-    private fun result(status: AccessibilityGuardRestoreStatus): AccessibilityGuardRestoreResult =
-        AccessibilityGuardRestoreResult(
+    private fun result(status: AccessibilityGuardCheckStatus): AccessibilityGuardCheckResult =
+        AccessibilityGuardCheckResult(
             status = status,
-            reason = AccessibilityGuardRestoreReason.Manual,
-            selectedIds = setOf(alpha),
-            beforeEnabledIds = emptySet(),
-            afterEnabledIds = setOf(alpha),
-            restoredIds = if (status == AccessibilityGuardRestoreStatus.Restored) setOf(alpha) else emptySet(),
-            skippedIds = emptySet(),
+            reason = AccessibilityGuardCheckReason.Manual,
+            checkCount = 1,
+            healthyCount = if (status == AccessibilityGuardCheckStatus.Healthy) 1 else 0,
+            warningCount = if (status == AccessibilityGuardCheckStatus.Healthy) 0 else 1,
             startedAtMs = 1_000L,
             finishedAtMs = 1_100L,
             elapsedMs = 100L,

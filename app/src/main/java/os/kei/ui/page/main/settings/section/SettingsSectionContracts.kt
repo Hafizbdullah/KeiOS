@@ -5,8 +5,8 @@ import androidx.compose.ui.unit.IntRect
 import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreStatus
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckStatus
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
 import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
@@ -43,9 +43,8 @@ internal data class SettingsPermissionKeepAliveSectionActions(
     val onOpenOemAutoStartSettings: () -> Unit,
     val onOpenAppListPermissionSettings: () -> Unit,
     val onCheckOrRequestShizuku: () -> Unit,
-    val onAccessibilityGuardServiceCheckedChange: (String, Boolean) -> Unit,
     val onAccessibilityGuardDaemonChanged: (Boolean) -> Unit,
-    val onAccessibilityGuardBootRestoreChanged: (Boolean) -> Unit,
+    val onAccessibilityGuardBootCheckChanged: (Boolean) -> Unit,
     val onAccessibilityGuardScreenOnChanged: (Boolean) -> Unit,
     val onRunAccessibilityGuardCheck: () -> Unit,
     val onExportAccessibilityGuardHistory: () -> Unit,
@@ -57,36 +56,24 @@ internal data class SettingsAccessibilityGuardUiState(
     val manualCheckRunning: Boolean = false,
     val exportingHistory: Boolean = false,
     val daemonEnabled: Boolean = false,
-    val bootRestoreEnabled: Boolean = false,
+    val bootCheckEnabled: Boolean = false,
     val screenOnCheckEnabled: Boolean = false,
-    val serviceCount: Int = 0,
-    val guardedCount: Int = 0,
-    val enabledGuardedCount: Int = 0,
+    val secureSettingsReadable: Boolean = false,
+    val shizukuStatus: String = "",
+    val activePolicyCount: Int = 0,
     val historyCount: Int = 0,
-    val services: List<SettingsAccessibilityGuardServiceUiItem> = emptyList(),
     val latestHistory: SettingsAccessibilityGuardHistoryUiItem? = null,
-)
-
-@Immutable
-internal data class SettingsAccessibilityGuardServiceUiItem(
-    val flattenedId: String,
-    val label: String,
-    val packageLabel: String,
-    val packageName: String,
-    val enabled: Boolean,
-    val guarded: Boolean,
-    val system: Boolean,
 )
 
 @Immutable
 internal data class SettingsAccessibilityGuardHistoryUiItem(
     val timestampMs: Long,
-    val reason: AccessibilityGuardRestoreReason,
-    val status: AccessibilityGuardRestoreStatus,
+    val reason: AccessibilityGuardCheckReason,
+    val status: AccessibilityGuardCheckStatus,
     val triggerAction: String,
-    val selectedCount: Int,
-    val restoredCount: Int,
-    val skippedCount: Int,
+    val checkCount: Int,
+    val healthyCount: Int,
+    val warningCount: Int,
     val elapsedMs: Long,
     val failureReason: String,
 )

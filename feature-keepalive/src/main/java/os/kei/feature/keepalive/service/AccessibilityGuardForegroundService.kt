@@ -20,7 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardStateStore
 import os.kei.feature.keepalive.notification.AccessibilityGuardNotificationHelper
@@ -28,15 +28,15 @@ import os.kei.feature.keepalive.notification.AccessibilityGuardNotificationHelpe
 class AccessibilityGuardForegroundService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + AppDispatchers.osOperations)
     private val stateStore: AccessibilityGuardStateStore by lazy { AccessibilityGuardRuntime.newStateStore() }
-    private val restoreRunner by lazy {
-        AccessibilityGuardRuntime.restoreRunner(
+    private val checkRunner by lazy {
+        AccessibilityGuardRuntime.checkRunner(
             context = this,
             stateStore = stateStore,
         )
     }
     private var settingsObserver: ContentObserver? = null
     private var screenOnReceiver: BroadcastReceiver? = null
-    private var restoreJob: Job? = null
+    private var checkJob: Job? = null
     private var foregroundPromoted = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -55,8 +55,8 @@ class AccessibilityGuardForegroundService : Service() {
             ACTION_CHECK_ACCESSIBILITY_GUARD -> {
                 if (promoteForegroundIfNeeded(force = true)) {
                     refreshRegistrations()
-                    scheduleRestore(
-                        reason = AccessibilityGuardRestoreReason.Manual,
+                    scheduleCheck(
+                        reason = AccessibilityGuardCheckReason.Manual,
                         triggerAction = ACTION_CHECK_ACCESSIBILITY_GUARD,
                     )
                     return START_STICKY
@@ -75,8 +75,8 @@ class AccessibilityGuardForegroundService : Service() {
                 }
                 if (promoteForegroundIfNeeded(force = false)) {
                     refreshRegistrations()
-                    scheduleRestore(
-                        reason = AccessibilityGuardRestoreReason.ForegroundServiceStart,
+                    scheduleCheck(
+                        reason = AccessibilityGuardCheckReason.ForegroundServiceStart,
                         triggerAction = ACTION_START_ACCESSIBILITY_GUARD,
                     )
                     return START_STICKY
@@ -121,8 +121,8 @@ class AccessibilityGuardForegroundService : Service() {
         val observer =
             object : ContentObserver(Handler(Looper.getMainLooper())) {
                 override fun onChange(selfChange: Boolean) {
-                    scheduleRestore(
-                        reason = AccessibilityGuardRestoreReason.SecureSettingChanged,
+                    scheduleCheck(
+                        reason = AccessibilityGuardCheckReason.SecureSettingChanged,
                         triggerAction = "secure_settings_observer",
                         debounceMs = SETTINGS_OBSERVER_DEBOUNCE_MS,
                     )
@@ -146,8 +146,8 @@ class AccessibilityGuardForegroundService : Service() {
                         intent: Intent?,
                     ) {
                         if (intent?.action != Intent.ACTION_SCREEN_ON) return
-                        scheduleRestore(
-                            reason = AccessibilityGuardRestoreReason.ScreenOn,
+                        scheduleCheck(
+                            reason = AccessibilityGuardCheckReason.ScreenOn,
                             triggerAction = Intent.ACTION_SCREEN_ON,
                         )
                     }
@@ -178,16 +178,16 @@ class AccessibilityGuardForegroundService : Service() {
         screenOnReceiver = null
     }
 
-    private fun scheduleRestore(
-        reason: AccessibilityGuardRestoreReason,
+    private fun scheduleCheck(
+        reason: AccessibilityGuardCheckReason,
         triggerAction: String,
         debounceMs: Long = 0L,
     ) {
-        restoreJob?.cancel()
-        restoreJob =
+        checkJob?.cancel()
+        checkJob =
             serviceScope.launch {
                 if (debounceMs > 0L) delay(debounceMs)
-                restoreRunner.restoreAndRecord(
+                checkRunner.checkAndRecord(
                     reason = reason,
                     triggerAction = triggerAction,
                 )
@@ -195,8 +195,8 @@ class AccessibilityGuardForegroundService : Service() {
     }
 
     private fun stopGuard(removeNotification: Boolean) {
-        restoreJob?.cancel()
-        restoreJob = null
+        checkJob?.cancel()
+        checkJob = null
         unregisterSettingsObserver()
         unregisterScreenOnReceiver()
         if (foregroundPromoted || removeNotification) {

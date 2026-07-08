@@ -5,21 +5,14 @@ package os.kei.ui.page.main.settings.section
 import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import os.kei.R
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreStatus
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckStatus
 import os.kei.ui.page.main.os.appLucideHistoryIcon
-import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.os.appLucideLockIcon
 import os.kei.ui.page.main.settings.support.SettingsButtonActionItem
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
@@ -51,14 +44,8 @@ internal fun SettingsAccessibilityGuardPolicyCard(
         SettingsValueItem(
             title = stringResource(R.string.settings_accessibility_guard_capability_title),
             summary = stringResource(R.string.settings_accessibility_guard_capability_summary),
-            infoKey = stringResource(R.string.settings_accessibility_guard_info_targets),
-            infoValue =
-                stringResource(
-                    R.string.settings_accessibility_guard_targets_value,
-                    guardState.enabledGuardedCount,
-                    guardState.guardedCount,
-                    guardState.serviceCount,
-                ),
+            infoKey = stringResource(R.string.settings_accessibility_guard_info_capability),
+            infoValue = accessibilityGuardCapabilityLabel(guardState),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_accessibility_guard_daemon_title),
@@ -69,12 +56,12 @@ internal fun SettingsAccessibilityGuardPolicyCard(
             infoValue = accessibilityGuardOnOffLabel(guardState.daemonEnabled),
         )
         SettingsToggleItem(
-            title = stringResource(R.string.settings_accessibility_guard_boot_restore_title),
-            summary = stringResource(R.string.settings_accessibility_guard_boot_restore_summary),
-            checked = guardState.bootRestoreEnabled,
-            onCheckedChange = actions.onAccessibilityGuardBootRestoreChanged,
+            title = stringResource(R.string.settings_accessibility_guard_boot_check_title),
+            summary = stringResource(R.string.settings_accessibility_guard_boot_check_summary),
+            checked = guardState.bootCheckEnabled,
+            onCheckedChange = actions.onAccessibilityGuardBootCheckChanged,
             infoKey = stringResource(R.string.settings_permissions_info_status),
-            infoValue = accessibilityGuardOnOffLabel(guardState.bootRestoreEnabled),
+            infoValue = accessibilityGuardOnOffLabel(guardState.bootCheckEnabled),
         )
         SettingsToggleItem(
             title = stringResource(R.string.settings_accessibility_guard_screen_on_title),
@@ -127,74 +114,6 @@ internal fun SettingsAccessibilityGuardPolicyCard(
 }
 
 @Composable
-internal fun SettingsAccessibilityGuardServicesCard(
-    state: SettingsPermissionKeepAliveSectionState,
-    actions: SettingsPermissionKeepAliveSectionActions,
-    containerColor: Color,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-) {
-    val guardState = state.accessibilityGuardState
-    SettingsGroupCard(
-        header = stringResource(R.string.settings_accessibility_guard_header),
-        title = stringResource(R.string.settings_accessibility_guard_services_title),
-        subtitle = stringResource(R.string.settings_accessibility_guard_services_summary),
-        sectionIcon = appLucideListIcon(),
-        containerColor = containerColor,
-        expanded = expanded,
-        onExpandedChange = onExpandedChange,
-    ) {
-        SettingsValueItem(
-            title = stringResource(R.string.settings_accessibility_guard_services_overview_title),
-            summary =
-                if (guardState.loading) {
-                    stringResource(R.string.settings_accessibility_guard_services_loading)
-                } else {
-                    stringResource(R.string.settings_accessibility_guard_services_overview_summary)
-                },
-            infoKey = stringResource(R.string.settings_accessibility_guard_info_targets),
-            infoValue =
-                stringResource(
-                    R.string.settings_accessibility_guard_targets_value,
-                    guardState.enabledGuardedCount,
-                    guardState.guardedCount,
-                    guardState.serviceCount,
-                ),
-        )
-        if (guardState.services.isEmpty()) {
-            SettingsValueItem(
-                title = stringResource(R.string.settings_accessibility_guard_services_empty_title),
-                summary = stringResource(R.string.settings_accessibility_guard_services_empty_summary),
-                infoKey = stringResource(R.string.settings_permissions_info_status),
-                infoValue = stringResource(R.string.settings_accessibility_guard_service_status_empty),
-            )
-        } else {
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 360.dp),
-                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-            ) {
-                items(
-                    items = guardState.services,
-                    key = { item -> item.flattenedId },
-                    contentType = { "accessibility_guard_service" },
-                ) { service ->
-                    AccessibilityGuardServiceItem(
-                        item = service,
-                        enabled = !guardState.loading,
-                        onCheckedChange = { checked ->
-                            actions.onAccessibilityGuardServiceCheckedChange(service.flattenedId, checked)
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 internal fun SettingsAccessibilityGuardHistoryCard(
     state: SettingsPermissionKeepAliveSectionState,
     containerColor: Color,
@@ -233,9 +152,9 @@ internal fun SettingsAccessibilityGuardHistoryCard(
                 infoValue =
                     stringResource(
                         R.string.settings_accessibility_guard_history_latest_value,
-                        latest.selectedCount,
-                        latest.restoredCount,
-                        latest.skippedCount,
+                        latest.checkCount,
+                        latest.healthyCount,
+                        latest.warningCount,
                         formatAccessibilityGuardElapsed(latest.elapsedMs),
                     ),
             )
@@ -249,23 +168,6 @@ internal fun SettingsAccessibilityGuardHistoryCard(
             }
         }
     }
-}
-
-@Composable
-private fun AccessibilityGuardServiceItem(
-    item: SettingsAccessibilityGuardServiceUiItem,
-    enabled: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    SettingsToggleItem(
-        title = item.label,
-        summary = "${item.packageLabel} · ${item.packageName}",
-        checked = item.guarded,
-        onCheckedChange = onCheckedChange,
-        infoKey = stringResource(R.string.settings_permissions_info_status),
-        infoValue = accessibilityGuardServiceStatus(item),
-        enabled = enabled,
-    )
 }
 
 @Composable
@@ -285,85 +187,65 @@ private fun accessibilityGuardOnOffLabel(enabled: Boolean): String =
     }
 
 @Composable
-private fun accessibilityGuardServiceStatus(item: SettingsAccessibilityGuardServiceUiItem): String =
-    listOfNotNull(
-        if (item.guarded) {
-            stringResource(R.string.settings_accessibility_guard_service_status_guarded)
-        } else {
-            stringResource(R.string.settings_accessibility_guard_service_status_unselected)
-        },
-        if (item.enabled) {
-            stringResource(R.string.settings_accessibility_guard_service_status_enabled)
-        } else {
-            stringResource(R.string.settings_accessibility_guard_service_status_off)
-        },
-        if (item.system) {
-            stringResource(R.string.settings_accessibility_guard_service_status_system)
-        } else {
-            null
-        },
-    ).joinToString(" / ")
+private fun accessibilityGuardCapabilityLabel(state: SettingsAccessibilityGuardUiState): String =
+    if (state.secureSettingsReadable) {
+        stringResource(R.string.settings_accessibility_guard_capability_ready)
+    } else {
+        stringResource(R.string.settings_accessibility_guard_capability_need_shizuku)
+    }
 
 @Composable
-private fun accessibilityGuardReasonLabel(reason: AccessibilityGuardRestoreReason): String =
+private fun accessibilityGuardReasonLabel(reason: AccessibilityGuardCheckReason): String =
     when (reason) {
-        AccessibilityGuardRestoreReason.Manual -> {
+        AccessibilityGuardCheckReason.Manual -> {
             stringResource(R.string.settings_accessibility_guard_reason_manual)
         }
 
-        AccessibilityGuardRestoreReason.ForegroundServiceStart -> {
+        AccessibilityGuardCheckReason.ForegroundServiceStart -> {
             stringResource(R.string.settings_accessibility_guard_reason_foreground_service_start)
         }
 
-        AccessibilityGuardRestoreReason.SecureSettingChanged -> {
+        AccessibilityGuardCheckReason.SecureSettingChanged -> {
             stringResource(R.string.settings_accessibility_guard_reason_secure_setting_changed)
         }
 
-        AccessibilityGuardRestoreReason.ScreenOn -> {
+        AccessibilityGuardCheckReason.ScreenOn -> {
             stringResource(R.string.settings_accessibility_guard_reason_screen_on)
         }
 
-        AccessibilityGuardRestoreReason.BootCompleted -> {
+        AccessibilityGuardCheckReason.BootCompleted -> {
             stringResource(R.string.settings_accessibility_guard_reason_boot_completed)
         }
 
-        AccessibilityGuardRestoreReason.PackageReplaced -> {
+        AccessibilityGuardCheckReason.PackageReplaced -> {
             stringResource(R.string.settings_accessibility_guard_reason_package_replaced)
         }
 
-        AccessibilityGuardRestoreReason.TimeoutRecovery -> {
+        AccessibilityGuardCheckReason.TimeoutRecovery -> {
             stringResource(R.string.settings_accessibility_guard_reason_timeout_recovery)
         }
     }
 
 @Composable
-private fun accessibilityGuardStatusLabel(status: AccessibilityGuardRestoreStatus): String =
+private fun accessibilityGuardStatusLabel(status: AccessibilityGuardCheckStatus): String =
     when (status) {
-        AccessibilityGuardRestoreStatus.Restored -> {
-            stringResource(R.string.settings_accessibility_guard_status_restored)
+        AccessibilityGuardCheckStatus.Healthy -> {
+            stringResource(R.string.settings_accessibility_guard_status_healthy)
         }
 
-        AccessibilityGuardRestoreStatus.SkippedNoTargets -> {
-            stringResource(R.string.settings_accessibility_guard_status_skipped_no_targets)
+        AccessibilityGuardCheckStatus.Checked -> {
+            stringResource(R.string.settings_accessibility_guard_status_checked)
         }
 
-        AccessibilityGuardRestoreStatus.SkippedMissingPrivilege -> {
-            stringResource(R.string.settings_accessibility_guard_status_skipped_missing_privilege)
+        AccessibilityGuardCheckStatus.MissingPrivilege -> {
+            stringResource(R.string.settings_accessibility_guard_status_missing_privilege)
         }
 
-        AccessibilityGuardRestoreStatus.SkippedAlreadyEnabled -> {
-            stringResource(R.string.settings_accessibility_guard_status_skipped_already_enabled)
-        }
-
-        AccessibilityGuardRestoreStatus.SkippedCooldown -> {
-            stringResource(R.string.settings_accessibility_guard_status_skipped_cooldown)
-        }
-
-        AccessibilityGuardRestoreStatus.Failed -> {
+        AccessibilityGuardCheckStatus.Failed -> {
             stringResource(R.string.settings_accessibility_guard_status_failed)
         }
 
-        AccessibilityGuardRestoreStatus.TimedOut -> {
+        AccessibilityGuardCheckStatus.TimedOut -> {
             stringResource(R.string.settings_accessibility_guard_status_timed_out)
         }
     }

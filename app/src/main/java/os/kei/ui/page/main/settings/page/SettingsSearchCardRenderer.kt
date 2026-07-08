@@ -39,7 +39,6 @@ internal fun LazyListScope.settingsCardItem(
             SettingsSearchCard.Permissions,
             SettingsSearchCard.KeepAlive,
             SettingsSearchCard.AccessibilityGuardPolicy,
-            SettingsSearchCard.AccessibilityGuardServices,
             SettingsSearchCard.AccessibilityGuardHistory,
             -> {
                 val onlyCardId =
@@ -48,10 +47,6 @@ internal fun LazyListScope.settingsCardItem(
                         SettingsSearchCard.KeepAlive -> SettingsCardExpansionId.KeepAlive
                         SettingsSearchCard.AccessibilityGuardPolicy -> {
                             SettingsCardExpansionId.AccessibilityGuardPolicy
-                        }
-
-                        SettingsSearchCard.AccessibilityGuardServices -> {
-                            SettingsCardExpansionId.AccessibilityGuardServices
                         }
 
                         else -> SettingsCardExpansionId.AccessibilityGuardHistory
@@ -272,7 +267,6 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
             listOf(
                 SettingsSearchCard.KeepAlive,
                 SettingsSearchCard.AccessibilityGuardPolicy,
-                SettingsSearchCard.AccessibilityGuardServices,
                 SettingsSearchCard.AccessibilityGuardHistory,
             )
         }

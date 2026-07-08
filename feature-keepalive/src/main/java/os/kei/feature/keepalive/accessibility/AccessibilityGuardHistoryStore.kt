@@ -4,8 +4,6 @@ import android.content.Context
 import android.net.Uri
 import java.io.File
 import java.util.UUID
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -18,13 +16,12 @@ import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 
 private const val HISTORY_EXPORT_FORMAT = "keios.keepalive.accessibility-guard-history"
-private const val HISTORY_EXPORT_SCHEMA_VERSION = 1
+private const val HISTORY_EXPORT_SCHEMA_VERSION = 2
 private const val DEFAULT_MAX_ENTRIES = 500
 private const val DEFAULT_MAX_BYTES = 1L * 1024L * 1024L
 private const val MAX_TRIGGER_ACTION_LENGTH = 80
 private const val MAX_SHIZUKU_STATUS_LENGTH = 160
 private const val MAX_FAILURE_REASON_LENGTH = 512
-private const val MAX_SERVICE_IDS_PER_ENTRY = 64
 
 data class AccessibilityGuardHistoryExportResult(
     val exportedCount: Int,
@@ -144,7 +141,7 @@ class AccessibilityGuardHistoryStore(
             }.encodeCompact(KeiJson.pretty)
         }
 
-        internal fun encodeEntry(entry: AccessibilityGuardHistoryEntry): JsonObject =
+        internal fun encodeEntry(entry: AccessibilityGuardHistoryEntry) =
             buildJsonObject {
                 val normalized = entry.normalizedForHistory()
                 put("id", normalized.id)
@@ -152,18 +149,12 @@ class AccessibilityGuardHistoryStore(
                 put("reason", normalized.reason.name)
                 put("status", normalized.status.name)
                 put("triggerAction", normalized.triggerAction)
-                put("selectedCount", normalized.selectedCount)
-                put("restoredCount", normalized.restoredCount)
-                put("skippedCount", normalized.skippedCount)
+                put("checkCount", normalized.checkCount)
+                put("healthyCount", normalized.healthyCount)
+                put("warningCount", normalized.warningCount)
                 put("elapsedMs", normalized.elapsedMs)
                 put("shizukuStatus", normalized.shizukuStatus)
                 put("failureReason", normalized.failureReason)
-                put(
-                    "serviceIds",
-                    buildJsonArray {
-                        normalized.serviceIds.forEach { id -> add(id.toJson()) }
-                    },
-                )
             }
 
         internal fun decodeEntry(raw: String): AccessibilityGuardHistoryEntry? {
@@ -172,19 +163,41 @@ class AccessibilityGuardHistoryStore(
                 val obj = raw.parseJsonObjectOrNull() ?: return@runCatching null
                 val timestampMs = obj.optLong("timestampMs", 0L)
                 if (timestampMs <= 0L) return@runCatching null
+                val status = obj.optString("status").toCheckStatus()
+                val legacySelectedCount = obj.optInt("selectedCount", 0)
+                val legacyRestoredCount = obj.optInt("restoredCount", 0)
+                val legacySkippedCount = obj.optInt("skippedCount", 0)
+                val legacyServiceCount = obj.optArray("serviceIds")?.size ?: 0
+                val fallbackCheckCount =
+                    maxOf(legacySelectedCount, legacyRestoredCount + legacySkippedCount, legacyServiceCount)
                 AccessibilityGuardHistoryEntry(
                     id = obj.optString("id").trim().ifBlank { UUID.randomUUID().toString() },
                     timestampMs = timestampMs,
-                    reason = enumValueOrDefault(obj.optString("reason"), AccessibilityGuardRestoreReason.Manual),
-                    status = enumValueOrDefault(obj.optString("status"), AccessibilityGuardRestoreStatus.Failed),
+                    reason = obj.optString("reason").toCheckReason(),
+                    status = status,
                     triggerAction = obj.optString("triggerAction").trim(),
-                    selectedCount = obj.optInt("selectedCount", 0),
-                    restoredCount = obj.optInt("restoredCount", 0),
-                    skippedCount = obj.optInt("skippedCount", 0),
+                    checkCount = obj.optInt("checkCount", fallbackCheckCount),
+                    healthyCount =
+                        obj.optInt(
+                            "healthyCount",
+                            legacyHealthyCount(
+                                status = status,
+                                restoredCount = legacyRestoredCount,
+                                checkCount = fallbackCheckCount,
+                            ),
+                        ),
+                    warningCount =
+                        obj.optInt(
+                            "warningCount",
+                            legacyWarningCount(
+                                status = status,
+                                skippedCount = legacySkippedCount,
+                                checkCount = fallbackCheckCount,
+                            ),
+                        ),
                     elapsedMs = obj.optLong("elapsedMs", 0L),
                     shizukuStatus = obj.optString("shizukuStatus").trim(),
                     failureReason = obj.optString("failureReason").trim(),
-                    serviceIds = obj.optArray("serviceIds").toServiceIds(),
                 ).normalizedForHistory()
             }.getOrNull()
         }
@@ -192,7 +205,7 @@ class AccessibilityGuardHistoryStore(
 }
 
 fun AccessibilityGuardHistoryEntry.Companion.fromResult(
-    result: AccessibilityGuardRestoreResult,
+    result: AccessibilityGuardCheckResult,
     id: String = UUID.randomUUID().toString(),
     triggerAction: String = result.reason.name,
 ): AccessibilityGuardHistoryEntry =
@@ -202,105 +215,118 @@ fun AccessibilityGuardHistoryEntry.Companion.fromResult(
         reason = result.reason,
         status = result.status,
         triggerAction = triggerAction,
-        selectedCount = result.selectedIds.size,
-        restoredCount = result.restoredIds.size,
-        skippedCount = result.skippedIds.size,
+        checkCount = result.checkCount,
+        healthyCount = result.healthyCount,
+        warningCount = result.warningCount,
         elapsedMs = result.elapsedMs,
         shizukuStatus = result.shizukuStatus,
         failureReason = result.failureReason,
-        serviceIds = result.selectedIds.sortedServiceIds(),
     ).normalizedForHistory()
 
 private data class AccessibilityGuardHistorySummary(
     val storedCount: Int,
-    val restoredRecordCount: Int,
-    val skippedRecordCount: Int,
+    val healthyRecordCount: Int,
+    val checkedRecordCount: Int,
+    val warningRecordCount: Int,
     val failedRecordCount: Int,
     val timedOutRecordCount: Int,
-    val restoredServiceCount: Int,
-    val skippedServiceCount: Int,
+    val checkedItemCount: Int,
+    val healthyItemCount: Int,
+    val warningItemCount: Int,
     val latestTimestampMs: Long,
 )
 
 private fun List<AccessibilityGuardHistoryEntry>.toSummary(): AccessibilityGuardHistorySummary =
     AccessibilityGuardHistorySummary(
         storedCount = size,
-        restoredRecordCount = count { entry -> entry.status == AccessibilityGuardRestoreStatus.Restored },
-        skippedRecordCount = count { entry -> entry.status.isSkippedStatus() },
-        failedRecordCount = count { entry -> entry.status == AccessibilityGuardRestoreStatus.Failed },
-        timedOutRecordCount = count { entry -> entry.status == AccessibilityGuardRestoreStatus.TimedOut },
-        restoredServiceCount = sumOf { entry -> entry.restoredCount },
-        skippedServiceCount = sumOf { entry -> entry.skippedCount },
+        healthyRecordCount = count { entry -> entry.status == AccessibilityGuardCheckStatus.Healthy },
+        checkedRecordCount = count { entry -> entry.status == AccessibilityGuardCheckStatus.Checked },
+        warningRecordCount = count { entry -> entry.status == AccessibilityGuardCheckStatus.MissingPrivilege },
+        failedRecordCount = count { entry -> entry.status == AccessibilityGuardCheckStatus.Failed },
+        timedOutRecordCount = count { entry -> entry.status == AccessibilityGuardCheckStatus.TimedOut },
+        checkedItemCount = sumOf { entry -> entry.checkCount },
+        healthyItemCount = sumOf { entry -> entry.healthyCount },
+        warningItemCount = sumOf { entry -> entry.warningCount },
         latestTimestampMs = maxOfOrNull { entry -> entry.timestampMs } ?: 0L,
     )
 
-private fun AccessibilityGuardHistorySummary.toJson(): JsonObject =
+private fun AccessibilityGuardHistorySummary.toJson() =
     buildJsonObject {
         put("storedCount", storedCount)
-        put("restoredRecordCount", restoredRecordCount)
-        put("skippedRecordCount", skippedRecordCount)
+        put("healthyRecordCount", healthyRecordCount)
+        put("checkedRecordCount", checkedRecordCount)
+        put("warningRecordCount", warningRecordCount)
         put("failedRecordCount", failedRecordCount)
         put("timedOutRecordCount", timedOutRecordCount)
-        put("restoredServiceCount", restoredServiceCount)
-        put("skippedServiceCount", skippedServiceCount)
+        put("checkedItemCount", checkedItemCount)
+        put("healthyItemCount", healthyItemCount)
+        put("warningItemCount", warningItemCount)
         put("latestTimestampMs", latestTimestampMs)
     }
 
-private fun AccessibilityGuardRestoreStatus.isSkippedStatus(): Boolean =
-    when (this) {
-        AccessibilityGuardRestoreStatus.SkippedNoTargets,
-        AccessibilityGuardRestoreStatus.SkippedMissingPrivilege,
-        AccessibilityGuardRestoreStatus.SkippedAlreadyEnabled,
-        AccessibilityGuardRestoreStatus.SkippedCooldown,
-        -> true
-        AccessibilityGuardRestoreStatus.Restored,
-        AccessibilityGuardRestoreStatus.Failed,
-        AccessibilityGuardRestoreStatus.TimedOut,
-        -> false
-    }
-
-private fun AccessibilityGuardHistoryEntry.normalizedForHistory(): AccessibilityGuardHistoryEntry =
-    copy(
+private fun AccessibilityGuardHistoryEntry.normalizedForHistory(): AccessibilityGuardHistoryEntry {
+    val normalizedCheckCount = checkCount.coerceAtLeast(0)
+    return copy(
         id = id.trim().ifBlank { UUID.randomUUID().toString() },
         timestampMs = timestampMs.coerceAtLeast(0L),
         triggerAction = triggerAction.compactHistoryText(MAX_TRIGGER_ACTION_LENGTH),
-        selectedCount = selectedCount.coerceAtLeast(0),
-        restoredCount = restoredCount.coerceAtLeast(0),
-        skippedCount = skippedCount.coerceAtLeast(0),
+        checkCount = normalizedCheckCount,
+        healthyCount = healthyCount.coerceIn(0, normalizedCheckCount),
+        warningCount = warningCount.coerceAtLeast(0),
         elapsedMs = elapsedMs.coerceAtLeast(0L),
         shizukuStatus = shizukuStatus.compactHistoryText(MAX_SHIZUKU_STATUS_LENGTH),
         failureReason = failureReason.compactHistoryText(MAX_FAILURE_REASON_LENGTH),
-        serviceIds = serviceIds.sortedServiceIds().take(MAX_SERVICE_IDS_PER_ENTRY),
     )
+}
 
-private fun AccessibilityServiceId.toJson(): JsonObject =
-    buildJsonObject {
-        put("packageName", packageName.trim())
-        put("serviceName", serviceName.trim())
-        put("flattened", flatten())
+private fun String.toCheckReason(): AccessibilityGuardCheckReason =
+    enumValueOrDefault(this, AccessibilityGuardCheckReason.Manual)
+
+private fun String.toCheckStatus(): AccessibilityGuardCheckStatus {
+    val raw = trim()
+    return enumValues<AccessibilityGuardCheckStatus>()
+        .firstOrNull { value -> value.name.equals(raw, ignoreCase = true) }
+        ?: legacyCheckStatus(raw)
+}
+
+private fun legacyCheckStatus(raw: String): AccessibilityGuardCheckStatus =
+    when {
+        raw.equals("Restored", ignoreCase = true) ||
+            raw.equals("SkippedAlreadyEnabled", ignoreCase = true) -> AccessibilityGuardCheckStatus.Healthy
+        raw.equals("SkippedMissingPrivilege", ignoreCase = true) -> AccessibilityGuardCheckStatus.MissingPrivilege
+        raw.equals("Failed", ignoreCase = true) -> AccessibilityGuardCheckStatus.Failed
+        raw.equals("TimedOut", ignoreCase = true) -> AccessibilityGuardCheckStatus.TimedOut
+        else -> AccessibilityGuardCheckStatus.Checked
     }
 
-private fun JsonArray?.toServiceIds(): List<AccessibilityServiceId> =
-    this
-        ?.mapNotNull { element ->
-            val obj = element as? JsonObject ?: return@mapNotNull null
-            val packageName = obj.optString("packageName").trim()
-            val serviceName = obj.optString("serviceName").trim()
-            if (packageName.isBlank() || serviceName.isBlank()) {
-                obj.optString("flattened").toAccessibilityServiceIdOrNull()
-            } else {
-                AccessibilityServiceId(packageName = packageName, serviceName = serviceName)
-            }
-        }
-        ?.sortedServiceIds()
-        .orEmpty()
+private fun legacyHealthyCount(
+    status: AccessibilityGuardCheckStatus,
+    restoredCount: Int,
+    checkCount: Int,
+): Int =
+    when (status) {
+        AccessibilityGuardCheckStatus.Healthy -> maxOf(restoredCount, checkCount)
+        AccessibilityGuardCheckStatus.Checked -> checkCount
+        AccessibilityGuardCheckStatus.MissingPrivilege,
+        AccessibilityGuardCheckStatus.Failed,
+        AccessibilityGuardCheckStatus.TimedOut,
+        -> restoredCount
+    }
 
-private fun List<AccessibilityServiceId>.sortedServiceIds(): List<AccessibilityServiceId> =
-    distinct()
-        .sortedWith(compareBy<AccessibilityServiceId> { it.packageName }.thenBy { it.serviceName })
-
-private fun Set<AccessibilityServiceId>.sortedServiceIds(): List<AccessibilityServiceId> =
-    toList().sortedServiceIds()
+private fun legacyWarningCount(
+    status: AccessibilityGuardCheckStatus,
+    skippedCount: Int,
+    checkCount: Int,
+): Int =
+    when (status) {
+        AccessibilityGuardCheckStatus.MissingPrivilege,
+        AccessibilityGuardCheckStatus.Failed,
+        AccessibilityGuardCheckStatus.TimedOut,
+        -> maxOf(skippedCount, checkCount)
+        AccessibilityGuardCheckStatus.Healthy,
+        AccessibilityGuardCheckStatus.Checked,
+        -> skippedCount
+    }
 
 private inline fun <reified T : Enum<T>> enumValueOrDefault(
     raw: String,

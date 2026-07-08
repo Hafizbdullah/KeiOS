@@ -20,8 +20,6 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class AccessibilityGuardHistoryStoreTest {
     private val tempDirs = mutableListOf<File>()
-    private val alpha = AccessibilityServiceId("com.alpha", "com.alpha.Service")
-    private val beta = AccessibilityServiceId("com.beta", "com.beta.Service")
 
     @After
     fun cleanup() {
@@ -78,16 +76,17 @@ class AccessibilityGuardHistoryStoreTest {
     }
 
     @Test
-    fun `encode and decode keeps guard fields`() {
+    fun `encode and decode keeps self check fields`() {
         val encoded =
             AccessibilityGuardHistoryStore.encodeEntry(
                 entry(
                     id = "roundtrip",
                     timestampMs = 123L,
-                    status = AccessibilityGuardRestoreStatus.Restored,
+                    status = AccessibilityGuardCheckStatus.Healthy,
                     triggerAction = "manual_check",
-                    restoredCount = 1,
-                    serviceIds = listOf(beta, alpha),
+                    checkCount = 3,
+                    healthyCount = 3,
+                    warningCount = 0,
                 ),
             ).toString()
 
@@ -95,10 +94,42 @@ class AccessibilityGuardHistoryStoreTest {
 
         assertNotNull(decoded)
         assertEquals("roundtrip", decoded.id)
-        assertEquals(AccessibilityGuardRestoreStatus.Restored, decoded.status)
+        assertEquals(AccessibilityGuardCheckStatus.Healthy, decoded.status)
         assertEquals("manual_check", decoded.triggerAction)
-        assertEquals(1, decoded.restoredCount)
-        assertEquals(listOf(alpha, beta), decoded.serviceIds)
+        assertEquals(3, decoded.checkCount)
+        assertEquals(3, decoded.healthyCount)
+        assertEquals(0, decoded.warningCount)
+    }
+
+    @Test
+    fun `decode maps legacy restore records to check records`() {
+        val decoded =
+            AccessibilityGuardHistoryStore.decodeEntry(
+                """
+                {
+                  "id":"legacy",
+                  "timestampMs":100,
+                  "reason":"ScreenOn",
+                  "status":"SkippedMissingPrivilege",
+                  "triggerAction":"screen_on",
+                  "selectedCount":2,
+                  "restoredCount":0,
+                  "skippedCount":2,
+                  "elapsedMs":25,
+                  "failureReason":"permission denied",
+                  "serviceIds":[
+                    {"packageName":"com.alpha","serviceName":"com.alpha.Service"}
+                  ]
+                }
+                """.trimIndent(),
+            )
+
+        assertNotNull(decoded)
+        assertEquals(AccessibilityGuardCheckReason.ScreenOn, decoded.reason)
+        assertEquals(AccessibilityGuardCheckStatus.MissingPrivilege, decoded.status)
+        assertEquals(2, decoded.checkCount)
+        assertEquals(0, decoded.healthyCount)
+        assertEquals(2, decoded.warningCount)
     }
 
     @Test
@@ -107,8 +138,8 @@ class AccessibilityGuardHistoryStoreTest {
             AccessibilityGuardHistoryStore.buildExportJson(
                 records =
                     listOf(
-                        entry(id = "skip", timestampMs = 100L, status = AccessibilityGuardRestoreStatus.SkippedCooldown),
-                        entry(id = "restore", timestampMs = 200L, status = AccessibilityGuardRestoreStatus.Restored),
+                        entry(id = "checked", timestampMs = 100L, status = AccessibilityGuardCheckStatus.Checked),
+                        entry(id = "healthy", timestampMs = 200L, status = AccessibilityGuardCheckStatus.Healthy),
                     ),
                 exportedAtMillis = 300L,
             )
@@ -119,25 +150,23 @@ class AccessibilityGuardHistoryStoreTest {
         assertEquals("local_only", root.optString("syncScope"))
         assertEquals(2, root.optArray("records")?.size)
         assertEquals(2, root.optObject("summary")?.get("storedCount")?.toString()?.toInt())
-        assertEquals("restore", root.optArray("records")?.optObject(0)?.optString("id"))
+        assertEquals("healthy", root.optArray("records")?.optObject(0)?.optString("id"))
     }
 
     @Test
-    fun `history entry can be built from restore result`() {
+    fun `history entry can be built from check result`() {
         val result =
-            AccessibilityGuardRestoreResult(
-                status = AccessibilityGuardRestoreStatus.Failed,
-                reason = AccessibilityGuardRestoreReason.ScreenOn,
-                selectedIds = setOf(alpha, beta),
-                beforeEnabledIds = setOf(alpha),
-                afterEnabledIds = setOf(alpha),
-                restoredIds = emptySet(),
-                skippedIds = setOf(beta),
+            AccessibilityGuardCheckResult(
+                status = AccessibilityGuardCheckStatus.MissingPrivilege,
+                reason = AccessibilityGuardCheckReason.ScreenOn,
+                checkCount = 2,
+                healthyCount = 1,
+                warningCount = 1,
                 startedAtMs = 1_000L,
                 finishedAtMs = 1_200L,
                 elapsedMs = 200L,
-                shizukuStatus = "ready",
-                failureReason = "write denied",
+                shizukuStatus = "permission denied",
+                failureReason = "permission denied",
             )
 
         val entry =
@@ -149,12 +178,12 @@ class AccessibilityGuardHistoryStoreTest {
 
         assertEquals("from-result", entry.id)
         assertEquals(1_200L, entry.timestampMs)
-        assertEquals(AccessibilityGuardRestoreReason.ScreenOn, entry.reason)
-        assertEquals(AccessibilityGuardRestoreStatus.Failed, entry.status)
+        assertEquals(AccessibilityGuardCheckReason.ScreenOn, entry.reason)
+        assertEquals(AccessibilityGuardCheckStatus.MissingPrivilege, entry.status)
         assertEquals("screen_on_receiver", entry.triggerAction)
-        assertEquals(2, entry.selectedCount)
-        assertEquals(1, entry.skippedCount)
-        assertEquals(listOf(alpha, beta), entry.serviceIds)
+        assertEquals(2, entry.checkCount)
+        assertEquals(1, entry.healthyCount)
+        assertEquals(1, entry.warningCount)
     }
 
     private fun store(
@@ -176,24 +205,24 @@ class AccessibilityGuardHistoryStoreTest {
     private fun entry(
         id: String = "entry",
         timestampMs: Long = 1L,
-        status: AccessibilityGuardRestoreStatus = AccessibilityGuardRestoreStatus.SkippedAlreadyEnabled,
+        status: AccessibilityGuardCheckStatus = AccessibilityGuardCheckStatus.Checked,
         triggerAction: String = "manual_check",
-        restoredCount: Int = 0,
+        checkCount: Int = 1,
+        healthyCount: Int = if (status == AccessibilityGuardCheckStatus.MissingPrivilege) 0 else checkCount,
+        warningCount: Int = if (status == AccessibilityGuardCheckStatus.MissingPrivilege) 1 else 0,
         failureReason: String = "",
-        serviceIds: List<AccessibilityServiceId> = listOf(alpha),
     ): AccessibilityGuardHistoryEntry =
         AccessibilityGuardHistoryEntry(
             id = id,
             timestampMs = timestampMs,
-            reason = AccessibilityGuardRestoreReason.Manual,
+            reason = AccessibilityGuardCheckReason.Manual,
             status = status,
             triggerAction = triggerAction,
-            selectedCount = serviceIds.size,
-            restoredCount = restoredCount,
-            skippedCount = 0,
+            checkCount = checkCount,
+            healthyCount = healthyCount,
+            warningCount = warningCount,
             elapsedMs = 25L,
             shizukuStatus = "ready",
             failureReason = failureReason,
-            serviceIds = serviceIds,
         )
 }

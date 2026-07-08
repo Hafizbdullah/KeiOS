@@ -16,14 +16,11 @@ import os.kei.core.intent.UriGrantCompat
 import os.kei.core.log.AppLogStore
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardHistoryEntry
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardHistoryStore
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreResult
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckResult
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
-import os.kei.feature.keepalive.accessibility.AccessibilityServiceId
-import os.kei.feature.keepalive.accessibility.parseAccessibilityServiceIds
 import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
 import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardHistoryUiItem
-import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardServiceUiItem
 import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.cache.CacheStores
@@ -44,7 +41,7 @@ private const val NON_HOME_BACKGROUND_CROP_TARGET_SHORT_EDGE = 1440
 private const val NON_HOME_BACKGROUND_CROP_MAX_WIDTH = 2560
 private const val NON_HOME_BACKGROUND_CROP_MAX_HEIGHT = 4096
 
-internal class SettingsPageRepository(
+internal open class SettingsPageRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
 ) {
@@ -81,12 +78,12 @@ internal class SettingsPageRepository(
         )
     }
 
-    suspend fun loadWebDavSyncState(): SettingsWebDavSyncUiState =
+    open suspend fun loadWebDavSyncState(): SettingsWebDavSyncUiState =
         withContext(ioDispatcher) {
             buildWebDavSyncState()
         }
 
-    suspend fun loadAccessibilityGuardState(context: Context): SettingsAccessibilityGuardUiState =
+    open suspend fun loadAccessibilityGuardState(context: Context): SettingsAccessibilityGuardUiState =
         withContext(ioDispatcher) {
             val appContext = context.applicationContext
             val stateStore = AccessibilityGuardRuntime.newStateStore()
@@ -94,34 +91,19 @@ internal class SettingsPageRepository(
             val snapshot =
                 AccessibilityGuardRuntime
                     .coordinator(stateStore)
-                    .loadSnapshot(appContext)
+                    .loadSnapshot()
             val history = AccessibilityGuardHistoryStore.forContext(appContext).latest(5)
-            val services = snapshot.services.map { service -> service.toSettingsUiItem() }
+            val capability = snapshot.capability
             SettingsAccessibilityGuardUiState(
                 daemonEnabled = settings.daemonEnabled,
-                bootRestoreEnabled = settings.bootRestoreEnabled,
+                bootCheckEnabled = settings.bootCheckEnabled,
                 screenOnCheckEnabled = settings.screenOnCheckEnabled,
-                serviceCount = services.size,
-                guardedCount = services.count { item -> item.guarded },
-                enabledGuardedCount = services.count { item -> item.guarded && item.enabled },
+                secureSettingsReadable = capability.canReadSecureSettings,
+                shizukuStatus = capability.shizukuStatus,
+                activePolicyCount = settings.activePolicyCount,
                 historyCount = history.size,
-                services = services,
                 latestHistory = history.firstOrNull()?.toSettingsUiItem(),
             )
-        }
-
-    suspend fun setAccessibilityGuarded(
-        flattenedId: String,
-        guarded: Boolean,
-    ): Result<Unit> =
-        withContext(ioDispatcher) {
-            runCatching {
-                val id = flattenedId.toAccessibilityGuardServiceId()
-                AccessibilityGuardRuntime
-                    .coordinator()
-                    .setGuarded(id = id, guarded = guarded)
-                Unit
-            }
         }
 
     suspend fun setAccessibilityGuardDaemonEnabled(
@@ -140,10 +122,10 @@ internal class SettingsPageRepository(
             }
         }
 
-    suspend fun setAccessibilityGuardBootRestoreEnabled(enabled: Boolean): Result<Unit> =
+    suspend fun setAccessibilityGuardBootCheckEnabled(enabled: Boolean): Result<Unit> =
         withContext(ioDispatcher) {
             runCatching {
-                AccessibilityGuardRuntime.coordinator().setBootRestoreEnabled(enabled)
+                AccessibilityGuardRuntime.coordinator().setBootCheckEnabled(enabled)
                 Unit
             }
         }
@@ -165,18 +147,18 @@ internal class SettingsPageRepository(
             }
         }
 
-    suspend fun runAccessibilityGuardManualCheck(context: Context): Result<AccessibilityGuardRestoreResult> =
+    suspend fun runAccessibilityGuardManualCheck(context: Context): Result<AccessibilityGuardCheckResult> =
         withContext(ioDispatcher) {
             runCatching {
                 val appContext = context.applicationContext
                 val stateStore = AccessibilityGuardRuntime.newStateStore()
                 AccessibilityGuardRuntime
-                    .restoreRunner(
+                    .checkRunner(
                         context = appContext,
                         stateStore = stateStore,
                     )
-                    .restoreAndRecord(
-                        reason = AccessibilityGuardRestoreReason.Manual,
+                    .checkAndRecord(
+                        reason = AccessibilityGuardCheckReason.Manual,
                         triggerAction = "settings_manual_check",
                     )
             }
@@ -406,34 +388,26 @@ private fun isManagedNonHomeBackgroundFile(file: File): Boolean {
     return true
 }
 
-private fun String.toAccessibilityGuardServiceId(): AccessibilityServiceId =
-    parseAccessibilityServiceIds(this).singleOrNull()
-        ?: error("Invalid accessibility service id: $this")
-
-private fun os.kei.feature.keepalive.accessibility.AccessibilityServiceSnapshot.toSettingsUiItem():
-    SettingsAccessibilityGuardServiceUiItem =
-    SettingsAccessibilityGuardServiceUiItem(
-        flattenedId = id.flatten(),
-        label = label,
-        packageLabel = packageLabel,
-        packageName = id.packageName,
-        enabled = enabled,
-        guarded = guarded,
-        system = system,
-    )
-
 private fun AccessibilityGuardHistoryEntry.toSettingsUiItem(): SettingsAccessibilityGuardHistoryUiItem =
     SettingsAccessibilityGuardHistoryUiItem(
         timestampMs = timestampMs,
         reason = reason,
         status = status,
         triggerAction = triggerAction,
-        selectedCount = selectedCount,
-        restoredCount = restoredCount,
-        skippedCount = skippedCount,
+        checkCount = checkCount,
+        healthyCount = healthyCount,
+        warningCount = warningCount,
         elapsedMs = elapsedMs,
         failureReason = failureReason,
     )
+
+private val os.kei.feature.keepalive.accessibility.AccessibilityGuardSettings.activePolicyCount: Int
+    get() =
+        listOf(
+            daemonEnabled,
+            bootCheckEnabled,
+            screenOnCheckEnabled,
+        ).count { it }
 
 private fun File.safeCanonicalPath(): String =
     runCatching { canonicalPath }.getOrDefault(absolutePath)

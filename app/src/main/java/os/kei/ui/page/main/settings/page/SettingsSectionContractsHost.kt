@@ -175,21 +175,14 @@ internal fun rememberSettingsPageSectionContracts(
             )
         },
         onCheckOrRequestShizuku = onCheckOrRequestShizuku,
-        onAccessibilityGuardServiceCheckedChange = { flattenedId, checked ->
-            settingsPageViewModel.updateAccessibilityGuarded(
-                context = context,
-                flattenedId = flattenedId,
-                guarded = checked,
-            )
-        },
         onAccessibilityGuardDaemonChanged = { enabled ->
             settingsPageViewModel.updateAccessibilityGuardDaemonEnabled(
                 context = context,
                 enabled = enabled,
             )
         },
-        onAccessibilityGuardBootRestoreChanged = { enabled ->
-            settingsPageViewModel.updateAccessibilityGuardBootRestoreEnabled(
+        onAccessibilityGuardBootCheckChanged = { enabled ->
+            settingsPageViewModel.updateAccessibilityGuardBootCheckEnabled(
                 context = context,
                 enabled = enabled,
             )

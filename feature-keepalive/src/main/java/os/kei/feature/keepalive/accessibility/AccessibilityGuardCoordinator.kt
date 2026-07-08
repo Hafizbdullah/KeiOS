@@ -1,86 +1,46 @@
 package os.kei.feature.keepalive.accessibility
 
-import android.content.Context
 import android.os.SystemClock
 
 class AccessibilityGuardCoordinator(
-    private val serviceRepository: AccessibilityServiceRepository,
     private val secureSettingsBridge: AccessibilitySecureSettingsBridge,
     private val stateStore: AccessibilityGuardStateStore,
     private val wallClockMs: () -> Long = System::currentTimeMillis,
     private val elapsedClockMs: () -> Long = SystemClock::elapsedRealtime,
 ) {
-    suspend fun loadSnapshot(context: Context): AccessibilityGuardSnapshot {
+    suspend fun loadSnapshot(): AccessibilityGuardSnapshot {
         val settings = stateStore.loadSettings()
+        val read = secureSettingsBridge.readEnabledServiceIds()
         return AccessibilityGuardSnapshot(
             settings = settings,
-            services =
-                serviceRepository.listInstalledServices(
-                    context = context,
-                    guardedIds = settings.guardedIds,
-                ),
+            capability = read.toCapability(checkedAtMs = wallClockMs()),
         )
-    }
-
-    fun setGuarded(
-        id: AccessibilityServiceId,
-        guarded: Boolean,
-    ): AccessibilityGuardSettings {
-        val current = stateStore.loadSettings()
-        val nextGuardedIds =
-            if (guarded) {
-                current.guardedIds + id
-            } else {
-                current.guardedIds - id
-            }
-        val next =
-            current.copy(
-                guardedIds = nextGuardedIds,
-                cooldownUntilById = current.cooldownUntilById - id,
-                failureCountById = current.failureCountById - id,
-            )
-        stateStore.saveSettings(next)
-        return next
     }
 
     fun setDaemonEnabled(enabled: Boolean): AccessibilityGuardSettings =
         updateSettings { current -> current.copy(daemonEnabled = enabled) }
 
-    fun setBootRestoreEnabled(enabled: Boolean): AccessibilityGuardSettings =
-        updateSettings { current -> current.copy(bootRestoreEnabled = enabled) }
+    fun setBootCheckEnabled(enabled: Boolean): AccessibilityGuardSettings =
+        updateSettings { current -> current.copy(bootCheckEnabled = enabled) }
 
     fun setScreenOnCheckEnabled(enabled: Boolean): AccessibilityGuardSettings =
         updateSettings { current -> current.copy(screenOnCheckEnabled = enabled) }
 
-    suspend fun restoreMissing(reason: AccessibilityGuardRestoreReason): AccessibilityGuardRestoreResult {
+    suspend fun checkSelf(reason: AccessibilityGuardCheckReason): AccessibilityGuardCheckResult {
         val startedAtMs = wallClockMs()
         val startedElapsedMs = elapsedClockMs()
         val settings = stateStore.loadSettings()
-        val selectedIds = settings.guardedIds.sortedSet()
-        if (selectedIds.isEmpty()) {
-            return result(
-                status = AccessibilityGuardRestoreStatus.SkippedNoTargets,
-                reason = reason,
-                selectedIds = selectedIds,
-                beforeEnabledIds = emptySet(),
-                afterEnabledIds = emptySet(),
-                restoredIds = emptySet(),
-                skippedIds = emptySet(),
-                startedAtMs = startedAtMs,
-                startedElapsedMs = startedElapsedMs,
-            )
-        }
-
         val read = secureSettingsBridge.readEnabledServiceIds()
+        val enabledPolicyCount = settings.enabledPolicyCount
+        val checkCount = SELF_CAPABILITY_CHECK_COUNT + enabledPolicyCount
+
         if (!read.success) {
             return result(
-                status = AccessibilityGuardRestoreStatus.SkippedMissingPrivilege,
+                status = AccessibilityGuardCheckStatus.MissingPrivilege,
                 reason = reason,
-                selectedIds = selectedIds,
-                beforeEnabledIds = emptySet(),
-                afterEnabledIds = emptySet(),
-                restoredIds = emptySet(),
-                skippedIds = selectedIds,
+                checkCount = checkCount,
+                healthyCount = enabledPolicyCount,
+                warningCount = SELF_CAPABILITY_CHECK_COUNT,
                 startedAtMs = startedAtMs,
                 startedElapsedMs = startedElapsedMs,
                 shizukuStatus = read.reason,
@@ -88,79 +48,20 @@ class AccessibilityGuardCoordinator(
             )
         }
 
-        val beforeEnabledIds = read.ids.sortedSet()
-        val missingIds = (selectedIds - beforeEnabledIds).sortedSet()
-        if (missingIds.isEmpty()) {
-            return result(
-                status = AccessibilityGuardRestoreStatus.SkippedAlreadyEnabled,
-                reason = reason,
-                selectedIds = selectedIds,
-                beforeEnabledIds = beforeEnabledIds,
-                afterEnabledIds = beforeEnabledIds,
-                restoredIds = emptySet(),
-                skippedIds = emptySet(),
-                startedAtMs = startedAtMs,
-                startedElapsedMs = startedElapsedMs,
-            )
-        }
-
-        val nowMs = wallClockMs()
-        val cooldownIds = missingIds
-            .filter { id -> (settings.cooldownUntilById[id] ?: 0L) > nowMs }
-            .toSet()
-            .sortedSet()
-        val restoreIds = (missingIds - cooldownIds).sortedSet()
-        if (restoreIds.isEmpty()) {
-            return result(
-                status = AccessibilityGuardRestoreStatus.SkippedCooldown,
-                reason = reason,
-                selectedIds = selectedIds,
-                beforeEnabledIds = beforeEnabledIds,
-                afterEnabledIds = beforeEnabledIds,
-                restoredIds = emptySet(),
-                skippedIds = cooldownIds,
-                startedAtMs = startedAtMs,
-                startedElapsedMs = startedElapsedMs,
-            )
-        }
-
-        val targetEnabledIds = (beforeEnabledIds + restoreIds).sortedSet()
-        val write = secureSettingsBridge.writeEnabledServiceIds(targetEnabledIds)
-        if (!write.success) {
-            recordFailureCooldown(
-                current = settings,
-                failedIds = restoreIds,
-                nowMs = nowMs,
-            )
-            return result(
-                status = AccessibilityGuardRestoreStatus.Failed,
-                reason = reason,
-                selectedIds = selectedIds,
-                beforeEnabledIds = beforeEnabledIds,
-                afterEnabledIds = beforeEnabledIds,
-                restoredIds = emptySet(),
-                skippedIds = cooldownIds,
-                startedAtMs = startedAtMs,
-                startedElapsedMs = startedElapsedMs,
-                failureReason = write.reason,
-            )
-        }
-
-        recordSuccessCooldown(
-            current = settings,
-            restoredIds = restoreIds,
-            nowMs = nowMs,
-        )
         return result(
-            status = AccessibilityGuardRestoreStatus.Restored,
+            status =
+                if (enabledPolicyCount > 0) {
+                    AccessibilityGuardCheckStatus.Healthy
+                } else {
+                    AccessibilityGuardCheckStatus.Checked
+                },
             reason = reason,
-            selectedIds = selectedIds,
-            beforeEnabledIds = beforeEnabledIds,
-            afterEnabledIds = targetEnabledIds,
-            restoredIds = restoreIds,
-            skippedIds = cooldownIds,
+            checkCount = checkCount,
+            healthyCount = checkCount,
+            warningCount = 0,
             startedAtMs = startedAtMs,
             startedElapsedMs = startedElapsedMs,
+            shizukuStatus = SHIZUKU_STATUS_READY,
         )
     }
 
@@ -172,73 +73,25 @@ class AccessibilityGuardCoordinator(
         return next
     }
 
-    private fun recordSuccessCooldown(
-        current: AccessibilityGuardSettings,
-        restoredIds: Set<AccessibilityServiceId>,
-        nowMs: Long,
-    ) {
-        if (restoredIds.isEmpty()) return
-        val cooldownUntil = nowMs + SUCCESS_COOLDOWN_MS
-        stateStore.saveSettings(
-            current.copy(
-                cooldownUntilById =
-                    current.cooldownUntilById
-                        .filterKeys { id -> id !in restoredIds } +
-                        restoredIds.associateWith { cooldownUntil },
-                failureCountById = current.failureCountById.filterKeys { id -> id !in restoredIds },
-            ),
-        )
-    }
-
-    private fun recordFailureCooldown(
-        current: AccessibilityGuardSettings,
-        failedIds: Set<AccessibilityServiceId>,
-        nowMs: Long,
-    ) {
-        if (failedIds.isEmpty()) return
-        val nextFailureCounts =
-            current.failureCountById +
-                failedIds.associateWith { id -> (current.failureCountById[id] ?: 0) + 1 }
-        val nextCooldowns =
-            current.cooldownUntilById +
-                failedIds.associateWith { id ->
-                    val failures = nextFailureCounts[id] ?: 1
-                    nowMs + if (failures >= REPEATED_FAILURE_COUNT) {
-                        REPEATED_FAILURE_COOLDOWN_MS
-                    } else {
-                        SUCCESS_COOLDOWN_MS
-                    }
-                }
-        stateStore.saveSettings(
-            current.copy(
-                cooldownUntilById = nextCooldowns,
-                failureCountById = nextFailureCounts,
-            ),
-        )
-    }
-
     private fun result(
-        status: AccessibilityGuardRestoreStatus,
-        reason: AccessibilityGuardRestoreReason,
-        selectedIds: Set<AccessibilityServiceId>,
-        beforeEnabledIds: Set<AccessibilityServiceId>,
-        afterEnabledIds: Set<AccessibilityServiceId>,
-        restoredIds: Set<AccessibilityServiceId>,
-        skippedIds: Set<AccessibilityServiceId>,
+        status: AccessibilityGuardCheckStatus,
+        reason: AccessibilityGuardCheckReason,
+        checkCount: Int,
+        healthyCount: Int,
+        warningCount: Int,
         startedAtMs: Long,
         startedElapsedMs: Long,
         shizukuStatus: String = "",
         failureReason: String = "",
-    ): AccessibilityGuardRestoreResult {
+    ): AccessibilityGuardCheckResult {
+        val normalizedCheckCount = checkCount.coerceAtLeast(0)
         val finishedAtMs = wallClockMs()
-        return AccessibilityGuardRestoreResult(
+        return AccessibilityGuardCheckResult(
             status = status,
             reason = reason,
-            selectedIds = selectedIds.sortedSet(),
-            beforeEnabledIds = beforeEnabledIds.sortedSet(),
-            afterEnabledIds = afterEnabledIds.sortedSet(),
-            restoredIds = restoredIds.sortedSet(),
-            skippedIds = skippedIds.sortedSet(),
+            checkCount = normalizedCheckCount,
+            healthyCount = healthyCount.coerceIn(0, normalizedCheckCount),
+            warningCount = warningCount.coerceAtLeast(0),
             startedAtMs = startedAtMs,
             finishedAtMs = finishedAtMs,
             elapsedMs = (elapsedClockMs() - startedElapsedMs).coerceAtLeast(0L),
@@ -248,12 +101,28 @@ class AccessibilityGuardCoordinator(
     }
 
     companion object {
-        const val SUCCESS_COOLDOWN_MS = 5L * 60L * 1000L
-        const val REPEATED_FAILURE_COOLDOWN_MS = 30L * 60L * 1000L
-        private const val REPEATED_FAILURE_COUNT = 2
+        const val SELF_CAPABILITY_CHECK_COUNT = 1
+        const val SHIZUKU_STATUS_READY = "ready"
     }
 }
 
-private fun Set<AccessibilityServiceId>.sortedSet(): Set<AccessibilityServiceId> =
-    sortedWith(compareBy<AccessibilityServiceId> { it.packageName }.thenBy { it.serviceName })
-        .toCollection(LinkedHashSet())
+private val AccessibilityGuardSettings.enabledPolicyCount: Int
+    get() =
+        listOf(
+            daemonEnabled,
+            bootCheckEnabled,
+            screenOnCheckEnabled,
+        ).count { it }
+
+private fun AccessibilitySecureSettingRead.toCapability(checkedAtMs: Long): AccessibilityGuardCapability =
+    AccessibilityGuardCapability(
+        shizukuReady = success,
+        canReadSecureSettings = success,
+        shizukuStatus =
+            if (success) {
+                AccessibilityGuardCoordinator.SHIZUKU_STATUS_READY
+            } else {
+                reason
+            },
+        checkedAtMs = checkedAtMs.coerceAtLeast(0L),
+    )

@@ -8,7 +8,6 @@ internal enum class SettingsSearchCard {
     Permissions,
     KeepAlive,
     AccessibilityGuardPolicy,
-    AccessibilityGuardServices,
     AccessibilityGuardHistory,
     ThemeLanguage,
     Performance,
@@ -61,10 +60,9 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val accessibilityGuardPolicyLabel = resolveString(R.string.settings_accessibility_guard_policy_title)
     val accessibilityGuardCapabilityLabel = resolveString(R.string.settings_accessibility_guard_capability_title)
     val accessibilityGuardDaemonLabel = resolveString(R.string.settings_accessibility_guard_daemon_title)
-    val accessibilityGuardBootRestoreLabel = resolveString(R.string.settings_accessibility_guard_boot_restore_title)
+    val accessibilityGuardBootCheckLabel = resolveString(R.string.settings_accessibility_guard_boot_check_title)
     val accessibilityGuardScreenOnLabel = resolveString(R.string.settings_accessibility_guard_screen_on_title)
     val accessibilityGuardDisclosureLabel = resolveString(R.string.settings_accessibility_guard_disclosure_title)
-    val accessibilityGuardServicesLabel = resolveString(R.string.settings_accessibility_guard_services_title)
     val accessibilityGuardHistoryLabel = resolveString(R.string.settings_accessibility_guard_history_title)
 
     val keepAliveCategoryLabel = resolveString(R.string.settings_category_keep_alive)
@@ -188,7 +186,7 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     accessibilityGuardPolicyLabel,
                     accessibilityGuardCapabilityLabel,
                     accessibilityGuardDaemonLabel,
-                    accessibilityGuardBootRestoreLabel,
+                    accessibilityGuardBootCheckLabel,
                     accessibilityGuardScreenOnLabel,
                     accessibilityGuardDisclosureLabel,
                     shizukuPermissionLabel,
@@ -196,18 +194,6 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     "secure settings",
                     "accessibility",
                     "daemon",
-                ),
-        ),
-        SettingsSearchTarget(
-            card = SettingsSearchCard.AccessibilityGuardServices,
-            category = SettingsCategory.KeepAlive,
-            tokens =
-                settingsTokens(
-                    keepAliveCategoryLabel,
-                    accessibilityGuardHeaderLabel,
-                    accessibilityGuardServicesLabel,
-                    "accessibility service",
-                    "guarded service",
                 ),
         ),
         SettingsSearchTarget(

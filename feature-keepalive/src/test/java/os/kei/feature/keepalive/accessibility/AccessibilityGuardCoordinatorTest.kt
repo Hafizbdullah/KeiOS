@@ -1,133 +1,94 @@
 package os.kei.feature.keepalive.accessibility
 
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 class AccessibilityGuardCoordinatorTest {
-    private val alpha = AccessibilityServiceId("com.alpha", "com.alpha.Service")
-    private val beta = AccessibilityServiceId("com.beta", "com.beta.Service")
-
     @Test
-    fun `restore skips when no services are selected`() = runTest {
-        val bridge = FakeSecureSettingsBridge(enabledIds = setOf(alpha))
-        val coordinator = coordinator(bridge = bridge)
+    fun `check self records checked result when secure settings are readable and no policy is enabled`() = runTest {
+        val coordinator = coordinator(bridge = FakeSecureSettingsBridge(readSuccess = true))
 
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
+        val result = coordinator.checkSelf(AccessibilityGuardCheckReason.Manual)
 
-        assertEquals(AccessibilityGuardRestoreStatus.SkippedNoTargets, result.status)
-        assertTrue(bridge.writes.isEmpty())
+        assertEquals(AccessibilityGuardCheckStatus.Checked, result.status)
+        assertEquals(1, result.checkCount)
+        assertEquals(1, result.healthyCount)
+        assertEquals(0, result.warningCount)
+        assertEquals("ready", result.shizukuStatus)
     }
 
     @Test
-    fun `restore skips with missing privilege when secure settings cannot be read`() = runTest {
-        val store = InMemoryGuardStore(AccessibilityGuardSettings(guardedIds = setOf(alpha)))
-        val bridge = FakeSecureSettingsBridge(readSuccess = false, readReason = "permission denied")
-        val coordinator = coordinator(store = store, bridge = bridge)
+    fun `check self records healthy result when guard policies are enabled`() = runTest {
+        val store =
+            InMemoryGuardStore(
+                AccessibilityGuardSettings(
+                    daemonEnabled = true,
+                    bootCheckEnabled = true,
+                    screenOnCheckEnabled = true,
+                ),
+            )
+        val coordinator = coordinator(store = store, bridge = FakeSecureSettingsBridge(readSuccess = true))
 
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
+        val result = coordinator.checkSelf(AccessibilityGuardCheckReason.ForegroundServiceStart)
 
-        assertEquals(AccessibilityGuardRestoreStatus.SkippedMissingPrivilege, result.status)
+        assertEquals(AccessibilityGuardCheckStatus.Healthy, result.status)
+        assertEquals(4, result.checkCount)
+        assertEquals(4, result.healthyCount)
+        assertEquals(0, result.warningCount)
+    }
+
+    @Test
+    fun `check self records missing privilege when secure settings cannot be read`() = runTest {
+        val store = InMemoryGuardStore(AccessibilityGuardSettings(daemonEnabled = true))
+        val coordinator =
+            coordinator(
+                store = store,
+                bridge = FakeSecureSettingsBridge(readSuccess = false, readReason = "permission denied"),
+            )
+
+        val result = coordinator.checkSelf(AccessibilityGuardCheckReason.ScreenOn)
+
+        assertEquals(AccessibilityGuardCheckStatus.MissingPrivilege, result.status)
+        assertEquals(2, result.checkCount)
+        assertEquals(1, result.healthyCount)
+        assertEquals(1, result.warningCount)
         assertEquals("permission denied", result.failureReason)
-        assertEquals(setOf(alpha), result.skippedIds)
-        assertTrue(bridge.writes.isEmpty())
     }
 
     @Test
-    fun `restore skips when selected services are already enabled`() = runTest {
-        val store = InMemoryGuardStore(AccessibilityGuardSettings(guardedIds = setOf(alpha)))
-        val bridge = FakeSecureSettingsBridge(enabledIds = setOf(alpha, beta))
-        val coordinator = coordinator(store = store, bridge = bridge)
-
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
-
-        assertEquals(AccessibilityGuardRestoreStatus.SkippedAlreadyEnabled, result.status)
-        assertEquals(setOf(alpha, beta), result.beforeEnabledIds)
-        assertTrue(bridge.writes.isEmpty())
-    }
-
-    @Test
-    fun `restore preserves unrelated enabled services while adding missing selected services`() = runTest {
-        val store = InMemoryGuardStore(AccessibilityGuardSettings(guardedIds = setOf(alpha)))
-        val bridge = FakeSecureSettingsBridge(enabledIds = setOf(beta))
-        val coordinator = coordinator(store = store, bridge = bridge, nowMs = 10_000L)
-
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
-
-        assertEquals(AccessibilityGuardRestoreStatus.Restored, result.status)
-        assertEquals(setOf(alpha), result.restoredIds)
-        assertEquals(setOf(alpha, beta), bridge.writes.single())
-        assertEquals(
-            10_000L + AccessibilityGuardCoordinator.SUCCESS_COOLDOWN_MS,
-            store.loadSettings().cooldownUntilById[alpha],
-        )
-    }
-
-    @Test
-    fun `restore skips missing services that are still cooling down`() = runTest {
-        val store =
-            InMemoryGuardStore(
-                AccessibilityGuardSettings(
-                    guardedIds = setOf(alpha),
-                    cooldownUntilById = mapOf(alpha to 20_000L),
-                ),
+    fun `load snapshot exposes secure settings capability`() = runTest {
+        val coordinator =
+            coordinator(
+                bridge = FakeSecureSettingsBridge(readSuccess = false, readReason = "shizuku unavailable"),
+                nowMs = 20_000L,
             )
-        val bridge = FakeSecureSettingsBridge(enabledIds = emptySet())
-        val coordinator = coordinator(store = store, bridge = bridge, nowMs = 10_000L)
 
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
+        val snapshot = coordinator.loadSnapshot()
 
-        assertEquals(AccessibilityGuardRestoreStatus.SkippedCooldown, result.status)
-        assertEquals(setOf(alpha), result.skippedIds)
-        assertTrue(bridge.writes.isEmpty())
+        assertEquals(false, snapshot.capability.canReadSecureSettings)
+        assertEquals(false, snapshot.capability.shizukuReady)
+        assertEquals("shizuku unavailable", snapshot.capability.shizukuStatus)
+        assertEquals(20_000L, snapshot.capability.checkedAtMs)
     }
 
     @Test
-    fun `restore records long cooldown after repeated failure`() = runTest {
-        val store =
-            InMemoryGuardStore(
-                AccessibilityGuardSettings(
-                    guardedIds = setOf(alpha),
-                    failureCountById = mapOf(alpha to 1),
-                ),
-            )
-        val bridge =
-            FakeSecureSettingsBridge(
-                enabledIds = emptySet(),
-                writeSuccess = false,
-                writeReason = "write denied",
-            )
-        val coordinator = coordinator(store = store, bridge = bridge, nowMs = 10_000L)
-
-        val result = coordinator.restoreMissing(AccessibilityGuardRestoreReason.Manual)
-
-        assertEquals(AccessibilityGuardRestoreStatus.Failed, result.status)
-        assertEquals("write denied", result.failureReason)
-        assertEquals(2, store.loadSettings().failureCountById[alpha])
-        assertEquals(
-            10_000L + AccessibilityGuardCoordinator.REPEATED_FAILURE_COOLDOWN_MS,
-            store.loadSettings().cooldownUntilById[alpha],
-        )
-    }
-
-    @Test
-    fun `set guarded clears stale cooldown and failure count`() {
-        val store =
-            InMemoryGuardStore(
-                AccessibilityGuardSettings(
-                    guardedIds = setOf(alpha),
-                    cooldownUntilById = mapOf(alpha to 20_000L),
-                    failureCountById = mapOf(alpha to 3),
-                ),
-            )
+    fun `policy setters persist self guard settings`() {
+        val store = InMemoryGuardStore()
         val coordinator = coordinator(store = store)
 
-        val settings = coordinator.setGuarded(alpha, guarded = false)
+        coordinator.setDaemonEnabled(true)
+        coordinator.setBootCheckEnabled(true)
+        coordinator.setScreenOnCheckEnabled(true)
 
-        assertTrue(alpha !in settings.guardedIds)
-        assertTrue(alpha !in settings.cooldownUntilById)
-        assertTrue(alpha !in settings.failureCountById)
+        assertEquals(
+            AccessibilityGuardSettings(
+                daemonEnabled = true,
+                bootCheckEnabled = true,
+                screenOnCheckEnabled = true,
+            ),
+            store.loadSettings(),
+        )
     }
 
     private fun coordinator(
@@ -136,7 +97,6 @@ class AccessibilityGuardCoordinatorTest {
         nowMs: Long = 1_000L,
     ): AccessibilityGuardCoordinator =
         AccessibilityGuardCoordinator(
-            serviceRepository = AccessibilityServiceRepository(),
             secureSettingsBridge = bridge,
             stateStore = store,
             wallClockMs = { nowMs },
@@ -154,36 +114,15 @@ class AccessibilityGuardCoordinatorTest {
     }
 
     private class FakeSecureSettingsBridge(
-        private val enabledIds: Set<AccessibilityServiceId> = emptySet(),
         private val readSuccess: Boolean = true,
         private val readReason: String = "",
-        private val writeSuccess: Boolean = true,
-        private val writeReason: String = "",
     ) : AccessibilitySecureSettingsBridge {
-        val writes = mutableListOf<Set<AccessibilityServiceId>>()
-
         override suspend fun readEnabledServiceIds(): AccessibilitySecureSettingRead =
             AccessibilitySecureSettingRead(
-                rawValue = enabledIds.joinToString(":") { id -> "${id.packageName}/${id.serviceName}" },
-                ids = enabledIds,
+                rawValue = "",
+                ids = emptySet(),
                 success = readSuccess,
                 reason = readReason,
-            )
-
-        override suspend fun writeEnabledServiceIds(ids: Set<AccessibilityServiceId>): AccessibilitySecureSettingWrite {
-            writes += ids
-            return AccessibilitySecureSettingWrite(
-                success = writeSuccess,
-                changed = writeSuccess,
-                reason = writeReason,
-            )
-        }
-
-        override suspend fun setAccessibilityEnabled(enabled: Boolean): AccessibilitySecureSettingWrite =
-            AccessibilitySecureSettingWrite(
-                success = writeSuccess,
-                changed = writeSuccess,
-                reason = writeReason,
             )
     }
 }

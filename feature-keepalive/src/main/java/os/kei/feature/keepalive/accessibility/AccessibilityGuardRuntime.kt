@@ -9,7 +9,6 @@ object AccessibilityGuardRuntime {
 
     fun coordinator(stateStore: AccessibilityGuardStateStore = newStateStore()): AccessibilityGuardCoordinator =
         AccessibilityGuardCoordinator(
-            serviceRepository = AccessibilityServiceRepository(),
             secureSettingsBridge =
                 ShizukuAccessibilitySecureSettingsBridge(
                     shizukuApiUtils = ShizukuApiUtils(commandDispatcher = AppDispatchers.osOperations),
@@ -17,15 +16,14 @@ object AccessibilityGuardRuntime {
             stateStore = stateStore,
         )
 
-    fun restoreRunner(
+    fun checkRunner(
         context: Context,
         stateStore: AccessibilityGuardStateStore = newStateStore(),
-        timeoutMs: Long = AccessibilityGuardRestoreRunner.DEFAULT_TIMEOUT_MS,
-    ): AccessibilityGuardRestoreRunner =
-        AccessibilityGuardRestoreRunner(
+        timeoutMs: Long = AccessibilityGuardCheckRunner.DEFAULT_TIMEOUT_MS,
+    ): AccessibilityGuardCheckRunner =
+        AccessibilityGuardCheckRunner(
             coordinator = coordinator(stateStore),
             historyStore = AccessibilityGuardHistoryStore.forContext(context.applicationContext),
-            selectedIdsProvider = { stateStore.loadSettings().guardedIds },
             timeoutMs = timeoutMs,
         )
 }

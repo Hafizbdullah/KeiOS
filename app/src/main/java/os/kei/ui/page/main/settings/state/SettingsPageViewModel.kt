@@ -8,6 +8,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -136,8 +137,11 @@ internal sealed interface SettingsBackgroundEvent {
     ) : SettingsBackgroundEvent
 }
 
-internal class SettingsPageViewModel : ViewModel() {
-    private val repository = SettingsPageRepository()
+internal class SettingsPageViewModel(
+    private val repository: SettingsPageRepository = SettingsPageRepository(),
+    initialExpandedCards: Map<SettingsCardExpansionId, Boolean> = SettingsCardExpansionStore.loadSnapshot(),
+    initialWebDavSyncState: SettingsWebDavSyncUiState = repository.buildWebDavSyncState(),
+) : ViewModel() {
     private var permissionKeepAliveRefreshJob: Job? = null
     private var accessibilityGuardRefreshJob: Job? = null
     private var batteryOptimizationRefreshJob: Job? = null
@@ -151,7 +155,7 @@ internal class SettingsPageViewModel : ViewModel() {
     private val _chromeState =
         MutableStateFlow(
             SettingsPageChromeState(
-                expandedCards = SettingsCardExpansionStore.loadSnapshot(),
+                expandedCards = initialExpandedCards,
             ),
         )
     val chromeState: StateFlow<SettingsPageChromeState> = _chromeState.asStateFlow()
@@ -165,7 +169,7 @@ internal class SettingsPageViewModel : ViewModel() {
     private val _accessibilityGuardState = MutableStateFlow(SettingsAccessibilityGuardUiState())
     val accessibilityGuardState: StateFlow<SettingsAccessibilityGuardUiState> =
         _accessibilityGuardState.asStateFlow()
-    private val _webDavSyncState = MutableStateFlow(repository.buildWebDavSyncState())
+    private val _webDavSyncState = MutableStateFlow(initialWebDavSyncState)
     val webDavSyncState: StateFlow<SettingsWebDavSyncUiState> = _webDavSyncState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<SettingsPageEvent> = _events.asSharedFlow()
@@ -483,6 +487,8 @@ internal class SettingsPageViewModel : ViewModel() {
         val result =
             runCatching {
                 repository.loadAccessibilityGuardState(context.applicationContext)
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
             }
         result
             .onSuccess { snapshot ->
@@ -504,25 +510,6 @@ internal class SettingsPageViewModel : ViewModel() {
             }
     }
 
-    fun updateAccessibilityGuarded(
-        context: Context,
-        flattenedId: String,
-        guarded: Boolean,
-    ) {
-        viewModelScope.launch {
-            val result = repository.setAccessibilityGuarded(flattenedId, guarded)
-            if (result.isFailure) {
-                _events.emit(
-                    SettingsPageEvent.FailureToast(
-                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
-                        reason = result.reasonName(),
-                    ),
-                )
-            }
-            refreshAccessibilityGuardNow(context.applicationContext)
-        }
-    }
-
     fun updateAccessibilityGuardDaemonEnabled(
         context: Context,
         enabled: Boolean,
@@ -541,12 +528,12 @@ internal class SettingsPageViewModel : ViewModel() {
         }
     }
 
-    fun updateAccessibilityGuardBootRestoreEnabled(
+    fun updateAccessibilityGuardBootCheckEnabled(
         context: Context,
         enabled: Boolean,
     ) {
         viewModelScope.launch {
-            val result = repository.setAccessibilityGuardBootRestoreEnabled(enabled)
+            val result = repository.setAccessibilityGuardBootCheckEnabled(enabled)
             if (result.isFailure) {
                 _events.emit(
                     SettingsPageEvent.FailureToast(

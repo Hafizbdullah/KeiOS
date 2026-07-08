@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import os.kei.core.log.AppLogger
-import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckReason
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
 import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
 
@@ -14,11 +14,11 @@ class AccessibilityGuardEventReceiver : BroadcastReceiver() {
         intent: Intent?,
     ) {
         val action = intent?.action.orEmpty()
-        val reason = action.toRestoreReasonOrNull() ?: return
+        val reason = action.toCheckReasonOrNull() ?: return
         val appContext = context.applicationContext
         val stateStore = AccessibilityGuardRuntime.newStateStore()
         val settings = stateStore.loadSettings()
-        if (!shouldHandle(action = action, bootRestoreEnabled = settings.bootRestoreEnabled)) return
+        if (!shouldHandle(action = action, bootCheckEnabled = settings.bootCheckEnabled)) return
 
         if (settings.daemonEnabled) {
             AccessibilityGuardForegroundService.start(appContext)
@@ -30,7 +30,7 @@ class AccessibilityGuardEventReceiver : BroadcastReceiver() {
             timeoutMs = RECEIVER_TIMEOUT_MS,
             onTimeout = { timeoutContext ->
                 AccessibilityGuardRuntime
-                    .restoreRunner(
+                    .checkRunner(
                         context = timeoutContext,
                         stateStore = stateStore,
                     )
@@ -41,12 +41,12 @@ class AccessibilityGuardEventReceiver : BroadcastReceiver() {
             },
         ) { receiverContext ->
             AccessibilityGuardRuntime
-                .restoreRunner(
+                .checkRunner(
                     context = receiverContext,
                     stateStore = stateStore,
                     timeoutMs = RECEIVER_TIMEOUT_MS,
                 )
-                .restoreAndRecord(
+                .checkAndRecord(
                     reason = reason,
                     triggerAction = action,
                 )
@@ -59,12 +59,12 @@ class AccessibilityGuardEventReceiver : BroadcastReceiver() {
 
         internal fun shouldHandle(
             action: String,
-            bootRestoreEnabled: Boolean,
+            bootCheckEnabled: Boolean,
         ): Boolean =
             when (action) {
                 Intent.ACTION_BOOT_COMPLETED,
                 Intent.ACTION_MY_PACKAGE_REPLACED,
-                -> bootRestoreEnabled
+                -> bootCheckEnabled
                 AccessibilityGuardForegroundService.ACTION_CHECK_ACCESSIBILITY_GUARD -> true
                 else -> false
             }
@@ -79,12 +79,12 @@ class AccessibilityGuardEventReceiver : BroadcastReceiver() {
                 .onFailure { error -> AppLogger.w(TAG, "request accessibility guard check failed", error) }
         }
 
-        private fun String.toRestoreReasonOrNull(): AccessibilityGuardRestoreReason? =
+        private fun String.toCheckReasonOrNull(): AccessibilityGuardCheckReason? =
             when (this) {
-                Intent.ACTION_BOOT_COMPLETED -> AccessibilityGuardRestoreReason.BootCompleted
-                Intent.ACTION_MY_PACKAGE_REPLACED -> AccessibilityGuardRestoreReason.PackageReplaced
+                Intent.ACTION_BOOT_COMPLETED -> AccessibilityGuardCheckReason.BootCompleted
+                Intent.ACTION_MY_PACKAGE_REPLACED -> AccessibilityGuardCheckReason.PackageReplaced
                 AccessibilityGuardForegroundService.ACTION_CHECK_ACCESSIBILITY_GUARD ->
-                    AccessibilityGuardRestoreReason.Manual
+                    AccessibilityGuardCheckReason.Manual
                 else -> null
             }
     }

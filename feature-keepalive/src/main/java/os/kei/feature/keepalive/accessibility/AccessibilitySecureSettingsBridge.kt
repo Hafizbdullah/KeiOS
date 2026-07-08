@@ -9,12 +9,6 @@ data class AccessibilitySecureSettingRead(
     val reason: String,
 )
 
-data class AccessibilitySecureSettingWrite(
-    val success: Boolean,
-    val changed: Boolean,
-    val reason: String,
-)
-
 fun interface AccessibilitySecureSettingsCommandRunner {
     suspend fun run(
         command: String,
@@ -24,8 +18,4 @@ fun interface AccessibilitySecureSettingsCommandRunner {
 
 interface AccessibilitySecureSettingsBridge {
     suspend fun readEnabledServiceIds(): AccessibilitySecureSettingRead
-
-    suspend fun writeEnabledServiceIds(ids: Set<AccessibilityServiceId>): AccessibilitySecureSettingWrite
-
-    suspend fun setAccessibilityEnabled(enabled: Boolean): AccessibilitySecureSettingWrite
 }

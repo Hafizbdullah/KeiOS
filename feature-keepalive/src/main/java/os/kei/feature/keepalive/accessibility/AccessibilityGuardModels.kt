@@ -9,25 +9,14 @@ data class AccessibilityServiceId(
     fun flatten(): String = ComponentName(packageName, serviceName).flattenToString()
 }
 
-data class AccessibilityServiceSnapshot(
-    val id: AccessibilityServiceId,
-    val label: String,
-    val packageLabel: String,
-    val enabled: Boolean,
-    val guarded: Boolean,
-    val installed: Boolean,
-    val system: Boolean,
-)
-
 data class AccessibilityGuardCapability(
     val shizukuReady: Boolean,
     val canReadSecureSettings: Boolean,
-    val canWriteSecureSettings: Boolean,
-    val notificationReady: Boolean,
-    val foregroundServiceAllowed: Boolean,
+    val shizukuStatus: String,
+    val checkedAtMs: Long,
 )
 
-enum class AccessibilityGuardRestoreReason {
+enum class AccessibilityGuardCheckReason {
     Manual,
     ForegroundServiceStart,
     SecureSettingChanged,
@@ -37,47 +26,39 @@ enum class AccessibilityGuardRestoreReason {
     TimeoutRecovery,
 }
 
-enum class AccessibilityGuardRestoreStatus {
-    Restored,
-    SkippedNoTargets,
-    SkippedMissingPrivilege,
-    SkippedAlreadyEnabled,
-    SkippedCooldown,
+enum class AccessibilityGuardCheckStatus {
+    Healthy,
+    Checked,
+    MissingPrivilege,
     Failed,
     TimedOut,
 }
 
-data class AccessibilityGuardRestoreResult(
-    val status: AccessibilityGuardRestoreStatus,
-    val reason: AccessibilityGuardRestoreReason,
-    val selectedIds: Set<AccessibilityServiceId>,
-    val beforeEnabledIds: Set<AccessibilityServiceId>,
-    val afterEnabledIds: Set<AccessibilityServiceId>,
-    val restoredIds: Set<AccessibilityServiceId>,
-    val skippedIds: Set<AccessibilityServiceId>,
+data class AccessibilityGuardCheckResult(
+    val status: AccessibilityGuardCheckStatus,
+    val reason: AccessibilityGuardCheckReason,
+    val checkCount: Int,
+    val healthyCount: Int,
+    val warningCount: Int,
     val startedAtMs: Long,
     val finishedAtMs: Long,
     val elapsedMs: Long,
     val shizukuStatus: String,
     val failureReason: String,
-) {
-    val changed: Boolean
-        get() = restoredIds.isNotEmpty() || beforeEnabledIds != afterEnabledIds
-}
+)
 
 data class AccessibilityGuardHistoryEntry(
     val id: String,
     val timestampMs: Long,
-    val reason: AccessibilityGuardRestoreReason,
-    val status: AccessibilityGuardRestoreStatus,
+    val reason: AccessibilityGuardCheckReason,
+    val status: AccessibilityGuardCheckStatus,
     val triggerAction: String = "",
-    val selectedCount: Int,
-    val restoredCount: Int,
-    val skippedCount: Int,
+    val checkCount: Int,
+    val healthyCount: Int,
+    val warningCount: Int,
     val elapsedMs: Long,
     val shizukuStatus: String,
     val failureReason: String,
-    val serviceIds: List<AccessibilityServiceId>,
 ) {
     companion object
 }

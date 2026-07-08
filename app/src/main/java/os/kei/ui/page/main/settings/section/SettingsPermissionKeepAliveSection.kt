@@ -87,22 +87,6 @@ internal fun SettingsPermissionKeepAliveSection(
                 },
             )
         }
-        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.AccessibilityGuardServices) {
-            SettingsAccessibilityGuardServicesCard(
-                state = state,
-                actions = actions,
-                containerColor =
-                    settingsSectionContainerColor(
-                        accessibilityGuardPresentation,
-                        enabledCardColor,
-                        disabledCardColor,
-                    ),
-                expanded = isCardExpanded(SettingsCardExpansionId.AccessibilityGuardServices),
-                onExpandedChange = {
-                    onCardExpandedChange(SettingsCardExpansionId.AccessibilityGuardServices, it)
-                },
-            )
-        }
         if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.AccessibilityGuardHistory) {
             SettingsAccessibilityGuardHistoryCard(
                 state = state,

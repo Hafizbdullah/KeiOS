@@ -7,33 +7,33 @@ import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
 
 class AccessibilityGuardEventReceiverTest {
     @Test
-    fun `boot and package replaced events require boot restore policy`() {
+    fun `boot and package replaced events require boot check policy`() {
         assertEquals(
             false,
             AccessibilityGuardEventReceiver.shouldHandle(
                 action = Intent.ACTION_BOOT_COMPLETED,
-                bootRestoreEnabled = false,
+                bootCheckEnabled = false,
             ),
         )
         assertEquals(
             true,
             AccessibilityGuardEventReceiver.shouldHandle(
                 action = Intent.ACTION_BOOT_COMPLETED,
-                bootRestoreEnabled = true,
+                bootCheckEnabled = true,
             ),
         )
         assertEquals(
             false,
             AccessibilityGuardEventReceiver.shouldHandle(
                 action = Intent.ACTION_MY_PACKAGE_REPLACED,
-                bootRestoreEnabled = false,
+                bootCheckEnabled = false,
             ),
         )
         assertEquals(
             true,
             AccessibilityGuardEventReceiver.shouldHandle(
                 action = Intent.ACTION_MY_PACKAGE_REPLACED,
-                bootRestoreEnabled = true,
+                bootCheckEnabled = true,
             ),
         )
     }
@@ -44,7 +44,7 @@ class AccessibilityGuardEventReceiverTest {
             true,
             AccessibilityGuardEventReceiver.shouldHandle(
                 action = AccessibilityGuardForegroundService.ACTION_CHECK_ACCESSIBILITY_GUARD,
-                bootRestoreEnabled = false,
+                bootCheckEnabled = false,
             ),
         )
     }
