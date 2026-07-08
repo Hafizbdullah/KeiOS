@@ -22,6 +22,7 @@ private const val DEFAULT_MAX_BYTES = 1L * 1024L * 1024L
 private const val MAX_TRIGGER_ACTION_LENGTH = 80
 private const val MAX_SHIZUKU_STATUS_LENGTH = 160
 private const val MAX_FAILURE_REASON_LENGTH = 512
+private const val STARTUP_HEALTHY_DEDUP_WINDOW_MS = 3_000L
 
 data class AccessibilityGuardHistoryExportResult(
     val exportedCount: Int,
@@ -36,7 +37,9 @@ class AccessibilityGuardHistoryStore(
 ) {
     suspend fun append(entry: AccessibilityGuardHistoryEntry) {
         synchronized(fileLock) {
-            val records = readRecordsLocked() + entry.normalizedForHistory()
+            val records =
+                (readRecordsLocked() + entry.normalizedForHistory())
+                    .deduplicateStartupHealthyBursts()
             writeRecordsLocked(trimRecords(records))
         }
     }
@@ -278,6 +281,53 @@ private fun AccessibilityGuardHistoryEntry.normalizedForHistory(): Accessibility
         failureReason = failureReason.compactHistoryText(MAX_FAILURE_REASON_LENGTH),
     )
 }
+
+private fun List<AccessibilityGuardHistoryEntry>.deduplicateStartupHealthyBursts():
+    List<AccessibilityGuardHistoryEntry> {
+    if (size < 2) return this
+    val merged = mutableListOf<AccessibilityGuardHistoryEntry>()
+    sortedBy { entry -> entry.timestampMs }.forEach { entry ->
+        val previous = merged.lastOrNull()
+        if (previous != null && previous.isSameStartupHealthyBurst(entry)) {
+            merged[merged.lastIndex] = entry
+        } else {
+            merged += entry
+        }
+    }
+    return merged
+}
+
+private fun AccessibilityGuardHistoryEntry.isSameStartupHealthyBurst(
+    other: AccessibilityGuardHistoryEntry,
+): Boolean {
+    if (!isStartupHealthySnapshot() || !other.isStartupHealthySnapshot()) return false
+    val gapMs = kotlin.math.abs(other.timestampMs - timestampMs)
+    if (gapMs > STARTUP_HEALTHY_DEDUP_WINDOW_MS) return false
+    return checkCount == other.checkCount &&
+        healthyCount == other.healthyCount &&
+        warningCount == other.warningCount &&
+        shizukuStatus == other.shizukuStatus
+}
+
+private fun AccessibilityGuardHistoryEntry.isStartupHealthySnapshot(): Boolean =
+    status == AccessibilityGuardCheckStatus.Healthy &&
+        healthyCount == checkCount &&
+        warningCount == 0 &&
+        failureReason.isBlank() &&
+        reason.isStartupRecoveryReason()
+
+private fun AccessibilityGuardCheckReason.isStartupRecoveryReason(): Boolean =
+    when (this) {
+        AccessibilityGuardCheckReason.ForegroundServiceStart,
+        AccessibilityGuardCheckReason.BootCompleted,
+        AccessibilityGuardCheckReason.PackageReplaced,
+        -> true
+        AccessibilityGuardCheckReason.Manual,
+        AccessibilityGuardCheckReason.SecureSettingChanged,
+        AccessibilityGuardCheckReason.ScreenOn,
+        AccessibilityGuardCheckReason.TimeoutRecovery,
+        -> false
+    }
 
 private fun String.toCheckReason(): AccessibilityGuardCheckReason =
     enumValueOrDefault(this, AccessibilityGuardCheckReason.Manual)

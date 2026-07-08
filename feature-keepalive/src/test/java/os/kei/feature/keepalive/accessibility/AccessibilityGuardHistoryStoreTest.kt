@@ -76,6 +76,89 @@ class AccessibilityGuardHistoryStoreTest {
     }
 
     @Test
+    fun `append merges adjacent startup healthy records`() = runTest {
+        val store = store()
+
+        store.append(
+            entry(
+                id = "service-before",
+                timestampMs = 1_000L,
+                reason = AccessibilityGuardCheckReason.ForegroundServiceStart,
+                status = AccessibilityGuardCheckStatus.Healthy,
+                checkCount = 4,
+                healthyCount = 4,
+            ),
+        )
+        store.append(
+            entry(
+                id = "boot",
+                timestampMs = 1_100L,
+                reason = AccessibilityGuardCheckReason.BootCompleted,
+                status = AccessibilityGuardCheckStatus.Healthy,
+                checkCount = 4,
+                healthyCount = 4,
+            ),
+        )
+        store.append(
+            entry(
+                id = "service-after",
+                timestampMs = 1_800L,
+                reason = AccessibilityGuardCheckReason.ForegroundServiceStart,
+                status = AccessibilityGuardCheckStatus.Healthy,
+                checkCount = 4,
+                healthyCount = 4,
+            ),
+        )
+
+        val latest = store.latest(10)
+        assertEquals(1, latest.size)
+        assertEquals("service-after", latest.single().id)
+    }
+
+    @Test
+    fun `append keeps manual and warning records near startup checks`() = runTest {
+        val store = store()
+
+        store.append(
+            entry(
+                id = "startup",
+                timestampMs = 1_000L,
+                reason = AccessibilityGuardCheckReason.ForegroundServiceStart,
+                status = AccessibilityGuardCheckStatus.Healthy,
+                checkCount = 4,
+                healthyCount = 4,
+            ),
+        )
+        store.append(
+            entry(
+                id = "manual",
+                timestampMs = 1_200L,
+                reason = AccessibilityGuardCheckReason.Manual,
+                status = AccessibilityGuardCheckStatus.Healthy,
+                checkCount = 4,
+                healthyCount = 4,
+            ),
+        )
+        store.append(
+            entry(
+                id = "missing-privilege",
+                timestampMs = 1_400L,
+                reason = AccessibilityGuardCheckReason.ForegroundServiceStart,
+                status = AccessibilityGuardCheckStatus.MissingPrivilege,
+                checkCount = 4,
+                healthyCount = 0,
+                warningCount = 4,
+                failureReason = "permission denied",
+            ),
+        )
+
+        assertEquals(
+            listOf("missing-privilege", "manual", "startup"),
+            store.latest(10).map { it.id },
+        )
+    }
+
+    @Test
     fun `encode and decode keeps self check fields`() {
         val encoded =
             AccessibilityGuardHistoryStore.encodeEntry(
@@ -205,6 +288,7 @@ class AccessibilityGuardHistoryStoreTest {
     private fun entry(
         id: String = "entry",
         timestampMs: Long = 1L,
+        reason: AccessibilityGuardCheckReason = AccessibilityGuardCheckReason.Manual,
         status: AccessibilityGuardCheckStatus = AccessibilityGuardCheckStatus.Checked,
         triggerAction: String = "manual_check",
         checkCount: Int = 1,
@@ -215,7 +299,7 @@ class AccessibilityGuardHistoryStoreTest {
         AccessibilityGuardHistoryEntry(
             id = id,
             timestampMs = timestampMs,
-            reason = AccessibilityGuardCheckReason.Manual,
+            reason = reason,
             status = status,
             triggerAction = triggerAction,
             checkCount = checkCount,

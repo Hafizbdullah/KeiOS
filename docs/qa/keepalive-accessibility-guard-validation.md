@@ -108,7 +108,7 @@ notification title=KeiOS 自保服务 channel=accessibility_guard_service_channe
 
 本轮发现并修复 `stop-app` 后用户重新打开应用时前台自保服务未恢复的问题。修复点位于 `MainActivity` 冷启动阶段：读取持久化自保设置，`daemonEnabled=true` 时重新启动 `AccessibilityGuardForegroundService`。该恢复动作只随用户打开主界面触发，避免后台广播冷启动时额外启动前台服务。
 
-`force-stop` 后用户重新打开应用时，系统会补发一次启动相关 receiver 记录，历史中可能短时间出现 `BootCompleted` 与 `ForegroundServiceStart` 两条 Healthy 记录。该现象不影响服务恢复，后续可按历史噪声做轻量去重。
+收尾补充：历史存储层会合并 3 秒内相邻的启动恢复类 `Healthy` 记录，覆盖 `BootCompleted` / `PackageReplaced` / `ForegroundServiceStart` 这类同一轮启动恢复噪声。手动检查、亮屏检查、权限缺失、超时、失败记录会完整保留。
 
 截图证据：
 
@@ -116,6 +116,10 @@ notification title=KeiOS 自保服务 channel=accessibility_guard_service_channe
 - `build/qa/keepalive-kill/emulator-5556-stop-app-after-fix.png`
 - `build/qa/keepalive-kill/emulator-5554-force-stop-after-fix.png`
 - `build/qa/keepalive-kill/emulator-5556-force-stop-after-fix.png`
+- `build/qa/keepalive-kill/emulator-5554-startup-dedup-stop-app.png`
+- `build/qa/keepalive-kill/emulator-5556-startup-dedup-stop-app.png`
+- `build/qa/keepalive-kill/emulator-5554-startup-dedup-force-stop.png`
+- `build/qa/keepalive-kill/emulator-5556-startup-dedup-force-stop.png`
 
 应验证 UI：
 
