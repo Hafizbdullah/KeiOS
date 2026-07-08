@@ -111,7 +111,7 @@ val extras = MiFocusNotificationTemplate.build(
 
 ## R8
 
-`app/proguard-rules.pro` 已保留：
+`core-notification` consumer rules 已保留：
 
 - `com.xzakota.hyper.notification.**$$serializer`
 - focus-api 模板字段

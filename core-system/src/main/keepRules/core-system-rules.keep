@@ -1,0 +1,20 @@
+# ---------- KeiOS core system R8 rules ----------
+# Shizuku and HiddenApiBypass are used through binder wrappers and small reflective
+# surfaces for shell execution, diagnostics, Xiaomi Magic, and package-manager routes.
+-dontwarn dalvik.system.VMRuntime
+-keep class org.lsposed.hiddenapibypass.LSPass { *; }
+-keep class org.lsposed.hiddenapibypass.Helper { *; }
+-keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
+-keepnames class org.lsposed.hiddenapibypass.CoreOjClassLoader
+-keep class rikka.shizuku.ShizukuBinderWrapper {
+    public <init>(android.os.IBinder);
+    public android.os.IInterface queryLocalInterface(java.lang.String);
+}
+-keepclassmembers class rikka.shizuku.Shizuku {
+    public static *** getUid(...);
+    public static *** getVersion(...);
+    public static *** getServerPatchVersion(...);
+    public static *** getSELinuxContext(...);
+    public static *** getLatestServiceVersion(...);
+    private static *** newProcess(java.lang.String[],java.lang.String[],java.lang.String);
+}

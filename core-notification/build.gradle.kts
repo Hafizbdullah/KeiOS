@@ -8,6 +8,7 @@ android {
 
     defaultConfig {
         minSdk = 35
+        consumerProguardFiles("src/main/keepRules/core-notification-rules.keep")
     }
 
     compileOptions {

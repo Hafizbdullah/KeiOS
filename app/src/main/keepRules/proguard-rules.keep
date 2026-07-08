@@ -58,74 +58,13 @@
     public static *** serializer(...);
 }
 
-# ShizukuApiUtils reflects these no-arg static method names.
-# Keep only the reflective surface so the rest can still be optimized/shrunk.
--dontwarn dalvik.system.VMRuntime
--keep class org.lsposed.hiddenapibypass.LSPass { *; }
--keep class org.lsposed.hiddenapibypass.Helper { *; }
--keepclassmembers class org.lsposed.hiddenapibypass.Helper$* { *; }
--keepnames class org.lsposed.hiddenapibypass.CoreOjClassLoader
--keep class rikka.shizuku.ShizukuBinderWrapper {
-    public <init>(android.os.IBinder);
-    public android.os.IInterface queryLocalInterface(java.lang.String);
-}
--keepclassmembers class rikka.shizuku.Shizuku {
-    public static *** getUid(...);
-    public static *** getVersion(...);
-    public static *** getServerPatchVersion(...);
-    public static *** getSELinuxContext(...);
-    public static *** getLatestServiceVersion(...);
-    private static *** newProcess(java.lang.String[],java.lang.String[],java.lang.String);
-}
-
 # Keep annotation/signature metadata used by Kotlin + library runtime features.
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 
-# focus-api ships without consumer rules. Keep only the payload contract that HyperOS reads:
-# 1) kotlinx.serialization entry points for miui.focus.param JSON
-# 2) sealed factory names because their fully qualified subclass names become the JSON "type"
-# 3) template/model fields used by declaredFields copy helpers and serializer-generated JSON
-# This keeps the Bundle/JSON schema stable while letting R8 shrink and optimize unused helpers.
--keepnames class com.xzakota.hyper.notification.focus.FocusNotification
--keepnames class com.xzakota.hyper.notification.focus.FocusNotification$FocusTemplateFactory
--keepnames class com.xzakota.hyper.notification.focus.FocusNotification$FocusTemplateFactory$*
--keep,allowoptimization class com.xzakota.hyper.notification.**$$serializer { *; }
--keepclassmembers class com.xzakota.hyper.notification.** {
-    public static ** Companion;
-    public static ** INSTANCE;
-    public static *** serializer(...);
-}
--keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.BaseFocusTemplate {
-    <fields>;
-}
--keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.FocusTemplate {
-    <fields>;
-}
--keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.FocusTemplateV3 {
-    <fields>;
-}
--keepclassmembers,allowoptimization,allowobfuscation class com.xzakota.hyper.notification.focus.template.CustomFocusTemplateV3 {
-    <fields>;
-}
--keepclassmembers,allowoptimization class com.xzakota.hyper.notification.focus.model.** {
-    <fields>;
-}
--keepclassmembers,allowoptimization class com.xzakota.hyper.notification.island.model.** {
-    <fields>;
-}
--keepclassmembers,allowoptimization class com.xzakota.hyper.notification.island.template.** {
-    <fields>;
-}
--keepclassmembers,allowoptimization class com.xzakota.hyper.notification.common.model.** {
-    <fields>;
-}
-
-# Keep the project Super Island facade readable for release-only payload debugging.
-# Specs are internal Kotlin data/sealed types, but stable names make mapping and focus payload
-# diagnosis much faster when adding future templates. Members stay optimizable because HyperOS
-# consumes the serialized focus-api payload, not these facade classes directly.
--keepnames class os.kei.core.notification.focus.**
--keepnames class os.kei.core.notification.live.builder.MiIslandNotificationBuilder
+# Module-specific rules:
+# - core-notification exports focus-api and Super Island facade consumer rules.
+# - core-system exports Shizuku and HiddenApiBypass consumer rules.
+# - feature-github keeps its managed-install Shizuku bridge surface.
 
 # Drop direct release Log calls to reduce overhead and method count.
 # AppLogger warning/error paths are kept visible for benchmark/release install diagnostics.
