@@ -54,6 +54,46 @@ AVD 覆盖 Android 16 / API 36 与 Android 17 / API 37。本轮验收重点为�
 | `emulator-5554` | 16 | 36 | 通过：保活页可进入，自保策略渲染正常，手动检查后历史更新为 `已检查` | `build/qa/keepalive-self/api36-settings-keepalive.png`, `build/qa/keepalive-self/api36-settings-keepalive-history-after-check.png` |
 | `emulator-5556` | 17 | 37 | 通过：保活页可进入，自保策略渲染正常，手动检查后历史更新为 `已检查` | `build/qa/keepalive-self/api37-settings-keepalive.png`, `build/qa/keepalive-self/api37-settings-keepalive-history-after-check.png` |
 
+## Fork Shizuku 验收记录
+
+验证时间：2026-07-09 00:07 +0800
+
+Android 17 需要第三方 Shizuku fork 时，Manager 包名可能与官方包名不同。本项目 Shizuku 验收基准固定为应用侧运行证据：
+
+- `rikka.shizuku.Shizuku` binder 存活。
+- `moe.shizuku.manager.permission.API_V23` 已授权给 KeiOS。
+- Shizuku 服务 UID 为 `2000`，命令身份为 `shell`。
+- 通过 Shizuku 执行 `id`、`whoami`、`getenforce`。
+- 自保链路通过 `settings get secure enabled_accessibility_services` 读取安全设置。
+- 自保历史写入 `Healthy`，`shizukuStatus=ready`。
+
+本轮确认自保链路以应用侧 Shizuku binder、授权状态和命令执行能力作为判断依据。包名扫描只适合作为辅助调试信息，实际通过应用侧 binder 和命令执行能力判断。
+
+| 设备 | Android | SDK | Shizuku 证据 | 自保证据 | 截图 |
+| --- | --- | --- | --- | --- | --- |
+| `emulator-5554` | 16 | 36 | `Binder Alive=true`，`Permission Granted=true`，`Command Identity=shell`，`Service UID=2000`，`SELinux Context=u:r:shell:s0` | `ScreenOn` 追加 `Healthy`，`checkCount=4`，`healthyCount=4`，`warningCount=0` | `build/qa/keepalive-self/api36-shizuku-keepalive-final.png` |
+| `emulator-5556` | 17 | 37 | `Binder Alive=true`，`Permission Granted=true`，`Command Identity=shell`，`Service UID=2000`，`SELinux Context=u:r:shell:s0` | `ScreenOn` 追加 `Healthy`，`checkCount=4`，`healthyCount=4`，`warningCount=0` | `build/qa/keepalive-self/api37-shizuku-keepalive-final.png` |
+
+运行证据：
+
+```text
+API 36:
+PASS Shizuku init: Shizuku Binder Alive=true | Shizuku Permission Granted=true | Shizuku Activated=true | Shizuku Command Identity=shell | Shizuku Service UID=2000 | Shizuku Service Version=13 | Shizuku Server Patch Version=6 | Shizuku SELinux Context=u:r:shell:s0 | Shizuku whoami=shell | Shizuku getenforce=Enforcing
+history: reason=ScreenOn status=Healthy triggerAction=android.intent.action.SCREEN_ON checkCount=4 healthyCount=4 warningCount=0 shizukuStatus=ready
+
+API 37:
+PASS Shizuku init: Shizuku Binder Alive=true | Shizuku Permission Granted=true | Shizuku Activated=true | Shizuku Command Identity=shell | Shizuku Service UID=2000 | Shizuku Service Version=13 | Shizuku Server Patch Version=6 | Shizuku SELinux Context=u:r:shell:s0 | Shizuku whoami=shell | Shizuku getenforce=Enforcing
+history: reason=ScreenOn status=Healthy triggerAction=android.intent.action.SCREEN_ON checkCount=4 healthyCount=4 warningCount=0 shizukuStatus=ready
+```
+
+前台服务证据：
+
+```text
+API 36: AccessibilityGuardForegroundService isForeground=true foregroundId=39887 types=0x40000000
+API 37: AccessibilityGuardForegroundService isForeground=true foregroundId=39887 types=0x40000000
+notification title=KeiOS 自保服务 channel=accessibility_guard_service_channel_v1 channelName=自保服务
+```
+
 应验证 UI：
 
 - 保活底栏可进入。
