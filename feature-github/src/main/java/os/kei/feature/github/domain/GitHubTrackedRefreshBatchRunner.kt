@@ -201,62 +201,68 @@ object GitHubTrackedRefreshBatchRunner {
             onProgress(progress)
             return progress
         }
-        coroutineScope {
-            List(concurrency) {
-                async(dispatcher) {
-                    while (true) {
-                        if (isBatchDeadlineReached(batchDeadlineNs)) {
-                            batchTimedOut.set(true)
-                            break
-                        }
-                        val index = nextIndex.getAndIncrement()
-                        if (index >= workItems.size) break
-                        ensureActive()
-                        val workItem = workItems[index]
-                        val item = workItem.item
-                        val itemStartNs = System.nanoTime()
-                        val check =
-                            evaluateWithRetry(
-                                item = item,
-                                timeoutMs = itemTimeoutMs(item),
-                                retryPolicy = retryPolicy,
-                            ) {
-                                runCatching {
-                                    evaluateWithTimeout(
+        val workersCompleted =
+            runGitHubRefreshWorkersWithBatchTimeout(batchTimeoutMs) {
+                coroutineScope {
+                    List(concurrency) {
+                        async(dispatcher) {
+                            while (true) {
+                                if (isBatchDeadlineReached(batchDeadlineNs)) {
+                                    batchTimedOut.set(true)
+                                    break
+                                }
+                                val index = nextIndex.getAndIncrement()
+                                if (index >= workItems.size) break
+                                ensureActive()
+                                val workItem = workItems[index]
+                                val item = workItem.item
+                                val itemStartNs = System.nanoTime()
+                                val check =
+                                    evaluateWithRetry(
                                         item = item,
                                         timeoutMs = itemTimeoutMs(item),
+                                        retryPolicy = retryPolicy,
                                     ) {
-                                        when {
-                                            item.isDirectApkTrack() -> {
-                                                directApkPermits.withPermit { evaluator(item) }
-                                            }
+                                        runCatching {
+                                            evaluateWithTimeout(
+                                                item = item,
+                                                timeoutMs = itemTimeoutMs(item),
+                                            ) {
+                                                when {
+                                                    item.isDirectApkTrack() -> {
+                                                        directApkPermits.withPermit { evaluator(item) }
+                                                    }
 
-                                            item.isFdroidRepositoryTrack() -> {
-                                                fdroidPermits.withPermit { evaluator(item) }
-                                            }
+                                                    item.isFdroidRepositoryTrack() -> {
+                                                        fdroidPermits.withPermit { evaluator(item) }
+                                                    }
 
-                                            else -> {
-                                                evaluator(item)
+                                                    else -> {
+                                                        evaluator(item)
+                                                    }
+                                                }
                                             }
+                                        }.getOrElse { error ->
+                                            if (error is CancellationException) throw error
+                                            failedCheck(error)
                                         }
                                     }
-                                }.getOrElse { error ->
-                                    if (error is CancellationException) throw error
-                                    failedCheck(error)
-                                }
+                                val itemElapsedMs = elapsedMsSince(itemStartNs)
+                                val result = GitHubTrackedRefreshItemResult(
+                                    item = item,
+                                    check = check,
+                                    elapsedMs = itemElapsedMs
+                                )
+                                results[workItem.originalIndex] = result
+                                publishResult(result)
+                                yield()
                             }
-                        val itemElapsedMs = elapsedMsSince(itemStartNs)
-                        val result = GitHubTrackedRefreshItemResult(
-                            item = item,
-                            check = check,
-                            elapsedMs = itemElapsedMs
-                        )
-                        results[workItem.originalIndex] = result
-                        publishResult(result)
-                        yield()
-                    }
+                        }
+                    }.awaitAll()
                 }
-            }.awaitAll()
+            }
+        if (!workersCompleted) {
+            batchTimedOut.set(true)
         }
         results.forEachIndexed { index, result ->
             if (result == null) {

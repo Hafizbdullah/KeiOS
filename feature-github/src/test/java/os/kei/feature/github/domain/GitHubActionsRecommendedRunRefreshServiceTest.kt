@@ -172,9 +172,9 @@ class GitHubActionsRecommendedRunRefreshServiceTest {
 
         assertEquals(listOf(items[0].id), source.fetchRequests.map { request -> request.trackId })
         assertEquals(3, result.checkedCount)
-        assertEquals(1, result.succeededCount)
-        assertEquals(2, result.failedCount)
-        assertTrue(result.outcomes.drop(1).all { outcome ->
+        assertEquals(0, result.succeededCount)
+        assertEquals(3, result.failedCount)
+        assertTrue(result.outcomes.all { outcome ->
             outcome.errorMessage.contains("batch timed out")
         })
         assertEquals(snapshot(items[1], runId = 20L), result.outcomes[1].previous)

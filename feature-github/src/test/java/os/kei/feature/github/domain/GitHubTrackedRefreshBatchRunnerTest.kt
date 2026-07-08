@@ -185,7 +185,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
-    fun `run stops starting new items after batch timeout and returns failed skipped items`() = runBlocking {
+    fun `run stops batch after timeout and returns failed unresolved items`() = runBlocking {
         val items = (1..5).map { index -> tracked(index) }
         val started = Collections.synchronizedList(mutableListOf<String>())
         val itemResults = Collections.synchronizedList(mutableListOf<String>())
@@ -212,10 +212,10 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(listOf("repo-1"), started.toList())
         assertEquals(items.size, result.totalCount)
         assertEquals(items.size, result.cacheEntries.size)
-        assertEquals(4, result.failedCount)
+        assertEquals(5, result.failedCount)
         assertEquals(listOf("repo-1", "repo-2", "repo-3", "repo-4", "repo-5"), itemResults.toList())
         assertEquals(listOf(1, 2, 3, 4, 5), progressEvents.map { progress -> progress.current })
-        assertEquals(4, progressEvents.last().failedCount)
+        assertEquals(5, progressEvents.last().failedCount)
         assertTrue(result.failures.all { failure -> failure.message.contains("Batch timed out") })
     }
 

@@ -114,28 +114,34 @@ class GitHubActionsRecommendedRunRefreshService(
         val deadlineNs = batchDeadlineNs(batchStartNs, batchTimeoutMs)
         val batchTimedOut = AtomicBoolean(false)
         val results = arrayOfNulls<GitHubActionsRecommendedRunRefreshOutcome>(targets.size)
-        coroutineScope {
-            List(concurrency) {
-                async(networkDispatcher) {
-                    while (true) {
-                        if (isBatchDeadlineReached(deadlineNs)) {
-                            batchTimedOut.set(true)
-                            break
+        val workersCompleted =
+            runGitHubRefreshWorkersWithBatchTimeout(batchTimeoutMs) {
+                coroutineScope {
+                    List(concurrency) {
+                        async(networkDispatcher) {
+                            while (true) {
+                                if (isBatchDeadlineReached(deadlineNs)) {
+                                    batchTimedOut.set(true)
+                                    break
+                                }
+                                val index = nextIndex.getAndIncrement()
+                                if (index >= targets.size) break
+                                coroutineContext.ensureActive()
+                                val item = targets[index]
+                                results[index] = refreshItemWithTimeout(
+                                    item = item,
+                                    lookupConfig = lookupConfig,
+                                    nowMs = nowMs,
+                                    timeoutMs = itemTimeoutMs,
+                                )
+                                yield()
+                            }
                         }
-                        val index = nextIndex.getAndIncrement()
-                        if (index >= targets.size) break
-                        coroutineContext.ensureActive()
-                        val item = targets[index]
-                        results[index] = refreshItemWithTimeout(
-                            item = item,
-                            lookupConfig = lookupConfig,
-                            nowMs = nowMs,
-                            timeoutMs = itemTimeoutMs,
-                        )
-                        yield()
-                    }
+                    }.awaitAll()
                 }
-            }.awaitAll()
+            }
+        if (!workersCompleted) {
+            batchTimedOut.set(true)
         }
         results.forEachIndexed { index, outcome ->
             if (outcome == null) {
