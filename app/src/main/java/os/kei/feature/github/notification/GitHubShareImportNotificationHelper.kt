@@ -6,8 +6,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.text.format.Formatter
 import os.kei.R
-import os.kei.core.prefs.UiPrefs
-import os.kei.feature.github.data.local.AppIconCache
+import os.kei.core.log.AppLogger
+import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.core.notification.live.NotificationHelper
 import os.kei.core.notification.live.builder.EnvironmentContext
 import os.kei.core.notification.live.builder.LegacyNotificationBuilder
@@ -16,10 +16,12 @@ import os.kei.core.notification.live.builder.ModernNotificationBuilder
 import os.kei.core.notification.live.builder.NotificationPayload
 import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.notification.live.builder.UserSettings
+import os.kei.core.prefs.UiPrefs
+import os.kei.feature.github.data.local.AppIconCache
 import os.kei.mcp.notification.McpNotificationHelper
-import os.kei.core.notification.live.LiveNotificationPayload
 
 object GitHubShareImportNotificationHelper {
+    private const val TAG = "GitHubShareImportNotify"
     const val NOTIFICATION_ID = 38991
 
     fun notifyResolving(context: Context, sourceLabel: String) {
@@ -475,11 +477,17 @@ object GitHubShareImportNotificationHelper {
     ): ShareImportNotificationBuildResult {
         val helper = NotificationHelper(context)
         val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
-        val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
+        val bypassRestriction = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+        val decision = helper.resolveRenderDecision(
+            preferSuperIsland = preferSuperIsland,
+            bypassRestriction = bypassRestriction,
+        )
+        val useMiIsland = decision.style == NotificationRenderStyle.MI_ISLAND
+        AppLogger.i(TAG, "buildNotification ${decision.logSummary()}")
         return if (useMiIsland) {
             ShareImportNotificationBuildResult(
                 notification = buildFrameworkMiIslandNotification(context, state),
-                useXiaomiMagic = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+                useXiaomiMagic = decision.useXiaomiMagic
             )
         } else {
             ShareImportNotificationBuildResult(

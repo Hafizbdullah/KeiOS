@@ -26,11 +26,14 @@ class SessionNotifierImpl(
     override fun build(payload: LiveNotificationPayload): SessionNotifier.NotificationBuildResult {
         val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
         val bypassRestriction = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
-        val style = resolveStyle(preferSuperIsland = preferSuperIsland)
+        val decision = helper.resolveRenderDecision(
+            preferSuperIsland = preferSuperIsland,
+            bypassRestriction = bypassRestriction,
+        )
+        val style = decision.style
         AppLogger.i(
             TAG,
-            "build preferSuperIsland=$preferSuperIsland supportMiIsland=${helper.isSupportMiIsland} " +
-                "focusPermission=${helper.hasMiIslandPermission} style=$style bypass=$bypassRestriction"
+            "build ${decision.logSummary()}"
         )
         val wrapped = NotificationPayload(
             state = payload,
@@ -51,14 +54,7 @@ class SessionNotifierImpl(
         return SessionNotifier.NotificationBuildResult(
             notification = notification,
             style = style,
-            useXiaomiMagic = style == NotificationRenderStyle.MI_ISLAND && bypassRestriction
+            useXiaomiMagic = decision.useXiaomiMagic
         )
-    }
-
-    private fun resolveStyle(preferSuperIsland: Boolean): NotificationRenderStyle {
-        if (preferSuperIsland && helper.isSupportMiIsland) {
-            return NotificationRenderStyle.MI_ISLAND
-        }
-        return NotificationRenderStyle.LIVE_UPDATE
     }
 }

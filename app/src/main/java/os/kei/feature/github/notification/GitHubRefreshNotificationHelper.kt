@@ -27,11 +27,12 @@ import os.kei.core.notification.focus.MiFocusNotificationTemplate
 import os.kei.core.notification.focus.MiFocusPictureRef
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
+import os.kei.core.notification.live.NotificationHelper
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.notification.MiFocusNotificationActions
-import os.kei.core.notification.live.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 import kotlin.math.roundToInt
 
@@ -548,15 +549,19 @@ object GitHubRefreshNotificationHelper {
     ): NotificationBuildResult {
         val helper = NotificationHelper(context)
         val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
-        val style = if (preferSuperIsland && helper.isSupportMiIsland) {
+        val bypassRestriction = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+        val decision = helper.resolveRenderDecision(
+            preferSuperIsland = preferSuperIsland,
+            bypassRestriction = bypassRestriction,
+        )
+        val style = if (decision.style == NotificationRenderStyle.MI_ISLAND) {
             RenderStyle.MI_ISLAND
         } else {
             RenderStyle.LIVE_UPDATE
         }
         AppLogger.i(
             TAG,
-            "buildNotification preferSuperIsland=$preferSuperIsland supportMiIsland=${helper.isSupportMiIsland} " +
-                "focusPermission=${helper.hasMiIslandPermission} style=$style"
+            "buildNotification ${decision.logSummary()}"
         )
         val notification = when (style) {
             RenderStyle.MI_ISLAND -> buildMiIslandNotification(context, state, onlyAlertOnce)
@@ -571,8 +576,7 @@ object GitHubRefreshNotificationHelper {
         return NotificationBuildResult(
             notification = notification,
             style = style,
-            useXiaomiMagic = style == RenderStyle.MI_ISLAND &&
-                UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+            useXiaomiMagic = decision.useXiaomiMagic
         )
     }
 

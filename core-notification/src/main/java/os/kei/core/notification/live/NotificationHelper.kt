@@ -3,9 +3,9 @@ package os.kei.core.notification.live
 import android.content.Context
 import android.os.Build
 import com.xzakota.hyper.notification.focus.util.FocusUtils
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.system.findPropString
-import os.kei.core.notification.live.builder.NotificationRenderStyle
 import java.util.Locale
 
 class NotificationHelper(
@@ -20,17 +20,35 @@ class NotificationHelper(
         isHyperOS || isColorOsFamily()
     }
 
-    val isSupportMiIsland: Boolean by lazy {
+    val miIslandFocusProtocolVersion: Int by lazy {
         runCatching {
-            FocusUtils.getFocusProtocolVersion(context) == 3
+            FocusUtils.getFocusProtocolVersion(context)
+        }.getOrDefault(0)
+    }
+
+    val isSupportMiIslandFeature: Boolean by lazy {
+        runCatching {
+            FocusUtils.isSupportIsland()
         }.getOrDefault(false)
     }
+
+    val isSupportMiIsland: Boolean
+        get() = miIslandCapability.canBuildMiIslandTemplate &&
+            miIslandCapability.hasRuntimeIslandSignal
 
     val hasMiIslandPermission: Boolean by lazy {
         runCatching {
             FocusUtils.hasFocusPermission(context)
         }.getOrDefault(false)
     }
+
+    val miIslandCapability: MiIslandCapability
+        get() = MiIslandCapability(
+            isHyperOS = isHyperOS,
+            focusProtocolVersion = miIslandFocusProtocolVersion,
+            supportsIslandFeature = isSupportMiIslandFeature,
+            hasFocusPermission = hasMiIslandPermission,
+        )
 
     val isMiIslandAvailable: Boolean
         get() = isHyperOS && isSupportMiIsland && hasMiIslandPermission
@@ -45,6 +63,16 @@ class NotificationHelper(
             NotificationRenderStyle.LEGACY -> channels.legacyChannelId
         }
     }
+
+    fun resolveRenderDecision(
+        preferSuperIsland: Boolean,
+        bypassRestriction: Boolean,
+    ): MiIslandRenderDecision =
+        MiIslandRenderPolicy.resolve(
+            preferSuperIsland = preferSuperIsland,
+            bypassRestriction = bypassRestriction,
+            capability = miIslandCapability,
+        )
 
     private fun isColorOsFamily(): Boolean {
         val buildFields = listOf(

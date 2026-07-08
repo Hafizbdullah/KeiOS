@@ -12,6 +12,9 @@ import androidx.core.graphics.toColorInt
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.log.AppLogger
+import os.kei.core.notification.live.NotificationHelper
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.notification.focus.MiFocusExpandedComponent
 import os.kei.core.notification.focus.MiFocusExpandedSpec
 import os.kei.core.notification.focus.MiFocusExpandedText
@@ -26,10 +29,10 @@ import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.notification.MiFocusNotificationActions
-import os.kei.core.notification.live.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 
 object GitHubActionsUpdateNotificationHelper {
+    private const val TAG = "GitHubActionsNotify"
     const val NOTIFICATION_ID = 38991
     private const val NOTIFICATION_ID_BASE = 389_910_000
     private const val NOTIFICATION_ID_RANGE = 1_000_000
@@ -76,7 +79,13 @@ object GitHubActionsUpdateNotificationHelper {
     ): NotificationBuildResult {
         val helper = NotificationHelper(context)
         val preferSuperIsland = UiPrefs.isSuperIslandNotificationEnabled(defaultValue = false)
-        val useMiIsland = preferSuperIsland && helper.isSupportMiIsland
+        val bypassRestriction = UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false)
+        val decision = helper.resolveRenderDecision(
+            preferSuperIsland = preferSuperIsland,
+            bypassRestriction = bypassRestriction,
+        )
+        val useMiIsland = decision.style == NotificationRenderStyle.MI_ISLAND
+        AppLogger.i(TAG, "buildNotification ${decision.logSummary()}")
         val notification =
             if (useMiIsland) {
                 buildMiIslandNotification(context, snapshot, onlyAlertOnce, notificationId)
@@ -85,9 +94,7 @@ object GitHubActionsUpdateNotificationHelper {
             }
         return NotificationBuildResult(
             notification = notification,
-            useXiaomiMagic =
-                useMiIsland &&
-                    UiPrefs.isSuperIslandBypassRestrictionEnabled(defaultValue = false),
+            useXiaomiMagic = decision.useXiaomiMagic,
         )
     }
 
