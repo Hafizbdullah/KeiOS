@@ -70,6 +70,7 @@ data class AccessibilityGuardHistoryEntry(
     val timestampMs: Long,
     val reason: AccessibilityGuardRestoreReason,
     val status: AccessibilityGuardRestoreStatus,
+    val triggerAction: String = "",
     val selectedCount: Int,
     val restoredCount: Int,
     val skippedCount: Int,
@@ -77,7 +78,9 @@ data class AccessibilityGuardHistoryEntry(
     val shizukuStatus: String,
     val failureReason: String,
     val serviceIds: List<AccessibilityServiceId>,
-)
+) {
+    companion object
+}
 
 fun parseAccessibilityServiceIds(raw: String): Set<AccessibilityServiceId> {
     if (raw.isBlank()) return emptySet()

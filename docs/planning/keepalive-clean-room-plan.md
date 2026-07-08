@@ -265,13 +265,13 @@ Reference files used for analysis:
   - `suspend fun latest(limit: Int): List<AccessibilityGuardHistoryEntry>`
   - `suspend fun exportToUri(context, uri): ExportJobResult`
 
-- [ ] Store history as bounded JSONL in `filesDir/keepalive/accessibility-guard-history.jsonl`.
-- [ ] Cap history at 500 entries and 1 MiB.
-- [ ] Include timestamp, reason, trigger action, selected count, restored count, skipped count, duration, Shizuku state, failure reason, and service IDs.
-- [ ] Add export through Settings data/log export conventions.
-- [ ] Keep history out of WebDAV sync.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest :app:testDebugUnitTest`.
-- [ ] Commit with `feat: add accessibility guard history`.
+- [x] Store history as bounded JSONL in `filesDir/keepalive/accessibility-guard-history.jsonl`.
+- [x] Cap history at 500 entries and 1 MiB.
+- [x] Include timestamp, reason, trigger action, selected count, restored count, skipped count, duration, Shizuku state, failure reason, and service IDs.
+- [x] Add export through Settings data/log export conventions.
+- [x] Keep history out of WebDAV sync.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest :app:testDebugUnitTest`.
+- [x] Commit with `feat: add accessibility guard history`.
 
 ## Task 6: Add Foreground Guard Service and Receivers
 

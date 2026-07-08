@@ -14,6 +14,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.export.ExportJobResult
 import os.kei.core.intent.UriGrantCompat
 import os.kei.core.log.AppLogStore
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardHistoryStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.cache.CacheStores
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
@@ -108,6 +109,42 @@ internal class SettingsPageRepository(
         withContext(defaultDispatcher) {
             val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
             "keios-logs-$stamp.zip"
+        }
+
+    suspend fun exportAccessibilityGuardHistory(
+        context: Context,
+        uri: Uri,
+    ): ExportJobResult =
+        withContext(ioDispatcher) {
+            val fileName =
+                uri.lastPathSegment
+                    ?.substringAfterLast('/')
+                    ?.trim()
+                    .orEmpty()
+                    .ifBlank { "keios-accessibility-guard-history.json" }
+            AccessibilityGuardHistoryStore
+                .forContext(context.applicationContext)
+                .exportToUri(context.applicationContext, uri)
+                .fold(
+                    onSuccess = { result ->
+                        ExportJobResult.success(
+                            fileName = fileName,
+                            attempted = result.exportedCount.coerceAtLeast(1),
+                        )
+                    },
+                    onFailure = { error ->
+                        ExportJobResult.failure(
+                            fileName = fileName,
+                            error = error,
+                        )
+                    },
+                )
+        }
+
+    suspend fun buildAccessibilityGuardHistoryExportFileName(): String =
+        withContext(defaultDispatcher) {
+            val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
+            "keios-accessibility-guard-history-$stamp.json"
         }
 
     suspend fun buildSearchTargets(context: Context): List<SettingsSearchTarget> {
