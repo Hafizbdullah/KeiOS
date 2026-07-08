@@ -9,10 +9,10 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.feature.notification.MiFocusNotificationActions
-import os.kei.mcp.framework.notification.NotificationHelper
-import os.kei.mcp.framework.notification.SessionNotifierImpl
+import os.kei.core.notification.live.NotificationHelper
+import os.kei.core.notification.live.SessionNotifierImpl
 import os.kei.mcp.notification.McpNotificationHelper
-import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
@@ -271,8 +271,8 @@ internal object BaCalendarPoolNotificationDispatcher {
         val acknowledgePendingIntent = acknowledgePendingIntent(context, notificationId)
         val ongoing = deadlineAtMs != null
         val payload =
-            McpNotificationPayload(
-                serverName = McpNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
+            LiveNotificationPayload(
+                serverName = LiveNotificationPayload.BA_CALENDAR_POOL_SERVER_NAME,
                 running = true,
                 port = progressPercent.coerceIn(0, 100),
                 path = content,

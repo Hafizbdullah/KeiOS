@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_acknowledge">Acknowledge</string>
+    <string name="common_mark_read">Mark read</string>
+    <string name="common_open">Open</string>
+    <string name="common_refresh">Refresh</string>
+    <string name="common_status_running">Running</string>
+
+    <string name="ba_arena_refresh_notification_content">Arena refresh is ready.</string>
+    <string name="ba_arena_refresh_notification_island_text">Arena</string>
+    <string name="ba_arena_refresh_notification_title">Arena Refresh</string>
+    <string name="ba_cafe_ap_notification_content">Current %1$d AP, threshold %2$s, cap %3$d</string>
+    <string name="ba_cafe_ap_notification_island_text">Cafe</string>
+    <string name="ba_cafe_ap_notification_title">Cafe AP</string>
+    <string name="ba_cafe_visit_notification_content">Cafe visit is ready.</string>
+    <string name="ba_cafe_visit_notification_island_text">Cafe</string>
+    <string name="ba_cafe_visit_notification_title">Cafe Visit</string>
+    <string name="ba_notification_ap_island_text">AP</string>
+
+    <string name="github_page_install_confirm_action_install">Install</string>
+    <string name="github_share_import_notify_action_confirm_track">Track</string>
+    <string name="github_share_import_notify_action_continue_install">Continue install</string>
+    <string name="github_share_import_notify_action_send_install">Send install</string>
+    <string name="github_share_import_pending_action_cancel">Cancel linkage</string>
+
+    <string name="mcp_action_toggle_service">Toggle service</string>
+    <string name="mcp_notification_content_ap">AP %1$d / %3$d\u0020\u0020\u0020Threshold %2$s</string>
+    <string name="mcp_notification_content_default">Port %1$d · Path %2$s · Online %3$d</string>
+    <string name="mcp_notification_content_tap_restart">Tap to return to the app and restart the service</string>
+    <string name="mcp_notification_service_not_running">Service is stopped</string>
+    <string name="mcp_notification_title_stopped">%1$s stopped</string>
+    <string name="mcp_online_text_ap_limit">Limit %1$d</string>
+    <string name="mcp_online_text_clients">Online %1$d</string>
+    <string name="mcp_status_running">Running</string>
+    <string name="mcp_status_stopped">Stopped</string>
+</resources>

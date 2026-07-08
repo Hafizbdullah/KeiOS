@@ -1,6 +1,6 @@
 package os.kei.mcp.notification
 
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 
 data class McpNotificationSnapshot(
     val serverName: String,

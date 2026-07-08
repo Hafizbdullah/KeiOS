@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_acknowledge">了解</string>
+    <string name="common_mark_read">既読にする</string>
+    <string name="common_open">開く</string>
+    <string name="common_refresh">更新</string>
+    <string name="common_status_running">実行中</string>
+
+    <string name="ba_arena_refresh_notification_content">戦術対抗戦がリセットされました。</string>
+    <string name="ba_arena_refresh_notification_island_text">対抗戦</string>
+    <string name="ba_arena_refresh_notification_title">対抗戦リセット</string>
+    <string name="ba_cafe_ap_notification_content">現在 %1$d AP、しきい値 %2$s、上限 %3$d</string>
+    <string name="ba_cafe_ap_notification_island_text">カフェ</string>
+    <string name="ba_cafe_ap_notification_title">カフェ AP</string>
+    <string name="ba_cafe_visit_notification_content">カフェ訪問が利用できます。</string>
+    <string name="ba_cafe_visit_notification_island_text">カフェ</string>
+    <string name="ba_cafe_visit_notification_title">カフェ訪問</string>
+    <string name="ba_notification_ap_island_text">AP</string>
+
+    <string name="github_page_install_confirm_action_install">インストール</string>
+    <string name="github_share_import_notify_action_confirm_track">追跡</string>
+    <string name="github_share_import_notify_action_continue_install">インストールを続行</string>
+    <string name="github_share_import_notify_action_send_install">インストールを送信</string>
+    <string name="github_share_import_pending_action_cancel">関連付けをキャンセル</string>
+
+    <string name="mcp_action_toggle_service">サービスを切り替え</string>
+    <string name="mcp_notification_content_ap">AP %1$d / %3$d   しきい値 %2$s</string>
+    <string name="mcp_notification_content_default">ポート %1$d · パス %2$s · オンライン %3$d</string>
+    <string name="mcp_notification_content_tap_restart">タップしてアプリへ戻り、サービスを再起動</string>
+    <string name="mcp_notification_service_not_running">サービスは停止中です</string>
+    <string name="mcp_notification_title_stopped">%1$s は停止中</string>
+    <string name="mcp_online_text_ap_limit">上限 %1$d</string>
+    <string name="mcp_online_text_clients">オンライン %1$d</string>
+    <string name="mcp_status_running">実行中</string>
+    <string name="mcp_status_stopped">停止中</string>
+</resources>

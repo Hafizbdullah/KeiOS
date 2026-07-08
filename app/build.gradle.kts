@@ -553,6 +553,7 @@ dependencies {
     implementation(project(":core-log"))
     implementation(project(":core-io"))
     implementation(project(":core-json"))
+    implementation(project(":core-notification"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
     implementation(project(":ui-pip"))
@@ -606,7 +607,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:$lifecycleViewModelComposeVersion")
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
-    implementation("com.xzakota.hyper.notification:focus-api:$focusApiVersion")
 
     // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")

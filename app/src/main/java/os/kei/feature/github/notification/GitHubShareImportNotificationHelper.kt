@@ -8,16 +8,16 @@ import android.text.format.Formatter
 import os.kei.R
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
-import os.kei.mcp.framework.notification.NotificationHelper
-import os.kei.mcp.framework.notification.builder.EnvironmentContext
-import os.kei.mcp.framework.notification.builder.LegacyNotificationBuilder
-import os.kei.mcp.framework.notification.builder.MiIslandNotificationBuilder
-import os.kei.mcp.framework.notification.builder.ModernNotificationBuilder
-import os.kei.mcp.framework.notification.builder.NotificationPayload
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
-import os.kei.mcp.framework.notification.builder.UserSettings
+import os.kei.core.notification.live.NotificationHelper
+import os.kei.core.notification.live.builder.EnvironmentContext
+import os.kei.core.notification.live.builder.LegacyNotificationBuilder
+import os.kei.core.notification.live.builder.MiIslandNotificationBuilder
+import os.kei.core.notification.live.builder.ModernNotificationBuilder
+import os.kei.core.notification.live.builder.NotificationPayload
+import os.kei.core.notification.live.builder.NotificationRenderStyle
+import os.kei.core.notification.live.builder.UserSettings
 import os.kei.mcp.notification.McpNotificationHelper
-import os.kei.mcp.notification.McpNotificationPayload
+import os.kei.core.notification.live.LiveNotificationPayload
 
 object GitHubShareImportNotificationHelper {
     const val NOTIFICATION_ID = 38991
@@ -492,7 +492,7 @@ object GitHubShareImportNotificationHelper {
     private fun buildPayload(
         context: Context,
         state: GitHubShareImportNotificationState
-    ): McpNotificationPayload {
+    ): LiveNotificationPayload {
         val liveUpdateActive = state.phase.ongoing || state.phase.promotedLiveUpdate
         val openPendingIntent = GitHubShareImportNotificationActions.buildOpenPendingIntent(
             context = context,
@@ -515,8 +515,8 @@ object GitHubShareImportNotificationHelper {
         val overrideProgressPercent = progressPercent.takeIf {
             state.phase.progressTemplateEnabled
         }
-        return McpNotificationPayload(
-            serverName = McpNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
+        return LiveNotificationPayload(
+            serverName = LiveNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
             port = progressPercent,
             path = content,

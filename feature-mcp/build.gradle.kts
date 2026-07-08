@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core-io"))
     implementation(project(":core-json"))
     implementation(project(":core-log"))
+    implementation(project(":core-notification"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
 
@@ -44,7 +45,6 @@ dependencies {
     implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
     implementation("io.ktor:ktor-server-cio")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
-    implementation("com.xzakota.hyper.notification:focus-api:1.4")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")

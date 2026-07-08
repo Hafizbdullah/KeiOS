@@ -1,0 +1,28 @@
+package os.kei.core.notification.live.builder
+
+import android.graphics.Bitmap
+import os.kei.core.notification.live.LiveNotificationPayload
+
+data class NotificationPayload(
+    val state: LiveNotificationPayload,
+    val settings: UserSettings,
+    val environment: EnvironmentContext,
+    val semanticIconBitmap: Bitmap? = null,
+    val miIslandProgressColorOverride: String? = null
+)
+
+data class UserSettings(
+    val miIslandOuterGlow: Boolean
+)
+
+data class EnvironmentContext(
+    val channelId: String,
+    val isHyperOS: Boolean,
+    val preferOemLiveIconLayout: Boolean = false
+)
+
+enum class NotificationRenderStyle {
+    MI_ISLAND,
+    LIVE_UPDATE,
+    LEGACY
+}

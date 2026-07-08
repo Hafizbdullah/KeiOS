@@ -5,7 +5,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.After
 import org.junit.Test
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 
 class McpNotificationSnapshotStoreTest {
     @After

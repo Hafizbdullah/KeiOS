@@ -13,9 +13,10 @@ import androidx.core.app.NotificationManagerCompat
 import os.kei.feature.mcp.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
-import os.kei.mcp.domain.notification.SessionNotifier
-import os.kei.mcp.framework.notification.NotificationHelper
-import os.kei.mcp.framework.notification.SessionNotifierImpl
+import os.kei.core.notification.live.SessionNotifier
+import os.kei.core.notification.live.NotificationHelper
+import os.kei.core.notification.live.LiveNotificationChannels
+import os.kei.core.notification.live.SessionNotifierImpl
 import os.kei.mcp.service.McpKeepAliveService
 
 object McpNotificationHelper {
@@ -253,7 +254,15 @@ object McpNotificationHelper {
             notificationId = notificationId,
             miFocusOrderId = resolvedMiFocusOrderId
         )
-        val notifier = SessionNotifierImpl(NotificationHelper(context))
+        val notifier = SessionNotifierImpl(
+            NotificationHelper(
+                context = context,
+                channels = LiveNotificationChannels(
+                    islandChannelId = CHANNEL_ID,
+                    liveUpdateChannelId = LIVE_CHANNEL_ID
+                )
+            )
+        )
         return notifier.build(payload)
     }
 

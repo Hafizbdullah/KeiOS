@@ -31,7 +31,7 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.notification.MiFocusNotificationActions
-import os.kei.mcp.framework.notification.NotificationHelper
+import os.kei.core.notification.live.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 import kotlin.math.roundToInt
 

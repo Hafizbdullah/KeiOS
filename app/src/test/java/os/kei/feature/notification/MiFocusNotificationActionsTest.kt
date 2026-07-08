@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import os.kei.mcp.framework.notification.builder.NotificationRenderStyle
+import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.mcp.notification.McpNotificationActiveStateCache
 import os.kei.mcp.notification.McpNotificationSnapshot
 import os.kei.mcp.notification.McpNotificationSnapshotStore

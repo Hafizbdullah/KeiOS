@@ -26,7 +26,7 @@ import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.notification.MiFocusNotificationActions
-import os.kei.mcp.framework.notification.NotificationHelper
+import os.kei.core.notification.live.NotificationHelper
 import os.kei.mcp.notification.McpNotificationHelper
 
 object GitHubActionsUpdateNotificationHelper {
