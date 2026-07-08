@@ -94,6 +94,29 @@ API 37: AccessibilityGuardForegroundService isForeground=true foregroundId=39887
 notification title=KeiOS 自保服务 channel=accessibility_guard_service_channel_v1 channelName=自保服务
 ```
 
+## 进程死亡与系统停止验收
+
+验证时间：2026-07-09 00:20 +0800
+
+| 场景 | API 36 / Android 16 | API 37 / Android 17 | 结论 |
+| --- | --- | --- | --- |
+| `am kill os.kei.debug` | PID `10993 -> 11529`，前台服务保持 `isForeground=true`，追加 `ForegroundServiceStart -> Healthy` | PID `11564 -> 12138`，前台服务保持 `isForeground=true`，追加 `ForegroundServiceStart -> Healthy` | 普通后台进程回收后可恢复 |
+| `run-as os.kei.debug kill -9 <pid>` | PID `11529 -> 11606`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | PID `12138 -> 12220`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | 进程硬杀后可恢复 |
+| `am crash os.kei.debug` | PID `11701 -> 11834`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | PID `12324 -> 12462`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | 应用崩溃后可恢复 |
+| `am force-stop os.kei.debug` | 进程消失，亮屏不追加历史；修复后用户重新打开，PID `12289`，前台服务恢复 | 进程消失，亮屏不追加历史；修复后用户重新打开，PID `12948`，前台服务恢复 | 系统停止态需要用户打开应用解除 |
+| `am stop-app os.kei.debug` | 修复后用户重新打开，PID `12195`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | 修复后用户重新打开，PID `12851`，前台服务恢复，追加 `ForegroundServiceStart -> Healthy` | 停止应用和服务后可通过用户启动恢复 |
+
+本轮发现并修复 `stop-app` 后用户重新打开应用时前台自保服务未恢复的问题。修复点位于 `MainActivity` 冷启动阶段：读取持久化自保设置，`daemonEnabled=true` 时重新启动 `AccessibilityGuardForegroundService`。该恢复动作只随用户打开主界面触发，避免后台广播冷启动时额外启动前台服务。
+
+`force-stop` 后用户重新打开应用时，系统会补发一次启动相关 receiver 记录，历史中可能短时间出现 `BootCompleted` 与 `ForegroundServiceStart` 两条 Healthy 记录。该现象不影响服务恢复，后续可按历史噪声做轻量去重。
+
+截图证据：
+
+- `build/qa/keepalive-kill/emulator-5554-stop-app-after-fix.png`
+- `build/qa/keepalive-kill/emulator-5556-stop-app-after-fix.png`
+- `build/qa/keepalive-kill/emulator-5554-force-stop-after-fix.png`
+- `build/qa/keepalive-kill/emulator-5556-force-stop-after-fix.png`
+
 应验证 UI：
 
 - 保活底栏可进入。
