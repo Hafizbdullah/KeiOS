@@ -239,17 +239,17 @@ Reference files used for analysis:
   - `suspend fun setGuarded(id, guarded): AccessibilityGuardSnapshot`
   - `suspend fun restoreMissing(reason): AccessibilityGuardRestoreResult`
 
-- [ ] Store selected targets and guard toggles in MMKV with stable keys.
-- [ ] Implement per-service cooldown: default 5 minutes after success, 30 minutes after repeated failure.
-- [ ] Implement restore decision:
+- [x] Store selected targets and guard toggles in MMKV with stable keys.
+- [x] Implement per-service cooldown: default 5 minutes after success, 30 minutes after repeated failure.
+- [x] Implement restore decision:
   - empty selected set returns `SkippedNoTargets`;
   - Shizuku unavailable returns `SkippedMissingPrivilege`;
   - all selected services already enabled returns `SkippedAlreadyEnabled`;
   - missing selected services triggers secure setting write.
-- [ ] Preserve unrelated currently enabled services when writing the merged enabled-service set.
-- [ ] Record the before and after service-id sets in result objects.
-- [ ] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
-- [ ] Commit with `feat: add accessibility guard coordinator`.
+- [x] Preserve unrelated currently enabled services when writing the merged enabled-service set.
+- [x] Record the before and after service-id sets in result objects.
+- [x] Run `./gradlew :feature-keepalive:testDebugUnitTest`.
+- [x] Commit with `feat: add accessibility guard coordinator`.
 
 ## Task 5: Add Guard History and Export
 
