@@ -16,13 +16,18 @@ internal fun SettingsAnimationSection(
     actions: SettingsAnimationSectionActions,
     enabledCardColor: Color,
     disabledCardColor: Color,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val presentation = deriveAnimationPresentation(state)
     SettingsGroupCard(
-        header = stringResource(R.string.settings_group_animation_header),
-        title = stringResource(R.string.settings_group_animation_title),
+        header = stringResource(R.string.settings_group_page_motion_header),
+        title = stringResource(R.string.settings_group_page_motion_title),
+        subtitle = stringResource(R.string.settings_group_page_motion_summary),
         sectionIcon = appLucideTimeIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_transition_animations_title),

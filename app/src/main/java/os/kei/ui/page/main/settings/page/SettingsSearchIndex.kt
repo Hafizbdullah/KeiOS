@@ -6,15 +6,23 @@ import java.util.Locale
 
 internal enum class SettingsSearchCard {
     Permissions,
-    Visual,
-    Animation,
-    ComponentEffects,
-    Background,
+    KeepAlive,
+    ThemeLanguage,
+    Performance,
+    HomeEffects,
+    PageMotion,
+    LiquidControls,
+    Interaction,
+    BackgroundAsset,
+    BackgroundLayout,
+    BackgroundRendering,
     Notify,
     Copy,
-    Cache,
-    Log,
     WebDavSync,
+    CacheDiagnostics,
+    CacheItems,
+    LogLevel,
+    LogFiles,
 }
 
 @Immutable
@@ -35,6 +43,7 @@ internal data class SettingsSearchTarget(
 internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<SettingsSearchTarget> {
     val accessCategoryLabel = resolveString(R.string.settings_category_access)
     val permissionsGroupLabel = resolveString(R.string.settings_group_permissions_title)
+    val keepAliveGroupLabel = resolveString(R.string.settings_group_keep_alive_title)
     val notificationPermissionLabel = resolveString(R.string.settings_notification_permission_title)
     val androidBackgroundLabel = resolveString(R.string.settings_android_background_title)
     val backgroundRecoveryLabel = resolveString(R.string.settings_background_recovery_title)
@@ -46,8 +55,13 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val appStandbyRareLabel = resolveString(R.string.settings_app_standby_bucket_rare)
     val appStandbyRestrictedLabel = resolveString(R.string.settings_app_standby_bucket_restricted)
 
-    val appearanceCategoryLabel = resolveString(R.string.settings_category_appearance)
-    val visualGroupLabel = resolveString(R.string.settings_group_visual_title)
+    val keepAliveCategoryLabel = resolveString(R.string.settings_category_keep_alive)
+    val interfaceCategoryLabel = resolveString(R.string.settings_category_interface)
+    val legacyAppearanceCategoryLabel = resolveString(R.string.settings_category_appearance)
+    val legacyEffectsCategoryLabel = resolveString(R.string.settings_category_effects)
+    val themeLanguageGroupLabel = resolveString(R.string.settings_group_theme_language_title)
+    val performanceGroupLabel = resolveString(R.string.settings_group_performance_title)
+    val homeEffectsGroupLabel = resolveString(R.string.settings_group_home_effects_title)
     val themeModeLabel = resolveString(R.string.settings_theme_mode_title)
     val launcherIconDesignLabel = resolveString(R.string.settings_launcher_icon_design_title)
     val launcherIconAppleLabel = resolveString(R.string.settings_launcher_icon_design_apple)
@@ -57,12 +71,12 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val homeShineLabel = resolveString(R.string.settings_home_shine_title)
     val homeDynamicFullEffectLabel = resolveString(R.string.settings_home_dynamic_full_effect_title)
 
-    val effectsCategoryLabel = resolveString(R.string.settings_category_effects)
-    val animationGroupLabel = resolveString(R.string.settings_group_animation_title)
+    val pageMotionGroupLabel = resolveString(R.string.settings_group_page_motion_title)
     val transitionAnimationsLabel = resolveString(R.string.settings_transition_animations_title)
     val predictiveBackAnimationsLabel = resolveString(R.string.settings_predictive_back_animations_title)
 
-    val componentEffectsGroupLabel = resolveString(R.string.settings_group_component_effects_title)
+    val liquidControlsGroupLabel = resolveString(R.string.settings_group_liquid_controls_title)
+    val interactionGroupLabel = resolveString(R.string.settings_group_interaction_title)
     val actionbarStyleLabel = resolveString(R.string.settings_actionbar_style_title)
     val liquidSwitchLabel = resolveString(R.string.settings_liquid_switch_title)
     val liquidToastLabel = resolveString(R.string.settings_liquid_toast_title)
@@ -71,7 +85,9 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val searchAutoFocusLabel = resolveString(R.string.settings_search_auto_focus_title)
     val gripAwareFloatingDockLabel = resolveString(R.string.settings_grip_aware_floating_dock_title)
 
-    val backgroundGroupLabel = resolveString(R.string.settings_group_background_title)
+    val backgroundAssetGroupLabel = resolveString(R.string.settings_group_background_asset_title)
+    val backgroundLayoutGroupLabel = resolveString(R.string.settings_group_background_layout_title)
+    val backgroundRenderingGroupLabel = resolveString(R.string.settings_group_background_rendering_title)
     val nonHomeBackgroundLabel = resolveString(R.string.settings_non_home_background_title)
     val nonHomeBackgroundImageLabel = resolveString(R.string.settings_non_home_background_image_title)
     val nonHomeBackgroundScaleLabel = resolveString(R.string.settings_non_home_background_scale_title)
@@ -103,8 +119,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val copyGroupLabel = resolveString(R.string.settings_group_copy_title)
     val copyCapabilityLabel = resolveString(R.string.settings_copy_capability_title)
 
-    val cacheHeaderLabel = resolveString(R.string.settings_cache_header)
     val cacheDiagnosticsLabel = resolveString(R.string.settings_cache_diagnostics_title)
+    val cacheItemsLabel = resolveString(R.string.settings_cache_items_title)
     val cacheEntryOverviewLabel = resolveString(R.string.settings_cache_entry_overview_title)
     val cacheEntryGithubLabel = resolveString(R.string.settings_cache_entry_github_title)
     val cacheEntryBaPageLabel = resolveString(R.string.settings_cache_entry_ba_page_title)
@@ -112,7 +128,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val cacheEntryOsLabel = resolveString(R.string.settings_cache_entry_os_title)
     val cacheEntryMcpLabel = resolveString(R.string.settings_cache_entry_mcp_title)
 
-    val logGroupLabel = resolveString(R.string.settings_group_log_title)
+    val logLevelGroupLabel = resolveString(R.string.settings_group_log_level_title)
+    val logFilesGroupLabel = resolveString(R.string.settings_group_log_files_title)
     val logLevelLabel = resolveString(R.string.settings_log_level_title)
     val logFeedbackActionLabel = resolveString(R.string.settings_log_feedback_action)
 
@@ -127,12 +144,21 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     accessCategoryLabel,
                     permissionsGroupLabel,
                     notificationPermissionLabel,
+                    appListAccessLabel,
+                    shizukuPermissionLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.KeepAlive,
+            category = SettingsCategory.KeepAlive,
+            tokens =
+                settingsTokens(
+                    keepAliveCategoryLabel,
+                    keepAliveGroupLabel,
                     androidBackgroundLabel,
                     backgroundRecoveryLabel,
                     batteryOptimizationLabel,
                     oemAutostartLabel,
-                    appListAccessLabel,
-                    shizukuPermissionLabel,
                     appStandbyActiveLabel,
                     appStandbyRareLabel,
                     appStandbyRestrictedLabel,
@@ -141,57 +167,105 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Visual,
-            category = SettingsCategory.Appearance,
+            card = SettingsSearchCard.ThemeLanguage,
+            category = SettingsCategory.Interface,
             tokens =
                 settingsTokens(
-                    appearanceCategoryLabel,
-                    visualGroupLabel,
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    themeLanguageGroupLabel,
                     themeModeLabel,
                     launcherIconDesignLabel,
                     launcherIconAppleLabel,
                     launcherIconAndroidLabel,
                     appLanguageLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.Performance,
+            category = SettingsCategory.Interface,
+            tokens =
+                settingsTokens(
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    performanceGroupLabel,
                     preloadingLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.HomeEffects,
+            category = SettingsCategory.Interface,
+            tokens =
+                settingsTokens(
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    legacyEffectsCategoryLabel,
+                    homeEffectsGroupLabel,
                     homeShineLabel,
                     homeDynamicFullEffectLabel,
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Animation,
-            category = SettingsCategory.Effects,
+            card = SettingsSearchCard.PageMotion,
+            category = SettingsCategory.Interface,
             tokens =
                 settingsTokens(
-                    effectsCategoryLabel,
-                    animationGroupLabel,
+                    interfaceCategoryLabel,
+                    legacyEffectsCategoryLabel,
+                    pageMotionGroupLabel,
                     transitionAnimationsLabel,
                     predictiveBackAnimationsLabel,
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.ComponentEffects,
-            category = SettingsCategory.Effects,
+            card = SettingsSearchCard.LiquidControls,
+            category = SettingsCategory.Interface,
             tokens =
                 settingsTokens(
-                    effectsCategoryLabel,
-                    componentEffectsGroupLabel,
+                    interfaceCategoryLabel,
+                    legacyEffectsCategoryLabel,
+                    liquidControlsGroupLabel,
                     actionbarStyleLabel,
                     liquidSwitchLabel,
                     liquidToastLabel,
                     liquidSheetLabel,
                     liquidDialogLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.Interaction,
+            category = SettingsCategory.Interface,
+            tokens =
+                settingsTokens(
+                    interfaceCategoryLabel,
+                    legacyEffectsCategoryLabel,
+                    interactionGroupLabel,
                     searchAutoFocusLabel,
                     gripAwareFloatingDockLabel,
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Background,
-            category = SettingsCategory.Appearance,
+            card = SettingsSearchCard.BackgroundAsset,
+            category = SettingsCategory.Interface,
             tokens =
                 settingsTokens(
-                    backgroundGroupLabel,
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    backgroundAssetGroupLabel,
                     nonHomeBackgroundLabel,
                     nonHomeBackgroundImageLabel,
+                    nonHomeBackgroundPreviewLabel,
+                    nonHomeBackgroundSuggestLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.BackgroundLayout,
+            category = SettingsCategory.Interface,
+            tokens =
+                settingsTokens(
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    backgroundLayoutGroupLabel,
                     nonHomeBackgroundScaleLabel,
                     nonHomeBackgroundScaleCropLabel,
                     nonHomeBackgroundScaleFitLabel,
@@ -205,12 +279,20 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     nonHomeBackgroundStyleSoftLabel,
                     nonHomeBackgroundStyleFocusedLabel,
                     nonHomeBackgroundDepthLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.BackgroundRendering,
+            category = SettingsCategory.Interface,
+            tokens =
+                settingsTokens(
+                    interfaceCategoryLabel,
+                    legacyAppearanceCategoryLabel,
+                    backgroundRenderingGroupLabel,
                     nonHomeBackgroundOpacityLabel,
                     nonHomeBackgroundSaturationLabel,
                     nonHomeBackgroundScrimLabel,
                     nonHomeBackgroundCropLabel,
-                    nonHomeBackgroundPreviewLabel,
-                    nonHomeBackgroundSuggestLabel,
                 ),
         ),
         SettingsSearchTarget(
@@ -236,12 +318,21 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Cache,
+            card = SettingsSearchCard.CacheDiagnostics,
             category = SettingsCategory.Data,
             tokens =
                 settingsTokens(
-                    cacheHeaderLabel,
+                    dataCategoryLabel,
                     cacheDiagnosticsLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.CacheItems,
+            category = SettingsCategory.Data,
+            tokens =
+                settingsTokens(
+                    dataCategoryLabel,
+                    cacheItemsLabel,
                     cacheEntryOverviewLabel,
                     cacheEntryGithubLabel,
                     cacheEntryBaPageLabel,
@@ -251,12 +342,22 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                 ),
         ),
         SettingsSearchTarget(
-            card = SettingsSearchCard.Log,
+            card = SettingsSearchCard.LogLevel,
             category = SettingsCategory.Data,
             tokens =
                 settingsTokens(
-                    logGroupLabel,
+                    dataCategoryLabel,
+                    logLevelGroupLabel,
                     logLevelLabel,
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.LogFiles,
+            category = SettingsCategory.Data,
+            tokens =
+                settingsTokens(
+                    dataCategoryLabel,
+                    logFilesGroupLabel,
                     logFeedbackActionLabel,
                 ),
         ),

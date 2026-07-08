@@ -254,15 +254,15 @@ fun SettingsPage(
             pageCount = categories.size,
         )
     val accessListState = rememberLazyListState()
-    val appearanceListState = rememberLazyListState()
-    val effectsListState = rememberLazyListState()
+    val keepAliveListState = rememberLazyListState()
+    val interfaceListState = rememberLazyListState()
     val dataListState = rememberLazyListState()
     val categoryListStates =
-        remember(accessListState, appearanceListState, effectsListState, dataListState) {
+        remember(accessListState, keepAliveListState, interfaceListState, dataListState) {
             SettingsCategoryListStates(
                 access = accessListState,
-                appearance = appearanceListState,
-                effects = effectsListState,
+                keepAlive = keepAliveListState,
+                interfaceState = interfaceListState,
                 data = dataListState,
             )
         }

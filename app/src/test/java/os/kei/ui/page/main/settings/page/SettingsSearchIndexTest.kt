@@ -23,8 +23,24 @@ class SettingsSearchIndexTest {
             }
 
         assertEquals(
-            listOf(SettingsSearchCard.Visual),
+            listOf(SettingsSearchCard.ThemeLanguage),
             deriveSettingsSearchTargets(targets, "theme").map { it.card },
+        )
+    }
+
+    @Test
+    fun `battery query targets keepalive card`() {
+        val targets =
+            buildSettingsSearchTargets { resId ->
+                when (resId) {
+                    R.string.settings_battery_optimization_title -> "Battery Optimization"
+                    else -> "label-$resId"
+                }
+            }
+
+        assertEquals(
+            listOf(SettingsSearchCard.KeepAlive),
+            deriveSettingsSearchTargets(targets, "battery").map { it.card },
         )
     }
 
@@ -33,8 +49,8 @@ class SettingsSearchIndexTest {
         val targets =
             listOf(
                 SettingsSearchTarget(
-                    card = SettingsSearchCard.Visual,
-                    category = SettingsCategory.Appearance,
+                    card = SettingsSearchCard.ThemeLanguage,
+                    category = SettingsCategory.Interface,
                     tokens = listOf("appearance", "theme"),
                 ),
             )
@@ -46,13 +62,13 @@ class SettingsSearchIndexTest {
     fun `query matches target tokens ignoring case`() {
         val visual =
             SettingsSearchTarget(
-                card = SettingsSearchCard.Visual,
-                category = SettingsCategory.Appearance,
+                card = SettingsSearchCard.ThemeLanguage,
+                category = SettingsCategory.Interface,
                 tokens = listOf("Appearance", "Theme Mode"),
             )
         val cache =
             SettingsSearchTarget(
-                card = SettingsSearchCard.Cache,
+                card = SettingsSearchCard.CacheDiagnostics,
                 category = SettingsCategory.Data,
                 tokens = listOf("Cache", "Diagnostics"),
             )

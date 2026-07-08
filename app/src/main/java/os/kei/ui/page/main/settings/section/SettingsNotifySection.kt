@@ -30,13 +30,18 @@ internal fun SettingsNotifySection(
     enabledCardColor: Color,
     disabledCardColor: Color,
     onSliderInteractionChanged: (Boolean) -> Unit = {},
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val presentation = deriveNotifyPresentation(state)
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_notify_header),
         title = stringResource(R.string.settings_group_notify_title),
+        subtitle = stringResource(R.string.settings_group_notify_summary),
         sectionIcon = appLucideAlertIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_super_island_style_title),

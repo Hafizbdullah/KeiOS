@@ -2,6 +2,8 @@
 
 package os.kei.ui.page.main.settings.section
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,12 +15,14 @@ import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.os.appLucideNotesIcon
+import os.kei.ui.page.main.settings.state.SettingsCardExpansionId
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.formatBytes
 import os.kei.ui.page.main.settings.support.formatLogTime
 import os.kei.ui.page.main.widget.core.AppDualActionRow
+import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -40,6 +44,9 @@ internal fun SettingsLogSection(
     onFeedbackClick: () -> Unit,
     enabledCardColor: Color,
     disabledCardColor: Color,
+    isCardExpanded: (SettingsCardExpansionId) -> Boolean,
+    onCardExpandedChange: (SettingsCardExpansionId, Boolean) -> Unit,
+    onlyCardId: SettingsCardExpansionId? = null,
 ) {
     val presentation = deriveLogPresentation(logLevel, logStats)
     val logLevels = AppLogLevel.entries
@@ -51,104 +58,131 @@ internal fun SettingsLogSection(
         } else {
             formatLogTime(logStats.latestModifiedAtMs)
         }
-    SettingsGroupCard(
-        header = stringResource(R.string.settings_group_log_header),
-        title = stringResource(R.string.settings_group_log_title),
-        sectionIcon = appLucideNotesIcon(),
-        containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.sectionGap),
     ) {
-        SettingsPickerItem(
-            title = stringResource(R.string.settings_log_level_title),
-            summary = stringResource(R.string.settings_log_level_summary),
-            infoKey = stringResource(R.string.common_scope),
-            infoValue = stringResource(R.string.settings_log_scope),
-            onClick = { onLevelExpandedChange(true) },
-            trailing = {
-                AppDropdownSelector(
-                    selectedText = levelLabels.getOrElse(selectedLevelIndex) { logLevel.storageId },
-                    options = levelLabels,
-                    selectedIndex = selectedLevelIndex,
-                    expanded = levelExpanded,
-                    anchorBounds = levelAnchorBounds,
-                    onExpandedChange = onLevelExpandedChange,
-                    onSelectedIndexChange = { index ->
-                        logLevels.getOrNull(index)?.let(onLogLevelChanged)
-                        onLevelExpandedChange(false)
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.LogLevel) {
+            SettingsGroupCard(
+                header = stringResource(R.string.settings_group_log_level_header),
+                title = stringResource(R.string.settings_group_log_level_title),
+                subtitle = stringResource(R.string.settings_group_log_level_summary),
+                sectionIcon = appLucideNotesIcon(),
+                containerColor =
+                    settingsSectionContainerColor(
+                        SettingsSectionPresentationState(active = logLevel != AppLogLevel.Off),
+                        enabledCardColor,
+                        disabledCardColor,
+                    ),
+                expanded = isCardExpanded(SettingsCardExpansionId.LogLevel),
+                onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.LogLevel, it) },
+            ) {
+                SettingsPickerItem(
+                    title = stringResource(R.string.settings_log_level_title),
+                    summary = stringResource(R.string.settings_log_level_summary),
+                    infoKey = stringResource(R.string.common_scope),
+                    infoValue = stringResource(R.string.settings_log_scope),
+                    onClick = { onLevelExpandedChange(true) },
+                    trailing = {
+                        AppDropdownSelector(
+                            selectedText = levelLabels.getOrElse(selectedLevelIndex) { logLevel.storageId },
+                            options = levelLabels,
+                            selectedIndex = selectedLevelIndex,
+                            expanded = levelExpanded,
+                            anchorBounds = levelAnchorBounds,
+                            onExpandedChange = onLevelExpandedChange,
+                            onSelectedIndexChange = { index ->
+                                logLevels.getOrNull(index)?.let(onLogLevelChanged)
+                                onLevelExpandedChange(false)
+                            },
+                            onAnchorBoundsChange = onLevelAnchorBoundsChange,
+                            popupMaxWidth = 220.dp,
+                            popupMatchAnchorWidth = true,
+                        )
                     },
-                    onAnchorBoundsChange = onLevelAnchorBoundsChange,
-                    popupMaxWidth = 220.dp,
-                    popupMatchAnchorWidth = true,
                 )
-            },
-        )
-        SettingsInfoItem(
-            key = stringResource(R.string.common_note),
-            value =
-                if (logLevel == AppLogLevel.Off) {
-                    stringResource(R.string.settings_log_note_disabled)
-                } else {
-                    stringResource(R.string.settings_log_note_enabled)
-                },
-        )
-        SettingsInfoItem(
-            key = stringResource(R.string.settings_log_current_level),
-            value = levelLabels.getOrElse(selectedLevelIndex) { logLevel.storageId },
-        )
-        SettingsInfoItem(
-            key = stringResource(R.string.settings_log_stat_size),
-            value = formatBytes(logStats.totalBytes),
-        )
-        SettingsInfoItem(
-            key = stringResource(R.string.settings_log_stat_files),
-            value = stringResource(R.string.settings_log_stat_files_count, logStats.fileCount),
-        )
-        SettingsInfoItem(
-            key = stringResource(R.string.settings_log_stat_latest),
-            value = logLatestText,
-        )
-        AppDualActionRow(
-            first = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetPrimaryAction,
-                    text =
-                        if (exportingLogZip) {
-                            stringResource(R.string.common_processing)
+                SettingsInfoItem(
+                    key = stringResource(R.string.common_note),
+                    value =
+                        if (logLevel == AppLogLevel.Off) {
+                            stringResource(R.string.settings_log_note_disabled)
                         } else {
-                            stringResource(R.string.settings_log_action_export_zip)
+                            stringResource(R.string.settings_log_note_enabled)
                         },
-                    modifier = modifier,
+                )
+                SettingsInfoItem(
+                    key = stringResource(R.string.settings_log_current_level),
+                    value = levelLabels.getOrElse(selectedLevelIndex) { logLevel.storageId },
+                )
+            }
+        }
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.LogFiles) {
+            SettingsGroupCard(
+                header = stringResource(R.string.settings_group_log_files_header),
+                title = stringResource(R.string.settings_group_log_files_title),
+                subtitle = stringResource(R.string.settings_group_log_files_summary),
+                sectionIcon = appLucideNotesIcon(),
+                containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                expanded = isCardExpanded(SettingsCardExpansionId.LogFiles),
+                onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.LogFiles, it) },
+            ) {
+                SettingsInfoItem(
+                    key = stringResource(R.string.settings_log_stat_size),
+                    value = formatBytes(logStats.totalBytes),
+                )
+                SettingsInfoItem(
+                    key = stringResource(R.string.settings_log_stat_files),
+                    value = stringResource(R.string.settings_log_stat_files_count, logStats.fileCount),
+                )
+                SettingsInfoItem(
+                    key = stringResource(R.string.settings_log_stat_latest),
+                    value = logLatestText,
+                )
+                AppDualActionRow(
+                    first = { modifier ->
+                        AppStandaloneLiquidTextButton(
+                            variant = GlassVariant.SheetPrimaryAction,
+                            text =
+                                if (exportingLogZip) {
+                                    stringResource(R.string.common_processing)
+                                } else {
+                                    stringResource(R.string.settings_log_action_export_zip)
+                                },
+                            modifier = modifier,
+                            buttonModifier = Modifier.fillMaxWidth(),
+                            textColor = MiuixTheme.colorScheme.primary,
+                            enabled = !exportingLogZip && !clearingLogs,
+                            onClick = onExportZipClick,
+                        )
+                    },
+                    second = { modifier ->
+                        AppStandaloneLiquidTextButton(
+                            variant = GlassVariant.SheetDangerAction,
+                            text =
+                                if (clearingLogs) {
+                                    stringResource(R.string.common_processing)
+                                } else {
+                                    stringResource(R.string.settings_log_action_clear)
+                                },
+                            modifier = modifier,
+                            buttonModifier = Modifier.fillMaxWidth(),
+                            textColor = MiuixTheme.colorScheme.error,
+                            enabled = !exportingLogZip && !clearingLogs,
+                            onClick = onClearLogsClick,
+                        )
+                    },
+                )
+                AppStandaloneLiquidTextButton(
+                    variant = GlassVariant.SheetAction,
+                    text = stringResource(R.string.settings_log_feedback_action),
+                    modifier = Modifier.fillMaxWidth(),
                     buttonModifier = Modifier.fillMaxWidth(),
                     textColor = MiuixTheme.colorScheme.primary,
                     enabled = !exportingLogZip && !clearingLogs,
-                    onClick = onExportZipClick,
+                    onClick = onFeedbackClick,
                 )
-            },
-            second = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetDangerAction,
-                    text =
-                        if (clearingLogs) {
-                            stringResource(R.string.common_processing)
-                        } else {
-                            stringResource(R.string.settings_log_action_clear)
-                        },
-                    modifier = modifier,
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.error,
-                    enabled = !exportingLogZip && !clearingLogs,
-                    onClick = onClearLogsClick,
-                )
-            },
-        )
-        AppStandaloneLiquidTextButton(
-            variant = GlassVariant.SheetAction,
-            text = stringResource(R.string.settings_log_feedback_action),
-            modifier = Modifier.fillMaxWidth(),
-            buttonModifier = Modifier.fillMaxWidth(),
-            textColor = MiuixTheme.colorScheme.primary,
-            enabled = !exportingLogZip && !clearingLogs,
-            onClick = onFeedbackClick,
-        )
+            }
+        }
     }
 }
 

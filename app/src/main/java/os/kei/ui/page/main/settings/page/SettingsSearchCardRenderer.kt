@@ -15,11 +15,12 @@ import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSection
 import os.kei.ui.page.main.settings.section.SettingsCopySection
 import os.kei.ui.page.main.settings.section.SettingsLogSection
 import os.kei.ui.page.main.settings.section.SettingsNotifySection
-import os.kei.ui.page.main.settings.section.SettingsWebDavSyncSection
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSection
 import os.kei.ui.page.main.settings.section.SettingsVisualSection
+import os.kei.ui.page.main.settings.section.SettingsWebDavSyncSection
 import os.kei.ui.page.main.settings.state.SettingsBackgroundController
 import os.kei.ui.page.main.settings.state.SettingsCacheUiState
+import os.kei.ui.page.main.settings.state.SettingsCardExpansionId
 import os.kei.ui.page.main.settings.state.SettingsLogUiState
 import os.kei.ui.page.main.settings.state.SettingsPageChromeState
 import os.kei.ui.page.main.settings.state.SettingsPageViewModel
@@ -35,43 +36,86 @@ internal fun LazyListScope.settingsCardItem(
         contentType = "settings_card",
     ) {
         when (card) {
-            SettingsSearchCard.Permissions -> {
+            SettingsSearchCard.Permissions,
+            SettingsSearchCard.KeepAlive,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.Permissions -> SettingsCardExpansionId.Permissions
+                        else -> SettingsCardExpansionId.KeepAlive
+                    }
                 SettingsPermissionKeepAliveSection(
                     state = input.sectionContracts.permissionKeepAliveState,
                     actions = input.sectionContracts.permissionKeepAliveActions,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
-            SettingsSearchCard.Visual -> {
+            SettingsSearchCard.ThemeLanguage,
+            SettingsSearchCard.Performance,
+            SettingsSearchCard.HomeEffects,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.ThemeLanguage -> SettingsCardExpansionId.ThemeLanguage
+                        SettingsSearchCard.Performance -> SettingsCardExpansionId.Performance
+                        else -> SettingsCardExpansionId.HomeEffects
+                    }
                 SettingsVisualSection(
                     state = input.sectionContracts.visualState,
                     actions = input.sectionContracts.visualActions,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
-            SettingsSearchCard.Animation -> {
+            SettingsSearchCard.PageMotion -> {
                 SettingsAnimationSection(
                     state = input.sectionContracts.animationState,
                     actions = input.sectionContracts.animationActions,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    expanded = input.isCardExpanded(SettingsCardExpansionId.PageMotion),
+                    onExpandedChange = { input.updateCardExpanded(SettingsCardExpansionId.PageMotion, it) },
                 )
             }
 
-            SettingsSearchCard.ComponentEffects -> {
+            SettingsSearchCard.LiquidControls,
+            SettingsSearchCard.Interaction,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.LiquidControls -> SettingsCardExpansionId.LiquidControls
+                        else -> SettingsCardExpansionId.Interaction
+                    }
                 SettingsComponentEffectsSection(
                     state = input.sectionContracts.componentEffectsState,
                     actions = input.sectionContracts.componentEffectsActions,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
-            SettingsSearchCard.Background -> {
+            SettingsSearchCard.BackgroundAsset,
+            SettingsSearchCard.BackgroundLayout,
+            SettingsSearchCard.BackgroundRendering,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.BackgroundAsset -> SettingsCardExpansionId.BackgroundAsset
+                        SettingsSearchCard.BackgroundLayout -> SettingsCardExpansionId.BackgroundLayout
+                        else -> SettingsCardExpansionId.BackgroundRendering
+                    }
                 SettingsBackgroundSection(
                     nonHomeBackgroundEnabled = input.nonHomeBackgroundEnabled,
                     onNonHomeBackgroundEnabledChanged = input.onNonHomeBackgroundEnabledChanged,
@@ -97,6 +141,9 @@ internal fun LazyListScope.settingsCardItem(
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
                     onSliderInteractionChanged = input.onSliderInteractionChanged,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
@@ -107,6 +154,8 @@ internal fun LazyListScope.settingsCardItem(
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
                     onSliderInteractionChanged = input.onSliderInteractionChanged,
+                    expanded = input.isCardExpanded(SettingsCardExpansionId.Notifications),
+                    onExpandedChange = { input.updateCardExpanded(SettingsCardExpansionId.Notifications, it) },
                 )
             }
 
@@ -116,10 +165,19 @@ internal fun LazyListScope.settingsCardItem(
                     actions = input.sectionContracts.copyActions,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    expanded = input.isCardExpanded(SettingsCardExpansionId.CopySelection),
+                    onExpandedChange = { input.updateCardExpanded(SettingsCardExpansionId.CopySelection, it) },
                 )
             }
 
-            SettingsSearchCard.Cache -> {
+            SettingsSearchCard.CacheDiagnostics,
+            SettingsSearchCard.CacheItems,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.CacheDiagnostics -> SettingsCardExpansionId.CacheDiagnostics
+                        else -> SettingsCardExpansionId.CacheItems
+                    }
                 SettingsCacheSection(
                     cacheDiagnosticsEnabled = input.cacheDiagnosticsEnabled,
                     onCacheDiagnosticsChanged = input.onCacheDiagnosticsChanged,
@@ -131,10 +189,20 @@ internal fun LazyListScope.settingsCardItem(
                     onClearCache = input::clearCache,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
-            SettingsSearchCard.Log -> {
+            SettingsSearchCard.LogLevel,
+            SettingsSearchCard.LogFiles,
+            -> {
+                val onlyCardId =
+                    when (card) {
+                        SettingsSearchCard.LogLevel -> SettingsCardExpansionId.LogLevel
+                        else -> SettingsCardExpansionId.LogFiles
+                    }
                 SettingsLogSection(
                     logLevel = input.logLevel,
                     onLogLevelChanged = input.onLogLevelChanged,
@@ -150,6 +218,9 @@ internal fun LazyListScope.settingsCardItem(
                     onFeedbackClick = input::openFeedbackIssue,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    isCardExpanded = input::isCardExpanded,
+                    onCardExpandedChange = input::updateCardExpanded,
+                    onlyCardId = onlyCardId,
                 )
             }
 
@@ -159,6 +230,8 @@ internal fun LazyListScope.settingsCardItem(
                     onClick = input::openWebDavSync,
                     enabledCardColor = input.enabledCardColor,
                     disabledCardColor = input.disabledCardColor,
+                    expanded = input.isCardExpanded(SettingsCardExpansionId.WebDavSync),
+                    onExpandedChange = { input.updateCardExpanded(SettingsCardExpansionId.WebDavSync, it) },
                 )
             }
         }
@@ -183,17 +256,23 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
             )
         }
 
-        SettingsCategory.Appearance -> {
+        SettingsCategory.KeepAlive -> {
             listOf(
-                SettingsSearchCard.Visual,
-                SettingsSearchCard.Background,
+                SettingsSearchCard.KeepAlive,
             )
         }
 
-        SettingsCategory.Effects -> {
+        SettingsCategory.Interface -> {
             listOf(
-                SettingsSearchCard.Animation,
-                SettingsSearchCard.ComponentEffects,
+                SettingsSearchCard.ThemeLanguage,
+                SettingsSearchCard.Performance,
+                SettingsSearchCard.HomeEffects,
+                SettingsSearchCard.PageMotion,
+                SettingsSearchCard.LiquidControls,
+                SettingsSearchCard.Interaction,
+                SettingsSearchCard.BackgroundAsset,
+                SettingsSearchCard.BackgroundLayout,
+                SettingsSearchCard.BackgroundRendering,
             )
         }
 
@@ -201,8 +280,10 @@ private fun settingsCardsForCategory(category: SettingsCategory): List<SettingsS
             listOf(
                 SettingsSearchCard.Copy,
                 SettingsSearchCard.WebDavSync,
-                SettingsSearchCard.Cache,
-                SettingsSearchCard.Log,
+                SettingsSearchCard.CacheDiagnostics,
+                SettingsSearchCard.CacheItems,
+                SettingsSearchCard.LogLevel,
+                SettingsSearchCard.LogFiles,
             )
         }
     }
@@ -263,4 +344,16 @@ internal data class SettingsSearchCardRenderInput(
     fun openWebDavSync() {
         onNavigateToWebDavSync()
     }
+
+    fun isCardExpanded(id: SettingsCardExpansionId): Boolean = chromeState.trimmedSearchQuery.isNotEmpty() || chromeState.isCardExpanded(id)
+
+    fun updateCardExpanded(
+        id: SettingsCardExpansionId,
+        expanded: Boolean,
+    ) {
+        if (!shouldPersistSettingsCardExpansion(chromeState.searchQuery)) return
+        settingsPageViewModel.updateCardExpanded(id, expanded)
+    }
 }
+
+internal fun shouldPersistSettingsCardExpansion(searchQuery: String): Boolean = searchQuery.trim().isEmpty()

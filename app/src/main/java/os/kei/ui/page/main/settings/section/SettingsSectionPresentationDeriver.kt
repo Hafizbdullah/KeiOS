@@ -19,15 +19,22 @@ internal fun settingsSectionContainerColor(
     disabledCardColor: Color,
 ): Color = if (presentation.active) enabledCardColor else disabledCardColor
 
-internal fun derivePermissionKeepAlivePresentation(state: SettingsPermissionKeepAliveSectionState): SettingsSectionPresentationState =
+internal fun derivePermissionPresentation(state: SettingsPermissionKeepAliveSectionState): SettingsSectionPresentationState =
     SettingsSectionPresentationState(
         active =
             state.notificationsEnabled ||
-                state.isAndroidBackgroundReliable ||
-                state.ignoringBatteryOptimizations ||
-                state.oemAutoStartState == SettingsOemAutoStartState.Allowed ||
+                state.notificationPermissionGranted ||
                 state.shizukuGranted ||
                 state.appListAccessMode != SettingsAppListAccessMode.Restricted,
+    )
+
+internal fun deriveKeepAlivePresentation(state: SettingsPermissionKeepAliveSectionState): SettingsSectionPresentationState =
+    SettingsSectionPresentationState(
+        active =
+            state.isAndroidBackgroundReliable ||
+                state.backgroundRecoverySnapshot.recoveryCount > 0 ||
+                state.ignoringBatteryOptimizations ||
+                state.oemAutoStartState == SettingsOemAutoStartState.Allowed,
     )
 
 private val SettingsPermissionKeepAliveSectionState.isAndroidBackgroundReliable: Boolean

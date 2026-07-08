@@ -18,13 +18,23 @@ internal fun SettingsWebDavSyncSection(
     onClick: () -> Unit,
     enabledCardColor: Color,
     disabledCardColor: Color,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val presentation = deriveWebDavSyncPresentation(state.configured)
     SettingsGroupCard(
         header = stringResource(R.string.settings_category_data),
         title = stringResource(R.string.webdav_sync_title),
+        subtitle =
+            if (state.configured) {
+                stringResource(R.string.webdav_sync_configured_summary)
+            } else {
+                stringResource(R.string.webdav_sync_not_configured_summary)
+            },
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
     ) {
         SettingsNavigationItem(
             title = stringResource(R.string.webdav_sync_title),

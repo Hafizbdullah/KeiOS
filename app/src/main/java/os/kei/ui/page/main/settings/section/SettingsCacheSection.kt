@@ -2,6 +2,8 @@
 
 package os.kei.ui.page.main.settings.section
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,10 +15,12 @@ import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
+import os.kei.ui.page.main.settings.state.SettingsCardExpansionId
 import os.kei.ui.page.main.settings.support.SettingsCacheRow
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
@@ -34,90 +38,124 @@ internal fun SettingsCacheSection(
     onClearCache: (String) -> Unit,
     enabledCardColor: Color,
     disabledCardColor: Color,
+    isCardExpanded: (SettingsCardExpansionId) -> Boolean,
+    onCardExpandedChange: (SettingsCardExpansionId, Boolean) -> Unit,
+    onlyCardId: SettingsCardExpansionId? = null,
 ) {
     val presentation = deriveCachePresentation(cacheDiagnosticsEnabled)
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
-    SettingsGroupCard(
-        header = stringResource(R.string.settings_cache_header),
-        title = stringResource(R.string.settings_cache_diagnostics_title),
-        sectionIcon = appLucidePackageIcon(),
-        containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.sectionGap),
     ) {
-        SettingsToggleItem(
-            title = stringResource(R.string.settings_cache_diagnostics_title),
-            summary =
-                if (cacheDiagnosticsEnabled) {
-                    stringResource(R.string.settings_cache_diagnostics_summary_enabled)
-                } else {
-                    stringResource(R.string.settings_cache_diagnostics_summary_disabled)
-                },
-            checked = cacheDiagnosticsEnabled,
-            onCheckedChange = onCacheDiagnosticsChanged,
-            infoKey = stringResource(R.string.common_scope),
-            infoValue =
-                if (cacheDiagnosticsEnabled) {
-                    stringResource(R.string.settings_cache_scope_enabled)
-                } else {
-                    stringResource(R.string.settings_cache_scope_disabled)
-                },
-        )
-        when {
-            !cacheDiagnosticsEnabled -> {
-                Text(
-                    text = stringResource(R.string.settings_cache_disabled_desc),
-                    color = subtitleColor,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                )
-            }
-
-            cacheEntries == null && cacheEntriesLoading -> {
-                Text(
-                    text = stringResource(R.string.settings_cache_loading_desc),
-                    color = subtitleColor,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                )
-            }
-
-            cacheEntries.isNullOrEmpty() -> {
-                Text(
-                    text = stringResource(R.string.settings_cache_empty_desc),
-                    color = subtitleColor,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                )
-            }
-
-            else -> {
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetDangerAction,
-                    text =
-                        if (clearingAllCaches) {
-                            stringResource(R.string.common_processing)
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.CacheDiagnostics) {
+            SettingsGroupCard(
+                header = stringResource(R.string.settings_cache_header),
+                title = stringResource(R.string.settings_cache_diagnostics_title),
+                subtitle = stringResource(R.string.settings_cache_diagnostics_summary_enabled),
+                sectionIcon = appLucidePackageIcon(),
+                containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                expanded = isCardExpanded(SettingsCardExpansionId.CacheDiagnostics),
+                onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.CacheDiagnostics, it) },
+            ) {
+                SettingsToggleItem(
+                    title = stringResource(R.string.settings_cache_diagnostics_title),
+                    summary =
+                        if (cacheDiagnosticsEnabled) {
+                            stringResource(R.string.settings_cache_diagnostics_summary_enabled)
                         } else {
-                            stringResource(R.string.settings_cache_action_clear_all)
+                            stringResource(R.string.settings_cache_diagnostics_summary_disabled)
                         },
-                    modifier =
-                        androidx.compose.ui.Modifier
-                            .fillMaxWidth(),
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.error,
-                    enabled = !clearingAllCaches && clearingCacheId == null,
-                    onClick = onClearAllCaches,
+                    checked = cacheDiagnosticsEnabled,
+                    onCheckedChange = onCacheDiagnosticsChanged,
+                    infoKey = stringResource(R.string.common_scope),
+                    infoValue =
+                        if (cacheDiagnosticsEnabled) {
+                            stringResource(R.string.settings_cache_scope_enabled)
+                        } else {
+                            stringResource(R.string.settings_cache_scope_disabled)
+                        },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                cacheEntries.forEachIndexed { index, entry ->
-                    SettingsCacheRow(
-                        entry = entry,
-                        clearing = clearingAllCaches || clearingCacheId == entry.id,
-                        onClear = {
-                            if (clearingAllCaches || clearingCacheId != null) return@SettingsCacheRow
-                            onClearCache(entry.id)
+                Text(
+                    text =
+                        if (cacheDiagnosticsEnabled) {
+                            stringResource(R.string.settings_cache_scope_enabled)
+                        } else {
+                            stringResource(R.string.settings_cache_disabled_desc)
                         },
-                    )
-                    if (index < cacheEntries.lastIndex) {
-                        Spacer(modifier = Modifier.height(6.dp))
+                    color = subtitleColor,
+                    fontSize = AppTypographyTokens.Supporting.fontSize,
+                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                )
+            }
+        }
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.CacheItems) {
+            SettingsGroupCard(
+                header = stringResource(R.string.settings_cache_items_header),
+                title = stringResource(R.string.settings_cache_items_title),
+                subtitle = stringResource(R.string.settings_cache_items_summary),
+                sectionIcon = appLucidePackageIcon(),
+                containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                expanded = isCardExpanded(SettingsCardExpansionId.CacheItems),
+                onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.CacheItems, it) },
+            ) {
+                when {
+                    !cacheDiagnosticsEnabled -> {
+                        Text(
+                            text = stringResource(R.string.settings_cache_disabled_desc),
+                            color = subtitleColor,
+                            fontSize = AppTypographyTokens.Supporting.fontSize,
+                            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        )
+                    }
+
+                    cacheEntries == null && cacheEntriesLoading -> {
+                        Text(
+                            text = stringResource(R.string.settings_cache_loading_desc),
+                            color = subtitleColor,
+                            fontSize = AppTypographyTokens.Supporting.fontSize,
+                            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        )
+                    }
+
+                    cacheEntries.isNullOrEmpty() -> {
+                        Text(
+                            text = stringResource(R.string.settings_cache_empty_desc),
+                            color = subtitleColor,
+                            fontSize = AppTypographyTokens.Supporting.fontSize,
+                            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        )
+                    }
+
+                    else -> {
+                        AppStandaloneLiquidTextButton(
+                            variant = GlassVariant.SheetDangerAction,
+                            text =
+                                if (clearingAllCaches) {
+                                    stringResource(R.string.common_processing)
+                                } else {
+                                    stringResource(R.string.settings_cache_action_clear_all)
+                                },
+                            modifier = Modifier.fillMaxWidth(),
+                            buttonModifier = Modifier.fillMaxWidth(),
+                            textColor = MiuixTheme.colorScheme.error,
+                            enabled = !clearingAllCaches && clearingCacheId == null,
+                            onClick = onClearAllCaches,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        cacheEntries.forEachIndexed { index, entry ->
+                            SettingsCacheRow(
+                                entry = entry,
+                                clearing = clearingAllCaches || clearingCacheId == entry.id,
+                                onClear = {
+                                    if (clearingAllCaches || clearingCacheId != null) return@SettingsCacheRow
+                                    onClearCache(entry.id)
+                                },
+                            )
+                            if (index < cacheEntries.lastIndex) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
                     }
                 }
             }

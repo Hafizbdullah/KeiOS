@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "ktlint:standard:function-naming")
+
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.foundation.combinedClickable
@@ -17,18 +19,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import com.composables.icons.lucide.R as LucideR
 import os.kei.ui.liquidglass.R
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -58,46 +64,68 @@ fun AppCardHeader(
     titleTypography: AppTypographyToken = AppTypographyTokens.SectionTitle,
     subtitleTypography: AppTypographyToken = AppTypographyTokens.Supporting,
     onClick: (() -> Unit)? = null,
-    onLongClick: (() -> Unit)? = null
+    onLongClick: (() -> Unit)? = null,
 ) {
-    val expandContentDescription = if (expanded) {
-        stringResource(R.string.common_collapse)
-    } else {
-        stringResource(R.string.common_expand)
-    }
-    val clickModifier = if (onClick != null || onLongClick != null) {
-        val interactionSource = remember { MutableInteractionSource() }
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick
-        )
-    } else {
-        Modifier
-    }
+    val expandContentDescription =
+        if (expanded) {
+            stringResource(R.string.common_collapse)
+        } else {
+            stringResource(R.string.common_expand)
+        }
+    val expandActionDescription =
+        if (expanded) {
+            stringResource(R.string.common_collapse_details_hint)
+        } else {
+            stringResource(R.string.common_expand_details_hint)
+        }
+    val clickModifier =
+        if (onClick != null || onLongClick != null) {
+            val interactionSource = remember { MutableInteractionSource() }
+            Modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                role = Role.Button,
+                onClick = { onClick?.invoke() },
+                onLongClick = onLongClick,
+            )
+        } else {
+            Modifier
+        }
+    val stateModifier =
+        if (expandable && onClick != null) {
+            Modifier.semantics {
+                stateDescription = expandContentDescription
+                onClick(label = expandActionDescription) {
+                    onClick()
+                    true
+                }
+            }
+        } else {
+            Modifier
+        }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .defaultMinSize(minHeight = minHeight)
-            .then(clickModifier)
-            .padding(contentPadding),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = minHeight)
+                .then(clickModifier)
+                .then(stateModifier)
+                .padding(contentPadding),
         horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         startAction?.let { action ->
             Box(
                 modifier = Modifier.size(AppInteractiveTokens.cardHeaderLeadingSlotSize),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 action()
             }
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap)
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
         ) {
             eyebrow?.takeIf { it.isNotBlank() }?.let { value ->
                 Text(
@@ -105,13 +133,13 @@ fun AppCardHeader(
                     color = eyebrowColor,
                     fontSize = AppTypographyTokens.Eyebrow.fontSize,
                     lineHeight = AppTypographyTokens.Eyebrow.lineHeight,
-                    fontWeight = AppTypographyTokens.Eyebrow.fontWeight
+                    fontWeight = AppTypographyTokens.Eyebrow.fontWeight,
                 )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = title,
@@ -121,7 +149,7 @@ fun AppCardHeader(
                     fontWeight = titleTypography.fontWeight,
                     modifier = Modifier.weight(1f, fill = false),
                     maxLines = titleMaxLines,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 titleAccessory?.invoke(this)
             }
@@ -132,7 +160,7 @@ fun AppCardHeader(
                     fontSize = subtitleTypography.fontSize,
                     lineHeight = subtitleTypography.lineHeight,
                     maxLines = subtitleMaxLines,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             supportingText?.takeIf { it.isNotBlank() }?.let { text ->
@@ -140,20 +168,27 @@ fun AppCardHeader(
                     text = text,
                     color = supportingColor,
                     fontSize = AppTypographyTokens.Caption.fontSize,
-                    lineHeight = AppTypographyTokens.Caption.lineHeight
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
                 )
             }
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             endActions?.invoke(this)
             if (expandable) {
                 Icon(
-                    imageVector = if (expanded) MiuixIcons.Regular.ExpandLess else MiuixIcons.Regular.ExpandMore,
+                    imageVector =
+                        ImageVector.vectorResource(
+                            if (expanded) {
+                                LucideR.drawable.lucide_ic_chevron_up
+                            } else {
+                                LucideR.drawable.lucide_ic_chevron_down
+                            },
+                        ),
                     contentDescription = expandContentDescription,
-                    tint = expandTint
+                    tint = expandTint,
                 )
             }
         }
@@ -172,17 +207,17 @@ private fun AppCardHeaderPreviewLight() {
                 Icon(
                     imageVector = MiuixIcons.Regular.Info,
                     contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary
+                    tint = MiuixTheme.colorScheme.primary,
                 )
             },
             endActions = {
                 StatusPill(
                     label = "Active",
-                    color = Color(0xFF22C55E)
+                    color = Color(0xFF22C55E),
                 )
             },
             expandable = true,
-            expanded = false
+            expanded = false,
         )
     }
 }

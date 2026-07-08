@@ -146,15 +146,15 @@ internal fun SettingsCategoryPagerContent(
 
 internal data class SettingsCategoryListStates(
     val access: LazyListState,
-    val appearance: LazyListState,
-    val effects: LazyListState,
+    val keepAlive: LazyListState,
+    val interfaceState: LazyListState,
     val data: LazyListState,
 ) {
     fun forCategory(category: SettingsCategory): LazyListState =
         when (category) {
             SettingsCategory.Access -> access
-            SettingsCategory.Appearance -> appearance
-            SettingsCategory.Effects -> effects
+            SettingsCategory.KeepAlive -> keepAlive
+            SettingsCategory.Interface -> interfaceState
             SettingsCategory.Data -> data
         }
 }

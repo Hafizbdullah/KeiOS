@@ -96,10 +96,13 @@ internal data class SettingsPageChromeState(
     val launcherIconDesignPopupAnchorBounds: IntRect? = null,
     val showLogLevelPopup: Boolean = false,
     val logLevelPopupAnchorBounds: IntRect? = null,
+    val expandedCards: Map<SettingsCardExpansionId, Boolean> = emptyMap(),
     val shizukuRefreshToken: Int = 0,
 ) {
     val trimmedSearchQuery: String
         get() = searchQuery.trim()
+
+    fun isCardExpanded(id: SettingsCardExpansionId): Boolean = expandedCards.isSettingsCardExpanded(id)
 }
 
 internal sealed interface SettingsPageEvent {
@@ -138,7 +141,12 @@ internal class SettingsPageViewModel : ViewModel() {
 
     private val _logState = MutableStateFlow(SettingsLogUiState())
     val logState: StateFlow<SettingsLogUiState> = _logState.asStateFlow()
-    private val _chromeState = MutableStateFlow(SettingsPageChromeState())
+    private val _chromeState =
+        MutableStateFlow(
+            SettingsPageChromeState(
+                expandedCards = SettingsCardExpansionStore.loadSnapshot(),
+            ),
+        )
     val chromeState: StateFlow<SettingsPageChromeState> = _chromeState.asStateFlow()
     private val searchTargetsState = MutableStateFlow<List<SettingsSearchTarget>>(emptyList())
     private val _batteryOptimizationState = MutableStateFlow(SettingsBatteryOptimizationSnapshot())
@@ -353,6 +361,17 @@ internal class SettingsPageViewModel : ViewModel() {
     fun updateSliderInteractionActive(active: Boolean) {
         _chromeState.update { state ->
             if (state.sliderInteractionActive == active) state else state.copy(sliderInteractionActive = active)
+        }
+    }
+
+    fun updateCardExpanded(
+        id: SettingsCardExpansionId,
+        expanded: Boolean,
+    ) {
+        SettingsCardExpansionStore.setExpanded(id, expanded)
+        _chromeState.update { state ->
+            val nextCards = state.expandedCards + (id to expanded)
+            if (state.expandedCards == nextCards) state else state.copy(expandedCards = nextCards)
         }
     }
 

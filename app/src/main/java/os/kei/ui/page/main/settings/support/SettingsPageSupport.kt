@@ -45,16 +45,23 @@ import kotlin.math.roundToInt
 internal fun SettingsGroupCard(
     header: String,
     title: String,
+    subtitle: String = "",
     sectionIcon: ImageVector? = null,
     containerColor: Color,
+    collapsible: Boolean = true,
+    expanded: Boolean = true,
+    onExpandedChange: (Boolean) -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppFeatureCard(
         title = title,
-        subtitle = "",
+        subtitle = subtitle,
         eyebrow = header,
         sectionIcon = sectionIcon,
         containerColor = containerColor,
+        collapsible = collapsible,
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
         contentPadding =

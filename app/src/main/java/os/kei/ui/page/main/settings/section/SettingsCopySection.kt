@@ -16,13 +16,18 @@ internal fun SettingsCopySection(
     actions: SettingsCopySectionActions,
     enabledCardColor: Color,
     disabledCardColor: Color,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
 ) {
     val presentation = deriveCopyPresentation(state)
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_copy_header),
         title = stringResource(R.string.settings_group_copy_title),
+        subtitle = stringResource(R.string.settings_group_copy_summary),
         sectionIcon = osLucideCopyIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        expanded = expanded,
+        onExpandedChange = onExpandedChange,
     ) {
         SettingsToggleItem(
             title = stringResource(R.string.settings_copy_capability_title),

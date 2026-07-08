@@ -13,8 +13,8 @@ internal enum class SettingsCategory(
     override val labelRes: Int,
 ) : TabbedPageCategory {
     Access(LucideR.drawable.lucide_ic_shield_check, R.string.settings_category_access),
-    Appearance(LucideR.drawable.lucide_ic_palette, R.string.settings_category_appearance),
-    Effects(LucideR.drawable.lucide_ic_sliders_horizontal, R.string.settings_category_effects),
+    KeepAlive(LucideR.drawable.lucide_ic_bell, R.string.settings_category_keep_alive),
+    Interface(LucideR.drawable.lucide_ic_palette, R.string.settings_category_interface),
     Data(LucideR.drawable.lucide_ic_database, R.string.settings_category_data),
 }
 
@@ -23,8 +23,8 @@ internal fun SettingsCategory.label(): String {
     return stringResource(
         when (this) {
             SettingsCategory.Access -> R.string.settings_category_access
-            SettingsCategory.Appearance -> R.string.settings_category_appearance
-            SettingsCategory.Effects -> R.string.settings_category_effects
+            SettingsCategory.KeepAlive -> R.string.settings_category_keep_alive
+            SettingsCategory.Interface -> R.string.settings_category_interface
             SettingsCategory.Data -> R.string.settings_category_data
         }
     )
@@ -34,8 +34,8 @@ internal fun SettingsCategory.label(): String {
 internal fun SettingsCategory.icon(): ImageVector {
     val drawableRes = when (this) {
         SettingsCategory.Access -> LucideR.drawable.lucide_ic_shield_check
-        SettingsCategory.Appearance -> LucideR.drawable.lucide_ic_palette
-        SettingsCategory.Effects -> LucideR.drawable.lucide_ic_sliders_horizontal
+        SettingsCategory.KeepAlive -> LucideR.drawable.lucide_ic_bell
+        SettingsCategory.Interface -> LucideR.drawable.lucide_ic_palette
         SettingsCategory.Data -> LucideR.drawable.lucide_ic_database
     }
     return ImageVector.vectorResource(drawableRes)
