@@ -40,6 +40,8 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
+import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.KeiOsMcpToolPlugins
 import os.kei.mcp.server.LocalMcpService
@@ -130,6 +132,7 @@ class MainActivity : ComponentActivity() {
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         consumeIntentNavigation(intent)
+        restoreAccessibilityGuardForegroundServiceIfNeeded()
 
         val appLabel =
             runCatching {
@@ -287,6 +290,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun hasLocalNetworkPermission(): Boolean = LocalNetworkPermissionCompat.hasPermission(this)
+
+    private fun restoreAccessibilityGuardForegroundServiceIfNeeded() {
+        lifecycleScope.launch(AppDispatchers.fileIo) {
+            runCatching {
+                val settings = AccessibilityGuardRuntime.newStateStore().loadSettings()
+                if (settings.daemonEnabled) {
+                    AccessibilityGuardForegroundService.start(applicationContext)
+                }
+            }
+        }
+    }
 
     private fun consumeIntentNavigation(intent: Intent?) {
         pendingMcpServerAction = null
