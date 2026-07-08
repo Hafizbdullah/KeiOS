@@ -39,6 +39,7 @@ data class GitHubRefreshRuntimeSession(
     val id: Long,
     val scope: GitHubRefreshScope,
     val source: GitHubRefreshSource,
+    val targetTrackIds: List<String> = emptyList(),
 )
 
 data class GitHubRefreshRuntimeState(
@@ -49,6 +50,7 @@ data class GitHubRefreshRuntimeState(
     val running: Boolean = false,
     val totalTrackedCount: Int = 0,
     val targetCount: Int = 0,
+    val targetTrackIds: List<String> = emptyList(),
     val completedCount: Int = 0,
     val updatableCount: Int = 0,
     val preReleaseUpdateCount: Int = 0,
@@ -78,6 +80,7 @@ object GitHubRefreshRuntimeStore {
         source: GitHubRefreshSource,
         totalTrackedCount: Int,
         targetCount: Int,
+        targetTrackIds: Collection<String> = emptyList(),
         policy: GitHubRefreshBeginPolicy = GitHubRefreshBeginPolicy.SupersedeRunning,
         nowMs: Long = System.currentTimeMillis(),
     ): GitHubRefreshRuntimeSession? =
@@ -87,6 +90,7 @@ object GitHubRefreshRuntimeStore {
                 return@synchronized null
             }
             val sessionId = sessionIds.incrementAndGet()
+            val normalizedTargetTrackIds = normalizeRuntimeTargetTrackIds(targetTrackIds)
             _state.value =
                 GitHubRefreshRuntimeState(
                     sessionId = sessionId,
@@ -96,6 +100,7 @@ object GitHubRefreshRuntimeStore {
                     running = true,
                     totalTrackedCount = totalTrackedCount.coerceAtLeast(0),
                     targetCount = targetCount.coerceAtLeast(0),
+                    targetTrackIds = normalizedTargetTrackIds,
                     completedCount = 0,
                     startedAtMs = nowMs,
                     updatedAtMs = nowMs,
@@ -104,6 +109,7 @@ object GitHubRefreshRuntimeStore {
                 id = sessionId,
                 scope = scope,
                 source = source,
+                targetTrackIds = normalizedTargetTrackIds,
             )
         }
 
@@ -192,3 +198,14 @@ object GitHubRefreshRuntimeStore {
         }
     }
 }
+
+private const val MAX_RUNTIME_TARGET_TRACK_IDS = 512
+
+private fun normalizeRuntimeTargetTrackIds(targetTrackIds: Collection<String>): List<String> =
+    targetTrackIds
+        .asSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .take(MAX_RUNTIME_TARGET_TRACK_IDS)
+        .toList()

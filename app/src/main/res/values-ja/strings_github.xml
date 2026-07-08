@@ -73,6 +73,10 @@
     <string name="github_history_refresh_time_finished">完了 %1$s</string>
     <string name="github_history_refresh_outcome_cancelled">中断</string>
     <string name="github_history_refresh_outcome_partial_failed">一部失敗</string>
+    <string name="github_history_refresh_action_retry_incremental_count">%1$d件を再更新</string>
+    <string name="github_history_refresh_retry_requested">%1$d件の再更新を予約しました</string>
+    <string name="github_history_refresh_retry_failed">再更新を予約できませんでした：%1$s</string>
+    <string name="github_history_refresh_retry_unavailable">この記録には再更新できる項目がありません</string>
     <string name="github_history_refresh_label_source">ソース</string>
     <string name="github_history_refresh_label_scope">範囲</string>
     <string name="github_history_refresh_label_purpose">目的</string>

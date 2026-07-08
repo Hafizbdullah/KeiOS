@@ -78,6 +78,7 @@ internal class GitHubRefreshBatchActions(
                             source = GitHubRefreshSource.Page,
                             totalTrackedCount = state.trackedItems.size,
                             targetCount = snapshot.size,
+                            targetTrackIds = targetIds,
                             nowMs = refreshStartedAtMs,
                         ),
                     )

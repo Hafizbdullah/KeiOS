@@ -76,6 +76,7 @@ class GitHubRefreshHistoryStoreTest {
             outcome = GitHubRefreshHistoryOutcome.Completed,
             totalTrackedCount = 77,
             targetCount = 77,
+            targetTrackIds = listOf("track-a", "track-b", "track-c"),
             completedCount = 77,
             updatableCount = 2,
             preReleaseUpdateCount = 1,

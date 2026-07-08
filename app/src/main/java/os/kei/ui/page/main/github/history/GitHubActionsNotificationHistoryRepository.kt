@@ -58,6 +58,10 @@ internal class GitHubActionsNotificationHistoryRepository(
         return refreshHistoryService.loadHistory().map(::GitHubRefreshHistoryUiRecord)
     }
 
+    suspend fun requestTrackRefresh(trackIds: Collection<String>) {
+        trackService.requestTrackRefresh(trackIds)
+    }
+
     suspend fun pruneRefreshHistoryOlderThanDays(
         days: Int,
         nowMillis: Long = System.currentTimeMillis(),

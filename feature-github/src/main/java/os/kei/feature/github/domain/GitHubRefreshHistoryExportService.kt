@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import java.util.Locale
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -259,6 +260,12 @@ private fun GitHubRefreshHistoryRecord.toJson() =
         put("outcome", outcome.name)
         put("totalTrackedCount", totalTrackedCount)
         put("targetCount", targetCount)
+        put(
+            "targetTrackIds",
+            buildJsonArray {
+                targetTrackIds.forEach { trackId -> add(JsonPrimitive(trackId)) }
+            },
+        )
         put("completedCount", completedCount)
         put("updatableCount", updatableCount)
         put("preReleaseUpdateCount", preReleaseUpdateCount)

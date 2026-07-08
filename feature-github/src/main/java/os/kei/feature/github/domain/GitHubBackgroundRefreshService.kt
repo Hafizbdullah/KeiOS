@@ -79,6 +79,7 @@ class GitHubBackgroundRefreshService(
                             source = GitHubRefreshSource.BackgroundTick,
                             totalTrackedCount = tracked.size,
                             targetCount = trackedUpdateTargetItems.size,
+                            targetTrackIds = trackedUpdateTargetItems.map { it.id },
                             policy = GitHubRefreshBeginPolicy.SkipWhenRunning,
                             nowMs = nowMs,
                         )
@@ -191,6 +192,7 @@ class GitHubBackgroundRefreshService(
                         source = GitHubRefreshSource.Shortcut,
                         totalTrackedCount = tracked.size,
                         targetCount = tracked.size,
+                        targetTrackIds = tracked.map { it.id },
                         nowMs = nowMs,
                     ),
                 )

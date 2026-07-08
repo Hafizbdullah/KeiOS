@@ -213,5 +213,13 @@ fun MainScreen(
                 navigator.popUntil { route -> route == KeiosRoute.Main }
             }
         },
+        onRetryGitHubRefreshTargetsFromHistory = { trackIds ->
+            if (trackIds.isNotEmpty()) {
+                localRequestedBottomPage = BottomPage.GitHub.name
+                localRequestedBottomPageToken += 1
+                localRequestedGitHubActionsTrackId = null
+                navigator.popUntil { route -> route == KeiosRoute.Main }
+            }
+        },
     )
 }

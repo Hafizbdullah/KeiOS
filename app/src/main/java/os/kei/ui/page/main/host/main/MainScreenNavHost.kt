@@ -78,6 +78,7 @@ internal fun MainScreenNavHost(
     transientExternalLaunchActive: Boolean,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
     onOpenGitHubActionsTrackFromHistory: (String) -> Unit,
+    onRetryGitHubRefreshTargetsFromHistory: (List<String>) -> Unit,
 ) {
     val backCoordinator =
         rememberMainScreenBackCoordinator(
@@ -299,6 +300,7 @@ internal fun MainScreenNavHost(
                                 GitHubActionsNotificationHistoryPage(
                                     onBack = onRouteBack,
                                     onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
+                                    onRetryRefreshTargets = onRetryGitHubRefreshTargetsFromHistory,
                                 )
                             }
                         }

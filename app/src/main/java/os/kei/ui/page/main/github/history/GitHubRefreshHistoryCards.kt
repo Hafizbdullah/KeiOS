@@ -27,6 +27,7 @@ import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.ui.page.main.os.appLucideFilterIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.github.sheet.trackedSourceModeLabel
 import os.kei.ui.page.main.widget.core.AppFeatureCard
@@ -35,6 +36,8 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -177,8 +180,10 @@ internal fun GitHubRefreshHistoryRecordCard(
     expanded: Boolean,
     modifier: Modifier = Modifier,
     onExpandedChange: (Boolean) -> Unit,
+    onRetryRefreshTargets: (List<String>) -> Unit,
 ) {
     val record = item.record
+    val retryTargetIds = remember(record) { record.refreshHistoryRetryTargetIds() }
     val finishedAt = rememberGitHubHistoryDateTime(record.finishedAtMillis)
     val title =
         stringResource(
@@ -339,7 +344,40 @@ internal fun GitHubRefreshHistoryRecordCard(
                     failure = failure,
                 )
             }
+            if (retryTargetIds.isNotEmpty()) {
+                GitHubRefreshHistoryRetryActionRow(
+                    retryTargetCount = retryTargetIds.size,
+                    onRetryRefresh = { onRetryRefreshTargets(retryTargetIds) },
+                )
+            }
         }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GitHubRefreshHistoryRetryActionRow(
+    retryTargetCount: Int,
+    onRetryRefresh: () -> Unit,
+) {
+    FlowRow(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = CardLayoutRhythm.controlRowTextGap),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        AppLiquidTextButton(
+            backdrop = null,
+            text = stringResource(R.string.github_history_refresh_action_retry_incremental_count, retryTargetCount),
+            leadingIcon = appLucideRefreshIcon(),
+            variant = GlassVariant.Compact,
+            textMaxLines = 1,
+            textOverflow = TextOverflow.Ellipsis,
+            onClick = onRetryRefresh,
+        )
     }
 }
 

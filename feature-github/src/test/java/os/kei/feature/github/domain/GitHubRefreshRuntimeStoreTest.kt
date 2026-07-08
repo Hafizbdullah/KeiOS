@@ -22,10 +22,12 @@ class GitHubRefreshRuntimeStoreTest {
                 source = GitHubRefreshSource.Page,
                 totalTrackedCount = 75,
                 targetCount = 75,
+                targetTrackIds = listOf("track-a", "track-b"),
                 nowMs = 1_000L,
             )
 
         assertNotNull(session)
+        assertEquals(listOf("track-a", "track-b"), session.targetTrackIds)
         val state = GitHubRefreshRuntimeStore.state.value
         assertEquals(session.id, state.sessionId)
         assertEquals(GitHubRefreshRuntimePhase.Running, state.phase)
@@ -33,6 +35,7 @@ class GitHubRefreshRuntimeStoreTest {
         assertEquals(GitHubRefreshSource.Page, state.source)
         assertEquals(75, state.totalTrackedCount)
         assertEquals(75, state.targetCount)
+        assertEquals(listOf("track-a", "track-b"), state.targetTrackIds)
         assertEquals(1_000L, state.startedAtMs)
         assertTrue(state.running)
     }

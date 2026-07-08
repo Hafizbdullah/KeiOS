@@ -53,6 +53,7 @@ data class GitHubRefreshHistoryRecord(
     val outcome: GitHubRefreshHistoryOutcome,
     val totalTrackedCount: Int,
     val targetCount: Int,
+    val targetTrackIds: List<String> = emptyList(),
     val completedCount: Int,
     val updatableCount: Int,
     val preReleaseUpdateCount: Int,

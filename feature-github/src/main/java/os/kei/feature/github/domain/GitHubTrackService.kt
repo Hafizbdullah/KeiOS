@@ -153,6 +153,26 @@ class GitHubTrackService(
         }
     }
 
+    suspend fun requestTrackRefresh(trackIds: Collection<String>) {
+        withContext(ioDispatcher) {
+            val normalizedTrackIds =
+                trackIds
+                    .asSequence()
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .toList()
+            if (normalizedTrackIds.isEmpty()) return@withContext
+            normalizedTrackIds.forEach { trackId ->
+                GitHubTrackStoreSignals.requestTrackRefresh(
+                    trackId = trackId,
+                    notifyChangeSignal = false,
+                )
+            }
+            GitHubTrackStoreSignals.notifyChanged()
+        }
+    }
+
     suspend fun saveCheckCache(
         states: Map<String, GitHubCheckCacheEntry>,
         refreshTimestamp: Long,

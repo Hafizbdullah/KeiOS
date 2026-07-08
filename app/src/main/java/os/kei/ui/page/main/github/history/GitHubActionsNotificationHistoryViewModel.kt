@@ -24,6 +24,7 @@ import os.kei.feature.github.domain.GitHubHistoryUnreadEventTimes
 import os.kei.feature.github.domain.GitHubRefreshHistoryOutcomeFilter
 import os.kei.feature.github.domain.GitHubRefreshHistoryQuery
 import os.kei.feature.github.domain.GitHubRefreshHistoryQueryDefaults
+import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.ui.page.main.github.page.GitHubAppIconLoader
 import os.kei.ui.page.main.github.page.GitHubAppIconUiState
 
@@ -63,6 +64,16 @@ internal sealed interface GitHubActionsNotificationHistoryEvent {
     data object RefreshHistoryExported : GitHubActionsNotificationHistoryEvent
 
     data class RefreshHistoryExportFailed(
+        val reason: String,
+    ) : GitHubActionsNotificationHistoryEvent
+
+    data class RefreshRetryRequested(
+        val targetIds: List<String>,
+    ) : GitHubActionsNotificationHistoryEvent
+
+    data object RefreshRetryUnavailable : GitHubActionsNotificationHistoryEvent
+
+    data class RefreshRetryRequestFailed(
         val reason: String,
     ) : GitHubActionsNotificationHistoryEvent
 }
@@ -317,6 +328,32 @@ internal class GitHubActionsNotificationHistoryViewModel(
                     )
                 }
                 _uiState.update { state -> state.copy(exportInProgress = false) }
+            }
+        }
+    }
+
+    fun requestRetryRefresh(record: GitHubRefreshHistoryRecord) {
+        viewModelScope.launch {
+            val targetIds = record.refreshHistoryRetryTargetIds()
+            if (targetIds.isEmpty()) {
+                _events.emit(GitHubActionsNotificationHistoryEvent.RefreshRetryUnavailable)
+                return@launch
+            }
+            runCatching {
+                repository.requestTrackRefresh(targetIds)
+            }.onSuccess {
+                _events.emit(
+                    GitHubActionsNotificationHistoryEvent.RefreshRetryRequested(
+                        targetIds = targetIds,
+                    ),
+                )
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                _events.emit(
+                    GitHubActionsNotificationHistoryEvent.RefreshRetryRequestFailed(
+                        reason = error.message.orEmpty(),
+                    ),
+                )
             }
         }
     }

@@ -116,6 +116,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     source = GitHubRefreshSource.Page,
                     totalTrackedCount = state.trackedItems.size,
                     targetCount = items.size,
+                    targetTrackIds = items.map { it.id },
                     policy = GitHubRefreshBeginPolicy.SkipWhenRunning,
                     nowMs = refreshStartedAtMs,
                 )

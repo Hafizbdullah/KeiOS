@@ -4,8 +4,10 @@ import com.tencent.mmkv.MMKV
 import java.security.MessageDigest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 import os.kei.core.json.encodeCompact
 import os.kei.core.json.optArray
@@ -27,6 +29,7 @@ object GitHubRefreshHistoryStore {
     private const val KV_ID = "github_refresh_history"
     private const val KEY_INDEX = "entry_index"
     internal const val MAX_RECORDS = 240
+    private const val MAX_TARGET_TRACK_IDS_PER_RECORD = 512
 
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
@@ -94,6 +97,14 @@ object GitHubRefreshHistoryStore {
             put("outcome", record.outcome.name)
             put("totalTrackedCount", record.totalTrackedCount)
             put("targetCount", record.targetCount)
+            put(
+                "targetTrackIds",
+                buildJsonArray {
+                    record.targetTrackIds.forEach { trackId ->
+                        add(JsonPrimitive(trackId))
+                    }
+                },
+            )
             put("completedCount", record.completedCount)
             put("updatableCount", record.updatableCount)
             put("preReleaseUpdateCount", record.preReleaseUpdateCount)
@@ -152,6 +163,12 @@ object GitHubRefreshHistoryStore {
                 outcome = enumValueOrDefault(obj.optString("outcome"), GitHubRefreshHistoryOutcome.Completed),
                 totalTrackedCount = obj.optInt("totalTrackedCount", 0).coerceAtLeast(0),
                 targetCount = obj.optInt("targetCount", 0).coerceAtLeast(0),
+                targetTrackIds =
+                    obj.optArray("targetTrackIds")
+                        ?.mapNotNull { element -> (element as? JsonPrimitive)?.contentOrNull?.trim() }
+                        ?.filter { it.isNotBlank() }
+                        ?.distinct()
+                        .orEmpty(),
                 completedCount = obj.optInt("completedCount", 0).coerceAtLeast(0),
                 updatableCount = obj.optInt("updatableCount", 0).coerceAtLeast(0),
                 preReleaseUpdateCount = obj.optInt("preReleaseUpdateCount", 0).coerceAtLeast(0),
@@ -198,6 +215,14 @@ object GitHubRefreshHistoryStore {
             id = id.trim(),
             totalTrackedCount = totalTrackedCount.coerceAtLeast(0),
             targetCount = targetCount.coerceAtLeast(0),
+            targetTrackIds =
+                targetTrackIds
+                    .asSequence()
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .take(MAX_TARGET_TRACK_IDS_PER_RECORD)
+                    .toList(),
             completedCount = completedCount.coerceAtLeast(0),
             updatableCount = updatableCount.coerceAtLeast(0),
             preReleaseUpdateCount = preReleaseUpdateCount.coerceAtLeast(0),

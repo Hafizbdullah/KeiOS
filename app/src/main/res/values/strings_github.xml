@@ -73,6 +73,10 @@
     <string name="github_history_refresh_time_finished">完成 %1$s</string>
     <string name="github_history_refresh_outcome_cancelled">已中断</string>
     <string name="github_history_refresh_outcome_partial_failed">部分失败</string>
+    <string name="github_history_refresh_action_retry_incremental_count">增量刷新 %1$d 项</string>
+    <string name="github_history_refresh_retry_requested">已请求增量刷新 %1$d 项</string>
+    <string name="github_history_refresh_retry_failed">请求增量刷新失败：%1$s</string>
+    <string name="github_history_refresh_retry_unavailable">这条记录暂无可重试项目</string>
     <string name="github_history_refresh_label_source">来源</string>
     <string name="github_history_refresh_label_scope">范围</string>
     <string name="github_history_refresh_label_purpose">目的</string>

@@ -85,6 +85,7 @@ import java.util.Locale
 internal fun GitHubActionsNotificationHistoryPage(
     onBack: () -> Unit,
     onOpenTrackActions: (String) -> Unit,
+    onRetryRefreshTargets: (List<String>) -> Unit,
     viewModel: GitHubActionsNotificationHistoryViewModel = viewModel(),
 ) {
     val context = LocalContext.current
@@ -203,6 +204,27 @@ internal fun GitHubActionsNotificationHistoryPage(
                         context.showToast(
                             context.getString(
                                 R.string.common_export_failed_with_reason,
+                                event.reason.ifBlank { context.getString(R.string.common_unknown) },
+                            ),
+                        )
+
+                    is GitHubActionsNotificationHistoryEvent.RefreshRetryRequested -> {
+                        context.showToast(
+                            context.getString(
+                                R.string.github_history_refresh_retry_requested,
+                                event.targetIds.size,
+                            ),
+                        )
+                        onRetryRefreshTargets(event.targetIds)
+                    }
+
+                    GitHubActionsNotificationHistoryEvent.RefreshRetryUnavailable ->
+                        context.showToast(context.getString(R.string.github_history_refresh_retry_unavailable))
+
+                    is GitHubActionsNotificationHistoryEvent.RefreshRetryRequestFailed ->
+                        context.showToast(
+                            context.getString(
+                                R.string.github_history_refresh_retry_failed,
                                 event.reason.ifBlank { context.getString(R.string.common_unknown) },
                             ),
                         )
@@ -466,6 +488,7 @@ internal fun GitHubActionsNotificationHistoryPage(
                                                 expandedRefreshRecordKeys - recordKey
                                             }
                                     },
+                                    onRetryRefreshTargets = { viewModel.requestRetryRefresh(item.record) },
                                 )
                             }
                         }
