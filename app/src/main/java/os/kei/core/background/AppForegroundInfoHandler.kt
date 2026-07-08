@@ -13,6 +13,7 @@ import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubBackgroundRefreshService
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.feature.github.domain.GitHubRefreshRuntimePhase
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
 import os.kei.feature.github.domain.GitHubRefreshHistoryService
@@ -238,7 +239,13 @@ object AppForegroundInfoHandler {
         schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
     ) {
         val runtime = GitHubRefreshRuntimeStore.state.value
-        val ownsRuntime = runtime.running && runtime.source == GitHubRefreshSource.BackgroundTick
+        val ownsRuntime =
+            runtime.source == GitHubRefreshSource.BackgroundTick &&
+                runtime.sessionId > 0L &&
+                (
+                    runtime.running ||
+                        runtime.phase == GitHubRefreshRuntimePhase.Cancelled
+                )
         if (ownsRuntime) {
             runCatching {
                 githubRefreshHistoryService.recordRuntimeState(
@@ -262,6 +269,51 @@ object AppForegroundInfoHandler {
                 failedCount = runtime.failedCount,
             )
         }
+        if (ownsRuntime && runtime.targetCount > 0) {
+            val terminalPosted =
+                runCatching {
+                    when (outcome) {
+                        GitHubRefreshHistoryOutcome.Failed ->
+                            GitHubRefreshNotificationHelper.notifyFailed(
+                                context = context,
+                                current = runtime.completedCount,
+                                total = runtime.targetCount,
+                                preReleaseUpdateCount = runtime.preReleaseUpdateCount,
+                                updatableCount = runtime.updatableCount,
+                                failedCount = runtime.failedCount.coerceAtLeast(1),
+                                sessionId = runtime.sessionId,
+                                scope = runtime.scope,
+                                source = runtime.source,
+                                totalTrackedCount = runtime.totalTrackedCount,
+                            )
+
+                        GitHubRefreshHistoryOutcome.Cancelled ->
+                            GitHubRefreshNotificationHelper.notifyCancelled(
+                                context = context,
+                                current = runtime.completedCount,
+                                total = runtime.targetCount,
+                                preReleaseUpdateCount = runtime.preReleaseUpdateCount,
+                                updatableCount = runtime.updatableCount,
+                                failedCount = runtime.failedCount,
+                                sessionId = runtime.sessionId,
+                                scope = runtime.scope,
+                                source = runtime.source,
+                                totalTrackedCount = runtime.totalTrackedCount,
+                            )
+
+                        GitHubRefreshHistoryOutcome.Completed -> false
+                    }
+                }.getOrElse { error ->
+                    AppLogger.w(
+                        "AppForegroundInfoHandler",
+                        "$reason terminal notification failed",
+                        error
+                    )
+                    false
+                }
+            if (terminalPosted) return
+        }
+
         val shouldCancelNotification = !runtime.running || ownsRuntime
         if (!shouldCancelNotification) return
         runCatching { GitHubRefreshNotificationHelper.cancel(context) }

@@ -446,6 +446,30 @@ internal class GitHubPageRepository(
         totalTrackedCount = totalTrackedCount,
     )
 
+    suspend fun notifyRefreshFailed(
+        context: Context,
+        current: Int,
+        total: Int,
+        preReleaseUpdateCount: Int,
+        updatableCount: Int,
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int,
+    ) = refreshRepository.notifyRefreshFailed(
+        context = context,
+        current = current,
+        total = total,
+        preReleaseUpdateCount = preReleaseUpdateCount,
+        updatableCount = updatableCount,
+        failedCount = failedCount,
+        sessionId = sessionId,
+        scope = scope,
+        source = source,
+        totalTrackedCount = totalTrackedCount,
+    )
+
     suspend fun notifyRefreshCancelled(
         context: Context,
         current: Int,

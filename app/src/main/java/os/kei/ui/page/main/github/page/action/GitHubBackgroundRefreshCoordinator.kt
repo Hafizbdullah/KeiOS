@@ -383,18 +383,33 @@ internal class GitHubBackgroundRefreshCoordinator(
                 failedCount = failedCount,
             )
             runCatching {
-                repository.notifyRefreshCancelled(
-                    context = context,
-                    current = completedCount,
-                    total = current.targetCount,
-                    preReleaseUpdateCount = preReleaseUpdateCount,
-                    updatableCount = updatableCount,
-                    failedCount = failedCount,
-                    sessionId = runtimeSessionId,
-                    scope = current.scope,
-                    source = current.source,
-                    totalTrackedCount = current.totalTrackedCount,
-                )
+                if (outcome == GitHubRefreshHistoryOutcome.Failed) {
+                    repository.notifyRefreshFailed(
+                        context = context,
+                        current = completedCount,
+                        total = current.targetCount,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = failedCount,
+                        sessionId = runtimeSessionId,
+                        scope = current.scope,
+                        source = current.source,
+                        totalTrackedCount = current.totalTrackedCount,
+                    )
+                } else {
+                    repository.notifyRefreshCancelled(
+                        context = context,
+                        current = completedCount,
+                        total = current.targetCount,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = failedCount,
+                        sessionId = runtimeSessionId,
+                        scope = current.scope,
+                        source = current.source,
+                        totalTrackedCount = current.totalTrackedCount,
+                    )
+                }
             }.onFailure { error ->
                 AppLogger.w(
                     "GitHubBackgroundRefresh",

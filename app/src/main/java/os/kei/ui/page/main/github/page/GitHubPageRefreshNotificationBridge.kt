@@ -84,6 +84,47 @@ internal class GitHubPageRefreshNotificationBridge(
         }
     }
 
+    suspend fun notifyFailed(
+        context: Context,
+        current: Int,
+        total: Int,
+        preReleaseUpdateCount: Int,
+        updatableCount: Int,
+        failedCount: Int,
+        sessionId: Long,
+        scope: GitHubRefreshScope,
+        source: GitHubRefreshSource,
+        totalTrackedCount: Int
+    ): Boolean {
+        return withContext(notificationDispatcher) {
+            val posted =
+                runCatching {
+                    GitHubRefreshNotificationHelper.notifyFailed(
+                        context = context,
+                        current = current,
+                        total = total,
+                        preReleaseUpdateCount = preReleaseUpdateCount,
+                        updatableCount = updatableCount,
+                        failedCount = failedCount,
+                        sessionId = sessionId,
+                        scope = scope,
+                        source = source,
+                        totalTrackedCount = totalTrackedCount
+                    )
+                }.getOrElse { error ->
+                    AppLogger.w(TAG, "github refresh failed notification failed", error)
+                    false
+                }
+            if (!posted) {
+                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                    .onFailure { error ->
+                        AppLogger.w(TAG, "github refresh failed notification cleanup failed", error)
+                    }
+            }
+            posted
+        }
+    }
+
     suspend fun notifyCancelled(
         context: Context,
         current: Int,

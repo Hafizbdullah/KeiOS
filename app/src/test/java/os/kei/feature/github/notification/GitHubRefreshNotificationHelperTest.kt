@@ -150,7 +150,7 @@ class GitHubRefreshNotificationHelperTest {
     }
 
     @Test
-    fun `mi island due refresh summary uses tracked denominator`() {
+    fun `mi island due refresh summary uses target denominator and expanded total context`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = createRefreshState(
             running = true,
@@ -166,17 +166,18 @@ class GitHubRefreshNotificationHelperTest {
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1, 75)))
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1)))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_partial_compact, 1, 0, 0),
+                context.getString(os.kei.R.string.github_refresh_content_compact, 1, 1, 0, 0),
             ),
         )
-        assertTrue(focusParam.contains("\"content\":\"1/75\""))
+        assertTrue(focusParam.contains("\"content\":\"1/1\""))
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_total_context, 75)))
     }
 
     @Test
-    fun `legacy due refresh summary uses scoped target text`() {
+    fun `legacy due refresh summary uses target progress text`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = createRefreshState(
             running = true,
@@ -194,14 +195,42 @@ class GitHubRefreshNotificationHelperTest {
         assertEquals(
             context.getString(
                 os.kei.R.string.github_refresh_content_scoped,
-                context.getString(os.kei.R.string.github_refresh_scope_due, 1, 75),
-                context.getString(os.kei.R.string.github_refresh_content_partial, 1, 0, 0),
+                context.getString(os.kei.R.string.github_refresh_scope_due, 1),
+                context.getString(os.kei.R.string.github_refresh_content, 1, 1, 0, 0),
             ),
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
         assertEquals(
-            context.getString(os.kei.R.string.common_progress_with_value, "1/75"),
+            context.getString(os.kei.R.string.common_progress_with_value, "1/1"),
             notification.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString(),
+        )
+    }
+
+    @Test
+    fun `mi island failed terminal keeps partial progress and failure title`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = false,
+            current = 2,
+            total = 5,
+            failedCount = 1,
+            displayProgressPercent = 40,
+            scope = GitHubRefreshScope.DueTracked,
+            source = GitHubRefreshSource.BackgroundTick,
+            totalTrackedCount = 75,
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(
+            context.getString(os.kei.R.string.github_refresh_title_failed),
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+        )
+        assertTrue(focusParam.contains("\"content\":\"2/5\""))
+        assertTrue(
+            focusParam.contains(
+                context.getString(os.kei.R.string.github_refresh_content_compact_with_failed, 2, 5, 1, 2, 1)
+            )
         )
     }
 

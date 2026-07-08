@@ -79,8 +79,8 @@ object GitHubRefreshNotificationHelper {
         val shortText: String
             get() = "$safeCurrent/$safeTotal"
 
-        val trackedText: String
-            get() = "$safeCurrent/$safeTotalTrackedCount"
+        val targetText: String
+            get() = "$safeCurrent/$safeTotal"
 
         val partialScope: Boolean
             get() =
@@ -197,6 +197,45 @@ object GitHubRefreshNotificationHelper {
         )
     }
 
+    fun notifyFailed(
+        context: Context,
+        current: Int,
+        total: Int,
+        preReleaseUpdateCount: Int,
+        updatableCount: Int,
+        failedCount: Int,
+        sessionId: Long = 0L,
+        scope: GitHubRefreshScope = GitHubRefreshScope.AllTracked,
+        source: GitHubRefreshSource = GitHubRefreshSource.Page,
+        totalTrackedCount: Int = total
+    ): Boolean {
+        val safeTotal = total.coerceAtLeast(1)
+        val safeCurrent = current.coerceIn(0, safeTotal)
+        val displayProgressPercent = resolveFailedDisplayProgressPercent(
+            sessionId = sessionId,
+            current = safeCurrent,
+            total = safeTotal,
+        ) ?: return false
+        return notifyInternal(
+            context = context,
+            state = RefreshState(
+                current = safeCurrent,
+                total = safeTotal,
+                preReleaseUpdateCount = preReleaseUpdateCount,
+                updatableCount = updatableCount,
+                failedCount = failedCount.coerceAtLeast(1),
+                running = false,
+                cancelled = false,
+                displayProgressPercent = displayProgressPercent,
+                sessionId = sessionId,
+                scope = scope,
+                source = source,
+                totalTrackedCount = totalTrackedCount
+            ),
+            onlyAlertOnce = true
+        )
+    }
+
     fun notifyCancelled(
         context: Context,
         current: Int,
@@ -279,6 +318,20 @@ object GitHubRefreshNotificationHelper {
         resetDisplayProgressLocked()
     }
 
+    private fun resolveFailedDisplayProgressPercent(
+        sessionId: Long,
+        current: Int,
+        total: Int,
+    ): Int? = synchronized(progressLock) {
+        if (!activateNotificationSessionLocked(sessionId)) return@synchronized null
+        val safeTotal = total.coerceAtLeast(1)
+        val safeCurrent = current.coerceIn(0, safeTotal)
+        resetDisplayProgressLocked()
+        ((safeCurrent.toFloat() / safeTotal.toFloat()) * 100f)
+            .roundToInt()
+            .coerceIn(0, 100)
+    }
+
     private fun activateNotificationSessionLocked(sessionId: Long): Boolean {
         if (sessionId <= 0L) return true
         if (activeNotificationSessionId != 0L && sessionId < activeNotificationSessionId) {
@@ -300,47 +353,34 @@ object GitHubRefreshNotificationHelper {
         return when {
             state.running -> context.getString(R.string.github_refresh_title_running)
             state.cancelled -> context.getString(R.string.github_refresh_title_cancelled)
+            state.failedCount > 0 && state.safeCurrent < state.safeTotal ->
+                context.getString(R.string.github_refresh_title_failed)
+
+            state.failedCount > 0 ->
+                context.getString(R.string.github_refresh_title_partial_failed)
+
             else -> context.getString(R.string.github_refresh_title_completed)
         }
     }
 
     private fun resolveContent(context: Context, state: RefreshState): String {
-        val body = if (state.partialScope) {
-            if (state.failedCount > 0) {
-                context.getString(
-                    R.string.github_refresh_content_partial_with_failed,
-                    state.safeCurrent,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount,
-                    state.failedCount
-                )
-            } else {
-                context.getString(
-                    R.string.github_refresh_content_partial,
-                    state.safeCurrent,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount
-                )
-            }
+        val body = if (state.failedCount > 0) {
+            context.getString(
+                R.string.github_refresh_content_with_failed,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount,
+                state.failedCount
+            )
         } else {
-            if (state.failedCount > 0) {
-                context.getString(
-                    R.string.github_refresh_content_with_failed,
-                    state.safeCurrent,
-                    state.safeTotal,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount,
-                    state.failedCount
-                )
-            } else {
-                context.getString(
-                    R.string.github_refresh_content,
-                    state.safeCurrent,
-                    state.safeTotal,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount
-                )
-            }
+            context.getString(
+                R.string.github_refresh_content,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount
+            )
         }
         return context.getString(
             R.string.github_refresh_content_scoped,
@@ -350,42 +390,23 @@ object GitHubRefreshNotificationHelper {
     }
 
     private fun resolveCondensedContent(context: Context, state: RefreshState): String {
-        val body = if (state.partialScope) {
-            if (state.failedCount > 0) {
-                context.getString(
-                    R.string.github_refresh_content_partial_compact_with_failed,
-                    state.safeCurrent,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount,
-                    state.failedCount
-                )
-            } else {
-                context.getString(
-                    R.string.github_refresh_content_partial_compact,
-                    state.safeCurrent,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount
-                )
-            }
+        val body = if (state.failedCount > 0) {
+            context.getString(
+                R.string.github_refresh_content_compact_with_failed,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount,
+                state.failedCount
+            )
         } else {
-            if (state.failedCount > 0) {
-                context.getString(
-                    R.string.github_refresh_content_compact_with_failed,
-                    state.safeCurrent,
-                    state.safeTotal,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount,
-                    state.failedCount
-                )
-            } else {
-                context.getString(
-                    R.string.github_refresh_content_compact,
-                    state.safeCurrent,
-                    state.safeTotal,
-                    state.preReleaseUpdateCount,
-                    state.updatableCount
-                )
-            }
+            context.getString(
+                R.string.github_refresh_content_compact,
+                state.safeCurrent,
+                state.safeTotal,
+                state.preReleaseUpdateCount,
+                state.updatableCount
+            )
         }
         return context.getString(
             R.string.github_refresh_content_scoped,
@@ -409,29 +430,25 @@ object GitHubRefreshNotificationHelper {
             GitHubRefreshScope.DueTracked ->
                 context.getString(
                     if (compact) R.string.github_refresh_scope_due_compact else R.string.github_refresh_scope_due,
-                    state.safeTotal,
-                    state.safeTotalTrackedCount
+                    state.safeTotal
                 )
 
             GitHubRefreshScope.VisibleTracked ->
                 context.getString(
                     if (compact) R.string.github_refresh_scope_visible_compact else R.string.github_refresh_scope_visible,
-                    state.safeTotal,
-                    state.safeTotalTrackedCount
+                    state.safeTotal
                 )
 
             GitHubRefreshScope.RequestedTracked ->
                 context.getString(
                     if (compact) R.string.github_refresh_scope_requested_compact else R.string.github_refresh_scope_requested,
-                    state.safeTotal,
-                    state.safeTotalTrackedCount
+                    state.safeTotal
                 )
 
             GitHubRefreshScope.MissingCache ->
                 context.getString(
                     if (compact) R.string.github_refresh_scope_missing_compact else R.string.github_refresh_scope_missing,
-                    state.safeTotal,
-                    state.safeTotalTrackedCount
+                    state.safeTotal
                 )
 
             GitHubRefreshScope.SingleTracked ->
@@ -454,17 +471,16 @@ object GitHubRefreshNotificationHelper {
     }
 
     private fun resolveCompactFractionText(context: Context, state: RefreshState): String {
-        val denominator =
-            if (state.partialScope) {
-                state.safeTotalTrackedCount
-            } else {
-                state.safeTotal
-            }
         return context.getString(
             R.string.github_refresh_progress_fraction,
-            state.safeCurrent.coerceAtMost(denominator),
-            denominator
+            state.safeCurrent,
+            state.safeTotal
         )
+    }
+
+    private fun resolveExpandedContextText(context: Context, state: RefreshState): String? {
+        if (!state.partialScope) return null
+        return context.getString(R.string.github_refresh_total_context, state.safeTotalTrackedCount)
     }
 
     private fun resolveCompactStateContent(context: Context, state: RefreshState): String? {
@@ -586,7 +602,7 @@ object GitHubRefreshNotificationHelper {
             .setOngoing(state.running)
             .setRequestPromotedOngoing(state.running)
             .setStyle(progressStyle)
-            .setShortCriticalText(if (state.partialScope) state.trackedText else state.shortText)
+            .setShortCriticalText(state.targetText)
             .setDeleteIntent(readPendingIntent)
             .addAction(0, context.getString(R.string.common_open), openPendingIntent)
             .addAction(0, context.getString(R.string.common_acknowledge), readPendingIntent)
@@ -609,7 +625,7 @@ object GitHubRefreshNotificationHelper {
             .setSubText(
                 context.getString(
                     R.string.common_progress_with_value,
-                    if (state.partialScope) state.trackedText else state.shortText
+                    state.targetText
                 )
             )
             .setContentIntent(openPendingIntent)
@@ -656,7 +672,7 @@ object GitHubRefreshNotificationHelper {
                 else NotificationCompat.CATEGORY_STATUS
             )
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setColorized(true)
+            .setColorized(!state.running)
             .setColor(MI_PROGRESS_COLOR.toColorInt())
             .setOngoing(state.running)
             .setOnlyAlertOnce(onlyAlertOnce)
@@ -741,6 +757,7 @@ object GitHubRefreshNotificationHelper {
                     text = MiFocusExpandedText(
                         title = title,
                         content = content.ifBlank { " " },
+                        subContent = resolveExpandedContextText(context, state),
                     )
                 )
             )
@@ -809,9 +826,11 @@ object GitHubRefreshNotificationHelper {
                         },
                 ),
                 expanded = MiFocusExpandedSpec(components = expandedComponents),
-                allowFloat = !state.running,
+                allowFloat = true,
                 islandFirstFloat = true,
                 updatable = true,
+                showNotification = true,
+                timeoutMinutes = if (state.running) 6 else 1,
                 outerGlow = true,
                 business = MI_FOCUS_DEFAULT_BUSINESS,
                 notifyId = NOTIFICATION_ID.toString(),
