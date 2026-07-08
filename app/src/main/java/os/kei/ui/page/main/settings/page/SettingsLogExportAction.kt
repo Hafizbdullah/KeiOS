@@ -25,7 +25,18 @@ internal fun BindSettingsLogExportAction(
         ) { uri ->
             settingsPageViewModel.completeLogExport(context, uri)
         }
-    LaunchedEffect(settingsPageViewModel, logExportLauncher, context) {
+    val accessibilityGuardHistoryExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri ->
+            settingsPageViewModel.completeAccessibilityGuardHistoryExport(context, uri)
+        }
+    LaunchedEffect(
+        settingsPageViewModel,
+        logExportLauncher,
+        accessibilityGuardHistoryExportLauncher,
+        context,
+    ) {
         settingsPageViewModel.events.collect { event ->
             when (event) {
                 is SettingsPageEvent.Toast -> {
@@ -52,6 +63,20 @@ internal fun BindSettingsLogExportAction(
                         context.showToast(
                             context.resolveString(
                                 R.string.settings_log_toast_export_failed,
+                                it.javaClass.simpleName,
+                            ),
+                        )
+                    }
+                }
+
+                is SettingsPageEvent.LaunchAccessibilityGuardHistoryExport -> {
+                    runCatching {
+                        accessibilityGuardHistoryExportLauncher.launch(event.fileName)
+                    }.onFailure {
+                        settingsPageViewModel.finishAccessibilityGuardHistoryExport()
+                        context.showToast(
+                            context.resolveString(
+                                R.string.settings_accessibility_guard_toast_history_export_failed,
                                 it.javaClass.simpleName,
                             ),
                         )

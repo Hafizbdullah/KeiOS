@@ -29,6 +29,7 @@ internal fun BindSettingsPageEffects(
     cacheDiagnosticsEnabled: Boolean,
     logLevel: AppLogLevel,
     shizukuRefreshToken: Int,
+    keepAliveActive: Boolean,
 ) {
     val latestContext = rememberUpdatedState(context)
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
@@ -45,6 +46,7 @@ internal fun BindSettingsPageEffects(
         settingsPageViewModel,
         batteryOptimizationController,
         permissionKeepAliveController,
+        keepAliveActive,
     ) {
         fun refreshSupportState() {
             settingsPageViewModel.refreshBatteryOptimization(batteryOptimizationController)
@@ -53,6 +55,9 @@ internal fun BindSettingsPageEffects(
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
                 shizukuStatus = latestShizukuStatus.value,
             )
+            if (keepAliveActive) {
+                settingsPageViewModel.refreshAccessibilityGuard(latestContext.value)
+            }
         }
 
         fun bindDiagnostics(active: Boolean) {
@@ -104,7 +109,7 @@ internal fun BindSettingsPageEffects(
             logLevel = logLevel,
         )
     }
-    LaunchedEffect(notificationPermissionGranted, shizukuStatus) {
+    LaunchedEffect(context, notificationPermissionGranted, shizukuStatus, keepAliveActive) {
         if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             return@LaunchedEffect
         }
@@ -113,6 +118,16 @@ internal fun BindSettingsPageEffects(
             notificationPermissionGranted = notificationPermissionGranted,
             shizukuStatus = shizukuStatus,
         )
+        if (keepAliveActive) {
+            settingsPageViewModel.refreshAccessibilityGuardNow(context)
+        }
+    }
+    LaunchedEffect(context, keepAliveActive) {
+        if (!keepAliveActive) return@LaunchedEffect
+        if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            return@LaunchedEffect
+        }
+        settingsPageViewModel.refreshAccessibilityGuardNow(context)
     }
     LaunchedEffect(shizukuRefreshToken) {
         if (shizukuRefreshToken <= 0) return@LaunchedEffect
@@ -122,6 +137,9 @@ internal fun BindSettingsPageEffects(
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
                 shizukuStatus = latestShizukuStatus.value,
             )
+            if (keepAliveActive) {
+                settingsPageViewModel.refreshAccessibilityGuardNow(latestContext.value)
+            }
             delay(400.milliseconds)
         }
     }

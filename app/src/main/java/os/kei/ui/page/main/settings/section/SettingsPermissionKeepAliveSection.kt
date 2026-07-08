@@ -38,6 +38,7 @@ internal fun SettingsPermissionKeepAliveSection(
 ) {
     val permissionPresentation = derivePermissionPresentation(state)
     val keepAlivePresentation = deriveKeepAlivePresentation(state)
+    val accessibilityGuardPresentation = deriveAccessibilityGuardPresentation(state.accessibilityGuardState)
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.sectionGap),
@@ -68,6 +69,53 @@ internal fun SettingsPermissionKeepAliveSection(
                     ),
                 expanded = isCardExpanded(SettingsCardExpansionId.KeepAlive),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.KeepAlive, it) },
+            )
+        }
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.AccessibilityGuardPolicy) {
+            SettingsAccessibilityGuardPolicyCard(
+                state = state,
+                actions = actions,
+                containerColor =
+                    settingsSectionContainerColor(
+                        accessibilityGuardPresentation,
+                        enabledCardColor,
+                        disabledCardColor,
+                    ),
+                expanded = isCardExpanded(SettingsCardExpansionId.AccessibilityGuardPolicy),
+                onExpandedChange = {
+                    onCardExpandedChange(SettingsCardExpansionId.AccessibilityGuardPolicy, it)
+                },
+            )
+        }
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.AccessibilityGuardServices) {
+            SettingsAccessibilityGuardServicesCard(
+                state = state,
+                actions = actions,
+                containerColor =
+                    settingsSectionContainerColor(
+                        accessibilityGuardPresentation,
+                        enabledCardColor,
+                        disabledCardColor,
+                    ),
+                expanded = isCardExpanded(SettingsCardExpansionId.AccessibilityGuardServices),
+                onExpandedChange = {
+                    onCardExpandedChange(SettingsCardExpansionId.AccessibilityGuardServices, it)
+                },
+            )
+        }
+        if (onlyCardId == null || onlyCardId == SettingsCardExpansionId.AccessibilityGuardHistory) {
+            SettingsAccessibilityGuardHistoryCard(
+                state = state,
+                containerColor =
+                    settingsSectionContainerColor(
+                        accessibilityGuardPresentation,
+                        enabledCardColor,
+                        disabledCardColor,
+                    ),
+                expanded = isCardExpanded(SettingsCardExpansionId.AccessibilityGuardHistory),
+                onExpandedChange = {
+                    onCardExpandedChange(SettingsCardExpansionId.AccessibilityGuardHistory, it)
+                },
             )
         }
     }

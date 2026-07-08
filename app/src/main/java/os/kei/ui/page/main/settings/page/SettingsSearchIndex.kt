@@ -7,6 +7,9 @@ import java.util.Locale
 internal enum class SettingsSearchCard {
     Permissions,
     KeepAlive,
+    AccessibilityGuardPolicy,
+    AccessibilityGuardServices,
+    AccessibilityGuardHistory,
     ThemeLanguage,
     Performance,
     HomeEffects,
@@ -54,6 +57,15 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val appStandbyActiveLabel = resolveString(R.string.settings_app_standby_bucket_active)
     val appStandbyRareLabel = resolveString(R.string.settings_app_standby_bucket_rare)
     val appStandbyRestrictedLabel = resolveString(R.string.settings_app_standby_bucket_restricted)
+    val accessibilityGuardHeaderLabel = resolveString(R.string.settings_accessibility_guard_header)
+    val accessibilityGuardPolicyLabel = resolveString(R.string.settings_accessibility_guard_policy_title)
+    val accessibilityGuardCapabilityLabel = resolveString(R.string.settings_accessibility_guard_capability_title)
+    val accessibilityGuardDaemonLabel = resolveString(R.string.settings_accessibility_guard_daemon_title)
+    val accessibilityGuardBootRestoreLabel = resolveString(R.string.settings_accessibility_guard_boot_restore_title)
+    val accessibilityGuardScreenOnLabel = resolveString(R.string.settings_accessibility_guard_screen_on_title)
+    val accessibilityGuardDisclosureLabel = resolveString(R.string.settings_accessibility_guard_disclosure_title)
+    val accessibilityGuardServicesLabel = resolveString(R.string.settings_accessibility_guard_services_title)
+    val accessibilityGuardHistoryLabel = resolveString(R.string.settings_accessibility_guard_history_title)
 
     val keepAliveCategoryLabel = resolveString(R.string.settings_category_keep_alive)
     val interfaceCategoryLabel = resolveString(R.string.settings_category_interface)
@@ -164,6 +176,50 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     appStandbyRestrictedLabel,
                     "Doze",
                     "standby",
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.AccessibilityGuardPolicy,
+            category = SettingsCategory.KeepAlive,
+            tokens =
+                settingsTokens(
+                    keepAliveCategoryLabel,
+                    accessibilityGuardHeaderLabel,
+                    accessibilityGuardPolicyLabel,
+                    accessibilityGuardCapabilityLabel,
+                    accessibilityGuardDaemonLabel,
+                    accessibilityGuardBootRestoreLabel,
+                    accessibilityGuardScreenOnLabel,
+                    accessibilityGuardDisclosureLabel,
+                    shizukuPermissionLabel,
+                    "Shizuku",
+                    "secure settings",
+                    "accessibility",
+                    "daemon",
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.AccessibilityGuardServices,
+            category = SettingsCategory.KeepAlive,
+            tokens =
+                settingsTokens(
+                    keepAliveCategoryLabel,
+                    accessibilityGuardHeaderLabel,
+                    accessibilityGuardServicesLabel,
+                    "accessibility service",
+                    "guarded service",
+                ),
+        ),
+        SettingsSearchTarget(
+            card = SettingsSearchCard.AccessibilityGuardHistory,
+            category = SettingsCategory.KeepAlive,
+            tokens =
+                settingsTokens(
+                    keepAliveCategoryLabel,
+                    accessibilityGuardHeaderLabel,
+                    accessibilityGuardHistoryLabel,
+                    "restore history",
+                    "guard history",
                 ),
         ),
         SettingsSearchTarget(

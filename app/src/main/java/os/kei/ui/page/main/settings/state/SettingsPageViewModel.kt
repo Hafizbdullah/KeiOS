@@ -29,6 +29,7 @@ import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
@@ -59,6 +60,7 @@ internal data class SettingsDiagnosticsUiState(
 internal data class SettingsSupportUiState(
     val batteryOptimizationState: SettingsBatteryOptimizationSnapshot = SettingsBatteryOptimizationSnapshot(),
     val permissionKeepAliveState: SettingsPermissionKeepAliveSnapshot = SettingsPermissionKeepAliveSnapshot(),
+    val accessibilityGuardState: SettingsAccessibilityGuardUiState = SettingsAccessibilityGuardUiState(),
 )
 
 @Immutable
@@ -122,6 +124,10 @@ internal sealed interface SettingsPageEvent {
     data class LaunchLogExport(
         val fileName: String,
     ) : SettingsPageEvent
+
+    data class LaunchAccessibilityGuardHistoryExport(
+        val fileName: String,
+    ) : SettingsPageEvent
 }
 
 internal sealed interface SettingsBackgroundEvent {
@@ -133,6 +139,7 @@ internal sealed interface SettingsBackgroundEvent {
 internal class SettingsPageViewModel : ViewModel() {
     private val repository = SettingsPageRepository()
     private var permissionKeepAliveRefreshJob: Job? = null
+    private var accessibilityGuardRefreshJob: Job? = null
     private var batteryOptimizationRefreshJob: Job? = null
     private var searchTargetsJob: Job? = null
 
@@ -155,6 +162,9 @@ internal class SettingsPageViewModel : ViewModel() {
     private val _permissionKeepAliveState = MutableStateFlow(SettingsPermissionKeepAliveSnapshot())
     val permissionKeepAliveState: StateFlow<SettingsPermissionKeepAliveSnapshot> =
         _permissionKeepAliveState.asStateFlow()
+    private val _accessibilityGuardState = MutableStateFlow(SettingsAccessibilityGuardUiState())
+    val accessibilityGuardState: StateFlow<SettingsAccessibilityGuardUiState> =
+        _accessibilityGuardState.asStateFlow()
     private val _webDavSyncState = MutableStateFlow(repository.buildWebDavSyncState())
     val webDavSyncState: StateFlow<SettingsWebDavSyncUiState> = _webDavSyncState.asStateFlow()
     private val _events = MutableSharedFlow<SettingsPageEvent>(replay = 0, extraBufferCapacity = 8)
@@ -175,10 +185,15 @@ internal class SettingsPageViewModel : ViewModel() {
         )
 
     val supportUiState: StateFlow<SettingsSupportUiState> =
-        combine(batteryOptimizationState, permissionKeepAliveState) { battery, permission ->
+        combine(
+            batteryOptimizationState,
+            permissionKeepAliveState,
+            accessibilityGuardState,
+        ) { battery, permission, guard ->
             SettingsSupportUiState(
                 batteryOptimizationState = battery,
                 permissionKeepAliveState = permission,
+                accessibilityGuardState = guard,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -348,6 +363,7 @@ internal class SettingsPageViewModel : ViewModel() {
     override fun onCleared() {
         searchTargetsJob?.cancel()
         permissionKeepAliveRefreshJob?.cancel()
+        accessibilityGuardRefreshJob?.cancel()
         batteryOptimizationRefreshJob?.cancel()
         super.onCleared()
     }
@@ -452,6 +468,175 @@ internal class SettingsPageViewModel : ViewModel() {
                 shizukuStatus = shizukuStatus,
             )
         _permissionKeepAliveState.update { snapshot }
+    }
+
+    fun refreshAccessibilityGuard(context: Context) {
+        accessibilityGuardRefreshJob?.cancel()
+        accessibilityGuardRefreshJob =
+            viewModelScope.launch {
+                refreshAccessibilityGuardNow(context)
+            }
+    }
+
+    suspend fun refreshAccessibilityGuardNow(context: Context) {
+        _accessibilityGuardState.update { current -> current.copy(loading = true) }
+        val result =
+            runCatching {
+                repository.loadAccessibilityGuardState(context.applicationContext)
+            }
+        result
+            .onSuccess { snapshot ->
+                _accessibilityGuardState.update { current ->
+                    snapshot.copy(
+                        loading = false,
+                        manualCheckRunning = current.manualCheckRunning,
+                        exportingHistory = current.exportingHistory,
+                    )
+                }
+            }.onFailure { error ->
+                _accessibilityGuardState.update { current -> current.copy(loading = false) }
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
+                        reason = error.javaClass.simpleName,
+                    ),
+                )
+            }
+    }
+
+    fun updateAccessibilityGuarded(
+        context: Context,
+        flattenedId: String,
+        guarded: Boolean,
+    ) {
+        viewModelScope.launch {
+            val result = repository.setAccessibilityGuarded(flattenedId, guarded)
+            if (result.isFailure) {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
+                        reason = result.reasonName(),
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
+    }
+
+    fun updateAccessibilityGuardDaemonEnabled(
+        context: Context,
+        enabled: Boolean,
+    ) {
+        viewModelScope.launch {
+            val result = repository.setAccessibilityGuardDaemonEnabled(context.applicationContext, enabled)
+            if (result.isFailure) {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
+                        reason = result.reasonName(),
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
+    }
+
+    fun updateAccessibilityGuardBootRestoreEnabled(
+        context: Context,
+        enabled: Boolean,
+    ) {
+        viewModelScope.launch {
+            val result = repository.setAccessibilityGuardBootRestoreEnabled(enabled)
+            if (result.isFailure) {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
+                        reason = result.reasonName(),
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
+    }
+
+    fun updateAccessibilityGuardScreenOnEnabled(
+        context: Context,
+        enabled: Boolean,
+    ) {
+        viewModelScope.launch {
+            val result = repository.setAccessibilityGuardScreenOnEnabled(context.applicationContext, enabled)
+            if (result.isFailure) {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_update_failed,
+                        reason = result.reasonName(),
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
+    }
+
+    fun runAccessibilityGuardManualCheck(context: Context) {
+        if (_accessibilityGuardState.value.manualCheckRunning) return
+        viewModelScope.launch {
+            _accessibilityGuardState.update { state -> state.copy(manualCheckRunning = true) }
+            val result = repository.runAccessibilityGuardManualCheck(context.applicationContext)
+            _accessibilityGuardState.update { state -> state.copy(manualCheckRunning = false) }
+            if (result.isSuccess) {
+                _events.emit(SettingsPageEvent.Toast(R.string.settings_accessibility_guard_toast_check_recorded))
+            } else {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_check_failed,
+                        reason = result.reasonName(),
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
+    }
+
+    fun beginAccessibilityGuardHistoryExport() {
+        if (_accessibilityGuardState.value.exportingHistory) return
+        viewModelScope.launch {
+            val fileName = repository.buildAccessibilityGuardHistoryExportFileName()
+            _accessibilityGuardState.update { state -> state.copy(exportingHistory = true) }
+            _events.emit(SettingsPageEvent.LaunchAccessibilityGuardHistoryExport(fileName))
+        }
+    }
+
+    fun finishAccessibilityGuardHistoryExport() {
+        _accessibilityGuardState.update { state -> state.copy(exportingHistory = false) }
+    }
+
+    fun completeAccessibilityGuardHistoryExport(
+        context: Context,
+        uri: Uri?,
+    ) {
+        if (uri == null) {
+            finishAccessibilityGuardHistoryExport()
+            return
+        }
+        viewModelScope.launch {
+            val result =
+                repository.exportAccessibilityGuardHistory(
+                    context = context.applicationContext,
+                    uri = uri,
+                )
+            finishAccessibilityGuardHistoryExport()
+            if (result.isSuccess) {
+                _events.emit(SettingsPageEvent.Toast(R.string.settings_accessibility_guard_toast_history_exported))
+            } else {
+                _events.emit(
+                    SettingsPageEvent.FailureToast(
+                        messageRes = R.string.settings_accessibility_guard_toast_history_export_failed,
+                        reason = result.errorPreview,
+                    ),
+                )
+            }
+            refreshAccessibilityGuardNow(context.applicationContext)
+        }
     }
 
     fun reloadCacheEntries(context: Context) {

@@ -37,6 +37,16 @@ internal fun deriveKeepAlivePresentation(state: SettingsPermissionKeepAliveSecti
                 state.oemAutoStartState == SettingsOemAutoStartState.Allowed,
     )
 
+internal fun deriveAccessibilityGuardPresentation(state: SettingsAccessibilityGuardUiState): SettingsSectionPresentationState =
+    SettingsSectionPresentationState(
+        active =
+            state.daemonEnabled ||
+                state.bootRestoreEnabled ||
+                state.screenOnCheckEnabled ||
+                state.guardedCount > 0 ||
+                state.historyCount > 0,
+    )
+
 private val SettingsPermissionKeepAliveSectionState.isAndroidBackgroundReliable: Boolean
     get() =
         !androidBackgroundRestricted &&

@@ -14,7 +14,17 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.export.ExportJobResult
 import os.kei.core.intent.UriGrantCompat
 import os.kei.core.log.AppLogStore
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardHistoryEntry
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardHistoryStore
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreReason
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardRestoreResult
+import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
+import os.kei.feature.keepalive.accessibility.AccessibilityServiceId
+import os.kei.feature.keepalive.accessibility.parseAccessibilityServiceIds
+import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardHistoryUiItem
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardServiceUiItem
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.settings.cache.CacheStores
 import os.kei.ui.page.main.settings.page.SettingsSearchTarget
@@ -74,6 +84,102 @@ internal class SettingsPageRepository(
     suspend fun loadWebDavSyncState(): SettingsWebDavSyncUiState =
         withContext(ioDispatcher) {
             buildWebDavSyncState()
+        }
+
+    suspend fun loadAccessibilityGuardState(context: Context): SettingsAccessibilityGuardUiState =
+        withContext(ioDispatcher) {
+            val appContext = context.applicationContext
+            val stateStore = AccessibilityGuardRuntime.newStateStore()
+            val settings = stateStore.loadSettings()
+            val snapshot =
+                AccessibilityGuardRuntime
+                    .coordinator(stateStore)
+                    .loadSnapshot(appContext)
+            val history = AccessibilityGuardHistoryStore.forContext(appContext).latest(5)
+            val services = snapshot.services.map { service -> service.toSettingsUiItem() }
+            SettingsAccessibilityGuardUiState(
+                daemonEnabled = settings.daemonEnabled,
+                bootRestoreEnabled = settings.bootRestoreEnabled,
+                screenOnCheckEnabled = settings.screenOnCheckEnabled,
+                serviceCount = services.size,
+                guardedCount = services.count { item -> item.guarded },
+                enabledGuardedCount = services.count { item -> item.guarded && item.enabled },
+                historyCount = history.size,
+                services = services,
+                latestHistory = history.firstOrNull()?.toSettingsUiItem(),
+            )
+        }
+
+    suspend fun setAccessibilityGuarded(
+        flattenedId: String,
+        guarded: Boolean,
+    ): Result<Unit> =
+        withContext(ioDispatcher) {
+            runCatching {
+                val id = flattenedId.toAccessibilityGuardServiceId()
+                AccessibilityGuardRuntime
+                    .coordinator()
+                    .setGuarded(id = id, guarded = guarded)
+                Unit
+            }
+        }
+
+    suspend fun setAccessibilityGuardDaemonEnabled(
+        context: Context,
+        enabled: Boolean,
+    ): Result<Unit> =
+        withContext(ioDispatcher) {
+            runCatching {
+                AccessibilityGuardRuntime.coordinator().setDaemonEnabled(enabled)
+                if (enabled) {
+                    AccessibilityGuardForegroundService.start(context.applicationContext)
+                } else {
+                    AccessibilityGuardForegroundService.stop(context.applicationContext)
+                }
+                Unit
+            }
+        }
+
+    suspend fun setAccessibilityGuardBootRestoreEnabled(enabled: Boolean): Result<Unit> =
+        withContext(ioDispatcher) {
+            runCatching {
+                AccessibilityGuardRuntime.coordinator().setBootRestoreEnabled(enabled)
+                Unit
+            }
+        }
+
+    suspend fun setAccessibilityGuardScreenOnEnabled(
+        context: Context,
+        enabled: Boolean,
+    ): Result<Unit> =
+        withContext(ioDispatcher) {
+            runCatching {
+                val settings =
+                    AccessibilityGuardRuntime
+                        .coordinator()
+                        .setScreenOnCheckEnabled(enabled)
+                if (settings.daemonEnabled) {
+                    AccessibilityGuardForegroundService.start(context.applicationContext)
+                }
+                Unit
+            }
+        }
+
+    suspend fun runAccessibilityGuardManualCheck(context: Context): Result<AccessibilityGuardRestoreResult> =
+        withContext(ioDispatcher) {
+            runCatching {
+                val appContext = context.applicationContext
+                val stateStore = AccessibilityGuardRuntime.newStateStore()
+                AccessibilityGuardRuntime
+                    .restoreRunner(
+                        context = appContext,
+                        stateStore = stateStore,
+                    )
+                    .restoreAndRecord(
+                        reason = AccessibilityGuardRestoreReason.Manual,
+                        triggerAction = "settings_manual_check",
+                    )
+            }
         }
 
     suspend fun clearLogs(context: Context): Result<Unit> =
@@ -299,6 +405,35 @@ private fun isManagedNonHomeBackgroundFile(file: File): Boolean {
     if (file.parentFile?.name != NON_HOME_BACKGROUND_CROP_DIR) return false
     return true
 }
+
+private fun String.toAccessibilityGuardServiceId(): AccessibilityServiceId =
+    parseAccessibilityServiceIds(this).singleOrNull()
+        ?: error("Invalid accessibility service id: $this")
+
+private fun os.kei.feature.keepalive.accessibility.AccessibilityServiceSnapshot.toSettingsUiItem():
+    SettingsAccessibilityGuardServiceUiItem =
+    SettingsAccessibilityGuardServiceUiItem(
+        flattenedId = id.flatten(),
+        label = label,
+        packageLabel = packageLabel,
+        packageName = id.packageName,
+        enabled = enabled,
+        guarded = guarded,
+        system = system,
+    )
+
+private fun AccessibilityGuardHistoryEntry.toSettingsUiItem(): SettingsAccessibilityGuardHistoryUiItem =
+    SettingsAccessibilityGuardHistoryUiItem(
+        timestampMs = timestampMs,
+        reason = reason,
+        status = status,
+        triggerAction = triggerAction,
+        selectedCount = selectedCount,
+        restoredCount = restoredCount,
+        skippedCount = skippedCount,
+        elapsedMs = elapsedMs,
+        failureReason = failureReason,
+    )
 
 private fun File.safeCanonicalPath(): String =
     runCatching { canonicalPath }.getOrDefault(absolutePath)

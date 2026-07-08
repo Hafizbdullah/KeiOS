@@ -320,15 +320,15 @@ Reference files used for analysis:
   - restore policy card;
   - latest history card.
 
-- [ ] Add state to load guard snapshot when KeepAlive tab becomes active and when Shizuku status changes.
-- [ ] Use existing `SettingsGroupCard`, `SettingsButtonActionItem`, and expansion memory.
-- [ ] Keep list rendering lazy and stable-keyed by flattened service ID.
-- [ ] Add user actions: select service, enable daemon, enable boot restore, enable screen-on check, run manual check, export history.
-- [ ] Add concise disclosure text explaining Shizuku secure setting writes.
-- [ ] Add search tokens for all new settings entries.
-- [ ] Add Chinese, English, and Japanese strings.
-- [ ] Run `./gradlew :app:testDebugUnitTest`.
-- [ ] Commit with `feat: surface accessibility guard in settings`.
+- [x] Add state to load guard snapshot when KeepAlive tab becomes active and when Shizuku status changes.
+- [x] Use existing `SettingsGroupCard`, `SettingsButtonActionItem`, and expansion memory.
+- [x] Keep list rendering lazy and stable-keyed by flattened service ID.
+- [x] Add user actions: select service, enable daemon, enable boot restore, enable screen-on check, run manual check, export history.
+- [x] Add concise disclosure text explaining Shizuku secure setting writes.
+- [x] Add search tokens for all new settings entries.
+- [x] Add Chinese, English, and Japanese strings.
+- [x] Run `./gradlew :app:testDebugUnitTest`.
+- [x] Commit with `feat: surface accessibility guard in settings`.
 
 ## Task 8: Add Android 16/17 Validation Pass
 

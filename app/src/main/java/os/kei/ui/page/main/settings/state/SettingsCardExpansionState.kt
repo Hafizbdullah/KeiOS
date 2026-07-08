@@ -9,6 +9,9 @@ internal enum class SettingsCardExpansionId(
 ) {
     Permissions("permissions", true),
     KeepAlive("keep_alive", true),
+    AccessibilityGuardPolicy("accessibility_guard_policy", true),
+    AccessibilityGuardServices("accessibility_guard_services", true),
+    AccessibilityGuardHistory("accessibility_guard_history", false),
     ThemeLanguage("theme_language", true),
     Performance("performance", false),
     HomeEffects("home_effects", false),

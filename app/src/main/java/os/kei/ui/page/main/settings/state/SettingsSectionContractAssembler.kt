@@ -15,6 +15,7 @@ import os.kei.ui.page.main.settings.section.SettingsCopySectionActions
 import os.kei.ui.page.main.settings.section.SettingsCopySectionState
 import os.kei.ui.page.main.settings.section.SettingsNotifySectionActions
 import os.kei.ui.page.main.settings.section.SettingsNotifySectionState
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionActions
 import os.kei.ui.page.main.settings.section.SettingsPermissionKeepAliveSectionState
 import os.kei.ui.page.main.settings.section.SettingsVisualSectionActions
@@ -78,6 +79,7 @@ internal fun rememberSettingsSectionContractBundle(
     appListSettingsActionAvailable: Boolean,
     shizukuGranted: Boolean,
     shizukuStatusText: String,
+    accessibilityGuardState: SettingsAccessibilityGuardUiState,
     textCopyCapabilityExpanded: Boolean,
     pageUiState: SettingsPageUiState,
     onRequestNotificationPermission: () -> Unit,
@@ -106,6 +108,12 @@ internal fun rememberSettingsSectionContractBundle(
     onOpenOemAutoStartSettings: () -> Unit,
     onOpenAppListPermissionSettings: () -> Unit,
     onCheckOrRequestShizuku: () -> Unit,
+    onAccessibilityGuardServiceCheckedChange: (String, Boolean) -> Unit,
+    onAccessibilityGuardDaemonChanged: (Boolean) -> Unit,
+    onAccessibilityGuardBootRestoreChanged: (Boolean) -> Unit,
+    onAccessibilityGuardScreenOnChanged: (Boolean) -> Unit,
+    onRunAccessibilityGuardCheck: () -> Unit,
+    onExportAccessibilityGuardHistory: () -> Unit,
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
 ): SettingsSectionContractBundle {
     val permissionKeepAliveState =
@@ -129,6 +137,7 @@ internal fun rememberSettingsSectionContractBundle(
             appListSettingsActionAvailable,
             shizukuGranted,
             shizukuStatusText,
+            accessibilityGuardState,
         ) {
             SettingsPermissionKeepAliveSectionState(
                 notificationPermissionGranted = notificationPermissionGranted,
@@ -150,6 +159,7 @@ internal fun rememberSettingsSectionContractBundle(
                 appListSettingsActionAvailable = appListSettingsActionAvailable,
                 shizukuGranted = shizukuGranted,
                 shizukuStatusText = shizukuStatusText,
+                accessibilityGuardState = accessibilityGuardState,
             )
         }
     val permissionKeepAliveActions =
@@ -161,6 +171,12 @@ internal fun rememberSettingsSectionContractBundle(
             onOpenOemAutoStartSettings,
             onOpenAppListPermissionSettings,
             onCheckOrRequestShizuku,
+            onAccessibilityGuardServiceCheckedChange,
+            onAccessibilityGuardDaemonChanged,
+            onAccessibilityGuardBootRestoreChanged,
+            onAccessibilityGuardScreenOnChanged,
+            onRunAccessibilityGuardCheck,
+            onExportAccessibilityGuardHistory,
         ) {
             SettingsPermissionKeepAliveSectionActions(
                 onRequestNotificationPermission = onRequestNotificationPermission,
@@ -170,6 +186,12 @@ internal fun rememberSettingsSectionContractBundle(
                 onOpenOemAutoStartSettings = onOpenOemAutoStartSettings,
                 onOpenAppListPermissionSettings = onOpenAppListPermissionSettings,
                 onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+                onAccessibilityGuardServiceCheckedChange = onAccessibilityGuardServiceCheckedChange,
+                onAccessibilityGuardDaemonChanged = onAccessibilityGuardDaemonChanged,
+                onAccessibilityGuardBootRestoreChanged = onAccessibilityGuardBootRestoreChanged,
+                onAccessibilityGuardScreenOnChanged = onAccessibilityGuardScreenOnChanged,
+                onRunAccessibilityGuardCheck = onRunAccessibilityGuardCheck,
+                onExportAccessibilityGuardHistory = onExportAccessibilityGuardHistory,
             )
         }
     val visualState =

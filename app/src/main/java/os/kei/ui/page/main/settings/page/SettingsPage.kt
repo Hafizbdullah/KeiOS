@@ -181,13 +181,18 @@ fun SettingsPage(
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         logLevel = logLevel,
         shizukuRefreshToken = chromeState.shizukuRefreshToken,
+        keepAliveActive =
+            SettingsCategory.entries
+                .getOrNull(chromeState.selectedCategoryIndex) == SettingsCategory.KeepAlive,
     )
     val sectionContracts =
         rememberSettingsPageSectionContracts(
             context = context,
             pageUiState = pageUiState,
+            settingsPageViewModel = settingsPageViewModel,
             permissionKeepAliveState = supportUiState.permissionKeepAliveState,
             batteryOptimizationState = supportUiState.batteryOptimizationState,
+            accessibilityGuardState = supportUiState.accessibilityGuardState,
             permissionKeepAliveController = permissionKeepAliveController,
             batteryOptimizationController = batteryOptimizationController,
             appLanguageController = appLanguageController,

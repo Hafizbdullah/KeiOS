@@ -9,6 +9,8 @@ import os.kei.core.prefs.LauncherIconDesign
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
 import os.kei.ui.page.main.settings.state.rememberSettingsSectionContractBundle
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
+import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.SettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
@@ -19,8 +21,10 @@ import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
 internal fun rememberSettingsPageSectionContracts(
     context: Context,
     pageUiState: SettingsPageUiState,
+    settingsPageViewModel: SettingsPageViewModel,
     permissionKeepAliveState: SettingsPermissionKeepAliveSnapshot,
     batteryOptimizationState: SettingsBatteryOptimizationSnapshot,
+    accessibilityGuardState: SettingsAccessibilityGuardUiState,
     permissionKeepAliveController: SettingsPermissionKeepAliveController,
     batteryOptimizationController: SettingsBatteryOptimizationController,
     appLanguageController: SettingsAppLanguageController,
@@ -106,6 +110,7 @@ internal fun rememberSettingsPageSectionContracts(
         appListSettingsActionAvailable = permissionKeepAliveState.appListSettingsActionAvailable,
         shizukuGranted = permissionKeepAliveState.shizukuGranted,
         shizukuStatusText = permissionKeepAliveState.shizukuStatusText,
+        accessibilityGuardState = accessibilityGuardState,
         textCopyCapabilityExpanded = textCopyCapabilityExpanded,
         pageUiState = pageUiState,
         onRequestNotificationPermission = onRequestNotificationPermission,
@@ -170,6 +175,37 @@ internal fun rememberSettingsPageSectionContracts(
             )
         },
         onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+        onAccessibilityGuardServiceCheckedChange = { flattenedId, checked ->
+            settingsPageViewModel.updateAccessibilityGuarded(
+                context = context,
+                flattenedId = flattenedId,
+                guarded = checked,
+            )
+        },
+        onAccessibilityGuardDaemonChanged = { enabled ->
+            settingsPageViewModel.updateAccessibilityGuardDaemonEnabled(
+                context = context,
+                enabled = enabled,
+            )
+        },
+        onAccessibilityGuardBootRestoreChanged = { enabled ->
+            settingsPageViewModel.updateAccessibilityGuardBootRestoreEnabled(
+                context = context,
+                enabled = enabled,
+            )
+        },
+        onAccessibilityGuardScreenOnChanged = { enabled ->
+            settingsPageViewModel.updateAccessibilityGuardScreenOnEnabled(
+                context = context,
+                enabled = enabled,
+            )
+        },
+        onRunAccessibilityGuardCheck = {
+            settingsPageViewModel.runAccessibilityGuardManualCheck(context)
+        },
+        onExportAccessibilityGuardHistory = {
+            settingsPageViewModel.beginAccessibilityGuardHistoryExport()
+        },
         onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
     )
 
