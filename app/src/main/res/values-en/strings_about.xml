@@ -399,9 +399,15 @@
     <string name="about_permission_foreground_service_title">Foreground service</string>
     <string name="about_permission_foreground_service_purpose">Allows foreground services to start and keep running</string>
     <string name="about_permission_foreground_service_used_in">MCP KeepAlive and notification heartbeat</string>
+    <string name="about_permission_foreground_service_media_playback_title">Media playback foreground service</string>
+    <string name="about_permission_foreground_service_media_playback_purpose">Allows a foreground service to run as media playback so system state stays correct while video is playing</string>
+    <string name="about_permission_foreground_service_media_playback_used_in">Memorial Lobby video playback and picture-in-picture playback</string>
     <string name="about_permission_foreground_service_special_use_title">Special-use foreground service</string>
     <string name="about_permission_foreground_service_special_use_purpose">Allows foreground services to run with the specialUse type</string>
     <string name="about_permission_foreground_service_special_use_used_in">HyperOS live activity / Super Island notification keepalive scenarios</string>
+    <string name="about_permission_request_ignore_battery_optimizations_title">Battery optimization exemption request</string>
+    <string name="about_permission_request_ignore_battery_optimizations_purpose">Allows opening the system page where users can exempt background refresh, reminders, and the MCP keepalive service from battery optimization limits</string>
+    <string name="about_permission_request_ignore_battery_optimizations_used_in">Settings Keep Alive tab, GitHub auto refresh, BA reminders, WebDAV auto sync, and MCP KeepAlive</string>
     <string name="about_value_advanced_protection_enabled">Enabled</string>
     <string name="about_value_advanced_protection_disabled">Disabled</string>
 

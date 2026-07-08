@@ -3,6 +3,7 @@ package os.kei.ui.page.main.about.model
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.PermissionInfo
 import android.content.pm.ServiceInfo
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
@@ -96,11 +97,26 @@ private val permissionExplainMap = mapOf(
         purposeRes = R.string.about_permission_foreground_service_purpose,
         usedInRes = R.string.about_permission_foreground_service_used_in
     ),
+    "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" to AboutExplainRes(
+        titleRes = R.string.about_permission_foreground_service_media_playback_title,
+        purposeRes = R.string.about_permission_foreground_service_media_playback_purpose,
+        usedInRes = R.string.about_permission_foreground_service_media_playback_used_in
+    ),
     "android.permission.FOREGROUND_SERVICE_SPECIAL_USE" to AboutExplainRes(
         titleRes = R.string.about_permission_foreground_service_special_use_title,
         purposeRes = R.string.about_permission_foreground_service_special_use_purpose,
         usedInRes = R.string.about_permission_foreground_service_special_use_used_in
+    ),
+    "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" to AboutExplainRes(
+        titleRes = R.string.about_permission_request_ignore_battery_optimizations_title,
+        purposeRes = R.string.about_permission_request_ignore_battery_optimizations_purpose,
+        usedInRes = R.string.about_permission_request_ignore_battery_optimizations_used_in
     )
+)
+
+private data class PlatformPermissionText(
+    val title: String?,
+    val purpose: String?
 )
 
 private val componentExplainMap = mapOf(
@@ -159,6 +175,11 @@ fun buildPermissionEntries(
     if (names.isEmpty()) return emptyList()
     return names.mapIndexed { index, permissionName ->
         val explain = permissionExplainMap[permissionName]
+        val platformText = if (explain == null) {
+            loadPlatformPermissionText(context, permissionName)
+        } else {
+            null
+        }
         val flagGranted = flags?.getOrNull(index)?.let {
             (it and PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0
         } ?: true
@@ -170,15 +191,41 @@ fun buildPermissionEntries(
         AboutPermissionEntry(
             name = permissionName,
             title = explain?.let { context.getString(it.titleRes) }
+                ?: platformText?.title
                 ?: permissionName.substringAfterLast('.'),
             granted = granted,
             purpose = explain?.let { context.getString(it.purposeRes) }
+                ?: platformText?.purpose
                 ?: context.getString(R.string.about_permission_fallback_purpose),
             usedIn = explain?.let { context.getString(it.usedInRes) }
                 ?: context.getString(R.string.about_permission_fallback_used_in)
         )
     }
 }
+
+private fun loadPlatformPermissionText(context: Context, permissionName: String): PlatformPermissionText? {
+    val normalizedName = permissionName.substringBefore(" ")
+    val permissionInfo = runCatching {
+        context.packageManager.getPermissionInfo(normalizedName, 0)
+    }.getOrNull() ?: return null
+    val title = permissionInfo.loadLabelText(context.packageManager)
+    val purpose = permissionInfo.loadDescriptionText(context.packageManager)
+    if (title == null && purpose == null) return null
+    return PlatformPermissionText(
+        title = title,
+        purpose = purpose
+    )
+}
+
+private fun PermissionInfo.loadLabelText(packageManager: PackageManager): String? =
+    runCatching {
+        loadLabel(packageManager).toString().trim().takeIf(String::isNotEmpty)
+    }.getOrNull()
+
+private fun PermissionInfo.loadDescriptionText(packageManager: PackageManager): String? =
+    runCatching {
+        loadDescription(packageManager)?.toString()?.trim()?.takeIf(String::isNotEmpty)
+    }.getOrNull()
 
 fun buildComponentEntries(context: Context, packageInfo: PackageInfo?): List<AboutComponentEntry> {
     val services = packageInfo?.services.orEmpty().map { service ->

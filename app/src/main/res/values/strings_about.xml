@@ -408,9 +408,15 @@
     <string name="about_permission_foreground_service_title">前台服务</string>
     <string name="about_permission_foreground_service_purpose">允许启动前台服务并持续运行</string>
     <string name="about_permission_foreground_service_used_in">MCP KeepAlive 保活与通知心跳</string>
+    <string name="about_permission_foreground_service_media_playback_title">媒体播放前台服务</string>
+    <string name="about_permission_foreground_service_media_playback_purpose">允许以媒体播放类型运行前台服务，保证视频播放期间的系统状态正确</string>
+    <string name="about_permission_foreground_service_media_playback_used_in">记忆大厅视频播放与画中画播放链路</string>
     <string name="about_permission_foreground_service_special_use_title">特殊用途前台服务</string>
     <string name="about_permission_foreground_service_special_use_purpose">允许以 specialUse 类型运行前台服务</string>
     <string name="about_permission_foreground_service_special_use_used_in">HyperOS 实时动态 / 超级岛通知保活场景</string>
+    <string name="about_permission_request_ignore_battery_optimizations_title">电池优化白名单请求</string>
+    <string name="about_permission_request_ignore_battery_optimizations_purpose">允许跳转系统页面，请用户为后台刷新、提醒与 MCP 常驻服务关闭电池优化限制</string>
+    <string name="about_permission_request_ignore_battery_optimizations_used_in">设置页保活板块、GitHub 自动刷新、BA 提醒、WebDAV 自动同步与 MCP KeepAlive</string>
     <string name="about_value_advanced_protection_enabled">已开启</string>
     <string name="about_value_advanced_protection_disabled">未开启</string>
 

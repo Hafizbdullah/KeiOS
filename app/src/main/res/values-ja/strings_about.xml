@@ -391,9 +391,15 @@
     <string name="about_permission_foreground_service_title">フォアグラウンドサービス</string>
     <string name="about_permission_foreground_service_purpose">フォアグラウンドサービスの開始と継続実行を許可します</string>
     <string name="about_permission_foreground_service_used_in">MCP KeepAlive と通知ハートビート</string>
+    <string name="about_permission_foreground_service_media_playback_title">メディア再生フォアグラウンドサービス</string>
+    <string name="about_permission_foreground_service_media_playback_purpose">動画再生中のシステム状態を正しく保つため、メディア再生タイプのフォアグラウンドサービスを実行できます</string>
+    <string name="about_permission_foreground_service_media_playback_used_in">メモリアルロビー動画再生とピクチャーインピクチャー再生</string>
     <string name="about_permission_foreground_service_special_use_title">特殊用途フォアグラウンドサービス</string>
     <string name="about_permission_foreground_service_special_use_purpose">specialUse タイプでフォアグラウンドサービスを実行できます</string>
     <string name="about_permission_foreground_service_special_use_used_in">HyperOS ライブアクティビティ / Super Island 通知常駐シナリオ</string>
+    <string name="about_permission_request_ignore_battery_optimizations_title">電池最適化除外リクエスト</string>
+    <string name="about_permission_request_ignore_battery_optimizations_purpose">バックグラウンド更新、リマインダー、MCP 常駐サービスを電池最適化の制限から除外するためのシステム画面を開けます</string>
+    <string name="about_permission_request_ignore_battery_optimizations_used_in">設定の常駐タブ、GitHub 自動更新、BA リマインダー、WebDAV 自動同期、MCP KeepAlive</string>
     <string name="about_value_advanced_protection_enabled">有効</string>
     <string name="about_value_advanced_protection_disabled">無効</string>
     <string name="about_component_empty">サービスコンポーネント情報を読み取れません</string>
