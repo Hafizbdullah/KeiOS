@@ -2,8 +2,10 @@ package os.kei.core.download.segmented
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -22,7 +24,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.min
 
 class SegmentedDownloadClient(
@@ -86,8 +88,12 @@ class SegmentedDownloadClient(
         val effectiveConnections = effectiveConnections(totalBytes, options)
         val scheduler = PartScheduler(
             totalBytes = totalBytes,
-            partSizeBytes = options.initialPartSizeBytes,
-            maxRetriesPerPart = options.maxRetriesPerPart,
+            initialPartSizeBytes = options.initialPartSizeBytes,
+            maxRetriesPerPart = effectiveRequeueBudget(options.maxRetriesPerPart),
+            concurrency = effectiveConnections,
+            tuning = PartSchedulerTuning(
+                minStealPartSizeBytes = ANDROID_MIN_STEAL_PART_BYTES,
+            ),
         )
         val progress = ProgressAggregator(
             totalBytes = totalBytes,
@@ -96,14 +102,19 @@ class SegmentedDownloadClient(
             intervalMs = options.progressIntervalMs,
             onProgress = onProgress,
         )
+        val workerClients = List(effectiveConnections) { client }
+        val speedTracker = RangeSpeedTracker()
         progress.emit(force = true)
         RandomAccessFile(partFile, "rw").use { randomFile ->
             randomFile.setLength(totalBytes)
             randomFile.channel.use { channel ->
                 coroutineScope {
-                    repeat(effectiveConnections) {
+                    repeat(effectiveConnections) { workerId ->
                         launch {
                             runWorker(
+                                workerId = workerId,
+                                httpClient = workerClients[workerId % workerClients.size],
+                                speedTracker = speedTracker,
                                 request = request,
                                 options = options,
                                 scheduler = scheduler,
@@ -118,19 +129,26 @@ class SegmentedDownloadClient(
             }
         }
         validateLength(partFile, totalBytes)
+        verifyDownloadedSha256(partFile, request.expectedSha256)
         movePartToOutput(partFile, outputFile)
         progress.emit(force = true)
+        val stats = scheduler.stats()
         return SegmentedDownloadResult(
             outputFile = outputFile,
             totalBytes = totalBytes,
             parallel = true,
             rangeSupported = true,
             finalUrl = probeResult.finalUrl,
-            retryCount = scheduler.retryCount(),
+            retryCount = stats.retryCount,
+            stealCount = stats.stealCount,
+            handoffCount = stats.handoffCount,
         )
     }
 
     private suspend fun runWorker(
+        workerId: Int,
+        httpClient: OkHttpClient,
+        speedTracker: RangeSpeedTracker,
         request: SegmentedDownloadRequest,
         options: SegmentedDownloadOptions,
         scheduler: PartScheduler,
@@ -140,82 +158,174 @@ class SegmentedDownloadClient(
     ) {
         while (true) {
             currentCoroutineContext().ensureActive()
-            val part = scheduler.nextPart() ?: return
+            val part = scheduler.nextPart(workerId)
+            if (part == null) {
+                if (scheduler.hasInFlight()) {
+                    delay(scheduler.idlePollMs)
+                    continue
+                }
+                return
+            }
+            val active = scheduler.activate(workerId = workerId, part = part)
+            val startedNs = System.nanoTime()
             val outcome = runCatching {
                 downloadPart(
+                    httpClient = httpClient,
+                    speedTracker = speedTracker,
                     request = request,
                     options = options,
-                    part = part,
+                    active = active,
                     channel = channel,
                     totalBytes = totalBytes,
                     progress = progress,
                 )
             }
-            if (outcome.isSuccess) continue
+            val elapsedMs = elapsedMsSince(startedNs)
+            val completedBytes = active.completedBytes()
+            scheduler.finish(workerId = workerId, active = active)
+            if (outcome.isSuccess) {
+                scheduler.record(workerId = workerId, bytes = completedBytes, elapsedMs = elapsedMs)
+                continue
+            }
             val error = outcome.exceptionOrNull()
             if (error is CancellationException) throw error
-            val writtenBytes = (error as? PartialPartDownloadException)?.writtenBytes ?: 0L
+            if (active.isComplete()) {
+                scheduler.record(workerId = workerId, bytes = completedBytes, elapsedMs = elapsedMs)
+                continue
+            }
+            val nextStart = active.currentOffset()
+            val failedEnd = active.currentEndInclusive()
             val retryable = error.isRetryableDownloadError()
-            val requeued = retryable && scheduler.requeueFailed(part, part.start + writtenBytes)
+            val rateLimited = error is SegmentedDownloadHttpException && error.code == 429
+            if (retryable && !rateLimited) {
+                scheduler.penalize(workerId)
+            }
+            val requeued = retryable && scheduler.requeueFailed(
+                part = part.copy(endInclusive = failedEnd),
+                nextStart = nextStart,
+                delayMs = if (rateLimited) options.retryDelayMs else 0L,
+            )
             if (!requeued) {
                 throw SegmentedDownloadException(
                     message = "part failed ${part.start}-${part.endInclusive}",
                     cause = error,
                 )
             }
-            if (error is SegmentedDownloadHttpException && error.code == 429 && options.retryDelayMs > 0L) {
-                delay(options.retryDelayMs)
-            }
         }
     }
 
     private suspend fun downloadPart(
+        httpClient: OkHttpClient,
+        speedTracker: RangeSpeedTracker,
         request: SegmentedDownloadRequest,
         options: SegmentedDownloadOptions,
-        part: DownloadPart,
+        active: ActiveDownloadPart,
         channel: FileChannel,
         totalBytes: Long,
         progress: ProgressAggregator,
     ) {
-        val rangeHeader = "bytes=${part.start}-${part.endInclusive}"
+        val requestStart = active.currentOffset()
+        val requestEnd = active.currentEndInclusive()
+        if (requestStart > requestEnd) return
+        val rangeHeader = "bytes=$requestStart-$requestEnd"
         val rangeRequest = request.newRequestBuilder()
+            .header("Accept-Encoding", "identity")
             .header("Range", rangeHeader)
             .get()
             .build()
-        var written = 0L
-        executeStreaming(rangeRequest) { response ->
-            if (response.code != 206) {
-                throw SegmentedDownloadHttpException(
-                    code = response.code,
-                    retryable = response.code == 429 || response.code in 500..599,
-                )
-            }
-            val contentRange = parseContentRange(response.header("Content-Range"))
-                ?: throw IOException("missing Content-Range")
-            if (
-                contentRange.start != part.start ||
-                contentRange.end != part.endInclusive ||
-                contentRange.totalBytes != totalBytes
-            ) {
-                throw IOException("unexpected Content-Range ${response.header("Content-Range").orEmpty()}")
-            }
-            val buffer = ByteArray(options.bufferSizeBytes)
-            response.body.byteStream().use { input ->
-                while (written < part.length) {
-                    currentCoroutineContext().ensureActive()
-                    val remaining = part.length - written
-                    val read = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
-                    if (read < 0) break
-                    writeAt(channel, part.start + written, buffer, read)
-                    written += read
-                    progress.addBytes(read.toLong())
+        val leaseMs = rangeLeaseMs(
+            part = active.part,
+            initialPartSizeBytes = options.initialPartSizeBytes,
+        )
+        val leaseJob =
+            if (leaseMs > 0L) {
+                CoroutineScope(currentCoroutineContext()).launch {
+                    delay(leaseMs)
+                    active.cancelAttempt()
+                }
+            } else {
+                null
+        }
+        try {
+            executeStreaming(httpClient, rangeRequest, active) { response ->
+                if (response.code != 206) {
+                    throw SegmentedDownloadHttpException(
+                        code = response.code,
+                        retryable = response.code == 429 || response.code in 500..599,
+                    )
+                }
+                val contentRange = parseContentRange(response.header("Content-Range"))
+                    ?: throw IOException("missing Content-Range")
+                if (
+                    contentRange.start != requestStart ||
+                    contentRange.end != requestEnd ||
+                    contentRange.totalBytes != totalBytes
+                ) {
+                    throw IOException("unexpected Content-Range ${response.header("Content-Range").orEmpty()}")
+                }
+                val buffer = ByteArray(options.bufferSizeBytes)
+                val speedId = speedTracker.register()
+                val startedNs = System.nanoTime()
+                var lastCheckNs = startedNs
+                var lastCheckOffset = requestStart
+                var slowStrikes = 0
+                response.body.byteStream().use { input ->
+                    try {
+                        while (true) {
+                            currentCoroutineContext().ensureActive()
+                            val offset = active.currentOffset()
+                            val end = active.currentEndInclusive()
+                            if (offset > end) return@executeStreaming
+                            val remaining = end - offset + 1L
+                            val read = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
+                            if (read < 0) break
+                            if (read == 0) continue
+                            val written = active.writeAvailable(read) { position, byteCount ->
+                                writeAt(channel, position, buffer, byteCount)
+                            }
+                            if (written > 0) {
+                                progress.addBytes(written.toLong())
+                                val nowNs = System.nanoTime()
+                                val checkElapsedMs = (nowNs - lastCheckNs) / 1_000_000L
+                                if (checkElapsedMs >= SLOW_CONNECTION_CHECK_INTERVAL_MS) {
+                                    val currentOffset = active.currentOffset()
+                                    val speedBytesPerMs =
+                                        (currentOffset - lastCheckOffset).toDouble() / checkElapsedMs.toDouble()
+                                    val snapshot = speedTracker.update(speedId, speedBytesPerMs)
+                                    if (
+                                        shouldCloseSlowConnection(
+                                            speedBytesPerMs = speedBytesPerMs,
+                                            averageBytesPerMs = snapshot.averageBytesPerMs,
+                                            measuredPeerCount = snapshot.measuredPeerCount,
+                                            ageMs = (nowNs - startedNs) / 1_000_000L,
+                                            bytes = currentOffset - requestStart,
+                                        )
+                                    ) {
+                                        slowStrikes += 1
+                                    } else {
+                                        slowStrikes = 0
+                                    }
+                                    lastCheckNs = nowNs
+                                    lastCheckOffset = currentOffset
+                                    if (slowStrikes >= SLOW_CONNECTION_STRIKES) {
+                                        throw SlowConnectionDownloadException()
+                                    }
+                                }
+                            }
+                            if (written < read) return@executeStreaming
+                        }
+                    } finally {
+                        speedTracker.unregister(speedId)
+                    }
                 }
             }
+        } finally {
+            leaseJob?.cancelAndJoin()
         }
-        if (written != part.length) {
+        if (active.currentOffset() <= active.currentEndInclusive()) {
             throw PartialPartDownloadException(
-                expectedBytes = part.length,
-                writtenBytes = written,
+                expectedBytes = requestEnd - requestStart + 1L,
+                writtenBytes = active.currentOffset() - requestStart,
             )
         }
     }
@@ -233,7 +343,7 @@ class SegmentedDownloadClient(
         var downloaded = 0L
         var finalUrl = probeResult.finalUrl
         var totalBytes = probeResult.totalBytes
-        executeStreaming(singleRequest) { response ->
+        executeStreaming(client, singleRequest) { response ->
             if (!response.isSuccessful) {
                 throw IOException("HTTP ${response.code}")
             }
@@ -265,6 +375,7 @@ class SegmentedDownloadClient(
             progress.emit(force = true)
         }
         if (totalBytes > 0L) validateLength(partFile, totalBytes)
+        verifyDownloadedSha256(partFile, request.expectedSha256)
         movePartToOutput(partFile, outputFile)
         return SegmentedDownloadResult(
             outputFile = outputFile,
@@ -296,9 +407,20 @@ class SegmentedDownloadClient(
         totalBytes: Long,
         options: SegmentedDownloadOptions,
     ): Int {
-        val partCount = ceil(totalBytes.toDouble() / options.initialPartSizeBytes.toDouble()).toInt().coerceAtLeast(1)
+        val usefulPartBytes = min(options.initialPartSizeBytes, MIN_DYNAMIC_PARALLEL_PART_BYTES)
+            .coerceAtLeast(1L)
+        val partCount = ((totalBytes + usefulPartBytes - 1L) / usefulPartBytes)
+            .toInt()
+            .coerceAtLeast(1)
         return min(options.maxConnections, partCount).coerceAtLeast(1)
     }
+
+    private fun effectiveRequeueBudget(maxRetriesPerPart: Int): Int =
+        if (maxRetriesPerPart <= 0) {
+            0
+        } else {
+            max(maxRetriesPerPart * PIKO_REQUEUE_BUDGET_MULTIPLIER, PIKO_MIN_REQUEUE_BUDGET)
+        }
 
     private fun writeAt(
         channel: FileChannel,
@@ -358,11 +480,17 @@ class SegmentedDownloadClient(
     private fun File.partFile(): File =
         File(parentFile ?: File("."), "$name.part")
 
+    private fun elapsedMsSince(startedNs: Long): Long =
+        ((System.nanoTime() - startedNs) / 1_000_000L).coerceAtLeast(1L)
+
     private suspend fun <T> executeStreaming(
+        httpClient: OkHttpClient,
         request: Request,
+        active: ActiveDownloadPart? = null,
         block: suspend (Response) -> T,
     ): T {
-        val call = client.newCall(request)
+        val call = httpClient.newCall(request)
+        active?.setCancelAttempt { call.cancel() }
         val cancellationHandle = currentCoroutineContext()[Job]?.invokeOnCompletion { error ->
             if (error is CancellationException) {
                 call.cancel()
@@ -373,6 +501,7 @@ class SegmentedDownloadClient(
                 block(response)
             }
         } finally {
+            active?.clearCancelAttempt()
             cancellationHandle?.dispose()
         }
     }
@@ -387,3 +516,10 @@ private class PartialPartDownloadException(
     val expectedBytes: Long,
     val writtenBytes: Long,
 ) : IOException("partial part expected=$expectedBytes written=$writtenBytes")
+
+private class SlowConnectionDownloadException : IOException("slow connection")
+
+private const val MIN_DYNAMIC_PARALLEL_PART_BYTES = 512L * 1024L
+private const val ANDROID_MIN_STEAL_PART_BYTES = 2L * 1024L * 1024L
+private const val PIKO_REQUEUE_BUDGET_MULTIPLIER = 4
+private const val PIKO_MIN_REQUEUE_BUDGET = 8

@@ -8,6 +8,7 @@ data class SegmentedDownloadRequest(
     val outputFile: File,
     val headers: Map<String, String> = emptyMap(),
     val fileNameHint: String = "",
+    val expectedSha256: String = "",
 )
 
 data class SegmentedDownloadOptions(
@@ -18,7 +19,7 @@ data class SegmentedDownloadOptions(
     val retryDelayMs: Long = 1_000L,
     val progressIntervalMs: Long = 250L,
     val requireHttpsForParallel: Boolean = true,
-    val bufferSizeBytes: Int = DEFAULT_BUFFER_SIZE,
+    val bufferSizeBytes: Int = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES,
 ) {
     init {
         require(minParallelSizeBytes > 0L) { "minParallelSizeBytes must be positive" }
@@ -30,6 +31,8 @@ data class SegmentedDownloadOptions(
         require(bufferSizeBytes > 0) { "bufferSizeBytes must be positive" }
     }
 }
+
+const val DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES: Int = 1024 * 1024
 
 data class SegmentedDownloadProgress(
     val downloadedBytes: Long,
@@ -45,6 +48,8 @@ data class SegmentedDownloadResult(
     val rangeSupported: Boolean,
     val finalUrl: String,
     val retryCount: Int = 0,
+    val stealCount: Int = 0,
+    val handoffCount: Int = 0,
     val fallbackReason: String? = null,
 )
 

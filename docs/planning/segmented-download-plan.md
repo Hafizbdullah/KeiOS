@@ -231,6 +231,7 @@ data class SegmentedDownloadRequest(
     val outputFile: File,
     val headers: Map<String, String> = emptyMap(),
     val fileNameHint: String = "",
+    val expectedSha256: String = "",
 )
 
 data class SegmentedDownloadOptions(
@@ -254,6 +255,10 @@ data class SegmentedDownloadResult(
     val parallel: Boolean,
     val rangeSupported: Boolean,
     val finalUrl: String,
+    val retryCount: Int = 0,
+    val stealCount: Int = 0,
+    val handoffCount: Int = 0,
+    val fallbackReason: String? = null,
 )
 ```
 
@@ -342,6 +347,8 @@ Scheduler rules:
 - Requeue failed bytes from the last confirmed written offset.
 - Clamp active connections by file size and part size.
 - Emit final progress after all ranges finish and final byte count matches expected size.
+- Validate optional `expectedSha256` on the completed `.part` file before replacing the previous output.
+- Keep the previous output file intact when length, range, or hash validation fails.
 
 ## Kotlin Coroutine Execution Model
 

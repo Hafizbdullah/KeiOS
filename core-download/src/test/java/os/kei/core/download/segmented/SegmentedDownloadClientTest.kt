@@ -15,12 +15,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class SegmentedDownloadClientTest {
@@ -50,6 +52,35 @@ class SegmentedDownloadClientTest {
     }
 
     @Test
+    fun `segmented download preserves bytes across uneven sizes and part plans`() = runBlocking {
+        val cases = listOf(
+            IntegrityCase(size = 1_025, partSizeBytes = 127, maxConnections = 3),
+            IntegrityCase(size = 65_539, partSizeBytes = 4_097, maxConnections = 5),
+            IntegrityCase(size = 1_048_699, partSizeBytes = 65_537, maxConnections = 4),
+        )
+        cases.forEachIndexed { index, case ->
+            val bytes = ByteArray(case.size) { byteIndex ->
+                ((byteIndex * 31 + index * 17) and 0xff).toByte()
+            }
+            MockWebServer().use { server ->
+                server.dispatcher = byteRangeDispatcher(bytes)
+                val outputFile = temp.newFile("integrity-$index.bin").apply { delete() }
+
+                client().downloadToFile(
+                    request = request(server, outputFile),
+                    options = testOptions(
+                        partSizeBytes = case.partSizeBytes,
+                        maxConnections = case.maxConnections,
+                        bufferSizeBytes = 257,
+                    ),
+                )
+
+                assertContentEquals(bytes, outputFile.readBytes(), "case=$case")
+            }
+        }
+    }
+
+    @Test
     fun `range unavailable uses single stream fallback`() = runBlocking {
         val bytes = ByteArray(16) { (it + 1).toByte() }
         MockWebServer().use { server ->
@@ -71,6 +102,84 @@ class SegmentedDownloadClientTest {
             assertEquals(false, result.parallel)
             assertEquals(false, result.rangeSupported)
             assertEquals("range-ignored", result.fallbackReason)
+            assertContentEquals(bytes, outputFile.readBytes())
+        }
+    }
+
+    @Test
+    fun `unexpected content range fails and keeps existing output intact`() = runBlocking {
+        val bytes = ByteArray(16) { (it + 29).toByte() }
+        val existingBytes = byteArrayOf(9, 8, 7, 6)
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val range = request.getHeader("Range").orEmpty()
+                    if (range == "bytes=0-0") return rangeResponse(bytes, 0, 0)
+                    if (range == "bytes=0-3") {
+                        return MockResponse()
+                            .setResponseCode(206)
+                            .addHeader("Content-Range", "bytes 1-4/${bytes.size}")
+                            .setBody(Buffer().write(bytes.copyOfRange(0, 4)))
+                    }
+                    return rangeResponse(bytes, range)
+                }
+            }
+            val outputFile = temp.newFile("bad-range.bin").apply { writeBytes(existingBytes) }
+            val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
+
+            assertFailsWith<SegmentedDownloadException> {
+                client().downloadToFile(
+                    request = request(server, outputFile),
+                    options = testOptions(
+                        partSizeBytes = 4,
+                        maxConnections = 2,
+                        maxRetriesPerPart = 0,
+                    ),
+                )
+            }
+
+            assertContentEquals(existingBytes, outputFile.readBytes())
+            assertFalse(partFile.exists())
+        }
+    }
+
+    @Test
+    fun `sha256 mismatch fails before replacing output file`() = runBlocking {
+        val bytes = ByteArray(32) { (it + 37).toByte() }
+        val existingBytes = byteArrayOf(5, 4, 3, 2)
+        MockWebServer().use { server ->
+            server.dispatcher = byteRangeDispatcher(bytes)
+            val outputFile = temp.newFile("digest.bin").apply { writeBytes(existingBytes) }
+            val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
+
+            assertFailsWith<SegmentedDownloadException> {
+                client().downloadToFile(
+                    request = request(server, outputFile).copy(
+                        expectedSha256 = "sha256:${"0".repeat(64)}",
+                    ),
+                    options = testOptions(partSizeBytes = 8, maxConnections = 4),
+                )
+            }
+
+            assertContentEquals(existingBytes, outputFile.readBytes())
+            assertFalse(partFile.exists())
+        }
+    }
+
+    @Test
+    fun `sha256 match allows final output replacement`() = runBlocking {
+        val bytes = ByteArray(32) { (it + 41).toByte() }
+        MockWebServer().use { server ->
+            server.dispatcher = byteRangeDispatcher(bytes)
+            val outputFile = temp.newFile("digest-match.bin").apply { delete() }
+
+            client().downloadToFile(
+                request = request(server, outputFile).copy(
+                    expectedSha256 = bytes.sha256Hex(),
+                ),
+                options = testOptions(partSizeBytes = 8, maxConnections = 4),
+            )
+
             assertContentEquals(bytes, outputFile.readBytes())
         }
     }
@@ -105,6 +214,44 @@ class SegmentedDownloadClientTest {
             assertContentEquals(bytes, outputFile.readBytes())
             val ranges = server.takeAllRequests().map { it.getHeader("Range").orEmpty() }
             assertTrue("bytes=2-3" in ranges)
+        }
+    }
+
+    @Test
+    fun `zero max retries fails after partial EOF and removes part file`() = runBlocking {
+        val bytes = ByteArray(12) { (it + 19).toByte() }
+        MockWebServer().use { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val range = request.getHeader("Range").orEmpty()
+                    if (range == "bytes=0-0") return rangeResponse(bytes, 0, 0)
+                    if (range == "bytes=0-3") {
+                        return MockResponse()
+                            .setResponseCode(206)
+                            .addHeader("Content-Range", "bytes 0-3/${bytes.size}")
+                            .setBody(Buffer().write(bytes.copyOfRange(0, 2)))
+                    }
+                    return rangeResponse(bytes, range)
+                }
+            }
+            val outputFile = temp.newFile("no-retry.bin").apply { delete() }
+            val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
+
+            assertFailsWith<SegmentedDownloadException> {
+                client().downloadToFile(
+                    request = request(server, outputFile),
+                    options = testOptions(
+                        partSizeBytes = 4,
+                        maxConnections = 2,
+                        maxRetriesPerPart = 0,
+                    ),
+                )
+            }
+
+            assertFalse(outputFile.exists())
+            assertFalse(partFile.exists())
+            val ranges = server.takeAllRequests().map { it.getHeader("Range").orEmpty() }
+            assertFalse("bytes=2-3" in ranges)
         }
     }
 
@@ -201,6 +348,44 @@ class SegmentedDownloadClientTest {
     }
 
     @Test
+    fun `idle worker hands off slow active range tail`() = runBlocking {
+        val partSizeBytes = 3L * 1024L * 1024L
+        val bytes = ByteArray((30L * 1024L * 1024L).toInt()) { (it % 251).toByte() }
+        MockWebServer().use { server ->
+            val throttledOnce = AtomicBoolean(true)
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    val range = request.getHeader("Range").orEmpty()
+                    if (range == "bytes=0-0") return rangeResponse(bytes, 0, 0)
+                    val response = rangeResponse(bytes, range)
+                    return if (
+                        range == "bytes=0-${partSizeBytes - 1L}" &&
+                        throttledOnce.compareAndSet(true, false)
+                    ) {
+                        response.throttleBody(16L * 1024L, 100, TimeUnit.MILLISECONDS)
+                    } else {
+                        response
+                    }
+                }
+            }
+            val outputFile = temp.newFile("steal.bin").apply { delete() }
+
+            val result = client().downloadToFile(
+                request = request(server, outputFile),
+                options = testOptions(
+                    partSizeBytes = partSizeBytes,
+                    maxConnections = 4,
+                    bufferSizeBytes = 64 * 1024,
+                ),
+            )
+
+            assertContentEquals(bytes, outputFile.readBytes())
+            assertTrue(result.stealCount > 0, "steal=${result.stealCount} handoff=${result.handoffCount}")
+            assertTrue(result.handoffCount > 0, "steal=${result.stealCount} handoff=${result.handoffCount}")
+        }
+    }
+
+    @Test
     fun `cancellation removes temp part file`() = runBlocking {
         val bytes = ByteArray(128) { it.toByte() }
         MockWebServer().use { server ->
@@ -255,16 +440,18 @@ class SegmentedDownloadClientTest {
     private fun testOptions(
         partSizeBytes: Long,
         maxConnections: Int,
+        bufferSizeBytes: Int = 4,
+        maxRetriesPerPart: Int = 2,
     ): SegmentedDownloadOptions =
         SegmentedDownloadOptions(
             minParallelSizeBytes = 1,
             initialPartSizeBytes = partSizeBytes,
             maxConnections = maxConnections,
-            maxRetriesPerPart = 2,
+            maxRetriesPerPart = maxRetriesPerPart,
             retryDelayMs = 1,
             progressIntervalMs = 0,
             requireHttpsForParallel = false,
-            bufferSizeBytes = 4,
+            bufferSizeBytes = bufferSizeBytes,
         )
 
     private fun byteRangeDispatcher(bytes: ByteArray): Dispatcher =
@@ -310,4 +497,16 @@ class SegmentedDownloadClientTest {
                 add(takeRequest())
             }
         }
+
+    private data class IntegrityCase(
+        val size: Int,
+        val partSizeBytes: Long,
+        val maxConnections: Int,
+    )
+
+    private fun ByteArray.sha256Hex(): String =
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(this)
+            .joinToString(separator = "") { byte -> "%02x".format(byte) }
 }

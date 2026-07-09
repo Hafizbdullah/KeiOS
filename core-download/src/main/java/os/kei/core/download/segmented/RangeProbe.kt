@@ -73,6 +73,7 @@ internal fun parseContentRange(value: String?): ParsedContentRange? {
 
 internal fun SegmentedDownloadRequest.newRequestBuilder(): Request.Builder {
     val builder = Request.Builder().url(url)
+        .header("Accept-Encoding", "identity")
     headers.forEach { (name, value) ->
         if (name.isNotBlank() && value.isNotBlank()) {
             builder.header(name, value)
