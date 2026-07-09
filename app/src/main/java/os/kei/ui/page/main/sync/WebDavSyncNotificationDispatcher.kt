@@ -128,7 +128,6 @@ internal object WebDavSyncNotificationDispatcher {
         }
         val safeTotal = total.coerceAtLeast(1)
         val safeCurrent = current.coerceIn(0, safeTotal)
-        val statusLabel = status.label(context)
         val operationLabel = operation.label(context)
         val content =
             if (status == WebDavSyncNotificationStatus.Running) {
@@ -139,13 +138,13 @@ internal object WebDavSyncNotificationDispatcher {
                     safeTotal,
                 )
             } else {
-                context.getString(
-                    R.string.webdav_sync_notification_terminal_content,
-                    statusLabel,
-                    succeeded.coerceAtLeast(0),
-                    safeTotal,
-                    failed.coerceAtLeast(0),
-                    skipped.coerceAtLeast(0),
+                buildTerminalContent(
+                    context = context,
+                    status = status,
+                    succeeded = succeeded.coerceAtLeast(0),
+                    total = safeTotal,
+                    failed = failed.coerceAtLeast(0),
+                    skipped = skipped.coerceAtLeast(0),
                 )
             }
         val shortText =
@@ -173,7 +172,7 @@ internal object WebDavSyncNotificationDispatcher {
                 overrideOnlineText = if (status == WebDavSyncNotificationStatus.Running) {
                     operationLabel
                 } else {
-                    statusLabel
+                    status.shortLabel(context)
                 },
                 overrideShortText = shortText,
                 overrideProgressPercent = percent(safeCurrent, safeTotal),
@@ -189,6 +188,26 @@ internal object WebDavSyncNotificationDispatcher {
         }.onFailure { error ->
             AppLogger.e(TAG, "send failed operation=$operation status=$status", error)
         }.getOrDefault(false)
+    }
+
+    private fun buildTerminalContent(
+        context: Context,
+        status: WebDavSyncNotificationStatus,
+        succeeded: Int,
+        total: Int,
+        failed: Int,
+        skipped: Int,
+    ): String {
+        val parts = buildList {
+            add("${status.shortLabel(context)} $succeeded/$total")
+            if (failed > 0) {
+                add(context.getString(R.string.webdav_sync_notification_failed_compact, failed))
+            }
+            if (skipped > 0) {
+                add(context.getString(R.string.webdav_sync_notification_skipped_compact, skipped))
+            }
+        }
+        return parts.joinToString(" · ")
     }
 
     private fun canPostNotifications(context: Context): Boolean =
@@ -210,17 +229,6 @@ internal object WebDavSyncNotificationDispatcher {
                 WebDavSyncNotificationOperation.Sync -> R.string.webdav_sync_notification_operation_sync
                 WebDavSyncNotificationOperation.Upload -> R.string.webdav_sync_notification_operation_upload
                 WebDavSyncNotificationOperation.Download -> R.string.webdav_sync_notification_operation_download
-            }
-        )
-
-    private fun WebDavSyncNotificationStatus.label(context: Context): String =
-        context.getString(
-            when (this) {
-                WebDavSyncNotificationStatus.Running -> R.string.webdav_sync_notification_status_running
-                WebDavSyncNotificationStatus.Success -> R.string.webdav_sync_notification_status_success
-                WebDavSyncNotificationStatus.NeedsReview -> R.string.webdav_sync_notification_status_review
-                WebDavSyncNotificationStatus.Failed -> R.string.webdav_sync_notification_status_failed
-                WebDavSyncNotificationStatus.Skipped -> R.string.webdav_sync_notification_status_skipped
             }
         )
 

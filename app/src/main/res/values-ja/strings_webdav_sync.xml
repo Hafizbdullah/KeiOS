@@ -18,6 +18,8 @@
     <string name="webdav_sync_notification_short_skipped">Skip</string>
     <string name="webdav_sync_notification_running_content">%1$s %2$d/%3$d</string>
     <string name="webdav_sync_notification_terminal_content">%1$s %2$d/%3$d · 失敗 %4$d · スキップ %5$d</string>
+    <string name="webdav_sync_notification_failed_compact">失%1$d</string>
+    <string name="webdav_sync_notification_skipped_compact">跳%1$d</string>
     <string name="webdav_sync_notification_action_open">表示</string>
     <string name="webdav_sync_section_connection">接続</string>
     <string name="webdav_sync_section_data">データ</string>
