@@ -99,6 +99,78 @@ curl -fsSL https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-test/maven
 | Remote APK metadata scan | Uses precise HTTP Range requests and validates `Content-Range`. | `feature-github/src/main/java/os/kei/feature/github/data/apk/RemoteZipEntryReader.kt` |
 | User-visible GitHub asset download | Uses system `DownloadManager` or external downloader package. | `app/src/main/java/os/kei/core/download/AppPrivateDownloadManager.kt` |
 
+## Benchmark Fixtures
+
+Benchmark both discovery modes for each GitHub download family. The optimizer
+must improve the paths real users hit in Atom/NightlyLink mode and in
+GitHubApiToken mode.
+
+Release APK fixed sample:
+
+| Field | Value |
+| --- | --- |
+| Repository | `getpaseo/paseo` |
+| Release | `https://github.com/getpaseo/paseo/releases/tag/v0.1.104` |
+| Asset name | `paseo-v0.1.104-android.apk` |
+| Asset ID | `470196887` |
+| Asset API URL | `https://api.github.com/repos/getpaseo/paseo/releases/assets/470196887` |
+| Atom/direct URL | `https://github.com/getpaseo/paseo/releases/download/v0.1.104/paseo-v0.1.104-android.apk` |
+| Size | `183037443` bytes, about `174.56 MiB` |
+| Digest | `sha256:f98520a1d8c9df9fb54c11505fa5af32cd108b0b3581927a596f40d9fc5191d5` |
+| Header check | Direct URL redirects to `release-assets.githubusercontent.com` and the final response advertises `Accept-Ranges: bytes`. |
+
+Release benchmark matrix:
+
+| Mode | URL resolution | Required comparison |
+| --- | --- | --- |
+| AtomFeed | Use the `browser_download_url` / direct release asset URL available from Atom or HTML parsing. | Single-stream direct URL vs segmented direct URL. |
+| GitHubApiToken | Resolve the asset through the GitHub release asset API using `Accept: application/octet-stream` and the configured token, then follow the signed redirect. | Single-stream API-resolved URL vs segmented API-resolved URL. |
+
+Actions benchmark matrix:
+
+| Mode | URL resolution | Required comparison |
+| --- | --- | --- |
+| NightlyLink | Use the current `GitHubActionsLookupStrategyOption.NightlyLink` path backed by `nightly.build` public pages. | Single-stream nightly artifact ZIP vs segmented nightly artifact ZIP. |
+| GitHubApiToken | Use the current `GitHubActionsLookupStrategyOption.GitHubApiToken` path backed by GitHub Actions artifact API URLs. | Single-stream API artifact ZIP vs segmented API artifact ZIP. |
+
+Actions benchmark selection rules:
+
+- Select one non-expired Android-like artifact ZIP from the same repository,
+  workflow, run, and artifact name for both modes whenever both modes can
+  resolve it.
+- Prefer artifacts at least `50 MiB`; prefer `100 MiB+` when available.
+- Record run ID, workflow name, artifact ID, artifact name, artifact size,
+  strategy, resolved final URL host, and expiration state before downloading.
+- Re-resolve the artifact URL immediately before each timed run because GitHub
+  Actions artifact and release-asset redirect URLs are short-lived.
+- Treat NightlyLink and GitHubApiToken as separate benchmark rows even when they
+  eventually redirect to the same storage host.
+
+Benchmark metrics:
+
+| Metric | Reason |
+| --- | --- |
+| Total elapsed time | Primary user-visible result. |
+| Average throughput | Main before/after speed signal. |
+| Tail time after 90% | Captures end-of-download slowdown. |
+| Resolved content length | Confirms both modes download the same file size. |
+| Range support result | Confirms segmented activation or fallback reason. |
+| Final URL host | Distinguishes `github.com`, `release-assets.githubusercontent.com`, and Actions storage redirects. |
+| Active connections | Confirms effective parallelism. |
+| Retry count and status codes | Captures 429/5xx/range failures. |
+| Temp-file cleanup result | Keeps managed install and benchmark reruns safe. |
+
+Benchmark run rules:
+
+- Use the same device, network, app build, dispatcher settings, and connection
+  defaults for all rows in one comparison set.
+- Run each row at least three times after one untimed warm-up resolution.
+- Keep raw per-run rows; compare medians for the decision.
+- Clear only the downloader temp files between runs; leave HTTP/TLS connection
+  behavior representative of normal app usage.
+- Capture both current single-stream baseline and new segmented downloader
+  results before changing default rollout behavior.
+
 ## Reference Summary
 
 `piko` is a GPL-3.0 Go downloader in `.tmp/piko`, currently at commit `4f5ba27`.
@@ -273,7 +345,9 @@ Scheduler rules:
 
 ## Kotlin Coroutine Execution Model
 
-Kotlin coroutine workers map cleanly to the segmented downloader model.
+Kotlin coroutines fit the segmented downloader coordinator role. The actual
+OkHttp response reads and file writes still occupy a bounded set of platform IO
+threads when using synchronous OkHttp and `FileChannel`/`RandomAccessFile`.
 
 ```kotlin
 suspend fun runWorkers(
@@ -299,8 +373,8 @@ Execution rules:
 | Scheduler state | Protect part assignment, active-part mutation, retry queues, and tail splitting with `Mutex`. |
 | Progress state | Use `AtomicLong` for completed bytes and a throttled progress emitter for UI/notification callbacks. |
 | OkHttp cancellation | Use the existing cancellable call pattern so coroutine cancellation invokes `Call.cancel()`. |
-| File writes | Use `RandomAccessFile` or `FileChannel` with per-part offsets; serialize only scheduler state, not every byte write. |
-| Thread control | Keep connection count small because each synchronous OkHttp call occupies a real IO thread while the coroutine is suspended from the caller's perspective. |
+| File writes | Use `RandomAccessFile` or `FileChannel` with per-part offsets; serialize scheduler state while each worker writes its own assigned range. |
+| Thread control | Keep connection count tied to effective HTTP connections because each synchronous OkHttp stream occupies a real IO thread. |
 | Structured cleanup | Parent cancellation closes calls, closes the file channel, deletes `.part`, and returns control through existing failure paths. |
 
 Implementation guidance:
@@ -311,6 +385,43 @@ Implementation guidance:
 - Keep `RangeWorker` thin: build request, validate response, write bytes, report offset.
 - Keep progress emission separate from worker loops so notification cadence stays stable.
 - Keep P1 public API suspend-first; feature code calls it from existing coroutine flows.
+- Evaluate a suspending OkHttp call wrapper for response acquisition; keep response body streaming and random-access file writes on the bounded download dispatcher.
+- Keep worker count near effective connection count; hundreds of range workers would mainly increase scheduler, server, and retry pressure.
+
+Runtime notes:
+
+| Topic | Plan Impact |
+| --- | --- |
+| Kotlin coroutines | Coroutines compile into continuations/state machines and run through dispatchers, which gives structured concurrency, cancellation, and testable scheduling. |
+| Blocking streams | Synchronous OkHttp reads and file writes still need real carrier threads, so the module must own worker limits and dispatcher injection. |
+| Go goroutines | Go's runtime-managed goroutines and network poller make cheap blocking-style network workers ergonomic; this is useful inspiration for scheduler shape, retry, and cancellation ergonomics. |
+| Java virtual threads | Java virtual threads are the JVM conceptual match for cheap blocking tasks. They are a future backend research item after Android device/runtime verification. |
+| Android SDK status | Local `android-37.1` and `android-36.1` sources include `Thread.startVirtualThread`, `Thread.ofVirtual`, `Thread.isVirtual`, and hidden `VirtualThread` scheduler code behind `Flags.virtualThreadImplV1()`. Local `android-35` source has no `VirtualThread.java`, so P1 stays compatible with min SDK 35. |
+
+Runtime references:
+
+| Topic | Source |
+| --- | --- |
+| Kotlin coroutine basics | `https://kotlinlang.org/docs/coroutines-basics.html` |
+| Java virtual threads | `https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html` |
+| Android 37.1 virtual-thread API gate | `/Users/voyager/Library/Android/sdk/sources/android-37.1/java/lang/Thread.java` |
+| Android 37.1 hidden virtual-thread scheduler | `/Users/voyager/Library/Android/sdk/sources/android-37.1/java/lang/VirtualThread.java` |
+| epoll/io_uring discussion reference | `https://sibexi.co/posts/epoll-vs-io_uring/` |
+
+## Kernel I/O Scope
+
+Keep P1 on portable JVM/Android APIs.
+
+| Topic | Decision |
+| --- | --- |
+| Network polling | Treat epoll and platform network polling as OkHttp/Android runtime details. Measure observable download behavior instead of choosing kernel polling APIs directly. |
+| File IO | Use blocking `FileChannel` or `RandomAccessFile` on the injected bounded dispatcher. |
+| io_uring | Leave native io_uring integration as a later research path after Kotlin implementation metrics show a clear file-IO bottleneck. |
+| Native backend | Leave Go/Rust/C native downloader backends out of P1 because they add ABI packaging, capability checks, cancellation bridging, GPL review, and test complexity. |
+
+Expected bottlenecks for the first implementation are server/CDN Range behavior,
+rate limits, conservative connection counts, retry policy, and tail scheduling.
+File IO should be measured before adding native kernel-API work.
 
 ## Integration Plan
 
@@ -344,6 +455,8 @@ Tests:
 - Progress reaches total bytes once.
 - Parent coroutine cancellation cancels active OkHttp calls.
 - Worker count never exceeds effective connection count.
+- Occupied IO thread count stays near active connection count in a large-file test run.
+- Virtual-thread backend research is documented separately after SDK 36.1/37.1 runtime verification.
 - `PartScheduler` tail splitting stays deterministic under a fake clock.
 - `PartScheduler` can be tested without network or file IO.
 
@@ -360,6 +473,8 @@ Acceptance:
 - `:feature-github` depends on `:core-download`.
 - Range-supported ZIP uses segmented downloader.
 - Range-unavailable ZIP uses existing single-stream behavior through the downloader fallback.
+- NightlyLink and GitHubApiToken Actions artifact downloads both route through the same `:core-download` adapter after each mode resolves its own URL.
+- Benchmark logging records Actions strategy, workflow run ID, artifact ID, artifact name, artifact size, resolved final URL host, parallel/fallback mode, elapsed time, average throughput, tail time, and retry count.
 - Existing `ZipFile` APK selection flow remains unchanged.
 - Notifications continue using `GitHubInstallProgressEmitter`.
 - Existing managed install result types remain unchanged.
@@ -370,6 +485,7 @@ Tests:
 - ZIP content remains readable after segmented download.
 - Invalid Range response falls back to single stream.
 - Cancellation cleans temp ZIP.
+- NightlyLink and GitHubApiToken modes can each produce a benchmark row for the same selected artifact when both modes resolve it.
 
 ### P3 GitHub Direct APK Managed Install Bridge
 
@@ -383,6 +499,9 @@ Acceptance:
 
 - Direct APK with Range uses segmented downloader.
 - Direct APK without Range uses single-stream temp download.
+- AtomFeed and GitHubApiToken release downloads both route through the same `:core-download` adapter after each mode resolves its own URL.
+- Paseo v0.1.104 Android APK is available as a fixed release benchmark sample for both Atom/direct and GitHubApiToken API-resolved downloads.
+- Benchmark logging records release strategy, asset ID, asset name, expected size, resolved final URL host, parallel/fallback mode, elapsed time, average throughput, tail time, and retry count.
 - Temp APK is reused for archive info reading.
 - Session write runs from completed temp APK.
 - Session progress keeps current notification wording and stage model.
@@ -392,6 +511,7 @@ Tests:
 - Direct APK install writes expected session bytes.
 - Archive info scan reads the downloaded temp APK.
 - Download failure deletes temp APK and abandons session through existing failure path.
+- Paseo v0.1.104 Android APK benchmark produces rows for AtomFeed single-stream, AtomFeed segmented, GitHubApiToken single-stream, and GitHubApiToken segmented.
 
 ### P4 GameKee Large Media Bridge
 
@@ -435,11 +555,14 @@ Initial defaults:
 Evidence to capture:
 
 - Average throughput for single-stream vs segmented on the same URL.
+- Paseo v0.1.104 Android APK benchmark rows for AtomFeed direct URL and GitHubApiToken API-resolved URL.
+- GitHub Actions artifact benchmark rows for NightlyLink/nightly.build and GitHubApiToken API modes.
 - Tail duration after 90% complete.
 - 429 and 5xx frequency.
 - Cancellation cleanup success.
 - Memory footprint while downloading 100-300 MiB APK/ZIP files.
 - Active coroutine count and occupied IO thread count during large downloads.
+- Whether Android 36.1/37.1 devices expose usable virtual-thread runtime behavior for app code.
 
 ## Verification Checklist
 
@@ -464,6 +587,8 @@ Evidence to capture:
 | Progress noise | Throttle progress emissions through the existing progress emitter cadence. |
 | Server Range quirks | Validate every `Content-Range` and fallback on probe mismatch. |
 | Coroutine thread pressure | Keep connection counts conservative and run workers on existing bounded dispatchers. |
+| Virtual-thread availability | Treat virtual threads as optional research until min-SDK and device-runtime evidence proves app-level support. |
+| Native IO complexity | Keep io_uring/native download backends outside P1 and require file-IO bottleneck evidence before revisiting. |
 | Scheduler race conditions | Keep scheduler state behind `Mutex` and cover allocation, requeue, stealing, and cancellation with deterministic unit tests. |
 
 ## First Implementation Recommendation
