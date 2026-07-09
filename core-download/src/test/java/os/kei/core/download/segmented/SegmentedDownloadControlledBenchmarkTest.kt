@@ -49,8 +49,10 @@ class SegmentedDownloadControlledBenchmarkTest {
             },
         )
 
-        assertTrue(capped.speedup >= 2.0, "per-connection cap speedup=${capped.speedup.format2()}")
-        assertTrue(handoff.speedup >= 2.0, "slow-head handoff speedup=${handoff.speedup.format2()}")
+        assertTrue(capped.balancedSpeedup >= 2.0, "per-connection cap balanced=${capped.balancedSpeedup.format2()}")
+        assertTrue(capped.foregroundBoostSpeedup >= 2.0, "per-connection cap boost=${capped.foregroundBoostSpeedup.format2()}")
+        assertTrue(handoff.balancedSpeedup >= 2.0, "slow-head handoff balanced=${handoff.balancedSpeedup.format2()}")
+        assertTrue(handoff.foregroundBoostSpeedup >= 2.0, "slow-head handoff boost=${handoff.foregroundBoostSpeedup.format2()}")
     }
 
     private suspend fun runPerConnectionCapScenario(client: OkHttpClient): ScenarioRows {
@@ -66,9 +68,6 @@ class SegmentedDownloadControlledBenchmarkTest {
                 client = client,
                 server = server,
                 bytes = bytes,
-                partSizeBytes = 3L * MIB,
-                baselineConnections = 1,
-                segmentedConnections = 4,
             )
         }
     }
@@ -81,7 +80,7 @@ class SegmentedDownloadControlledBenchmarkTest {
                 override fun dispatch(request: RecordedRequest): MockResponse {
                     val range = request.getHeader("Range")
                     val response = rangeOrFullResponse(bytes, range)
-                    return if (range == "bytes=0-${initialPartBytes - 1L}") {
+                    return if (range == null || range.startsWith("bytes=0-")) {
                         response.throttleBody(16L * 1024L, 40, TimeUnit.MILLISECONDS)
                     } else {
                         response.throttleBody(256L * 1024L, 40, TimeUnit.MILLISECONDS)
@@ -93,9 +92,6 @@ class SegmentedDownloadControlledBenchmarkTest {
                 client = client,
                 server = server,
                 bytes = bytes,
-                partSizeBytes = initialPartBytes,
-                baselineConnections = 1,
-                segmentedConnections = 4,
             )
         }
     }
@@ -105,30 +101,73 @@ class SegmentedDownloadControlledBenchmarkTest {
         client: OkHttpClient,
         server: MockWebServer,
         bytes: ByteArray,
-        partSizeBytes: Long,
-        baselineConnections: Int,
-        segmentedConnections: Int,
     ): ScenarioRows {
-        val baseline = runSegmented(
+        val baseline = runSingleStream(
             client = client,
             server = server,
             bytes = bytes,
             outputFile = temp.newFile("$name-baseline.bin").apply { delete() },
-            partSizeBytes = partSizeBytes,
-            maxConnections = baselineConnections,
         )
-        val segmented = runSegmented(
+        val balanced = runSegmented(
             client = client,
             server = server,
             bytes = bytes,
-            outputFile = temp.newFile("$name-segmented.bin").apply { delete() },
-            partSizeBytes = partSizeBytes,
-            maxConnections = segmentedConnections,
+            outputFile = temp.newFile("$name-balanced.bin").apply { delete() },
+            partSizeBytes = 8L * MIB,
+            maxConnections = 4,
+            speedProfile = SegmentedDownloadSpeedProfile.Balanced,
+        )
+        val foregroundBoost = runSegmented(
+            client = client,
+            server = server,
+            bytes = bytes,
+            outputFile = temp.newFile("$name-foreground-boost.bin").apply { delete() },
+            partSizeBytes = 4L * MIB,
+            maxConnections = 8,
+            speedProfile = SegmentedDownloadSpeedProfile.ForegroundBoost,
         )
         return ScenarioRows(
             name = name,
-            baseline = baseline.copy(mode = "baseline_${baselineConnections}x"),
-            segmented = segmented.copy(mode = "segmented_${segmentedConnections}x"),
+            baseline = baseline.copy(mode = "old_single"),
+            balanced = balanced.copy(mode = "segmented_balanced"),
+            foregroundBoost = foregroundBoost.copy(mode = "segmented_foreground_boost"),
+        )
+    }
+
+    private suspend fun runSingleStream(
+        client: OkHttpClient,
+        server: MockWebServer,
+        bytes: ByteArray,
+        outputFile: File,
+    ): BenchmarkRow {
+        val downloader = SegmentedDownloadClient(client = client, dispatcher = Dispatchers.IO)
+        val startedNs = System.nanoTime()
+        val result = downloader.downloadToFile(
+            request = SegmentedDownloadRequest(
+                url = server.url("/artifact.bin").toString(),
+                outputFile = outputFile,
+            ),
+            options = SegmentedDownloadOptions(
+                minParallelSizeBytes = Long.MAX_VALUE,
+                initialPartSizeBytes = 8L * MIB,
+                maxConnections = 1,
+                maxRetriesPerPart = 0,
+                retryDelayMs = 1,
+                progressIntervalMs = 0,
+                requireHttpsForParallel = false,
+                bufferSizeBytes = BUFFER_SIZE,
+            ),
+        )
+        assertContentEquals(bytes, outputFile.readBytes())
+        return BenchmarkRow(
+            mode = "old_single",
+            bytes = outputFile.length(),
+            elapsedMs = elapsedMs(startedNs),
+            parallel = result.parallel,
+            connections = 1,
+            retryCount = result.retryCount,
+            stealCount = result.stealCount,
+            handoffCount = result.handoffCount,
         )
     }
 
@@ -139,6 +178,7 @@ class SegmentedDownloadControlledBenchmarkTest {
         outputFile: File,
         partSizeBytes: Long,
         maxConnections: Int,
+        speedProfile: SegmentedDownloadSpeedProfile,
     ): BenchmarkRow {
         val downloader = SegmentedDownloadClient(client = client, dispatcher = Dispatchers.IO)
         var activeConnections = 0
@@ -157,6 +197,7 @@ class SegmentedDownloadControlledBenchmarkTest {
                 progressIntervalMs = 0,
                 requireHttpsForParallel = false,
                 bufferSizeBytes = BUFFER_SIZE,
+                speedProfile = speedProfile,
             ),
             onProgress = { progress ->
                 activeConnections = progress.activeConnections
@@ -197,8 +238,9 @@ class SegmentedDownloadControlledBenchmarkTest {
     }
 
     private fun StringBuilder.appendRows(rows: ScenarioRows) {
-        appendRow(rows.name, rows.baseline, rows.speedup)
-        appendRow(rows.name, rows.segmented, rows.speedup)
+        appendRow(rows.name, rows.baseline, 1.0)
+        appendRow(rows.name, rows.balanced, rows.balancedSpeedup)
+        appendRow(rows.name, rows.foregroundBoost, rows.foregroundBoostSpeedup)
     }
 
     private fun StringBuilder.appendRow(
@@ -239,10 +281,13 @@ class SegmentedDownloadControlledBenchmarkTest {
     private data class ScenarioRows(
         val name: String,
         val baseline: BenchmarkRow,
-        val segmented: BenchmarkRow,
+        val balanced: BenchmarkRow,
+        val foregroundBoost: BenchmarkRow,
     ) {
-        val speedup: Double =
-            baseline.elapsedMs.toDouble() / segmented.elapsedMs.toDouble()
+        val balancedSpeedup: Double =
+            baseline.elapsedMs.toDouble() / balanced.elapsedMs.toDouble()
+        val foregroundBoostSpeedup: Double =
+            baseline.elapsedMs.toDouble() / foregroundBoost.elapsedMs.toDouble()
     }
 
     private data class BenchmarkRow(

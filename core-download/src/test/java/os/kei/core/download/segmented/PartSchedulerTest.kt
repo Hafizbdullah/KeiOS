@@ -107,6 +107,41 @@ class PartSchedulerTest {
         assertTrue(cancelled.get())
     }
 
+    @Test
+    fun `foreground boost profile hands off smaller remaining ranges`() = runBlocking {
+        val cancelled = AtomicBoolean(false)
+        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
+        val totalBytes = 4 * 1024L * 1024L
+        val handoffStart = totalBytes - 80L * 1024L
+        val scheduler = PartScheduler(
+            totalBytes = totalBytes,
+            initialPartSizeBytes = totalBytes,
+            maxRetriesPerPart = 2,
+            concurrency = 2,
+            tuning = tuning.copy(
+                minStealAgeMs = 0,
+                tailWindowInitialMultiplier = 0,
+            ),
+            nowMs = { 1_000L },
+        )
+        val part = assertNotNull(scheduler.nextPart(workerId = 0))
+        val active = scheduler.activate(workerId = 0, part = part)
+        active.setCancelAttempt { cancelled.set(true) }
+        active.advanceTo(handoffStart)
+
+        assertEquals(
+            DownloadPart(
+                start = handoffStart,
+                endInclusive = totalBytes - 1L,
+                retryCount = 1,
+            ),
+            scheduler.nextPart(workerId = 1),
+        )
+        assertEquals(handoffStart - 1L, active.currentEndInclusive())
+        assertTrue(active.isComplete())
+        assertTrue(cancelled.get())
+    }
+
     private companion object {
         val testTuning = PartSchedulerTuning(
             minDynamicPartSizeBytes = 1,

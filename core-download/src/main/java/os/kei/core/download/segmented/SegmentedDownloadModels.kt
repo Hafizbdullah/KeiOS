@@ -20,6 +20,7 @@ data class SegmentedDownloadOptions(
     val progressIntervalMs: Long = 250L,
     val requireHttpsForParallel: Boolean = true,
     val bufferSizeBytes: Int = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES,
+    val speedProfile: SegmentedDownloadSpeedProfile = SegmentedDownloadSpeedProfile.Balanced,
 ) {
     init {
         require(minParallelSizeBytes > 0L) { "minParallelSizeBytes must be positive" }
@@ -30,6 +31,11 @@ data class SegmentedDownloadOptions(
         require(progressIntervalMs >= 0L) { "progressIntervalMs cannot be negative" }
         require(bufferSizeBytes > 0) { "bufferSizeBytes must be positive" }
     }
+}
+
+enum class SegmentedDownloadSpeedProfile {
+    Balanced,
+    ForegroundBoost,
 }
 
 const val DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES: Int = 1024 * 1024

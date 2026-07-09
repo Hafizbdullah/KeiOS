@@ -91,9 +91,7 @@ class SegmentedDownloadClient(
             initialPartSizeBytes = options.initialPartSizeBytes,
             maxRetriesPerPart = effectiveRequeueBudget(options.maxRetriesPerPart),
             concurrency = effectiveConnections,
-            tuning = PartSchedulerTuning(
-                minStealPartSizeBytes = ANDROID_MIN_STEAL_PART_BYTES,
-            ),
+            tuning = options.speedProfile.schedulerTuning(),
         )
         val progress = ProgressAggregator(
             totalBytes = totalBytes,
@@ -523,3 +521,21 @@ private const val MIN_DYNAMIC_PARALLEL_PART_BYTES = 512L * 1024L
 private const val ANDROID_MIN_STEAL_PART_BYTES = 2L * 1024L * 1024L
 private const val PIKO_REQUEUE_BUDGET_MULTIPLIER = 4
 private const val PIKO_MIN_REQUEUE_BUDGET = 8
+
+internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTuning =
+    when (this) {
+        SegmentedDownloadSpeedProfile.Balanced ->
+            PartSchedulerTuning(
+                minStealPartSizeBytes = ANDROID_MIN_STEAL_PART_BYTES,
+            )
+
+        SegmentedDownloadSpeedProfile.ForegroundBoost ->
+            PartSchedulerTuning(
+                minDynamicPartSizeBytes = 256L * 1024L,
+                minTailPartSizeBytes = 64L * 1024L,
+                minStealPartSizeBytes = 64L * 1024L,
+                minStealAgeMs = 80L,
+                partSizeTargetDurationMs = 10_000L,
+                idlePollMs = 30L,
+            )
+    }
