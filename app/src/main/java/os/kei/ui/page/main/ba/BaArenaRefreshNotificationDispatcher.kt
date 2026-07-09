@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba
 import android.content.Context
 import android.content.pm.PackageManager
 import os.kei.R
+import os.kei.core.log.AppLogger
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.ui.page.main.ba.support.BaAccountId
@@ -10,6 +11,8 @@ import os.kei.ui.page.main.ba.support.baServerLabelRes
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 
 internal object BaArenaRefreshNotificationDispatcher {
+    private const val TAG = "BaArenaNotify"
+
     fun send(
         context: Context,
         serverIndex: Int,
@@ -21,7 +24,12 @@ internal object BaArenaRefreshNotificationDispatcher {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
                     PackageManager.PERMISSION_GRANTED
-        if (!notificationsGranted) return false
+        if (!notificationsGranted) {
+            AppLogger.w(TAG) {
+                "skip arena refresh notification: permission missing id=$notificationId server=$serverIndex"
+            }
+            return false
+        }
 
         val detailLine = buildRefreshDetailLine(
             context = context,
@@ -45,6 +53,12 @@ internal object BaArenaRefreshNotificationDispatcher {
                 ),
                 targetBaAccountId = accountId?.value,
             )
+        }.onSuccess { sent ->
+            AppLogger.i(TAG) {
+                "send result=$sent id=$notificationId server=$serverIndex slot=$slotMs account=${accountId?.value.orEmpty()}"
+            }
+        }.onFailure { throwable ->
+            AppLogger.e(TAG, "send failed id=$notificationId server=$serverIndex", throwable)
         }.getOrDefault(false)
     }
 

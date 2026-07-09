@@ -313,7 +313,7 @@ private fun BaDebugControlsHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = true,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
+                )
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -333,7 +333,7 @@ private fun BaDebugControlsHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = false,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
+                )
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -353,7 +353,7 @@ private fun BaDebugControlsHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = true,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
+                )
             notifyBaDebugResult(
                 context = context,
                 sent =
@@ -373,7 +373,7 @@ private fun BaDebugControlsHost(
                     useRealData = routeState.debugUseRealCalendarPoolData,
                     upcoming = false,
                     nowMs = uiNowMs,
-                ) ?: return@BaDebugControlsContent showBaDebugRealDataMissingToast(context)
+                )
             notifyBaDebugResult(
                 context = context,
                 sent =

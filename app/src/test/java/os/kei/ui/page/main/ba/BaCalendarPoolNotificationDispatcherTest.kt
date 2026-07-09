@@ -54,6 +54,14 @@ class BaCalendarPoolNotificationDispatcherTest {
     }
 
     @Test
+    fun `calendar pool focus order id is stable for notification id`() {
+        assertEquals(
+            "ba-calendar-pool-391123456",
+            baCalendarPoolMiFocusOrderId(391_123_456),
+        )
+    }
+
+    @Test
     fun `calendar notification target opens calendar page for requested server`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val intent =

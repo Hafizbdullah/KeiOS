@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
+import os.kei.core.log.AppLogger
 import os.kei.feature.notification.MiFocusNotificationActions
 import os.kei.core.notification.live.NotificationHelper
 import os.kei.core.notification.live.SessionNotifierImpl
@@ -22,6 +23,7 @@ import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 
 internal object BaCalendarPoolNotificationDispatcher {
+    private const val TAG = "BaCalendarPoolNotify"
     private const val CALENDAR_UPCOMING_NOTIFICATION_ID_BASE = 389_100_000
     private const val CALENDAR_ENDING_NOTIFICATION_ID_BASE = 390_100_000
     private const val POOL_UPCOMING_NOTIFICATION_ID_BASE = 391_100_000
@@ -251,7 +253,12 @@ internal object BaCalendarPoolNotificationDispatcher {
         deadlineAtMs: Long?,
         progressPercent: Int,
     ): Boolean {
-        if (!notificationsGranted(context)) return false
+        if (!notificationsGranted(context)) {
+            AppLogger.w(TAG) {
+                "skip notification: permission missing id=$notificationId destination=$destination server=$serverIndex"
+            }
+            return false
+        }
         McpNotificationHelper.ensureChannel(context)
         val helper = NotificationHelper(context)
         val openPendingIntent =
@@ -289,15 +296,21 @@ internal object BaCalendarPoolNotificationDispatcher {
                 overrideShortText = shortText,
                 overrideProgressPercent = progressPercent.coerceIn(0, 100),
                 deadlineAtMs = deadlineAtMs,
+                notificationId = notificationId,
+                miFocusOrderId = baCalendarPoolMiFocusOrderId(notificationId),
             )
         val buildResult = SessionNotifierImpl(helper).build(payload)
-        McpNotificationHelper.dispatchNotification(
+        val dispatched = McpNotificationHelper.dispatchNotification(
             context = context,
             notificationId = notificationId,
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic,
         )
-        return true
+        AppLogger.i(TAG) {
+            "dispatch result=$dispatched id=$notificationId destination=$destination server=$serverIndex " +
+                "deadline=${deadlineAtMs != null} style=${buildResult.style} xiaomiMagic=${buildResult.useXiaomiMagic}"
+        }
+        return dispatched
     }
 
     fun buildDataChangedCopy(
@@ -539,3 +552,6 @@ internal fun baCalendarPoolGroupedNotificationId(
     val timeBucketHash = (notifyAtMs / 60_000L).hashCode().and(0x7fffffff) % 300_000
     return baseId + serverBucket + timeBucketHash
 }
+
+internal fun baCalendarPoolMiFocusOrderId(notificationId: Int): String =
+    "ba-calendar-pool-${notificationId.coerceAtLeast(0)}"

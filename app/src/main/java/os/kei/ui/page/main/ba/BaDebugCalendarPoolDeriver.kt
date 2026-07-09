@@ -52,7 +52,7 @@ internal fun resolveCalendarDebugEntries(
     useRealData: Boolean,
     upcoming: Boolean,
     nowMs: Long,
-): List<BaCalendarEntry>? {
+): List<BaCalendarEntry> {
     if (!useRealData) return listOf(sampleCalendarEntry(context, upcoming, nowMs))
     val targetTime =
         if (upcoming) {
@@ -67,7 +67,7 @@ internal fun resolveCalendarDebugEntries(
                 ?.endAtMs
         }
     return when {
-        targetTime == null -> null
+        targetTime == null -> listOf(sampleCalendarEntry(context, upcoming, nowMs))
         upcoming -> entries.filter { it.beginAtMs == targetTime }
         else -> entries.filter { it.endAtMs == targetTime }
     }
@@ -79,7 +79,7 @@ internal fun resolvePoolDebugEntries(
     useRealData: Boolean,
     upcoming: Boolean,
     nowMs: Long,
-): List<BaPoolEntry>? {
+): List<BaPoolEntry> {
     if (!useRealData) return listOf(samplePoolEntry(context, upcoming, nowMs))
     val targetTime =
         if (upcoming) {
@@ -94,7 +94,7 @@ internal fun resolvePoolDebugEntries(
                 ?.endAtMs
         }
     return when {
-        targetTime == null -> null
+        targetTime == null -> listOf(samplePoolEntry(context, upcoming, nowMs))
         upcoming -> entries.filter { it.startAtMs == targetTime }
         else -> entries.filter { it.endAtMs == targetTime }
     }
