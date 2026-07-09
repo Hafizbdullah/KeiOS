@@ -12,6 +12,33 @@
 
 展开态用于承载完整标题、正文、进度和操作。项目内按钮最多放 2 个，主操作高亮，次操作普通。
 
+## 文字样式与颜色
+
+摘要态文字样式有限，优先靠短文本、图标和进度色表达状态：
+
+- `highlightColor`：岛级强调色，配合文本模板里的 `showHighlightColor` 使用。
+- `showHighlightColor`：让摘要文字使用强调色，适合完成、有更新、失败、取消等短状态。
+- `narrowFont`：给数字、英文、百分比等窄文本使用，减少摘要态挤压。
+- `colorReach` / `colorUnReach`：进度组件的已完成/未完成颜色，适合刷新、导入、AP 等进行中状态。
+
+展开态文字支持更完整的颜色字段：
+
+- `colorTitle` / `colorTitleDark`：主标题颜色，适合状态主色。
+- `colorContent` / `colorContentDark`：正文颜色，适合弱化长说明。
+- `colorSubContent` / `colorSubContentDark`：副正文颜色。
+- `specialTitle` + `colorSpecialTitle` + `colorSpecialBg`：短状态标签，适合“刷新”“更4”“败1”“完成”这类语义。
+- Action 的 `actionBgColor` / `actionTitleColor`：按钮背景和文字颜色。
+
+文案策略：摘要态只放“范围 · 进度 · 非零结果”，零值省略；expanded 使用彩色 `specialTitle` 承载状态，正文保留完整上下文。
+
+项目默认语义色：
+
+- 运行中 / 进度：蓝色 `#3B82F6`
+- 完成 / 发现更新 / 正向结果：绿色 `#22C55E`
+- 失败 / 部分失败 / 危险操作：红色 `#E25B6A`
+- 取消 / 中断 / 普通上下文：灰色 `#64748B`
+- 缓存、降级、待处理冲突等需要谨慎判断的状态：黄色 `#F59E0B`
+
 ## Action 约束
 
 - 超级岛展开态按钮需要同时写入模板 JSON 和 `miui.focus.actions`，项目内通过 `MiFocusNotificationAction` +

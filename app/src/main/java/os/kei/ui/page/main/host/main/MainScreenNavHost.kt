@@ -267,6 +267,8 @@ internal fun MainScreenNavHost(
                                     onApplyNonHomeBackgroundReadableSuggestion = prefsState::applyNonHomeBackgroundReadableSuggestion,
                                     superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
                                     onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
+                                    superIslandFloatBehavior = prefsState.superIslandFloatBehavior,
+                                    onSuperIslandFloatBehaviorChanged = prefsState::updateSuperIslandFloatBehavior,
                                     superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
                                     onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
                                     superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,

@@ -12,7 +12,9 @@ data class NotificationPayload(
 )
 
 data class UserSettings(
-    val miIslandOuterGlow: Boolean
+    val miIslandOuterGlow: Boolean,
+    val miIslandFirstFloat: Boolean = true,
+    val miIslandFinishFloat: Boolean = true
 )
 
 data class EnvironmentContext(

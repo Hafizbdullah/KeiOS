@@ -390,6 +390,9 @@ object McpNotificationHelper {
             manager != null &&
             isNotificationActive(manager, notificationId)
         ) {
+            AppLogger.d(TAG) {
+                "skip identical active notification id=$notificationId server=$serverName"
+            }
             return true
         }
         val dispatched = notifyWithResolvedDispatcher(
@@ -797,6 +800,9 @@ object McpNotificationHelper {
         }
         if (dispatched) {
             McpNotificationActiveStateCache.markActive(notificationId, active = true)
+        }
+        AppLogger.i(TAG) {
+            "dispatch result=$dispatched id=$notificationId xiaomiMagic=$useXiaomiMagic"
         }
         return dispatched
     }

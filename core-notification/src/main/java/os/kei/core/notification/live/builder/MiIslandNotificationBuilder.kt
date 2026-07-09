@@ -139,14 +139,34 @@ class MiIslandNotificationBuilder(
             isGitHubShareImport = isGitHubShareImport,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
+        val resolvedAllowFloat = resolveAllowFloat(
+            state = state,
+            presentation = presentation,
+            settings = payload.settings
+        )
+        val notificationTitle = resolveFocusTitle(state)
+        val notificationContent = resolveFocusContent(
+            state = state,
+            presentation = presentation,
+            isGitHubShareImport = isGitHubShareImport
+        )
+        AppLogger.d(TAG) {
+            "build server=${state.serverName} notificationId=${state.notificationId} " +
+                "running=${state.running} ongoing=${state.ongoing} allowFloat=$resolvedAllowFloat " +
+                "rawAllowFloat=${presentation.allowFloat} firstFloat=${payload.settings.miIslandFirstFloat} " +
+                "finishFloat=${payload.settings.miIslandFinishFloat} updatable=${presentation.focusUpdatable} " +
+                "showNotification=${presentation.focusShowNotification} promoted=${presentation.requestPromotedOngoing} " +
+                "progress=${presentation.progressPercent} big=${presentation.bigTemplateKind} " +
+                "small=${presentation.smallTemplateKind} channel=${payload.environment.channelId}"
+        }
         val isCalendarPoolCountdown =
             isBlueArchiveCalendarPool && state.running && state.deadlineAtMs != null
         val isCalendarPoolUpdate =
             isBlueArchiveCalendarPool && state.running && state.deadlineAtMs == null
         val builder = NotificationCompat.Builder(context, payload.environment.channelId)
             .setSmallIcon(islandIconResId)
-            .setContentTitle(state.title(context))
-            .setContentText(state.content(context).ifBlank { " " })
+            .setContentTitle(notificationTitle)
+            .setContentText(notificationContent.ifBlank { " " })
             .setContentIntent(state.openPendingIntent)
             .setCategory(
                 when {
@@ -241,14 +261,19 @@ class MiIslandNotificationBuilder(
             Icon.createWithBitmap(bitmap)
         }
             ?: Icon.createWithResource(context, islandIconResId)
+        val resolvedAllowFloat = resolveAllowFloat(
+            state = state,
+            presentation = presentation,
+            settings = payload.settings
+        )
 
         FocusNotification.buildV3 {
             val lightLogoKey = createPicture("key_logo_light", lightLogoIcon)
             val darkLogoKey = createPicture("key_logo_dark", darkLogoIcon)
             val displayIconKey = createPicture("key_logo_display", displayIcon)
 
-            islandFirstFloat = true
-            enableFloat = presentation.allowFloat
+            islandFirstFloat = payload.settings.miIslandFirstFloat
+            enableFloat = resolvedAllowFloat
             updatable = presentation.focusUpdatable
             business = MI_FOCUS_DEFAULT_BUSINESS
             notifyId = state.notificationId.takeIf { it > 0 }?.toString()
@@ -263,6 +288,7 @@ class MiIslandNotificationBuilder(
 
             island {
                 islandProperty = 1
+                highlightColor = presentation.notificationAccentColor
                 bigIslandArea {
                     imageTextInfoLeft {
                         type = 1
@@ -283,6 +309,7 @@ class MiIslandNotificationBuilder(
                                 textInfo {
                                     title = presentation.compactTitle
                                     content = presentation.compactContent
+                                    showHighlightColor = presentation.notificationAccentColor != null
                                     narrowFont = shouldUseNarrowFont(presentation)
                                 }
                             }
@@ -309,6 +336,7 @@ class MiIslandNotificationBuilder(
                                 textInfo {
                                     title = presentation.compactTitle
                                     content = presentation.compactContent
+                                    showHighlightColor = presentation.notificationAccentColor != null
                                     narrowFont = shouldUseNarrowFont(presentation)
                                 }
                             }
@@ -344,8 +372,16 @@ class MiIslandNotificationBuilder(
 
             baseInfo {
                 type = 2
-                title = state.title(context)
-                content = state.content(context).ifBlank { " " }
+                title = resolveFocusTitle(state)
+                content = resolveFocusContent(
+                    state = state,
+                    presentation = presentation,
+                    isGitHubShareImport = isGitHubShareImport
+                ).ifBlank { " " }
+                colorTitle = resolveFocusTitleColor(presentation)
+                colorTitleDark = resolveFocusTitleColor(presentation)
+                colorContent = resolveFocusContentColor(isGitHubShareImport)
+                colorContentDark = resolveFocusContentColor(isGitHubShareImport)
             }
 
             if (presentation.showExpandedProgress) {
@@ -407,7 +443,7 @@ class MiIslandNotificationBuilder(
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
             return IslandPresentation(
-                allowFloat = false,
+                allowFloat = true,
                 showTextButtons = true,
                 bigTemplateKind = IslandBigTemplateKind.PROGRESS_TEXT,
                 smallTemplateKind = IslandSmallTemplateKind.PROGRESS_ICON,
@@ -558,6 +594,28 @@ class MiIslandNotificationBuilder(
         )
     }
 
+    private fun resolveAllowFloat(
+        state: LiveNotificationPayload,
+        presentation: IslandPresentation,
+        settings: UserSettings
+    ): Boolean {
+        if (!presentation.allowFloat) return false
+        if (!state.running) return settings.miIslandFinishFloat
+        return if (shouldFloatRunningState(state, presentation)) {
+            settings.miIslandFirstFloat
+        } else {
+            false
+        }
+    }
+
+    private fun shouldFloatRunningState(
+        state: LiveNotificationPayload,
+        presentation: IslandPresentation
+    ): Boolean {
+        if (!state.onlyAlertOnce && presentation.notificationOngoing) return true
+        return !presentation.notificationOngoing && !presentation.requestPromotedOngoing
+    }
+
     private fun resolveShortCriticalText(
         state: LiveNotificationPayload,
         isBlueArchiveAp: Boolean,
@@ -573,7 +631,9 @@ class MiIslandNotificationBuilder(
             isGitHubShareImport -> state.onlineText(context)
             isBlueArchiveCafeVisit || isBlueArchiveArenaRefresh -> state.onlineText(context)
             else -> state.onlineText(context)
-        }.takeIf { it.isNotBlank() }
+        }
+            .takeIf { it.isNotBlank() }
+            ?.let { compactFocusText(it, maxLength = 8) }
     }
 
     private fun resolveIslandActions(
@@ -698,9 +758,41 @@ class MiIslandNotificationBuilder(
     ): String {
         val fullContent = state.content(context).trim()
         if (isGitHubShareImport && presentation.showExpandedProgress && fullContent.isNotBlank()) {
-            return fullContent
+            return compactFocusText(fullContent, maxLength = 32)
         }
         return presentation.compactContent ?: state.shortText
+    }
+
+    private fun resolveFocusTitle(state: LiveNotificationPayload): String {
+        return compactFocusText(state.title(context), maxLength = 18)
+    }
+
+    private fun resolveFocusContent(
+        state: LiveNotificationPayload,
+        presentation: IslandPresentation,
+        isGitHubShareImport: Boolean
+    ): String {
+        val raw = state.content(context)
+        val fallback = listOfNotNull(
+            presentation.compactTitle.takeIf { it.isNotBlank() },
+            presentation.compactContent?.takeIf { it.isNotBlank() }
+        ).joinToString(" · ")
+        return compactFocusText(
+            raw = raw.ifBlank { fallback },
+            maxLength = if (isGitHubShareImport) 28 else 34
+        )
+    }
+
+    private fun resolveFocusTitleColor(presentation: IslandPresentation): String? {
+        return presentation.notificationAccentColor
+    }
+
+    private fun resolveFocusContentColor(isGitHubShareImport: Boolean): String? {
+        return if (isGitHubShareImport) {
+            GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR
+        } else {
+            null
+        }
     }
 
     private fun resolveApProgressPercent(state: LiveNotificationPayload): Int {
@@ -723,6 +815,13 @@ class MiIslandNotificationBuilder(
         if (isNumeric) return fallbackTrimmed
         if (trimmed.length <= maxTextLength) return trimmed
         return fallbackTrimmed.ifBlank { trimmed }
+    }
+
+    private fun compactFocusText(raw: String, maxLength: Int): String {
+        val trimmed = raw.trim()
+        if (trimmed.length <= maxLength) return trimmed
+        val end = (maxLength - 3).coerceAtLeast(1)
+        return trimmed.take(end).trimEnd() + "..."
     }
 
     private fun shouldUseNarrowFont(presentation: IslandPresentation): Boolean {

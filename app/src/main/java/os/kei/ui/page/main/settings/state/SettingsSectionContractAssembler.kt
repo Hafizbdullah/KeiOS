@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
+import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionActions
 import os.kei.ui.page.main.settings.section.SettingsAnimationSectionState
 import os.kei.ui.page.main.settings.section.SettingsComponentEffectsSectionActions
@@ -67,6 +68,7 @@ internal fun rememberSettingsSectionContractBundle(
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
+    superIslandFloatBehavior: SuperIslandFloatBehavior,
     superIslandBypassRestrictionEnabled: Boolean,
     superIslandRestoreDelayMs: Int,
     ignoringBatteryOptimizations: Boolean,
@@ -102,6 +104,7 @@ internal fun rememberSettingsSectionContractBundle(
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
+    onSuperIslandFloatBehaviorChanged: (SuperIslandFloatBehavior) -> Unit,
     onSuperIslandBypassRestrictionChanged: (Boolean) -> Unit,
     onSuperIslandRestoreDelayMsChanged: (Int) -> Unit,
     onOpenBatteryOptimizationSettings: () -> Unit,
@@ -310,11 +313,13 @@ internal fun rememberSettingsSectionContractBundle(
     val notifyState =
         remember(
             superIslandNotificationEnabled,
+            superIslandFloatBehavior,
             superIslandBypassRestrictionEnabled,
             superIslandRestoreDelayMs,
         ) {
             SettingsNotifySectionState(
                 superIslandNotificationEnabled = superIslandNotificationEnabled,
+                superIslandFloatBehavior = superIslandFloatBehavior,
                 superIslandBypassRestrictionEnabled = superIslandBypassRestrictionEnabled,
                 superIslandRestoreDelayMs = superIslandRestoreDelayMs,
             )
@@ -322,11 +327,13 @@ internal fun rememberSettingsSectionContractBundle(
     val notifyActions =
         remember(
             onSuperIslandNotificationChanged,
+            onSuperIslandFloatBehaviorChanged,
             onSuperIslandBypassRestrictionChanged,
             onSuperIslandRestoreDelayMsChanged,
         ) {
             SettingsNotifySectionActions(
                 onSuperIslandNotificationChanged = onSuperIslandNotificationChanged,
+                onSuperIslandFloatBehaviorChanged = onSuperIslandFloatBehaviorChanged,
                 onSuperIslandBypassRestrictionChanged = onSuperIslandBypassRestrictionChanged,
                 onSuperIslandRestoreDelayMsChanged = onSuperIslandRestoreDelayMsChanged,
             )

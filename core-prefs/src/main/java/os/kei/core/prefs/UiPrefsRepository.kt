@@ -223,6 +223,38 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setSuperIslandFloatBehavior(value: SuperIslandFloatBehavior) {
+        updateAndPersist(
+            {
+                copy(
+                    superIslandFloatBehavior = value,
+                    superIslandFirstFloatEnabled = value.firstFloatEnabled,
+                )
+            },
+        ) {
+            UiPrefs.setSuperIslandFloatBehavior(value)
+        }
+    }
+
+    suspend fun setSuperIslandFirstFloatEnabled(value: Boolean) {
+        val behavior =
+            if (value) {
+                SuperIslandFloatBehavior.StartAndFinish
+            } else {
+                SuperIslandFloatBehavior.SummaryOnly
+            }
+        updateAndPersist(
+            {
+                copy(
+                    superIslandFloatBehavior = behavior,
+                    superIslandFirstFloatEnabled = behavior.firstFloatEnabled,
+                )
+            },
+        ) {
+            UiPrefs.setSuperIslandFirstFloatEnabled(value)
+        }
+    }
+
     suspend fun setSuperIslandBypassRestrictionEnabled(value: Boolean) {
         updateAndPersist({ copy(superIslandBypassRestrictionEnabled = value) }) {
             UiPrefs.setSuperIslandBypassRestrictionEnabled(value)

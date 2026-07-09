@@ -27,6 +27,8 @@ data class UiPrefsSnapshot(
     val nonHomeBackgroundDepthEnabled: Boolean,
     val nonHomeBackgroundSaturation: Float,
     val superIslandNotificationEnabled: Boolean,
+    val superIslandFloatBehavior: SuperIslandFloatBehavior,
+    val superIslandFirstFloatEnabled: Boolean,
     val superIslandBypassRestrictionEnabled: Boolean,
     val superIslandRestoreDelayMs: Int,
     val logLevel: AppLogLevel,
@@ -39,6 +41,26 @@ data class UiPrefsSnapshot(
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>,
 )
+
+enum class SuperIslandFloatBehavior(
+    val storageId: String,
+) {
+    SummaryOnly("summary_only"),
+    StartOnly("start_only"),
+    StartAndFinish("start_and_finish"),
+    ;
+
+    val firstFloatEnabled: Boolean
+        get() = this != SummaryOnly
+
+    val finishFloatEnabled: Boolean
+        get() = this == StartAndFinish
+
+    companion object {
+        fun fromStorageId(raw: String?): SuperIslandFloatBehavior =
+            entries.firstOrNull { it.storageId == raw } ?: StartAndFinish
+    }
+}
 
 enum class NonHomeBackgroundContentScale(
     val storageId: String,
@@ -107,6 +129,8 @@ object UiPrefs {
     private const val KEY_NON_HOME_BACKGROUND_DEPTH = "non_home_background_depth"
     private const val KEY_NON_HOME_BACKGROUND_SATURATION = "non_home_background_saturation"
     private const val KEY_SUPER_ISLAND_NOTIFICATION = "super_island_notification"
+    private const val KEY_SUPER_ISLAND_FLOAT_BEHAVIOR = "super_island_float_behavior"
+    private const val KEY_SUPER_ISLAND_FIRST_FLOAT = "super_island_first_float"
     private const val KEY_SUPER_ISLAND_BYPASS_RESTRICTION = "super_island_bypass_restriction"
     private const val KEY_SUPER_ISLAND_RESTORE_DELAY_MS = "super_island_restore_delay_ms"
     private const val KEY_LOG_DEBUG = "log_debug"
@@ -337,6 +361,60 @@ object UiPrefs {
         kv().encode(KEY_SUPER_ISLAND_NOTIFICATION, value)
     }
 
+    fun getSuperIslandFloatBehavior(
+        defaultValue: SuperIslandFloatBehavior = SuperIslandFloatBehavior.StartAndFinish,
+    ): SuperIslandFloatBehavior {
+        val store = kv()
+        if (store.containsKey(KEY_SUPER_ISLAND_FLOAT_BEHAVIOR)) {
+            return SuperIslandFloatBehavior.fromStorageId(
+                store.decodeString(KEY_SUPER_ISLAND_FLOAT_BEHAVIOR, defaultValue.storageId),
+            )
+        }
+        if (store.containsKey(KEY_SUPER_ISLAND_FIRST_FLOAT)) {
+            return if (store.decodeBool(KEY_SUPER_ISLAND_FIRST_FLOAT, true)) {
+                SuperIslandFloatBehavior.StartAndFinish
+            } else {
+                SuperIslandFloatBehavior.SummaryOnly
+            }
+        }
+        return defaultValue
+    }
+
+    fun setSuperIslandFloatBehavior(value: SuperIslandFloatBehavior) {
+        kv().encode(KEY_SUPER_ISLAND_FLOAT_BEHAVIOR, value.storageId)
+        kv().encode(KEY_SUPER_ISLAND_FIRST_FLOAT, value.firstFloatEnabled)
+    }
+
+    fun isSuperIslandFirstFloatEnabled(defaultValue: Boolean = true): Boolean =
+        getSuperIslandFloatBehavior(
+            defaultValue =
+                if (defaultValue) {
+                    SuperIslandFloatBehavior.StartAndFinish
+                } else {
+                    SuperIslandFloatBehavior.SummaryOnly
+                },
+        ).firstFloatEnabled
+
+    fun isSuperIslandFinishFloatEnabled(defaultValue: Boolean = true): Boolean =
+        getSuperIslandFloatBehavior(
+            defaultValue =
+                if (defaultValue) {
+                    SuperIslandFloatBehavior.StartAndFinish
+                } else {
+                    SuperIslandFloatBehavior.StartOnly
+                },
+        ).finishFloatEnabled
+
+    fun setSuperIslandFirstFloatEnabled(value: Boolean) {
+        setSuperIslandFloatBehavior(
+            if (value) {
+                SuperIslandFloatBehavior.StartAndFinish
+            } else {
+                SuperIslandFloatBehavior.SummaryOnly
+            },
+        )
+    }
+
     fun isSuperIslandBypassRestrictionEnabled(defaultValue: Boolean = false): Boolean =
         kv().decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, defaultValue)
 
@@ -493,6 +571,8 @@ object UiPrefs {
             nonHomeBackgroundDepthEnabled = false,
             nonHomeBackgroundSaturation = NON_HOME_BACKGROUND_SATURATION_DEFAULT,
             superIslandNotificationEnabled = false,
+            superIslandFloatBehavior = SuperIslandFloatBehavior.StartAndFinish,
+            superIslandFirstFloatEnabled = true,
             superIslandBypassRestrictionEnabled = false,
             superIslandRestoreDelayMs = SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS,
             logLevel = UiPrefsRuntimeDefaults.defaultLogLevel,
@@ -508,6 +588,7 @@ object UiPrefs {
 
     fun loadSnapshot(): UiPrefsSnapshot {
         val store = kv()
+        val superIslandFloatBehavior = getSuperIslandFloatBehavior()
         return UiPrefsSnapshot(
             liquidActionBarLayeredStyleEnabled = store.decodeBool(KEY_LIQUID_ACTION_BAR_LAYERED_STYLE, true),
             liquidSwitchEnabled = store.decodeBool(KEY_LIQUID_SWITCH, true),
@@ -534,6 +615,8 @@ object UiPrefs {
             nonHomeBackgroundDepthEnabled = isNonHomeBackgroundDepthEnabled(),
             nonHomeBackgroundSaturation = getNonHomeBackgroundSaturation(),
             superIslandNotificationEnabled = store.decodeBool(KEY_SUPER_ISLAND_NOTIFICATION, false),
+            superIslandFloatBehavior = superIslandFloatBehavior,
+            superIslandFirstFloatEnabled = superIslandFloatBehavior.firstFloatEnabled,
             superIslandBypassRestrictionEnabled = store.decodeBool(KEY_SUPER_ISLAND_BYPASS_RESTRICTION, false),
             superIslandRestoreDelayMs = getSuperIslandRestoreDelayMs(),
             logLevel = getLogLevel(),

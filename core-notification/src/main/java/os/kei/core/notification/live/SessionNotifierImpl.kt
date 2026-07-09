@@ -35,9 +35,22 @@ class SessionNotifierImpl(
             TAG,
             "build ${decision.logSummary()}"
         )
+        val floatBehavior = UiPrefs.getSuperIslandFloatBehavior()
+        AppLogger.d(TAG) {
+            "buildDetail ${decision.logSummary()} server=${payload.serverName} " +
+                "notificationId=${payload.notificationId} running=${payload.running} " +
+                "ongoing=${payload.ongoing} behavior=${floatBehavior.storageId} " +
+                "firstFloat=${floatBehavior.firstFloatEnabled} finishFloat=${floatBehavior.finishFloatEnabled} " +
+                "channel=${helper.resolveChannel(style)}"
+        }
         val wrapped = NotificationPayload(
             state = payload,
-            settings = UserSettings(miIslandOuterGlow = payload.outerGlow),
+            settings =
+                UserSettings(
+                    miIslandOuterGlow = payload.outerGlow,
+                    miIslandFirstFloat = floatBehavior.firstFloatEnabled,
+                    miIslandFinishFloat = floatBehavior.finishFloatEnabled,
+                ),
             environment = EnvironmentContext(
                 channelId = helper.resolveChannel(style),
                 isHyperOS = helper.isHyperOS,

@@ -12,6 +12,7 @@ import os.kei.core.log.AppLogLevel
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
+import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
@@ -188,6 +189,18 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updateSuperIslandNotificationEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setSuperIslandNotificationEnabled(value)
+        }
+    }
+
+    fun updateSuperIslandFloatBehavior(value: SuperIslandFloatBehavior) {
+        launchRepositoryUpdate {
+            setSuperIslandFloatBehavior(value)
+        }
+    }
+
+    fun updateSuperIslandFirstFloatEnabled(value: Boolean) {
+        launchRepositoryUpdate {
+            setSuperIslandFirstFloatEnabled(value)
         }
     }
 

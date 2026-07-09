@@ -5,11 +5,17 @@ package os.kei.ui.page.main.settings.section
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_KEY_POINTS
@@ -18,9 +24,12 @@ import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MAX_MS
 import os.kei.ui.page.main.settings.support.SUPER_ISLAND_RESTORE_DELAY_MIN_MS
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
+import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.settings.support.SettingsValueItem
 import os.kei.ui.page.main.settings.support.formatMilliseconds
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import kotlin.math.roundToInt
 
 @Composable
@@ -34,6 +43,34 @@ internal fun SettingsNotifySection(
     onExpandedChange: (Boolean) -> Unit,
 ) {
     val presentation = deriveNotifyPresentation(state)
+    var floatBehaviorExpanded by remember { mutableStateOf(false) }
+    var floatBehaviorAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val floatBehaviorOptions =
+        listOf(
+            SuperIslandFloatBehavior.StartAndFinish to
+                stringResource(R.string.settings_super_island_float_behavior_start_finish),
+            SuperIslandFloatBehavior.StartOnly to
+                stringResource(R.string.settings_super_island_float_behavior_start_only),
+            SuperIslandFloatBehavior.SummaryOnly to
+                stringResource(R.string.settings_super_island_float_behavior_summary_only),
+        )
+    val selectedFloatBehaviorIndex =
+        floatBehaviorOptions
+            .indexOfFirst { it.first == state.superIslandFloatBehavior }
+            .coerceAtLeast(0)
+    val selectedFloatBehaviorLabel =
+        floatBehaviorOptions
+            .getOrElse(selectedFloatBehaviorIndex) { floatBehaviorOptions.first() }
+            .second
+    val floatBehaviorSummary =
+        when (state.superIslandFloatBehavior) {
+            SuperIslandFloatBehavior.StartAndFinish ->
+                stringResource(R.string.settings_super_island_float_behavior_summary_start_finish)
+            SuperIslandFloatBehavior.StartOnly ->
+                stringResource(R.string.settings_super_island_float_behavior_summary_start_only)
+            SuperIslandFloatBehavior.SummaryOnly ->
+                stringResource(R.string.settings_super_island_float_behavior_summary_summary_only)
+        }
     SettingsGroupCard(
         header = stringResource(R.string.settings_group_notify_header),
         title = stringResource(R.string.settings_group_notify_title),
@@ -56,6 +93,35 @@ internal fun SettingsNotifySection(
             infoKey = stringResource(R.string.common_scope),
             infoValue = stringResource(R.string.settings_super_island_style_scope),
         )
+        SettingsPickerItem(
+            title = stringResource(R.string.settings_super_island_float_behavior_title),
+            summary = floatBehaviorSummary,
+            infoKey = stringResource(R.string.common_scope),
+            infoValue = stringResource(R.string.settings_super_island_float_behavior_scope),
+        ) {
+            AppDropdownSelector(
+                selectedText = selectedFloatBehaviorLabel,
+                options = floatBehaviorOptions.map { it.second },
+                selectedIndex = selectedFloatBehaviorIndex,
+                expanded = floatBehaviorExpanded && state.superIslandNotificationEnabled,
+                anchorBounds = floatBehaviorAnchorBounds,
+                onExpandedChange = { expanded ->
+                    floatBehaviorExpanded = expanded && state.superIslandNotificationEnabled
+                },
+                onSelectedIndexChange = { selectedIndex ->
+                    floatBehaviorOptions
+                        .getOrNull(selectedIndex)
+                        ?.first
+                        ?.let(actions.onSuperIslandFloatBehaviorChanged)
+                    floatBehaviorExpanded = false
+                },
+                onAnchorBoundsChange = { floatBehaviorAnchorBounds = it },
+                enabled = state.superIslandNotificationEnabled,
+                variant = GlassVariant.SheetAction,
+                popupMaxWidth = 260.dp,
+                popupMatchAnchorWidth = true,
+            )
+        }
         SettingsToggleItem(
             title = stringResource(R.string.settings_super_island_bypass_title),
             summary =

@@ -11,6 +11,7 @@ import os.kei.core.log.AppLogger
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
+import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
@@ -46,6 +47,8 @@ internal class MainScreenUiPrefsState(
     val nonHomeBackgroundDepthEnabled: Boolean get() = snapshot.nonHomeBackgroundDepthEnabled
     val nonHomeBackgroundSaturation: Float get() = snapshot.nonHomeBackgroundSaturation
     val superIslandNotificationEnabled: Boolean get() = snapshot.superIslandNotificationEnabled
+    val superIslandFloatBehavior: SuperIslandFloatBehavior get() = snapshot.superIslandFloatBehavior
+    val superIslandFirstFloatEnabled: Boolean get() = snapshot.superIslandFirstFloatEnabled
     val superIslandBypassRestrictionEnabled: Boolean get() = snapshot.superIslandBypassRestrictionEnabled
     val superIslandRestoreDelayMs: Int get() = snapshot.superIslandRestoreDelayMs
     val logLevel: AppLogLevel get() = snapshot.logLevel
@@ -158,6 +161,18 @@ internal class MainScreenUiPrefsState(
 
     fun updateSuperIslandNotificationEnabled(value: Boolean) {
         viewModel.updateSuperIslandNotificationEnabled(value)
+        mcpServerManager.refreshNotificationNow()
+        McpNotificationHelper.refreshCurrentNotificationStyle(appContext)
+    }
+
+    fun updateSuperIslandFloatBehavior(value: SuperIslandFloatBehavior) {
+        viewModel.updateSuperIslandFloatBehavior(value)
+        mcpServerManager.refreshNotificationNow()
+        McpNotificationHelper.refreshCurrentNotificationStyle(appContext)
+    }
+
+    fun updateSuperIslandFirstFloatEnabled(value: Boolean) {
+        viewModel.updateSuperIslandFirstFloatEnabled(value)
         mcpServerManager.refreshNotificationNow()
         McpNotificationHelper.refreshCurrentNotificationStyle(appContext)
     }

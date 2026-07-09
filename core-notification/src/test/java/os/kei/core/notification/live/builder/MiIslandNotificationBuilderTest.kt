@@ -86,6 +86,101 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
+    fun `first float follows user setting`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 511,
+            action = "os.kei.test.OPEN_NOTIFICATION_FIRST_FLOAT"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            512,
+            Intent("os.kei.test.STOP_MCP_FIRST_FLOAT").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = "KeiOS MCP",
+                running = false,
+                port = 8080,
+                path = "/mcp",
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                notificationId = 38889,
+                miFocusOrderId = "mcp_keepalive_first_float"
+            ),
+            settings =
+                UserSettings(
+                    miIslandOuterGlow = true,
+                    miIslandFirstFloat = false,
+                ),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+    }
+
+    @Test
+    fun `finish float follows user setting`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 521,
+            action = "os.kei.test.OPEN_NOTIFICATION_FINISH_FLOAT"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            522,
+            Intent("os.kei.test.STOP_MCP_FINISH_FLOAT").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = "KeiOS MCP",
+                running = false,
+                port = 8080,
+                path = "/mcp",
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = true,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent,
+                notificationId = 38890,
+                miFocusOrderId = "mcp_keepalive_finish_float"
+            ),
+            settings =
+                UserSettings(
+                    miIslandOuterGlow = true,
+                    miIslandFirstFloat = false,
+                    miIslandFinishFloat = false,
+                ),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+    }
+
+    @Test
     fun `ba ap progress island title uses current ap value`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(
@@ -130,7 +225,91 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":53"))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#4DA3FF\""))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
+    }
+
+    @Test
+    fun `ba ap first alert enables island float`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 611,
+            action = "os.kei.test.OPEN_BA_AP_FIRST_ALERT"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            612,
+            Intent("os.kei.test.MARK_BA_AP_FIRST_ALERT_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
+                running = true,
+                port = 128,
+                path = "120",
+                clients = 240,
+                ongoing = true,
+                onlyAlertOnce = false,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+    }
+
+    @Test
+    fun `ba cafe visit event enables island float`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationOpenPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 621,
+            action = "os.kei.test.OPEN_BA_CAFE_VISIT"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            622,
+            Intent("os.kei.test.MARK_BA_CAFE_VISIT_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
+                running = true,
+                port = 0,
+                path = "学生访问刷新",
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = false,
+                openPendingIntent = notificationOpenPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+                focusOpenPendingIntent = notificationOpenPendingIntent
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#4DA3FF\""))
     }
 
     @Test
@@ -155,7 +334,7 @@ class MiIslandNotificationBuilderTest {
                 path = "Event starts soon",
                 clients = 1,
                 ongoing = true,
-                onlyAlertOnce = true,
+                onlyAlertOnce = false,
                 openPendingIntent = notificationOpenPendingIntent,
                 stopPendingIntent = stopPendingIntent,
                 focusOpenPendingIntent = notificationOpenPendingIntent,
@@ -186,6 +365,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"timerWhen\":1778007600000"))
         assertTrue(focusParam.contains("\"timerSystemCurrent\""))
         assertTrue(focusParam.contains("mcp_action_stop"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
     }
 
     @Test
@@ -239,6 +419,7 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"更新\""))
         assertTrue(focusParam.contains("\"content\":\"卡池\""))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("multiProgressInfo"))
@@ -304,6 +485,10 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
+        assertTrue(focusParam.contains("\"colorTitle\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#FF6B7C\""))
@@ -425,6 +610,8 @@ class MiIslandNotificationBuilderTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertEquals("#22C55E".toColorInt(), notification.color)
+        assertTrue(focusParam.contains("\"highlightColor\":\"#22C55E\""))
+        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
         assertFalse(focusParam.contains("\"actionTitle\":\"Mark read\",\"actionBgColor\""))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
