@@ -418,7 +418,7 @@ class MiIslandNotificationBuilderTest {
         assertEquals(Notification.CATEGORY_STATUS, notification.category)
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"更新\""))
-        assertTrue(focusParam.contains("\"content\":\"卡池\""))
+        assertFalse(focusParam.contains("\"content\":\"卡池\""))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))

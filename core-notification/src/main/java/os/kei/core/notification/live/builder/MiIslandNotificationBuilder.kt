@@ -335,7 +335,6 @@ class MiIslandNotificationBuilder(
                                 type = 3
                                 textInfo {
                                     title = presentation.compactTitle
-                                    content = presentation.compactContent
                                     showHighlightColor = presentation.notificationAccentColor != null
                                     narrowFont = shouldUseNarrowFont(presentation)
                                 }
