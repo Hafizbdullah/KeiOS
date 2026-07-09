@@ -24,7 +24,7 @@ import kotlin.math.roundToInt
 private const val GITHUB_INSTALL_SESSION_WRITER_TAG = "GitHubInstallWriter"
 private const val GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS = 200L
 private const val GITHUB_SEGMENTED_MIN_SIZE_BYTES = 8L * 1024L * 1024L
-private const val GITHUB_SEGMENTED_PART_SIZE_BYTES = 4L * 1024L * 1024L
+private const val GITHUB_SEGMENTED_PART_SIZE_BYTES = 8L * 1024L * 1024L
 private const val GITHUB_SEGMENTED_MAX_CONNECTIONS = 4
 
 data class GitHubInstallSessionWriteResult(
@@ -56,6 +56,7 @@ class GitHubInstallSessionWriter(
                 context = context,
                 resolvedUrl = resolvedUrl,
                 assetName = asset.name,
+                expectedDigest = asset.digest,
                 declaredSizeBytes = asset.sizeBytes,
                 session = session,
                 sessionId = sessionId,
@@ -84,6 +85,7 @@ class GitHubInstallSessionWriter(
         try {
             downloadToTempFile(
                 resolvedUrl = resolvedUrl,
+                expectedDigest = asset.digest,
                 declaredSizeBytes = asset.sizeBytes,
                 outputFile = tempApkFile,
                 acceptHeader = "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1",
@@ -107,6 +109,7 @@ class GitHubInstallSessionWriter(
         context: Context,
         resolvedUrl: String,
         assetName: String,
+        expectedDigest: String,
         declaredSizeBytes: Long,
         session: PackageInstaller.Session,
         sessionId: Int,
@@ -116,6 +119,7 @@ class GitHubInstallSessionWriter(
         try {
             downloadToTempFile(
                 resolvedUrl = resolvedUrl,
+                expectedDigest = expectedDigest,
                 declaredSizeBytes = declaredSizeBytes,
                 outputFile = archiveFile,
                 acceptHeader = "application/zip, application/octet-stream;q=0.9, */*;q=0.1",
@@ -246,6 +250,7 @@ class GitHubInstallSessionWriter(
 
     private suspend fun downloadToTempFile(
         resolvedUrl: String,
+        expectedDigest: String,
         declaredSizeBytes: Long,
         outputFile: File,
         acceptHeader: String,
@@ -262,6 +267,7 @@ class GitHubInstallSessionWriter(
                         "Accept" to acceptHeader,
                     ),
                     fileNameHint = outputFile.name,
+                    expectedSha256 = expectedDigest,
                 ),
                 options = SegmentedDownloadOptions(
                     minParallelSizeBytes = GITHUB_SEGMENTED_MIN_SIZE_BYTES,
@@ -296,7 +302,8 @@ class GitHubInstallSessionWriter(
             )
         AppLogger.i(GITHUB_INSTALL_SESSION_WRITER_TAG) {
             "asset downloaded parallel=${result.parallel} range=${result.rangeSupported} " +
-                "bytes=${result.totalBytes} retry=${result.retryCount} fallback=${result.fallbackReason.orEmpty()}"
+                "bytes=${result.totalBytes} retry=${result.retryCount} steal=${result.stealCount} " +
+                "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         }
     }
 

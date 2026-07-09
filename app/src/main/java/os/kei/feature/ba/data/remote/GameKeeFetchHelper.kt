@@ -15,6 +15,7 @@ import okhttp3.Request
 import okhttp3.Response
 import os.kei.KeiOSApp
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.download.segmented.DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES
 import os.kei.core.download.segmented.SegmentedDownloadClient
 import os.kei.core.download.segmented.SegmentedDownloadOptions
 import os.kei.core.download.segmented.SegmentedDownloadRequest
@@ -640,7 +641,7 @@ object GameKeeFetchHelper {
                 retryDelayMs = 1_000L,
                 progressIntervalMs = MEDIA_DOWNLOAD_PROGRESS_INTERVAL_MS,
                 requireHttpsForParallel = true,
-                bufferSizeBytes = DEFAULT_BUFFER_SIZE,
+                bufferSizeBytes = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES,
             ),
             onProgress = { progress ->
                 onProgress?.invoke(progress.downloadedBytes, progress.totalBytes)
@@ -648,7 +649,8 @@ object GameKeeFetchHelper {
         )
         logD(
             "download segmented parallel=${result.parallel} range=${result.rangeSupported} " +
-                "bytes=${result.totalBytes} retry=${result.retryCount} fallback=${result.fallbackReason.orEmpty()}"
+                "bytes=${result.totalBytes} retry=${result.retryCount} steal=${result.stealCount} " +
+                "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         )
     }
 
