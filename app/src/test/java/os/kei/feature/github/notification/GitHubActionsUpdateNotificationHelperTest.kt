@@ -13,6 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import os.kei.MainActivity
@@ -66,6 +67,7 @@ class GitHubActionsUpdateNotificationHelperTest {
         val focusOpenIntent = Shadows.shadowOf(openAction.actionIntent).savedIntent
         val markReadIntent = Shadows.shadowOf(markReadAction.actionIntent).savedIntent
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
 
         assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
         assertNotNull(notification.getLargeIcon())
@@ -90,7 +92,7 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"actionTitleColor\":\"#FFFFFF\""))
         assertTrue(focusParam.contains("\"business\":\"keios\""))
         assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
-        assertTrue(focusParam.contains("\"orderId\":\"${snapshot.trackId}\""))
+        assertEquals(snapshot.trackId, focusJson.getString("orderId"))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(

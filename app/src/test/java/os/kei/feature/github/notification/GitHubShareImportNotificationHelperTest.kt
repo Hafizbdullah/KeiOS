@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.mcp.notification.McpNotificationHelper
@@ -614,6 +615,7 @@ class GitHubShareImportNotificationHelperTest {
 
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
 
         assertEquals(
             "Install completed",
@@ -628,7 +630,10 @@ class GitHubShareImportNotificationHelperTest {
         assertNotNull(notification.deleteIntent)
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"Done\""))
-        assertTrue(focusParam.contains("Demo · owner/repo"))
+        assertEquals(
+            "Demo · owner/repo",
+            focusJson.getJSONObject("baseInfo").getString("content"),
+        )
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
     }
@@ -648,6 +653,7 @@ class GitHubShareImportNotificationHelperTest {
 
         val notification = buildMiIsland(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
 
         assertEquals(
             "Waiting for install confirmation",
@@ -667,7 +673,10 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("Confirm install", focusConfirmAction.title.toString())
         assertConfirmPageInstallReceiverAction(context, focusConfirmAction)
         assertTrue(focusParam.contains("\"title\":\"Confirm\""))
-        assertTrue(focusParam.contains("Demo · owner/repo · waiting"))
+        assertEquals(
+            "Demo · owner/repo · waiting",
+            focusJson.getJSONObject("baseInfo").getString("content"),
+        )
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#DBEAFE\""))
         assertFalse(focusParam.contains("progressTextInfo"))

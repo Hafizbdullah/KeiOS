@@ -153,12 +153,8 @@ class MiIslandNotificationBuilder(
             presentation = presentation,
             settings = payload.settings
         )
-        val notificationTitle = resolveFocusTitle(state)
-        val notificationContent = resolveFocusContent(
-            state = state,
-            presentation = presentation,
-            isGitHubShareImport = isGitHubShareImport
-        )
+        val notificationTitle = state.title(context)
+        val notificationContent = state.content(context)
         AppLogger.d(TAG) {
             "build server=${state.serverName} notificationId=${state.notificationId} " +
                 "running=${state.running} ongoing=${state.ongoing} allowFloat=$resolvedAllowFloat " +
