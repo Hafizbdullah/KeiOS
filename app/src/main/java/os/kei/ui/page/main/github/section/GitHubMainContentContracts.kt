@@ -57,7 +57,6 @@ internal data class GitHubMainContentControls(
 
 internal data class GitHubMainContentOverview(
     val refreshState: OverviewRefreshState,
-    val expanded: Boolean,
     val refreshProgress: Float,
     val lastRefreshMs: Long,
     val lookupConfig: GitHubLookupConfig,
@@ -109,7 +108,6 @@ internal data class GitHubMainContentActions(
     val onOpenDroidSourcesSheet: () -> Unit,
     val onOpenDebugSheet: () -> Unit,
     val onOpenActionsNotificationHistory: () -> Unit,
-    val onOverviewExpandedChange: (Boolean) -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,
     val onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,

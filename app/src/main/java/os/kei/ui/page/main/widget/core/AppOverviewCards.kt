@@ -66,6 +66,7 @@ fun AppOverviewCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     startAction: (@Composable () -> Unit)? = null,
+    titleAccessory: (@Composable RowScope.() -> Unit)? = null,
     headerEndActions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -114,6 +115,7 @@ fun AppOverviewCard(
             blurRadius = blurRadius,
             lensRadius = lensRadius,
             startAction = startAction,
+            titleAccessory = titleAccessory,
             headerEndActions = headerEndActions,
             content = content,
         )
@@ -137,6 +139,7 @@ fun AppOverviewCard(
             blurRadius = blurRadius,
             lensRadius = lensRadius,
             startAction = startAction,
+            titleAccessory = titleAccessory,
             headerEndActions = headerEndActions,
             content = content,
         )
@@ -162,6 +165,7 @@ private fun AppOverviewCardSurface(
     blurRadius: Dp,
     lensRadius: Dp,
     startAction: (@Composable () -> Unit)?,
+    titleAccessory: (@Composable RowScope.() -> Unit)?,
     headerEndActions: (@Composable RowScope.() -> Unit)?,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -213,6 +217,7 @@ private fun AppOverviewCardSurface(
                         ),
                     titleTypography = AppTypographyTokens.CompactTitle,
                     startAction = startAction,
+                    titleAccessory = titleAccessory,
                     endActions = headerEndActions,
                 )
                 AppCardBodyColumn(

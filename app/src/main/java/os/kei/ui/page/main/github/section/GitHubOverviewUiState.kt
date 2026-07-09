@@ -8,7 +8,6 @@ import os.kei.R
 
 @Immutable
 internal data class GitHubOverviewUiState(
-    val expanded: Boolean = true,
     val visibleEntries: Set<GitHubOverviewEntry> = defaultGitHubOverviewEntries()
 )
 
@@ -23,7 +22,6 @@ internal enum class GitHubOverviewEntry(
     StableLatest("stable_latest", R.string.github_overview_label_stable_latest),
     PreReleaseTracked("pre_release_tracked", R.string.github_overview_label_prerelease_tracked),
     PreReleaseUpdate("pre_release_update", R.string.github_overview_label_prerelease_update),
-    OldestChecked("oldest_checked", R.string.github_overview_label_oldest_checked),
     CheckFailed("check_failed", R.string.github_overview_label_check_failed);
 
     companion object {
@@ -42,21 +40,15 @@ internal fun Set<GitHubOverviewEntry>.orDefaultGitHubOverviewEntries(): Set<GitH
 
 internal object GitHubOverviewUiStateStore {
     private const val KV_ID = "github_overview_ui_state"
-    private const val KEY_EXPANDED = "overview_expanded"
     private const val KEY_VISIBLE_ENTRIES = "overview_visible_entries"
     private val store: MMKV by lazy { KeiMmkv.byId(KV_ID) }
 
     fun load(): GitHubOverviewUiState {
         return GitHubOverviewUiState(
-            expanded = store.decodeBool(KEY_EXPANDED, true),
             visibleEntries = parseVisibleEntries(
                 store.decodeString(KEY_VISIBLE_ENTRIES).orEmpty()
             )
         )
-    }
-
-    fun setExpanded(value: Boolean) {
-        store.encode(KEY_EXPANDED, value)
     }
 
     fun setVisibleEntries(entries: Set<GitHubOverviewEntry>) {

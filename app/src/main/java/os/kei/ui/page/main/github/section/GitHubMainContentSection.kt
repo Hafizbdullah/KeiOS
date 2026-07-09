@@ -210,8 +210,6 @@ internal fun GitHubMainContent(
                             isDark = surfaces.isDark,
                             lookupConfig = overview.lookupConfig,
                             overviewRefreshState = overview.refreshState,
-                            expanded = overview.expanded,
-                            onExpandedChange = actions.onOverviewExpandedChange,
                             refreshProgress = overview.refreshProgress,
                             lastRefreshMs = overview.lastRefreshMs,
                             visibleEntries = overview.visibleEntries,

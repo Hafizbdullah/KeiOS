@@ -217,12 +217,14 @@ internal fun GitHubLookupStrategyOption.overviewLabel(context: Context): String 
     }
 }
 
-internal fun GitHubLookupConfig.overviewApiLabel(context: Context): String {
-    return when {
-        selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken ->
-            context.getString(R.string.common_not_used)
-        apiToken.isBlank() -> context.getString(R.string.common_guest)
-        else -> apiToken.maskedApiPreview(context)
+internal fun GitHubLookupConfig.overviewLookupPillLabel(context: Context): String {
+    return when (selectedStrategy) {
+        GitHubLookupStrategyOption.AtomFeed -> selectedStrategy.overviewLabel(context)
+        GitHubLookupStrategyOption.GitHubApiToken ->
+            context.getString(
+                R.string.github_overview_lookup_api,
+                apiToken.maskedApiPreview(context)
+            )
     }
 }
 
@@ -347,7 +349,7 @@ internal fun VersionCheckUi.statusActionUrl(
 
 private fun String.maskedApiPreview(context: Context): String {
     val token = trim()
-    if (token.isBlank()) return context.getString(R.string.common_guest)
+    if (token.isBlank()) return context.getString(R.string.github_overview_api_unset)
 
     return when {
         token.startsWith("github_pat_") -> "FG ${token.fineGrainedMarker()}"

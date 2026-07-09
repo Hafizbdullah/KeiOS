@@ -162,7 +162,6 @@ internal class GitHubPageState(
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(pageUiState.sortMode)
     var sortDirection by mutableStateOf(pageUiState.sortDirection)
-    var overviewExpanded by overviewState::overviewExpanded
     var overviewVisibleEntries by overviewState::overviewVisibleEntries
     var pendingDeleteItem by sheetState::pendingDeleteItem
     var overviewRefreshState by overviewState::overviewRefreshState
@@ -252,9 +251,6 @@ internal class GitHubPageState(
         }
         if (actionsRunsExpanded == defaultActionsState.runsExpanded) {
             actionsRunsExpanded = snapshot.actionsSectionExpansionState.runsExpanded
-        }
-        if (overviewExpanded == defaultOverviewState.expanded) {
-            overviewExpanded = snapshot.overviewUiState.expanded
         }
         if (overviewVisibleEntries == defaultOverviewState.visibleEntries) {
             overviewVisibleEntries = snapshot.overviewUiState.visibleEntries

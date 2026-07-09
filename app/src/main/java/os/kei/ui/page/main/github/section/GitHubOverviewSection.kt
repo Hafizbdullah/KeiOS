@@ -1,47 +1,39 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.OverviewRefreshState
 import os.kei.ui.page.main.github.borderColor
 import os.kei.ui.page.main.github.color
 import os.kei.ui.page.main.github.formatRefreshAgo
 import os.kei.ui.page.main.github.indicatorBackground
-import os.kei.ui.page.main.github.overviewApiLabel
-import os.kei.ui.page.main.github.overviewLabel
+import os.kei.ui.page.main.github.overviewLookupPillLabel
 import os.kei.ui.page.main.github.surfaceColor
 import os.kei.ui.page.main.widget.core.AppOverviewCard
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import os.kei.ui.page.main.widget.motion.AppMotionTokens
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -77,8 +69,6 @@ internal fun GitHubOverviewCard(
     isDark: Boolean,
     lookupConfig: GitHubLookupConfig,
     overviewRefreshState: OverviewRefreshState,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
     refreshProgress: Float,
     lastRefreshMs: Long,
     visibleEntries: Set<GitHubOverviewEntry>,
@@ -89,29 +79,16 @@ internal fun GitHubOverviewCard(
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val overviewTitleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant
-    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val strategyValue = lookupConfig.selectedStrategy.overviewLabel(context)
-    val apiValue = lookupConfig.overviewApiLabel(context)
-    val strategyColor = lookupConfig.selectedStrategy.run {
-        when (this) {
-            GitHubLookupStrategyOption.AtomFeed -> GitHubStatusPalette.Active
-            GitHubLookupStrategyOption.GitHubApiToken -> GitHubStatusPalette.Update
+    val lookupValue = lookupConfig.overviewLookupPillLabel(context)
+    val lookupColor =
+        when {
+            lookupConfig.selectedStrategy != GitHubLookupStrategyOption.GitHubApiToken ->
+                GitHubStatusPalette.Active
+            lookupConfig.apiToken.isBlank() ->
+                GitHubStatusPalette.PreRelease
+            else ->
+                GitHubStatusPalette.Active
         }
-    }
-    val apiColor = if (lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken) {
-        if (lookupConfig.apiToken.isBlank()) {
-            GitHubStatusPalette.PreRelease
-        } else {
-            GitHubStatusPalette.Active
-        }
-    } else {
-        overviewMetricColor(
-            color = GitHubStatusPalette.Active,
-            emphasized = false,
-            isDark = isDark
-        )
-    }
     val displayRefreshState = if (
         overviewRefreshState == OverviewRefreshState.Idle && lastRefreshMs > 0L
     ) {
@@ -119,6 +96,7 @@ internal fun GitHubOverviewCard(
     } else {
         overviewRefreshState
     }
+    val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     AppOverviewCard(
         title = stringResource(R.string.github_overview_title),
         backdrop = backdrop,
@@ -133,8 +111,16 @@ internal fun GitHubOverviewCard(
             neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
         ),
         contentColor = MiuixTheme.colorScheme.onBackground,
-        onClick = { onExpandedChange(!expanded) },
         onLongClick = onEditVisibleEntries,
+        titleAccessory = {
+            if (GitHubOverviewEntry.Tracked in entries) {
+                GitHubOverviewTrackedCountPill(
+                    count = metrics.trackedCount,
+                    isDark = isDark,
+                    backdrop = backdrop
+                )
+            }
+        },
         headerEndActions = {
             if (displayRefreshState != OverviewRefreshState.Idle) {
                 val indicatorColor = displayRefreshState.color(
@@ -182,54 +168,17 @@ internal fun GitHubOverviewCard(
             )
         }
     ) {
-        AnimatedContent(
-            targetState = expanded,
-            transitionSpec = {
-                if (transitionAnimationsEnabled) {
-                    (
-                            fadeIn(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeInMs)) togetherWith
-                                    fadeOut(animationSpec = tween(durationMillis = AppMotionTokens.expandFadeOutMs))
-                            ).using(
-                            SizeTransform(clip = false) { _, _ ->
-                                tween(durationMillis = AppMotionTokens.expandSizeInMs)
-                            }
-                        )
-                } else {
-                    EnterTransition.None togetherWith ExitTransition.None
-                }
-            },
-            label = "github_overview_expand_content",
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            if (it) {
-                GitHubOverviewExpandedContent(
-                    backdrop = backdrop,
-                    isDark = isDark,
-                    overviewTitleColor = overviewTitleColor,
-                    strategyValue = strategyValue,
-                    strategyColor = strategyColor,
-                    apiValue = apiValue,
-                    apiColor = apiColor,
-                    visibleEntries = visibleEntries,
-                    metrics = metrics,
-                    failedFilterActive = failedFilterActive,
-                    onRetryFailedTracked = onRetryFailedTracked,
-                    onFailedFilterToggle = onFailedFilterToggle
-                )
-            } else {
-                GitHubOverviewCollapsedContent(
-                    backdrop = backdrop,
-                    isDark = isDark,
-                    overviewTitleColor = overviewTitleColor,
-                    isApiStrategy = lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken,
-                    strategyValue = strategyValue,
-                    strategyColor = strategyColor,
-                    apiValue = apiValue,
-                    apiColor = apiColor,
-                    metrics = metrics
-                )
-            }
-        }
+        GitHubOverviewExpandedContent(
+            backdrop = backdrop,
+            isDark = isDark,
+            lookupValue = lookupValue,
+            lookupColor = lookupColor,
+            visibleEntries = entries,
+            metrics = metrics,
+            failedFilterActive = failedFilterActive,
+            onRetryFailedTracked = onRetryFailedTracked,
+            onFailedFilterToggle = onFailedFilterToggle
+        )
     }
 }
 
@@ -237,162 +186,32 @@ internal fun GitHubOverviewCard(
 private fun GitHubOverviewExpandedContent(
     backdrop: Backdrop?,
     isDark: Boolean,
-    overviewTitleColor: Color,
-    strategyValue: String,
-    strategyColor: Color,
-    apiValue: String,
-    apiColor: Color,
+    lookupValue: String,
+    lookupColor: Color,
     visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
     failedFilterActive: Boolean,
     onRetryFailedTracked: () -> Unit,
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
-    val context = LocalContext.current
     val entries = visibleEntries.orDefaultGitHubOverviewEntries()
-    val tiles = buildList {
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.Strategy,
-                value = strategyValue,
-                color = strategyColor
+    val pills =
+        buildGitHubOverviewExpandedPillPlan(entries).map { pill ->
+            pill.toDisplayPill(
+                isDark = isDark,
+                lookupValue = lookupValue,
+                lookupColor = lookupColor,
+                metrics = metrics
             )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.Api,
-                value = apiValue,
-                color = apiColor,
-                labelMaxLines = 1,
-                valueMaxLines = 1,
-                labelWeight = 0.24f,
-                valueWeight = 0.76f
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.Tracked,
-                value = stringResource(R.string.github_overview_value_count, metrics.trackedCount),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.Stable,
-                    emphasized = metrics.trackedCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.StableUpdate,
-                value = stringResource(
-                    R.string.github_overview_value_count,
-                    metrics.stableUpdateCount
-                ),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.Update,
-                    emphasized = metrics.stableUpdateCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.StableLatest,
-                value = stringResource(
-                    R.string.github_overview_value_count,
-                    metrics.stableLatestCount
-                ),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.Stable,
-                    emphasized = metrics.stableLatestCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.PreReleaseTracked,
-                value = stringResource(
-                    R.string.github_overview_value_count,
-                    metrics.preReleaseCount
-                ),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.PreRelease,
-                    emphasized = metrics.preReleaseCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.PreReleaseUpdate,
-                value = stringResource(
-                    R.string.github_overview_value_count,
-                    metrics.preReleaseUpdateCount
-                ),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.PreRelease,
-                    emphasized = metrics.preReleaseUpdateCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.OldestChecked,
-                value =
-                    formatRefreshAgo(
-                        context = context,
-                        lastRefreshMs = metrics.oldestCheckedAtMillis,
-                    ),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.Cache,
-                    emphasized = metrics.oldestCheckedAtMillis > 0L,
-                    isDark = isDark
-                ),
-                labelWeight = 0.44f,
-                valueWeight = 0.56f
-            )
-        )
-        add(
-            GitHubOverviewTile(
-                entry = GitHubOverviewEntry.CheckFailed,
-                value = stringResource(R.string.github_overview_value_count, metrics.failedCount),
-                color = overviewMetricColor(
-                    color = GitHubStatusPalette.Error,
-                    emphasized = metrics.failedCount > 0,
-                    isDark = isDark
-                )
-            )
-        )
-    }.filter { it.entry in entries }
+        }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
     ) {
-        tiles.chunked(2).forEach { rowTiles ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap)
-            ) {
-                rowTiles.forEach { tile ->
-                    GitHubOverviewMetricItem(
-                        label = stringResource(tile.entry.labelRes),
-                        value = tile.value,
-                        titleColor = overviewTitleColor,
-                        valueColor = tile.color,
-                        labelMaxLines = tile.labelMaxLines,
-                        valueMaxLines = tile.valueMaxLines,
-                        labelWeight = tile.labelWeight,
-                        valueWeight = tile.valueWeight,
-                        backdrop = backdrop,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                if (rowTiles.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
+        GitHubOverviewExpandedPillFlow(
+            pills = pills,
+            backdrop = backdrop,
+        )
         if (metrics.failedCount > 0) {
             if (failedFilterActive) {
                 StatusPill(
@@ -429,72 +248,199 @@ private fun GitHubOverviewExpandedContent(
     }
 }
 
-private data class GitHubOverviewTile(
-    val entry: GitHubOverviewEntry,
-    val value: String,
-    val color: Color,
-    val labelMaxLines: Int = 1,
-    val valueMaxLines: Int = 1,
-    val labelWeight: Float = 0.64f,
-    val valueWeight: Float = 0.36f
+internal enum class GitHubOverviewExpandedPillKind {
+    Lookup,
+    Stable,
+    StableUpdate,
+    StableLatest,
+    PreRelease,
+    PreReleaseTracked,
+    PreReleaseUpdate,
+    CheckFailed
+}
+
+internal data class GitHubOverviewExpandedPillPlan(
+    val kind: GitHubOverviewExpandedPillKind
 )
 
-@Composable
-private fun GitHubOverviewCollapsedContent(
-    backdrop: Backdrop?,
-    isDark: Boolean,
-    overviewTitleColor: Color,
-    isApiStrategy: Boolean,
-    strategyValue: String,
-    strategyColor: Color,
-    apiValue: String,
-    apiColor: Color,
-    metrics: GitHubOverviewMetrics,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap)
-    ) {
-        GitHubOverviewMetricItem(
-            label = stringResource(R.string.github_overview_label_strategy_api),
-            value = if (isApiStrategy) {
-                stringResource(R.string.github_overview_value_api, apiValue)
-            } else {
-                stringResource(
-                    R.string.github_overview_value_strategy_api,
-                    strategyValue,
-                    apiValue
-                )
-            },
-            titleColor = overviewTitleColor,
-            valueColor = if (apiColor == GitHubStatusPalette.PreRelease) apiColor else strategyColor,
-            showLabel = false,
-            valueMaxLines = 1,
-            valueTextAlign = TextAlign.Start,
-            backdrop = backdrop,
-            modifier = Modifier.weight(1f)
-        )
-        GitHubOverviewMetricItem(
-            label = stringResource(R.string.github_overview_label_update_tracked),
-            value = stringResource(
-                R.string.github_overview_value_update_tracked_compact,
-                metrics.totalUpdatableCount,
-                metrics.trackedCount
-            ),
-            titleColor = overviewTitleColor,
-            valueColor = overviewMetricColor(
-                color = GitHubStatusPalette.Update,
-                emphasized = metrics.totalUpdatableCount > 0,
-                isDark = isDark
-            ),
-            emphasized = metrics.totalUpdatableCount > 0,
-            showLabel = false,
-            valueMaxLines = 1,
-            valueTextAlign = TextAlign.Start,
-            backdrop = backdrop,
-            modifier = Modifier.weight(1f)
-        )
+private data class GitHubOverviewDisplayPill(
+    val label: String,
+    val color: Color
+)
+
+private val GitHubOverviewPillHeight = 28.dp
+private val GitHubOverviewPillPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+
+internal fun buildGitHubOverviewExpandedPillPlan(
+    visibleEntries: Set<GitHubOverviewEntry>
+): List<GitHubOverviewExpandedPillPlan> {
+    val entries = visibleEntries.orDefaultGitHubOverviewEntries()
+    return buildList {
+        if (GitHubOverviewEntry.Strategy in entries || GitHubOverviewEntry.Api in entries) {
+            add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.Lookup))
+        }
+        when {
+            GitHubOverviewEntry.StableUpdate in entries &&
+                    GitHubOverviewEntry.StableLatest in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.Stable))
+
+            GitHubOverviewEntry.StableUpdate in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.StableUpdate))
+
+            GitHubOverviewEntry.StableLatest in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.StableLatest))
+        }
+        when {
+            GitHubOverviewEntry.PreReleaseTracked in entries &&
+                    GitHubOverviewEntry.PreReleaseUpdate in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreRelease))
+
+            GitHubOverviewEntry.PreReleaseTracked in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreReleaseTracked))
+
+            GitHubOverviewEntry.PreReleaseUpdate in entries ->
+                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreReleaseUpdate))
+        }
+        if (GitHubOverviewEntry.CheckFailed in entries) {
+            add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.CheckFailed))
+        }
     }
+}
+
+@Composable
+private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
+    isDark: Boolean,
+    lookupValue: String,
+    lookupColor: Color,
+    metrics: GitHubOverviewMetrics
+): GitHubOverviewDisplayPill {
+    val stableTotal = metrics.stableUpdateCount + metrics.stableLatestCount
+    val label = when (kind) {
+        GitHubOverviewExpandedPillKind.Lookup -> lookupValue
+
+        GitHubOverviewExpandedPillKind.Stable ->
+            stringResource(
+                R.string.github_overview_pill_stable_pair,
+                metrics.stableUpdateCount,
+                stableTotal
+            )
+
+        GitHubOverviewExpandedPillKind.StableUpdate ->
+            stringResource(R.string.github_overview_pill_stable_update, metrics.stableUpdateCount)
+
+        GitHubOverviewExpandedPillKind.StableLatest ->
+            stringResource(R.string.github_overview_pill_stable_latest, metrics.stableLatestCount)
+
+        GitHubOverviewExpandedPillKind.PreRelease ->
+            stringResource(
+                R.string.github_overview_pill_prerelease_pair,
+                metrics.preReleaseUpdateCount,
+                metrics.preReleaseCount
+            )
+
+        GitHubOverviewExpandedPillKind.PreReleaseTracked ->
+            stringResource(R.string.github_overview_pill_prerelease_tracked, metrics.preReleaseCount)
+
+        GitHubOverviewExpandedPillKind.PreReleaseUpdate ->
+            stringResource(
+                R.string.github_overview_pill_prerelease_update,
+                metrics.preReleaseUpdateCount
+            )
+
+        GitHubOverviewExpandedPillKind.CheckFailed ->
+            stringResource(R.string.github_overview_pill_failed, metrics.failedCount)
+    }
+    val color = when (kind) {
+        GitHubOverviewExpandedPillKind.Lookup -> lookupColor
+
+        GitHubOverviewExpandedPillKind.Stable,
+        GitHubOverviewExpandedPillKind.StableUpdate ->
+            overviewMetricColor(
+                color = GitHubStatusPalette.Update,
+                emphasized = metrics.stableUpdateCount > 0,
+                isDark = isDark
+            )
+
+        GitHubOverviewExpandedPillKind.StableLatest ->
+            overviewMetricColor(
+                color = GitHubStatusPalette.Stable,
+                emphasized = metrics.stableLatestCount > 0,
+                isDark = isDark
+            )
+
+        GitHubOverviewExpandedPillKind.PreRelease,
+        GitHubOverviewExpandedPillKind.PreReleaseTracked,
+        GitHubOverviewExpandedPillKind.PreReleaseUpdate ->
+            overviewMetricColor(
+                color = GitHubStatusPalette.PreRelease,
+                emphasized = metrics.preReleaseCount > 0 || metrics.preReleaseUpdateCount > 0,
+                isDark = isDark
+            )
+
+        GitHubOverviewExpandedPillKind.CheckFailed ->
+            overviewMetricColor(
+                color = GitHubStatusPalette.Error,
+                emphasized = metrics.failedCount > 0,
+                isDark = isDark
+            )
+    }
+    return GitHubOverviewDisplayPill(label = label, color = color)
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GitHubOverviewExpandedPillFlow(
+    pills: List<GitHubOverviewDisplayPill>,
+    backdrop: Backdrop?
+) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        pills.forEach { pill ->
+            GitHubOverviewExpandedPill(
+                pill = pill,
+                backdrop = backdrop,
+                modifier = Modifier.align(Alignment.Bottom)
+            )
+        }
+    }
+}
+
+@Composable
+private fun GitHubOverviewTrackedCountPill(
+    count: Int,
+    isDark: Boolean,
+    backdrop: Backdrop?
+) {
+    StatusPill(
+        label = count.toString(),
+        color = overviewMetricColor(
+            color = GitHubStatusPalette.Stable,
+            emphasized = count > 0,
+            isDark = isDark
+        ),
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
+        backdrop = backdrop
+    )
+}
+
+@Composable
+private fun GitHubOverviewExpandedPill(
+    pill: GitHubOverviewDisplayPill,
+    backdrop: Backdrop?,
+    modifier: Modifier = Modifier
+) {
+    StatusPill(
+        label = pill.label,
+        color = pill.color,
+        modifier = modifier.height(GitHubOverviewPillHeight),
+        size = AppStatusPillSize.Compact,
+        contentPadding = GitHubOverviewPillPadding,
+        backdrop = backdrop
+    )
 }
 
 @Preview(name = "GitHub Overview Light", showBackground = true, backgroundColor = 0xFFF3F4F6)
@@ -508,8 +454,6 @@ private fun GitHubOverviewCardPreview() {
                 apiToken = "github_pat_preview_token"
             ),
             overviewRefreshState = OverviewRefreshState.Completed,
-            expanded = true,
-            onExpandedChange = {},
             refreshProgress = 1f,
             lastRefreshMs = System.currentTimeMillis() - 180_000L,
             visibleEntries = defaultGitHubOverviewEntries(),

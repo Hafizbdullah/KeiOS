@@ -12,7 +12,6 @@ import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 internal class GitHubOverviewPageStateHolder(
     overviewUiState: GitHubOverviewUiState,
 ) {
-    var overviewExpanded by mutableStateOf(overviewUiState.expanded)
     var overviewVisibleEntries by mutableStateOf(overviewUiState.visibleEntries)
     var overviewRefreshState by mutableStateOf(OverviewRefreshState.Idle)
     var lastRefreshMs by mutableStateOf(0L)

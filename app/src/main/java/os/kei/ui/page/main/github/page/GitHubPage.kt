@@ -332,7 +332,6 @@ fun GitHubPage(
             overview =
                 GitHubMainContentOverview(
                     refreshState = state.overviewRefreshState,
-                    expanded = state.overviewExpanded,
                     refreshProgress = state.refreshProgress,
                     lastRefreshMs = state.lastRefreshMs,
                     lookupConfig = state.lookupConfig,
@@ -386,7 +385,6 @@ fun GitHubPage(
                     onOpenDroidSourcesSheet = actions::openDroidSourcesSheet,
                     onOpenDebugSheet = actions::openDebugSheet,
                     onOpenActionsNotificationHistory = onOpenActionsNotificationHistory,
-                    onOverviewExpandedChange = actions::setOverviewExpanded,
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
                     onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
                     onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,

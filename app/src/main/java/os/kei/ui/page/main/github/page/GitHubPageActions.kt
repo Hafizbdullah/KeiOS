@@ -191,8 +191,6 @@ internal class GitHubPageActions(
 
     fun setActionsArtifactFilter(value: GitHubActionsArtifactFilter) = actionsActions.setArtifactFilter(value)
 
-    fun setOverviewExpanded(value: Boolean) = overviewActions.setOverviewExpanded(value)
-
     fun setTrackedStableVersionExpanded(
         itemId: String,
         value: Boolean,

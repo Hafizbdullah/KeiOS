@@ -12,19 +12,8 @@ internal class GitHubOverviewActionFacade(
     private val state: GitHubPageState
         get() = env.state
 
-    fun setOverviewExpanded(value: Boolean) {
-        state.overviewExpanded = value
-        env.scope.launch {
-            env.repository.saveOverviewExpanded(value)
-        }
-    }
-
     fun openOverviewEntrySheet() {
         state.showOverviewEntrySheet = true
-        state.overviewExpanded = true
-        env.scope.launch {
-            env.repository.saveOverviewExpanded(true)
-        }
     }
 
     fun closeOverviewEntrySheet() {

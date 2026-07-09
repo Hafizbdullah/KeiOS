@@ -226,12 +226,6 @@ internal class GitHubPageRepository(
         }
     }
 
-    suspend fun saveOverviewExpanded(value: Boolean) {
-        withContext(localDispatcher) {
-            GitHubOverviewUiStateStore.setExpanded(value)
-        }
-    }
-
     suspend fun saveOverviewVisibleEntries(entries: Set<GitHubOverviewEntry>) {
         withContext(localDispatcher) {
             GitHubOverviewUiStateStore.setVisibleEntries(entries)
