@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV 同期</string>
+    <string name="webdav_sync_notification_title">WebDAV %1$s</string>
+    <string name="webdav_sync_notification_operation_refresh">更新</string>
+    <string name="webdav_sync_notification_operation_sync">同期</string>
+    <string name="webdav_sync_notification_operation_upload">アップロード</string>
+    <string name="webdav_sync_notification_operation_download">ダウンロード</string>
+    <string name="webdav_sync_notification_status_running">実行中</string>
+    <string name="webdav_sync_notification_status_success">完了</string>
+    <string name="webdav_sync_notification_status_review">確認</string>
+    <string name="webdav_sync_notification_status_failed">失敗</string>
+    <string name="webdav_sync_notification_status_skipped">スキップ</string>
+    <string name="webdav_sync_notification_short_running">実行</string>
+    <string name="webdav_sync_notification_short_success">完了</string>
+    <string name="webdav_sync_notification_short_review">確認</string>
+    <string name="webdav_sync_notification_short_failed">失敗</string>
+    <string name="webdav_sync_notification_short_skipped">Skip</string>
+    <string name="webdav_sync_notification_running_content">%1$s %2$d/%3$d</string>
+    <string name="webdav_sync_notification_terminal_content">%1$s %2$d/%3$d · 失敗 %4$d · スキップ %5$d</string>
+    <string name="webdav_sync_notification_action_open">表示</string>
     <string name="webdav_sync_section_connection">接続</string>
     <string name="webdav_sync_section_data">データ</string>
     <string name="webdav_sync_section_history">履歴</string>

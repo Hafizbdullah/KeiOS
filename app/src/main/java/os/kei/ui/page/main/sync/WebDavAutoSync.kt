@@ -91,6 +91,7 @@ internal object WebDavAutoSync {
     }
 
     fun handleScheduledTickTimeout(context: Context) {
+        val appContext = context.applicationContext
         if (WebDavSyncStore.loadConfig() == null || !WebDavSyncStore.isAutoSyncEnabled()) return
         val nowMs = System.currentTimeMillis()
         WebDavSyncStore.setLastAutoSyncAttemptTime(nowMs)
@@ -107,6 +108,11 @@ internal object WebDavAutoSync {
                     ),
                 )
             },
+        )
+        WebDavSyncNotificationDispatcher.notifyFailed(
+            context = appContext,
+            operation = WebDavSyncNotificationOperation.Sync,
+            total = WebDavSyncItem.entries.count(WebDavSyncStore::isItemEnabled),
         )
         AppBackgroundScheduler.scheduleWebDavAutoSync(context.applicationContext)
     }
@@ -176,18 +182,39 @@ internal object WebDavAutoSync {
             val itemOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             val skippedOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var skippedCount = 0
+            if (targets.isNotEmpty()) {
+                WebDavSyncNotificationDispatcher.notifyStarted(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Sync,
+                    total = targets.size,
+                )
+            }
             for (item in targets) {
                 coroutineContext.ensureActive()
                 val port = ports[item]
                 if (port == null) {
                     skippedCount += 1
                     skippedOutcomes += item to WebDavItemOutcome(WebDavItemStatus.Error)
+                    notifyAutoSyncProgress(
+                        context = context,
+                        operation = WebDavSyncNotificationOperation.Sync,
+                        outcomes = itemOutcomes,
+                        skippedCount = skippedCount,
+                        total = targets.size,
+                    )
                     continue
                 }
                 val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state
                 if (shouldDeferPendingWebDavAutoSync(pending, port)) {
                     skippedCount += 1
                     skippedOutcomes += item to pending.toDeferredAutoSyncOutcome()
+                    notifyAutoSyncProgress(
+                        context = context,
+                        operation = WebDavSyncNotificationOperation.Sync,
+                        outcomes = itemOutcomes,
+                        skippedCount = skippedCount,
+                        total = targets.size,
+                    )
                     continue
                 }
                 val outcome = reconcileItem(config, item, port)
@@ -196,6 +223,13 @@ internal object WebDavAutoSync {
                 if (!outcome.isSuccess) {
                     AppLogger.w(TAG, "auto-sync ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
+                notifyAutoSyncProgress(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Sync,
+                    outcomes = itemOutcomes,
+                    skippedCount = skippedCount,
+                    total = targets.size,
+                )
             }
             val summary = buildAutoSyncSummary(
                 reason = reason,
@@ -222,6 +256,17 @@ internal object WebDavAutoSync {
             if (summary.status == WebDavAutoSyncStatus.Success) {
                 WebDavSyncStore.setLastFullSyncTime(summary.finishedAtMs)
             }
+            if (targets.isNotEmpty()) {
+                WebDavSyncNotificationDispatcher.notifyFinished(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Sync,
+                    status = summary.status,
+                    total = summary.targetCount,
+                    succeeded = summary.succeededCount,
+                    failed = summary.failedCount,
+                    skipped = summary.skippedCount,
+                )
+            }
             summary
         } catch (e: CancellationException) {
             throw e
@@ -238,6 +283,11 @@ internal object WebDavAutoSync {
                     startedAtMs = startedAtMs,
                 ),
             )
+            WebDavSyncNotificationDispatcher.notifyFailed(
+                context = context,
+                operation = WebDavSyncNotificationOperation.Sync,
+                total = summary.targetCount,
+            )
             summary
         }
     }
@@ -252,30 +302,55 @@ internal object WebDavAutoSync {
             val coroutineContext = currentCoroutineContext()
             val ports = buildWebDavSyncDataPorts(context)
             val targets = WebDavSyncItem.entries.filter { WebDavSyncStore.isItemEnabled(it) }
+            val changedTargets =
+                targets.mapNotNull { item ->
+                    coroutineContext.ensureActive()
+                    val port = ports[item] ?: return@mapNotNull null
+                    val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state
+                    if (shouldDeferPendingWebDavAutoSync(pending, port)) return@mapNotNull null
+                    val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
+                    val storedHash = WebDavSyncStore.getItemContentHash(item)
+                    if (currentHash == storedHash) {
+                        null
+                    } else {
+                        WebDavAutoUploadTarget(
+                            item = item,
+                            port = port,
+                            storedHash = storedHash,
+                        )
+                    }
+                }
             val outcomes = mutableListOf<WebDavItemOutcome>()
             val itemOutcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
-            var changedCount = 0
-            for (item in targets) {
+            val changedCount = changedTargets.size
+            if (changedCount > 0) {
+                WebDavSyncNotificationDispatcher.notifyStarted(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Upload,
+                    total = changedCount,
+                )
+            }
+            for (target in changedTargets) {
                 coroutineContext.ensureActive()
-                val port = ports[item] ?: continue
-                val pending = WebDavSyncStore.loadItemPendingSummary(item)?.state
-                if (shouldDeferPendingWebDavAutoSync(pending, port)) continue
-                val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
-                val storedHash = WebDavSyncStore.getItemContentHash(item)
-                if (currentHash == storedHash) continue
-                changedCount += 1
                 val outcome =
                     pushLocalChange(
                         config = config,
-                        item = item,
-                        port = port,
-                        storedHash = storedHash,
+                        item = target.item,
+                        port = target.port,
+                        storedHash = target.storedHash,
                     )
                 if (!outcome.isSuccess) {
-                    AppLogger.w(TAG, "auto-push ($reason) ${item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
+                    AppLogger.w(TAG, "auto-push ($reason) ${target.item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
                 outcomes += outcome
-                itemOutcomes += item to outcome
+                itemOutcomes += target.item to outcome
+                notifyAutoSyncProgress(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Upload,
+                    outcomes = itemOutcomes,
+                    skippedCount = 0,
+                    total = changedCount,
+                )
             }
             val summary = buildAutoSyncSummary(
                 reason = reason,
@@ -299,6 +374,15 @@ internal object WebDavAutoSync {
                         skippedCount = 0,
                     ),
                 )
+                WebDavSyncNotificationDispatcher.notifyFinished(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.Upload,
+                    status = summary.status,
+                    total = summary.targetCount,
+                    succeeded = summary.succeededCount,
+                    failed = summary.failedCount,
+                    skipped = summary.skippedCount,
+                )
             }
             summary
         } catch (e: CancellationException) {
@@ -316,6 +400,11 @@ internal object WebDavAutoSync {
                     source = WebDavSyncHistorySource.Auto,
                     startedAtMs = startedAtMs,
                 ),
+            )
+            WebDavSyncNotificationDispatcher.notifyFailed(
+                context = context,
+                operation = WebDavSyncNotificationOperation.Upload,
+                total = summary.targetCount,
             )
             summary
         }
@@ -496,6 +585,32 @@ private fun buildAutoSyncSummary(
         succeededCount = succeededCount,
         failedCount = failedCount,
         skippedCount = skippedCount,
+    )
+}
+
+private data class WebDavAutoUploadTarget(
+    val item: WebDavSyncItem,
+    val port: WebDavSyncDataPort,
+    val storedHash: String?,
+)
+
+private fun notifyAutoSyncProgress(
+    context: Context,
+    operation: WebDavSyncNotificationOperation,
+    outcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>>,
+    skippedCount: Int,
+    total: Int,
+) {
+    val succeeded = outcomes.count { (_, outcome) -> outcome.isSuccess }
+    val failed = outcomes.size - succeeded
+    WebDavSyncNotificationDispatcher.notifyProgress(
+        context = context,
+        operation = operation,
+        current = outcomes.size + skippedCount,
+        total = total,
+        succeeded = succeeded,
+        failed = failed,
+        skipped = skippedCount,
     )
 }
 

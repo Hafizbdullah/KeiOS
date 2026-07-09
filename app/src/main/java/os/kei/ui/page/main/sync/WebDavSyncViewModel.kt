@@ -2,6 +2,7 @@ package os.kei.ui.page.main.sync
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -112,7 +113,10 @@ internal class WebDavSyncViewModel(
      * from the page so other devices can see what's on the server before deciding whether to
      * Sync, Upload, or Download.
      */
-    fun refreshRemoteSummary(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+    fun refreshRemoteSummary(
+        context: Context,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ) {
         if (_uiState.value.interactionLocked) return
         viewModelScope.launch {
             val config = repository.loadConfig() ?: run {
@@ -126,10 +130,22 @@ internal class WebDavSyncViewModel(
             val updatedStates = _uiState.value.itemStates.toMutableMap()
             val outcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var skippedCount = 0
+            WebDavSyncNotificationDispatcher.notifyStarted(
+                context = context,
+                operation = WebDavSyncNotificationOperation.RemoteProbe,
+                total = targets.size,
+            )
             for (item in targets) {
                 val port =
                     dataPorts[item] ?: run {
                         skippedCount += 1
+                        notifyWebDavProgress(
+                            context = context,
+                            operation = WebDavSyncNotificationOperation.RemoteProbe,
+                            outcomes = outcomes,
+                            skippedCount = skippedCount,
+                            total = targets.size,
+                        )
                         continue
                     }
                 val current = updatedStates[item] ?: WebDavSyncItemUiState()
@@ -158,24 +174,39 @@ internal class WebDavSyncViewModel(
                         )
                     }
                 }
+                notifyWebDavProgress(
+                    context = context,
+                    operation = WebDavSyncNotificationOperation.RemoteProbe,
+                    outcomes = outcomes,
+                    skippedCount = skippedCount,
+                    total = targets.size,
+                )
             }
             // Per-item probe timestamps are written by the engine; record the wall-clock for the
             // batch so the UI can render "remote refreshed: <relative time>" without scanning all
             // five entries.
             val lastRemoteProbeTimeMs = repository.recordRemoteProbeBatch()
-            val history =
-                repository.appendHistory(
-                    buildWebDavSyncHistoryEntry(
-                        source = WebDavSyncHistorySource.RemoteProbe,
-                        kind = WebDavSyncHistoryKind.RemoteProbe,
-                        reason = "manual-remote-probe",
-                        startedAtMs = startedAtMs,
-                        finishedAtMs = lastRemoteProbeTimeMs,
-                        targetCount = targets.size,
-                        outcomes = outcomes,
-                        skippedCount = skippedCount,
-                    ),
+            val entry =
+                buildWebDavSyncHistoryEntry(
+                    source = WebDavSyncHistorySource.RemoteProbe,
+                    kind = WebDavSyncHistoryKind.RemoteProbe,
+                    reason = "manual-remote-probe",
+                    startedAtMs = startedAtMs,
+                    finishedAtMs = lastRemoteProbeTimeMs,
+                    targetCount = targets.size,
+                    outcomes = outcomes,
+                    skippedCount = skippedCount,
                 )
+            val history = repository.appendHistory(entry)
+            WebDavSyncNotificationDispatcher.notifyFinished(
+                context = context,
+                operation = WebDavSyncNotificationOperation.RemoteProbe,
+                status = entry.status,
+                total = entry.targetCount,
+                succeeded = entry.succeededCount,
+                failed = entry.failedCount,
+                skipped = entry.skippedCount,
+            )
             val itemStates = repository.loadItemStates(updatedStates)
             _uiState.update { state ->
                 state.copy(
@@ -369,14 +400,18 @@ internal class WebDavSyncViewModel(
         _uiState.update { it.copy(pendingPlan = null) }
     }
 
-    fun confirmPlan(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+    fun confirmPlan(
+        context: Context,
+        dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
+    ) {
         val plan = _uiState.value.pendingPlan ?: return
         if (plan.hasBlockingError) return
         _uiState.update { it.copy(pendingPlan = null) }
-        runPlannedBatch(plan, dataPorts)
+        runPlannedBatch(context, plan, dataPorts)
     }
 
     private fun runPlannedBatch(
+        context: Context,
         plan: WebDavSyncPlan,
         dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>,
     ) {
@@ -393,10 +428,23 @@ internal class WebDavSyncViewModel(
             targets.forEach { setItemRunning(it) }
             val outcomes = mutableListOf<Pair<WebDavSyncItem, WebDavItemOutcome>>()
             var skippedCount = 0
+            val operation = plan.kind.toNotificationOperation()
+            WebDavSyncNotificationDispatcher.notifyStarted(
+                context = context,
+                operation = operation,
+                total = targets.size,
+            )
             for (planItem in plan.items) {
                 val port =
                     dataPorts[planItem.item] ?: run {
                         skippedCount += 1
+                        notifyWebDavProgress(
+                            context = context,
+                            operation = operation,
+                            outcomes = outcomes,
+                            skippedCount = skippedCount,
+                            total = targets.size,
+                        )
                         continue
                     }
                 val outcome =
@@ -406,24 +454,39 @@ internal class WebDavSyncViewModel(
                         item = planItem.item,
                         port = port,
                         planItem = planItem,
-                    )
+                )
                 outcomes += planItem.item to outcome
                 applyItemOutcome(planItem.item, outcome)
+                notifyWebDavProgress(
+                    context = context,
+                    operation = operation,
+                    outcomes = outcomes,
+                    skippedCount = skippedCount,
+                    total = targets.size,
+                )
             }
             val lastFullSyncTimeMs = repository.recordFullSyncBatch()
-            val history =
-                repository.appendHistory(
-                    buildWebDavSyncHistoryEntry(
-                        source = WebDavSyncHistorySource.Manual,
-                        kind = plan.kind.toHistoryKind(),
-                        reason = plan.scope.historyReason(),
-                        startedAtMs = startedAtMs,
-                        finishedAtMs = lastFullSyncTimeMs,
-                        targetCount = targets.size,
-                        outcomes = outcomes,
-                        skippedCount = skippedCount,
-                    ),
+            val entry =
+                buildWebDavSyncHistoryEntry(
+                    source = WebDavSyncHistorySource.Manual,
+                    kind = plan.kind.toHistoryKind(),
+                    reason = plan.scope.historyReason(),
+                    startedAtMs = startedAtMs,
+                    finishedAtMs = lastFullSyncTimeMs,
+                    targetCount = targets.size,
+                    outcomes = outcomes,
+                    skippedCount = skippedCount,
                 )
+            val history = repository.appendHistory(entry)
+            WebDavSyncNotificationDispatcher.notifyFinished(
+                context = context,
+                operation = operation,
+                status = entry.status,
+                total = entry.targetCount,
+                succeeded = entry.succeededCount,
+                failed = entry.failedCount,
+                skipped = entry.skippedCount,
+            )
             val itemStates = repository.loadItemStates(_uiState.value.itemStates)
             _uiState.update { state ->
                 state.copy(
@@ -578,6 +641,26 @@ private fun WebDavSyncPlanScope.historyReason(): String =
         WebDavSyncPlanScope.AutoReview -> "manual-auto-review"
         is WebDavSyncPlanScope.Single -> "manual-${item.name}"
     }
+
+private fun notifyWebDavProgress(
+    context: Context,
+    operation: WebDavSyncNotificationOperation,
+    outcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>>,
+    skippedCount: Int,
+    total: Int,
+) {
+    val succeeded = outcomes.count { (_, outcome) -> outcome.isSuccess }
+    val failed = outcomes.size - succeeded
+    WebDavSyncNotificationDispatcher.notifyProgress(
+        context = context,
+        operation = operation,
+        current = outcomes.size + skippedCount,
+        total = total,
+        succeeded = succeeded,
+        failed = failed,
+        skipped = skippedCount,
+    )
+}
 
 internal data class WebDavSyncItemUiState(
     val enabled: Boolean = true,

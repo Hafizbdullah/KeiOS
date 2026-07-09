@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV 同步</string>
+    <string name="webdav_sync_notification_title">WebDAV %1$s</string>
+    <string name="webdav_sync_notification_operation_refresh">刷新</string>
+    <string name="webdav_sync_notification_operation_sync">同步</string>
+    <string name="webdav_sync_notification_operation_upload">上传</string>
+    <string name="webdav_sync_notification_operation_download">下载</string>
+    <string name="webdav_sync_notification_status_running">进行中</string>
+    <string name="webdav_sync_notification_status_success">完成</string>
+    <string name="webdav_sync_notification_status_review">需处理</string>
+    <string name="webdav_sync_notification_status_failed">失败</string>
+    <string name="webdav_sync_notification_status_skipped">跳过</string>
+    <string name="webdav_sync_notification_short_running">运行</string>
+    <string name="webdav_sync_notification_short_success">完成</string>
+    <string name="webdav_sync_notification_short_review">处理</string>
+    <string name="webdav_sync_notification_short_failed">失败</string>
+    <string name="webdav_sync_notification_short_skipped">跳过</string>
+    <string name="webdav_sync_notification_running_content">%1$s %2$d/%3$d</string>
+    <string name="webdav_sync_notification_terminal_content">%1$s %2$d/%3$d · 失败 %4$d · 跳过 %5$d</string>
+    <string name="webdav_sync_notification_action_open">查看</string>
     <string name="webdav_sync_section_connection">连接</string>
     <string name="webdav_sync_section_data">数据</string>
     <string name="webdav_sync_section_history">历史</string>

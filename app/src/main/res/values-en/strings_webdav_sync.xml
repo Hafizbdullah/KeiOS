@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="webdav_sync_title">WebDAV Sync</string>
+    <string name="webdav_sync_notification_title">WebDAV %1$s</string>
+    <string name="webdav_sync_notification_operation_refresh">Refresh</string>
+    <string name="webdav_sync_notification_operation_sync">Sync</string>
+    <string name="webdav_sync_notification_operation_upload">Upload</string>
+    <string name="webdav_sync_notification_operation_download">Download</string>
+    <string name="webdav_sync_notification_status_running">Running</string>
+    <string name="webdav_sync_notification_status_success">Done</string>
+    <string name="webdav_sync_notification_status_review">Review</string>
+    <string name="webdav_sync_notification_status_failed">Failed</string>
+    <string name="webdav_sync_notification_status_skipped">Skipped</string>
+    <string name="webdav_sync_notification_short_running">Run</string>
+    <string name="webdav_sync_notification_short_success">Done</string>
+    <string name="webdav_sync_notification_short_review">Review</string>
+    <string name="webdav_sync_notification_short_failed">Failed</string>
+    <string name="webdav_sync_notification_short_skipped">Skip</string>
+    <string name="webdav_sync_notification_running_content">%1$s %2$d/%3$d</string>
+    <string name="webdav_sync_notification_terminal_content">%1$s %2$d/%3$d · failed %4$d · skipped %5$d</string>
+    <string name="webdav_sync_notification_action_open">View</string>
     <string name="webdav_sync_section_connection">Connect</string>
     <string name="webdav_sync_section_data">Data</string>
     <string name="webdav_sync_section_history">History</string>

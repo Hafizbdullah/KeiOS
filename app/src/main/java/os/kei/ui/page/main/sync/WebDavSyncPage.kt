@@ -65,6 +65,7 @@ internal fun WebDavSyncPage(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val appContext = context.applicationContext
     val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberLayerBackdrop()
@@ -204,7 +205,7 @@ internal fun WebDavSyncPage(
             chromeNestedScrollConnection = bottomChromeScrollState.chromeNestedScrollConnection,
             topBarNestedScrollConnection = scrollBehavior.nestedScrollConnection,
             cardColor = cardColor,
-            appContext = context.applicationContext,
+            appContext = appContext,
             onOpenJianguoyunHelp = openJianguoyunHelp,
             transitionAnimationsEnabled = transitionAnimationsEnabled,
         )
@@ -219,7 +220,7 @@ internal fun WebDavSyncPage(
             WebDavSyncPlanDialog(
                 plan = pendingPlan,
                 onDismiss = viewModel::dismissPlan,
-                onConfirm = { viewModel.confirmPlan(dataPorts) },
+                onConfirm = { viewModel.confirmPlan(appContext, dataPorts) },
             )
         }
     }
@@ -352,7 +353,7 @@ private fun LazyListScope.webDavCategoryItems(
                 WebDavSyncRemoteSnapshotCard(
                     state = state,
                     cardColor = cardColor,
-                    onRefreshRemote = { viewModel.refreshRemoteSummary(dataPorts) },
+                    onRefreshRemote = { viewModel.refreshRemoteSummary(appContext, dataPorts) },
                 )
             }
             item(key = "webdav-sync-batch", contentType = "webdav_card") {
