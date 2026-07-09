@@ -148,8 +148,11 @@ internal class GitHubPageRefreshRepository(
         )
     }
 
-    fun cancelRefreshNotification(context: Context) {
-        notificationBridge.cancel(context)
+    fun cancelRefreshNotification(
+        context: Context,
+        sessionId: Long,
+    ) {
+        notificationBridge.cancel(context, sessionId)
     }
 
     suspend fun clearReleaseStrategyCaches() {

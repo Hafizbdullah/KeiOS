@@ -213,4 +213,191 @@ class GitHubRefreshRuntimeStoreTest {
         assertEquals(2, state.completedCount)
         assertEquals(1, state.updatableCount)
     }
+
+    @Test
+    fun `background terminal cleanup can be claimed once per session`() {
+        val session =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 74,
+                targetCount = 74,
+                nowMs = 1_000L,
+            )
+        assertNotNull(session)
+        GitHubRefreshRuntimeStore.progress(
+            sessionId = session.id,
+            completedCount = 50,
+            updatableCount = 2,
+            preReleaseUpdateCount = 1,
+            failedCount = 0,
+            nowMs = 2_000L,
+        )
+        GitHubRefreshRuntimeStore.cancel(
+            sessionId = session.id,
+            completedCount = 50,
+            updatableCount = 2,
+            preReleaseUpdateCount = 1,
+            failedCount = 0,
+            nowMs = 2_100L,
+        )
+
+        val claimed = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(session.id)
+        val duplicate = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(session.id)
+
+        assertNotNull(claimed)
+        assertEquals(50, claimed.completedCount)
+        assertTrue(claimed.terminalCleanupClaimed)
+        assertNull(duplicate)
+        assertTrue(GitHubRefreshRuntimeStore.state.value.terminalCleanupClaimed)
+    }
+
+    @Test
+    fun `stopped background cleanup claims its captured session without touching a newer session`() {
+        val stopped =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 74,
+                targetCount = 74,
+                nowMs = 1_000L,
+            )
+        assertNotNull(stopped)
+        GitHubRefreshRuntimeStore.progress(
+            sessionId = stopped.id,
+            completedCount = 50,
+            updatableCount = 2,
+            preReleaseUpdateCount = 1,
+            failedCount = 0,
+            nowMs = 2_000L,
+        )
+        val stoppedSnapshot = GitHubRefreshRuntimeStore.state.value
+        val active =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 74,
+                targetCount = 24,
+                nowMs = 3_000L,
+            )
+        assertNotNull(active)
+
+        val claimed = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(stoppedSnapshot)
+        val duplicate = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(stoppedSnapshot)
+
+        assertNotNull(claimed)
+        assertEquals(stopped.id, claimed.sessionId)
+        assertEquals(50, claimed.completedCount)
+        assertNull(duplicate)
+        assertEquals(active.id, GitHubRefreshRuntimeStore.state.value.sessionId)
+        assertTrue(GitHubRefreshRuntimeStore.state.value.running)
+        assertFalse(GitHubRefreshRuntimeStore.state.value.terminalCleanupClaimed)
+    }
+
+    @Test
+    fun `stopped background cleanup does not replace a completed session`() {
+        val session =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 74,
+                targetCount = 74,
+                nowMs = 1_000L,
+            )
+        assertNotNull(session)
+        GitHubRefreshRuntimeStore.progress(
+            sessionId = session.id,
+            completedCount = 74,
+            updatableCount = 3,
+            preReleaseUpdateCount = 1,
+            failedCount = 0,
+            nowMs = 2_000L,
+        )
+        val stoppedSnapshot = GitHubRefreshRuntimeStore.state.value
+        GitHubRefreshRuntimeStore.complete(
+            sessionId = session.id,
+            completedCount = 74,
+            updatableCount = 3,
+            preReleaseUpdateCount = 1,
+            failedCount = 0,
+            nowMs = 2_100L,
+        )
+
+        val claimed = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(stoppedSnapshot)
+
+        assertNull(claimed)
+        assertEquals(GitHubRefreshRuntimePhase.Completed, GitHubRefreshRuntimeStore.state.value.phase)
+        assertFalse(GitHubRefreshRuntimeStore.state.value.terminalCleanupClaimed)
+    }
+
+    @Test
+    fun `completed background session is not replaced by a late cancellation`() {
+        val session =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 4,
+                targetCount = 4,
+                nowMs = 1_000L,
+            )
+        assertNotNull(session)
+        GitHubRefreshRuntimeStore.complete(
+            sessionId = session.id,
+            completedCount = 4,
+            updatableCount = 1,
+            preReleaseUpdateCount = 0,
+            failedCount = 0,
+            nowMs = 2_000L,
+        )
+
+        GitHubRefreshRuntimeStore.cancel(
+            sessionId = session.id,
+            completedCount = 3,
+            updatableCount = 0,
+            preReleaseUpdateCount = 0,
+            failedCount = 0,
+            nowMs = 2_100L,
+        )
+
+        val state = GitHubRefreshRuntimeStore.state.value
+        assertEquals(GitHubRefreshRuntimePhase.Completed, state.phase)
+        assertEquals(4, state.completedCount)
+        assertEquals(1, state.updatableCount)
+    }
+
+    @Test
+    fun `claimed stopped session is not replaced by a late completion`() {
+        val session =
+            GitHubRefreshRuntimeStore.begin(
+                scope = GitHubRefreshScope.DueTracked,
+                source = GitHubRefreshSource.BackgroundTick,
+                totalTrackedCount = 4,
+                targetCount = 4,
+                nowMs = 1_000L,
+            )
+        assertNotNull(session)
+        GitHubRefreshRuntimeStore.progress(
+            sessionId = session.id,
+            completedCount = 3,
+            updatableCount = 0,
+            preReleaseUpdateCount = 0,
+            failedCount = 0,
+            nowMs = 1_900L,
+        )
+        assertNotNull(GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(session.id))
+
+        GitHubRefreshRuntimeStore.complete(
+            sessionId = session.id,
+            completedCount = 4,
+            updatableCount = 1,
+            preReleaseUpdateCount = 0,
+            failedCount = 0,
+            nowMs = 2_000L,
+        )
+
+        val state = GitHubRefreshRuntimeStore.state.value
+        assertEquals(GitHubRefreshRuntimePhase.Running, state.phase)
+        assertEquals(3, state.completedCount)
+        assertTrue(state.terminalCleanupClaimed)
+    }
 }

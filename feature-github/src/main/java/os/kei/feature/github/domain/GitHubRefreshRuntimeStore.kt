@@ -1,5 +1,6 @@
 package os.kei.feature.github.domain
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +59,7 @@ data class GitHubRefreshRuntimeState(
     val startedAtMs: Long = 0L,
     val updatedAtMs: Long = 0L,
     val finishedAtMs: Long = 0L,
+    val terminalCleanupClaimed: Boolean = false,
 ) {
     val safeTargetCount: Int
         get() = targetCount.coerceAtLeast(1)
@@ -71,7 +73,8 @@ data class GitHubRefreshRuntimeState(
 
 object GitHubRefreshRuntimeStore {
     private val sessionIds = AtomicLong(0L)
-    private val beginLock = Any()
+    private val terminalCleanupClaims = ConcurrentHashMap.newKeySet<Long>()
+    private val runtimeStateLock = Any()
     private val _state = MutableStateFlow(GitHubRefreshRuntimeState())
     val state: StateFlow<GitHubRefreshRuntimeState> = _state.asStateFlow()
 
@@ -84,7 +87,7 @@ object GitHubRefreshRuntimeStore {
         policy: GitHubRefreshBeginPolicy = GitHubRefreshBeginPolicy.SupersedeRunning,
         nowMs: Long = System.currentTimeMillis(),
     ): GitHubRefreshRuntimeSession? =
-        synchronized(beginLock) {
+        synchronized(runtimeStateLock) {
             val current = _state.value
             if (policy == GitHubRefreshBeginPolicy.SkipWhenRunning && current.running) {
                 return@synchronized null
@@ -144,20 +147,26 @@ object GitHubRefreshRuntimeStore {
         failedCount: Int,
         nowMs: Long = System.currentTimeMillis(),
     ) {
-        _state.update { current ->
-            if (current.sessionId != sessionId) {
-                current
-            } else {
-                current.copy(
-                    phase = GitHubRefreshRuntimePhase.Completed,
-                    running = false,
-                    completedCount = completedCount.coerceIn(0, current.safeTargetCount),
-                    updatableCount = updatableCount.coerceAtLeast(0),
-                    preReleaseUpdateCount = preReleaseUpdateCount.coerceAtLeast(0),
-                    failedCount = failedCount.coerceAtLeast(0),
-                    updatedAtMs = nowMs.coerceAtLeast(current.updatedAtMs),
-                    finishedAtMs = nowMs.coerceAtLeast(current.startedAtMs),
-                )
+        synchronized(runtimeStateLock) {
+            _state.update { current ->
+                if (
+                    current.sessionId != sessionId ||
+                    !current.running ||
+                    current.terminalCleanupClaimed
+                ) {
+                    current
+                } else {
+                    current.copy(
+                        phase = GitHubRefreshRuntimePhase.Completed,
+                        running = false,
+                        completedCount = completedCount.coerceIn(0, current.safeTargetCount),
+                        updatableCount = updatableCount.coerceAtLeast(0),
+                        preReleaseUpdateCount = preReleaseUpdateCount.coerceAtLeast(0),
+                        failedCount = failedCount.coerceAtLeast(0),
+                        updatedAtMs = nowMs.coerceAtLeast(current.updatedAtMs),
+                        finishedAtMs = nowMs.coerceAtLeast(current.startedAtMs),
+                    )
+                }
             }
         }
     }
@@ -170,25 +179,73 @@ object GitHubRefreshRuntimeStore {
         failedCount: Int,
         nowMs: Long = System.currentTimeMillis(),
     ) {
-        _state.update { current ->
-            if (current.sessionId != sessionId) {
-                current
-            } else {
-                current.copy(
-                    phase = GitHubRefreshRuntimePhase.Cancelled,
-                    running = false,
-                    completedCount = completedCount.coerceIn(0, current.safeTargetCount),
-                    updatableCount = updatableCount.coerceAtLeast(0),
-                    preReleaseUpdateCount = preReleaseUpdateCount.coerceAtLeast(0),
-                    failedCount = failedCount.coerceAtLeast(0),
-                    updatedAtMs = nowMs.coerceAtLeast(current.updatedAtMs),
-                    finishedAtMs = nowMs.coerceAtLeast(current.startedAtMs),
-                )
+        synchronized(runtimeStateLock) {
+            _state.update { current ->
+                if (
+                    current.sessionId != sessionId ||
+                    (
+                        current.phase != GitHubRefreshRuntimePhase.Running &&
+                            current.phase != GitHubRefreshRuntimePhase.Cancelled
+                    )
+                ) {
+                    current
+                } else {
+                    current.copy(
+                        phase = GitHubRefreshRuntimePhase.Cancelled,
+                        running = false,
+                        completedCount = completedCount.coerceIn(0, current.safeTargetCount),
+                        updatableCount = updatableCount.coerceAtLeast(0),
+                        preReleaseUpdateCount = preReleaseUpdateCount.coerceAtLeast(0),
+                        failedCount = failedCount.coerceAtLeast(0),
+                        updatedAtMs = nowMs.coerceAtLeast(current.updatedAtMs),
+                        finishedAtMs = nowMs.coerceAtLeast(current.startedAtMs),
+                    )
+                }
             }
         }
     }
 
+    fun claimBackgroundTerminalCleanup(sessionId: Long): GitHubRefreshRuntimeState? {
+        val runtime = _state.value.takeIf { it.sessionId == sessionId } ?: return null
+        return claimBackgroundTerminalCleanup(runtime)
+    }
+
+    fun claimBackgroundTerminalCleanup(
+        runtime: GitHubRefreshRuntimeState,
+    ): GitHubRefreshRuntimeState? =
+        synchronized(runtimeStateLock) {
+            val canClaim =
+                runtime.sessionId > 0L &&
+                    runtime.source == GitHubRefreshSource.BackgroundTick &&
+                    (runtime.running || runtime.phase == GitHubRefreshRuntimePhase.Cancelled)
+            val current = _state.value
+            val alreadyCompleted =
+                current.sessionId == runtime.sessionId &&
+                    current.phase == GitHubRefreshRuntimePhase.Completed
+            if (
+                !canClaim ||
+                alreadyCompleted ||
+                !terminalCleanupClaims.add(runtime.sessionId)
+            ) {
+                return@synchronized null
+            }
+
+            _state.update { latest ->
+                if (latest.sessionId == runtime.sessionId) {
+                    latest.copy(terminalCleanupClaimed = true)
+                } else {
+                    latest
+                }
+            }
+            runtime.copy(terminalCleanupClaimed = true)
+        }
+
     fun clear(sessionId: Long? = null) {
+        if (sessionId == null) {
+            terminalCleanupClaims.clear()
+        } else {
+            terminalCleanupClaims.remove(sessionId)
+        }
         _state.update { current ->
             if (sessionId == null || current.sessionId == sessionId) {
                 GitHubRefreshRuntimeState()

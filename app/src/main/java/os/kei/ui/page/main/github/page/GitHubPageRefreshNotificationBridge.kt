@@ -75,7 +75,7 @@ internal class GitHubPageRefreshNotificationBridge(
                     false
                 }
             if (!posted) {
-                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                runCatching { GitHubRefreshNotificationHelper.cancel(context, sessionId) }
                     .onFailure { error ->
                         AppLogger.w(TAG, "github refresh stale notification cancel failed", error)
                     }
@@ -116,7 +116,7 @@ internal class GitHubPageRefreshNotificationBridge(
                     false
                 }
             if (!posted) {
-                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                runCatching { GitHubRefreshNotificationHelper.cancel(context, sessionId) }
                     .onFailure { error ->
                         AppLogger.w(TAG, "github refresh failed notification cleanup failed", error)
                     }
@@ -157,7 +157,7 @@ internal class GitHubPageRefreshNotificationBridge(
                     false
                 }
             if (!posted) {
-                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                runCatching { GitHubRefreshNotificationHelper.cancel(context, sessionId) }
                     .onFailure { error ->
                         AppLogger.w(TAG, "github refresh cancelled notification cleanup failed", error)
                     }
@@ -166,9 +166,12 @@ internal class GitHubPageRefreshNotificationBridge(
         }
     }
 
-    fun cancel(context: Context) {
+    fun cancel(
+        context: Context,
+        sessionId: Long,
+    ) {
         runCatching {
-            GitHubRefreshNotificationHelper.cancel(context)
+            GitHubRefreshNotificationHelper.cancel(context, sessionId)
         }.onFailure { error ->
             AppLogger.w(TAG, "github refresh notification cancel failed", error)
         }

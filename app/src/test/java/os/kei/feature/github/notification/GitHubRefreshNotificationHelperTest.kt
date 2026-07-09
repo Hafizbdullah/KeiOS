@@ -11,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,6 +61,7 @@ class GitHubRefreshNotificationHelperTest {
         )
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertTrue(focusParam.contains("imageTextInfoLeft"))
         assertTrue(focusParam.contains("progressTextInfo"))
@@ -69,16 +71,21 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("picInfo"))
         assertFalse(focusParam.contains("textButton"))
         assertTrue(focusParam.contains("\"title\":\"50%\""))
-        assertTrue(focusParam.contains("\"content\":\"2/4\""))
-        assertTrue(
-            focusParam.contains(
-                context.getString(
-                    os.kei.R.string.github_refresh_mi_content,
-                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
-                    "2/4",
-                    3
-                )
-            )
+        assertEquals(
+            "2/4",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("progressTextInfo")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_mi_content,
+                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                "2/4",
+                3,
+            ),
+            focusJson.getJSONObject("baseInfo").getString("content"),
         )
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
         assertFalse(focusParam.contains("预发可更新"))
@@ -193,6 +200,7 @@ class GitHubRefreshNotificationHelperTest {
         val state = createRefreshState(running = false)
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertTrue(
             focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_completed)}\"")
@@ -204,16 +212,21 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("textButton"))
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
-        assertTrue(focusParam.contains("\"content\":\"4/4\""))
-        assertTrue(
-            focusParam.contains(
-                context.getString(
-                    os.kei.R.string.github_refresh_mi_content,
-                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
-                    "4/4",
-                    3
-                )
-            )
+        assertEquals(
+            "4/4",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_mi_content,
+                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                "4/4",
+                3,
+            ),
+            focusJson.getJSONObject("baseInfo").getString("content"),
         )
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_updates, 3)))
@@ -237,11 +250,18 @@ class GitHubRefreshNotificationHelperTest {
         )
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertTrue(
             focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_cancelled)}\"")
         )
-        assertTrue(focusParam.contains("\"content\":\"2/4\""))
+        assertEquals(
+            "2/4",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
         assertTrue(focusParam.contains("\"colorSpecialBg\":\"#64748B\""))
         assertTrue(focusParam.contains("\"highlightColor\":\"#64748B\""))
         assertFalse(focusParam.contains("\"showHighlightColor\":true"))
@@ -256,6 +276,7 @@ class GitHubRefreshNotificationHelperTest {
         )
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertTrue(
             focusParam.contains(
@@ -267,17 +288,22 @@ class GitHubRefreshNotificationHelperTest {
                 }\""
             )
         )
-        assertTrue(focusParam.contains("\"content\":\"4/4\""))
-        assertTrue(
-            focusParam.contains(
-                context.getString(
-                    os.kei.R.string.github_refresh_mi_content_failed,
-                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
-                    "4/4",
-                    3,
-                    1
-                )
-            )
+        assertEquals(
+            "4/4",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_mi_content_failed,
+                context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                "4/4",
+                3,
+                1,
+            ),
+            focusJson.getJSONObject("baseInfo").getString("content"),
         )
         assertTrue(focusParam.contains("\"colorSpecialBg\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
@@ -299,18 +325,24 @@ class GitHubRefreshNotificationHelperTest {
         )
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1)))
-        assertTrue(
-            focusParam.contains(
-                context.getString(
-                    os.kei.R.string.github_refresh_mi_content_base,
-                    context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1),
-                    "1/1"
-                ),
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_mi_content_base,
+                context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1),
+                "1/1",
             ),
+            focusJson.getJSONObject("baseInfo").getString("content"),
         )
-        assertTrue(focusParam.contains("\"content\":\"1/1\""))
+        assertEquals(
+            "1/1",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("progressTextInfo")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_running)))
         assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
         assertFalse(focusParam.contains(context.getString(os.kei.R.string.github_refresh_total_context, 75)))
@@ -361,22 +393,28 @@ class GitHubRefreshNotificationHelperTest {
         )
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = focusParam.focusParamV2()
 
         assertEquals(
             context.getString(os.kei.R.string.github_refresh_mi_title_failed),
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
         )
-        assertTrue(focusParam.contains("\"content\":\"2/5\""))
-        assertTrue(
-            focusParam.contains(
-                context.getString(
-                    os.kei.R.string.github_refresh_mi_content_failed,
-                    context.getString(os.kei.R.string.github_refresh_scope_due_compact, 5),
-                    "2/5",
-                    3,
-                    1
-                )
-            )
+        assertEquals(
+            "2/5",
+            focusJson.focusBigIslandArea()
+                .getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
+                .getString("content"),
+        )
+        assertEquals(
+            context.getString(
+                os.kei.R.string.github_refresh_mi_content_failed,
+                context.getString(os.kei.R.string.github_refresh_scope_due_compact, 5),
+                "2/5",
+                3,
+                1,
+            ),
+            focusJson.getJSONObject("baseInfo").getString("content"),
         )
     }
 
@@ -412,6 +450,35 @@ class GitHubRefreshNotificationHelperTest {
         assertNotNull(firstProgress)
         assertNotNull(secondProgress)
         assertEquals(null, staleProgress)
+    }
+
+    @Test
+    fun `stale cleanup cannot cancel the active notification session`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        invokeResetNotificationRuntime()
+        assertNotNull(
+            invokeResolveDisplayProgressPercent(
+                sessionId = 11L,
+                current = 1,
+                total = 75,
+                running = true,
+                cancelled = false,
+            ),
+        )
+
+        val staleCancelled = GitHubRefreshNotificationHelper.cancel(context, sessionId = 10L)
+        val activeProgress =
+            invokeResolveDisplayProgressPercent(
+                sessionId = 11L,
+                current = 2,
+                total = 75,
+                running = true,
+                cancelled = false,
+            )
+
+        assertFalse(staleCancelled)
+        assertNotNull(activeProgress)
+        assertTrue(GitHubRefreshNotificationHelper.cancel(context, sessionId = 11L))
     }
 
     private fun createRefreshState(
@@ -554,6 +621,12 @@ class GitHubRefreshNotificationHelperTest {
             "os.kei.feature.github.notification.GitHubRefreshNotificationHelper\$RefreshState"
         )
     }
+
+    private fun String.focusParamV2(): JSONObject =
+        JSONObject(this).getJSONObject("param_v2")
+
+    private fun JSONObject.focusBigIslandArea(): JSONObject =
+        getJSONObject("param_island").getJSONObject("bigIslandArea")
 
     private fun Notification.focusAction(key: String): Notification.Action {
         val actions = extras.getBundle("miui.focus.actions")

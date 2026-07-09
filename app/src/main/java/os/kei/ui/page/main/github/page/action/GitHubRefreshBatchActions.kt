@@ -61,7 +61,10 @@ internal class GitHubRefreshBatchActions(
                 state.overviewRefreshState = OverviewRefreshState.Idle
                 state.refreshProgress = 0f
                 state.refreshTargetIds = emptySet()
-                repository.cancelRefreshNotification(context)
+                repository.cancelRefreshNotification(
+                    context = context,
+                    sessionId = state.refreshSessionId,
+                )
             }
             return
         }

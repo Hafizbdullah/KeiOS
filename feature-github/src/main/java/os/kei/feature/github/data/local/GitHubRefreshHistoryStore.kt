@@ -45,16 +45,21 @@ object GitHubRefreshHistoryStore {
         val index = loadIndex(kv)
         index.remove(id)
         index.add(id)
+        compactDuplicateEntries(index, kv)
         trimIndex(index, kv)
         saveIndex(index, kv)
     }
 
     fun load(): List<GitHubRefreshHistoryRecord> {
         val kv = kv()
-        return loadIndex(kv)
-            .mapNotNull { id ->
-                decodeRecord(kv.decodeString(entryStoreKey(id)).orEmpty())
-            }
+        val index = loadIndex(kv)
+        val sizeBeforeCompaction = index.size
+        val records = compactDuplicateEntries(index, kv).map { (_, record) -> record }
+        if (index.size != sizeBeforeCompaction) {
+            saveIndex(index, kv)
+            kv.trim()
+        }
+        return records
             .sortedByDescending { record ->
                 record.finishedAtMillis.takeIf { it > 0L } ?: record.startedAtMillis
             }
@@ -292,16 +297,63 @@ object GitHubRefreshHistoryStore {
     }
 
     internal fun recordId(record: GitHubRefreshHistoryRecord): String {
-        val sessionPart = if (record.sessionId > 0L) record.sessionId.toString() else ""
+        val identityParts =
+            if (record.sessionId > 0L) {
+                listOf(
+                    record.sessionId.toString(),
+                    record.scope.name,
+                    record.source.name,
+                    record.startedAtMillis.toString(),
+                )
+            } else {
+                listOf(
+                    "",
+                    record.scope.name,
+                    record.source.name,
+                    record.startedAtMillis.toString(),
+                    record.finishedAtMillis.toString(),
+                )
+            }
         return sha1(
-            listOf(
-                sessionPart,
-                record.scope.name,
-                record.source.name,
-                record.startedAtMillis.toString(),
-                record.finishedAtMillis.toString(),
-            ).joinToString("|"),
+            identityParts.joinToString("|"),
         )
+    }
+
+    internal fun collapseDuplicateSessions(
+        records: List<GitHubRefreshHistoryRecord>,
+    ): List<GitHubRefreshHistoryRecord> {
+        val collapsed = linkedMapOf<String, GitHubRefreshHistoryRecord>()
+        records.forEach { record ->
+            val identity = historyIdentity(record)
+            val existing = collapsed[identity]
+            val recordTime = record.finishedAtMillis.takeIf { it > 0L } ?: record.startedAtMillis
+            val existingTime =
+                existing?.let {
+                    it.finishedAtMillis.takeIf { finished -> finished > 0L } ?: it.startedAtMillis
+                }
+            if (existingTime == null || recordTime >= existingTime) {
+                collapsed[identity] = record
+            }
+        }
+        return collapsed.values.toList()
+    }
+
+    internal fun collapsedEntryIds(
+        entries: List<Pair<String, GitHubRefreshHistoryRecord>>,
+    ): Set<String> {
+        val collapsed = linkedMapOf<String, Pair<String, GitHubRefreshHistoryRecord>>()
+        entries.forEach { entry ->
+            val existing = collapsed[historyIdentity(entry.second)]
+            val entryTime = entry.second.finishedAtMillis.takeIf { it > 0L } ?: entry.second.startedAtMillis
+            val existingTime =
+                existing?.second?.let { record ->
+                    record.finishedAtMillis.takeIf { it > 0L } ?: record.startedAtMillis
+                }
+            if (existingTime == null || entryTime >= existingTime) {
+                collapsed[historyIdentity(entry.second)] = entry
+            }
+        }
+        return collapsed.values.mapTo(linkedSetOf()) { (id, _) -> id }
     }
 
     internal fun shouldPruneBefore(
@@ -407,6 +459,29 @@ object GitHubRefreshHistoryStore {
         }
         index.retainAll(keep)
     }
+
+    private fun compactDuplicateEntries(
+        index: MutableSet<String>,
+        kv: MMKV,
+    ): List<Pair<String, GitHubRefreshHistoryRecord>> {
+        val entries =
+            index.mapNotNull { id ->
+                decodeRecord(kv.decodeString(entryStoreKey(id)).orEmpty())?.let { record -> id to record }
+            }
+        val retainedIds = collapsedEntryIds(entries)
+        index.filter { it !in retainedIds }.forEach { id ->
+            kv.removeValueForKey(entryStoreKey(id))
+        }
+        index.retainAll(retainedIds)
+        return entries.filter { (id, _) -> id in retainedIds }
+    }
+
+    private fun historyIdentity(record: GitHubRefreshHistoryRecord): String =
+        if (record.sessionId > 0L) {
+            "session:${recordId(record)}"
+        } else {
+            "record:${record.id.ifBlank { recordId(record) }}"
+        }
 
     private fun entryStoreKey(id: String): String = "entry_$id"
 

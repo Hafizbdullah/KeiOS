@@ -125,13 +125,6 @@ class GitHubBackgroundRefreshService(
                             cancelRuntimeSession(runtimeSession)
                         }.getOrThrow()
                             .also { result ->
-                                GitHubRefreshRuntimeStore.complete(
-                                    sessionId = runtimeSession.id,
-                                    completedCount = result.totalCount,
-                                    updatableCount = result.updatableCount,
-                                    preReleaseUpdateCount = result.preReleaseUpdateCount,
-                                    failedCount = result.failedCount,
-                                )
                                 AppLogger.d(
                                     GITHUB_BACKGROUND_REFRESH_TAG,
                                     "tick refreshed target=${result.totalCount}/${tracked.size} " +
@@ -154,6 +147,13 @@ class GitHubBackgroundRefreshService(
                                     result = result,
                                     startedAtMillis = nowMs,
                                     schedulerDiagnostics = schedulerDiagnostics,
+                                )
+                                GitHubRefreshRuntimeStore.complete(
+                                    sessionId = runtimeSession.id,
+                                    completedCount = result.totalCount,
+                                    updatableCount = result.updatableCount,
+                                    preReleaseUpdateCount = result.preReleaseUpdateCount,
+                                    failedCount = result.failedCount,
                                 )
                             }
                     }
@@ -231,13 +231,6 @@ class GitHubBackgroundRefreshService(
                 }.onFailure {
                     cancelRuntimeSession(runtimeSession)
                 }.getOrThrow()
-            GitHubRefreshRuntimeStore.complete(
-                sessionId = runtimeSession.id,
-                completedCount = result.totalCount,
-                updatableCount = result.updatableCount,
-                preReleaseUpdateCount = result.preReleaseUpdateCount,
-                failedCount = result.failedCount,
-            )
             AppLogger.i(
                 GITHUB_BACKGROUND_REFRESH_TAG,
                 "shortcut refreshed total=${result.totalCount} elapsed=${result.performance.elapsedMs}ms " +
@@ -251,6 +244,13 @@ class GitHubBackgroundRefreshService(
                 totalTrackedCount = tracked.size,
                 result = result,
                 startedAtMillis = nowMs,
+            )
+            GitHubRefreshRuntimeStore.complete(
+                sessionId = runtimeSession.id,
+                completedCount = result.totalCount,
+                updatableCount = result.updatableCount,
+                preReleaseUpdateCount = result.preReleaseUpdateCount,
+                failedCount = result.failedCount,
             )
             val actionsNotificationCount =
                 handleActionsUpdates(

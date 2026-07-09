@@ -298,6 +298,20 @@ object GitHubRefreshNotificationHelper {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
+    fun cancel(
+        context: Context,
+        sessionId: Long,
+    ): Boolean = synchronized(progressLock) {
+        if (sessionId <= 0L || activeNotificationSessionId != sessionId) {
+            return@synchronized false
+        }
+        AppLogger.d(TAG) { "cancel notification id=$NOTIFICATION_ID session=$sessionId" }
+        activeNotificationSessionId = 0L
+        resetDisplayProgressLocked()
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+        true
+    }
+
     private fun resolveDisplayProgressPercent(
         sessionId: Long,
         current: Int,
@@ -607,21 +621,25 @@ object GitHubRefreshNotificationHelper {
                 "totalTracked=${state.safeTotalTrackedCount} updatable=${state.updatableCount} " +
                 "prerelease=${state.preReleaseUpdateCount} failed=${state.failedCount}"
         }
-        val dispatched = if (buildResult.style == RenderStyle.MI_ISLAND) {
-            McpNotificationHelper.dispatchNotification(
-                context = context,
-                notificationId = NOTIFICATION_ID,
-                notification = buildResult.notification,
-                useXiaomiMagic = buildResult.useXiaomiMagic
-            )
-        } else {
-            McpNotificationHelper.dispatchNotification(
-                context = context,
-                notificationId = NOTIFICATION_ID,
-                notification = buildResult.notification,
-                useXiaomiMagic = false
-            )
-        }
+        val dispatched =
+            synchronized(progressLock) {
+                if (!isCurrentNotificationSessionLocked(state.sessionId)) {
+                    AppLogger.i(
+                        TAG,
+                        "skip stale notification dispatch session=${state.sessionId} " +
+                            "active=$activeNotificationSessionId",
+                    )
+                    false
+                } else {
+                    McpNotificationHelper.dispatchNotification(
+                        context = context,
+                        notificationId = NOTIFICATION_ID,
+                        notification = buildResult.notification,
+                        useXiaomiMagic =
+                            buildResult.style == RenderStyle.MI_ISLAND && buildResult.useXiaomiMagic,
+                    )
+                }
+            }
         if (!dispatched) {
             AppLogger.w(
                 TAG,
@@ -635,6 +653,13 @@ object GitHubRefreshNotificationHelper {
         }
         return dispatched
     }
+
+    private fun isCurrentNotificationSessionLocked(sessionId: Long): Boolean =
+        if (sessionId > 0L) {
+            activeNotificationSessionId == sessionId
+        } else {
+            activeNotificationSessionId == 0L
+        }
 
     private fun buildNotification(
         context: Context,

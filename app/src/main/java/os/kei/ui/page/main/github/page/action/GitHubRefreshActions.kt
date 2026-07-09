@@ -145,7 +145,10 @@ internal class GitHubRefreshActions(
                 )
             }
         } else {
-            repository.cancelRefreshNotification(context)
+            repository.cancelRefreshNotification(
+                context = context,
+                sessionId = refreshSessionId,
+            )
         }
         state.overviewRefreshState =
             if (state.trackedItems.isEmpty()) {

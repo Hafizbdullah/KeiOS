@@ -8,6 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.PersistableBundle
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -19,15 +21,72 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.domain.GitHubRefreshRuntimeState
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshSource
 import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 
 internal const val GITHUB_BACKGROUND_REFRESH_JOB_ID = 42101
 
+internal data class GitHubBackgroundRefreshStopContext(
+    val diagnostics: GitHubRefreshSchedulerDiagnostics,
+    val runtime: GitHubRefreshRuntimeState?,
+)
+
+internal class GitHubBackgroundRefreshJobStopState {
+    private val boundSessionId = AtomicLong(0L)
+    private val stopContext = AtomicReference<GitHubBackgroundRefreshStopContext?>(null)
+
+    val isStopped: Boolean
+        get() = stopContext.get() != null
+
+    fun bindSession(sessionId: Long) {
+        if (sessionId > 0L) {
+            boundSessionId.compareAndSet(0L, sessionId)
+        }
+    }
+
+    fun capture(
+        diagnostics: GitHubRefreshSchedulerDiagnostics,
+        runtime: GitHubRefreshRuntimeState?,
+    ) {
+        stopContext.compareAndSet(
+            null,
+            GitHubBackgroundRefreshStopContext(
+                diagnostics = diagnostics,
+                runtime = runtime?.takeIf(::isBoundBackgroundRuntime),
+            ),
+        )
+    }
+
+    fun resolve(
+        fallbackDiagnostics: GitHubRefreshSchedulerDiagnostics,
+        fallbackRuntime: GitHubRefreshRuntimeState?,
+    ): GitHubBackgroundRefreshStopContext {
+        val captured = stopContext.get()
+        return if (captured != null) {
+            captured.copy(
+                runtime = captured.runtime ?: fallbackRuntime?.takeIf(::isBoundBackgroundRuntime),
+            )
+        } else {
+            GitHubBackgroundRefreshStopContext(
+                diagnostics = fallbackDiagnostics,
+                runtime = fallbackRuntime?.takeIf(::isBoundBackgroundRuntime),
+            )
+        }
+    }
+
+    private fun isBoundBackgroundRuntime(runtime: GitHubRefreshRuntimeState): Boolean =
+        runtime.sessionId > 0L &&
+            runtime.sessionId == boundSessionId.get() &&
+            runtime.source == GitHubRefreshSource.BackgroundTick
+}
+
 class GitHubBackgroundRefreshJobService : JobService() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(serviceJob + AppDispatchers.githubNetwork)
+
+    @Volatile
     private var activeJob: ActiveJob? = null
 
     override fun onStartJob(params: JobParameters): Boolean {
@@ -44,7 +103,8 @@ class GitHubBackgroundRefreshJobService : JobService() {
             params = params,
             startedAtMillis = System.currentTimeMillis(),
         )
-        val stopped = AtomicBoolean(false)
+        val stopState = GitHubBackgroundRefreshJobStopState()
+        lateinit var execution: ActiveJob
         val worker =
             serviceScope.launch(start = CoroutineStart.LAZY) {
                 try {
@@ -52,35 +112,33 @@ class GitHubBackgroundRefreshJobService : JobService() {
                         context = appContext,
                         schedulerDiagnostics = schedulerDiagnostics,
                         suppressQuietBackgroundCompletion = true,
+                        cleanupCancellationLocally = false,
+                        onRefreshSessionStarted = { session ->
+                            execution.stopState.bindSession(session.id)
+                        },
                     )
                 } catch (error: CancellationException) {
-                    val stopDiagnostics = activeJob
-                        ?.takeIf { it.params == params }
-                        ?.stopDiagnostics
-                    if (stopped.get() && stopDiagnostics != null) {
-                        withContext(NonCancellable) {
-                            AppForegroundInfoHandler.handleGitHubTickTimeout(
-                                context = appContext,
-                                schedulerDiagnostics = stopDiagnostics,
-                            )
-                        }
-                    } else {
-                        withContext(NonCancellable) {
-                            AppForegroundInfoHandler.handleGitHubTickTimeout(
-                                context = appContext,
-                                schedulerDiagnostics = schedulerDiagnostics,
-                            )
-                        }
+                    val stopContext =
+                        execution.stopState.resolve(
+                            fallbackDiagnostics = schedulerDiagnostics,
+                            fallbackRuntime = GitHubRefreshRuntimeStore.state.value,
+                        )
+                    withContext(NonCancellable) {
+                        AppForegroundInfoHandler.handleGitHubTickStopped(
+                            context = appContext,
+                            schedulerDiagnostics = stopContext.diagnostics,
+                            stoppedRuntime = stopContext.runtime,
+                        )
                     }
                     throw error
                 } catch (error: Throwable) {
                     AppLogger.w(TAG, "github background refresh job failed", error)
                 } finally {
-                    if (activeJob?.params == params) {
+                    if (activeJob === execution) {
                         activeJob = null
+                        jobRunning.set(false)
                     }
-                    jobRunning.set(false)
-                    if (!stopped.get()) {
+                    if (!execution.stopState.isStopped) {
                         AppBackgroundScheduler.onTickHandled(
                             context = appContext,
                             action = AppBackgroundTickReceiver.ACTION_GITHUB_TICK,
@@ -89,26 +147,41 @@ class GitHubBackgroundRefreshJobService : JobService() {
                     }
                 }
             }
-        activeJob = ActiveJob(
-            params = params,
-            worker = worker,
-            stopped = stopped,
-            startedAtMillis = schedulerDiagnostics.startedAtMillis,
-        )
+        execution =
+            ActiveJob(
+                params = params,
+                worker = worker,
+                stopState = stopState,
+                startedAtMillis = schedulerDiagnostics.startedAtMillis,
+            )
+        activeJob = execution
         worker.start()
         return true
     }
 
     override fun onStopJob(params: JobParameters): Boolean {
         val current = activeJob?.takeIf { it.params == params } ?: return false
-        current.stopped.set(true)
+        val stopReason = jobStopReasonLabel(params.stopReason)
         val schedulerDiagnostics = buildSchedulerDiagnostics(
             params = params,
             startedAtMillis = current.startedAtMillis,
-            stopReason = jobStopReasonLabel(params.stopReason),
+            stopReason = stopReason,
             rescheduled = true,
         )
-        current.stopDiagnostics = schedulerDiagnostics
+        val runtime = GitHubRefreshRuntimeStore.state.value
+        AppLogger.i(
+            TAG,
+            "stop github background refresh job reason=$stopReason code=${params.stopReason} " +
+                "session=${runtime.sessionId} phase=${runtime.phase} " +
+                "progress=${runtime.completedCount}/${runtime.targetCount} reschedule=true",
+        )
+        current.stopState.capture(
+            diagnostics = schedulerDiagnostics,
+            runtime =
+                runtime.takeIf {
+                    it.sessionId > 0L && it.source == GitHubRefreshSource.BackgroundTick
+                },
+        )
         current.worker.cancel(
             CancellationException("GitHub background refresh job stopped: ${params.stopReason}")
         )
@@ -126,10 +199,8 @@ class GitHubBackgroundRefreshJobService : JobService() {
     private data class ActiveJob(
         val params: JobParameters,
         val worker: Job,
-        val stopped: AtomicBoolean,
+        val stopState: GitHubBackgroundRefreshJobStopState,
         val startedAtMillis: Long,
-        @Volatile
-        var stopDiagnostics: GitHubRefreshSchedulerDiagnostics? = null,
     )
 
     companion object {

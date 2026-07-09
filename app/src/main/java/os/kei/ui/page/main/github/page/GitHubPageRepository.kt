@@ -488,7 +488,10 @@ internal class GitHubPageRepository(
         totalTrackedCount = totalTrackedCount,
     )
 
-    fun cancelRefreshNotification(context: Context) = refreshRepository.cancelRefreshNotification(context)
+    fun cancelRefreshNotification(
+        context: Context,
+        sessionId: Long,
+    ) = refreshRepository.cancelRefreshNotification(context, sessionId)
 
     suspend fun clearReleaseStrategyCaches() = refreshRepository.clearReleaseStrategyCaches()
 

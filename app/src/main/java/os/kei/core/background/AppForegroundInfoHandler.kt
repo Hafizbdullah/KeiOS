@@ -11,12 +11,13 @@ import kotlinx.coroutines.yield
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.domain.GitHubBackgroundRefreshService
+import os.kei.feature.github.domain.GitHubRefreshHistoryService
+import os.kei.feature.github.domain.GitHubRefreshRuntimePhase
+import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
+import os.kei.feature.github.domain.GitHubRefreshRuntimeState
+import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
-import os.kei.feature.github.domain.GitHubRefreshRuntimePhase
-import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
-import os.kei.feature.github.domain.GitHubRefreshRuntimeSession
-import os.kei.feature.github.domain.GitHubRefreshHistoryService
 import os.kei.feature.github.domain.GitHubShortcutRefreshExecution
 import os.kei.feature.github.domain.GitHubTrackedRefreshBatchProgress
 import os.kei.feature.github.model.GitHubRefreshHistoryOutcome
@@ -53,6 +54,8 @@ object AppForegroundInfoHandler {
         context: Context,
         schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
         suppressQuietBackgroundCompletion: Boolean = false,
+        cleanupCancellationLocally: Boolean = true,
+        onRefreshSessionStarted: (GitHubRefreshRuntimeSession) -> Unit = {},
     ) {
         val progressNotifier = GitHubRefreshProgressNotifier(
             context = context,
@@ -63,7 +66,10 @@ object AppForegroundInfoHandler {
             try {
                 githubRefreshService.runDueRefresh(
                     context = context,
-                    onRefreshStart = progressNotifier::notifyInitial,
+                    onRefreshStart = { session, total, totalTrackedCount ->
+                        onRefreshSessionStarted(session)
+                        progressNotifier.notifyInitial(session, total, totalTrackedCount)
+                    },
                     onRefreshProgress = progressNotifier::notifyProgress,
                     onActionsUpdateAvailable = { snapshot ->
                         GitHubActionsUpdateNotificationHelper.notifyUpdateAvailable(
@@ -74,13 +80,15 @@ object AppForegroundInfoHandler {
                     schedulerDiagnostics = schedulerDiagnostics,
                 )
             } catch (error: CancellationException) {
-                withContext(NonCancellable) {
-                    cleanupGitHubRefreshRuntimeAndNotification(
-                        context = context,
-                        reason = "github tick cancelled",
-                        outcome = GitHubRefreshHistoryOutcome.Cancelled,
-                        schedulerDiagnostics = schedulerDiagnostics,
-                    )
+                if (cleanupCancellationLocally) {
+                    withContext(NonCancellable) {
+                        cleanupGitHubRefreshRuntimeAndNotification(
+                            context = context,
+                            reason = "github tick cancelled",
+                            outcome = GitHubRefreshHistoryOutcome.Cancelled,
+                            schedulerDiagnostics = schedulerDiagnostics,
+                        )
+                    }
                 }
                 throw error
             } catch (error: Throwable) {
@@ -100,7 +108,12 @@ object AppForegroundInfoHandler {
                 progressNotifier.session?.source == GitHubRefreshSource.BackgroundTick &&
                 !refreshResult.hasNotifiableOutcome
             ) {
-                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                runCatching {
+                    GitHubRefreshNotificationHelper.cancel(
+                        context = context,
+                        sessionId = progressNotifier.session?.id ?: 0L,
+                    )
+                }
                     .onFailure { error ->
                         AppLogger.w(
                             "AppForegroundInfoHandler",
@@ -120,7 +133,12 @@ object AppForegroundInfoHandler {
                 )
             }
         } else if (progressNotifier.didNotify) {
-            runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+            runCatching {
+                GitHubRefreshNotificationHelper.cancel(
+                    context = context,
+                    sessionId = progressNotifier.session?.id ?: 0L,
+                )
+            }
                 .onFailure { error ->
                     AppLogger.w(
                         "AppForegroundInfoHandler",
@@ -131,16 +149,24 @@ object AppForegroundInfoHandler {
         }
     }
 
-    suspend fun handleGitHubTickTimeout(
+    suspend fun handleGitHubTickStopped(
         context: Context,
         schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
+        stoppedRuntime: GitHubRefreshRuntimeState?,
     ) {
+        val reason =
+            schedulerDiagnostics.stopReason
+                .takeIf { it.isNotBlank() }
+                ?.let { "github tick stopped: $it" }
+                ?: "github tick stopped"
+        if (stoppedRuntime == null) return
         withContext(NonCancellable) {
             cleanupGitHubRefreshRuntimeAndNotification(
                 context = context,
-                reason = "github tick timed out",
+                reason = reason,
                 outcome = GitHubRefreshHistoryOutcome.Cancelled,
                 schedulerDiagnostics = schedulerDiagnostics,
+                runtimeSnapshot = stoppedRuntime,
             )
         }
     }
@@ -162,7 +188,11 @@ object AppForegroundInfoHandler {
                 )
         ) {
             GitHubShortcutRefreshExecution.NoTrackedItems -> {
-                runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+                runCatching {
+                    progressNotifier.session?.let { session ->
+                        GitHubRefreshNotificationHelper.cancel(context, session.id)
+                    }
+                }
                     .onFailure { error ->
                         AppLogger.w(
                             "AppForegroundInfoHandler",
@@ -221,7 +251,11 @@ object AppForegroundInfoHandler {
                 false
             }
         if (!posted) {
-            runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+            runCatching {
+                session?.let { activeSession ->
+                    GitHubRefreshNotificationHelper.cancel(context, activeSession.id)
+                }
+            }
                 .onFailure { error ->
                     AppLogger.w(
                         "AppForegroundInfoHandler",
@@ -237,39 +271,93 @@ object AppForegroundInfoHandler {
         reason: String,
         outcome: GitHubRefreshHistoryOutcome,
         schedulerDiagnostics: GitHubRefreshSchedulerDiagnostics = GitHubRefreshSchedulerDiagnostics(),
+        runtimeSnapshot: GitHubRefreshRuntimeState? = null,
     ) {
-        val runtime = GitHubRefreshRuntimeStore.state.value
-        val ownsRuntime =
-            runtime.source == GitHubRefreshSource.BackgroundTick &&
-                runtime.sessionId > 0L &&
-                (
-                    runtime.running ||
-                        runtime.phase == GitHubRefreshRuntimePhase.Cancelled
-                )
-        if (ownsRuntime) {
-            runCatching {
-                githubRefreshHistoryService.recordRuntimeState(
-                    runtime = runtime,
-                    outcome = outcome,
-                    note = reason,
-                    schedulerDiagnostics = schedulerDiagnostics,
-                )
-            }.onFailure { error ->
-                AppLogger.w(
+        val observedRuntime = runtimeSnapshot ?: GitHubRefreshRuntimeStore.state.value
+        val runtime = GitHubRefreshRuntimeStore.claimBackgroundTerminalCleanup(observedRuntime)
+        if (runtime == null) {
+            val currentRuntime = GitHubRefreshRuntimeStore.state.value
+            if (runtimeSnapshot != null) {
+                if (
+                    observedRuntime.phase == GitHubRefreshRuntimePhase.Completed &&
+                    currentRuntime.sessionId == observedRuntime.sessionId
+                ) {
+                    runCatching {
+                        GitHubRefreshNotificationHelper.cancel(
+                            context = context,
+                            sessionId = observedRuntime.sessionId,
+                        )
+                    }
+                        .onFailure { error ->
+                            AppLogger.w(
+                                "AppForegroundInfoHandler",
+                                "$reason completed notification cleanup failed",
+                                error,
+                            )
+                        }
+                }
+                return
+            }
+            if (
+                currentRuntime.sessionId == observedRuntime.sessionId &&
+                currentRuntime.terminalCleanupClaimed
+            ) {
+                AppLogger.i(
                     "AppForegroundInfoHandler",
-                    "$reason history record failed",
-                    error
+                    "$reason skipped because session ${observedRuntime.sessionId} cleanup is already claimed",
+                )
+                return
+            }
+            if (currentRuntime.running) return
+            runCatching {
+                GitHubRefreshNotificationHelper.cancel(
+                    context = context,
+                    sessionId = observedRuntime.sessionId,
                 )
             }
-            GitHubRefreshRuntimeStore.cancel(
-                sessionId = runtime.sessionId,
-                completedCount = runtime.completedCount,
-                updatableCount = runtime.updatableCount,
-                preReleaseUpdateCount = runtime.preReleaseUpdateCount,
-                failedCount = runtime.failedCount,
+                .onFailure { error ->
+                    AppLogger.w(
+                        "AppForegroundInfoHandler",
+                        "$reason notification cleanup failed",
+                        error,
+                    )
+                }
+            return
+        }
+
+        runCatching {
+            githubRefreshHistoryService.recordRuntimeState(
+                runtime = runtime,
+                outcome = outcome,
+                note = reason,
+                schedulerDiagnostics = schedulerDiagnostics,
+            )
+        }.onFailure { error ->
+            AppLogger.w(
+                "AppForegroundInfoHandler",
+                "$reason history record failed",
+                error,
             )
         }
-        if (ownsRuntime && runtime.targetCount > 0) {
+        GitHubRefreshRuntimeStore.cancel(
+            sessionId = runtime.sessionId,
+            completedCount = runtime.completedCount,
+            updatableCount = runtime.updatableCount,
+            preReleaseUpdateCount = runtime.preReleaseUpdateCount,
+            failedCount = runtime.failedCount,
+        )
+        val notificationRuntime = GitHubRefreshRuntimeStore.state.value
+        if (
+            notificationRuntime.sessionId > 0L &&
+            notificationRuntime.sessionId != runtime.sessionId
+        ) {
+            AppLogger.i(
+                "AppForegroundInfoHandler",
+                "$reason skipped notification because session ${notificationRuntime.sessionId} superseded ${runtime.sessionId}",
+            )
+            return
+        }
+        if (runtime.targetCount > 0) {
             val terminalPosted =
                 runCatching {
                     when (outcome) {
@@ -314,9 +402,12 @@ object AppForegroundInfoHandler {
             if (terminalPosted) return
         }
 
-        val shouldCancelNotification = !runtime.running || ownsRuntime
-        if (!shouldCancelNotification) return
-        runCatching { GitHubRefreshNotificationHelper.cancel(context) }
+        runCatching {
+            GitHubRefreshNotificationHelper.cancel(
+                context = context,
+                sessionId = runtime.sessionId,
+            )
+        }
             .onFailure { error ->
                 AppLogger.w(
                     "AppForegroundInfoHandler",

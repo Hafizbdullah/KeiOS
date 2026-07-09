@@ -25,7 +25,12 @@ class GitHubRefreshHistoryStoreTest {
     @Test
     fun `refresh history id is stable for the same session`() {
         val first = createRecord(sessionId = 42L, finishedAtMillis = 2_000L)
-        val updated = first.copy(failedCount = 2, note = "timeout")
+        val updated =
+            first.copy(
+                failedCount = 2,
+                finishedAtMillis = 2_100L,
+                note = "timeout",
+            )
         val anotherSession = first.copy(sessionId = 43L)
 
         val firstId =
@@ -43,6 +48,58 @@ class GitHubRefreshHistoryStoreTest {
 
         assertEquals(firstId, updatedId)
         assertNotEquals(firstId, anotherId)
+    }
+
+    @Test
+    fun `refresh history collapses legacy duplicate records for one session`() {
+        val first =
+            createRecord(sessionId = 42L, finishedAtMillis = 2_000L)
+                .copy(id = "legacy-first")
+        val latest =
+            first.copy(
+                id = "legacy-latest",
+                finishedAtMillis = 2_100L,
+                note = "stopped: timeout",
+            )
+        val anotherSession =
+            createRecord(sessionId = 43L, finishedAtMillis = 2_050L)
+                .copy(id = "legacy-other")
+
+        val records =
+            GitHubRefreshHistoryStore.collapseDuplicateSessions(
+                listOf(first, latest, anotherSession),
+            )
+
+        assertEquals(2, records.size)
+        assertEquals(latest, records.single { it.sessionId == 42L })
+        assertEquals(anotherSession, records.single { it.sessionId == 43L })
+    }
+
+    @Test
+    fun `refresh history compaction keeps the newest stored entry for each session`() {
+        val first =
+            createRecord(sessionId = 42L, finishedAtMillis = 2_000L)
+                .copy(id = "legacy-first")
+        val latest =
+            first.copy(
+                id = "legacy-latest",
+                finishedAtMillis = 2_100L,
+                note = "stopped: timeout",
+            )
+        val anotherSession =
+            createRecord(sessionId = 43L, finishedAtMillis = 2_050L)
+                .copy(id = "legacy-other")
+
+        val retainedIds =
+            GitHubRefreshHistoryStore.collapsedEntryIds(
+                listOf(
+                    "legacy-first" to first,
+                    "legacy-latest" to latest,
+                    "legacy-other" to anotherSession,
+                ),
+            )
+
+        assertEquals(setOf("legacy-latest", "legacy-other"), retainedIds)
     }
 
     @Test
