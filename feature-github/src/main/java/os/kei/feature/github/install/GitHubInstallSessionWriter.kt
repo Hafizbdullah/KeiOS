@@ -2,10 +2,15 @@ package os.kei.feature.github.install
 
 import android.content.Context
 import android.content.pm.PackageInstaller
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.download.segmented.SegmentedDownloadClient
+import os.kei.core.download.segmented.SegmentedDownloadOptions
+import os.kei.core.download.segmented.SegmentedDownloadRequest
+import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
 import java.io.File
@@ -14,6 +19,13 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import kotlin.math.roundToInt
+
+private const val GITHUB_INSTALL_SESSION_WRITER_TAG = "GitHubInstallWriter"
+private const val GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS = 200L
+private const val GITHUB_SEGMENTED_MIN_SIZE_BYTES = 8L * 1024L * 1024L
+private const val GITHUB_SEGMENTED_PART_SIZE_BYTES = 4L * 1024L * 1024L
+private const val GITHUB_SEGMENTED_MAX_CONNECTIONS = 4
 
 data class GitHubInstallSessionWriteResult(
     val bytesWritten: Long,
@@ -23,7 +35,14 @@ data class GitHubInstallSessionWriteResult(
 
 class GitHubInstallSessionWriter(
     private val client: OkHttpClient,
+    downloadDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
 ) {
+    private val segmentedDownloadClient =
+        SegmentedDownloadClient(
+            client = client,
+            dispatcher = downloadDispatcher,
+        )
+
     suspend fun streamApkIntoSession(
         context: Context,
         resolvedUrl: String,
@@ -61,71 +80,26 @@ class GitHubInstallSessionWriter(
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult {
-        val request =
-            Request
-                .Builder()
-                .url(resolvedUrl)
-                .header("User-Agent", "KeiOS-App/1.0 (Android)")
-                .header(
-                    "Accept",
-                    "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1",
-                ).build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code}")
-            }
-            val body = response.body
-            val totalBytes =
-                when {
-                    body.contentLength() > 0L -> body.contentLength()
-                    asset.sizeBytes > 0L -> asset.sizeBytes
-                    else -> -1L
-                }
-            val fileName = asset.name.trim().ifBlank { "base.apk" }
-            val tempApkFile = createGitHubTempApkFile(context, asset.name)
-            try {
-                val progress =
-                    GitHubInstallProgressEmitter(
-                        sessionId = sessionId,
-                        totalBytes = totalBytes,
-                        onProgress = onProgress,
-                    )
-                progress.emit(force = true)
-                body.byteStream().use { input ->
-                    session.openWrite(fileName, 0, totalBytes).use { output ->
-                        FileOutputStream(tempApkFile).use { archiveOutput ->
-                            val buffer = ByteArray(GITHUB_APK_STREAM_BUFFER_SIZE)
-                            while (true) {
-                                currentCoroutineContext().ensureActive()
-                                val read = input.read(buffer)
-                                if (read == -1) break
-                                output.write(buffer, 0, read)
-                                archiveOutput.write(buffer, 0, read)
-                                progress.add(read.toLong())
-                                progress.emit()
-                            }
-                            archiveOutput.flush()
-                        }
-                        progress.emit(force = true)
-                        val archiveInfo = readGitHubApkArchiveInfo(context, tempApkFile)
-                        emitStagingProgress(
-                            sessionId = sessionId,
-                            totalRead = progress.totalRead,
-                            totalBytes = totalBytes,
-                            archiveInfo = archiveInfo,
-                            onProgress = onProgress,
-                        )
-                        session.fsync(output)
-                        return GitHubInstallSessionWriteResult(
-                            bytesWritten = progress.totalRead,
-                            totalBytes = totalBytes,
-                            archiveInfo = archiveInfo,
-                        )
-                    }
-                }
-            } finally {
-                runCatching { tempApkFile.delete() }
-            }
+        val tempApkFile = createGitHubTempApkFile(context, asset.name)
+        try {
+            downloadToTempFile(
+                resolvedUrl = resolvedUrl,
+                declaredSizeBytes = asset.sizeBytes,
+                outputFile = tempApkFile,
+                acceptHeader = "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1",
+                sessionId = sessionId,
+                onProgress = onProgress,
+            )
+            return streamDownloadedApkFileIntoSession(
+                context = context,
+                apkFile = tempApkFile,
+                sessionName = asset.name.toGitHubApkSessionName(),
+                session = session,
+                sessionId = sessionId,
+                onProgress = onProgress,
+            )
+        } finally {
+            runCatching { tempApkFile.delete() }
         }
     }
 
@@ -144,6 +118,7 @@ class GitHubInstallSessionWriter(
                 resolvedUrl = resolvedUrl,
                 declaredSizeBytes = declaredSizeBytes,
                 outputFile = archiveFile,
+                acceptHeader = "application/zip, application/octet-stream;q=0.9, */*;q=0.1",
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -273,49 +248,55 @@ class GitHubInstallSessionWriter(
         resolvedUrl: String,
         declaredSizeBytes: Long,
         outputFile: File,
+        acceptHeader: String,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ) {
-        val request =
-            Request
-                .Builder()
-                .url(resolvedUrl)
-                .header("User-Agent", "KeiOS-App/1.0 (Android)")
-                .header("Accept", "application/zip, application/octet-stream;q=0.9, */*;q=0.1")
-                .build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code}")
-            }
-            val body = response.body
-            val totalBytes =
-                when {
-                    body.contentLength() > 0L -> body.contentLength()
-                    declaredSizeBytes > 0L -> declaredSizeBytes
-                    else -> -1L
-                }
-            val progress =
-                GitHubInstallProgressEmitter(
-                    sessionId = sessionId,
-                    totalBytes = totalBytes,
-                    onProgress = onProgress,
-                )
-            progress.emit(force = true)
-            body.byteStream().use { input ->
-                FileOutputStream(outputFile).use { output ->
-                    val buffer = ByteArray(GITHUB_APK_STREAM_BUFFER_SIZE)
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val read = input.read(buffer)
-                        if (read == -1) break
-                        output.write(buffer, 0, read)
-                        progress.add(read.toLong())
-                        progress.emit()
-                    }
-                    output.flush()
-                }
-            }
-            progress.emit(force = true)
+        val result =
+            segmentedDownloadClient.downloadToFile(
+                request = SegmentedDownloadRequest(
+                    url = resolvedUrl,
+                    outputFile = outputFile,
+                    headers = mapOf(
+                        "User-Agent" to "KeiOS-App/1.0 (Android)",
+                        "Accept" to acceptHeader,
+                    ),
+                    fileNameHint = outputFile.name,
+                ),
+                options = SegmentedDownloadOptions(
+                    minParallelSizeBytes = GITHUB_SEGMENTED_MIN_SIZE_BYTES,
+                    initialPartSizeBytes = GITHUB_SEGMENTED_PART_SIZE_BYTES,
+                    maxConnections = GITHUB_SEGMENTED_MAX_CONNECTIONS,
+                    maxRetriesPerPart = 3,
+                    retryDelayMs = 1_000L,
+                    progressIntervalMs = GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS,
+                    requireHttpsForParallel = true,
+                    bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
+                ),
+                onProgress = { progress ->
+                    val totalBytes =
+                        when {
+                            progress.totalBytes > 0L -> progress.totalBytes
+                            declaredSizeBytes > 0L -> declaredSizeBytes
+                            else -> -1L
+                        }
+                    onProgress(
+                        GitHubApkInstallProgress(
+                            stage = GitHubApkInstallStage.Downloading,
+                            progressPercent = downloadProgressPercent(
+                                downloadedBytes = progress.downloadedBytes,
+                                totalBytes = totalBytes,
+                            ),
+                            downloadedBytes = progress.downloadedBytes,
+                            totalBytes = totalBytes,
+                            sessionId = sessionId,
+                        )
+                    )
+                },
+            )
+        AppLogger.i(GITHUB_INSTALL_SESSION_WRITER_TAG) {
+            "asset downloaded parallel=${result.parallel} range=${result.rangeSupported} " +
+                "bytes=${result.totalBytes} retry=${result.retryCount} fallback=${result.fallbackReason.orEmpty()}"
         }
     }
 
@@ -342,4 +323,13 @@ class GitHubInstallSessionWriter(
             ),
         )
     }
+}
+
+private fun downloadProgressPercent(
+    downloadedBytes: Long,
+    totalBytes: Long,
+): Int {
+    if (totalBytes <= 0L) return 0
+    val fraction = downloadedBytes.toDouble() / totalBytes.toDouble()
+    return (fraction.coerceIn(0.0, 1.0) * 100.0).roundToInt().coerceIn(0, 100)
 }

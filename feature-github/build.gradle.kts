@@ -25,6 +25,7 @@ android {
 
 dependencies {
     implementation(project(":core-concurrency"))
+    implementation(project(":core-download"))
     implementation(project(":core-io"))
     implementation(project(":core-json"))
     implementation(project(":core-log"))
