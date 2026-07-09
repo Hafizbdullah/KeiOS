@@ -35,6 +35,7 @@ rootProject.name = "KeiOS"
 include(":app")
 include(":baselineprofile")
 include(":core-concurrency")
+include(":core-download")
 include(":core-log")
 include(":core-io")
 include(":core-json")
