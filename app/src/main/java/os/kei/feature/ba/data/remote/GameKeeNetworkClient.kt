@@ -1,6 +1,7 @@
 package os.kei.feature.ba.data.remote
 
 import android.graphics.Bitmap
+import kotlinx.coroutines.CancellationException
 import java.io.File
 
 internal data class GameKeeNetworkRequest(
@@ -78,13 +79,13 @@ internal object GameKeeNetworkClient {
         }
     }
 
-    fun downloadToFile(
+    suspend fun downloadToFile(
         mediaUrl: String,
         targetFile: File,
         onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
     ): GameKeeNetworkResult<File> {
         val request = GameKeeNetworkRequest(pathOrUrl = mediaUrl, refererPath = "")
-        return capture(request) {
+        return captureSuspending(request) {
             val downloaded = GameKeeFetchHelper.downloadToFile(
                 mediaUrl = mediaUrl,
                 targetFile = targetFile,
@@ -102,6 +103,32 @@ internal object GameKeeNetworkClient {
 
                 is GameKeeNetworkResult.Failure -> result
             }
+        }
+    }
+
+    private suspend fun <T> captureSuspending(
+        request: GameKeeNetworkRequest,
+        block: suspend () -> T
+    ): GameKeeNetworkResult<T> {
+        return try {
+            val value = block()
+            GameKeeNetworkResult.Success(
+                value = value,
+                request = request,
+                bytes = when (value) {
+                    is String -> value.toByteArray(Charsets.UTF_8).size.toLong()
+                    is File -> value.length().coerceAtLeast(0L)
+                    else -> 0L
+                }
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            GameKeeNetworkResult.Failure(
+                request = request,
+                errorPreview = error.compactGameKeeError(),
+                throwable = error
+            )
         }
     }
 

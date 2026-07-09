@@ -109,7 +109,7 @@ internal object BaGuideImageCache {
         runCatching { cacheRoot(context).deleteRecursively() }
     }
 
-    fun loadBitmap(
+    suspend fun loadBitmap(
         context: Context,
         source: String,
         maxDecodeDimension: Int = 2048,

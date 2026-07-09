@@ -2,6 +2,9 @@ package os.kei.feature.ba.data.remote
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import okhttp3.Cache
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -11,6 +14,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import os.kei.KeiOSApp
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.download.segmented.SegmentedDownloadClient
+import os.kei.core.download.segmented.SegmentedDownloadOptions
+import os.kei.core.download.segmented.SegmentedDownloadRequest
 import os.kei.core.log.AppLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -27,6 +34,10 @@ object GameKeeFetchHelper {
     private const val DEFAULT_MAX_DECODE_EDGE = 2560
     private const val HTTP_CACHE_DIR = "ba_gamekee_http_cache"
     private const val HTTP_CACHE_SIZE_BYTES = 64L * 1024L * 1024L
+    private const val MEDIA_SEGMENTED_MIN_SIZE_BYTES = 8L * 1024L * 1024L
+    private const val MEDIA_SEGMENTED_PART_SIZE_BYTES = 4L * 1024L * 1024L
+    private const val MEDIA_SEGMENTED_MAX_CONNECTIONS = 3
+    private const val MEDIA_DOWNLOAD_PROGRESS_INTERVAL_MS = 250L
     private const val REFERER_HOME_PATH = "/"
     private const val REFERER_BA_PATH = "/ba"
     private const val REFERER_ACTIVITY_PATH = "/ba/huodong/15"
@@ -152,6 +163,10 @@ object GameKeeFetchHelper {
         .cookieJar(InMemoryCookieJar())
         .cache(resolveHttpCache())
         .build()
+    private val segmentedDownloadClient = SegmentedDownloadClient(
+        client = client,
+        dispatcher = AppDispatchers.baFetch,
+    )
 
     private fun resolveHttpCache(): Cache? {
         return runCatching {
@@ -449,6 +464,9 @@ object GameKeeFetchHelper {
                     }
                 }
                 val elapsedMs = System.currentTimeMillis() - startMs
+                result.exceptionOrNull()?.let { error ->
+                    if (error is CancellationException) throw error
+                }
                 if (result.isSuccess) {
                     val bitmap = result.getOrNull()
                     if (bitmap != null) {
@@ -501,7 +519,7 @@ object GameKeeFetchHelper {
         )
     }
 
-    fun downloadToFile(
+    suspend fun downloadToFile(
         mediaUrl: String,
         targetFile: File,
         onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)? = null
@@ -532,60 +550,38 @@ object GameKeeFetchHelper {
             uas.forEach { ua ->
                 attempt += 1
                 val startMs = System.currentTimeMillis()
-                val req = Request.Builder()
-                    .url(url)
-                    .get()
-                    .header("Accept", ACCEPT_IMAGE)
-                    .header("Accept-Language", ACCEPT_LANGUAGE)
-                    .header("Referer", referer)
-                    .header("User-Agent", ua)
-                    .build()
+                val headers = gameKeeDownloadHeaders(referer = referer, ua = ua)
 
                 val result = runCatching {
-                    client.newCall(req).execute().use { resp ->
-                        if (!resp.isSuccessful) {
-                            val contentType = resp.header("Content-Type").orEmpty()
-                            throw IOException("http=${resp.code} ct=${contentType.ifBlank { "-" }}")
-                        }
-                        val body = resp.body
-                        val total = body.contentLength()
-                        body.byteStream().use { input ->
-                            tempFile.outputStream().use { out ->
-                                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                                var downloaded = 0L
-                                while (true) {
-                                    val count = input.read(buffer)
-                                    if (count <= 0) break
-                                    out.write(buffer, 0, count)
-                                    downloaded += count
-                                    onProgress?.invoke(downloaded, total)
-                                }
-                            }
-                        }
+                    if (shouldUseSegmentedMediaDownload(url, targetFile)) {
+                        downloadMediaSegmented(
+                            url = url,
+                            targetFile = targetFile,
+                            headers = headers,
+                            onProgress = onProgress,
+                        )
+                    } else {
+                        downloadMediaSingleStream(
+                            url = url,
+                            tempFile = tempFile,
+                            headers = headers,
+                            onProgress = onProgress,
+                        )
+                        moveGameKeeTempFile(
+                            tempFile = tempFile,
+                            targetFile = targetFile,
+                        )
                         Unit
                     }
                 }
                 val elapsedMs = System.currentTimeMillis() - startMs
                 if (result.isSuccess) {
-                    if (targetFile.exists()) {
-                        runCatching { targetFile.delete() }
-                    }
-                    val renamed = tempFile.renameTo(targetFile)
-                    if (renamed) {
-                        val size = targetFile.length()
-                        logD(
-                            "download[$traceId] ok a$attempt/$totalAttempts ${shortUa(ua)} " +
-                                "${elapsedMs}ms bytes=$size file=${targetFile.name}"
-                        )
-                        return true
-                    }
-                    val renameError = IOException("rename-failed ${tempFile.absolutePath} -> ${targetFile.absolutePath}")
-                    lastError = renameError
-                    errors += "a$attempt:${shortUa(ua)}:${renameError.toCompactLogMessage().compactForLog(120)}"
+                    val size = targetFile.length()
                     logD(
-                        "download[$traceId] fail a$attempt/$totalAttempts ${shortUa(ua)} ${elapsedMs}ms " +
-                            "url=${url.compactForLog(110)} err=${renameError.toCompactLogMessage()}"
+                        "download[$traceId] ok a$attempt/$totalAttempts ${shortUa(ua)} " +
+                            "${elapsedMs}ms bytes=$size file=${targetFile.name}"
                     )
+                    return true
                 }
                 if (result.isFailure) {
                     lastError = result.exceptionOrNull()
@@ -611,4 +607,111 @@ object GameKeeFetchHelper {
         if (lastError != null) throw lastError
         return false
     }
+
+    private fun gameKeeDownloadHeaders(
+        referer: String,
+        ua: String,
+    ): Map<String, String> =
+        mapOf(
+            "Accept" to ACCEPT_IMAGE,
+            "Accept-Language" to ACCEPT_LANGUAGE,
+            "Referer" to referer,
+            "User-Agent" to ua,
+        )
+
+    private suspend fun downloadMediaSegmented(
+        url: String,
+        targetFile: File,
+        headers: Map<String, String>,
+        onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)?,
+    ) {
+        val result = segmentedDownloadClient.downloadToFile(
+            request = SegmentedDownloadRequest(
+                url = url,
+                outputFile = targetFile,
+                headers = headers,
+                fileNameHint = targetFile.name,
+            ),
+            options = SegmentedDownloadOptions(
+                minParallelSizeBytes = MEDIA_SEGMENTED_MIN_SIZE_BYTES,
+                initialPartSizeBytes = MEDIA_SEGMENTED_PART_SIZE_BYTES,
+                maxConnections = MEDIA_SEGMENTED_MAX_CONNECTIONS,
+                maxRetriesPerPart = 3,
+                retryDelayMs = 1_000L,
+                progressIntervalMs = MEDIA_DOWNLOAD_PROGRESS_INTERVAL_MS,
+                requireHttpsForParallel = true,
+                bufferSizeBytes = DEFAULT_BUFFER_SIZE,
+            ),
+            onProgress = { progress ->
+                onProgress?.invoke(progress.downloadedBytes, progress.totalBytes)
+            },
+        )
+        logD(
+            "download segmented parallel=${result.parallel} range=${result.rangeSupported} " +
+                "bytes=${result.totalBytes} retry=${result.retryCount} fallback=${result.fallbackReason.orEmpty()}"
+        )
+    }
+
+    private suspend fun downloadMediaSingleStream(
+        url: String,
+        tempFile: File,
+        headers: Map<String, String>,
+        onProgress: ((downloadedBytes: Long, totalBytes: Long) -> Unit)?,
+    ) {
+        val builder = Request.Builder().url(url).get()
+        headers.forEach { (key, value) -> builder.header(key, value) }
+        client.newCall(builder.build()).execute().use { resp ->
+            if (!resp.isSuccessful) {
+                val contentType = resp.header("Content-Type").orEmpty()
+                throw IOException("http=${resp.code} ct=${contentType.ifBlank { "-" }}")
+            }
+            val body = resp.body
+            val total = body.contentLength()
+            body.byteStream().use { input ->
+                tempFile.outputStream().use { out ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var downloaded = 0L
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val count = input.read(buffer)
+                        if (count <= 0) break
+                        out.write(buffer, 0, count)
+                        downloaded += count
+                        onProgress?.invoke(downloaded, total)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun moveGameKeeTempFile(
+        tempFile: File,
+        targetFile: File,
+    ) {
+        if (targetFile.exists()) {
+            runCatching { targetFile.delete() }
+        }
+        if (!tempFile.renameTo(targetFile)) {
+            throw IOException("rename-failed ${tempFile.absolutePath} -> ${targetFile.absolutePath}")
+        }
+    }
+
+    private fun shouldUseSegmentedMediaDownload(
+        url: String,
+        targetFile: File,
+    ): Boolean {
+        val extension = (url.substringBefore('?').substringAfterLast('.', "")).lowercase()
+            .ifBlank { targetFile.extension.lowercase() }
+        return extension in SEGMENTED_MEDIA_EXTENSIONS
+    }
+
+    private val SEGMENTED_MEDIA_EXTENSIONS =
+        setOf(
+            "mp4",
+            "m4v",
+            "mov",
+            "webm",
+            "mkv",
+            "zip",
+        )
 }

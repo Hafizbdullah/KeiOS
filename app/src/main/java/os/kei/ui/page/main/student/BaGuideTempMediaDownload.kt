@@ -17,7 +17,7 @@ internal object BaGuideTempMediaDownload {
         return value + suffix
     }
 
-    fun downloadWithValidation(
+    suspend fun downloadWithValidation(
         normalizedUrl: String,
         targetFile: File,
         forceReDownload: Boolean,

@@ -14,9 +14,9 @@ The first delivery targets large files where HTTP Range is usually available:
 
 | Area | Status | Target |
 | --- | --- | --- |
-| GitHub managed install direct APK | Planned | Download to app-private temp APK with segmented Range, then stream the completed file into `PackageInstaller.Session`. |
-| GitHub Actions artifact ZIP | Planned | Download archive temp ZIP with segmented Range, then reuse current ZIP selection and session-writing flow. |
-| GameKee large media | Planned | Download large media to `.part` with segmented Range and atomic rename. |
+| GitHub managed install direct APK | Implemented | Download to app-private temp APK with segmented Range, then stream the completed file into `PackageInstaller.Session`. |
+| GitHub Actions artifact ZIP | Implemented | Download archive temp ZIP with segmented Range, then reuse current ZIP selection and session-writing flow. |
+| GameKee large media | Implemented | Download large media to `.part` with segmented Range and atomic rename. |
 | WebDAV sync text downloads | Later independent topic | Current text sync path stays with dav4jvm single request. |
 | Coil/image decode cache | Later independent topic | Current Coil/GameKee image flow stays focused on cache and decode behavior. |
 
@@ -424,6 +424,16 @@ rate limits, conservative connection counts, retry policy, and tail scheduling.
 File IO should be measured before adding native kernel-API work.
 
 ## Integration Plan
+
+### Implementation Status 2026-07-09
+
+| Priority | Status | Notes |
+| --- | --- | --- |
+| P1 Core downloader foundation | Implemented | Added `:core-download` with Range probe, segmented writes, retry, cancellation cleanup, progress aggregation, and unit tests. |
+| P2 GitHub Actions ZIP bridge | Implemented | `GitHubInstallSessionWriter` downloads Actions ZIP assets through `:core-download`, then keeps the existing `ZipFile` APK selection and staging flow. |
+| P3 GitHub direct APK bridge | Implemented | Direct APK install now downloads to an app-private temp APK through `:core-download`, then streams the completed file into `PackageInstaller.Session`. |
+| P4 GameKee large media bridge | Implemented with Kotlin-side scope guard | Video/archive-like media extensions (`mp4`, `m4v`, `mov`, `webm`, `mkv`, `zip`) use `:core-download`; common image cache downloads keep the previous single-stream path to avoid doubling request count with Range probes during image prefetch. |
+| P5 Runtime tuning | Pending evidence | Needs device/network benchmark rows before changing connection counts, part sizes, or rollout thresholds. |
 
 ### P0 Plan Setup
 

@@ -51,7 +51,7 @@ internal fun normalizeGuideMediaSource(raw: String): String {
     }
 }
 
-internal fun loadGuideBitmapSource(
+internal suspend fun loadGuideBitmapSource(
     context: Context,
     source: String,
     maxDecodeDimension: Int = 2048,

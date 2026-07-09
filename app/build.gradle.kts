@@ -550,6 +550,7 @@ dependencies {
     baselineProfile(project(":baselineprofile"))
 
     implementation(project(":core-concurrency"))
+    implementation(project(":core-download"))
     implementation(project(":core-log"))
     implementation(project(":core-io"))
     implementation(project(":core-json"))
