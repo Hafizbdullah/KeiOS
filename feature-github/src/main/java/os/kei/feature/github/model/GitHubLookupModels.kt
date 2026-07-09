@@ -93,6 +93,7 @@ data class GitHubLookupConfig(
     val shareImportLinkageEnabled: Boolean = true,
     val shareImportFlowMode: GitHubShareImportFlowMode = GitHubShareImportFlowMode.SheetAssisted,
     val appManagedShareInstallEnabled: Boolean = false,
+    val foregroundManagedDownloadBoostEnabled: Boolean = false,
     val onlineShareTargetPackage: String = "",
     val preferredDownloaderPackage: String = "",
     val decisionAssistEnabled: Boolean = false,

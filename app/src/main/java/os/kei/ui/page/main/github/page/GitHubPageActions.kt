@@ -128,6 +128,9 @@ internal class GitHubPageActions(
 
     fun setAppManagedShareInstallEnabledInput(value: Boolean) = configActions.setAppManagedShareInstallEnabledInput(value)
 
+    fun setForegroundManagedDownloadBoostEnabledInput(value: Boolean) =
+        configActions.setForegroundManagedDownloadBoostEnabledInput(value)
+
     fun setPreferredDownloaderPackageInput(value: String) = configActions.setPreferredDownloaderPackageInput(value)
 
     fun setOnlineShareTargetPackageInput(value: String) = configActions.setOnlineShareTargetPackageInput(value)

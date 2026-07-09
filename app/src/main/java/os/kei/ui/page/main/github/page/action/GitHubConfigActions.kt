@@ -104,6 +104,7 @@ internal class GitHubConfigActions(
             state.profileDepthInput = config.profileDepth
             state.shareImportFlowModeInput = config.shareImportFlowMode
             state.appManagedShareInstallEnabledInput = config.appManagedShareInstallEnabled
+            state.foregroundManagedDownloadBoostEnabledInput = config.foregroundManagedDownloadBoostEnabled
             state.onlineShareTargetPackageInput = config.onlineShareTargetPackage
             state.preferredDownloaderPackageInput = config.preferredDownloaderPackage
             state.decisionAssistEnabledInput = config.decisionAssistEnabled
@@ -147,6 +148,10 @@ internal class GitHubConfigActions(
 
     fun setAppManagedShareInstallEnabledInput(value: Boolean) {
         state.appManagedShareInstallEnabledInput = value
+    }
+
+    fun setForegroundManagedDownloadBoostEnabledInput(value: Boolean) {
+        state.foregroundManagedDownloadBoostEnabledInput = value
     }
 
     fun setPreferredDownloaderPackageInput(value: String) {
@@ -260,6 +265,8 @@ internal class GitHubConfigActions(
                     shareImportLinkageEnabled = true,
                     shareImportFlowMode = previousConfig.shareImportFlowMode,
                     appManagedShareInstallEnabled = previousConfig.appManagedShareInstallEnabled,
+                    foregroundManagedDownloadBoostEnabled =
+                        previousConfig.foregroundManagedDownloadBoostEnabled,
                     onlineShareTargetPackage = previousConfig.onlineShareTargetPackage,
                     preferredDownloaderPackage = previousConfig.preferredDownloaderPackage,
                     decisionAssistEnabled = previousConfig.decisionAssistEnabled,
@@ -351,6 +358,8 @@ internal class GitHubConfigActions(
                     shareImportLinkageEnabled = true,
                     shareImportFlowMode = state.shareImportFlowModeInput,
                     appManagedShareInstallEnabled = state.appManagedShareInstallEnabledInput,
+                    foregroundManagedDownloadBoostEnabled =
+                        state.foregroundManagedDownloadBoostEnabledInput,
                     onlineShareTargetPackage =
                         state.onlineShareTargetPackageInput
                             .trim()
@@ -384,7 +393,9 @@ internal class GitHubConfigActions(
             val shareImportChanged =
                 previousConfig.shareImportFlowMode != newConfig.shareImportFlowMode ||
                     previousConfig.appManagedShareInstallEnabled !=
-                    newConfig.appManagedShareInstallEnabled
+                    newConfig.appManagedShareInstallEnabled ||
+                    previousConfig.foregroundManagedDownloadBoostEnabled !=
+                    newConfig.foregroundManagedDownloadBoostEnabled
             val onlineShareTargetChanged =
                 previousConfig.onlineShareTargetPackage != newConfig.onlineShareTargetPackage
             val downloaderChanged =

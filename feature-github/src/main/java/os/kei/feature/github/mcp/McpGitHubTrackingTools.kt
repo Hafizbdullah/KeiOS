@@ -209,6 +209,10 @@ internal class McpGitHubTrackingTools(
             appendLine("aggressiveApkFiltering=${snapshot.lookupConfig.aggressiveApkFiltering}")
             appendLine("preciseApkVersionEnabled=${snapshot.lookupConfig.preciseApkVersionEnabled}")
             appendLine("checkAllDirectApkPreReleases=${snapshot.lookupConfig.checkAllDirectApkPreReleases}")
+            appendLine(
+                "foregroundManagedDownloadBoostEnabled=" +
+                    snapshot.lookupConfig.foregroundManagedDownloadBoostEnabled
+            )
             appendLine("preciseApkVersionOverrideCount=${optionCounts.preciseApkVersionOverrideCount}")
             appendLine("actionsUpdateCount=${optionCounts.actionsUpdateCount}")
             appendLine("actionsIntervalOverrideCount=$actionsIntervalOverrideCount")

@@ -125,6 +125,8 @@ internal suspend fun GitHubRefreshActions.applyTrackSnapshot(trackSnapshot: GitH
     state.shareImportFlowModeInput = trackSnapshot.lookupConfig.shareImportFlowMode
     state.appManagedShareInstallEnabledInput =
         trackSnapshot.lookupConfig.appManagedShareInstallEnabled
+    state.foregroundManagedDownloadBoostEnabledInput =
+        trackSnapshot.lookupConfig.foregroundManagedDownloadBoostEnabled
     state.scanSystemAppsByDefaultInput = trackSnapshot.lookupConfig.scanSystemAppsByDefault
     state.onlineShareTargetPackageInput = trackSnapshot.lookupConfig.onlineShareTargetPackage
     state.preferredDownloaderPackageInput = trackSnapshot.lookupConfig.preferredDownloaderPackage

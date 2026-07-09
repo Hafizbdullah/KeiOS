@@ -6,6 +6,7 @@ import os.kei.feature.github.install.GitHubApkInstallProgress
 import os.kei.feature.github.install.GitHubApkInstallRequest
 import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.install.GitHubApkInstallStage
+import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 
@@ -84,6 +85,7 @@ internal fun buildManagedInstallRequest(
         scannedTargetSdk = manifestInfo.targetSdk.trim(),
         scannedNativeAbis = manifestInfo.normalizedNativeAbis(),
         resolvedDownloadUrl = resolvedDownloadUrl,
+        downloadSpeedProfile = lookupConfig.managedInstallDownloadSpeedProfile(),
         requestId = startState.requestId,
     )
 

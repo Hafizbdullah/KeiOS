@@ -166,6 +166,7 @@ class GitHubShizukuPackageInstaller(
                     context = appContext,
                     resolvedUrl = resolvedUrl,
                     asset = request.asset,
+                    downloadSpeedProfile = request.downloadSpeedProfile,
                     session = session,
                     sessionId = sessionId,
                     onProgress = onProgress

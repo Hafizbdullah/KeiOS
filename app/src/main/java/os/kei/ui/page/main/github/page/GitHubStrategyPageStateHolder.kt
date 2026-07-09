@@ -23,6 +23,7 @@ internal class GitHubStrategyPageStateHolder {
     var profileDepthInput by mutableStateOf(GitHubProfileDepth.Basic)
     var shareImportFlowModeInput by mutableStateOf(lookupConfig.shareImportFlowMode)
     var appManagedShareInstallEnabledInput by mutableStateOf(false)
+    var foregroundManagedDownloadBoostEnabledInput by mutableStateOf(false)
     var onlineShareTargetPackageInput by mutableStateOf("")
     var preferredDownloaderPackageInput by mutableStateOf("")
     var decisionAssistEnabledInput by mutableStateOf(false)

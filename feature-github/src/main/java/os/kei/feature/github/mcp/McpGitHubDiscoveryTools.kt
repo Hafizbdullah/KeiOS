@@ -124,6 +124,10 @@ internal class McpGitHubDiscoveryTools(
             appendLine("shareImportLinkageEnabled=${snapshot.lookupConfig.shareImportLinkageEnabled}")
             appendLine("shareImportFlowMode=${snapshot.lookupConfig.shareImportFlowMode.storageId}")
             appendLine("appManagedShareInstallEnabled=${snapshot.lookupConfig.appManagedShareInstallEnabled}")
+            appendLine(
+                "foregroundManagedDownloadBoostEnabled=" +
+                    snapshot.lookupConfig.foregroundManagedDownloadBoostEnabled
+            )
             appendLine("onlineShareTargetConfigured=${snapshot.lookupConfig.onlineShareTargetPackage.isNotBlank()}")
             appendLine("preferredDownloaderConfigured=${snapshot.lookupConfig.preferredDownloaderPackage.isNotBlank()}")
             appendLine("decisionAssistEnabled=${snapshot.lookupConfig.decisionAssistEnabled}")

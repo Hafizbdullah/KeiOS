@@ -43,6 +43,7 @@ internal fun GitHubCheckLogicSheet(
     profileDepthInput: GitHubProfileDepth,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     appManagedShareInstallEnabledInput: Boolean,
+    foregroundManagedDownloadBoostEnabledInput: Boolean,
     onlineShareTargetPackageInput: String,
     preferredDownloaderPackageInput: String,
     decisionAssistEnabledInput: Boolean,
@@ -70,6 +71,7 @@ internal fun GitHubCheckLogicSheet(
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
+    onForegroundManagedDownloadBoostEnabledInputChange: (Boolean) -> Unit,
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onDecisionAssistEnabledInputChange: (Boolean) -> Unit,
@@ -92,6 +94,8 @@ internal fun GitHubCheckLogicSheet(
             profileDepthInput != lookupConfig.profileDepth ||
             shareImportFlowModeInput != lookupConfig.shareImportFlowMode ||
             appManagedShareInstallEnabledInput != lookupConfig.appManagedShareInstallEnabled ||
+            foregroundManagedDownloadBoostEnabledInput !=
+            lookupConfig.foregroundManagedDownloadBoostEnabled ||
             onlineShareTargetPackageInput != lookupConfig.onlineShareTargetPackage ||
             preferredDownloaderPackageInput != lookupConfig.preferredDownloaderPackage ||
             decisionAssistEnabledInput != lookupConfig.decisionAssistEnabled ||
@@ -193,6 +197,8 @@ internal fun GitHubCheckLogicSheet(
                 downloaderPopupAnchorBounds = downloaderPopupAnchorBounds,
                 shareImportFlowModeInput = shareImportFlowModeInput,
                 appManagedShareInstallEnabledInput = appManagedShareInstallEnabledInput,
+                foregroundManagedDownloadBoostEnabledInput =
+                    foregroundManagedDownloadBoostEnabledInput,
                 selectedOnlineShareTargetLabel = effectiveOnlineShareTargetLabel,
                 onlineShareTargetOptions = onlineShareTargetOptions,
                 installedOnlineShareTargets = installedOnlineShareTargets,
@@ -205,6 +211,8 @@ internal fun GitHubCheckLogicSheet(
                 onShareImportFlowModeInputChange = onShareImportFlowModeInputChange,
                 onAppManagedShareInstallEnabledInputChange =
                 onAppManagedShareInstallEnabledInputChange,
+                onForegroundManagedDownloadBoostEnabledInputChange =
+                    onForegroundManagedDownloadBoostEnabledInputChange,
                 onOnlineShareTargetPackageInputChange = onOnlineShareTargetPackageInputChange,
                 onShowDownloaderPopupChange = onShowDownloaderPopupChange,
                 onShowOnlineShareTargetPopupChange = onShowOnlineShareTargetPopupChange,

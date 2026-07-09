@@ -1,5 +1,6 @@
 package os.kei.feature.github.install
 
+import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
 
@@ -19,6 +20,7 @@ data class GitHubApkInstallRequest(
     val scannedTargetSdk: String = "",
     val scannedNativeAbis: List<String> = emptyList(),
     val resolvedDownloadUrl: String = "",
+    val downloadSpeedProfile: SegmentedDownloadSpeedProfile = SegmentedDownloadSpeedProfile.Balanced,
     val requestId: String = GitHubApkInstallRequestIds.newId(),
     val startedAtMillis: Long = System.currentTimeMillis()
 )
@@ -119,3 +121,10 @@ object GitHubApkInstallRequestIds {
         return java.util.UUID.randomUUID().toString().substring(0, 8)
     }
 }
+
+fun GitHubLookupConfig.managedInstallDownloadSpeedProfile(): SegmentedDownloadSpeedProfile =
+    if (foregroundManagedDownloadBoostEnabled) {
+        SegmentedDownloadSpeedProfile.ForegroundBoost
+    } else {
+        SegmentedDownloadSpeedProfile.Balanced
+    }

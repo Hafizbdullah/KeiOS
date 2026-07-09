@@ -181,6 +181,8 @@ internal class GitHubPageState(
     var profileDepthInput by strategyState::profileDepthInput
     var shareImportFlowModeInput by strategyState::shareImportFlowModeInput
     var appManagedShareInstallEnabledInput by strategyState::appManagedShareInstallEnabledInput
+    var foregroundManagedDownloadBoostEnabledInput by
+        strategyState::foregroundManagedDownloadBoostEnabledInput
     var onlineShareTargetPackageInput by strategyState::onlineShareTargetPackageInput
     var preferredDownloaderPackageInput by strategyState::preferredDownloaderPackageInput
     var decisionAssistEnabledInput by strategyState::decisionAssistEnabledInput

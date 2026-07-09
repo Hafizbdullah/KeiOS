@@ -241,6 +241,7 @@ internal fun GitHubCheckTransferSection(
     downloaderPopupAnchorBounds: IntRect?,
     shareImportFlowModeInput: GitHubShareImportFlowMode,
     appManagedShareInstallEnabledInput: Boolean,
+    foregroundManagedDownloadBoostEnabledInput: Boolean,
     selectedOnlineShareTargetLabel: String,
     onlineShareTargetOptions: List<OnlineShareTargetOption>,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
@@ -252,6 +253,7 @@ internal fun GitHubCheckTransferSection(
     onPreferredDownloaderPackageInputChange: (String) -> Unit,
     onShareImportFlowModeInputChange: (GitHubShareImportFlowMode) -> Unit,
     onAppManagedShareInstallEnabledInputChange: (Boolean) -> Unit,
+    onForegroundManagedDownloadBoostEnabledInputChange: (Boolean) -> Unit,
     onOnlineShareTargetPackageInputChange: (String) -> Unit,
     onShowDownloaderPopupChange: (Boolean) -> Unit,
     onShowOnlineShareTargetPopupChange: (Boolean) -> Unit,
@@ -311,6 +313,15 @@ internal fun GitHubCheckTransferSection(
             AppSwitch(
                 checked = appManagedShareInstallEnabledInput,
                 onCheckedChange = onAppManagedShareInstallEnabledInputChange,
+            )
+        }
+        SheetControlRow(
+            label = stringResource(R.string.github_check_sheet_label_foreground_download_boost),
+            summary = stringResource(R.string.github_check_sheet_summary_foreground_download_boost),
+        ) {
+            AppSwitch(
+                checked = foregroundManagedDownloadBoostEnabledInput,
+                onCheckedChange = onForegroundManagedDownloadBoostEnabledInputChange,
             )
         }
         SheetControlRow(

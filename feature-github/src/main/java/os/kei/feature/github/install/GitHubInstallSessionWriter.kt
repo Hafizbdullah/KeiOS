@@ -10,6 +10,7 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.segmented.SegmentedDownloadClient
 import os.kei.core.download.segmented.SegmentedDownloadOptions
 import os.kei.core.download.segmented.SegmentedDownloadRequest
+import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
@@ -26,6 +27,9 @@ private const val GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS = 200L
 private const val GITHUB_SEGMENTED_MIN_SIZE_BYTES = 8L * 1024L * 1024L
 private const val GITHUB_SEGMENTED_PART_SIZE_BYTES = 8L * 1024L * 1024L
 private const val GITHUB_SEGMENTED_MAX_CONNECTIONS = 4
+private const val GITHUB_FOREGROUND_BOOST_MIN_SIZE_BYTES = 4L * 1024L * 1024L
+private const val GITHUB_FOREGROUND_BOOST_PART_SIZE_BYTES = 4L * 1024L * 1024L
+private const val GITHUB_FOREGROUND_BOOST_MAX_CONNECTIONS = 8
 
 data class GitHubInstallSessionWriteResult(
     val bytesWritten: Long,
@@ -47,6 +51,7 @@ class GitHubInstallSessionWriter(
         context: Context,
         resolvedUrl: String,
         asset: GitHubReleaseAssetFile,
+        downloadSpeedProfile: SegmentedDownloadSpeedProfile,
         session: PackageInstaller.Session,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
@@ -58,6 +63,7 @@ class GitHubInstallSessionWriter(
                 assetName = asset.name,
                 expectedDigest = asset.digest,
                 declaredSizeBytes = asset.sizeBytes,
+                downloadSpeedProfile = downloadSpeedProfile,
                 session = session,
                 sessionId = sessionId,
                 onProgress = onProgress,
@@ -67,6 +73,7 @@ class GitHubInstallSessionWriter(
                 context = context,
                 resolvedUrl = resolvedUrl,
                 asset = asset,
+                downloadSpeedProfile = downloadSpeedProfile,
                 session = session,
                 sessionId = sessionId,
                 onProgress = onProgress,
@@ -77,6 +84,7 @@ class GitHubInstallSessionWriter(
         context: Context,
         resolvedUrl: String,
         asset: GitHubReleaseAssetFile,
+        downloadSpeedProfile: SegmentedDownloadSpeedProfile,
         session: PackageInstaller.Session,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
@@ -89,6 +97,7 @@ class GitHubInstallSessionWriter(
                 declaredSizeBytes = asset.sizeBytes,
                 outputFile = tempApkFile,
                 acceptHeader = "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1",
+                downloadSpeedProfile = downloadSpeedProfile,
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -111,6 +120,7 @@ class GitHubInstallSessionWriter(
         assetName: String,
         expectedDigest: String,
         declaredSizeBytes: Long,
+        downloadSpeedProfile: SegmentedDownloadSpeedProfile,
         session: PackageInstaller.Session,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
@@ -123,6 +133,7 @@ class GitHubInstallSessionWriter(
                 declaredSizeBytes = declaredSizeBytes,
                 outputFile = archiveFile,
                 acceptHeader = "application/zip, application/octet-stream;q=0.9, */*;q=0.1",
+                downloadSpeedProfile = downloadSpeedProfile,
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -254,6 +265,7 @@ class GitHubInstallSessionWriter(
         declaredSizeBytes: Long,
         outputFile: File,
         acceptHeader: String,
+        downloadSpeedProfile: SegmentedDownloadSpeedProfile,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ) {
@@ -269,16 +281,7 @@ class GitHubInstallSessionWriter(
                     fileNameHint = outputFile.name,
                     expectedSha256 = expectedDigest,
                 ),
-                options = SegmentedDownloadOptions(
-                    minParallelSizeBytes = GITHUB_SEGMENTED_MIN_SIZE_BYTES,
-                    initialPartSizeBytes = GITHUB_SEGMENTED_PART_SIZE_BYTES,
-                    maxConnections = GITHUB_SEGMENTED_MAX_CONNECTIONS,
-                    maxRetriesPerPart = 3,
-                    retryDelayMs = 1_000L,
-                    progressIntervalMs = GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS,
-                    requireHttpsForParallel = true,
-                    bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
-                ),
+                options = githubSegmentedDownloadOptions(downloadSpeedProfile),
                 onProgress = { progress ->
                     val totalBytes =
                         when {
@@ -301,7 +304,8 @@ class GitHubInstallSessionWriter(
                 },
             )
         AppLogger.i(GITHUB_INSTALL_SESSION_WRITER_TAG) {
-            "asset downloaded parallel=${result.parallel} range=${result.rangeSupported} " +
+            "asset downloaded profile=${downloadSpeedProfile.name} parallel=${result.parallel} " +
+                "range=${result.rangeSupported} " +
                 "bytes=${result.totalBytes} retry=${result.retryCount} steal=${result.stealCount} " +
                 "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         }
@@ -331,6 +335,37 @@ class GitHubInstallSessionWriter(
         )
     }
 }
+
+private fun githubSegmentedDownloadOptions(
+    speedProfile: SegmentedDownloadSpeedProfile,
+): SegmentedDownloadOptions =
+    when (speedProfile) {
+        SegmentedDownloadSpeedProfile.Balanced ->
+            SegmentedDownloadOptions(
+                minParallelSizeBytes = GITHUB_SEGMENTED_MIN_SIZE_BYTES,
+                initialPartSizeBytes = GITHUB_SEGMENTED_PART_SIZE_BYTES,
+                maxConnections = GITHUB_SEGMENTED_MAX_CONNECTIONS,
+                maxRetriesPerPart = 3,
+                retryDelayMs = 1_000L,
+                progressIntervalMs = GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS,
+                requireHttpsForParallel = true,
+                bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
+                speedProfile = speedProfile,
+            )
+
+        SegmentedDownloadSpeedProfile.ForegroundBoost ->
+            SegmentedDownloadOptions(
+                minParallelSizeBytes = GITHUB_FOREGROUND_BOOST_MIN_SIZE_BYTES,
+                initialPartSizeBytes = GITHUB_FOREGROUND_BOOST_PART_SIZE_BYTES,
+                maxConnections = GITHUB_FOREGROUND_BOOST_MAX_CONNECTIONS,
+                maxRetriesPerPart = 3,
+                retryDelayMs = 1_000L,
+                progressIntervalMs = GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS,
+                requireHttpsForParallel = true,
+                bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
+                speedProfile = speedProfile,
+            )
+    }
 
 private fun downloadProgressPercent(
     downloadedBytes: Long,

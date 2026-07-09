@@ -837,6 +837,8 @@
     <string name="github_share_import_flow_mode_notification">通知优先</string>
     <string name="github_check_sheet_label_app_managed_share_install">本 App 接管安装</string>
     <string name="github_check_sheet_summary_app_managed_share_install">开启后，分享导入流程中的单 APK 会由 KeiOS 通过 Shizuku 下载并安装</string>
+    <string name="github_check_sheet_label_foreground_download_boost">前台下载加速</string>
+    <string name="github_check_sheet_summary_foreground_download_boost">手动安装或分享导入时使用更激进的分段连接；后台刷新继续使用稳健策略。</string>
     <string name="github_check_sheet_label_share_to_installer">分享到安装器</string>
     <string name="github_check_sheet_summary_share_managed_by_app">已由 KeiOS 接管安装，外部安装器选择会暂时锁定</string>
     <string name="github_check_sheet_summary_share_available">分享时可直接发送到支持直接边下载边安装的安装器</string>

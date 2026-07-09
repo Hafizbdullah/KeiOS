@@ -19,6 +19,7 @@ import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
 import os.kei.feature.github.install.GitHubShizukuPackageInstaller
+import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -129,6 +130,7 @@ internal class GitHubPageManagedInstallRunner(
             scannedTargetSdk = manifestInfo?.targetSdk.orEmpty(),
             scannedNativeAbis = manifestInfo?.nativeAbis.orEmpty(),
             resolvedDownloadUrl = resolvedDownloadUrl,
+            downloadSpeedProfile = lookupConfig.managedInstallDownloadSpeedProfile(),
             requestId = GitHubApkInstallRequestIds.newId(context.packageName)
         )
     }

@@ -7,6 +7,7 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.install.GitHubApkInstallFailureReason
 import os.kei.feature.github.install.GitHubApkInstallRequest
 import os.kei.feature.github.install.GitHubApkInstallResult
+import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 
@@ -54,6 +55,7 @@ internal fun GitHubPendingShareImportManagedInstallRecord.toInstallRequest(
         scannedMinSdk = minSdk,
         scannedTargetSdk = targetSdk,
         scannedNativeAbis = nativeAbis,
+        downloadSpeedProfile = lookupConfig.managedInstallDownloadSpeedProfile(),
         requestId = requestId,
         startedAtMillis = startedAtMillis,
     )
