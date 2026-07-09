@@ -8,6 +8,8 @@ import android.os.Bundle
 import androidx.annotation.DrawableRes
 import com.xzakota.hyper.notification.focus.FocusNotification
 import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * Xiaomi HyperOS Super Island/Focussed Notification JSON builder facade.
@@ -18,6 +20,8 @@ import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
  * 3. Pick one summary-state small-island template with [MiFocusIslandSmallTemplate].
  * 4. Add one or more expanded-state components with [MiFocusExpandedComponent].
  * 5. Pass the returned [Bundle] to `NotificationCompat.Builder.addExtras`.
+ * 6. Keep [MiFocusNotificationSpec.privateOverrides] as host-side render intent metadata when
+ *    private RemoteViews tweaks are desired later.
  *
  * This facade keeps the project on the current client-side route:
  * `Notification.extras["miui.focus.param"]` + `com.xzakota.hyper.notification:focus-api`.
@@ -31,15 +35,39 @@ import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
  * - Use [MiFocusIslandBigTemplate.ImageTextLeft] plus
  *   [MiFocusIslandBigTemplate.SameWidthDigit] for countdown scenes.
  * - Use [MiFocusIslandSmallTemplate.CombinePic] when the small island must show progress.
+ * - Use [MiFocusIslandSmallTemplate.ImageTextRight] for the official small-island icon+text pattern.
  * - Use [MiFocusIslandBigTemplate.ImageTextRight] with `type = 3` for finished, failed,
  *   cancelled, read, or other terminal short states.
  *
  * Expanded-state design notes:
  * - [MiFocusExpandedComponent.Base] is the safest default for full title/body text.
- * - [MiFocusExpandedComponent.TextButtons] should contain at most 2 actions in this project:
- *   primary action highlighted, secondary action plain.
+ * - [MiFocusExpandedComponent.Actions] maps to the official `actions` array and supports
+ *   1-3 circle/progress actions or one standalone text action through a final JSON patch.
+ * - [MiFocusExpandedComponent.TextButtons] maps to the official `textButton` component and
+ *   should contain 1-2 actions in this project: primary action highlighted, secondary action plain.
+ * - [MiFocusExpandedComponent.HighlightV3] maps to the official `highlightInfoV3` component and
+ *   accepts a single highlighted capsule action.
  * - [MiFocusExpandedComponent.MultiProgress] mirrors summary progress for expanded details.
  * - Keep icons square. Resource/vector icons and bitmap app icons are both supported.
+ *
+ * APK evidence notes from `com.xiaomi.aicr` 4.0.6:
+ * - Medication reminder cards still use the public `Notification.extras` route.
+ * - The special-looking left/right buttons are produced by internal RemoteViews icon overrides in
+ *   `TakeMedicineHelper`, layered on top of regular focus action wiring.
+ * - `MetroHelper` adds colored label chips and a QR action icon.
+ * - `MovieReminderHelper` adds cropped rounded background artwork plus a QR action icon.
+ * - `HyperMindHabitHelper` and `PrepareCarReminderHelper` switch from content text to subtitle-right
+ *   emphasis and reuse island/default action icon pairs across surfaces.
+ * - Project-side code can reproduce the public structure and most color/icon treatment. Fully
+ *   matching private medicine-button chrome depends on system or host resources.
+ * - `focus-api` 1.4 does not expose small-island `imageTextInfoRight(type = 6)`, so this facade
+ *   patches the final `miui.focus.param` JSON when that official template is requested.
+ * - `focus-api` 1.4 also does not expose expanded `actions(button1)` on V3, so this facade
+ *   patches the final JSON when [MiFocusExpandedComponent.Actions] is used.
+ * - `focus-api` 1.4 also does not expose expanded `picInfo(type = 5)` title/color fields, so
+ *   this facade patches the final JSON when [MiFocusExpandedComponent.OfficialPictureType5Payload]
+ *   or the legacy [MiFocusExpandedComponent.CountdownPicture] is used for the official
+ *   countdown-picture variant.
  *
  * JSON composition:
  * - `FocusNotification.buildV3` serializes to `miui.focus.param`.
@@ -54,9 +82,17 @@ object MiFocusNotificationTemplate {
     const val PRIMARY_ACTION_TITLE = "#FFFFFF"
 
     fun build(context: Context, spec: MiFocusNotificationSpec): Bundle {
-        return FocusNotification.buildV3 {
-            val pictures = registerPictures(context, spec)
-            applyBaseFlags(spec, pictures)
+        var pictures: MiFocusPictureRegistry? = null
+        var expandedActions: List<MiFocusPatchedActionInfo> = emptyList()
+        val bundle = FocusNotification.buildV3 {
+            val registry = registerPictures(context, spec)
+            pictures = registry
+            applyBaseFlags(spec, registry)
+            expandedActions = registerPatchedExpandedActions(
+                context = context,
+                components = spec.expanded.components,
+                defaultActionIconResId = spec.actionIconResId
+            )
 
             spec.island?.let { islandSpec ->
                 island {
@@ -73,30 +109,34 @@ object MiFocusNotificationTemplate {
 
                     bigIslandArea {
                         islandSpec.bigTemplates.forEach { template ->
-                            applyBigIslandTemplate(template, pictures)
+                            applyBigIslandTemplate(template, registry)
                         }
                     }
                     islandSpec.smallTemplate?.let { smallTemplate ->
                         smallIslandArea {
-                            applySmallIslandTemplate(smallTemplate, pictures)
+                            applySmallIslandTemplate(smallTemplate, registry)
                         }
                     }
                     islandSpec.shareData?.let { data ->
                         shareData {
                             title = data.title
                             content = data.content
-                            pic = pictures.keyOf(data.pic)
+                            pic = registry.keyOf(data.pic)
                             shareContent = data.shareContent
-                            sharePic = pictures.keyOf(data.sharePic)
+                            sharePic = registry.keyOf(data.sharePic)
                         }
                     }
                 }
             }
 
             spec.expanded.components.forEach { component ->
-                applyExpandedComponent(context, component, pictures, spec.actionIconResId)
+                applyExpandedComponent(context, component, registry, spec.actionIconResId)
             }
         }
+        patchOfficialSmallIslandTemplates(bundle, spec, pictures)
+        patchOfficialExpandedPicturePayloadTemplates(bundle, spec)
+        patchOfficialExpandedActions(bundle, expandedActions)
+        return bundle
     }
 
     private fun FocusTemplateV3.registerPictures(
@@ -248,6 +288,12 @@ object MiFocusNotificationTemplate {
                     smallPicInfo = template.smallPic?.toIslandPicInfo(pictures)
                 }
             }
+
+            is MiFocusIslandSmallTemplate.ImageTextRight -> {
+                // focus-api 1.4 only models picInfo/combinePicInfo for SmallIslandArea.
+                // Keep a visible icon fallback and patch the final JSON after build.
+                picInfo = template.pic.toIslandPicInfo(pictures)
+            }
         }
     }
 
@@ -261,6 +307,7 @@ object MiFocusNotificationTemplate {
         progressInfo = template.progress?.toIslandProgressInfo()
     }
 
+    @Suppress("DEPRECATION")
     private fun FocusTemplateV3.applyExpandedComponent(
         context: Context,
         component: MiFocusExpandedComponent,
@@ -351,6 +398,33 @@ object MiFocusNotificationTemplate {
                 }
             }
 
+            is MiFocusExpandedComponent.OfficialHint -> {
+                hintInfo {
+                    type = component.type
+                    titleLineCount = component.titleLineCount
+                    colorContentBg = component.colorContentBg
+                    picContent = pictures.keyOf(component.picContent)
+                    applyExpandedTextColors(component.text)
+                    title = component.text.title
+                    subTitle = component.text.subTitle
+                    extraTitle = component.text.extraTitle
+                    specialTitle = component.text.specialTitle
+                    content = component.text.content
+                    subContent = component.text.subContent
+                    component.timer?.let { timer ->
+                        timerInfo { applyFocusTimer(timer) }
+                    }
+                    actionInfo {
+                        this@applyExpandedComponent.applyAction(
+                            target = this,
+                            context = context,
+                            focusAction = component.action,
+                            defaultActionIconResId = defaultActionIconResId
+                        )
+                    }
+                }
+            }
+
             is MiFocusExpandedComponent.Progress -> {
                 progressInfo {
                     progress = component.progress.progressPercent.coerceIn(0, 100)
@@ -367,6 +441,42 @@ object MiFocusNotificationTemplate {
             is MiFocusExpandedComponent.Picture -> {
                 picInfo {
                     type = component.type
+                    pic = pictures.keyOf(component.pic)
+                    picDark = pictures.keyOf(component.picDark)
+                    component.action?.let { focusAction ->
+                        actionInfo {
+                            this@applyExpandedComponent.applyAction(
+                                target = this,
+                                context = context,
+                                focusAction = focusAction,
+                                defaultActionIconResId = defaultActionIconResId
+                            )
+                        }
+                    }
+                }
+            }
+
+            is MiFocusExpandedComponent.OfficialPicture -> {
+                picInfo {
+                    type = component.type
+                    pic = pictures.keyOf(component.pic)
+                    picDark = pictures.keyOf(component.picDark)
+                    component.action?.let { focusAction ->
+                        actionInfo {
+                            this@applyExpandedComponent.applyAction(
+                                target = this,
+                                context = context,
+                                focusAction = focusAction,
+                                defaultActionIconResId = defaultActionIconResId
+                            )
+                        }
+                    }
+                }
+            }
+
+            is MiFocusExpandedComponent.CountdownPicture -> {
+                picInfo {
+                    type = 5
                     pic = pictures.keyOf(component.pic)
                     picDark = pictures.keyOf(component.picDark)
                     component.action?.let { focusAction ->
@@ -437,9 +547,8 @@ object MiFocusNotificationTemplate {
                 }
             }
 
-            is MiFocusExpandedComponent.IconText -> {
-                iconTextInfo {
-                    type = component.type
+            is MiFocusExpandedComponent.OfficialHighlightCapsule -> {
+                highlightInfoV3 {
                     applyExpandedTextColors(component.text)
                     title = component.text.title
                     subTitle = component.text.subTitle
@@ -447,24 +556,70 @@ object MiFocusNotificationTemplate {
                     specialTitle = component.text.specialTitle
                     content = component.text.content
                     subContent = component.text.subContent
-                    component.icon?.let { icon ->
-                        animIconInfo {
-                            applyAnimIcon(icon, pictures)
-                        }
+                    highLightText = component.label
+                    highLightTextColor = component.labelColor
+                    highLightTextColorDark = component.labelColorDark
+                    highLightbgColor = component.labelBgColor
+                    highLightbgColorDark = component.labelBgColorDark
+                    primaryColor = component.primaryColor
+                    primaryColorDark = component.primaryColorDark
+                    primaryText = component.primaryText
+                    secondaryColor = component.secondaryColor
+                    secondaryColorDark = component.secondaryColorDark
+                    secondaryText = component.secondaryText
+                    showSecondaryLine = component.showSecondaryLine
+                    actionInfo {
+                        this@applyExpandedComponent.applyAction(
+                            target = this,
+                            context = context,
+                            focusAction = component.action,
+                            defaultActionIconResId = defaultActionIconResId
+                        )
                     }
+                }
+            }
+
+            is MiFocusExpandedComponent.IconText -> {
+                iconTextInfo {
+                    applyExpandedIconText(
+                        text = component.text,
+                        type = component.type,
+                        icon = component.icon,
+                        pictures = pictures
+                    )
+                }
+            }
+
+            is MiFocusExpandedComponent.OfficialNewImageText -> {
+                iconTextInfo {
+                    applyExpandedIconText(
+                        text = component.text,
+                        type = component.type,
+                        icon = component.icon,
+                        pictures = pictures
+                    )
                 }
             }
 
             is MiFocusExpandedComponent.MultiProgress -> {
                 multiProgressInfo {
-                    progress = component.progressPercent.coerceIn(0, 100)
-                    color = component.color
-                    points = component.points?.coerceIn(0, 4)
-                    title = component.text?.title
-                    subTitle = component.text?.subTitle
-                    content = component.text?.content
-                    subContent = component.text?.subContent
-                    component.text?.let { applyExpandedTextColors(it) }
+                    applyExpandedMultiProgress(
+                        progressPercent = component.progressPercent,
+                        color = component.color,
+                        points = component.points,
+                        text = component.text
+                    )
+                }
+            }
+
+            is MiFocusExpandedComponent.OfficialMultiProgress -> {
+                multiProgressInfo {
+                    applyExpandedMultiProgress(
+                        progressPercent = component.progressPercent,
+                        color = component.color,
+                        points = component.points,
+                        text = component.text
+                    )
                 }
             }
 
@@ -502,6 +657,24 @@ object MiFocusNotificationTemplate {
                     }
                 }
             }
+
+            is MiFocusExpandedComponent.OfficialTextButtons -> {
+                textButton {
+                    component.actions.take(2).forEach { focusAction ->
+                        addActionInfo {
+                            this@applyExpandedComponent.applyAction(
+                                target = this,
+                                context = context,
+                                focusAction = focusAction,
+                                defaultActionIconResId = defaultActionIconResId
+                            )
+                        }
+                    }
+                }
+            }
+
+            is MiFocusExpandedComponent.Actions -> Unit
+            is MiFocusExpandedComponent.OfficialActions -> Unit
         }
     }
 
@@ -521,6 +694,43 @@ object MiFocusNotificationTemplate {
         colorContentDark = text.colorContentDark
         colorSubContent = text.colorSubContent
         colorSubContentDark = text.colorSubContentDark
+    }
+
+    private fun com.xzakota.hyper.notification.focus.model.IconTextInfo.applyExpandedIconText(
+        text: MiFocusExpandedText,
+        type: Int?,
+        icon: MiFocusAnimIcon?,
+        pictures: MiFocusPictureRegistry
+    ) {
+        this.type = type
+        applyExpandedTextColors(text)
+        title = text.title
+        subTitle = text.subTitle
+        extraTitle = text.extraTitle
+        specialTitle = text.specialTitle
+        content = text.content
+        subContent = text.subContent
+        icon?.let { animIcon ->
+            animIconInfo {
+                applyAnimIcon(animIcon, pictures)
+            }
+        }
+    }
+
+    private fun com.xzakota.hyper.notification.focus.model.MultiProgressInfo.applyExpandedMultiProgress(
+        progressPercent: Int,
+        color: String?,
+        points: Int?,
+        text: MiFocusExpandedText?
+    ) {
+        progress = progressPercent.coerceIn(0, 100)
+        this.color = color
+        this.points = points?.coerceIn(0, 4)
+        title = text?.title
+        subTitle = text?.subTitle
+        content = text?.content
+        subContent = text?.subContent
+        text?.let { applyExpandedTextColors(it) }
     }
 
     private fun FocusTemplateV3.applyAction(
@@ -545,6 +755,49 @@ object MiFocusNotificationTemplate {
             target.actionTitleColor = focusAction.titleColor
             target.actionTitleColorDark = focusAction.titleColorDark ?: focusAction.titleColor
         }
+    }
+
+    private fun FocusTemplateV3.registerPatchedExpandedActions(
+        context: Context,
+        components: List<MiFocusExpandedComponent>,
+        @DrawableRes defaultActionIconResId: Int
+    ): List<MiFocusPatchedActionInfo> {
+        return components
+            .asSequence()
+            .mapNotNull { component ->
+                when (component) {
+                    is MiFocusExpandedComponent.Actions -> component.actions
+                    is MiFocusExpandedComponent.OfficialActions -> component.actions
+                    else -> null
+                }
+            }
+            .flatMap { actions ->
+                actions.map { focusAction ->
+                    val patchedAction = focusAction.copy(
+                        key = officialPatchedActionKey(focusAction.key)
+                    )
+                    val actionInfo = com.xzakota.hyper.notification.focus.model.ActionInfo()
+                    applyAction(
+                        target = actionInfo,
+                        context = context,
+                        focusAction = patchedAction,
+                        defaultActionIconResId = defaultActionIconResId
+                    )
+                    focusAction.progress?.let { progress ->
+                        actionInfo.progressInfo =
+                            com.xzakota.hyper.notification.focus.model.ProgressInfo().also {
+                                it.progress = progress.progressPercent.coerceIn(0, 100)
+                                it.colorProgress = progress.colorReach
+                                it.colorProgressEnd = progress.colorEnd
+                            }
+                    }
+                    MiFocusPatchedActionInfo(
+                        info = actionInfo,
+                        progress = focusAction.progress
+                    )
+                }
+            }
+            .toList()
     }
 
     private fun com.xzakota.hyper.notification.focus.model.AnimIconInfo.applyAnimIcon(
@@ -573,6 +826,117 @@ object MiFocusNotificationTemplate {
         timerWhen = timer.whenAtMs
         timerTotal = timer.totalMs
         timerSystemCurrent = timer.systemCurrentMs
+    }
+
+    private fun patchOfficialSmallIslandTemplates(
+        bundle: Bundle,
+        spec: MiFocusNotificationSpec,
+        pictures: MiFocusPictureRegistry?
+    ) {
+        val template = spec.island?.smallTemplate as? MiFocusIslandSmallTemplate.ImageTextRight ?: return
+        val registry = pictures ?: return
+        val focusParam = bundle.getString("miui.focus.param") ?: return
+
+        val root = JSONObject(focusParam)
+        val island = root.optJSONObject("island") ?: JSONObject().also { root.put("island", it) }
+        val smallIslandArea =
+            island.optJSONObject("smallIslandArea") ?: JSONObject().also {
+                island.put("smallIslandArea", it)
+            }
+
+        smallIslandArea.remove("picInfo")
+        smallIslandArea.remove("combinePicInfo")
+        smallIslandArea.put("imageTextInfoRight", template.toSmallIslandJson(registry))
+
+        bundle.putString("miui.focus.param", root.toString())
+    }
+
+    @Suppress("DEPRECATION")
+    private fun patchOfficialExpandedPicturePayloadTemplates(
+        bundle: Bundle,
+        spec: MiFocusNotificationSpec
+    ) {
+        val type5Payload = spec.expanded.components
+            .asSequence()
+            .mapNotNull { component ->
+                when (component) {
+                    is MiFocusExpandedComponent.OfficialPicture ->
+                        if (component.type == 5) component.type5Payload else null
+                    is MiFocusExpandedComponent.CountdownPicture ->
+                        MiFocusExpandedComponent.OfficialPictureType5Payload(
+                            title = component.title,
+                            colorTitle = component.colorTitle
+                        )
+                    else -> null
+                }
+            }
+            .firstOrNull()
+            ?: return
+        val focusParam = bundle.getString("miui.focus.param") ?: return
+        val root = JSONObject(focusParam)
+        val paramV2 = root.optJSONObject("param_v2") ?: root
+        val picInfo = paramV2.optJSONObject("picInfo") ?: return
+
+        picInfo.put("title", type5Payload.title)
+        type5Payload.colorTitle?.let { picInfo.put("colorTitle", it) }
+        bundle.putString("miui.focus.param", root.toString())
+    }
+
+    private fun patchOfficialExpandedActions(
+        bundle: Bundle,
+        actions: List<MiFocusPatchedActionInfo>
+    ) {
+        if (actions.isEmpty()) return
+        val focusParam = bundle.getString("miui.focus.param") ?: return
+        val root = JSONObject(focusParam)
+        val paramV2 = root.optJSONObject("param_v2") ?: JSONObject().also {
+            root.put("param_v2", it)
+        }
+        val actionsJson = JSONArray()
+        actions.forEach { actionsJson.put(it.toJson()) }
+        paramV2.put("actions", actionsJson)
+        bundle.putString("miui.focus.param", root.toString())
+    }
+
+    private fun officialPatchedActionKey(key: String): String {
+        return if (key.startsWith("miui.focus.action_")) {
+            key
+        } else {
+            "miui.focus.action_$key"
+        }
+    }
+}
+
+private data class MiFocusPatchedActionInfo(
+    val info: com.xzakota.hyper.notification.focus.model.ActionInfo,
+    val progress: MiFocusActionProgress?
+) {
+    fun toJson(): JSONObject {
+        return JSONObject().also { json ->
+            info.type?.let { json.put("type", it) }
+            info.action?.let { json.put("action", it) }
+            info.actionTitle?.let { json.put("actionTitle", it) }
+            info.actionTitleColor?.let { json.put("actionTitleColor", it) }
+            info.actionTitleColorDark?.let { json.put("actionTitleColorDark", it) }
+            info.actionBgColor?.let { json.put("actionBgColor", it) }
+            info.actionBgColorDark?.let { json.put("actionBgColorDark", it) }
+            info.clickWithCollapse?.let { json.put("clickWithCollapse", it) }
+            val progressInfo = info.progressInfo
+            if (progressInfo != null) {
+                json.put(
+                    "progressInfo",
+                    JSONObject().also { progressJson ->
+                        progressInfo.progress?.let { progressJson.put("progress", it) }
+                        progressInfo.colorProgress?.let { progressJson.put("colorProgress", it) }
+                        progressInfo.colorProgressEnd?.let {
+                            progressJson.put("colorProgressEnd", it)
+                        }
+                        progress?.isClockwiseFromTop?.let { progressJson.put("isCCW", it) }
+                        progress?.autoProgress?.let { progressJson.put("isAutoProgress", it) }
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -628,3 +992,40 @@ private fun MiFocusIslandProgress.toIslandProgressInfo() =
         info.colorReach = colorReach
         info.colorUnReach = colorUnReach
     }
+
+private fun MiFocusIslandSmallTemplate.ImageTextRight.toSmallIslandJson(
+    pictures: MiFocusPictureRegistry
+) = JSONObject().apply {
+    put("type", type)
+    put("textInfo", text.toJsonObject())
+    put("picInfo", pic.toJsonObject(pictures))
+}
+
+private fun MiFocusIslandText.toJsonObject() = JSONObject().apply {
+    putIfNotNull("title", title)
+    putIfNotNull("frontTitle", frontTitle)
+    putIfNotNull("content", content)
+    putIfNotNull("showHighlightColor", showHighlightColor)
+    putIfNotNull("narrowFont", narrowFont)
+    putIfNotNull("isTitleDigit", isTitleDigit)
+    putIfNotNull("turnAnim", turnAnim)
+}
+
+private fun MiFocusIslandPic.toJsonObject(
+    pictures: MiFocusPictureRegistry
+) = JSONObject().apply {
+    put("type", type)
+    putIfNotNull("pic", pictures.keyOf(pic))
+    putIfNotNull("contentDescription", contentDescription)
+    putIfNotNull("number", number)
+    putIfNotNull("effectSrc", effectSrc)
+    putIfNotNull("effectColor", effectColor)
+    putIfNotNull("autoplay", autoplay)
+    putIfNotNull("loop", loop)
+}
+
+private fun JSONObject.putIfNotNull(key: String, value: Any?) {
+    if (value != null) {
+        put(key, value)
+    }
+}

@@ -41,6 +41,7 @@ data class MiFocusNotificationSpec(
     val filterWhenNoPermission: Boolean? = null,
     val hideDeco: Boolean? = null,
     val sequence: Long? = null,
+    val privateOverrides: MiFocusPrivateOverrides? = null,
     val business: String? = MI_FOCUS_DEFAULT_BUSINESS,
     val notifyId: String? = null,
     val orderId: String? = null
@@ -63,34 +64,299 @@ data class MiFocusIslandSpec(
     val shareData: MiFocusIslandShareData? = null
 ) {
     companion object {
+        fun iconOnlySummary(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic)
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic)
+        )
+
+        fun textOnlySummary(
+            title: String,
+            content: String? = null,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            showHighlightColor: Boolean? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.Text(
+                    MiFocusIslandText(
+                        title = title,
+                        content = content,
+                        showHighlightColor = showHighlightColor
+                    )
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic)
+        )
+
+        fun iconTextSummary(
+            rightTitle: String,
+            rightFrontTitle: String? = null,
+            rightContent: String? = null,
+            rightPic: MiFocusPictureRef = MiFocusPictureRef.Expanded,
+            leftPic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            highlightColor: String? = null,
+            narrowFont: Boolean? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = leftPic),
+                MiFocusIslandBigTemplate.officialIconTextRight(
+                    text = MiFocusIslandText(
+                        frontTitle = rightFrontTitle,
+                        title = rightTitle,
+                        content = rightContent,
+                        narrowFont = narrowFont,
+                        showHighlightColor = highlightColor != null
+                    ),
+                    pic = MiFocusIslandPic.officialStatic(pic = rightPic)
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = leftPic),
+            highlightColor = highlightColor
+        )
+
         fun summaryText(
             title: String = "",
             content: String? = null,
             pic: MiFocusPictureRef = MiFocusPictureRef.Display
         ) = MiFocusIslandSpec(
             bigTemplates = listOf(
-                MiFocusIslandBigTemplate.ImageTextLeft(pic = MiFocusIslandPic(pic = pic)),
-                MiFocusIslandBigTemplate.ImageTextRight(
-                    type = 3,
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.officialTerminalTextRight(
                     text = MiFocusIslandText(title = title, content = content)
                 )
             ),
-            smallTemplate = MiFocusIslandSmallTemplate.Picture(MiFocusIslandPic(pic = pic))
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic)
+        )
+
+        fun progressSummary(
+            progressPercent: Int,
+            content: String,
+            progressText: String = "$progressPercent%",
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            colorReach: String,
+            colorUnReach: String,
+            highlightColor: String? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.ProgressText(
+                    text = MiFocusIslandText(title = progressText, content = content),
+                    progress = MiFocusIslandProgress(
+                        progressPercent = progressPercent,
+                        colorReach = colorReach,
+                        colorUnReach = colorUnReach
+                    )
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialProgressPicture(
+                progressPercent = progressPercent,
+                colorReach = colorReach,
+                colorUnReach = colorUnReach,
+                pic = pic
+            ),
+            highlightColor = highlightColor
+        )
+
+        fun countdownSummary(
+            content: String,
+            deadlineAtMs: Long,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            nowMs: Long = System.currentTimeMillis(),
+            highlightColor: String? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.SameWidthDigit(
+                    content = content,
+                    timer = MiFocusTimer.countdown(deadlineAtMs = deadlineAtMs, nowMs = nowMs),
+                    showHighlightColor = highlightColor != null
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic),
+            highlightColor = highlightColor
+        )
+
+        fun terminalSummary(
+            title: String,
+            content: String? = null,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            highlightColor: String? = null,
+            showHighlightColor: Boolean = highlightColor != null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.officialTerminalTextRight(
+                    text = MiFocusIslandText(
+                        title = title,
+                        content = content,
+                        showHighlightColor = showHighlightColor
+                    )
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic),
+            highlightColor = highlightColor
+        )
+
+        fun terminalIconSummary(
+            title: String,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            highlightColor: String? = null,
+            narrowFont: Boolean? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.officialTerminalTextRight(
+                    text = MiFocusIslandText(
+                        title = title,
+                        narrowFont = narrowFont,
+                        showHighlightColor = highlightColor != null
+                    ),
+                    pic = MiFocusIslandPic.officialStatic(pic = pic)
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic),
+            highlightColor = highlightColor
+        )
+
+        fun fixedDigitSummary(
+            digit: String,
+            content: String? = null,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            highlightColor: String? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = pic),
+                MiFocusIslandBigTemplate.FixedWidthDigit(
+                    digit = digit,
+                    content = content,
+                    showHighlightColor = highlightColor != null
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = pic),
+            highlightColor = highlightColor
+        )
+
+        fun largePictureSummary(
+            leftPic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            rightPic: MiFocusPictureRef = MiFocusPictureRef.Expanded
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialImageTextLeft(pic = leftPic),
+                MiFocusIslandBigTemplate.officialPicture(pic = rightPic)
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialPicture(pic = leftPic)
+        )
+
+        fun dualImageTextSummary(
+            rightTitle: String? = null,
+            rightContent: String? = null,
+            rightPic: MiFocusPictureRef? = null,
+            leftPic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            highlightColor: String? = null
+        ) = MiFocusIslandSpec(
+            bigTemplates = listOf(
+                MiFocusIslandBigTemplate.officialDualImageTextLeft(
+                    pic = leftPic
+                ),
+                MiFocusIslandBigTemplate.officialDualImageTextRight(
+                    text = MiFocusIslandText(
+                        title = rightTitle,
+                        content = rightContent,
+                        showHighlightColor = highlightColor != null
+                    ),
+                    pic = rightPic
+                )
+            ),
+            smallTemplate = MiFocusIslandSmallTemplate.officialImageTextRight(
+                text = MiFocusIslandText(
+                    title = rightTitle,
+                    showHighlightColor = highlightColor != null
+                ),
+                pic = rightPic ?: leftPic
+            ),
+            highlightColor = highlightColor
         )
     }
 }
 
 sealed interface MiFocusIslandBigTemplate {
+    companion object {
+        fun officialImageTextLeft(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            text: MiFocusIslandText? = null,
+            progress: MiFocusIslandProgress? = null
+        ) = ImageTextLeft(
+            type = 1,
+            text = text,
+            pic = MiFocusIslandPic.officialStatic(pic = pic),
+            progress = progress
+        )
+
+        fun officialPicture(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display
+        ) = Picture(
+            pic = MiFocusIslandPic.officialStatic(pic = pic)
+        )
+
+        fun officialIconTextRight(
+            text: MiFocusIslandText,
+            pic: MiFocusIslandPic? = null,
+            progress: MiFocusIslandProgress? = null
+        ) = ImageTextRight(
+            type = 2,
+            text = text,
+            pic = pic,
+            progress = progress
+        )
+
+        fun officialTerminalTextRight(
+            text: MiFocusIslandText,
+            pic: MiFocusIslandPic? = null,
+            progress: MiFocusIslandProgress? = null
+        ) = ImageTextRight(
+            type = 3,
+            text = text,
+            pic = pic,
+            progress = progress
+        )
+
+        fun officialDualImageTextLeft(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            text: MiFocusIslandText? = null,
+            progress: MiFocusIslandProgress? = null
+        ) = ImageTextLeft(
+            type = 5,
+            text = text,
+            pic = MiFocusIslandPic.officialCompact(pic = pic),
+            progress = progress
+        )
+
+        fun officialDualImageTextRight(
+            text: MiFocusIslandText,
+            pic: MiFocusPictureRef? = null,
+            progress: MiFocusIslandProgress? = null
+        ) = ImageTextRight(
+            type = 6,
+            text = text,
+            pic = pic?.let { MiFocusIslandPic.officialCompact(pic = it) },
+            progress = progress
+        )
+    }
+
     data class Text(val text: MiFocusIslandText) : MiFocusIslandBigTemplate
 
     data class Picture(
-        val pic: MiFocusIslandPic = MiFocusIslandPic()
+        val pic: MiFocusIslandPic = MiFocusIslandPic.officialStatic()
     ) : MiFocusIslandBigTemplate
 
     data class ImageTextLeft(
         override val type: Int = 1,
         override val text: MiFocusIslandText? = null,
-        override val pic: MiFocusIslandPic? = MiFocusIslandPic(),
+        override val pic: MiFocusIslandPic? = MiFocusIslandPic.officialStatic(),
         override val progress: MiFocusIslandProgress? = null
     ) : MiFocusIslandImageTextTemplate, MiFocusIslandBigTemplate
 
@@ -130,15 +396,57 @@ sealed interface MiFocusIslandImageTextTemplate {
 }
 
 sealed interface MiFocusIslandSmallTemplate {
+    companion object {
+        fun officialPicture(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display
+        ) = Picture(
+            pic = MiFocusIslandPic.officialStatic(pic = pic)
+        )
+
+        fun officialProgressPicture(
+            progressPercent: Int,
+            colorReach: String,
+            colorUnReach: String,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            smallPic: MiFocusPictureRef? = null
+        ) = CombinePic(
+            pic = MiFocusIslandPic.officialStatic(pic = pic),
+            progress = MiFocusIslandProgress(
+                progressPercent = progressPercent,
+                colorReach = colorReach,
+                colorUnReach = colorUnReach
+            ),
+            smallPic = smallPic?.let { MiFocusIslandPic.officialStatic(pic = it) }
+        )
+
+        fun officialImageTextRight(
+            text: MiFocusIslandText,
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display
+        ) = ImageTextRight(
+            text = text,
+            pic = MiFocusIslandPic.officialCompact(pic = pic)
+        )
+    }
+
     data class Picture(
-        val pic: MiFocusIslandPic = MiFocusIslandPic()
+        val pic: MiFocusIslandPic = MiFocusIslandPic.officialStatic()
     ) : MiFocusIslandSmallTemplate
 
     data class CombinePic(
-        val pic: MiFocusIslandPic = MiFocusIslandPic(),
+        val pic: MiFocusIslandPic = MiFocusIslandPic.officialStatic(),
         val progress: MiFocusIslandProgress,
         val smallPic: MiFocusIslandPic? = null
     ) : MiFocusIslandSmallTemplate
+
+    data class ImageTextRight(
+        val type: Int = 6,
+        val text: MiFocusIslandText,
+        val pic: MiFocusIslandPic = MiFocusIslandPic.officialCompact()
+    ) : MiFocusIslandSmallTemplate {
+        init {
+            require(type == 6) { "Small island image text template requires type = 6" }
+        }
+    }
 }
 
 data class MiFocusIslandText(
@@ -160,7 +468,47 @@ data class MiFocusIslandPic(
     val effectColor: String? = null,
     val autoplay: Boolean? = null,
     val loop: Boolean? = null
-)
+) {
+    companion object {
+        fun officialStatic(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            contentDescription: String? = null,
+            number: Int? = null,
+            effectSrc: String? = null,
+            effectColor: String? = null,
+            autoplay: Boolean? = null,
+            loop: Boolean? = null
+        ) = MiFocusIslandPic(
+            type = 1,
+            pic = pic,
+            contentDescription = contentDescription,
+            number = number,
+            effectSrc = effectSrc,
+            effectColor = effectColor,
+            autoplay = autoplay,
+            loop = loop
+        )
+
+        fun officialCompact(
+            pic: MiFocusPictureRef = MiFocusPictureRef.Display,
+            contentDescription: String? = null,
+            number: Int? = null,
+            effectSrc: String? = null,
+            effectColor: String? = null,
+            autoplay: Boolean? = null,
+            loop: Boolean? = null
+        ) = MiFocusIslandPic(
+            type = 4,
+            pic = pic,
+            contentDescription = contentDescription,
+            number = number,
+            effectSrc = effectSrc,
+            effectColor = effectColor,
+            autoplay = autoplay,
+            loop = loop
+        )
+    }
+}
 
 data class MiFocusIslandProgress(
     val progressPercent: Int,
@@ -183,117 +531,85 @@ data class MiFocusExpandedSpec(
     companion object {
         fun base(title: String, content: String) = MiFocusExpandedSpec(
             components = listOf(
-                MiFocusExpandedComponent.Base(
+                MiFocusExpandedComponent.officialBaseSecondary(
                     text = MiFocusExpandedText(title = title, content = content.ifBlank { " " })
                 )
             )
         )
+
+        fun dualTextButtons(
+            text: MiFocusExpandedText,
+            secondaryAction: MiFocusNotificationAction,
+            primaryAction: MiFocusNotificationAction,
+            picture: MiFocusPictureRef? = null
+        ) = MiFocusExpandedSpec(
+            components = buildList {
+                add(MiFocusExpandedComponent.officialBaseSecondary(text = text))
+                picture?.let { add(MiFocusExpandedComponent.officialPictureAppIcon(pic = it)) }
+                add(
+                    MiFocusExpandedComponent.officialTextButtons(
+                        actions = listOf(secondaryAction, primaryAction)
+                    )
+                )
+            }
+        )
+
+        fun hintAction(
+            text: MiFocusExpandedText,
+            action: MiFocusNotificationAction,
+            titleLineCount: Int? = null,
+            colorContentBg: String? = null,
+            picContent: MiFocusPictureRef? = null,
+            timer: MiFocusTimer? = null
+        ) = MiFocusExpandedSpec(
+            components = listOf(
+                MiFocusExpandedComponent.officialHintSecondary(
+                    text = text,
+                    action = action,
+                    titleLineCount = titleLineCount,
+                    colorContentBg = colorContentBg,
+                    picContent = picContent,
+                    timer = timer
+                )
+            )
+        )
+
+        fun highlightCapsuleAction(
+            text: MiFocusExpandedText,
+            primaryText: String,
+            action: MiFocusNotificationAction,
+            secondaryText: String? = null,
+            label: String? = null,
+            labelColor: String? = null,
+            labelColorDark: String? = null,
+            labelBgColor: String? = null,
+            labelBgColorDark: String? = null,
+            primaryColor: String? = null,
+            primaryColorDark: String? = null,
+            secondaryColor: String? = null,
+            secondaryColorDark: String? = null,
+            showSecondaryLine: Boolean? = null
+        ) = MiFocusExpandedSpec(
+            components = listOf(
+                MiFocusExpandedComponent.officialHighlightCapsule(
+                    text = text,
+                    primaryText = primaryText,
+                    action = action,
+                    secondaryText = secondaryText,
+                    label = label,
+                    labelColor = labelColor,
+                    labelColorDark = labelColorDark,
+                    labelBgColor = labelBgColor,
+                    labelBgColorDark = labelBgColorDark,
+                    primaryColor = primaryColor,
+                    primaryColorDark = primaryColorDark,
+                    secondaryColor = secondaryColor,
+                    secondaryColorDark = secondaryColorDark,
+                    showSecondaryLine = showSecondaryLine
+                )
+            )
+        )
     }
-}
-
-sealed interface MiFocusExpandedComponent {
-    data class Base(
-        val text: MiFocusExpandedText,
-        val type: Int = 2,
-        val showDivider: Boolean? = null,
-        val showContentDivider: Boolean? = null,
-        val picFunction: MiFocusPictureRef? = null,
-        val setMarginTop: Boolean? = null,
-        val setMarginBottom: Boolean? = null
-    ) : MiFocusExpandedComponent
-
-    data class Chat(
-        val text: MiFocusExpandedText,
-        val picProfile: MiFocusPictureRef? = null,
-        val picProfileDark: MiFocusPictureRef? = null,
-        val appIconPkg: String? = null,
-        val timer: MiFocusTimer? = null
-    ) : MiFocusExpandedComponent
-
-    data class Highlight(
-        val text: MiFocusExpandedText,
-        val type: Int? = null,
-        val picFunction: MiFocusPictureRef? = null,
-        val picFunctionDark: MiFocusPictureRef? = null,
-        val timer: MiFocusTimer? = null
-    ) : MiFocusExpandedComponent
-
-    data class Hint(
-        val text: MiFocusExpandedText,
-        val type: Int? = null,
-        val titleLineCount: Int? = null,
-        val colorContentBg: String? = null,
-        val picContent: MiFocusPictureRef? = null,
-        val timer: MiFocusTimer? = null,
-        val action: MiFocusNotificationAction? = null
-    ) : MiFocusExpandedComponent
-
-    data class Progress(
-        val progress: MiFocusExpandedProgress,
-        val picForward: MiFocusPictureRef? = null,
-        val picMiddle: MiFocusPictureRef? = null,
-        val picMiddleUnselected: MiFocusPictureRef? = null,
-        val picEnd: MiFocusPictureRef? = null,
-        val picEndUnselected: MiFocusPictureRef? = null
-    ) : MiFocusExpandedComponent
-
-    data class Picture(
-        val pic: MiFocusPictureRef = MiFocusPictureRef.Display,
-        val picDark: MiFocusPictureRef? = null,
-        val type: Int = 0,
-        val action: MiFocusNotificationAction? = null
-    ) : MiFocusExpandedComponent
-
-    data class Background(
-        val type: Int = 1,
-        val color: String? = null,
-        val pic: MiFocusPictureRef? = null
-    ) : MiFocusExpandedComponent
-
-    data class Cover(
-        val text: MiFocusExpandedText,
-        val pic: MiFocusPictureRef
-    ) : MiFocusExpandedComponent
-
-    data class HighlightV3(
-        val text: MiFocusExpandedText,
-        val label: String? = null,
-        val labelColor: String? = null,
-        val labelColorDark: String? = null,
-        val labelBgColor: String? = null,
-        val labelBgColorDark: String? = null,
-        val primaryText: String? = null,
-        val primaryColor: String? = null,
-        val primaryColorDark: String? = null,
-        val secondaryText: String? = null,
-        val secondaryColor: String? = null,
-        val secondaryColorDark: String? = null,
-        val showSecondaryLine: Boolean? = null,
-        val action: MiFocusNotificationAction? = null
-    ) : MiFocusExpandedComponent
-
-    data class IconText(
-        val text: MiFocusExpandedText,
-        val type: Int? = null,
-        val icon: MiFocusAnimIcon? = null
-    ) : MiFocusExpandedComponent
-
-    data class MultiProgress(
-        val progressPercent: Int,
-        val color: String? = null,
-        val points: Int? = null,
-        val text: MiFocusExpandedText? = null
-    ) : MiFocusExpandedComponent
-
-    data class AnimText(
-        val text: MiFocusExpandedText,
-        val icon: MiFocusAnimIcon? = null,
-        val timer: MiFocusTimer? = null
-    ) : MiFocusExpandedComponent
-
-    data class TextButtons(
-        val actions: List<MiFocusNotificationAction>
-    ) : MiFocusExpandedComponent
 }
 
 data class MiFocusExpandedText(
@@ -324,6 +640,14 @@ data class MiFocusExpandedProgress(
     val colorEnd: String? = null
 )
 
+data class MiFocusActionProgress(
+    val progressPercent: Int,
+    val colorReach: String? = null,
+    val colorEnd: String? = null,
+    val isClockwiseFromTop: Boolean? = null,
+    val autoProgress: Boolean? = null
+)
+
 data class MiFocusAnimIcon(
     val src: MiFocusPictureRef? = MiFocusPictureRef.Expanded,
     val srcDark: MiFocusPictureRef? = null,
@@ -346,9 +670,87 @@ data class MiFocusNotificationAction(
     val collapsePanel: Boolean? = null,
     val backgroundColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_BG,
     val backgroundColorDark: String? = null,
+    val pressedBackgroundColor: String? = null,
+    val pressedBackgroundColorDark: String? = null,
     val titleColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_TITLE,
-    val titleColorDark: String? = null
+    val titleColorDark: String? = null,
+    val progress: MiFocusActionProgress? = null
 )
+
+fun MiFocusNotificationAction.asSecondaryTextButton(): MiFocusNotificationAction {
+    return copy(
+        isHighlighted = false,
+        type = MiFocusActionType.Text
+    )
+}
+
+fun MiFocusNotificationAction.asPrimaryTextButton(
+    backgroundColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_BG,
+    titleColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_TITLE,
+    backgroundColorDark: String? = null,
+    titleColorDark: String? = null,
+    pressedBackgroundColor: String? = null,
+    pressedBackgroundColorDark: String? = null
+): MiFocusNotificationAction {
+    return copy(
+        type = MiFocusActionType.Text,
+        isHighlighted = true,
+        backgroundColor = backgroundColor,
+        backgroundColorDark = backgroundColorDark,
+        titleColor = titleColor,
+        titleColorDark = titleColorDark,
+        pressedBackgroundColor = pressedBackgroundColor,
+        pressedBackgroundColorDark = pressedBackgroundColorDark
+    )
+}
+
+fun MiFocusNotificationAction.asHighlightCapsuleButton(
+    backgroundColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_BG,
+    titleColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_TITLE,
+    backgroundColorDark: String? = null,
+    titleColorDark: String? = null,
+    pressedBackgroundColor: String? = null,
+    pressedBackgroundColorDark: String? = null
+): MiFocusNotificationAction {
+    return copy(
+        type = MiFocusActionType.Circle,
+        isHighlighted = true,
+        backgroundColor = backgroundColor,
+        backgroundColorDark = backgroundColorDark,
+        titleColor = titleColor,
+        titleColorDark = titleColorDark,
+        pressedBackgroundColor = pressedBackgroundColor,
+        pressedBackgroundColorDark = pressedBackgroundColorDark
+    )
+}
+
+fun MiFocusNotificationAction.asProgressButton(
+    progressPercent: Int,
+    colorReach: String? = null,
+    colorEnd: String? = null,
+    isClockwiseFromTop: Boolean? = null,
+    autoProgress: Boolean? = null,
+    backgroundColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_BG,
+    titleColor: String = MiFocusNotificationTemplate.PRIMARY_ACTION_TITLE,
+    backgroundColorDark: String? = null,
+    titleColorDark: String? = null
+): MiFocusNotificationAction {
+    return copy(
+        type = MiFocusActionType.Progress,
+        isHighlighted = true,
+        backgroundColor = backgroundColor,
+        backgroundColorDark = backgroundColorDark,
+        titleColor = titleColor,
+        titleColorDark = titleColorDark,
+        progress = MiFocusActionProgress(
+            progressPercent = progressPercent,
+            colorReach = colorReach,
+            colorEnd = colorEnd,
+            isClockwiseFromTop = isClockwiseFromTop,
+            autoProgress = autoProgress
+        )
+    )
+}
 
 enum class MiFocusActionType(val rawValue: Int) {
     Circle(0),
@@ -393,6 +795,59 @@ data class MiFocusPictureAsset(
     val ref: MiFocusPictureRef,
     val source: MiFocusPictureSource
 )
+
+data class MiFocusPrivateOverrides(
+    val contentMode: MiFocusPrivateContentMode = MiFocusPrivateContentMode.Default,
+    val splitRule: MiFocusPrivateSplitRule? = null,
+    val actionIcons: MiFocusPrivateActionIcons? = null,
+    val labelChips: List<MiFocusPrivateLabelChip> = emptyList(),
+    val backgroundArtwork: MiFocusPrivateBackgroundArtwork? = null,
+    val notes: String? = null
+)
+
+enum class MiFocusPrivateContentMode {
+    Default,
+    ContentOnly,
+    SubtitleRightOnly,
+    LabelChips,
+    SplitContentTwoLines
+}
+
+data class MiFocusPrivateSplitRule(
+    val delimiter: String,
+    val surfaces: Set<MiFocusPrivateSurface> = setOf(MiFocusPrivateSurface.Default)
+)
+
+data class MiFocusPrivateActionIcons(
+    val leftDefault: MiFocusPictureRef? = null,
+    val leftIsland: MiFocusPictureRef? = null,
+    val rightDefault: MiFocusPictureRef? = null,
+    val rightIsland: MiFocusPictureRef? = null,
+    val rightNight: MiFocusPictureRef? = null
+)
+
+data class MiFocusPrivateLabelChip(
+    val text: String,
+    val backgroundColor: String,
+    val textColor: String? = null
+)
+
+data class MiFocusPrivateBackgroundArtwork(
+    val source: MiFocusPictureSource,
+    val roundedCornerDp: Int? = null,
+    val cropWidthDp: Int? = null,
+    val cropHeightDp: Int? = null,
+    val surfaces: Set<MiFocusPrivateSurface> = setOf(MiFocusPrivateSurface.Default)
+)
+
+enum class MiFocusPrivateSurface {
+    Default,
+    Island,
+    Night,
+    Tiny,
+    DecoPort,
+    Flip
+}
 
 sealed interface MiFocusPictureSource {
     data class Resource(
