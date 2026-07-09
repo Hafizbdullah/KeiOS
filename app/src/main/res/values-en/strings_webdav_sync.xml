@@ -84,6 +84,10 @@
     <string name="webdav_sync_auto_summary_failed">Failed %1$d · success %2$d/%3$d · %4$s</string>
     <string name="webdav_sync_auto_summary_skipped">No local changes · %1$s</string>
     <string name="webdav_sync_auto_summary_running">Running · %1$s</string>
+    <string name="webdav_sync_auto_summary_review_resolved">Review handled · %1$s</string>
+    <string name="webdav_sync_auto_review_current_hint">%1$d dataset(s) need a manual merge before auto sync can continue.</string>
+    <string name="webdav_sync_auto_review_action">Handle review items</string>
+    <string name="webdav_sync_auto_review_resolved_hint">Current review queue is clear. Auto sync will continue on the next trigger.</string>
 
     <string name="webdav_sync_sync_all">Sync all</string>
     <string name="webdav_sync_upload_all">Upload all</string>
@@ -198,6 +202,7 @@
     <string name="webdav_sync_history_reason_background">Background local-change upload</string>
     <string name="webdav_sync_history_reason_alarm">Scheduled auto sync</string>
     <string name="webdav_sync_history_reason_alarm_timeout">Scheduled sync timeout</string>
+    <string name="webdav_sync_history_reason_manual_auto_review">Manual auto-sync review</string>
     <string name="webdav_sync_history_duration_minutes_seconds">%1$dm %2$ds</string>
     <string name="webdav_sync_history_duration_seconds">%1$ds</string>
     <string name="webdav_sync_history_duration_millis">%1$dms</string>
@@ -206,6 +211,7 @@
     <string name="webdav_sync_plan_sync_title">Review sync changes</string>
     <string name="webdav_sync_plan_upload_title">Review upload changes</string>
     <string name="webdav_sync_plan_download_title">Review download changes</string>
+    <string name="webdav_sync_plan_auto_review_title">Handle auto-sync review</string>
     <string name="webdav_sync_plan_item_sync_title">Review %1$s sync</string>
     <string name="webdav_sync_plan_item_upload_title">Review %1$s upload</string>
     <string name="webdav_sync_plan_item_download_title">Review %1$s download</string>

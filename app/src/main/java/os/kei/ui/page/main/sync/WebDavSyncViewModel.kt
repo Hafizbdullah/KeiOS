@@ -322,6 +322,49 @@ internal class WebDavSyncViewModel(
         }
     }
 
+    fun requestAutoSyncReviewPlan(dataPorts: Map<WebDavSyncItem, WebDavSyncDataPort>) {
+        val state = _uiState.value
+        if (state.interactionLocked || state.pendingPlan != null) return
+        val targets = pendingWebDavAutoSyncReviewItems(state.itemStates)
+        if (targets.isEmpty()) return
+        syncJob = viewModelScope.launch {
+            val config = repository.loadConfig() ?: run {
+                _uiState.update { it.copy(missingConfig = true) }
+                return@launch
+            }
+            val enabledTargets = targets.filter { repository.isItemEnabled(it) }
+            if (enabledTargets.isEmpty()) return@launch
+            _uiState.update {
+                it.copy(
+                    planningKind = WebDavBatchKind.Sync,
+                    missingConfig = false,
+                    pendingPlan = null,
+                )
+            }
+            val plan =
+                repository.preparePlan(
+                    kind = WebDavBatchKind.Sync,
+                    scope = WebDavSyncPlanScope.AutoReview,
+                    config = config,
+                    targets = enabledTargets,
+                    dataPorts = dataPorts,
+                )
+            val itemStates = itemStatesWithPlan(
+                base = repository.loadItemStates(_uiState.value.itemStates),
+                plan = plan,
+            )
+            _uiState.update {
+                it.copy(
+                    planningKind = null,
+                    pendingPlan = plan,
+                    lastRemoteProbeTimeMs = plan.createdAtMs,
+                    itemStates = itemStates,
+                )
+            }
+            refreshLocalCountsInternal(dataPorts)
+        }
+    }
+
     fun dismissPlan() {
         _uiState.update { it.copy(pendingPlan = null) }
     }
@@ -532,6 +575,7 @@ internal data class WebDavSyncUiState(
 private fun WebDavSyncPlanScope.historyReason(): String =
     when (this) {
         WebDavSyncPlanScope.Batch -> "manual-batch"
+        WebDavSyncPlanScope.AutoReview -> "manual-auto-review"
         is WebDavSyncPlanScope.Single -> "manual-${item.name}"
     }
 

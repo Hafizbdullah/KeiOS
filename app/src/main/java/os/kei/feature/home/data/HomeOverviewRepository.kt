@@ -50,6 +50,7 @@ import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
 import os.kei.ui.page.main.sync.WebDavSyncItem
 import os.kei.ui.page.main.sync.WebDavSyncStore
 import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
+import os.kei.ui.page.main.sync.requiresManualReview
 
 private const val TAG = "HomeOverviewRepository"
 private const val INITIAL_OVERVIEW_LOAD_DELAY_MS = 500L
@@ -473,6 +474,11 @@ private fun refreshIntervalMs(hours: Int): Long = hours.coerceAtLeast(1) * 60L *
 
 private fun loadHomeWebDavOverview(): HomeWebDavOverview =
     WebDavSyncStore.loadLastAutoSyncSummary().let { autoSummary ->
+        val pendingReview =
+            WebDavSyncItem.entries.any { item ->
+                WebDavSyncStore.isItemEnabled(item) &&
+                    WebDavSyncStore.loadItemPendingSummary(item)?.requiresManualReview == true
+            }
         HomeWebDavOverview(
             configured = WebDavSyncStore.hasConfig(),
             autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
@@ -480,7 +486,7 @@ private fun loadHomeWebDavOverview(): HomeWebDavOverview =
             totalItemCount = WebDavSyncItem.entries.size,
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
             lastAutoSyncTimeMs = autoSummary?.finishedAtMs ?: 0L,
-            autoSyncNeedsReview = autoSummary?.status == WebDavAutoSyncStatus.NeedsReview,
+            autoSyncNeedsReview = autoSummary?.status == WebDavAutoSyncStatus.NeedsReview && pendingReview,
             autoSyncFailed = autoSummary?.status == WebDavAutoSyncStatus.Failed,
         )
     }

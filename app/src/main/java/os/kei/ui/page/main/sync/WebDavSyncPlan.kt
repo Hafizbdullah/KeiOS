@@ -15,6 +15,7 @@ internal data class WebDavSyncPlan(
 
 internal sealed interface WebDavSyncPlanScope {
     data object Batch : WebDavSyncPlanScope
+    data object AutoReview : WebDavSyncPlanScope
     data class Single(val item: WebDavSyncItem) : WebDavSyncPlanScope
 }
 

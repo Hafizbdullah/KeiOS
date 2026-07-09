@@ -164,6 +164,9 @@ private fun planTitle(plan: WebDavSyncPlan): String =
                 },
             )
 
+        WebDavSyncPlanScope.AutoReview ->
+            stringResource(R.string.webdav_sync_plan_auto_review_title)
+
         is WebDavSyncPlanScope.Single -> {
             val itemLabel = stringResource(scope.item.labelRes)
             stringResource(

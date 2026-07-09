@@ -274,8 +274,12 @@ internal fun WebDavSyncAutoSyncCard(
     state: WebDavSyncUiState,
     cardColor: Color,
     onToggleAutoSync: (Boolean) -> Unit,
+    onResolveAutoSyncReview: () -> Unit,
 ) {
     val syncReady = state.isConfigured
+    val reviewItems = pendingWebDavAutoSyncReviewItems(state.itemStates)
+    val reviewCount = reviewItems.size
+    val canResolveReview = syncReady && !state.interactionLocked && reviewCount > 0
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_title),
         title = stringResource(R.string.webdav_sync_auto_card_title),
@@ -292,7 +296,39 @@ internal fun WebDavSyncAutoSyncCard(
         state.lastAutoSyncSummary?.let { summary ->
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_last_auto_sync_label),
-                value = autoSyncSummaryText(summary),
+                value = autoSyncSummaryText(summary, reviewCount),
+            )
+        }
+        if (reviewCount > 0) {
+            Text(
+                text = stringResource(R.string.webdav_sync_auto_review_current_hint, reviewCount),
+                color = MiuixTheme.colorScheme.error,
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+            AppStandaloneLiquidTextButton(
+                variant = if (canResolveReview) GlassVariant.SheetPrimaryAction else GlassVariant.Content,
+                text = if (state.planningKind == WebDavBatchKind.Sync) {
+                    stringResource(R.string.webdav_sync_refreshing_remote)
+                } else {
+                    stringResource(R.string.webdav_sync_auto_review_action)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                buttonModifier = Modifier.fillMaxWidth(),
+                textColor = if (canResolveReview) {
+                    MiuixTheme.colorScheme.primary
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
+                },
+                enabled = canResolveReview,
+                onClick = onResolveAutoSyncReview,
+            )
+        } else if (state.lastAutoSyncSummary?.status == WebDavAutoSyncStatus.NeedsReview) {
+            Text(
+                text = stringResource(R.string.webdav_sync_auto_review_resolved_hint),
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
             )
         }
     }
@@ -726,7 +762,10 @@ private fun itemContractSummary(item: WebDavSyncItem): String = when (item) {
 }
 
 @Composable
-private fun autoSyncSummaryText(summary: WebDavAutoSyncSummary): String {
+private fun autoSyncSummaryText(
+    summary: WebDavAutoSyncSummary,
+    currentReviewCount: Int,
+): String {
     val time =
         summary.finishedAtMs
             .takeIf { it > 0L }
@@ -742,13 +781,17 @@ private fun autoSyncSummaryText(summary: WebDavAutoSyncSummary): String {
             )
 
         WebDavAutoSyncStatus.NeedsReview ->
-            stringResource(
-                R.string.webdav_sync_auto_summary_needs_review,
-                summary.failedCount,
-                summary.succeededCount,
-                summary.targetCount,
-                time,
-            )
+            if (currentReviewCount > 0) {
+                stringResource(
+                    R.string.webdav_sync_auto_summary_needs_review,
+                    currentReviewCount,
+                    summary.succeededCount,
+                    summary.targetCount,
+                    time,
+                )
+            } else {
+                stringResource(R.string.webdav_sync_auto_summary_review_resolved, time)
+            }
 
         WebDavAutoSyncStatus.Failed ->
             stringResource(

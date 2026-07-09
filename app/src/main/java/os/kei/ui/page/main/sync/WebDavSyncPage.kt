@@ -343,6 +343,9 @@ private fun LazyListScope.webDavCategoryItems(
                             AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
                         }
                     },
+                    onResolveAutoSyncReview = {
+                        viewModel.requestAutoSyncReviewPlan(dataPorts)
+                    },
                 )
             }
             item(key = "webdav-sync-remote", contentType = "webdav_card") {

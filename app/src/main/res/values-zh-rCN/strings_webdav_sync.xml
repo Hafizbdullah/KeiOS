@@ -84,6 +84,10 @@
     <string name="webdav_sync_auto_summary_failed">失败 %1$d 项 · 成功 %2$d/%3$d · %4$s</string>
     <string name="webdav_sync_auto_summary_skipped">无本地变更 · %1$s</string>
     <string name="webdav_sync_auto_summary_running">运行中 · %1$s</string>
+    <string name="webdav_sync_auto_summary_review_resolved">已处理 · %1$s</string>
+    <string name="webdav_sync_auto_review_current_hint">%1$d 个数据集需要手动合并后，自动同步才能继续。</string>
+    <string name="webdav_sync_auto_review_action">处理需处理项</string>
+    <string name="webdav_sync_auto_review_resolved_hint">当前需处理队列已清空，自动同步会在下次触发时继续。</string>
 
     <string name="webdav_sync_sync_all">全部同步</string>
     <string name="webdav_sync_upload_all">全部上传</string>
@@ -198,6 +202,7 @@
     <string name="webdav_sync_history_reason_background">后台上传本地变更</string>
     <string name="webdav_sync_history_reason_alarm">定时自动同步</string>
     <string name="webdav_sync_history_reason_alarm_timeout">定时同步超时</string>
+    <string name="webdav_sync_history_reason_manual_auto_review">手动处理自动同步</string>
     <string name="webdav_sync_history_duration_minutes_seconds">%1$d分 %2$d秒</string>
     <string name="webdav_sync_history_duration_seconds">%1$d秒</string>
     <string name="webdav_sync_history_duration_millis">%1$d毫秒</string>
@@ -206,6 +211,7 @@
     <string name="webdav_sync_plan_sync_title">确认同步变更</string>
     <string name="webdav_sync_plan_upload_title">确认上传变更</string>
     <string name="webdav_sync_plan_download_title">确认下载变更</string>
+    <string name="webdav_sync_plan_auto_review_title">处理自动同步需处理项</string>
     <string name="webdav_sync_plan_item_sync_title">确认同步「%1$s」</string>
     <string name="webdav_sync_plan_item_upload_title">确认上传「%1$s」</string>
     <string name="webdav_sync_plan_item_download_title">确认下载「%1$s」</string>

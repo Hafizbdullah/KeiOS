@@ -78,6 +78,10 @@
     <string name="webdav_sync_auto_summary_failed">失敗 %1$d · 成功 %2$d/%3$d · %4$s</string>
     <string name="webdav_sync_auto_summary_skipped">ローカル変更なし · %1$s</string>
     <string name="webdav_sync_auto_summary_running">実行中 · %1$s</string>
+    <string name="webdav_sync_auto_summary_review_resolved">確認済み · %1$s</string>
+    <string name="webdav_sync_auto_review_current_hint">%1$d 件のデータセットは、手動マージ後に自動同期を再開できます。</string>
+    <string name="webdav_sync_auto_review_action">確認項目を処理</string>
+    <string name="webdav_sync_auto_review_resolved_hint">現在の確認キューは空です。次回のトリガーで自動同期が続行されます。</string>
     <string name="webdav_sync_sync_all">すべて同期</string>
     <string name="webdav_sync_upload_all">すべてアップロード</string>
     <string name="webdav_sync_download_all">すべてダウンロード</string>
@@ -176,12 +180,14 @@
     <string name="webdav_sync_history_reason_background">バックグラウンドのローカル変更アップロード</string>
     <string name="webdav_sync_history_reason_alarm">スケジュール自動同期</string>
     <string name="webdav_sync_history_reason_alarm_timeout">スケジュール同期タイムアウト</string>
+    <string name="webdav_sync_history_reason_manual_auto_review">自動同期の手動確認</string>
     <string name="webdav_sync_history_duration_minutes_seconds">%1$dm %2$ds</string>
     <string name="webdav_sync_history_duration_seconds">%1$ds</string>
     <string name="webdav_sync_history_duration_millis">%1$dms</string>
     <string name="webdav_sync_plan_sync_title">同期変更を確認</string>
     <string name="webdav_sync_plan_upload_title">アップロード変更を確認</string>
     <string name="webdav_sync_plan_download_title">ダウンロード変更を確認</string>
+    <string name="webdav_sync_plan_auto_review_title">自動同期の確認項目を処理</string>
     <string name="webdav_sync_plan_item_sync_title">%1$s の同期を確認</string>
     <string name="webdav_sync_plan_item_upload_title">%1$s のアップロードを確認</string>
     <string name="webdav_sync_plan_item_download_title">%1$s のダウンロードを確認</string>

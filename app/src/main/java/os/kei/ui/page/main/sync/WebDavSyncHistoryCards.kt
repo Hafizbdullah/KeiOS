@@ -289,6 +289,7 @@ private fun historyItemStatusColor(status: WebDavItemStatus): Color =
 private fun historyReasonLabel(reason: String): String =
     when {
         reason == "manual-batch" -> stringResource(R.string.webdav_sync_history_reason_manual_batch)
+        reason == "manual-auto-review" -> stringResource(R.string.webdav_sync_history_reason_manual_auto_review)
         reason == "manual-remote-probe" -> stringResource(R.string.webdav_sync_history_reason_remote_probe)
         reason == "launch" -> stringResource(R.string.webdav_sync_history_reason_launch)
         reason == "launch-dirty" -> stringResource(R.string.webdav_sync_history_reason_launch_dirty)
