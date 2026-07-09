@@ -44,7 +44,7 @@
 ### P0-B 运行时、打包、Native 依赖
 
 - [x] 完成打包 debug APK 的 API 36 16 KB page-size 验证，使用 `KeiOS_API36_16K` AVD；证据目录：`artifacts/api36-p0/p0b-runtime-native-api36-16k-run2/`。模拟器报告 `PAGE_SIZE=16384`，`zipalign -P 16` 退出码为 0，依赖带入的 native libraries `libandroidx.graphics.path.so` 与 `libmmkv.so` 最小 LOAD alignment 均为 `16384`，当前决策为保持 `android:pageSizeCompat` 未设置。
-- [x] 完成 API 36 ART / native dependency smoke，覆盖全新安装、升级安装、启动、MMKV 读写、缓存清理、Coil GIF 解码、Media3 BGM / 视频、Shizuku 初始化、focus-api 通知构建、backdrop / liquid-glass 渲染；证据目录：`artifacts/api36-p0/p0b-runtime-native-api36-16k-run2/`。全新安装与升级安装均返回 `Success`，runtime probe 全部 `PASS`，`UnsatisfiedLinkError`、KeiOS 进程 fatal exception、KeiOS native `dlopen failed` 的运行阻断计数为 0。`AccessibilityNodeInfo.getSelection/setSelection` 的 hidden-API denied 残留进入下一轮 hidden-API 审计。
+- [x] 完成 API 36 ART / native dependency smoke，覆盖全新安装、升级安装、启动、MMKV 读写、缓存清理、Coil GIF 解码、Media3 BGM / 视频、Shizuku 初始化、Focus Notification 构建、backdrop / liquid-glass 渲染；证据目录：`artifacts/api36-p0/p0b-runtime-native-api36-16k-run2/`。全新安装与升级安装均返回 `Success`，runtime probe 全部 `PASS`，`UnsatisfiedLinkError`、KeiOS 进程 fatal exception、KeiOS native `dlopen failed` 的运行阻断计数为 0。`AccessibilityNodeInfo.getSelection/setSelection` 的 hidden-API denied 残留进入下一轮 hidden-API 审计。
 - [x] 完成 `setAccessible` / hidden API 首轮收敛：HyperOS 设置跳转与保活权限辅助的系统属性读取改用统一 PropUtils，AppOpsManagerInjector 改为公开方法探测；Shizuku private `newProcess` 兼容入口保留并受状态门控。
 
 ### P0-C 本地网络与 MCP 服务

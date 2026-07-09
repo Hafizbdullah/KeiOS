@@ -4,6 +4,7 @@
 
 - `os.kei.core.notification.focus.MiFocusNotificationTemplate.build(context, spec)`
 - 输出 `Bundle`，内部包含 `miui.focus.param`、`miui.focus.pics`、`miui.focus.actions`
+- `miui.focus.param` 由本地 V3 协议引擎构建，展开态位于 `param_v2`，小岛位于 `param_v2.param_island`
 - 调用方式：`NotificationCompat.Builder(...).addExtras(MiFocusNotificationTemplate.build(...))`
 - `MiFocusNotificationSpec.privateOverrides` 预留给宿主层私有 `RemoteViews` 后处理，当前作为经验模型沉淀。
 
@@ -64,10 +65,8 @@
 - `pressedBackgroundColor` / `pressedBackgroundColorDark` -> `actionBgPressColor` / `actionBgPressColorDark`
 - `titleColor` / `titleColorDark` -> `actionTitleColor` / `actionTitleColorDark`
 
-当前项目限制：
-
-- `MiFocusNotificationAction` 已保留按压态颜色字段，方便后续升级底层 `focus-api` 后直接接通。
-- 当前 `com.xzakota.hyper.notification:focus-api` 版本未暴露按压态写入口，现阶段实际下发的是常态背景色和文字色。
+本地协议引擎会直接下发常态、深色和按压态颜色字段，`pressedBackgroundColor` /
+`pressedBackgroundColorDark` 分别映射为 `actionBgPressColor` / `actionBgPressColorDark`。
 
 推荐写法：
 
@@ -203,10 +202,9 @@ check(route?.primaryHelpers?.contains("MiFocusExpandedComponent.officialPictureC
 
 当前实现说明：
 
-- `focus-api` 1.4 原生只暴露了小岛 `picInfo` 和 `combinePicInfo`。
-- 官方小岛模板 3 需要 `imageTextInfoRight(type = 6)`。
+- 本地 V3 协议引擎覆盖小岛 `picInfo`、`combinePicInfo` 与 `imageTextInfoRight(type = 6)`。
 - 官方 summary 1-9 和小岛模板 1-3 现在都能通过本地 summary helper / preset 直接表达，`type = 1 / 2 / 3 / 5 / 6` 与 `pic.type = 1 / 4` 的公开语义集中在一处。
-- 项目内 `MiFocusNotificationTemplate.build(...)` 已经在最终 `miui.focus.param` 上补齐这个官方 JSON 结构，所以 `MiFocusIslandSmallTemplate.ImageTextRight` 可以直接使用。
+- `MiFocusIslandSmallTemplate.ImageTextRight` 会在首次编码时写入官方 JSON 结构，可以直接使用。
 - `MiFocusIslandBigTemplate.Picture / ImageTextLeft / ImageTextRight` 和 `MiFocusIslandSmallTemplate.Picture / CombinePic / ImageTextRight` 继续保留为通用 fallback 层；公共官方模板优先走 `official*` helper。
 
 ## 分层建议
@@ -316,7 +314,7 @@ check(route?.primaryHelpers?.contains("MiFocusExpandedComponent.officialPictureC
 - 1-3 个 action
 - `Text` 类型只能单独使用 1 个
 - `Progress` 类型必须携带进度元数据
-- 模块会在最终 `param_v2.actions` 上补齐官方 JSON，同时同步写入 `miui.focus.actions`
+- 本地协议引擎直接写入 `param_v2.actions`，同时同步写入 `miui.focus.actions`
 
 官方参考模板映射：
 
@@ -542,11 +540,8 @@ val spec = MiFocusExpandedSpec.highlightCapsuleAction(
 
 ## R8
 
-`core-notification` consumer rules 已保留：
-
-- `com.xzakota.hyper.notification.**$$serializer`
-- focus-api 模板字段
-- `os.kei.core.notification.focus.**` 类名
+`core-notification` consumer rules保留 `os.kei.core.notification.focus.**` 类名，方便 release
+环境定位 Focus payload。协议引擎使用显式 JSON 字段，无需反射序列化规则。
 
 新增超级岛模板时优先复用 `MiFocusNotificationTemplate`，保持 JSON 拼接、图片注册、Action 注册和 R8
 规则集中维护。

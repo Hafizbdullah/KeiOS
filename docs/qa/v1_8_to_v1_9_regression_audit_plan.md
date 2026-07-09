@@ -624,7 +624,7 @@ adb shell perfetto --txt -c /data/misc/perfetto-configs/keios.textproto -o /data
   - Playback Coordinator：`BaGuideBgmPlaybackCoordinator` 通过 `remember(context)` 持有，`SupervisorJob()` 保护后端切换，`_uiState`（收藏/队列/选择）与 `_runtimeState`（位置/时长/播放）拆分；写操作全部走 `BaGuideBgmPlaybackRepository`。
   - Temp Media Cache：分三层 `BaGuideTempMediaCache`（facade）+ `Resolver`（校验）+ `Prefetcher`（下载）；TTL 72h、prune 30min 抽到 `BaGuideTempMediaCacheConfig` 命名常量；MMKV index 带版本。
   - BGM Bottom Chrome：`playbackProgress: () -> Float` 改为 lambda，draw 阶段读取；`BaGuideBgmChromePresentationDeriver.derive()` 纯派生；动画值（`containerHeight` / `tabGroupY` / `searchY`）以 lambda 传给子组件。
-  - Mi Focus 通知：`MiFocusNotificationTemplate` 通过 `FocusNotification.buildV3` 构造岛与展开组件，`dismissIsland` 控制关闭；`BaGuideBgmMediaNotificationProviderFactory.cancelNotification()` 在 session 停止时对称调用 `NotificationManagerCompat.cancel()`。
+  - Mi Focus 通知：`MiFocusNotificationTemplate` 通过本地 Focus V3 协议引擎构造岛与展开组件，`dismissIsland` 控制关闭；`BaGuideBgmMediaNotificationProviderFactory.cancelNotification()` 在 session 停止时对称调用 `NotificationManagerCompat.cancel()`。
   - 全量 `collectAsStateWithLifecycle()`，零 `collectAsState(`。
 - 保留风险:
   - Playback coordinator 后端切换（`updateNativeMediaNotificationEnabled`）在 `remember(context)` 单 key 下，依赖 `LaunchedEffect` 更新；当前 `force=true` + `SupervisorJob` 已能保护，但极端时序仍有可能。
