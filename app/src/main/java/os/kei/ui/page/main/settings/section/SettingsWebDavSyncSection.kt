@@ -67,6 +67,15 @@ internal fun SettingsWebDavSyncSection(
                     },
                 ),
             )
+            if (state.autoSyncEnabled) {
+                SettingsInfoItem(
+                    key = stringResource(R.string.webdav_sync_auto_interval_label),
+                    value = stringResource(
+                        R.string.webdav_sync_auto_interval_value,
+                        state.autoSyncIntervalHours,
+                    ),
+                )
+            }
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_last_sync_label),
                 value = if (state.lastFullSyncTimeMs > 0L) {

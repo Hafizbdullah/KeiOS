@@ -69,6 +69,7 @@ internal data class SettingsWebDavSyncUiState(
     val configured: Boolean = false,
     val username: String = "",
     val autoSyncEnabled: Boolean = false,
+    val autoSyncIntervalHours: Int = 3,
     val lastFullSyncTimeMs: Long = 0L,
 )
 

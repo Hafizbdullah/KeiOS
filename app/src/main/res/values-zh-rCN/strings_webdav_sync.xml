@@ -98,6 +98,9 @@
 
     <string name="webdav_sync_auto_sync_label">自动同步</string>
     <string name="webdav_sync_auto_sync_summary">启动时检查远端；本地变更会安全上传；冲突会保留本地等待处理。</string>
+    <string name="webdav_sync_auto_interval_label">同步间隔</string>
+    <string name="webdav_sync_auto_interval_summary">控制启动、后台与定时自动同步频率；坚果云建议 3h 以上。</string>
+    <string name="webdav_sync_auto_interval_value">%1$dh</string>
     <string name="webdav_sync_last_auto_sync_label">上次自动同步</string>
     <string name="webdav_sync_auto_summary_success">成功 %1$d/%2$d · %3$s</string>
     <string name="webdav_sync_auto_summary_needs_review">需处理 %1$d 项 · 成功 %2$d/%3$d · %4$s</string>

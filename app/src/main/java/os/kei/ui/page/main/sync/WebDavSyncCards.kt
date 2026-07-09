@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -274,12 +277,22 @@ internal fun WebDavSyncAutoSyncCard(
     state: WebDavSyncUiState,
     cardColor: Color,
     onToggleAutoSync: (Boolean) -> Unit,
+    onAutoSyncIntervalHoursChange: (Int) -> Unit,
     onResolveAutoSyncReview: () -> Unit,
 ) {
     val syncReady = state.isConfigured
     val reviewItems = pendingWebDavAutoSyncReviewItems(state.itemStates)
     val reviewCount = reviewItems.size
     val canResolveReview = syncReady && !state.interactionLocked && reviewCount > 0
+    val intervalOptions = remember { WebDavSyncStore.AUTO_SYNC_INTERVAL_HOUR_OPTIONS }
+    val intervalLabels = intervalOptions.map { hours ->
+        stringResource(R.string.webdav_sync_auto_interval_value, hours)
+    }
+    val selectedIntervalIndex =
+        intervalOptions.indexOf(state.autoSyncIntervalHours).takeIf { it >= 0 }
+            ?: intervalOptions.indexOf(WebDavSyncStore.DEFAULT_AUTO_SYNC_INTERVAL_HOURS).coerceAtLeast(0)
+    var intervalExpanded by remember { mutableStateOf(false) }
+    var intervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     SettingsGroupCard(
         header = stringResource(R.string.webdav_sync_title),
         title = stringResource(R.string.webdav_sync_auto_card_title),
@@ -292,6 +305,39 @@ internal fun WebDavSyncAutoSyncCard(
             checked = state.autoSyncEnabled,
             onCheckedChange = onToggleAutoSync,
             enabled = syncReady && !state.interactionLocked,
+        )
+        SettingsPickerItem(
+            title = stringResource(R.string.webdav_sync_auto_interval_label),
+            summary = stringResource(R.string.webdav_sync_auto_interval_summary),
+            onClick = {
+                if (syncReady && !state.interactionLocked) {
+                    intervalExpanded = true
+                }
+            },
+            trailing = {
+                AppDropdownSelector(
+                    selectedText = intervalLabels.getOrElse(selectedIntervalIndex) {
+                        stringResource(
+                            R.string.webdav_sync_auto_interval_value,
+                            state.autoSyncIntervalHours,
+                        )
+                    },
+                    options = intervalLabels,
+                    selectedIndex = selectedIntervalIndex,
+                    expanded = intervalExpanded,
+                    anchorBounds = intervalAnchorBounds,
+                    onExpandedChange = { expanded ->
+                        intervalExpanded = expanded && syncReady && !state.interactionLocked
+                    },
+                    onSelectedIndexChange = { index ->
+                        intervalOptions.getOrNull(index)?.let(onAutoSyncIntervalHoursChange)
+                        intervalExpanded = false
+                    },
+                    onAnchorBoundsChange = { intervalAnchorBounds = it },
+                    popupMaxWidth = 180.dp,
+                    popupMatchAnchorWidth = true,
+                )
+            },
         )
         state.lastAutoSyncSummary?.let { summary ->
             SettingsInfoItem(

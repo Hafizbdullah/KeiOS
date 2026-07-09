@@ -104,6 +104,19 @@ internal class WebDavSyncViewModel(
         }
     }
 
+    fun setAutoSyncIntervalHours(
+        hours: Int,
+        onPersisted: () -> Unit = {},
+    ) {
+        if (_uiState.value.interactionLocked) return
+        val normalized = WebDavSyncStore.normalizeAutoSyncIntervalHours(hours)
+        _uiState.update { it.copy(autoSyncIntervalHours = normalized) }
+        viewModelScope.launch {
+            repository.setAutoSyncIntervalHours(normalized)
+            onPersisted()
+        }
+    }
+
     // ── Refresh remote summary (read-only) ─────────────────────────────
 
     /**
@@ -613,6 +626,7 @@ internal data class WebDavSyncUiState(
     val passwordVisible: Boolean = false,
     val isConfigured: Boolean = false,
     val autoSyncEnabled: Boolean = false,
+    val autoSyncIntervalHours: Int = WebDavSyncStore.DEFAULT_AUTO_SYNC_INTERVAL_HOURS,
     val testing: Boolean = false,
     val refreshingRemote: Boolean = false,
     val connectionResult: WebDavConnectionOutcome? = null,

@@ -7,20 +7,31 @@ import kotlin.test.assertTrue
 
 class WebDavAutoSyncTest {
     @Test
-    fun `jianguoyun launch auto sync uses quota window cooldown`() {
-        assertEquals(30L * 60L * 1000L, launchAutoSyncCooldownMs(WebDavProvider.Jianguoyun))
+    fun `successful auto sync uses configured interval cooldown`() {
+        val intervalMs = 3L * 60L * 60L * 1000L
+
+        assertEquals(
+            intervalMs,
+            autoSyncScheduleCooldownMs(
+                provider = WebDavProvider.Jianguoyun,
+                lastStatus = WebDavAutoSyncStatus.Success,
+                intervalMs = intervalMs,
+            ),
+        )
     }
 
     @Test
-    fun `failed auto sync uses shorter retry cooldown`() {
+    fun `failed auto sync uses bounded retry cooldown`() {
+        val intervalMs = 3L * 60L * 60L * 1000L
+
         assertEquals(5L * 60L * 1000L, retryAutoSyncCooldownMs(WebDavProvider.Jianguoyun))
         assertEquals(
-            retryAutoSyncCooldownMs(WebDavProvider.Jianguoyun),
-            autoSyncScheduleCooldownMs(WebDavProvider.Jianguoyun, WebDavAutoSyncStatus.Failed),
-        )
-        assertEquals(
-            launchAutoSyncCooldownMs(WebDavProvider.Jianguoyun),
-            autoSyncScheduleCooldownMs(WebDavProvider.Jianguoyun, WebDavAutoSyncStatus.Success),
+            60L * 60L * 1000L,
+            autoSyncScheduleCooldownMs(
+                provider = WebDavProvider.Jianguoyun,
+                lastStatus = WebDavAutoSyncStatus.Failed,
+                intervalMs = intervalMs,
+            ),
         )
     }
 

@@ -344,6 +344,11 @@ private fun LazyListScope.webDavCategoryItems(
                             AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
                         }
                     },
+                    onAutoSyncIntervalHoursChange = { hours ->
+                        viewModel.setAutoSyncIntervalHours(hours) {
+                            AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
+                        }
+                    },
                     onResolveAutoSyncReview = {
                         viewModel.requestAutoSyncReviewPlan(dataPorts)
                     },

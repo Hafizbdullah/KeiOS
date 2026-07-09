@@ -74,6 +74,7 @@ internal open class SettingsPageRepository(
             configured = config != null,
             username = config?.username.orEmpty(),
             autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
+            autoSyncIntervalHours = WebDavSyncStore.getAutoSyncIntervalHours(),
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
         )
     }

@@ -20,8 +20,6 @@ import os.kei.core.log.AppLogger
 import os.kei.feature.webdav.model.WebDavConfig
 import java.util.concurrent.atomic.AtomicInteger
 
-private const val JIANGUOYUN_LAUNCH_SYNC_COOLDOWN_MS = 30L * 60L * 1000L
-private const val CUSTOM_LAUNCH_SYNC_COOLDOWN_MS = 10L * 60L * 1000L
 private const val JIANGUOYUN_RETRY_SYNC_COOLDOWN_MS = 5L * 60L * 1000L
 private const val CUSTOM_RETRY_SYNC_COOLDOWN_MS = 2L * 60L * 1000L
 
@@ -76,7 +74,11 @@ internal object WebDavAutoSync {
         val nowMs = System.currentTimeMillis()
         val provider = WebDavSyncStore.loadProvider()
         val summary = WebDavSyncStore.loadLastAutoSyncSummary()
-        val cooldownMs = autoSyncScheduleCooldownMs(provider, summary?.status)
+        val cooldownMs = autoSyncScheduleCooldownMs(
+            provider = provider,
+            lastStatus = summary?.status,
+            intervalMs = WebDavSyncStore.getAutoSyncIntervalMs(),
+        )
         if (
             !shouldRunLaunchAutoSync(
                 nowMs = nowMs,
@@ -124,7 +126,11 @@ internal object WebDavAutoSync {
         val nowMs = System.currentTimeMillis()
         val provider = WebDavSyncStore.loadProvider()
         val summary = WebDavSyncStore.loadLastAutoSyncSummary()
-        val cooldownMs = autoSyncScheduleCooldownMs(provider, summary?.status)
+        val cooldownMs = autoSyncScheduleCooldownMs(
+            provider = provider,
+            lastStatus = summary?.status,
+            intervalMs = WebDavSyncStore.getAutoSyncIntervalMs(),
+        )
         if (
             !shouldRunLaunchAutoSync(
                 nowMs = nowMs,
@@ -149,6 +155,25 @@ internal object WebDavAutoSync {
                 delay(BACKGROUND_PUSH_DELAY_MS)
                 val config = WebDavSyncStore.loadConfig() ?: return@launch
                 if (!WebDavSyncStore.isAutoSyncEnabled()) return@launch
+                val provider = WebDavSyncStore.loadProvider()
+                val summary = WebDavSyncStore.loadLastAutoSyncSummary()
+                val cooldownMs = autoSyncScheduleCooldownMs(
+                    provider = provider,
+                    lastStatus = summary?.status,
+                    intervalMs = WebDavSyncStore.getAutoSyncIntervalMs(),
+                )
+                val nowMs = System.currentTimeMillis()
+                if (
+                    !shouldRunLaunchAutoSync(
+                        nowMs = nowMs,
+                        lastAutoAttemptMs = WebDavSyncStore.getLastAutoSyncAttemptTime(),
+                        lastFullSyncMs = WebDavSyncStore.getLastFullSyncTime(),
+                        cooldownMs = cooldownMs,
+                    )
+                ) {
+                    AppLogger.i(TAG, "auto-push (background) delayed by sync interval (${cooldownMs}ms)")
+                    return@launch
+                }
                 pushChangedItems(context, config, reason = "background")
             } finally {
                 AppBackgroundScheduler.scheduleWebDavAutoSync(context)
@@ -507,21 +532,16 @@ internal object WebDavAutoSync {
     }
 }
 
-internal fun launchAutoSyncCooldownMs(provider: WebDavProvider): Long =
-    when (provider) {
-        WebDavProvider.Jianguoyun -> JIANGUOYUN_LAUNCH_SYNC_COOLDOWN_MS
-        WebDavProvider.Custom -> CUSTOM_LAUNCH_SYNC_COOLDOWN_MS
-    }
-
 internal fun autoSyncScheduleCooldownMs(
     provider: WebDavProvider,
     lastStatus: WebDavAutoSyncStatus?,
+    intervalMs: Long,
 ): Long =
     when (lastStatus) {
         WebDavAutoSyncStatus.Failed,
         WebDavAutoSyncStatus.Running,
-        -> retryAutoSyncCooldownMs(provider)
-        else -> launchAutoSyncCooldownMs(provider)
+        -> maxOf(retryAutoSyncCooldownMs(provider), intervalMs / 3L)
+        else -> intervalMs
     }
 
 internal fun retryAutoSyncCooldownMs(provider: WebDavProvider): Long =

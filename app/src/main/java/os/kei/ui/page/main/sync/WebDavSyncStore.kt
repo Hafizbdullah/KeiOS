@@ -8,6 +8,7 @@ import os.kei.core.json.KeiJson
 import os.kei.core.json.decodeFromStringOrNull
 import os.kei.core.prefs.KeiMmkv
 import os.kei.feature.webdav.model.WebDavConfig
+import kotlin.math.abs
 
 /**
  * Persists WebDAV connection config and per-item sync metadata in MMKV.
@@ -26,6 +27,7 @@ internal object WebDavSyncStore {
     private const val KEY_APP_PASSWORD = "app_password"
     private const val KEY_REMOTE_DIR = "remote_dir"
     private const val KEY_AUTO_SYNC = "auto_sync"
+    private const val KEY_AUTO_SYNC_INTERVAL_HOURS = "auto_sync_interval_hours"
     private const val KEY_LAST_FULL_SYNC = "last_full_sync"
     private const val KEY_LAST_REMOTE_PROBE = "last_remote_probe"
     private const val KEY_LAST_AUTO_SYNC_ATTEMPT = "last_auto_sync_attempt"
@@ -39,6 +41,8 @@ internal object WebDavSyncStore {
     private const val KEY_SYNC_HISTORY = "sync_history_v1"
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
+    const val DEFAULT_AUTO_SYNC_INTERVAL_HOURS = 3
+    val AUTO_SYNC_INTERVAL_HOUR_OPTIONS = listOf(1, 3, 6, 12, 24)
 
     private val mmkv: MMKV get() = KeiMmkv.byId(STORE_ID)
 
@@ -98,6 +102,7 @@ internal object WebDavSyncStore {
                 KEY_APP_PASSWORD,
                 KEY_REMOTE_DIR,
                 KEY_AUTO_SYNC,
+                KEY_AUTO_SYNC_INTERVAL_HOURS,
                 KEY_LAST_FULL_SYNC,
                 KEY_LAST_REMOTE_PROBE,
                 KEY_LAST_AUTO_SYNC_ATTEMPT,
@@ -121,6 +126,23 @@ internal object WebDavSyncStore {
         mmkv.encode(KEY_AUTO_SYNC, enabled)
         WebDavSyncStoreSignals.notifyChanged()
     }
+
+    fun getAutoSyncIntervalHours(): Int =
+        normalizeAutoSyncIntervalHours(
+            mmkv.decodeInt(KEY_AUTO_SYNC_INTERVAL_HOURS, DEFAULT_AUTO_SYNC_INTERVAL_HOURS),
+        )
+
+    fun setAutoSyncIntervalHours(hours: Int) {
+        mmkv.encode(KEY_AUTO_SYNC_INTERVAL_HOURS, normalizeAutoSyncIntervalHours(hours))
+        WebDavSyncStoreSignals.notifyChanged()
+    }
+
+    fun getAutoSyncIntervalMs(): Long =
+        getAutoSyncIntervalHours() * 60L * 60L * 1000L
+
+    fun normalizeAutoSyncIntervalHours(hours: Int): Int =
+        AUTO_SYNC_INTERVAL_HOUR_OPTIONS.minByOrNull { option -> abs(option - hours) }
+            ?: DEFAULT_AUTO_SYNC_INTERVAL_HOURS
 
     // ── Per-item enabled flag ──────────────────────────────────────────
 

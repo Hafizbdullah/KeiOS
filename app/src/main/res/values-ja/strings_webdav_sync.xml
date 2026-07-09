@@ -92,6 +92,9 @@
     <string name="webdav_sync_url_error_scheme">URL は http:// または https:// で始めてください</string>
     <string name="webdav_sync_auto_sync_label">自動同期</string>
     <string name="webdav_sync_auto_sync_summary">起動時にリモートを確認し、ローカル変更を安全にアップロードし、競合は確認用に残します。</string>
+    <string name="webdav_sync_auto_interval_label">同期間隔</string>
+    <string name="webdav_sync_auto_interval_summary">起動時、バックグラウンド、定期自動同期の頻度を制御します。Jianguoyun は 3h 以上がおすすめです。</string>
+    <string name="webdav_sync_auto_interval_value">%1$dh</string>
     <string name="webdav_sync_last_auto_sync_label">最終自動同期</string>
     <string name="webdav_sync_auto_summary_success">成功 %1$d/%2$d · %3$s</string>
     <string name="webdav_sync_auto_summary_needs_review">確認必要 %1$d · 成功 %2$d/%3$d · %4$s</string>

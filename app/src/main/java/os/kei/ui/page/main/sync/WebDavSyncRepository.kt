@@ -28,6 +28,7 @@ internal class WebDavSyncRepository(
             remoteDir = config?.remoteDir ?: provider.defaultRemoteDir,
             isConfigured = config != null,
             autoSyncEnabled = WebDavSyncStore.isAutoSyncEnabled(),
+            autoSyncIntervalHours = WebDavSyncStore.getAutoSyncIntervalHours(),
             lastFullSyncTimeMs = WebDavSyncStore.getLastFullSyncTime(),
             lastRemoteProbeTimeMs = WebDavSyncStore.getLastRemoteProbeTime(),
             lastAutoSyncSummary = WebDavSyncStore.loadLastAutoSyncSummary(),
@@ -60,6 +61,11 @@ internal class WebDavSyncRepository(
     suspend fun setAutoSyncEnabled(enabled: Boolean) =
         withContext(ioDispatcher) {
             WebDavSyncStore.setAutoSyncEnabled(enabled)
+        }
+
+    suspend fun setAutoSyncIntervalHours(hours: Int) =
+        withContext(ioDispatcher) {
+            WebDavSyncStore.setAutoSyncIntervalHours(hours)
         }
 
     suspend fun setItemEnabled(
