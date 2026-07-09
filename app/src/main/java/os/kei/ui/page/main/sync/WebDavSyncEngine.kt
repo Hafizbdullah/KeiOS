@@ -59,11 +59,12 @@ internal class WebDavSyncEngine(
         etag: String?,
         port: WebDavSyncDataPort,
     ) {
-        recordSynced(item, etag, port.fingerprintJson())
+        val local = port.exportJson()
+        recordSynced(item, etag, fingerprintSnapshot(port, local))
         saveRemoteSummaryFromLocal(
             item = item,
             port = port,
-            content = port.exportJson(),
+            content = local,
             etag = etag,
         )
     }
@@ -243,35 +244,39 @@ internal class WebDavSyncEngine(
     ): WebDavItemOutcome =
         when (
             val upload =
-                if (etag == null) {
+                if (usableEtag(etag) == null) {
                     c.uploadIfAbsent(item.fileName, content)
                 } else {
-                    c.upload(item.fileName, content, etag)
+                    c.upload(item.fileName, content, usableEtag(etag))
                 }
         ) {
             is WebDavUploadResult.Success -> {
-                recordSynced(item, upload.etag, port.fingerprintJson())
+                recordUploadedSnapshot(item, upload.etag, port, content)
                 saveRemoteSummaryFromLocal(item, port, content, upload.etag)
                 WebDavItemOutcome(statusWhenWritten)
             }
             WebDavUploadResult.Conflict -> {
-                // Remote moved under us — pull again, re-merge, and retry once unconditionally.
+                // Remote moved under us: pull again, re-merge, and retry against the refreshed ETag.
                 when (val retry = c.download(item.fileName)) {
                     is WebDavDownloadResult.Success -> {
                         port.merge(retry.content)
                         val reMerged = port.exportJson()
-                        when (val second = c.upload(item.fileName, reMerged, retry.etag)) {
+                        val retryEtag = usableEtag(retry.etag)
+                        if (retryEtag == null) {
+                            conflictOutcome(item)
+                        } else when (val second = c.upload(item.fileName, reMerged, retryEtag)) {
                             is WebDavUploadResult.Success -> {
-                                recordSynced(item, second.etag, port.fingerprintJson())
+                                recordUploadedSnapshot(item, second.etag, port, reMerged)
                                 saveRemoteSummaryFromLocal(item, port, reMerged, second.etag)
                                 WebDavItemOutcome(WebDavItemStatus.Merged)
                             }
                             WebDavUploadResult.Conflict ->
                                 if (port.mergeRemoteOnAutoConflict) {
-                                    refreshMergeAndOverwrite(
+                                    resolveMergeConflictOptimistically(
                                         c = c,
                                         item = item,
                                         port = port,
+                                        remainingAttempts = MAX_OPTIMISTIC_MERGE_ATTEMPTS - 1,
                                     )
                                 } else {
                                     conflictOutcome(item)
@@ -288,7 +293,7 @@ internal class WebDavSyncEngine(
     /**
      * Push local changes detected by auto-sync without pulling remote content into local first.
      * The previous remote ETag/hash is used as the baseline. If the remote moved, local data is
-     * preserved and the item is marked as pending conflict for the WebDAV page.
+     * preserved; lossless ports re-merge with conditional writes, while other ports request review.
      */
     suspend fun uploadLocalChange(
         config: WebDavConfig,
@@ -322,7 +327,7 @@ internal class WebDavSyncEngine(
                 }
             when (val upload = uploadResult) {
                 is WebDavUploadResult.Success -> {
-                    recordSynced(item, upload.etag, port.fingerprintJson())
+                    recordUploadedSnapshot(item, upload.etag, port, local)
                     saveRemoteSummaryFromLocal(item, port, local, upload.etag)
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
                 }
@@ -359,7 +364,12 @@ internal class WebDavSyncEngine(
                 if (remoteHash != expectedRemoteHash) {
                     WebDavUploadResult.Conflict
                 } else {
-                    c.upload(item.fileName, local, remote.etag)
+                    val remoteEtag = usableEtag(remote.etag)
+                    if (remoteEtag == null) {
+                        WebDavUploadResult.Conflict
+                    } else {
+                        c.upload(item.fileName, local, remoteEtag)
+                    }
                 }
             }
             is WebDavDownloadResult.Error -> WebDavUploadResult.Error(remote.error)
@@ -378,7 +388,7 @@ internal class WebDavSyncEngine(
                 metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
                 when (val retryUpload = c.uploadIfAbsent(item.fileName, local)) {
                     is WebDavUploadResult.Success -> {
-                        recordSynced(item, retryUpload.etag, port.fingerprintJson())
+                        recordUploadedSnapshot(item, retryUpload.etag, port, local)
                         saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
                         WebDavItemOutcome(WebDavItemStatus.Uploaded)
                     }
@@ -388,7 +398,7 @@ internal class WebDavSyncEngine(
             }
             is WebDavDownloadResult.Success -> {
                 saveRemoteSummaryFromRemote(item, port, refreshed.content, refreshed.etag)
-                val localFingerprint = port.fingerprintJson()
+                val localFingerprint = fingerprintSnapshot(port, local)
                 val localHash = contentHash(localFingerprint)
                 val refreshedRemoteHash = contentHash(port.remoteFingerprintJson(refreshed.content))
                 when {
@@ -396,36 +406,44 @@ internal class WebDavSyncEngine(
                         recordSynced(item, refreshed.etag, localFingerprint)
                         WebDavItemOutcome(WebDavItemStatus.UpToDate)
                     }
-                    expectedRemoteHash != null && refreshedRemoteHash == expectedRemoteHash ->
-                        when (val retryUpload = c.upload(item.fileName, local, refreshed.etag)) {
+                    expectedRemoteHash != null && refreshedRemoteHash == expectedRemoteHash -> {
+                        val refreshedEtag = usableEtag(refreshed.etag)
+                        if (refreshedEtag == null) {
+                            conflictOutcome(item)
+                        } else when (val retryUpload = c.upload(item.fileName, local, refreshedEtag)) {
                             is WebDavUploadResult.Success -> {
-                                recordSynced(item, retryUpload.etag, localFingerprint)
+                                recordUploadedSnapshot(item, retryUpload.etag, port, local)
                                 saveRemoteSummaryFromLocal(item, port, local, retryUpload.etag)
                                 WebDavItemOutcome(WebDavItemStatus.Uploaded)
                             }
                             WebDavUploadResult.Conflict -> conflictOutcome(item)
                             is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
                         }
+                    }
                     port.mergeRemoteOnAutoConflict -> {
                         port.merge(refreshed.content)
                         val merged = port.exportJson()
-                        val mergedFingerprint = port.fingerprintJson()
+                        val mergedFingerprint = fingerprintSnapshot(port, merged)
                         val mergedHash = contentHash(mergedFingerprint)
                         if (mergedHash == refreshedRemoteHash) {
                             recordSynced(item, refreshed.etag, mergedFingerprint)
                             WebDavItemOutcome(WebDavItemStatus.UpToDate)
                         } else {
-                            when (val retryUpload = c.upload(item.fileName, merged, refreshed.etag)) {
+                            val refreshedEtag = usableEtag(refreshed.etag)
+                            if (refreshedEtag == null) {
+                                conflictOutcome(item)
+                            } else when (val retryUpload = c.upload(item.fileName, merged, refreshedEtag)) {
                                 is WebDavUploadResult.Success -> {
-                                    recordSynced(item, retryUpload.etag, mergedFingerprint)
+                                    recordUploadedSnapshot(item, retryUpload.etag, port, merged)
                                     saveRemoteSummaryFromLocal(item, port, merged, retryUpload.etag)
                                     WebDavItemOutcome(WebDavItemStatus.Merged)
                                 }
                                 WebDavUploadResult.Conflict ->
-                                    refreshMergeAndOverwrite(
+                                    resolveMergeConflictOptimistically(
                                         c = c,
                                         item = item,
                                         port = port,
+                                        remainingAttempts = MAX_OPTIMISTIC_MERGE_ATTEMPTS - 1,
                                     )
                                 is WebDavUploadResult.Error -> errorOutcome(retryUpload.error)
                             }
@@ -461,7 +479,7 @@ internal class WebDavSyncEngine(
                 }
             when (val upload = uploadResult) {
                 is WebDavUploadResult.Success -> {
-                    recordSynced(item, upload.etag, port.fingerprintJson())
+                    recordUploadedSnapshot(item, upload.etag, port, local)
                     saveRemoteSummaryFromLocal(item, port, local, upload.etag)
                     WebDavItemOutcome(WebDavItemStatus.Uploaded)
                 }
@@ -590,7 +608,7 @@ internal class WebDavSyncEngine(
                 saveRemoteSummaryFromRemote(item, port, refreshed.content, refreshed.etag)
                 when (val second = c.upload(item.fileName, local, etag = null)) {
                     is WebDavUploadResult.Success -> {
-                        recordSynced(item, second.etag, port.fingerprintJson())
+                        recordUploadedSnapshot(item, second.etag, port, local)
                         saveRemoteSummaryFromLocal(item, port, local, second.etag)
                         WebDavItemOutcome(WebDavItemStatus.Uploaded)
                     }
@@ -602,7 +620,7 @@ internal class WebDavSyncEngine(
                 metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
                 when (val second = c.upload(item.fileName, local, etag = null)) {
                     is WebDavUploadResult.Success -> {
-                        recordSynced(item, second.etag, port.fingerprintJson())
+                        recordUploadedSnapshot(item, second.etag, port, local)
                         saveRemoteSummaryFromLocal(item, port, local, second.etag)
                         WebDavItemOutcome(WebDavItemStatus.Uploaded)
                     }
@@ -613,49 +631,93 @@ internal class WebDavSyncEngine(
             is WebDavDownloadResult.Error -> errorOutcome(refreshed.error)
         }
 
-    private suspend fun refreshMergeAndOverwrite(
+    private suspend fun resolveMergeConflictOptimistically(
         c: WebDavSyncClientBridge,
         item: WebDavSyncItem,
         port: WebDavSyncDataPort,
-    ): WebDavItemOutcome =
-        when (val latest = c.download(item.fileName)) {
-            is WebDavDownloadResult.Success -> {
-                saveRemoteSummaryFromRemote(item, port, latest.content, latest.etag)
-                port.merge(latest.content)
-                val merged = port.exportJson()
-                val mergedFingerprint = port.fingerprintJson()
-                val latestRemoteHash = contentHash(port.remoteFingerprintJson(latest.content))
-                if (contentHash(mergedFingerprint) == latestRemoteHash) {
-                    recordSynced(item, latest.etag, mergedFingerprint)
-                    WebDavItemOutcome(WebDavItemStatus.UpToDate)
-                } else {
-                    when (val upload = c.upload(item.fileName, merged, etag = null)) {
+        remainingAttempts: Int,
+    ): WebDavItemOutcome {
+        for (attempt in 1..remainingAttempts.coerceAtLeast(0)) {
+            when (val latest = c.download(item.fileName)) {
+                is WebDavDownloadResult.Success -> {
+                    saveRemoteSummaryFromRemote(item, port, latest.content, latest.etag)
+                    port.merge(latest.content)
+                    val merged = port.exportJson()
+                    val mergedFingerprint = fingerprintSnapshot(port, merged)
+                    val latestRemoteHash = contentHash(port.remoteFingerprintJson(latest.content))
+                    if (contentHash(mergedFingerprint) == latestRemoteHash) {
+                        recordSynced(item, latest.etag, mergedFingerprint)
+                        return WebDavItemOutcome(WebDavItemStatus.UpToDate)
+                    }
+                    val latestEtag = usableEtag(latest.etag) ?: return conflictOutcome(item)
+                    when (val upload = c.upload(item.fileName, merged, etag = latestEtag)) {
                         is WebDavUploadResult.Success -> {
-                            recordSynced(item, upload.etag, mergedFingerprint)
+                            recordUploadedSnapshot(item, upload.etag, port, merged)
                             saveRemoteSummaryFromLocal(item, port, merged, upload.etag)
-                            AppLogger.i(TAG, "merge-safe overwrite resolved ${item.name} after refreshed ETag conflict")
-                            WebDavItemOutcome(WebDavItemStatus.Merged)
+                            AppLogger.i(
+                                TAG,
+                                "optimistic merge resolved ${item.name} on attempt $attempt",
+                            )
+                            return WebDavItemOutcome(WebDavItemStatus.Merged)
                         }
-                        WebDavUploadResult.Conflict -> conflictOutcome(item)
-                        is WebDavUploadResult.Error -> errorOutcome(upload.error)
+                        WebDavUploadResult.Conflict -> {
+                            AppLogger.i(
+                                TAG,
+                                "optimistic merge retry ${item.name} after ETag changed on attempt $attempt",
+                            )
+                        }
+                        is WebDavUploadResult.Error -> return errorOutcome(upload.error)
                     }
                 }
-            }
-            WebDavDownloadResult.Empty -> {
-                metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
-                val local = port.exportJson()
-                when (val upload = c.upload(item.fileName, local, etag = null)) {
-                    is WebDavUploadResult.Success -> {
-                        recordSynced(item, upload.etag, port.fingerprintJson())
-                        saveRemoteSummaryFromLocal(item, port, local, upload.etag)
-                        WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                WebDavDownloadResult.Empty -> {
+                    metadataStore.saveRemoteSummaryEmpty(item, nowMillis())
+                    val local = port.exportJson()
+                    when (val upload = c.uploadIfAbsent(item.fileName, local)) {
+                        is WebDavUploadResult.Success -> {
+                            recordUploadedSnapshot(item, upload.etag, port, local)
+                            saveRemoteSummaryFromLocal(item, port, local, upload.etag)
+                            return WebDavItemOutcome(WebDavItemStatus.Uploaded)
+                        }
+                        WebDavUploadResult.Conflict -> {
+                            AppLogger.i(
+                                TAG,
+                                "optimistic merge retry ${item.name} after remote file appeared on attempt $attempt",
+                            )
+                        }
+                        is WebDavUploadResult.Error -> return errorOutcome(upload.error)
                     }
-                    WebDavUploadResult.Conflict -> conflictOutcome(item)
-                    is WebDavUploadResult.Error -> errorOutcome(upload.error)
                 }
+                is WebDavDownloadResult.Error -> return errorOutcome(latest.error)
             }
-            is WebDavDownloadResult.Error -> errorOutcome(latest.error)
         }
+        AppLogger.i(
+            TAG,
+            "optimistic merge exhausted $MAX_OPTIMISTIC_MERGE_ATTEMPTS attempts for ${item.name}",
+        )
+        return conflictOutcome(item)
+    }
+
+    private fun recordUploadedSnapshot(
+        item: WebDavSyncItem,
+        etag: String?,
+        port: WebDavSyncDataPort,
+        uploadedContent: String,
+    ) {
+        recordSynced(item, etag, fingerprintSnapshot(port, uploadedContent))
+    }
+
+    private fun usableEtag(etag: String?): String? =
+        etag?.trim()?.takeIf { it.isNotEmpty() }
+
+    private fun fingerprintSnapshot(
+        port: WebDavSyncDataPort,
+        content: String,
+    ): String =
+        runCatching { port.remoteFingerprintJson(content) }
+            .onFailure { error ->
+                AppLogger.w(TAG, "failed to fingerprint uploaded WebDAV snapshot", error)
+            }
+            .getOrDefault(content)
 
     private fun saveRemoteSummaryFromRemote(
         item: WebDavSyncItem,
@@ -715,6 +777,7 @@ internal class WebDavSyncEngine(
 
     companion object {
         private const val TAG = "WebDavSyncEngine"
+        private const val MAX_OPTIMISTIC_MERGE_ATTEMPTS = 3
 
         /** Stable content fingerprint used to detect real local changes for auto-sync. */
         fun contentHash(content: String): String {
