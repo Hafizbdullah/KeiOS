@@ -62,7 +62,7 @@
 -keepattributes Signature,InnerClasses,EnclosingMethod,*Annotation*
 
 # Module-specific rules:
-# - core-notification exports focus-api and Super Island facade consumer rules.
+# - core-notification exports local Focus V3 and Super Island facade consumer rules.
 # - core-system exports Shizuku and HiddenApiBypass consumer rules.
 # - feature-github keeps its managed-install Shizuku bridge surface.
 

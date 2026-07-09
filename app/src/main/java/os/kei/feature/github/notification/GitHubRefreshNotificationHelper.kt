@@ -957,7 +957,7 @@ object GitHubRefreshNotificationHelper {
             )
         )
     }.onFailure {
-        AppLogger.e(TAG, "Build FocusNotification extras failed", it)
+        AppLogger.e(TAG, "Build local Focus protocol extras failed", it)
     }.getOrNull()
 
     private fun resolveSuperIslandFloatPolicy(state: RefreshState): SuperIslandFloatPolicy {

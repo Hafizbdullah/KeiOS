@@ -7,8 +7,9 @@ import android.graphics.Color
 import android.graphics.drawable.Icon
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.toColorInt
-import com.xzakota.hyper.notification.focus.FocusNotification
-import com.xzakota.hyper.notification.focus.template.FocusTemplateV3
+import os.kei.core.notification.focus.MiFocusProtocolActionInfo
+import os.kei.core.notification.focus.MiFocusProtocolNotification
+import os.kei.core.notification.focus.MiFocusProtocolTemplateV3
 import os.kei.core.notification.R
 import os.kei.core.log.AppLogger
 import os.kei.core.notification.live.LiveNotificationPayload
@@ -279,7 +280,7 @@ class MiIslandNotificationBuilder(
             settings = payload.settings
         )
 
-        FocusNotification.buildV3 {
+        MiFocusProtocolNotification.buildV3 {
             val lightLogoKey = createPicture("key_logo_light", lightLogoIcon)
             val darkLogoKey = createPicture("key_logo_dark", darkLogoIcon)
             val displayIconKey = createPicture("key_logo_display", displayIcon)
@@ -440,7 +441,7 @@ class MiIslandNotificationBuilder(
             }
         }
     }.onFailure {
-        AppLogger.e(TAG, "Build FocusNotification extras failed", it)
+        AppLogger.e(TAG, "Build local Focus protocol extras failed", it)
     }.getOrNull()
 
     private fun resolvePresentation(
@@ -739,7 +740,7 @@ class MiIslandNotificationBuilder(
         return actions
     }
 
-    private fun com.xzakota.hyper.notification.focus.model.ActionInfo.applyIslandActionStyle(
+    private fun MiFocusProtocolActionInfo.applyIslandActionStyle(
         style: IslandActionStyle
     ) {
         when (style) {
@@ -914,7 +915,7 @@ class MiIslandNotificationBuilder(
             .setChronometerCountDown(true)
     }
 
-    private fun FocusTemplateV3.focusShowNotification(show: Boolean?) {
+    private fun MiFocusProtocolTemplateV3.focusShowNotification(show: Boolean?) {
         if (show != null) {
             isShowNotification = show
         }

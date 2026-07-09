@@ -2,7 +2,7 @@ package os.kei.core.notification.live
 
 import android.content.Context
 import android.os.Build
-import com.xzakota.hyper.notification.focus.util.FocusUtils
+import os.kei.core.notification.focus.MiFocusCapabilityAdapter
 import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.system.findPropString
@@ -22,13 +22,13 @@ class NotificationHelper(
 
     val miIslandFocusProtocolVersion: Int by lazy {
         runCatching {
-            FocusUtils.getFocusProtocolVersion(context)
+            MiFocusCapabilityAdapter.getFocusProtocolVersion(context)
         }.getOrDefault(0)
     }
 
     val isSupportMiIslandFeature: Boolean by lazy {
         runCatching {
-            FocusUtils.isSupportIsland()
+            MiFocusCapabilityAdapter.isSupportIsland()
         }.getOrDefault(false)
     }
 
@@ -38,7 +38,7 @@ class NotificationHelper(
 
     val hasMiIslandPermission: Boolean by lazy {
         runCatching {
-            FocusUtils.hasFocusPermission(context)
+            MiFocusCapabilityAdapter.hasFocusPermission(context)
         }.getOrDefault(false)
     }
 

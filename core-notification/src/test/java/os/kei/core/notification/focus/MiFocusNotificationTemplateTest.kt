@@ -260,7 +260,9 @@ class MiFocusNotificationTemplateTest {
         )
 
         val root = JSONObject(bundle.getString("miui.focus.param").orEmpty())
-        val smallIsland = root.getJSONObject("island").getJSONObject("smallIslandArea")
+        val smallIsland = root.getJSONObject("param_v2")
+            .getJSONObject("param_island")
+            .getJSONObject("smallIslandArea")
         val imageText = smallIsland.getJSONObject("imageTextInfoRight")
 
         assertFalse(smallIsland.has("combinePicInfo"))
@@ -312,7 +314,9 @@ class MiFocusNotificationTemplateTest {
                 )
             ).getString("miui.focus.param").orEmpty()
         )
-        val summary9Small = summary9Root.getJSONObject("island").getJSONObject("smallIslandArea")
+        val summary9Small = summary9Root.getJSONObject("param_v2")
+            .getJSONObject("param_island")
+            .getJSONObject("smallIslandArea")
             .getJSONObject("imageTextInfoRight")
         assertEquals(6, summary9Small.getInt("type"))
     }
