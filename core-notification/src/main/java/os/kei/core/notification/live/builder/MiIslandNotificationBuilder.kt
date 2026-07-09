@@ -80,6 +80,10 @@ class MiIslandNotificationBuilder(
         private const val BA_AP_PROGRESS_TRACK_COLOR = "#374151"
         private const val BA_EVENT_ACCENT_COLOR = "#4DA3FF"
         private const val GITHUB_SHARE_IMPORT_ACCENT_COLOR = "#2563EB"
+        private const val WEBDAV_ACCENT_COLOR = "#2563EB"
+        private const val WEBDAV_NEEDS_REVIEW_COLOR = "#F59E0B"
+        private const val WEBDAV_SUCCESS_COLOR = "#22C55E"
+        private const val WEBDAV_DANGER_COLOR = "#E25B6A"
         private const val GITHUB_SHARE_IMPORT_ACTION_PRIMARY_COLOR = "#2563EB"
         private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR = "#DBEAFE"
         private const val GITHUB_SHARE_IMPORT_ACTION_SECONDARY_BG_COLOR_DARK = "#1E3A8A"
@@ -109,6 +113,8 @@ class MiIslandNotificationBuilder(
             LiveNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             LiveNotificationPayload.isGitHubShareImportServerName(state.serverName)
+        val isWebDavSync =
+            LiveNotificationPayload.isWebDavSyncServerName(state.serverName)
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -128,7 +134,8 @@ class MiIslandNotificationBuilder(
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
-            isGitHubShareImport = isGitHubShareImport
+            isGitHubShareImport = isGitHubShareImport,
+            isWebDavSync = isWebDavSync
         )
         val presentation = resolvePresentation(
             state = state,
@@ -137,6 +144,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubShareImport = isGitHubShareImport,
+            isWebDavSync = isWebDavSync,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val resolvedAllowFloat = resolveAllowFloat(
@@ -170,12 +178,13 @@ class MiIslandNotificationBuilder(
             .setContentIntent(state.openPendingIntent)
             .setCategory(
                 when {
-                    isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    isCalendarPoolCountdown -> NotificationCompat.CATEGORY_PROGRESS
-                    isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
-                    !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
-                    else -> NotificationCompat.CATEGORY_STATUS
-                }
+            isBlueArchiveAp && state.running -> NotificationCompat.CATEGORY_PROGRESS
+            isCalendarPoolCountdown -> NotificationCompat.CATEGORY_PROGRESS
+            isGitHubShareImport && state.running -> NotificationCompat.CATEGORY_PROGRESS
+            isWebDavSync && state.running -> NotificationCompat.CATEGORY_PROGRESS
+            !isBlueArchiveNotification && state.running -> NotificationCompat.CATEGORY_SERVICE
+            else -> NotificationCompat.CATEGORY_STATUS
+        }
             )
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setOngoing(presentation.notificationOngoing)
@@ -226,6 +235,8 @@ class MiIslandNotificationBuilder(
             LiveNotificationPayload.isBaCalendarPoolServerName(state.serverName)
         val isGitHubShareImport =
             LiveNotificationPayload.isGitHubShareImportServerName(state.serverName)
+        val isWebDavSync =
+            LiveNotificationPayload.isWebDavSyncServerName(state.serverName)
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
@@ -238,6 +249,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
             isBlueArchiveCalendarPool = isBlueArchiveCalendarPool,
             isGitHubShareImport = isGitHubShareImport,
+            isWebDavSync = isWebDavSync,
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val useSemanticIcon = isBlueArchiveNotification || isGitHubShareImport
@@ -438,6 +450,7 @@ class MiIslandNotificationBuilder(
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
         isGitHubShareImport: Boolean,
+        isWebDavSync: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
         if (isBlueArchiveAp && state.running) {
@@ -564,6 +577,55 @@ class MiIslandNotificationBuilder(
                 primaryActionColor = GITHUB_SHARE_IMPORT_ACTION_PRIMARY_COLOR
             )
         }
+        if (isWebDavSync && state.running) {
+            val progressPercent = state.overrideProgressPercent
+                ?.coerceIn(0, 100)
+                ?: state.port.coerceIn(0, 100)
+            val progressColor = miIslandProgressColorOverride
+                ?: state.overrideAccentColor
+                ?: WEBDAV_ACCENT_COLOR
+            return IslandPresentation(
+                allowFloat = true,
+                showTextButtons = true,
+                bigTemplateKind = IslandBigTemplateKind.PROGRESS_TEXT,
+                smallTemplateKind = IslandSmallTemplateKind.PROGRESS_ICON,
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = state.shortText,
+                    maxTextLength = 8
+                ),
+                compactContent = state.shortText.takeIf { it.isNotBlank() },
+                notificationOngoing = state.ongoing,
+                requestPromotedOngoing = true,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                showExpandedProgress = true,
+                progressPercent = progressPercent,
+                progressColor = progressColor,
+                notificationAccentColor = progressColor,
+                primaryActionColor = progressColor
+            )
+        }
+        if (isWebDavSync) {
+            val accentColor = state.overrideAccentColor
+                ?: resolveWebDavTerminalAccentColor(state)
+            return IslandPresentation(
+                allowFloat = true,
+                showTextButtons = true,
+                compactTitle = resolveCompactTitle(
+                    raw = state.onlineText(context),
+                    fallback = state.statusText(context),
+                    maxTextLength = 8
+                ),
+                compactContent = state.shortText.takeIf { it.isNotBlank() },
+                notificationOngoing = state.ongoing,
+                requestPromotedOngoing = state.ongoing,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                notificationAccentColor = accentColor,
+                primaryActionColor = accentColor
+            )
+        }
         if (state.running) {
             return IslandPresentation(
                 allowFloat = false,
@@ -621,9 +683,11 @@ class MiIslandNotificationBuilder(
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
         isBlueArchiveCalendarPool: Boolean,
-        isGitHubShareImport: Boolean
+        isGitHubShareImport: Boolean,
+        isWebDavSync: Boolean
     ): String? {
         return when {
+            isWebDavSync -> state.shortText.ifBlank { state.onlineText(context) }
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)
             isBlueArchiveCalendarPool -> state.shortText
@@ -791,6 +855,20 @@ class MiIslandNotificationBuilder(
             GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR
         } else {
             null
+        }
+    }
+
+    private fun resolveWebDavTerminalAccentColor(state: LiveNotificationPayload): String {
+        val text = listOf(
+            state.onlineText(context),
+            state.shortText,
+            state.content(context),
+        ).joinToString(separator = " ").lowercase()
+        return when {
+            listOf("fail", "failed", "error", "失败").any(text::contains) -> WEBDAV_DANGER_COLOR
+            listOf("review", "需处理", "conflict").any(text::contains) -> WEBDAV_NEEDS_REVIEW_COLOR
+            listOf("success", "完成", "done").any(text::contains) -> WEBDAV_SUCCESS_COLOR
+            else -> WEBDAV_ACCENT_COLOR
         }
     }
 

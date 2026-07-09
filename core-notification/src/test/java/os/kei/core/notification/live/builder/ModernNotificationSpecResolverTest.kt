@@ -262,6 +262,54 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
+    fun `webdav sync uses override progress and accent color`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
+                running = true,
+                port = 45,
+                clients = 6,
+                ongoing = true,
+                overrideProgressPercent = 45,
+                overrideAccentColor = "#F59E0B"
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.WEBDAV_SYNC, spec.kind)
+        assertEquals(45, spec.progressPercent)
+        assertEquals(R.drawable.ic_kei_logo_live_update, spec.iconResId)
+        assertEquals(R.drawable.ic_kei_logo_live_update, spec.expandedIconResId)
+        assertEquals(R.drawable.ic_kei_logo_live_update, spec.trackerIconResId)
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+        assertEquals(true, spec.showProgressStyle)
+        assertEquals(0xFFF59E0B.toInt(), spec.progressColor)
+    }
+
+    @Test
+    fun `webdav terminal update uses status presentation`() {
+        val spec = ModernNotificationSpecResolver.resolve(
+            state = createState(
+                serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
+                running = false,
+                port = 100,
+                clients = 6,
+                ongoing = false,
+                overrideProgressPercent = 100,
+                overrideAccentColor = "#22C55E"
+            ),
+            preferOemLiveIconLayout = true
+        )
+
+        assertEquals(ModernNotificationKind.WEBDAV_SYNC, spec.kind)
+        assertEquals(0, spec.progressPercent)
+        assertEquals(ModernShortCriticalMode.NONE, spec.shortCriticalMode)
+        assertEquals(false, spec.ongoing)
+        assertEquals(false, spec.showProgressStyle)
+        assertEquals(0xFF22C55E.toInt(), spec.progressColor)
+    }
+
+    @Test
     fun `default notification keeps standard app status icon`() {
         val spec = ModernNotificationSpecResolver.resolve(
             state = createState(
@@ -304,7 +352,8 @@ class ModernNotificationSpecResolverTest {
         clients: Int,
         ongoing: Boolean,
         overrideProgressPercent: Int? = null,
-        deadlineAtMs: Long? = null
+        deadlineAtMs: Long? = null,
+        overrideAccentColor: String? = null
     ): LiveNotificationPayload {
         val pendingIntent = createFakePendingIntent()
         return LiveNotificationPayload(
@@ -318,6 +367,7 @@ class ModernNotificationSpecResolverTest {
             openPendingIntent = pendingIntent,
             stopPendingIntent = pendingIntent,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs
         )
     }

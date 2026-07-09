@@ -118,6 +118,11 @@ fun MainScreen(
             )
         )
     }
+    LaunchedEffect(hostState.requestedWebDavSyncToken) {
+        if (hostState.requestedWebDavSyncToken <= 0) return@LaunchedEffect
+        navigator.popUntil { it == KeiosRoute.Main }
+        navigator.pushSingleTop(KeiosRoute.WebDavSync)
+    }
     LaunchedEffect(guideNavigationViewModel, navigator) {
         guideNavigationViewModel.events.collect { event ->
             when (event) {

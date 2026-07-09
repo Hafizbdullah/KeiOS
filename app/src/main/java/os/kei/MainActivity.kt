@@ -60,6 +60,7 @@ private const val DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS = 2_000L
 class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_TARGET_BOTTOM_PAGE = "os.kei.extra.TARGET_BOTTOM_PAGE"
+        const val EXTRA_TARGET_ROUTE = "os.kei.extra.TARGET_ROUTE"
         const val EXTRA_MCP_SERVER_ACTION = "os.kei.extra.MCP_SERVER_ACTION"
         const val EXTRA_SHORTCUT_ACTION = "os.kei.extra.SHORTCUT_ACTION"
         const val EXTRA_GITHUB_ACTIONS_TRACK_ID = "os.kei.extra.GITHUB_ACTIONS_TRACK_ID"
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_BOTTOM_PAGE_GITHUB = "GitHub"
         const val TARGET_BOTTOM_PAGE_MCP = "Mcp"
         const val TARGET_BOTTOM_PAGE_BA = "Ba"
+        const val TARGET_ROUTE_WEBDAV_SYNC = "WebDavSync"
         const val MCP_SERVER_ACTION_TOGGLE = "toggle"
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
@@ -308,6 +310,7 @@ class MainActivity : ComponentActivity() {
         val route =
             MainActivityIntentRouting.sanitize(
                 rawTargetBottomPage = intent?.getStringExtra(EXTRA_TARGET_BOTTOM_PAGE),
+                rawTargetRoute = intent?.getStringExtra(EXTRA_TARGET_ROUTE),
                 rawMcpServerAction = intent?.getStringExtra(EXTRA_MCP_SERVER_ACTION),
                 rawShortcutAction = intent?.getStringExtra(EXTRA_SHORTCUT_ACTION),
                 rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID),
@@ -325,6 +328,11 @@ class MainActivity : ComponentActivity() {
         } else {
             previous.requestedBaAccountToken
         }
+        val nextWebDavSyncToken = if (route.targetRoute == TARGET_ROUTE_WEBDAV_SYNC) {
+            previous.requestedWebDavSyncToken + 1
+        } else {
+            previous.requestedWebDavSyncToken
+        }
         hostUiState = previous.copy(
             requestedBottomPage = route.targetBottomPage,
             requestedBottomPageToken = previous.requestedBottomPageToken + 1,
@@ -332,6 +340,7 @@ class MainActivity : ComponentActivity() {
             requestedGitHubActionsSheetToken = nextActionsSheetToken,
             requestedBaAccountId = route.baAccountId ?: previous.requestedBaAccountId,
             requestedBaAccountToken = nextBaAccountToken,
+            requestedWebDavSyncToken = nextWebDavSyncToken,
         )
         pendingMcpServerAction = route.mcpServerAction
         pendingShortcutAction = route.shortcutAction

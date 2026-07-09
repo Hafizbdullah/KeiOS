@@ -2,6 +2,7 @@ package os.kei
 
 internal data class MainActivityIntentRoute(
     val targetBottomPage: String,
+    val targetRoute: String?,
     val mcpServerAction: String?,
     val shortcutAction: String?,
     val githubActionsTrackId: String? = null,
@@ -13,6 +14,7 @@ internal object MainActivityIntentRouting {
         rawTargetBottomPage: String?,
         rawMcpServerAction: String?,
         rawShortcutAction: String?,
+        rawTargetRoute: String? = null,
         rawGitHubActionsTrackId: String? = null,
         rawBaAccountId: String? = null
     ): MainActivityIntentRoute? {
@@ -33,8 +35,10 @@ internal object MainActivityIntentRouting {
             targetBottomPage = target,
             rawAccountId = rawBaAccountId,
         )
+        val targetRoute = normalizeTargetRoute(rawTargetRoute)
         return MainActivityIntentRoute(
             targetBottomPage = target,
+            targetRoute = targetRoute,
             mcpServerAction = mcpServerAction,
             shortcutAction = shortcutAction,
             githubActionsTrackId = githubActionsTrackId,
@@ -48,6 +52,13 @@ internal object MainActivityIntentRouting {
             MainActivity.TARGET_BOTTOM_PAGE_GITHUB -> MainActivity.TARGET_BOTTOM_PAGE_GITHUB
             MainActivity.TARGET_BOTTOM_PAGE_MCP -> MainActivity.TARGET_BOTTOM_PAGE_MCP
             MainActivity.TARGET_BOTTOM_PAGE_BA -> MainActivity.TARGET_BOTTOM_PAGE_BA
+            else -> null
+        }
+    }
+
+    private fun normalizeTargetRoute(raw: String?): String? {
+        return when (raw?.trim()) {
+            MainActivity.TARGET_ROUTE_WEBDAV_SYNC -> MainActivity.TARGET_ROUTE_WEBDAV_SYNC
             else -> null
         }
     }

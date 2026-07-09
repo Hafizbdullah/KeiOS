@@ -30,6 +30,7 @@ object McpNotificationHelper {
     const val BA_CAFE_VISIT_NOTIFICATION_ID = 38890
     const val BA_ARENA_REFRESH_NOTIFICATION_ID = 38891
     const val BA_CAFE_AP_NOTIFICATION_ID = 38892
+    const val WEBDAV_SYNC_NOTIFICATION_ID = 38893
     private const val TEST_NOTIFICATION_ID = KEEPALIVE_NOTIFICATION_ID
     private const val ACTION_DISMISS = "os.kei.mcp.keepalive.DISMISS"
     private const val EXTRA_NOTIFICATION_ID = "notification_id"
@@ -155,9 +156,11 @@ object McpNotificationHelper {
         overrideOnlineText: String? = null,
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
+        overrideAccentColor: String? = null,
         deadlineAtMs: Long? = null,
         miFocusOrderId: String? = null,
         targetBaAccountId: String? = null,
+        targetRoute: String? = null,
     ): SessionNotifier.NotificationBuildResult {
         val isBlueArchiveNotification =
             McpNotificationPayload.isBaNotificationServerName(serverName)
@@ -169,6 +172,7 @@ object McpNotificationHelper {
                 context = context,
                 serverName = serverName,
                 targetBaAccountId = targetBaAccountId,
+                targetRoute = targetRoute,
             )
         val focusOpenPendingIntent = PendingIntent.getActivity(
             context,
@@ -250,6 +254,7 @@ object McpNotificationHelper {
             overrideOnlineText = overrideOnlineText,
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs,
             notificationId = notificationId,
             miFocusOrderId = resolvedMiFocusOrderId
@@ -321,9 +326,11 @@ object McpNotificationHelper {
         overrideOnlineText: String? = null,
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
+        overrideAccentColor: String? = null,
         deadlineAtMs: Long? = null,
         miFocusOrderId: String? = null,
         targetBaAccountId: String? = null,
+        targetRoute: String? = null,
     ): Boolean {
         ensureChannel(context)
         val resolvedTargetBaAccountId =
@@ -357,9 +364,11 @@ object McpNotificationHelper {
             overrideOnlineText = overrideOnlineText,
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs,
             miFocusOrderId = resolvedMiFocusOrderId,
             targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = targetRoute,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -380,9 +389,11 @@ object McpNotificationHelper {
             overrideOnlineText = overrideOnlineText,
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs,
             miFocusOrderId = resolvedMiFocusOrderId,
             targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = targetRoute,
         )
         val manager = context.getSystemService(NotificationManager::class.java)
         if (
@@ -426,9 +437,11 @@ object McpNotificationHelper {
         overrideOnlineText: String? = null,
         overrideShortText: String? = null,
         overrideProgressPercent: Int? = null,
+        overrideAccentColor: String? = null,
         deadlineAtMs: Long? = null,
         miFocusOrderId: String? = null,
         targetBaAccountId: String? = null,
+        targetRoute: String? = null,
     ): Boolean {
         ensureChannel(context)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
@@ -464,9 +477,11 @@ object McpNotificationHelper {
             overrideOnlineText = overrideOnlineText,
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs,
             miFocusOrderId = resolvedMiFocusOrderId,
             targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = targetRoute,
         )
         val snapshot = McpNotificationSnapshot(
             serverName = serverName,
@@ -487,9 +502,11 @@ object McpNotificationHelper {
             overrideOnlineText = overrideOnlineText,
             overrideShortText = overrideShortText,
             overrideProgressPercent = overrideProgressPercent,
+            overrideAccentColor = overrideAccentColor,
             deadlineAtMs = deadlineAtMs,
             miFocusOrderId = resolvedMiFocusOrderId,
             targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = targetRoute,
         )
         if (McpNotificationSnapshotStore.get(notificationId) == snapshot) return true
         val dispatched = notifyWithResolvedDispatcher(
@@ -657,9 +674,11 @@ object McpNotificationHelper {
             overrideOnlineText = snapshot.overrideOnlineText,
             overrideShortText = snapshot.overrideShortText,
             overrideProgressPercent = snapshot.overrideProgressPercent,
+            overrideAccentColor = snapshot.overrideAccentColor,
             deadlineAtMs = snapshot.deadlineAtMs,
             miFocusOrderId = resolvedMiFocusOrderId,
             targetBaAccountId = snapshot.targetBaAccountId,
+            targetRoute = snapshot.targetRoute,
         )
         val nextSnapshot = snapshot.copy(
             style = buildResult.style,
@@ -718,6 +737,7 @@ object McpNotificationHelper {
         context: Context,
         serverName: String,
         targetBaAccountId: String? = null,
+        targetRoute: String? = null,
     ): Intent {
         val isBlueArchiveNotification =
             McpNotificationPayload.isBaNotificationServerName(serverName)
@@ -741,6 +761,9 @@ object McpNotificationHelper {
                     McpAppIntentContract.TARGET_BOTTOM_PAGE_MCP
                 },
             )
+            normalizeTargetRoute(targetRoute)?.let { route ->
+                putExtra(McpAppIntentContract.EXTRA_TARGET_ROUTE, route)
+            }
             resolvedTargetBaAccountId?.let { accountId ->
                 putExtra(McpAppIntentContract.EXTRA_BA_ACCOUNT_ID, accountId)
             }
@@ -778,6 +801,12 @@ object McpNotificationHelper {
             ?.trim()
             ?.takeIf { it.isNotBlank() }
     }
+
+    private fun normalizeTargetRoute(targetRoute: String?): String? =
+        when (targetRoute?.trim()) {
+            McpAppIntentContract.TARGET_ROUTE_WEBDAV_SYNC -> McpAppIntentContract.TARGET_ROUTE_WEBDAV_SYNC
+            else -> null
+        }
 
     private fun notifyWithResolvedDispatcher(
         context: Context,

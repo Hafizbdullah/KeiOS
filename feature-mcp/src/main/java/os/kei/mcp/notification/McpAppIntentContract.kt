@@ -3,9 +3,11 @@ package os.kei.mcp.notification
 object McpAppIntentContract {
     const val MAIN_ACTIVITY_CLASS_NAME = "os.kei.MainActivity"
     const val EXTRA_TARGET_BOTTOM_PAGE = "os.kei.extra.TARGET_BOTTOM_PAGE"
+    const val EXTRA_TARGET_ROUTE = "os.kei.extra.TARGET_ROUTE"
     const val EXTRA_BA_ACCOUNT_ID = "os.kei.extra.BA_ACCOUNT_ID"
     const val TARGET_BOTTOM_PAGE_MCP = "Mcp"
     const val TARGET_BOTTOM_PAGE_BA = "Ba"
+    const val TARGET_ROUTE_WEBDAV_SYNC = "WebDavSync"
 }
 
 internal object McpNotificationActionContract {

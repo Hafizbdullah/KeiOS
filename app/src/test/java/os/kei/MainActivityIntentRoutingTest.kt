@@ -124,6 +124,34 @@ class MainActivityIntentRoutingTest {
     }
 
     @Test
+    fun `valid webdav target route is preserved`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawTargetRoute = "  ${MainActivity.TARGET_ROUTE_WEBDAV_SYNC}  "
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_MCP, route?.targetBottomPage)
+        assertEquals(MainActivity.TARGET_ROUTE_WEBDAV_SYNC, route?.targetRoute)
+        assertNull(route?.shortcutAction)
+        assertNull(route?.mcpServerAction)
+    }
+
+    @Test
+    fun `unknown target route is dropped`() {
+        val route = MainActivityIntentRouting.sanitize(
+            rawTargetBottomPage = MainActivity.TARGET_BOTTOM_PAGE_MCP,
+            rawMcpServerAction = null,
+            rawShortcutAction = null,
+            rawTargetRoute = "Settings"
+        )
+
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_MCP, route?.targetBottomPage)
+        assertNull(route?.targetRoute)
+    }
+
+    @Test
     fun `unknown target is rejected`() {
         val route = MainActivityIntentRouting.sanitize(
             rawTargetBottomPage = "Settings",

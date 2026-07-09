@@ -21,9 +21,11 @@ data class McpNotificationSnapshot(
     val overrideOnlineText: String? = null,
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
+    val overrideAccentColor: String? = null,
     val deadlineAtMs: Long? = null,
     val miFocusOrderId: String? = null,
     val targetBaAccountId: String? = null,
+    val targetRoute: String? = null,
 )
 
 object McpNotificationSnapshotStore {

@@ -55,7 +55,8 @@ class SessionNotifierImpl(
                 channelId = helper.resolveChannel(style),
                 isHyperOS = helper.isHyperOS,
                 preferOemLiveIconLayout = helper.preferOemLiveIconLayout
-            )
+            ),
+            miIslandProgressColorOverride = payload.overrideAccentColor
         )
         val notification = when (style) {
             NotificationRenderStyle.MI_ISLAND -> miIslandBuilder.build(wrapped)

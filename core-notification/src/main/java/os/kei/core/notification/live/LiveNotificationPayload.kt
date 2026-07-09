@@ -24,6 +24,7 @@ data class LiveNotificationPayload(
     val overrideOnlineText: String? = null,
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
+    val overrideAccentColor: String? = null,
     val deadlineAtMs: Long? = null,
     val notificationId: Int = 0,
     val miFocusOrderId: String? = null
@@ -35,6 +36,7 @@ data class LiveNotificationPayload(
         const val BA_ARENA_REFRESH_SERVER_NAME = "BlueArchive Arena Refresh"
         const val BA_CALENDAR_POOL_SERVER_NAME = "BlueArchive Calendar Pool"
         const val GITHUB_SHARE_IMPORT_SERVER_NAME = "GitHub Share Import"
+        const val WEBDAV_SYNC_SERVER_NAME = "WebDAV Sync"
         const val BA_CAFE_VISIT_PATH = "student_visit"
         const val BA_ARENA_REFRESH_PATH = "arena_refresh"
 
@@ -60,6 +62,10 @@ data class LiveNotificationPayload(
 
         fun isGitHubShareImportServerName(serverName: String): Boolean {
             return serverName.trim() == GITHUB_SHARE_IMPORT_SERVER_NAME
+        }
+
+        fun isWebDavSyncServerName(serverName: String): Boolean {
+            return serverName.trim() == WEBDAV_SYNC_SERVER_NAME
         }
 
         fun isBaNotificationServerName(serverName: String): Boolean {
