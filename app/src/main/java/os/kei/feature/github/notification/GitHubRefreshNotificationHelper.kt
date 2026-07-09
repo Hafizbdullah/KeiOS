@@ -29,6 +29,7 @@ import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
 import os.kei.core.notification.live.NotificationHelper
 import os.kei.core.notification.live.builder.NotificationRenderStyle
+import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
@@ -40,9 +41,16 @@ object GitHubRefreshNotificationHelper {
     private const val TAG = "GitHubRefreshNotify"
     const val CHANNEL_ID = "github_refresh_channel_v2"
     const val NOTIFICATION_ID = 38990
+    private const val LEGACY_DEFAULT_ISLAND_CHANNEL_ID = "github_refresh_island_channel_v1"
     private val ISLAND_ICON_RES_ID = R.drawable.ic_github_invertocat_island_blue
-    private const val MI_PROGRESS_COLOR = "#1A73E8"
+    private const val MI_COLOR_RUNNING = "#3B82F6"
+    private const val MI_COLOR_SUCCESS = "#22C55E"
+    private const val MI_COLOR_UPDATE = "#22C55E"
+    private const val MI_COLOR_DANGER = "#E25B6A"
+    private const val MI_COLOR_NEUTRAL = "#64748B"
+    private const val MI_COLOR_NEUTRAL_DARK = "#CBD5E1"
     private const val MI_PROGRESS_TRACK_COLOR = "#334155"
+    private const val MI_LABEL_TEXT_COLOR = "#FFFFFF"
     private const val RUNNING_PROGRESS_FLOOR = 6
     private const val RUNNING_PROGRESS_CEILING = 96
 
@@ -55,6 +63,21 @@ object GitHubRefreshNotificationHelper {
         val notification: Notification,
         val style: RenderStyle,
         val useXiaomiMagic: Boolean
+    )
+
+    private data class SuperIslandFloatPolicy(
+        val behavior: SuperIslandFloatBehavior,
+        val firstFloat: Boolean,
+        val allowFloat: Boolean
+    )
+
+    private data class MiIslandRefreshStyle(
+        val accentColor: String,
+        val contentColor: String = MI_COLOR_NEUTRAL,
+        val contentColorDark: String = MI_COLOR_NEUTRAL_DARK,
+        val progressColor: String = accentColor,
+        val progressTrackColor: String = MI_PROGRESS_TRACK_COLOR,
+        val highlightTerminalText: Boolean = true
     )
 
     private data class RefreshState(
@@ -83,18 +106,8 @@ object GitHubRefreshNotificationHelper {
         val targetText: String
             get() = "$safeCurrent/$safeTotal"
 
-        val partialScope: Boolean
-            get() =
-                when (scope) {
-                    GitHubRefreshScope.DueTracked,
-                    GitHubRefreshScope.VisibleTracked,
-                    GitHubRefreshScope.RequestedTracked,
-                    GitHubRefreshScope.MissingCache -> safeTotalTrackedCount > safeTotal
-
-                    GitHubRefreshScope.AllTracked,
-                    GitHubRefreshScope.SingleTracked,
-                    GitHubRefreshScope.ShortcutAllTracked -> false
-                }
+        val totalUpdateCount: Int
+            get() = (preReleaseUpdateCount + updatableCount).coerceAtLeast(0)
     }
 
     private enum class RenderStyle {
@@ -104,6 +117,9 @@ object GitHubRefreshNotificationHelper {
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (manager.getNotificationChannel(LEGACY_DEFAULT_ISLAND_CHANNEL_ID) != null) {
+            manager.deleteNotificationChannel(LEGACY_DEFAULT_ISLAND_CHANNEL_ID)
+        }
         if (manager.getNotificationChannel(CHANNEL_ID) == null) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -277,6 +293,7 @@ object GitHubRefreshNotificationHelper {
     }
 
     fun cancel(context: Context) {
+        AppLogger.d(TAG) { "cancel notification id=$NOTIFICATION_ID" }
         resetNotificationRuntime()
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
@@ -390,30 +407,100 @@ object GitHubRefreshNotificationHelper {
         )
     }
 
-    private fun resolveCondensedContent(context: Context, state: RefreshState): String {
-        val body = if (state.failedCount > 0) {
-            context.getString(
-                R.string.github_refresh_content_compact_with_failed,
-                state.safeCurrent,
-                state.safeTotal,
-                state.preReleaseUpdateCount,
-                state.updatableCount,
+    private fun resolveMiIslandTitle(context: Context, state: RefreshState): String {
+        return when {
+            state.running -> context.getString(R.string.github_refresh_mi_title_running)
+            state.cancelled -> context.getString(R.string.github_refresh_mi_title_cancelled)
+            state.failedCount > 0 && state.safeCurrent < state.safeTotal ->
+                context.getString(R.string.github_refresh_mi_title_failed)
+
+            state.failedCount > 0 ->
+                context.getString(R.string.github_refresh_mi_title_partial_failed)
+
+            else -> context.getString(R.string.github_refresh_mi_title_completed)
+        }
+    }
+
+    private fun resolveMiIslandContent(context: Context, state: RefreshState): String {
+        val scope = resolveScopeText(context, state, compact = true)
+        val progress = resolveCompactFractionText(context, state)
+        return when {
+            state.failedCount > 0 && state.totalUpdateCount > 0 ->
+                context.getString(
+                    R.string.github_refresh_mi_content_failed,
+                    scope,
+                    progress,
+                    state.totalUpdateCount,
+                    state.failedCount
+                )
+
+            state.failedCount > 0 ->
+                context.getString(
+                    R.string.github_refresh_mi_content_failed_only,
+                    scope,
+                    progress,
+                    state.failedCount
+                )
+
+            state.totalUpdateCount > 0 ->
+                context.getString(
+                    R.string.github_refresh_mi_content,
+                    scope,
+                    progress,
+                    state.totalUpdateCount
+                )
+
+            else ->
+                context.getString(
+                    R.string.github_refresh_mi_content_base,
+                    scope,
+                    progress
+                )
+        }
+    }
+
+    private fun resolveMiIslandStatusLabel(context: Context, state: RefreshState): String {
+        return when {
+            state.running -> context.getString(R.string.github_refresh_mi_label_running)
+            state.cancelled -> context.getString(R.string.github_refresh_mi_label_cancelled)
+            state.failedCount > 0 -> context.getString(
+                R.string.github_refresh_mi_label_failed,
                 state.failedCount
             )
-        } else {
-            context.getString(
-                R.string.github_refresh_content_compact,
-                state.safeCurrent,
-                state.safeTotal,
-                state.preReleaseUpdateCount,
-                state.updatableCount
+
+            state.totalUpdateCount > 0 -> context.getString(
+                R.string.github_refresh_mi_label_updates,
+                state.totalUpdateCount
+            )
+
+            else -> context.getString(R.string.github_refresh_mi_label_completed)
+        }
+    }
+
+    private fun resolveMiIslandRefreshStyle(state: RefreshState): MiIslandRefreshStyle {
+        return when {
+            state.running -> MiIslandRefreshStyle(
+                accentColor = MI_COLOR_RUNNING,
+                highlightTerminalText = false
+            )
+
+            state.cancelled -> MiIslandRefreshStyle(
+                accentColor = MI_COLOR_NEUTRAL,
+                highlightTerminalText = false
+            )
+
+            state.failedCount > 0 -> MiIslandRefreshStyle(
+                accentColor = MI_COLOR_DANGER
+            )
+
+            state.totalUpdateCount > 0 -> MiIslandRefreshStyle(
+                accentColor = MI_COLOR_UPDATE
+            )
+
+            else -> MiIslandRefreshStyle(
+                accentColor = MI_COLOR_SUCCESS
             )
         }
-        return context.getString(
-            R.string.github_refresh_content_scoped,
-            resolveScopeText(context, state, compact = true),
-            body
-        )
     }
 
     private fun resolveScopeText(
@@ -479,11 +566,6 @@ object GitHubRefreshNotificationHelper {
         )
     }
 
-    private fun resolveExpandedContextText(context: Context, state: RefreshState): String? {
-        if (!state.partialScope) return null
-        return context.getString(R.string.github_refresh_total_context, state.safeTotalTrackedCount)
-    }
-
     private fun resolveCompactStateContent(context: Context, state: RefreshState): String? {
         return when {
             state.cancelled -> context.getString(R.string.github_refresh_island_cancelled)
@@ -517,6 +599,14 @@ object GitHubRefreshNotificationHelper {
             state = state,
             onlyAlertOnce = onlyAlertOnce
         )
+        AppLogger.d(TAG) {
+            "dispatch session=${state.sessionId} id=$NOTIFICATION_ID style=${buildResult.style} " +
+                "xiaomiMagic=${buildResult.useXiaomiMagic} running=${state.running} " +
+                "cancelled=${state.cancelled} scope=${state.scope} source=${state.source} " +
+                "progress=${state.safeCurrent}/${state.safeTotal} display=${state.progressPercent} " +
+                "totalTracked=${state.safeTotalTrackedCount} updatable=${state.updatableCount} " +
+                "prerelease=${state.preReleaseUpdateCount} failed=${state.failedCount}"
+        }
         val dispatched = if (buildResult.style == RenderStyle.MI_ISLAND) {
             McpNotificationHelper.dispatchNotification(
                 context = context,
@@ -538,6 +628,10 @@ object GitHubRefreshNotificationHelper {
                 "dispatch failed session=${state.sessionId} running=${state.running} " +
                     "scope=${state.scope} source=${state.source} progress=${state.safeCurrent}/${state.safeTotal}"
             )
+        }
+        AppLogger.d(TAG) {
+            "dispatchResult session=${state.sessionId} id=$NOTIFICATION_ID dispatched=$dispatched " +
+                "style=${buildResult.style} xiaomiMagic=${buildResult.useXiaomiMagic}"
         }
         return dispatched
     }
@@ -563,6 +657,14 @@ object GitHubRefreshNotificationHelper {
             TAG,
             "buildNotification ${decision.logSummary()}"
         )
+        AppLogger.d(TAG) {
+            val floatBehavior = GitHubNotificationPreferences.superIslandFloatBehavior()
+            "buildNotificationDetail ${decision.logSummary()} channel=$CHANNEL_ID " +
+                "session=${state.sessionId} scope=${state.scope} source=${state.source} " +
+                "running=${state.running} floatBehavior=${floatBehavior.storageId} " +
+                "firstFloat=${floatBehavior.firstFloatEnabled} finishFloat=${floatBehavior.finishFloatEnabled} " +
+                "modernLiveUpdate=${helper.isModernLiveUpdateEligible}"
+        }
         val notification = when (style) {
             RenderStyle.MI_ISLAND -> buildMiIslandNotification(context, state, onlyAlertOnce)
             RenderStyle.LIVE_UPDATE -> {
@@ -657,8 +759,9 @@ object GitHubRefreshNotificationHelper {
         onlyAlertOnce: Boolean
     ): Notification {
         val iconResId = ISLAND_ICON_RES_ID
-        val title = resolveTitle(context, state)
-        val content = resolveCondensedContent(context, state)
+        val title = resolveMiIslandTitle(context, state)
+        val content = resolveMiIslandContent(context, state)
+        val refreshStyle = resolveMiIslandRefreshStyle(state)
         val openPendingIntent = buildOpenPendingIntent(context)
         val readPendingIntent = buildMarkReadPendingIntent(context)
         val shortCriticalText = if (state.running) {
@@ -671,25 +774,15 @@ object GitHubRefreshNotificationHelper {
             .setContentTitle(title)
             .setContentText(content.ifBlank { " " })
             .setContentIntent(openPendingIntent)
-            .setCategory(
-                if (state.running) NotificationCompat.CATEGORY_PROGRESS
-                else NotificationCompat.CATEGORY_STATUS
-            )
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setColorized(!state.running)
-            .setColor(MI_PROGRESS_COLOR.toColorInt())
+            .setColor(refreshStyle.accentColor.toColorInt())
             .setOngoing(state.running)
             .setOnlyAlertOnce(onlyAlertOnce)
             .setAutoCancel(false)
-            .setRequestPromotedOngoing(state.running)
             .setShortCriticalText(shortCriticalText)
             .setDeleteIntent(readPendingIntent)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .setProgress(
-                if (state.running) 100 else 0,
-                if (state.running) state.progressPercent else 0,
-                false
-            )
 
         buildMiIslandFocusExtras(
             context = context,
@@ -712,6 +805,7 @@ object GitHubRefreshNotificationHelper {
         focusOpenPendingIntent: PendingIntent,
         markReadPendingIntent: PendingIntent
     ) = runCatching {
+        val floatPolicy = resolveSuperIslandFloatPolicy(state)
         val progressPercent = state.progressPercent.coerceIn(0, 100)
         val progressText = resolveCompactProgressText(context, state)
         val fractionText = resolveCompactFractionText(context, state)
@@ -721,10 +815,12 @@ object GitHubRefreshNotificationHelper {
         } else {
             resolveCompactStateContent(context, state) ?: fractionText
         }
+        val refreshStyle = resolveMiIslandRefreshStyle(state)
+        val statusLabel = resolveMiIslandStatusLabel(context, state)
         val progress = MiFocusIslandProgress(
             progressPercent = progressPercent,
-            colorReach = MI_PROGRESS_COLOR,
-            colorUnReach = MI_PROGRESS_TRACK_COLOR,
+            colorReach = refreshStyle.progressColor,
+            colorUnReach = refreshStyle.progressTrackColor,
         )
         val islandBigTemplates = buildList {
             add(
@@ -749,7 +845,7 @@ object GitHubRefreshNotificationHelper {
                         text = MiFocusIslandText(
                             title = compactStateTitle,
                             content = compactStateContent,
-                            showHighlightColor = state.failedCount > 0,
+                            showHighlightColor = refreshStyle.highlightTerminalText,
                         ),
                     )
                 )
@@ -761,7 +857,14 @@ object GitHubRefreshNotificationHelper {
                     text = MiFocusExpandedText(
                         title = title,
                         content = content.ifBlank { " " },
-                        subContent = resolveExpandedContextText(context, state),
+                        specialTitle = statusLabel,
+                        colorTitle = refreshStyle.accentColor,
+                        colorTitleDark = refreshStyle.accentColor,
+                        colorSpecialTitle = MI_LABEL_TEXT_COLOR,
+                        colorSpecialTitleDark = MI_LABEL_TEXT_COLOR,
+                        colorSpecialBg = refreshStyle.accentColor,
+                        colorContent = refreshStyle.contentColor,
+                        colorContentDark = refreshStyle.contentColorDark,
                     )
                 )
             )
@@ -769,10 +872,12 @@ object GitHubRefreshNotificationHelper {
                 add(
                     MiFocusExpandedComponent.MultiProgress(
                         progressPercent = progressPercent,
-                        color = MI_PROGRESS_COLOR,
+                        color = refreshStyle.progressColor,
                         text = MiFocusExpandedText(
                             title = progressText,
                             content = fractionText,
+                            colorTitle = refreshStyle.progressColor,
+                            colorTitleDark = refreshStyle.progressColor,
                         ),
                     )
                 )
@@ -806,6 +911,13 @@ object GitHubRefreshNotificationHelper {
                 )
             }
         }
+        AppLogger.d(TAG) {
+            "buildMiIslandExtras session=${state.sessionId} id=$NOTIFICATION_ID " +
+                "running=${state.running} behavior=${floatPolicy.behavior.storageId} " +
+                "allowFloat=${floatPolicy.allowFloat} firstFloat=${floatPolicy.firstFloat} " +
+                "timeoutMinutes=${if (state.running) 6 else 1} progress=$progressPercent " +
+                "scope=${state.scope} source=${state.source}"
+        }
         MiFocusNotificationTemplate.build(
             context = context,
             spec = MiFocusNotificationSpec(
@@ -828,10 +940,11 @@ object GitHubRefreshNotificationHelper {
                                 pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
                             )
                         },
+                    highlightColor = refreshStyle.accentColor,
                 ),
                 expanded = MiFocusExpandedSpec(components = expandedComponents),
-                allowFloat = true,
-                islandFirstFloat = true,
+                allowFloat = floatPolicy.allowFloat,
+                islandFirstFloat = floatPolicy.firstFloat,
                 updatable = true,
                 showNotification = true,
                 timeoutMinutes = if (state.running) 6 else 1,
@@ -846,6 +959,15 @@ object GitHubRefreshNotificationHelper {
     }.onFailure {
         AppLogger.e(TAG, "Build FocusNotification extras failed", it)
     }.getOrNull()
+
+    private fun resolveSuperIslandFloatPolicy(state: RefreshState): SuperIslandFloatPolicy {
+        val behavior = GitHubNotificationPreferences.superIslandFloatBehavior()
+        return SuperIslandFloatPolicy(
+            behavior = behavior,
+            firstFloat = behavior.firstFloatEnabled,
+            allowFloat = !state.running && behavior.finishFloatEnabled,
+        )
+    }
 
     private fun buildOpenPendingIntent(context: Context): PendingIntent {
         val openIntent = Intent(context, MainActivity::class.java).apply {

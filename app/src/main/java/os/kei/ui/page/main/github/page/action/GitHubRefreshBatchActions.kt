@@ -30,7 +30,7 @@ internal class GitHubRefreshBatchActions(
     private val actionsRunRefreshCoordinator: GitHubActionsRecommendedRunRefreshCoordinator,
 ) {
     private val context get() = owner.context
-    private val scope get() = owner.scope
+    private val durableScope get() = owner.durableScope
     private val state get() = owner.state
     private val repository get() = owner.repository
     private val clock get() = owner.clock
@@ -65,11 +65,15 @@ internal class GitHubRefreshBatchActions(
             }
             return
         }
-        backgroundRefreshCoordinator.cancel()
+        backgroundRefreshCoordinator.cancel(reason = "superseded_by_page_batch")
         actionsRunRefreshCoordinator.cancel()
-        state.refreshAllJob?.cancel()
+        state.refreshAllJob?.cancel(CancellationException("superseded_by_page_batch"))
+        AppLogger.d("GitHubRefreshActions") {
+            "enqueue page refresh scope=${refreshPlan.refreshScope} target=${snapshot.size}/${state.trackedItems.size} " +
+                "force=$forceRefresh clearAll=$clearAllCheckCache updateGlobal=$updateGlobalRefreshTimestamp"
+        }
         state.refreshAllJob =
-            scope.launch {
+            durableScope.launch {
                 val refreshStartedAtMs = clock.nowMs()
                 val runtimeSession =
                     checkNotNull(
@@ -82,6 +86,10 @@ internal class GitHubRefreshBatchActions(
                             nowMs = refreshStartedAtMs,
                         ),
                     )
+                AppLogger.d("GitHubRefreshActions") {
+                    "begin page refresh session=${runtimeSession.id} scope=${runtimeSession.scope} " +
+                        "source=${runtimeSession.source} target=${snapshot.size}/${state.trackedItems.size}"
+                }
                 state.refreshSessionId = runtimeSession.id
                 val previousCheckStatesById = state.checkStates.toMap()
                 val totalCount = snapshot.size
@@ -324,6 +332,10 @@ internal class GitHubRefreshBatchActions(
                         owner.syncSnapshotFromStore(forceRefreshApps = false)
                     }
                 } catch (error: CancellationException) {
+                    AppLogger.d("GitHubRefreshActions") {
+                        "cancel page refresh session=${runtimeSession.id} scope=${runtimeSession.scope} " +
+                            "completed=$completedCount/$totalCount reason=${error.message.orEmpty()}"
+                    }
                     restoreInterruptedItemStates(
                         snapshot = snapshot,
                         previousCheckStatesById = previousCheckStatesById,

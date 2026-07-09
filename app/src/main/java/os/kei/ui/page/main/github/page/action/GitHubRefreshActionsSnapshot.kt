@@ -21,7 +21,7 @@ import os.kei.ui.page.main.github.state.toUi
 
 internal fun GitHubRefreshActions.launchDeferredTrackStoreSyncIfNeeded() {
     if (!consumeDeferredTrackStoreSyncAfterRefresh()) return
-    scope.launch {
+    durableScope.launch {
         syncSnapshotFromStore(forceRefreshApps = false)
     }
 }

@@ -16,6 +16,7 @@ import os.kei.ui.page.main.github.query.DownloaderOption
 internal class GitHubPageActionEnvironment(
     val context: Context,
     val scope: CoroutineScope,
+    val durableScope: CoroutineScope,
     val state: GitHubPageState,
     val viewModel: GitHubPageViewModel,
     val repository: GitHubPageRepository,

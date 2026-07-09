@@ -437,7 +437,11 @@ object GitHubShareImportNotificationHelper {
         val helper = NotificationHelper(context)
         val payload = NotificationPayload(
             state = buildPayload(context, state),
-            settings = UserSettings(miIslandOuterGlow = false),
+            settings =
+                UserSettings(
+                    miIslandOuterGlow = false,
+                    miIslandFirstFloat = GitHubNotificationPreferences.isSuperIslandFirstFloatEnabled(),
+                ),
             environment = EnvironmentContext(
                 channelId = McpNotificationHelper.LIVE_CHANNEL_ID,
                 isHyperOS = helper.isHyperOS,
@@ -459,7 +463,11 @@ object GitHubShareImportNotificationHelper {
         val helper = NotificationHelper(context)
         val payload = NotificationPayload(
             state = buildPayload(context, state),
-            settings = UserSettings(miIslandOuterGlow = true),
+            settings =
+                UserSettings(
+                    miIslandOuterGlow = true,
+                    miIslandFirstFloat = GitHubNotificationPreferences.isSuperIslandFirstFloatEnabled(),
+                ),
             environment = EnvironmentContext(
                 channelId = helper.resolveChannel(NotificationRenderStyle.MI_ISLAND),
                 isHyperOS = helper.isHyperOS,

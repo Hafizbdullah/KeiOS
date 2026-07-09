@@ -17,7 +17,7 @@ internal class GitHubSingleRefreshActions(
     private val actionsRunRefreshCoordinator: GitHubActionsRecommendedRunRefreshCoordinator,
 ) {
     private val context get() = owner.context
-    private val scope get() = owner.scope
+    private val durableScope get() = owner.durableScope
     private val state get() = owner.state
     private val clock get() = owner.clock
 
@@ -29,7 +29,7 @@ internal class GitHubSingleRefreshActions(
         forceRefresh: Boolean = false,
         onUpdated: ((VersionCheckUi) -> Unit)? = null,
     ): Job =
-        scope.launch {
+        durableScope.launch {
             refreshItemNow(
                 item = item,
                 showToastOnError = showToastOnError,

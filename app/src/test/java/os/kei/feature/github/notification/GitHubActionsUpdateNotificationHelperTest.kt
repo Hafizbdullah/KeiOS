@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
@@ -18,6 +19,7 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.notification.NotificationActionReceiver
+import org.junit.After
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
@@ -30,10 +32,16 @@ import kotlin.test.assertTrue
     sdk = [35],
 )
 class GitHubActionsUpdateNotificationHelperTest {
+    @After
+    fun tearDown() {
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(null)
+    }
+
     @Test
     @Suppress("DEPRECATION")
     fun `mi island summary keeps short run label and expanded action colors are semantic`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(true)
         val trackedPackageName = "me.him188.ani"
         Shadows.shadowOf(context.packageManager).apply {
             addPackage(
@@ -59,6 +67,7 @@ class GitHubActionsUpdateNotificationHelperTest {
         val markReadIntent = Shadows.shadowOf(markReadAction.actionIntent).savedIntent
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
+        assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
         assertNotNull(notification.getLargeIcon())
         assertNotNull(Shadows.shadowOf(displayIcon).bitmap)
         assertNotNull(Shadows.shadowOf(expandedIcon).bitmap)
@@ -67,6 +76,12 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"#44\""))
         assertFalse(focusParam.contains("\"content\":\"Actions\""))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#3B82F6\""))
+        assertTrue(focusParam.contains("\"showHighlightColor\":true"))
+        assertTrue(focusParam.contains("\"specialTitle\":\"#44\""))
+        assertTrue(focusParam.contains("\"colorTitle\":\"#3B82F6\""))
+        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
+        assertTrue(focusParam.contains("\"colorContent\":\"#64748B\""))
         assertFalse(focusParam.contains("\"picFunction\""))
         assertTrue(focusParam.contains("\"baseInfo\""))
         assertTrue(focusParam.contains("\"picInfo\":{\"type\":1,\"pic\":\"mi_focus_expanded\""))
@@ -76,6 +91,8 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"business\":\"keios\""))
         assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
         assertTrue(focusParam.contains("\"orderId\":\"${snapshot.trackId}\""))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(
             focusParam.contains(
                 "\"actionTitle\":\"${context.getString(R.string.common_mark_read)}\",\"actionBgColor\"",
@@ -101,6 +118,18 @@ class GitHubActionsUpdateNotificationHelperTest {
             notificationId,
             markReadIntent.getIntExtra(NotificationActionReceiver.EXTRA_NOTIFICATION_ID, -1),
         )
+    }
+
+    @Test
+    fun `mi island actions update can disable first float preference`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(false)
+        val snapshot = createSnapshot(packageName = "me.him188.ani")
+        val notification = invokeMiIslandNotification(context, snapshot)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
     }
 
     @Test

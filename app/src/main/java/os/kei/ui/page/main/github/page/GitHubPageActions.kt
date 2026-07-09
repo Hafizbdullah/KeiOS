@@ -45,6 +45,7 @@ import os.kei.ui.page.main.github.section.GitHubOverviewEntry
 internal class GitHubPageActions(
     context: Context,
     scope: CoroutineScope,
+    durableScope: CoroutineScope,
     state: GitHubPageState,
     viewModel: GitHubPageViewModel,
     repository: GitHubPageRepository,
@@ -55,6 +56,7 @@ internal class GitHubPageActions(
         GitHubPageActionEnvironment(
             context = context,
             scope = scope,
+            durableScope = durableScope,
             state = state,
             viewModel = viewModel,
             repository = repository,

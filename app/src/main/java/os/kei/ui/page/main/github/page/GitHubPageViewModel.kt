@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,6 +116,8 @@ internal class GitHubPageViewModel(
 ) : AndroidViewModel(application) {
     private val appContext: Context = application.applicationContext
     val repository = GitHubPageRepository()
+    val durableActionScope: CoroutineScope
+        get() = viewModelScope
     private val appIconLoader = GitHubAppIconLoader(viewModelScope)
     private var pageState: GitHubPageState? = null
     private var contentStateJob: Job? = null

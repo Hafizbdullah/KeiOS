@@ -25,7 +25,7 @@ internal class GitHubTrackedRefreshActionFacade(
         showToast: Boolean = true,
         forceRefresh: Boolean = true,
     ) {
-        env.scope.launch {
+        env.durableScope.launch {
             refreshActions.reloadApps(forceRefresh = true)
             refreshActions.refreshAllTracked(
                 showToast = showToast,
@@ -51,7 +51,7 @@ internal class GitHubTrackedRefreshActionFacade(
             return
         }
         val targetIds = items.mapTo(LinkedHashSet()) { it.id }
-        env.scope.launch {
+        env.durableScope.launch {
             refreshActions.reloadApps(forceRefresh = true)
             refreshActions.refreshTrackedBatch(
                 targets = items,
@@ -70,7 +70,7 @@ internal class GitHubTrackedRefreshActionFacade(
         profilePurposeOverride: GitHubRepositoryProfilePurpose? = null,
         forceRefresh: Boolean = true,
     ) {
-        env.scope.launch {
+        env.durableScope.launch {
             refreshTrackedItemNow(
                 item = item,
                 showToastOnError = showToastOnError,
@@ -139,7 +139,7 @@ internal class GitHubTrackedRefreshActionFacade(
             }
             return
         }
-        env.scope.launch {
+        env.durableScope.launch {
             refreshActions.reloadApps(forceRefresh = true)
             coroutineScope {
                 failedItems.chunked(RETRY_FAILED_TRACKED_PARALLELISM).forEach { chunk ->

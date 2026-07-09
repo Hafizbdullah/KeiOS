@@ -20,7 +20,7 @@ internal class GitHubDebugRefreshActionFacade(
         if (env.state.debugBackgroundFullRefreshLoading) return
         env.state.debugBackgroundFullRefreshLoading = true
         env.toast(R.string.github_debug_toast_background_full_refresh_started)
-        env.scope.launch {
+        env.durableScope.launch {
             try {
                 val result =
                     AppForegroundInfoHandler.handleGitHubShortcutRefresh(
@@ -54,7 +54,7 @@ internal class GitHubDebugRefreshActionFacade(
         if (env.state.debugBackgroundDueRefreshLoading) return
         env.state.debugBackgroundDueRefreshLoading = true
         env.toast(R.string.github_debug_toast_background_due_refresh_started)
-        env.scope.launch {
+        env.durableScope.launch {
             val nowMs = System.currentTimeMillis()
             try {
                 AppForegroundInfoHandler.handleGitHubTick(
@@ -91,7 +91,7 @@ internal class GitHubDebugRefreshActionFacade(
             return
         }
         env.state.debugVisibleIncrementalRefreshLoading = true
-        env.scope.launch {
+        env.durableScope.launch {
             try {
                 refreshActions.reloadApps(forceRefresh = true)
                 refreshActions.refreshTrackedBatch(
@@ -108,7 +108,7 @@ internal class GitHubDebugRefreshActionFacade(
                     env.state.debugVisibleIncrementalRefreshLoading = false
                 } else {
                     refreshJob.invokeOnCompletion {
-                        env.scope.launch {
+                        env.durableScope.launch {
                             env.state.debugVisibleIncrementalRefreshLoading = false
                         }
                     }

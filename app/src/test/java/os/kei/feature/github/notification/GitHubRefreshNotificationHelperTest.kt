@@ -5,10 +5,13 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.os.Bundle
+import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.domain.GitHubRefreshSource
+import os.kei.core.prefs.SuperIslandFloatBehavior
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -23,6 +26,11 @@ import kotlin.test.assertTrue
     sdk = [35]
 )
 class GitHubRefreshNotificationHelperTest {
+    @After
+    fun tearDown() {
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(null)
+    }
+
     @Test
     fun `mi island open action uses focus pending intent`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
@@ -64,12 +72,119 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("\"content\":\"2/4\""))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_compact, 2, 4, 1, 2)
+                context.getString(
+                    os.kei.R.string.github_refresh_mi_content,
+                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                    "2/4",
+                    3
+                )
             )
         )
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
         assertFalse(focusParam.contains("预发可更新"))
         assertTrue(focusParam.contains("\"progress\":50"))
+    }
+
+    @Test
+    fun `mi island running notification does not request platform live update`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = createRefreshState(
+            running = true,
+            current = 2,
+            total = 4,
+            displayProgressPercent = 50
+        )
+        val notification = invokeMiIslandNotification(context, state)
+
+        assertEquals(Notification.CATEGORY_STATUS, notification.category)
+        assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
+        assertFalse(
+            notification.extras.getBoolean(
+                NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING,
+                false
+            )
+        )
+        assertEquals(0, notification.extras.getInt(NotificationCompat.EXTRA_PROGRESS, 0))
+        assertEquals(0, notification.extras.getInt(NotificationCompat.EXTRA_PROGRESS_MAX, 0))
+        assertFalse(notification.extras.getBoolean(NotificationCompat.EXTRA_PROGRESS_INDETERMINATE, false))
+        assertTrue(notification.extras.getString("miui.focus.param").orEmpty().contains("progressTextInfo"))
+    }
+
+    @Test
+    fun `mi island refresh summary allows first float preference without repeated force float`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(true)
+        val state = createRefreshState(
+            running = true,
+            current = 2,
+            total = 4,
+            displayProgressPercent = 50
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+        assertTrue(focusParam.contains("\"updatable\":true"))
+    }
+
+    @Test
+    fun `mi island refresh summary can disable first float preference`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFirstFloatForTests(false)
+        val state = createRefreshState(
+            running = true,
+            current = 2,
+            total = 4,
+            displayProgressPercent = 50
+        )
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+    }
+
+    @Test
+    fun `mi island refresh completed summary floats when start and finish behavior is enabled`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+            SuperIslandFloatBehavior.StartAndFinish
+        )
+        val state = createRefreshState(running = false)
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+    }
+
+    @Test
+    fun `mi island refresh completed summary stays quiet for start only behavior`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+            SuperIslandFloatBehavior.StartOnly
+        )
+        val state = createRefreshState(running = false)
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
+    }
+
+    @Test
+    fun `mi island refresh completed summary stays quiet for summary only behavior`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        GitHubNotificationPreferences.overrideSuperIslandFloatBehaviorForTests(
+            SuperIslandFloatBehavior.SummaryOnly
+        )
+        val state = createRefreshState(running = false)
+        val notification = invokeMiIslandNotification(context, state)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("\"islandFirstFloat\":false"))
+        assertTrue(focusParam.contains("\"enableFloat\":false"))
     }
 
     @Test
@@ -92,10 +207,19 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_compact, 4, 4, 1, 2)
+                context.getString(
+                    os.kei.R.string.github_refresh_mi_content,
+                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                    "4/4",
+                    3
+                )
             )
         )
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4)))
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_updates, 3)))
+        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#22C55E\""))
+        assertTrue(focusParam.contains("\"colorContent\":\"#64748B\""))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#22C55E\""))
         assertFalse(focusParam.contains("稳定可更新"))
         assertTrue(focusParam.contains("github_action_open"))
         assertTrue(focusParam.contains("github_action_read"))
@@ -118,6 +242,9 @@ class GitHubRefreshNotificationHelperTest {
             focusParam.contains("\"title\":\"${context.getString(os.kei.R.string.github_refresh_island_cancelled)}\"")
         )
         assertTrue(focusParam.contains("\"content\":\"2/4\""))
+        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#64748B\""))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#64748B\""))
+        assertFalse(focusParam.contains("\"showHighlightColor\":true"))
     }
 
     @Test
@@ -143,14 +270,21 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains("\"content\":\"4/4\""))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_compact_with_failed, 4, 4, 1, 2, 1)
+                context.getString(
+                    os.kei.R.string.github_refresh_mi_content_failed,
+                    context.getString(os.kei.R.string.github_refresh_scope_all_compact, 4),
+                    "4/4",
+                    3,
+                    1
+                )
             )
         )
+        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
     }
 
     @Test
-    fun `mi island due refresh summary uses target denominator and expanded total context`() {
+    fun `mi island due refresh summary uses target denominator without duplicate total context`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = createRefreshState(
             running = true,
@@ -169,11 +303,17 @@ class GitHubRefreshNotificationHelperTest {
         assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1)))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_compact, 1, 1, 0, 0),
+                context.getString(
+                    os.kei.R.string.github_refresh_mi_content_base,
+                    context.getString(os.kei.R.string.github_refresh_scope_due_compact, 1),
+                    "1/1"
+                ),
             ),
         )
         assertTrue(focusParam.contains("\"content\":\"1/1\""))
-        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_total_context, 75)))
+        assertTrue(focusParam.contains(context.getString(os.kei.R.string.github_refresh_mi_label_running)))
+        assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
+        assertFalse(focusParam.contains(context.getString(os.kei.R.string.github_refresh_total_context, 75)))
     }
 
     @Test
@@ -223,13 +363,19 @@ class GitHubRefreshNotificationHelperTest {
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
         assertEquals(
-            context.getString(os.kei.R.string.github_refresh_title_failed),
+            context.getString(os.kei.R.string.github_refresh_mi_title_failed),
             notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
         )
         assertTrue(focusParam.contains("\"content\":\"2/5\""))
         assertTrue(
             focusParam.contains(
-                context.getString(os.kei.R.string.github_refresh_content_compact_with_failed, 2, 5, 1, 2, 1)
+                context.getString(
+                    os.kei.R.string.github_refresh_mi_content_failed,
+                    context.getString(os.kei.R.string.github_refresh_scope_due_compact, 5),
+                    "2/5",
+                    3,
+                    1
+                )
             )
         )
     }

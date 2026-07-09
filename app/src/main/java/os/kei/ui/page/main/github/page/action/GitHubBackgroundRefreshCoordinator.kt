@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.github.page.action
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
@@ -47,15 +47,23 @@ internal class GitHubBackgroundRefreshCoordinator(
     private val persistCheckCache: suspend (Set<String>) -> Unit
 ) {
     private val context get() = env.context
-    private val scope get() = env.scope
+    private val durableScope get() = env.durableScope
     private val state get() = env.state
     private val repository get() = env.repository
     private val clock get() = env.clock
     private val backgroundJobs = ConcurrentHashMap.newKeySet<Job>()
     private val refreshHistoryService = GitHubRefreshHistoryService()
 
-    fun cancel() {
-        backgroundJobs.forEach { it.cancel() }
+    fun cancel(reason: String = "explicit") {
+        val activeCount = backgroundJobs.count { it.isActive }
+        if (activeCount > 0) {
+            AppLogger.d("GitHubBackgroundRefresh") {
+                "cancel background jobs reason=$reason active=$activeCount"
+            }
+        }
+        backgroundJobs.forEach { job ->
+            job.cancel(CancellationException(reason))
+        }
         backgroundJobs.clear()
     }
 
@@ -108,7 +116,11 @@ internal class GitHubBackgroundRefreshCoordinator(
     ) {
         if (items.isEmpty()) return
         var runtimeSessionId = 0L
-        val job = scope.launch {
+        AppLogger.d("GitHubBackgroundRefresh") {
+            "enqueue page background refresh scope=$refreshScope target=${items.size} " +
+                "force=$forceRefresh maxConcurrency=$maxConcurrency"
+        }
+        val job = durableScope.launch {
             val refreshStartedAtMs = clock.nowMs()
             val runtimeSession =
                 GitHubRefreshRuntimeStore.begin(
@@ -121,10 +133,10 @@ internal class GitHubBackgroundRefreshCoordinator(
                     nowMs = refreshStartedAtMs,
                 )
             if (runtimeSession == null) {
-                AppLogger.i(
-                    "GitHubBackgroundRefresh",
-                    "skip page background refresh scope=$refreshScope target=${items.size} because another session is running",
-                )
+                AppLogger.d("GitHubBackgroundRefresh") {
+                    "skip page background refresh scope=$refreshScope target=${items.size} " +
+                        "because another session is running"
+                }
                 return@launch
             }
             runtimeSessionId = runtimeSession.id
@@ -133,6 +145,11 @@ internal class GitHubBackgroundRefreshCoordinator(
             state.refreshProgress = 0f
             state.overviewRefreshState = OverviewRefreshState.Refreshing
             val concurrency = items.size.coerceAtMost(maxConcurrency.coerceAtLeast(1))
+            AppLogger.d("GitHubBackgroundRefresh") {
+                "begin page background refresh session=${runtimeSession.id} " +
+                    "scope=${runtimeSession.scope} source=${runtimeSession.source} " +
+                    "target=${items.size}/${state.trackedItems.size} concurrency=$concurrency"
+            }
             val previousCheckStatesById = state.checkStates.toMap()
             val batchEvaluator =
                 GitHubTrackedRefreshBatchEvaluator(
@@ -283,6 +300,11 @@ internal class GitHubBackgroundRefreshCoordinator(
                     totalTrackedCount = state.trackedItems.size,
                 )
                 logTrackedRefreshFailures(batchResult.failures)
+                AppLogger.d("GitHubBackgroundRefresh") {
+                    "complete page background refresh session=${runtimeSession.id} " +
+                        "scope=${runtimeSession.scope} target=${items.size} " +
+                        "updatable=$updatableCount prerelease=$preReleaseUpdateCount failed=$failedCount"
+                }
                 state.overviewRefreshState =
                     if (failedCount > 0) {
                         OverviewRefreshState.Failed
@@ -291,6 +313,11 @@ internal class GitHubBackgroundRefreshCoordinator(
                 }
                 state.refreshProgress = 1f
             } catch (error: CancellationException) {
+                AppLogger.d("GitHubBackgroundRefresh") {
+                    "cancel page background refresh session=${runtimeSession.id} " +
+                        "scope=${runtimeSession.scope} completed=$completedCount/${items.size} " +
+                        "reason=${error.message.orEmpty()}"
+                }
                 restoreInterruptedItemStates(
                     items = items,
                     previousCheckStatesById = previousCheckStatesById,
@@ -342,10 +369,10 @@ internal class GitHubBackgroundRefreshCoordinator(
         backgroundJobs.add(job)
         job.invokeOnCompletion { cause ->
             if (cause != null && runtimeSessionId > 0L) {
-                AppLogger.d(
-                    "GitHubBackgroundRefresh",
-                    "page background refresh job completed with ${cause.javaClass.simpleName}",
-                )
+                AppLogger.d("GitHubBackgroundRefresh") {
+                    "page background refresh job finished session=$runtimeSessionId " +
+                        "cause=${cause.javaClass.simpleName} message=${cause.message.orEmpty()}"
+                }
             }
             backgroundJobs.remove(job)
         }

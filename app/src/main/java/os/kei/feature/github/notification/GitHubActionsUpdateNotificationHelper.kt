@@ -18,7 +18,11 @@ import os.kei.core.notification.live.builder.NotificationRenderStyle
 import os.kei.core.notification.focus.MiFocusExpandedComponent
 import os.kei.core.notification.focus.MiFocusExpandedSpec
 import os.kei.core.notification.focus.MiFocusExpandedText
+import os.kei.core.notification.focus.MiFocusIslandBigTemplate
+import os.kei.core.notification.focus.MiFocusIslandPic
 import os.kei.core.notification.focus.MiFocusIslandSpec
+import os.kei.core.notification.focus.MiFocusIslandSmallTemplate
+import os.kei.core.notification.focus.MiFocusIslandText
 import os.kei.core.notification.focus.MiFocusNotificationAction
 import os.kei.core.notification.focus.MiFocusNotificationSpec
 import os.kei.core.notification.focus.MiFocusNotificationTemplate
@@ -37,6 +41,9 @@ object GitHubActionsUpdateNotificationHelper {
     private const val NOTIFICATION_ID_BASE = 389_910_000
     private const val NOTIFICATION_ID_RANGE = 1_000_000
     private const val GITHUB_ACTIONS_COLOR = "#3B82F6"
+    private const val GITHUB_ACTIONS_NEUTRAL_COLOR = "#64748B"
+    private const val GITHUB_ACTIONS_NEUTRAL_COLOR_DARK = "#CBD5E1"
+    private const val GITHUB_ACTIONS_LABEL_TEXT_COLOR = "#FFFFFF"
     private val ICON_RES_ID = R.drawable.ic_github_invertocat_island_blue
 
     fun notifyUpdateAvailable(
@@ -48,6 +55,11 @@ object GitHubActionsUpdateNotificationHelper {
         GitHubRefreshNotificationHelper.ensureChannel(context)
         val notificationId = notificationId(snapshot)
         val buildResult = buildNotification(context, snapshot, onlyAlertOnce, notificationId)
+        AppLogger.d(TAG) {
+            "dispatch id=$notificationId style=${buildResult.style} " +
+                "xiaomiMagic=${buildResult.useXiaomiMagic} track=${snapshot.trackId} " +
+                "run=${snapshot.runLabel} workflow=${snapshot.workflowName.ifBlank { snapshot.workflowPath }}"
+        }
         McpNotificationHelper.dispatchNotification(
             context = context,
             notificationId = notificationId,
@@ -68,6 +80,7 @@ object GitHubActionsUpdateNotificationHelper {
 
     private data class NotificationBuildResult(
         val notification: Notification,
+        val style: NotificationRenderStyle,
         val useXiaomiMagic: Boolean,
     )
 
@@ -86,6 +99,11 @@ object GitHubActionsUpdateNotificationHelper {
         )
         val useMiIsland = decision.style == NotificationRenderStyle.MI_ISLAND
         AppLogger.i(TAG, "buildNotification ${decision.logSummary()}")
+        AppLogger.d(TAG) {
+            "buildNotificationDetail ${decision.logSummary()} id=$notificationId " +
+                "onlyAlertOnce=$onlyAlertOnce firstFloat=${GitHubNotificationPreferences.isSuperIslandFirstFloatEnabled()} " +
+                "track=${snapshot.trackId} run=${snapshot.runLabel}"
+        }
         val notification =
             if (useMiIsland) {
                 buildMiIslandNotification(context, snapshot, onlyAlertOnce, notificationId)
@@ -94,6 +112,7 @@ object GitHubActionsUpdateNotificationHelper {
             }
         return NotificationBuildResult(
             notification = notification,
+            style = decision.style,
             useXiaomiMagic = decision.useXiaomiMagic,
         )
     }
@@ -142,7 +161,8 @@ object GitHubActionsUpdateNotificationHelper {
         notificationId: Int,
     ): Notification {
         val title = title(context)
-        val content = content(context, snapshot)
+        val content = compactContent(snapshot)
+        val compactRunLabel = compactText(snapshot.runLabel, maxLength = 8)
         val openPendingIntent = buildOpenPendingIntent(context, snapshot, notificationId)
         val markReadPendingIntent = buildMarkReadPendingIntent(context, notificationId)
         val appIconBitmap = resolveTrackedAppIconBitmap(context, snapshot)
@@ -161,8 +181,7 @@ object GitHubActionsUpdateNotificationHelper {
                 .setAutoCancel(false)
                 .setOngoing(false)
                 .setSilent(onlyAlertOnce)
-                .setRequestPromotedOngoing(false)
-                .setShortCriticalText(snapshot.runLabel)
+                .setShortCriticalText(compactRunLabel)
                 .setDeleteIntent(markReadPendingIntent)
                 .addAction(0, context.getString(R.string.common_open), openPendingIntent)
                 .addAction(
@@ -174,6 +193,11 @@ object GitHubActionsUpdateNotificationHelper {
                 }
 
         runCatching {
+            val firstFloat = GitHubNotificationPreferences.isSuperIslandFirstFloatEnabled()
+            AppLogger.d(TAG) {
+                "buildMiIslandExtras id=$notificationId allowFloat=false firstFloat=$firstFloat " +
+                    "track=${snapshot.trackId} run=${snapshot.runLabel}"
+            }
             val trackedAppPicture = appIconBitmap?.let(MiFocusPictureSource::BitmapValue)
             MiFocusNotificationTemplate.build(
                 context = context,
@@ -189,8 +213,27 @@ object GitHubActionsUpdateNotificationHelper {
                             trackedAppPicture
                                 ?: MiFocusPictureSource.Resource(ICON_RES_ID),
                         island =
-                            MiFocusIslandSpec.summaryText(
-                                title = snapshot.runLabel,
+                            MiFocusIslandSpec(
+                                bigTemplates =
+                                    listOf(
+                                        MiFocusIslandBigTemplate.ImageTextLeft(
+                                            pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
+                                        ),
+                                        MiFocusIslandBigTemplate.ImageTextRight(
+                                            type = 3,
+                                            text =
+                                                MiFocusIslandText(
+                                                    title = compactRunLabel,
+                                                    content = compactTargetLabel(snapshot),
+                                                    showHighlightColor = true,
+                                                ),
+                                        ),
+                                    ),
+                                smallTemplate =
+                                    MiFocusIslandSmallTemplate.Picture(
+                                        pic = MiFocusIslandPic(pic = MiFocusPictureRef.Display),
+                                    ),
+                                highlightColor = GITHUB_ACTIONS_COLOR,
                             ),
                         expanded =
                             MiFocusExpandedSpec(
@@ -201,6 +244,14 @@ object GitHubActionsUpdateNotificationHelper {
                                                 MiFocusExpandedText(
                                                     title = title,
                                                     content = content.ifBlank { " " },
+                                                    specialTitle = compactRunLabel,
+                                                    colorTitle = GITHUB_ACTIONS_COLOR,
+                                                    colorTitleDark = GITHUB_ACTIONS_COLOR,
+                                                    colorSpecialTitle = GITHUB_ACTIONS_LABEL_TEXT_COLOR,
+                                                    colorSpecialTitleDark = GITHUB_ACTIONS_LABEL_TEXT_COLOR,
+                                                    colorSpecialBg = GITHUB_ACTIONS_COLOR,
+                                                    colorContent = GITHUB_ACTIONS_NEUTRAL_COLOR,
+                                                    colorContentDark = GITHUB_ACTIONS_NEUTRAL_COLOR_DARK,
                                                 ),
                                         ),
                                         MiFocusExpandedComponent.Picture(
@@ -229,13 +280,13 @@ object GitHubActionsUpdateNotificationHelper {
                                                 ),
                                         ),
                                     ),
-                            ),
-                        allowFloat = true,
-                        islandFirstFloat = true,
+                        ),
+                        allowFloat = false,
+                        islandFirstFloat = firstFloat,
                         updatable = true,
                         outerGlow = true,
                         ticker = title,
-                        compactTicker = snapshot.runLabel,
+                        compactTicker = compactRunLabel,
                         notifyId = notificationId.toString(),
                         orderId = snapshot.trackId,
                     ),
@@ -268,6 +319,28 @@ object GitHubActionsUpdateNotificationHelper {
             snapshot.runLabel,
             snapshot.workflowName.ifBlank { snapshot.workflowPath },
         )
+
+    private fun compactContent(snapshot: GitHubActionsRecommendedRunSnapshot): String {
+        val target = compactTargetLabel(snapshot)
+        val run = compactText(snapshot.runLabel, maxLength = 12)
+        return listOf(target, run)
+            .filter { it.isNotBlank() }
+            .joinToString(" · ")
+            .ifBlank { snapshot.owner + "/" + snapshot.repo }
+    }
+
+    private fun compactTargetLabel(snapshot: GitHubActionsRecommendedRunSnapshot): String {
+        return compactText(
+            raw = snapshot.appLabel.ifBlank { snapshot.repo.ifBlank { snapshot.owner } },
+            maxLength = 10,
+        )
+    }
+
+    private fun compactText(raw: String, maxLength: Int): String {
+        val trimmed = raw.trim()
+        if (trimmed.length <= maxLength) return trimmed
+        return trimmed.take((maxLength - 3).coerceAtLeast(1)).trimEnd() + "..."
+    }
 
     private fun buildOpenPendingIntent(
         context: Context,

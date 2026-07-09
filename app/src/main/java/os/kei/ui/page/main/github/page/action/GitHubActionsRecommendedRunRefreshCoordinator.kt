@@ -18,7 +18,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
     private val env: GitHubPageActionEnvironment
 ) {
     private val context get() = env.context
-    private val scope get() = env.scope
+    private val durableScope get() = env.durableScope
     private val state get() = env.state
     private val actionsRepository get() = env.actionsRepository
     private val itemJobs = ConcurrentHashMap<String, Job>()
@@ -40,7 +40,10 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         }
         if (targets.isEmpty()) return
         val lookupConfig = state.lookupConfig
-        val job = scope.launch {
+        AppLogger.d(GITHUB_ACTIONS_RECOMMENDED_RUN_REFRESH_TAG) {
+            "enqueue recommended run refresh target=${targets.size}"
+        }
+        val job = durableScope.launch {
             try {
                 val result =
                     refreshService.refreshItems(
@@ -77,7 +80,7 @@ internal class GitHubActionsRecommendedRunRefreshCoordinator(
         val trackId = item.id
         val activeItem = state.trackedItems.firstOrNull { it.id == trackId } ?: return
         itemJobs.remove(trackId)?.cancel()
-        val job = scope.launch {
+        val job = durableScope.launch {
             refreshItem(activeItem)
         }
         itemJobs[trackId] = job

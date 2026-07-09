@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.github.page.action
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -26,6 +27,7 @@ internal class GitHubRefreshActions(
 ) {
     internal val context get() = env.context
     internal val scope get() = env.scope
+    internal val durableScope get() = env.durableScope
     internal val state get() = env.state
     internal val repository get() = env.repository
     internal val clock get() = env.clock
@@ -79,16 +81,16 @@ internal class GitHubRefreshActions(
         val states = buildCheckCacheEntries()
         val resolvedRefreshTimestamp =
             states.resolvedRefreshTimestamp(refreshTimestamp ?: state.lastRefreshMs)
-        scope.launch {
+        durableScope.launch {
             state.lastRefreshMs = repository.saveCheckCache(states, resolvedRefreshTimestamp)
         }
     }
 
     fun cancelRefreshAll(reason: String? = null) {
-        backgroundRefreshCoordinator.cancel()
+        backgroundRefreshCoordinator.cancel(reason = "cancelRefreshAll")
         actionsRunRefreshCoordinator.cancel()
         if (state.refreshAllJob?.isActive != true) return
-        state.refreshAllJob?.cancel()
+        state.refreshAllJob?.cancel(CancellationException("cancelRefreshAll"))
         state.refreshAllJob = null
         val activeRefreshIds =
             state.refreshTargetIds.takeIf { it.isNotEmpty() }
@@ -128,7 +130,7 @@ internal class GitHubRefreshActions(
                     failedCount = failedCount,
                 )
             }
-            scope.launch {
+            durableScope.launch {
                 repository.notifyRefreshCancelled(
                     context = context,
                     current = checkedCount,

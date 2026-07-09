@@ -142,6 +142,7 @@ fun GitHubPage(
             GitHubPageActions(
                 context = context,
                 scope = scope,
+                durableScope = githubPageViewModel.durableActionScope,
                 state = state,
                 viewModel = githubPageViewModel,
                 repository = githubPageViewModel.repository,

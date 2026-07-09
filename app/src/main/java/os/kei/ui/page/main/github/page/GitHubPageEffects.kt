@@ -9,6 +9,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import os.kei.R
+import os.kei.core.log.AppLogger
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -83,6 +84,11 @@ internal fun BindGitHubPageLifecycleCoordinator(
     LaunchedEffect(isPageDataActive) {
         if (!isPageDataActive) return@LaunchedEffect
         delay(GITHUB_PAGE_ACTIVE_SYNC_DELAY_MS.milliseconds)
+        AppLogger.d("GitHubPageLifecycle") {
+            "page data active initialized=${state.hasActiveInitialized} " +
+                "warmInitialized=${state.hasInitialized} tracked=${state.trackedItems.size} " +
+                "cached=${state.checkStates.size}"
+        }
         if (!state.hasInitialized) {
             state.hasInitialized = true
             actions.initializeWarmSnapshot()
