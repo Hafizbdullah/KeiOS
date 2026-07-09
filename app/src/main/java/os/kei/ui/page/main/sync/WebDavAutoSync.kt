@@ -243,6 +243,7 @@ internal object WebDavAutoSync {
                     continue
                 }
                 val outcome = reconcileItem(config, item, port)
+                recordFingerprintRevisionIfSynced(item, port, outcome)
                 outcomes += outcome
                 itemOutcomes += item to outcome
                 if (!outcome.isSuccess) {
@@ -335,13 +336,19 @@ internal object WebDavAutoSync {
                     if (shouldDeferPendingWebDavAutoSync(pending, port)) return@mapNotNull null
                     val currentHash = WebDavSyncEngine.contentHash(port.fingerprintJson())
                     val storedHash = WebDavSyncStore.getItemContentHash(item)
-                    if (currentHash == storedHash) {
+                    val requiresFullReconciliation =
+                        requiresWebDavFingerprintReconciliation(
+                            storedRevision = WebDavSyncStore.getItemFingerprintRevision(item),
+                            currentRevision = port.fingerprintRevision,
+                        )
+                    if (currentHash == storedHash && !requiresFullReconciliation) {
                         null
                     } else {
                         WebDavAutoUploadTarget(
                             item = item,
                             port = port,
                             storedHash = storedHash,
+                            requiresFullReconciliation = requiresFullReconciliation,
                         )
                     }
                 }
@@ -363,7 +370,9 @@ internal object WebDavAutoSync {
                         item = target.item,
                         port = target.port,
                         storedHash = target.storedHash,
+                        requiresFullReconciliation = target.requiresFullReconciliation,
                     )
+                recordFingerprintRevisionIfSynced(target.item, target.port, outcome)
                 if (!outcome.isSuccess) {
                     AppLogger.w(TAG, "auto-push ($reason) ${target.item.name} -> ${outcome.status} ${outcome.detail.orEmpty()}")
                 }
@@ -444,6 +453,17 @@ internal object WebDavAutoSync {
         val storedHash = WebDavSyncStore.getItemContentHash(item)
         return when {
             storedHash == null -> adoptOrDeferMissingBaseline(config, item, port)
+            requiresWebDavFingerprintReconciliation(
+                storedRevision = WebDavSyncStore.getItemFingerprintRevision(item),
+                currentRevision = port.fingerprintRevision,
+            ) -> {
+                AppLogger.i(
+                    TAG,
+                    "auto-sync rebaselining ${item.name} fingerprint revision " +
+                        "${WebDavSyncStore.getItemFingerprintRevision(item)} -> ${port.fingerprintRevision}",
+                )
+                engine.sync(config, item, port)
+            }
             currentHash != storedHash ->
                 pushLocalChange(
                     config = config,
@@ -460,14 +480,29 @@ internal object WebDavAutoSync {
         item: WebDavSyncItem,
         port: WebDavSyncDataPort,
         storedHash: String?,
+        requiresFullReconciliation: Boolean = false,
     ): WebDavItemOutcome =
-        engine.uploadLocalChange(
-            config = config,
-            item = item,
-            port = port,
-            expectedRemoteEtag = WebDavSyncStore.getItemEtag(item),
-            expectedRemoteHash = storedHash,
-        )
+        if (requiresFullReconciliation) {
+            engine.sync(config, item, port)
+        } else {
+            engine.uploadLocalChange(
+                config = config,
+                item = item,
+                port = port,
+                expectedRemoteEtag = WebDavSyncStore.getItemEtag(item),
+                expectedRemoteHash = storedHash,
+            )
+        }
+
+    private fun recordFingerprintRevisionIfSynced(
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        outcome: WebDavItemOutcome,
+    ) {
+        if (outcome.isSuccess) {
+            WebDavSyncStore.setItemFingerprintRevision(item, port.fingerprintRevision)
+        }
+    }
 
     private suspend fun adoptOrDeferMissingBaseline(
         config: WebDavConfig,
@@ -612,7 +647,13 @@ private data class WebDavAutoUploadTarget(
     val item: WebDavSyncItem,
     val port: WebDavSyncDataPort,
     val storedHash: String?,
+    val requiresFullReconciliation: Boolean,
 )
+
+internal fun requiresWebDavFingerprintReconciliation(
+    storedRevision: Int,
+    currentRevision: Int,
+): Boolean = storedRevision != currentRevision
 
 private fun notifyAutoSyncProgress(
     context: Context,

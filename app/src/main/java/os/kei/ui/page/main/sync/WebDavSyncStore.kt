@@ -39,6 +39,7 @@ internal object WebDavSyncStore {
     private const val KEY_LAST_AUTO_SYNC_FAILED = "last_auto_sync_failed"
     private const val KEY_LAST_AUTO_SYNC_SKIPPED = "last_auto_sync_skipped"
     private const val KEY_SYNC_HISTORY = "sync_history_v1"
+    private const val DEFAULT_FINGERPRINT_REVISION = 1
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
     const val DEFAULT_AUTO_SYNC_INTERVAL_HOURS = 3
@@ -85,6 +86,7 @@ internal object WebDavSyncStore {
                 lastSyncKey(item),
                 etagKey(item),
                 hashKey(item),
+                fingerprintRevisionKey(item),
                 remoteCountKey(item),
                 remoteByteSizeKey(item),
                 remoteEtagKey(item),
@@ -183,6 +185,17 @@ internal object WebDavSyncStore {
 
     fun setItemContentHash(item: WebDavSyncItem, hash: String) {
         mmkv.encode(hashKey(item), hash)
+    }
+
+    fun getItemFingerprintRevision(item: WebDavSyncItem): Int =
+        mmkv.decodeInt(fingerprintRevisionKey(item), DEFAULT_FINGERPRINT_REVISION)
+            .coerceAtLeast(DEFAULT_FINGERPRINT_REVISION)
+
+    fun setItemFingerprintRevision(item: WebDavSyncItem, revision: Int) {
+        mmkv.encode(
+            fingerprintRevisionKey(item),
+            revision.coerceAtLeast(DEFAULT_FINGERPRINT_REVISION),
+        )
     }
 
     // ── Per-item pending state (auto-sync conflict / first-baseline guard) ─
@@ -347,6 +360,7 @@ internal object WebDavSyncStore {
     private fun lastSyncKey(item: WebDavSyncItem) = "last_sync_${item.name}"
     private fun etagKey(item: WebDavSyncItem) = "etag_${item.name}"
     private fun hashKey(item: WebDavSyncItem) = "hash_${item.name}"
+    private fun fingerprintRevisionKey(item: WebDavSyncItem) = "hash_revision_${item.name}"
     private fun remoteCountKey(item: WebDavSyncItem) = "remote_count_${item.name}"
     private fun remoteByteSizeKey(item: WebDavSyncItem) = "remote_size_${item.name}"
     private fun remoteEtagKey(item: WebDavSyncItem) = "remote_etag_${item.name}"

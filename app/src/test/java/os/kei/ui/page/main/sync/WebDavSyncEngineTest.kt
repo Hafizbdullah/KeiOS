@@ -1,15 +1,90 @@
 package os.kei.ui.page.main.sync
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Test
 import os.kei.feature.webdav.client.WebDavDownloadResult
 import os.kei.feature.webdav.client.WebDavTestConnectionResult
 import os.kei.feature.webdav.client.WebDavUploadResult
 import os.kei.feature.webdav.model.WebDavConfig
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WebDavSyncEngineTest {
+    @Test
+    fun `sync operations across engine instances serialize remote writes`() = runBlocking {
+        val firstDownloadStarted = CompletableDeferred<Unit>()
+        val releaseFirstDownload = CompletableDeferred<Unit>()
+        val secondDownloadStarted = CompletableDeferred<Unit>()
+        val firstClient = object : WebDavSyncClientBridge {
+            override suspend fun testConnection(): WebDavTestConnectionResult =
+                WebDavTestConnectionResult.Success(dirCreated = false)
+
+            override suspend fun upload(
+                fileName: String,
+                content: String,
+                etag: String?,
+            ): WebDavUploadResult = WebDavUploadResult.Success("etag-first")
+
+            override suspend fun uploadIfAbsent(
+                fileName: String,
+                content: String,
+            ): WebDavUploadResult = WebDavUploadResult.Success("etag-first")
+
+            override suspend fun download(fileName: String): WebDavDownloadResult {
+                firstDownloadStarted.complete(Unit)
+                releaseFirstDownload.await()
+                return WebDavDownloadResult.Success("same", "etag-first")
+            }
+        }
+        val secondClient = object : WebDavSyncClientBridge {
+            override suspend fun testConnection(): WebDavTestConnectionResult =
+                WebDavTestConnectionResult.Success(dirCreated = false)
+
+            override suspend fun upload(
+                fileName: String,
+                content: String,
+                etag: String?,
+            ): WebDavUploadResult = WebDavUploadResult.Success("etag-second")
+
+            override suspend fun uploadIfAbsent(
+                fileName: String,
+                content: String,
+            ): WebDavUploadResult = WebDavUploadResult.Success("etag-second")
+
+            override suspend fun download(fileName: String): WebDavDownloadResult {
+                secondDownloadStarted.complete(Unit)
+                return WebDavDownloadResult.Success("same", "etag-second")
+            }
+        }
+        val firstEngine = WebDavSyncEngine(clientFactory = { firstClient })
+        val secondEngine = WebDavSyncEngine(clientFactory = { secondClient })
+        val firstPort = FakeWebDavSyncDataPort(localJson = "same")
+        val secondPort = FakeWebDavSyncDataPort(localJson = "same")
+
+        val first = async(Dispatchers.Default) {
+            firstEngine.sync(fakeConfig(), WebDavSyncItem.BaAccounts, firstPort.port)
+        }
+        withTimeout(1_000L) { firstDownloadStarted.await() }
+        val second = async(Dispatchers.Default) {
+            secondEngine.sync(fakeConfig(), WebDavSyncItem.BaAccounts, secondPort.port)
+        }
+
+        assertNull(withTimeoutOrNull(150L) { secondDownloadStarted.await() })
+
+        releaseFirstDownload.complete(Unit)
+        withTimeout(1_000L) {
+            first.await()
+            second.await()
+        }
+        assertTrue(secondDownloadStarted.isCompleted)
+    }
+
     @Test
     fun `sync returns up to date when local and remote content hashes match`() = runBlocking {
         val client = FakeWebDavSyncClientBridge(

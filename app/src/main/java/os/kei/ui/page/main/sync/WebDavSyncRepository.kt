@@ -106,7 +106,7 @@ internal class WebDavSyncRepository(
         planItem: WebDavSyncPlanItem? = null,
     ): WebDavItemOutcome =
         withContext(ioDispatcher) {
-            when (kind) {
+            val outcome = when (kind) {
                 WebDavBatchKind.Sync -> engine.sync(config, item, port)
                 WebDavBatchKind.Upload ->
                     engine.upload(
@@ -120,6 +120,10 @@ internal class WebDavSyncRepository(
                     )
                 WebDavBatchKind.Download -> engine.download(config, item, port)
             }
+            if (outcome.isSuccess) {
+                WebDavSyncStore.setItemFingerprintRevision(item, port.fingerprintRevision)
+            }
+            outcome
         }
 
     suspend fun preparePlan(

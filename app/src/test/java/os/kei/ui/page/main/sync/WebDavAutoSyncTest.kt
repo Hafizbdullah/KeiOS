@@ -99,6 +99,22 @@ class WebDavAutoSyncTest {
     }
 
     @Test
+    fun `BA account fingerprint revision requests a full reconcile after model evolution`() {
+        assertTrue(
+            requiresWebDavFingerprintReconciliation(
+                storedRevision = 1,
+                currentRevision = 2,
+            ),
+        )
+        assertFalse(
+            requiresWebDavFingerprintReconciliation(
+                storedRevision = 2,
+                currentRevision = 2,
+            ),
+        )
+    }
+
+    @Test
     fun `auto sync review targets enabled manual review items only`() {
         val targets =
             pendingWebDavAutoSyncReviewItems(

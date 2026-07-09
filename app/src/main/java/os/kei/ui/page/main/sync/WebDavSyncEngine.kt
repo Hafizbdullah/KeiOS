@@ -195,7 +195,19 @@ internal class WebDavSyncEngine(
      * push the merged local copy back. Updates the persisted ETag + content hash + last-sync time
      * on success.
      */
-    suspend fun sync(config: WebDavConfig, item: WebDavSyncItem, port: WebDavSyncDataPort): WebDavItemOutcome {
+    suspend fun sync(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome = WebDavSyncOperationCoordinator.run {
+        syncInternal(config, item, port)
+    }
+
+    private suspend fun syncInternal(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome {
         val c = client(config)
         return try {
             when (val download = c.download(item.fileName)) {
@@ -296,6 +308,22 @@ internal class WebDavSyncEngine(
      * preserved; lossless ports re-merge with conditional writes, while other ports request review.
      */
     suspend fun uploadLocalChange(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        expectedRemoteEtag: String?,
+        expectedRemoteHash: String?,
+    ): WebDavItemOutcome = WebDavSyncOperationCoordinator.run {
+        uploadLocalChangeInternal(
+            config = config,
+            item = item,
+            port = port,
+            expectedRemoteEtag = expectedRemoteEtag,
+            expectedRemoteHash = expectedRemoteHash,
+        )
+    }
+
+    private suspend fun uploadLocalChangeInternal(
         config: WebDavConfig,
         item: WebDavSyncItem,
         port: WebDavSyncDataPort,
@@ -464,6 +492,24 @@ internal class WebDavSyncEngine(
         expectedRemoteEtag: String? = null,
         remoteKnownEmpty: Boolean = false,
         confirmedOverwrite: Boolean = false,
+    ): WebDavItemOutcome = WebDavSyncOperationCoordinator.run {
+        uploadInternal(
+            config = config,
+            item = item,
+            port = port,
+            expectedRemoteEtag = expectedRemoteEtag,
+            remoteKnownEmpty = remoteKnownEmpty,
+            confirmedOverwrite = confirmedOverwrite,
+        )
+    }
+
+    private suspend fun uploadInternal(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+        expectedRemoteEtag: String? = null,
+        remoteKnownEmpty: Boolean = false,
+        confirmedOverwrite: Boolean = false,
     ): WebDavItemOutcome {
         val c = client(config)
         return try {
@@ -506,7 +552,19 @@ internal class WebDavSyncEngine(
 
     // ── Manual download (pull remote → merge into local) ───────────────
 
-    suspend fun download(config: WebDavConfig, item: WebDavSyncItem, port: WebDavSyncDataPort): WebDavItemOutcome {
+    suspend fun download(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome = WebDavSyncOperationCoordinator.run {
+        downloadInternal(config, item, port)
+    }
+
+    private suspend fun downloadInternal(
+        config: WebDavConfig,
+        item: WebDavSyncItem,
+        port: WebDavSyncDataPort,
+    ): WebDavItemOutcome {
         val c = client(config)
         return try {
             when (val download = c.download(item.fileName)) {
@@ -957,6 +1015,8 @@ internal sealed interface WebDavRemoteProbeOutcome {
  *   what's on the server before deciding to sync.
  * - [mergeRemoteOnAutoConflict] allows stores with lossless union-merge semantics to resolve a
  *   background conflict by merging the refreshed remote payload before retrying upload.
+ * - [fingerprintRevision] advances when an item's canonical fingerprint changes after a model
+ *   migration, so auto-sync can re-establish a remote baseline through a full merge.
  */
 internal data class WebDavSyncDataPort(
     val exportJson: () -> String,
@@ -966,4 +1026,5 @@ internal data class WebDavSyncDataPort(
     val fingerprintJson: () -> String = exportJson,
     val remoteFingerprintJson: (raw: String) -> String = { it },
     val mergeRemoteOnAutoConflict: Boolean = false,
+    val fingerprintRevision: Int = 1,
 )
