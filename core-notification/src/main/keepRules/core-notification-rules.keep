@@ -1,5 +1,3 @@
 # ---------- KeiOS core notification R8 rules ----------
-# The local Focus V3 encoder writes public JSON keys directly and has no reflection serializer surface.
-# Keep facade names readable for release-only payload diagnosis.
--keepnames class os.kei.core.notification.focus.**
--keepnames class os.kei.core.notification.live.builder.MiIslandNotificationBuilder
+# Focus V3 payloads use explicit org.json keys, and all notification entry points use
+# direct typed calls. Release builds can shrink, optimize, and obfuscate this module.
