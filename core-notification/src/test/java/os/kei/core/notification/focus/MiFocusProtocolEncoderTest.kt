@@ -89,10 +89,13 @@ class MiFocusProtocolEncoderTest {
             "#1D4ED8",
             param.getJSONArray("textButton").getJSONObject(0).getString("actionBgPressColor"),
         )
-        assertNotNull(bundle.getBundle(MI_FOCUS_PICTURES_KEY)?.getParcelable<Icon>("focus_protocol_logo"))
+        assertNotNull(
+            bundle.getBundle(MI_FOCUS_PICTURES_KEY)
+                ?.getParcelable("focus_protocol_logo", Icon::class.java),
+        )
         assertNotNull(
             bundle.getBundle(MI_FOCUS_ACTIONS_KEY)
-                ?.getParcelable<Notification.Action>("focus_protocol_open"),
+                ?.getParcelable("focus_protocol_open", Notification.Action::class.java),
         )
     }
 }
