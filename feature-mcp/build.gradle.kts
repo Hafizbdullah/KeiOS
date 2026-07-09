@@ -41,7 +41,7 @@ dependencies {
     implementation("dev.rikka.shizuku:api:13.1.5")
     implementation("dev.rikka.shizuku:provider:13.1.5")
     implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
-    api("io.modelcontextprotocol:kotlin-sdk:0.13.0")
+    api("io.modelcontextprotocol:kotlin-sdk:0.14.0")
     implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
     implementation("io.ktor:ktor-server-cio")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
