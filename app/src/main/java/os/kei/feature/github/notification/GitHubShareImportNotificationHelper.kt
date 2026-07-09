@@ -4,8 +4,17 @@ import android.annotation.SuppressLint
 import android.app.Notification
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import android.text.format.Formatter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import os.kei.R
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.core.notification.live.NotificationHelper
@@ -19,10 +28,16 @@ import os.kei.core.notification.live.builder.UserSettings
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.mcp.notification.McpNotificationHelper
+import java.util.concurrent.atomic.AtomicLong
 
 object GitHubShareImportNotificationHelper {
     private const val TAG = "GitHubShareImportNotify"
+    private const val MIN_NOTIFICATION_POST_INTERVAL_MS = 400L
     const val NOTIFICATION_ID = 38991
+
+    private val notificationPostScheduler = GitHubShareImportNotificationPostScheduler(
+        minimumIntervalMs = MIN_NOTIFICATION_POST_INTERVAL_MS,
+    )
 
     fun notifyResolving(context: Context, sourceLabel: String) {
         notifyState(
@@ -410,6 +425,7 @@ object GitHubShareImportNotificationHelper {
     }
 
     fun cancel(context: Context) {
+        notificationPostScheduler.clear()
         McpNotificationHelper.cancelNotification(context, NOTIFICATION_ID)
     }
 
@@ -419,6 +435,18 @@ object GitHubShareImportNotificationHelper {
         state: GitHubShareImportNotificationState
     ): Boolean {
         if (!notificationsGranted(context)) return false
+        notificationPostScheduler.enqueue(
+            context = context.applicationContext,
+            state = state,
+            post = ::postState,
+        )
+        return true
+    }
+
+    private fun postState(
+        context: Context,
+        state: GitHubShareImportNotificationState,
+    ) {
         McpNotificationHelper.ensureChannel(context)
         val buildResult = buildFrameworkNotificationResult(context, state)
         McpNotificationHelper.dispatchNotification(
@@ -427,7 +455,6 @@ object GitHubShareImportNotificationHelper {
             notification = buildResult.notification,
             useXiaomiMagic = buildResult.useXiaomiMagic
         )
-        return true
     }
 
     internal fun buildFrameworkLiveUpdateNotification(
@@ -701,3 +728,81 @@ private data class ShareImportNotificationBuildResult(
     val notification: Notification,
     val useXiaomiMagic: Boolean
 )
+
+internal class GitHubShareImportNotificationPostScheduler(
+    minimumIntervalMs: Long,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + AppDispatchers.githubNotification),
+    private val nowElapsedRealtimeMs: () -> Long = SystemClock::elapsedRealtime,
+) {
+    private data class PendingPost(
+        val context: Context,
+        val state: GitHubShareImportNotificationState,
+        val generation: Long,
+        val post: (Context, GitHubShareImportNotificationState) -> Unit,
+    )
+
+    private val mutex = Mutex()
+    private val pacer = GitHubShareImportNotificationDispatchPacer(minimumIntervalMs)
+    private val requestedGeneration = AtomicLong(0L)
+    private var pendingPost: PendingPost? = null
+    private var drainJob: Job? = null
+    private var latestGeneration = 0L
+
+    fun enqueue(
+        context: Context,
+        state: GitHubShareImportNotificationState,
+        post: (Context, GitHubShareImportNotificationState) -> Unit,
+    ) {
+        val submittedGeneration = requestedGeneration.incrementAndGet()
+        scope.launch {
+            mutex.withLock {
+                if (submittedGeneration < latestGeneration) return@withLock
+                latestGeneration = submittedGeneration
+                pendingPost = PendingPost(
+                    context = context,
+                    state = state,
+                    generation = submittedGeneration,
+                    post = post,
+                )
+                if (drainJob?.isActive != true) {
+                    drainJob = scope.launch { drain() }
+                }
+            }
+        }
+    }
+
+    fun clear() {
+        val clearedGeneration = requestedGeneration.incrementAndGet()
+        scope.launch {
+            mutex.withLock {
+                if (clearedGeneration < latestGeneration) return@withLock
+                latestGeneration = clearedGeneration
+                pendingPost = null
+            }
+        }
+    }
+
+    private suspend fun drain() {
+        while (true) {
+            val delayMs = mutex.withLock {
+                if (pendingPost == null) {
+                    drainJob = null
+                    return
+                }
+                pacer.delayUntilReady(nowElapsedRealtimeMs())
+            }
+            if (delayMs > 0L) delay(delayMs)
+
+            val nextPost = mutex.withLock {
+                val queued = pendingPost
+                pendingPost = null
+                queued?.takeIf { it.generation == latestGeneration }
+            } ?: continue
+
+            nextPost.post(nextPost.context, nextPost.state)
+            mutex.withLock {
+                pacer.markDispatched(nowElapsedRealtimeMs())
+            }
+        }
+    }
+}
