@@ -501,7 +501,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_topbar_debug_tools">Debug</string>
     <string name="github_topbar_debug_tools_summary">更新と通知のテスト</string>
     <string name="github_topbar_search_label">追跡プロジェクトを検索（リポジトリ / アプリ / パッケージ）</string>
-    <string name="github_overview_title">プロジェクトバージョン追跡</string>
+    <string name="github_overview_title">バージョン追跡</string>
     <string name="github_overview_label_strategy">方式</string>
     <string name="github_overview_label_api">API</string>
     <string name="github_overview_label_tracked">追跡</string>
@@ -533,10 +533,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_overview_pill_failed">失敗 %1$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
-    <string name="github_overview_lookup_api">API %1$s</string>
-    <string name="github_overview_api_unset">未入力</string>
     <string name="github_overview_actions_strategy_nightly">nightly</string>
-    <string name="github_overview_api_guest">Guest</string>
     <string name="github_refresh_ago_not_refreshed">未更新</string>
     <string name="github_eta_soon_recover">まもなく回復</string>
     <string name="github_eta_after_minutes">%1$d 分後</string>

@@ -218,14 +218,7 @@ internal fun GitHubLookupStrategyOption.overviewLabel(context: Context): String 
 }
 
 internal fun GitHubLookupConfig.overviewLookupPillLabel(context: Context): String {
-    return when (selectedStrategy) {
-        GitHubLookupStrategyOption.AtomFeed -> selectedStrategy.overviewLabel(context)
-        GitHubLookupStrategyOption.GitHubApiToken ->
-            context.getString(
-                R.string.github_overview_lookup_api,
-                apiToken.maskedApiPreview(context)
-            )
-    }
+    return selectedStrategy.overviewLabel(context)
 }
 
 internal fun GitHubActionsLookupStrategyOption.overviewLabel(context: Context): String {
@@ -345,57 +338,6 @@ internal fun VersionCheckUi.statusActionUrl(
             GitHubVersionUtils.buildReleaseTagUrl(owner, repo, latestPreRawTag)
         else -> ""
     }
-}
-
-private fun String.maskedApiPreview(context: Context): String {
-    val token = trim()
-    if (token.isBlank()) return context.getString(R.string.github_overview_api_unset)
-
-    return when {
-        token.startsWith("github_pat_") -> "FG ${token.fineGrainedMarker()}"
-        token.startsWith("ghp_") -> "CL ${token.compactMarker(prefix = "ghp_")}"
-        token.startsWith("gho_") -> "OA ${token.compactMarker(prefix = "gho_")}"
-        token.startsWith("ghu_") -> "US ${token.compactMarker(prefix = "ghu_")}"
-        token.startsWith("ghs_") -> "SV ${token.compactMarker(prefix = "ghs_")}"
-        token.startsWith("ghr_") -> "RF ${token.compactMarker(prefix = "ghr_")}"
-        else -> "KEY ${token.compactMarker()}"
-    }
-}
-
-private fun String.fineGrainedMarker(): String {
-    val payload = removePrefix("github_pat_")
-    val segmentA = payload.substringBefore('_', "").tokenFingerprintSource()
-    val segmentB = payload.substringAfterLast('_', "").tokenFingerprintSource()
-    return buildCompactMarker(
-        headSource = segmentA.ifBlank { payload.tokenFingerprintSource() },
-        tailSource = segmentB.ifBlank { payload.tokenFingerprintSource() }
-    )
-}
-
-private fun String.compactMarker(prefix: String = ""): String {
-    return buildCompactMarker(
-        headSource = removePrefix(prefix).tokenFingerprintSource(),
-        tailSource = removePrefix(prefix).tokenFingerprintSource()
-    )
-}
-
-private fun buildCompactMarker(
-    headSource: String,
-    tailSource: String
-): String {
-    val head = headSource.take(2)
-    val tail = tailSource.takeLast(2)
-    return when {
-        head.isBlank() && tail.isBlank() -> "--"
-        head.isBlank() -> tail
-        tail.isBlank() -> head
-        head == tail -> head
-        else -> "$head…$tail"
-    }
-}
-
-private fun String.tokenFingerprintSource(): String {
-    return filter { it.isLetterOrDigit() }
 }
 
 internal const val githubFineGrainedPatDocsUrl =

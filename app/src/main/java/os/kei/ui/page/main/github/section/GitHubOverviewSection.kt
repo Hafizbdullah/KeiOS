@@ -113,11 +113,13 @@ internal fun GitHubOverviewCard(
         contentColor = MiuixTheme.colorScheme.onBackground,
         onLongClick = onEditVisibleEntries,
         titleAccessory = {
-            if (GitHubOverviewEntry.Tracked in entries) {
-                GitHubOverviewTrackedCountPill(
-                    count = metrics.trackedCount,
-                    isDark = isDark,
-                    backdrop = backdrop
+            val showLookupMode =
+                GitHubOverviewEntry.Strategy in entries || GitHubOverviewEntry.Api in entries
+            if (showLookupMode) {
+                GitHubOverviewLookupModePill(
+                    label = lookupValue,
+                    color = lookupColor,
+                    backdrop = backdrop,
                 )
             }
         },
@@ -171,8 +173,6 @@ internal fun GitHubOverviewCard(
         GitHubOverviewExpandedContent(
             backdrop = backdrop,
             isDark = isDark,
-            lookupValue = lookupValue,
-            lookupColor = lookupColor,
             visibleEntries = entries,
             metrics = metrics,
             failedFilterActive = failedFilterActive,
@@ -186,8 +186,6 @@ internal fun GitHubOverviewCard(
 private fun GitHubOverviewExpandedContent(
     backdrop: Backdrop?,
     isDark: Boolean,
-    lookupValue: String,
-    lookupColor: Color,
     visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
     failedFilterActive: Boolean,
@@ -195,14 +193,28 @@ private fun GitHubOverviewExpandedContent(
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
     val entries = visibleEntries.orDefaultGitHubOverviewEntries()
-    val pills =
+    val metricPills =
         buildGitHubOverviewExpandedPillPlan(entries).map { pill ->
             pill.toDisplayPill(
                 isDark = isDark,
-                lookupValue = lookupValue,
-                lookupColor = lookupColor,
                 metrics = metrics
             )
+        }
+    val pills =
+        buildList {
+            if (GitHubOverviewEntry.Tracked in entries) {
+                add(
+                    GitHubOverviewDisplayPill(
+                        label = metrics.trackedCount.toString(),
+                        color = overviewMetricColor(
+                            color = GitHubStatusPalette.Stable,
+                            emphasized = metrics.trackedCount > 0,
+                            isDark = isDark,
+                        ),
+                    )
+                )
+            }
+            addAll(metricPills)
         }
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -249,7 +261,6 @@ private fun GitHubOverviewExpandedContent(
 }
 
 internal enum class GitHubOverviewExpandedPillKind {
-    Lookup,
     Stable,
     StableUpdate,
     StableLatest,
@@ -276,9 +287,6 @@ internal fun buildGitHubOverviewExpandedPillPlan(
 ): List<GitHubOverviewExpandedPillPlan> {
     val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     return buildList {
-        if (GitHubOverviewEntry.Strategy in entries || GitHubOverviewEntry.Api in entries) {
-            add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.Lookup))
-        }
         when {
             GitHubOverviewEntry.StableUpdate in entries &&
                     GitHubOverviewEntry.StableLatest in entries ->
@@ -310,14 +318,10 @@ internal fun buildGitHubOverviewExpandedPillPlan(
 @Composable
 private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
     isDark: Boolean,
-    lookupValue: String,
-    lookupColor: Color,
     metrics: GitHubOverviewMetrics
 ): GitHubOverviewDisplayPill {
     val stableTotal = metrics.stableUpdateCount + metrics.stableLatestCount
     val label = when (kind) {
-        GitHubOverviewExpandedPillKind.Lookup -> lookupValue
-
         GitHubOverviewExpandedPillKind.Stable ->
             stringResource(
                 R.string.github_overview_pill_stable_pair,
@@ -351,8 +355,6 @@ private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
             stringResource(R.string.github_overview_pill_failed, metrics.failedCount)
     }
     val color = when (kind) {
-        GitHubOverviewExpandedPillKind.Lookup -> lookupColor
-
         GitHubOverviewExpandedPillKind.Stable,
         GitHubOverviewExpandedPillKind.StableUpdate ->
             overviewMetricColor(
@@ -409,21 +411,17 @@ private fun GitHubOverviewExpandedPillFlow(
 }
 
 @Composable
-private fun GitHubOverviewTrackedCountPill(
-    count: Int,
-    isDark: Boolean,
-    backdrop: Backdrop?
+private fun GitHubOverviewLookupModePill(
+    label: String,
+    color: Color,
+    backdrop: Backdrop?,
 ) {
     StatusPill(
-        label = count.toString(),
-        color = overviewMetricColor(
-            color = GitHubStatusPalette.Stable,
-            emphasized = count > 0,
-            isDark = isDark
-        ),
+        label = label,
+        color = color,
         size = AppStatusPillSize.Compact,
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 3.dp),
-        backdrop = backdrop
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 3.dp),
+        backdrop = backdrop,
     )
 }
 

@@ -524,7 +524,7 @@
     <string name="github_topbar_debug_tools">调试</string>
     <string name="github_topbar_debug_tools_summary">刷新与通知测试</string>
     <string name="github_topbar_search_label">搜索已跟踪项目（仓库/App/包名）</string>
-    <string name="github_overview_title">项目版本跟踪</string>
+    <string name="github_overview_title">版本追踪</string>
     <string name="github_overview_label_strategy">策略</string>
     <string name="github_overview_label_api">API</string>
     <string name="github_overview_label_tracked">已追踪</string>
@@ -557,10 +557,7 @@
     <string name="github_overview_pill_failed">失败 %1$d</string>
     <string name="github_overview_strategy_atom">Atom</string>
     <string name="github_overview_strategy_api">API</string>
-    <string name="github_overview_lookup_api">API %1$s</string>
-    <string name="github_overview_api_unset">未填写</string>
     <string name="github_overview_actions_strategy_nightly">nightly</string>
-    <string name="github_overview_api_guest">游客</string>
     <string name="github_refresh_ago_not_refreshed">未刷新</string>
     <string name="github_eta_soon_recover">即将恢复</string>
     <string name="github_eta_after_minutes">%1$d 分钟后</string>

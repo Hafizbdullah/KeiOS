@@ -10,7 +10,6 @@ class GitHubOverviewPillPlanTest {
 
         assertEquals(
             listOf(
-                GitHubOverviewExpandedPillKind.Lookup,
                 GitHubOverviewExpandedPillKind.Stable,
                 GitHubOverviewExpandedPillKind.PreRelease,
                 GitHubOverviewExpandedPillKind.CheckFailed,
@@ -33,7 +32,6 @@ class GitHubOverviewPillPlanTest {
 
         assertEquals(
             listOf(
-                GitHubOverviewExpandedPillKind.Lookup,
                 GitHubOverviewExpandedPillKind.StableUpdate,
                 GitHubOverviewExpandedPillKind.PreReleaseTracked,
                 GitHubOverviewExpandedPillKind.CheckFailed,
@@ -43,7 +41,7 @@ class GitHubOverviewPillPlanTest {
     }
 
     @Test
-    fun apiOnlyEntryStillUsesLookupPill() {
+    fun apiOnlyEntryLeavesMetricRowEmpty() {
         val plan =
             buildGitHubOverviewExpandedPillPlan(
                 setOf(
@@ -53,9 +51,7 @@ class GitHubOverviewPillPlanTest {
             )
 
         assertEquals(
-            listOf(
-                GitHubOverviewExpandedPillKind.Lookup,
-            ),
+            emptyList(),
             plan.map { it.kind },
         )
     }
