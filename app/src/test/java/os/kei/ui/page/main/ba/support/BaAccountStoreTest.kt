@@ -85,6 +85,20 @@ class BaAccountStoreTest {
     }
 
     @Test
+    fun `AP read suppression false survives global settings save and fresh load`() {
+        val backingStore = InMemoryBaAccountKeyValueStore()
+
+        BaAccountStore(backingStore).saveGlobalReminderSettings(
+            BaGlobalReminderSettings(
+                keepApRemindersReadUntilBelowThreshold = false,
+            ),
+        )
+
+        val reloaded = BaAccountStore(backingStore).loadGlobalReminderSettings()
+        assertFalse(reloaded.keepApRemindersReadUntilBelowThreshold)
+    }
+
+    @Test
     fun `runtime updates only active account`() {
         val store = BaAccountStore(InMemoryBaAccountKeyValueStore())
         store.saveAccounts(

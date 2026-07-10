@@ -162,6 +162,51 @@ class BaAccountTransferTest {
     }
 
     @Test
+    fun `sync merge import keeps AP read suppression false after fresh load`() {
+        val backingStore = InMemoryBaAccountKeyValueStore()
+        val importStore = BaAccountStore(backingStore)
+        val remoteRaw =
+            buildBaAccountsExportJson(
+                snapshot =
+                    BaAccountStoreSnapshot(
+                        accounts = emptyList(),
+                        activeAccountId = null,
+                        allAccountsFollowGlobalNotificationSettings = true,
+                        globalReminderSettings =
+                            BaGlobalReminderSettings(
+                                keepApRemindersReadUntilBelowThreshold = false,
+                            ),
+                        globalReminderSettingsUpdatedAtMs = 2_000L,
+                    ),
+                nowMs = 3_000L,
+            )
+        val merged =
+            mergeBaAccountsForSync(
+                local = importStore.loadState(),
+                remote = parseBaAccountsExportJson(remoteRaw),
+                nowMs = 4_000L,
+            )
+
+        importStore.replaceAll(
+            accounts = merged.accounts,
+            activeAccountId = merged.activeAccountId,
+            activeAccountUpdatedAtMs = merged.activeAccountUpdatedAtMs,
+        )
+        importStore.saveAllAccountsFollowGlobalNotificationSettingsFromSync(
+            merged.allAccountsFollowGlobalNotificationSettings,
+            merged.allAccountsFollowGlobalNotificationSettingsUpdatedAtMs,
+        )
+        importStore.saveGlobalReminderSettingsFromSync(
+            merged.globalReminderSettings,
+            merged.globalReminderSettingsUpdatedAtMs,
+        )
+
+        val reloaded = BaAccountStore(backingStore).loadState()
+        assertFalse(reloaded.globalReminderSettings.keepApRemindersReadUntilBelowThreshold)
+        assertEquals(2_000L, reloaded.globalReminderSettingsUpdatedAtMs)
+    }
+
+    @Test
     fun `merge preserves different account edits from two devices for a third device`() {
         val base =
             BaAccountStoreSnapshot(
