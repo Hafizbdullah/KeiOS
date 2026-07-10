@@ -278,6 +278,7 @@ class GitHubInstallSessionWriter(
                         "Accept" to acceptHeader,
                     ),
                     fileNameHint = outputFile.name,
+                    expectedSizeBytes = declaredSizeBytes.takeIf { it > 0L } ?: -1L,
                     expectedSha256 = expectedDigest,
                 ),
                 options = githubSegmentedDownloadOptions(downloadSpeedProfile),

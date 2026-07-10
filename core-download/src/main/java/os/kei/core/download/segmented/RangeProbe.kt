@@ -1,7 +1,7 @@
 package os.kei.core.download.segmented
 
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import okhttp3.Response
 import os.kei.core.io.executeCancellable
 import java.io.IOException
 
@@ -10,49 +10,133 @@ internal data class RangeProbeResult(
     val totalBytes: Long,
     val finalUrl: String,
     val fallbackReason: String? = null,
+    val resourceValidator: RangeResourceValidator? = null,
 )
 
-internal class RangeProbe(
-    private val client: OkHttpClient,
+internal data class RangeResourceValidator(
+    val strongEtag: String? = null,
+    val lastModified: String? = null,
 ) {
-    suspend fun probe(request: SegmentedDownloadRequest): RangeProbeResult {
-        val probeRequest = request.newRequestBuilder()
-            .header("Range", "bytes=0-0")
-            .get()
-            .build()
-        return client.executeCancellable(probeRequest) { response ->
-            val finalUrl = response.request.url.toString()
-            when (response.code) {
-                206 -> {
-                    val range = parseContentRange(response.header("Content-Range"))
-                    if (range == null || range.start != 0L || range.end != 0L || range.totalBytes <= 0L) {
-                        RangeProbeResult(
-                            rangeSupported = false,
-                            totalBytes = -1L,
-                            finalUrl = finalUrl,
-                            fallbackReason = "invalid-content-range",
-                        )
-                    } else {
-                        RangeProbeResult(
-                            rangeSupported = true,
-                            totalBytes = range.totalBytes,
-                            finalUrl = finalUrl,
-                        )
-                    }
-                }
+    init {
+        require(strongEtag != null || lastModified != null) { "resource validator cannot be empty" }
+    }
 
-                200 -> {
-                    RangeProbeResult(
-                        rangeSupported = false,
-                        totalBytes = response.body.contentLength().takeIf { it > 0L } ?: -1L,
-                        finalUrl = finalUrl,
-                        fallbackReason = "range-ignored",
-                    )
-                }
+    val ifRangeValue: String
+        get() = strongEtag ?: requireNotNull(lastModified)
 
-                else -> throw IOException("HTTP ${response.code}")
+    fun responseChanged(response: Response): Boolean =
+        when {
+            strongEtag != null ->
+                response.header("ETag")
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { it != strongEtag } == true
+
+            lastModified != null ->
+                response.header("Last-Modified")
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { it != lastModified } == true
+
+            else -> false
+        }
+
+    companion object {
+        fun from(response: Response): RangeResourceValidator? {
+            val strongEtag = response.header("ETag")
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() && !it.startsWith("W/", ignoreCase = true) }
+            val lastModified = response.header("Last-Modified")
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+            return when {
+                strongEtag != null -> RangeResourceValidator(strongEtag = strongEtag)
+                lastModified != null -> RangeResourceValidator(lastModified = lastModified)
+                else -> null
             }
         }
+    }
+}
+
+internal class RangeProbe(
+    client: OkHttpClient,
+) {
+    private val probeClient = client.newBuilder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build()
+
+    suspend fun probe(request: SegmentedDownloadRequest): RangeProbeResult {
+        var currentUrl = request.url
+        repeat(MAX_PROBE_REDIRECTS + 1) { redirectCount ->
+            val probeRequest = request.newRequestBuilder(targetUrl = currentUrl)
+                .header("Range", "bytes=0-0")
+                .get()
+                .build()
+            val step = probeClient.executeCancellable(probeRequest) { response ->
+                if (response.code.isProbeRedirect()) {
+                    val location = response.header("Location")
+                        ?: throw IOException("redirect missing Location")
+                    val nextUrl = response.request.url.resolve(location)
+                        ?: throw IOException("invalid redirect Location")
+                    ProbeStep.Redirect(nextUrl.toString())
+                } else {
+                    ProbeStep.Complete(response.toRangeProbeResult())
+                }
+            }
+            when (step) {
+                is ProbeStep.Complete -> return step.result
+                is ProbeStep.Redirect -> {
+                    if (redirectCount >= MAX_PROBE_REDIRECTS) {
+                        throw IOException("too many redirects")
+                    }
+                    currentUrl = step.url
+                }
+            }
+        }
+        throw IOException("too many redirects")
+    }
+}
+
+private sealed interface ProbeStep {
+    data class Redirect(val url: String) : ProbeStep
+
+    data class Complete(val result: RangeProbeResult) : ProbeStep
+}
+
+private fun Response.toRangeProbeResult(): RangeProbeResult {
+    val finalUrl = request.url.toString()
+    return when (code) {
+        206 -> {
+            val range = parseContentRange(header("Content-Range"))
+            if (range == null || range.start != 0L || range.end != 0L || range.totalBytes <= 0L) {
+                RangeProbeResult(
+                    rangeSupported = false,
+                    totalBytes = -1L,
+                    finalUrl = finalUrl,
+                    fallbackReason = "invalid-content-range",
+                )
+            } else {
+                RangeProbeResult(
+                    rangeSupported = true,
+                    totalBytes = range.totalBytes,
+                    finalUrl = finalUrl,
+                    resourceValidator = RangeResourceValidator.from(this),
+                )
+            }
+        }
+
+        200 -> {
+            RangeProbeResult(
+                rangeSupported = false,
+                totalBytes = body.contentLength().takeIf { it > 0L } ?: -1L,
+                finalUrl = finalUrl,
+                fallbackReason = "range-ignored",
+                resourceValidator = RangeResourceValidator.from(this),
+            )
+        }
+
+        else -> throw IOException("HTTP $code")
     }
 }
 
@@ -71,15 +155,9 @@ internal fun parseContentRange(value: String?): ParsedContentRange? {
     return ParsedContentRange(start = start, end = end, totalBytes = total)
 }
 
-internal fun SegmentedDownloadRequest.newRequestBuilder(): Request.Builder {
-    val builder = Request.Builder().url(url)
-        .header("Accept-Encoding", "identity")
-    headers.forEach { (name, value) ->
-        if (name.isNotBlank() && value.isNotBlank()) {
-            builder.header(name, value)
-        }
-    }
-    return builder
-}
-
 private val CONTENT_RANGE_REGEX = Regex("""bytes\s+(\d+)-(\d+)/(\d+)""")
+
+private fun Int.isProbeRedirect(): Boolean =
+    this == 301 || this == 302 || this == 303 || this == 307 || this == 308
+
+private const val MAX_PROBE_REDIRECTS = 20

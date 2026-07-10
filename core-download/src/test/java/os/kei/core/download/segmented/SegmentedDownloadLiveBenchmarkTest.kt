@@ -184,6 +184,7 @@ class SegmentedDownloadLiveBenchmarkTest {
             request = SegmentedDownloadRequest(
                 url = url,
                 outputFile = outputFile,
+                expectedSizeBytes = expectedBytes,
                 expectedSha256 = expectedSha256,
                 headers = mapOf(
                     "User-Agent" to USER_AGENT,

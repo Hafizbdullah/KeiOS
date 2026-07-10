@@ -8,8 +8,13 @@ data class SegmentedDownloadRequest(
     val outputFile: File,
     val headers: Map<String, String> = emptyMap(),
     val fileNameHint: String = "",
+    val expectedSizeBytes: Long = -1L,
     val expectedSha256: String = "",
-)
+) {
+    init {
+        require(expectedSizeBytes >= -1L) { "expectedSizeBytes must be -1 or non-negative" }
+    }
+}
 
 data class SegmentedDownloadOptions(
     val minParallelSizeBytes: Long = 8L * 1024L * 1024L,

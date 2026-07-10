@@ -3,6 +3,16 @@ package os.kei.core.download.segmented
 import java.io.File
 import java.security.MessageDigest
 
+internal fun validateExpectedDownloadSize(
+    actualBytes: Long,
+    expectedBytes: Long,
+) {
+    if (expectedBytes < 0L || actualBytes < 0L || actualBytes == expectedBytes) return
+    throw SegmentedDownloadException(
+        message = "download size mismatch expected=$expectedBytes actual=$actualBytes",
+    )
+}
+
 internal fun verifyDownloadedSha256(
     file: File,
     expectedSha256: String,
@@ -25,10 +35,10 @@ private fun String.normalizedSha256OrNull(): String? {
         } else {
             raw
         }.lowercase()
-    if (raw.startsWith("sha256:", ignoreCase = true) && !SHA256_HEX_REGEX.matches(normalized)) {
+    if (!SHA256_HEX_REGEX.matches(normalized)) {
         throw SegmentedDownloadException(message = "invalid sha256 digest")
     }
-    return normalized.takeIf { SHA256_HEX_REGEX.matches(it) }
+    return normalized
 }
 
 private fun File.sha256Hex(): String {
