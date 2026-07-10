@@ -20,7 +20,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
-import kotlin.math.roundToInt
 
 private const val GITHUB_INSTALL_SESSION_WRITER_TAG = "GitHubInstallWriter"
 private const val GITHUB_DOWNLOAD_PROGRESS_INTERVAL_MS = 200L
@@ -366,12 +365,3 @@ private fun githubSegmentedDownloadOptions(
                 speedProfile = speedProfile,
             )
     }
-
-private fun downloadProgressPercent(
-    downloadedBytes: Long,
-    totalBytes: Long,
-): Int {
-    if (totalBytes <= 0L) return 0
-    val fraction = downloadedBytes.toDouble() / totalBytes.toDouble()
-    return (fraction.coerceIn(0.0, 1.0) * 100.0).roundToInt().coerceIn(0, 100)
-}

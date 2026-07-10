@@ -1,7 +1,6 @@
 package os.kei.feature.github.install
 
 import android.os.SystemClock
-import kotlin.math.roundToInt
 
 private const val DOWNLOAD_PROGRESS_MIN_INTERVAL_MS = 200L
 private const val UNKNOWN_TOTAL_PROGRESS_STEP_BYTES = 1024L * 1024L
@@ -46,13 +45,4 @@ class GitHubInstallProgressEmitter(
             ),
         )
     }
-}
-
-private fun downloadProgressPercent(
-    downloadedBytes: Long,
-    totalBytes: Long,
-): Int {
-    if (totalBytes <= 0L) return 0
-    val fraction = downloadedBytes.toDouble() / totalBytes.toDouble()
-    return (fraction.coerceIn(0.0, 1.0) * 100.0).roundToInt().coerceIn(0, 100)
 }
