@@ -766,30 +766,39 @@ object AppForegroundInfoHandler {
         }
     }
 
-    private suspend fun persistBaForegroundApReminderWrites(
+    internal suspend fun persistBaForegroundApReminderWrites(
         accountId: BaAccountId,
         writes: List<BaForegroundApReminderWrite>,
+        persistWrite: suspend (BaAccountId, BaForegroundApReminderWrite) -> Unit =
+            ::persistBaForegroundApReminderWrite,
     ) {
         if (writes.isEmpty()) return
-        withContext(AppDispatchers.mcpServer) {
+        withContext(NonCancellable + AppDispatchers.mcpServer) {
             writes.forEach { write ->
-                write.lastNotifiedLevel?.let { level ->
-                    when (write.kind) {
-                        BaApReminderKind.Ap ->
-                            BASettingsStore.saveAccountApLastNotifiedLevel(accountId, level)
-
-                        BaApReminderKind.CafeAp ->
-                            BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, level)
-                    }
-                }
-                write.suppressionAnchorAtMs?.let { anchorAtMs ->
-                    BASettingsStore.saveAccountApSuppressionAnchor(
-                        accountId = accountId,
-                        kind = write.kind,
-                        anchorAtMs = anchorAtMs,
-                    )
-                }
+                persistWrite(accountId, write)
             }
+        }
+    }
+
+    private fun persistBaForegroundApReminderWrite(
+        accountId: BaAccountId,
+        write: BaForegroundApReminderWrite,
+    ) {
+        write.lastNotifiedLevel?.let { level ->
+            when (write.kind) {
+                BaApReminderKind.Ap ->
+                    BASettingsStore.saveAccountApLastNotifiedLevel(accountId, level)
+
+                BaApReminderKind.CafeAp ->
+                    BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, level)
+            }
+        }
+        write.suppressionAnchorAtMs?.let { anchorAtMs ->
+            BASettingsStore.saveAccountApSuppressionAnchor(
+                accountId = accountId,
+                kind = write.kind,
+                anchorAtMs = anchorAtMs,
+            )
         }
     }
 

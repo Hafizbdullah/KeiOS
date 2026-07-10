@@ -158,7 +158,11 @@ internal class BaOfficeViewModel(
     }
 
     fun showNotificationSettingsSheet() {
-        val savedDraft = notificationRuntimeDraft(_notificationDraftUiState.value.savedDraft)
+        val savedDraft =
+            notificationRuntimeDraft(
+                base = _notificationDraftUiState.value.savedDraft,
+                office = office,
+            )
         _notificationDraftUiState.value =
             BaOfficeNotificationDraftUiState(
                 draft = savedDraft,
@@ -583,16 +587,6 @@ internal class BaOfficeViewModel(
         }
     }
 
-    private fun notificationRuntimeDraft(base: BaPageNotificationDraftState): BaPageNotificationDraftState =
-        base.copy(
-            apNotifyEnabled = office.apNotifyEnabled,
-            cafeApNotifyEnabled = office.cafeApNotifyEnabled,
-            arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
-            cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
-            apNotifyThresholdText = office.apNotifyThreshold.toString(),
-            cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
-        )
-
     private suspend fun applyAccountMutationState(
         accountState: BaAccountStoreSnapshot,
         refreshData: Boolean = true,
@@ -653,3 +647,18 @@ internal class BaOfficeViewModel(
         }
     }
 }
+
+internal fun notificationRuntimeDraft(
+    base: BaPageNotificationDraftState,
+    office: BaOfficeController,
+): BaPageNotificationDraftState =
+    base.copy(
+        apNotifyEnabled = office.apNotifyEnabled,
+        cafeApNotifyEnabled = office.cafeApNotifyEnabled,
+        keepApRemindersReadUntilBelowThreshold =
+            office.keepApRemindersReadUntilBelowThreshold,
+        arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
+        cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+        apNotifyThresholdText = office.apNotifyThreshold.toString(),
+        cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
+    )

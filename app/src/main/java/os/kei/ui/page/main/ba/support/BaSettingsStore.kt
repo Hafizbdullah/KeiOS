@@ -7,16 +7,6 @@ import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import java.util.UUID
 
-internal fun deleteBaAccountAndClearAcknowledgements(
-    accountStore: BaAccountStore,
-    acknowledgementStore: BaApAcknowledgementStore,
-    accountId: BaAccountId,
-): Boolean {
-    if (!accountStore.deleteAccount(accountId)) return false
-    acknowledgementStore.clearAccount(accountId)
-    return true
-}
-
 internal object BASettingsStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_SETTINGS_KV_ID) }
 
@@ -30,11 +20,13 @@ internal object BASettingsStore {
 
     private fun accountKeyValueStore(): MmkvBaSettingsKeyValueStore = MmkvBaSettingsKeyValueStore(kv())
 
-    private fun apAcknowledgementStore(): BaApAcknowledgementStore =
-        BaApAcknowledgementStore(accountKeyValueStore())
+    private fun apAcknowledgementRuntimeRepository(): BaApAcknowledgementRuntimeRepository =
+        BaApAcknowledgementRuntimeRepository(accountKeyValueStore()) {
+            notifyChanged(notifyHomeOverview = false)
+        }
 
     private fun BaPageSnapshot.withLocalApAcknowledgements(accountId: BaAccountId): BaPageSnapshot =
-        withLocalApAcknowledgementAnchors(accountId, apAcknowledgementStore())
+        apAcknowledgementRuntimeRepository().withLocalAcknowledgements(this, accountId)
 
     private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
         BaAccountStore(keyValueStore)
@@ -282,7 +274,13 @@ internal object BASettingsStore {
 
     fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
-        if (deleteBaAccountAndClearAcknowledgements(store, apAcknowledgementStore(), accountId)) {
+        if (
+            deleteBaAccountAndClearAcknowledgements(
+                store,
+                BaApAcknowledgementStore(accountKeyValueStore()),
+                accountId,
+            )
+        ) {
             notifyChanged()
         }
         return store.loadState()
@@ -337,7 +335,7 @@ internal object BASettingsStore {
     private fun loadReminderSnapshots(includeDisabledAccounts: Boolean): List<BaAccountReminderSnapshot> {
         val accountState = loadAccountState()
         val baseSnapshot = loadBaSettingsSnapshot(kv())
-        val acknowledgementStore = apAcknowledgementStore()
+        val acknowledgementRepository = apAcknowledgementRuntimeRepository()
         return accountState
             .accounts
             .filter { includeDisabledAccounts || it.profile.enabled }
@@ -349,7 +347,12 @@ internal object BASettingsStore {
                         baseSnapshot.withBaAccount(
                             accountState = accountState,
                             account = account,
-                        ).withLocalApAcknowledgementAnchors(account.profile.id, acknowledgementStore),
+                        ).let { snapshot ->
+                            acknowledgementRepository.withLocalAcknowledgements(
+                                snapshot = snapshot,
+                                accountId = account.profile.id,
+                            )
+                        },
                 )
             }
     }
@@ -357,84 +360,43 @@ internal object BASettingsStore {
     fun loadAccountApSuppressionAnchor(
         accountId: BaAccountId,
         kind: BaApReminderKind,
-    ): Long = apAcknowledgementStore().loadSuppressionAnchor(accountId, kind)
+    ): Long =
+        apAcknowledgementRuntimeRepository().loadSuppressionAnchor(accountId, kind)
 
     fun saveAccountApSuppressionAnchor(
         accountId: BaAccountId,
         kind: BaApReminderKind,
         anchorAtMs: Long,
     ): Boolean =
-        apAcknowledgementStore()
-            .setSuppressionAnchor(accountId, kind, anchorAtMs)
-            .also { changed ->
-                if (changed) notifyChanged(notifyHomeOverview = false)
-            }
+        apAcknowledgementRuntimeRepository()
+            .saveSuppressionAnchor(accountId, kind, anchorAtMs)
 
     fun clearAccountApAcknowledgements(accountId: BaAccountId): Boolean =
-        apAcknowledgementStore()
-            .clearAccount(accountId)
-            .also { changed ->
-                if (changed) notifyChanged(notifyHomeOverview = false)
-            }
+        apAcknowledgementRuntimeRepository().clearAccount(accountId)
 
     fun reconcileApAcknowledgements(nowMs: Long): Boolean {
-        val acknowledgementStore = apAcknowledgementStore()
-        val changed =
-            reconcileApAcknowledgements(
-                accountState = loadAccountState(),
-                baseSnapshot = loadBaSettingsSnapshot(kv()),
-                acknowledgementStore = acknowledgementStore,
-                nowMs = nowMs,
-            )
-        if (changed) notifyChanged(notifyHomeOverview = false)
-        return changed
+        val accountStore = migratedAccountStore()
+        return apAcknowledgementRuntimeRepository().reconcile(
+            accountStore = accountStore,
+            baseSnapshot = loadBaSettingsSnapshot(kv()),
+            nowMs = nowMs,
+        )
     }
 
     internal fun reconcileApAcknowledgements(
         accountState: BaAccountStoreSnapshot,
         baseSnapshot: BaPageSnapshot,
+        accountStore: BaAccountStore,
         acknowledgementStore: BaApAcknowledgementStore,
         nowMs: Long,
     ): Boolean {
-        var changed = false
-        accountState
-            .accounts
-            .map { account ->
-                BaAccountReminderSnapshot(
-                    accountId = account.profile.id,
-                    displayName = account.profile.displayName,
-                    snapshot =
-                        baseSnapshot.withBaAccount(
-                            accountState = accountState,
-                            account = account,
-                        ).withLocalApAcknowledgementAnchors(account.profile.id, acknowledgementStore),
-                )
-            }
-            .forEach { reminderSnapshot ->
-                val accountId = reminderSnapshot.accountId
-                val snapshot = reminderSnapshot.snapshot
-                val apPlan =
-                    BaReminderCoordinator.evaluateApThreshold(
-                        snapshot = snapshot,
-                        nowMs = nowMs,
-                    )
-                if (apPlan.resetSuppressionAnchor) {
-                    changed =
-                        acknowledgementStore.clear(accountId, BaApReminderKind.Ap) ||
-                                changed
-                }
-                val cafeApPlan =
-                    BaReminderCoordinator.evaluateCafeApThreshold(
-                        snapshot = snapshot,
-                        nowMs = nowMs,
-                    )
-                if (cafeApPlan.resetSuppressionAnchor) {
-                    changed =
-                        acknowledgementStore.clear(accountId, BaApReminderKind.CafeAp) ||
-                                changed
-                }
-            }
-        return changed
+        return reconcileBaApAcknowledgements(
+            accountState = accountState,
+            baseSnapshot = baseSnapshot,
+            accountStore = accountStore,
+            acknowledgementStore = acknowledgementStore,
+            nowMs = nowMs,
+        )
     }
 
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)

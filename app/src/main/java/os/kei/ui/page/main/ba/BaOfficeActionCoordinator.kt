@@ -34,6 +34,10 @@ internal class BaOfficeActionCoordinator(
     private val onRefreshPool: () -> Unit,
     private val onOpenCalendarLink: (String) -> Unit,
     private val onOpenPoolStudentGuide: (String) -> Unit,
+    private val persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit =
+        { update -> update.persistAsync() },
+    private val scheduleBaApThreshold: () -> Unit =
+        { AppBackgroundScheduler.scheduleBaApThreshold(context) },
 ) {
     fun buildContentActions(): BaPageContentActions =
         BaPageContentActions(
@@ -101,8 +105,8 @@ internal class BaOfficeActionCoordinator(
         if (update == null) return
         scope.launch {
             persistBaApMutationAndReschedule(
-                persist = { update.withCurrentAccount().persistAsync() },
-                schedule = { AppBackgroundScheduler.scheduleBaApThreshold(context) },
+                persist = { persistRuntimeUpdate(update.withCurrentAccount()) },
+                schedule = scheduleBaApThreshold,
             )
         }
     }

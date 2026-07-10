@@ -36,6 +36,7 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
             context = context,
             tag = TAG,
             timeoutMs = timeoutForAction(action),
+            awaitWorkerCompletionOnTimeout = action == ACTION_BA_AP_TICK,
             onTimeout = recoverTimeout
         ) { appContext ->
             try {

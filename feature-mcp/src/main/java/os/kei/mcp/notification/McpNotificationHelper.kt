@@ -195,7 +195,6 @@ object McpNotificationHelper {
             markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
-                requestCode = 210_200 + notificationId,
                 serverName = serverName,
                 targetBaAccountId = resolvedTargetBaAccountId,
             ) to context.getString(
@@ -797,10 +796,9 @@ object McpNotificationHelper {
             }
         }
 
-    private fun markReadPendingIntent(
+    internal fun markReadPendingIntent(
         context: Context,
         notificationId: Int,
-        requestCode: Int,
         serverName: String,
         targetBaAccountId: String?,
     ): PendingIntent {
@@ -813,7 +811,7 @@ object McpNotificationHelper {
             )
         return PendingIntent.getBroadcast(
             context,
-            requestCode,
+            210_200 + notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

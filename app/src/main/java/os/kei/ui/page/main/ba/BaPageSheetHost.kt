@@ -17,6 +17,40 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 
+internal class BaPageSheetApMutationPersistenceCoordinator(
+    private val accountIdProvider: () -> BaAccountId?,
+    private val saveApLimit: suspend (Int) -> Unit = { limit ->
+        BaOfficeRepository.saveApLimitAsync(limit)
+    },
+    private val persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit =
+        { update -> update.persistAsync() },
+    private val scheduleBaApThreshold: () -> Unit,
+) {
+    suspend fun persistApLimit(
+        limit: Int,
+        runtimeUpdate: BaRuntimePersistenceUpdate?,
+    ) {
+        persistBaApMutationAndReschedule(
+            persist = {
+                saveApLimit(limit)
+                runtimeUpdate
+                    ?.withAccountId(accountIdProvider())
+                    ?.let { update -> persistRuntimeUpdate(update) }
+            },
+            schedule = scheduleBaApThreshold,
+        )
+    }
+
+    suspend fun persistCafeCalibration(update: BaRuntimePersistenceUpdate) {
+        persistBaApMutationAndReschedule(
+            persist = {
+                persistRuntimeUpdate(update.withAccountId(accountIdProvider()))
+            },
+            schedule = scheduleBaApThreshold,
+        )
+    }
+}
+
 @Composable
 internal fun BaPageSheetHost(
     backdrop: Backdrop?,
@@ -42,6 +76,13 @@ internal fun BaPageSheetHost(
     onSaveNotificationSettings: () -> Unit,
 ) {
     val sheetScope = rememberCoroutineScope()
+    val apMutationPersistenceCoordinator =
+        BaPageSheetApMutationPersistenceCoordinator(
+            accountIdProvider = { accountUiState.activeAccountId },
+            scheduleBaApThreshold = {
+                AppBackgroundScheduler.scheduleBaApThreshold(context)
+            },
+        )
 
     LaunchedEffect(routeState.showApLimitToolsSheet) {
         if (routeState.showApLimitToolsSheet) {
@@ -63,28 +104,16 @@ internal fun BaPageSheetHost(
         }
         office.apLimitInput = limitUpdate.limit.toString()
         sheetScope.launch {
-            persistBaApMutationAndReschedule(
-                persist = {
-                    BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
-                    runtimeUpdate
-                        ?.withAccountId(accountUiState.activeAccountId)
-                        ?.persistAsync()
-                },
-                schedule = { AppBackgroundScheduler.scheduleBaApThreshold(context) },
+            apMutationPersistenceCoordinator.persistApLimit(
+                limit = limitUpdate.limit,
+                runtimeUpdate = runtimeUpdate,
             )
         }
     }
 
     fun persistCafeStoredApCalibration(update: BaRuntimePersistenceUpdate) {
         sheetScope.launch {
-            persistBaApMutationAndReschedule(
-                persist = {
-                    update
-                        .withAccountId(accountUiState.activeAccountId)
-                        .persistAsync()
-                },
-                schedule = { AppBackgroundScheduler.scheduleBaApThreshold(context) },
-            )
+            apMutationPersistenceCoordinator.persistCafeCalibration(update)
         }
         office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }

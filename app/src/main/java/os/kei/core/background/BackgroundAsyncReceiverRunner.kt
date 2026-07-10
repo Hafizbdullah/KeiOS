@@ -22,6 +22,7 @@ object BackgroundAsyncReceiverRunner {
         context: Context,
         tag: String,
         timeoutMs: Long = DEFAULT_RECEIVER_TIMEOUT_MS,
+        awaitWorkerCompletionOnTimeout: Boolean = false,
         onTimeout: suspend (Context) -> Unit = {},
         block: suspend (Context) -> Unit
     ) {
@@ -31,6 +32,7 @@ object BackgroundAsyncReceiverRunner {
             context = appContext,
             tag = tag,
             timeoutMs = timeoutMs,
+            awaitWorkerCompletionOnTimeout = awaitWorkerCompletionOnTimeout,
             finishPending = pendingResult::finish,
             onTimeout = onTimeout,
             block = block
@@ -41,12 +43,14 @@ object BackgroundAsyncReceiverRunner {
         context: Context,
         tag: String,
         timeoutMs: Long = DEFAULT_RECEIVER_TIMEOUT_MS,
+        awaitWorkerCompletionOnTimeout: Boolean = false,
         finishPending: () -> Unit,
         runnerScope: CoroutineScope = scope,
         onTimeout: suspend (Context) -> Unit = {},
         block: suspend (Context) -> Unit
     ): Job {
         val finished = AtomicBoolean(false)
+        val timedOut = AtomicBoolean(false)
         fun finishPendingOnce() {
             if (finished.compareAndSet(false, true)) {
                 finishPending()
@@ -68,11 +72,15 @@ object BackgroundAsyncReceiverRunner {
         val watchdog = runnerScope.launch {
             delay(timeoutMs.coerceAtLeast(1L))
             if (!worker.isActive) return@launch
+            timedOut.set(true)
             finishPendingOnce()
             AppLogger.w(tag, "async receiver timed out after ${timeoutMs}ms")
             worker.cancel(
                 CancellationException("Async receiver timed out after ${timeoutMs}ms")
             )
+            if (awaitWorkerCompletionOnTimeout) {
+                worker.join()
+            }
             try {
                 onTimeout(appContext)
             } catch (error: CancellationException) {
@@ -82,7 +90,9 @@ object BackgroundAsyncReceiverRunner {
             }
         }
         worker.invokeOnCompletion {
-            watchdog.cancel()
+            if (!timedOut.get()) {
+                watchdog.cancel()
+            }
             finishPendingOnce()
         }
         return worker
