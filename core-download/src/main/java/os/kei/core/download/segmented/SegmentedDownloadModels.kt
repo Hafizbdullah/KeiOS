@@ -19,6 +19,7 @@ data class SegmentedDownloadRequest(
 data class SegmentedDownloadOptions(
     val minParallelSizeBytes: Long = 8L * 1024L * 1024L,
     val initialPartSizeBytes: Long = 4L * 1024L * 1024L,
+    val minBytesPerConnection: Long = initialPartSizeBytes,
     val maxConnections: Int = 4,
     val maxRetriesPerPart: Int = 3,
     val retryDelayMs: Long = 1_000L,
@@ -33,6 +34,7 @@ data class SegmentedDownloadOptions(
     init {
         require(minParallelSizeBytes > 0L) { "minParallelSizeBytes must be positive" }
         require(initialPartSizeBytes > 0L) { "initialPartSizeBytes must be positive" }
+        require(minBytesPerConnection > 0L) { "minBytesPerConnection must be positive" }
         require(maxConnections > 0) { "maxConnections must be positive" }
         require(maxRetriesPerPart >= 0) { "maxRetriesPerPart cannot be negative" }
         require(retryDelayMs >= 0L) { "retryDelayMs cannot be negative" }
@@ -68,6 +70,8 @@ data class SegmentedDownloadResult(
     val parallel: Boolean,
     val rangeSupported: Boolean,
     val finalUrl: String,
+    val workerConnections: Int = 1,
+    val peakActiveConnections: Int = 1,
     val retryCount: Int = 0,
     val stealCount: Int = 0,
     val handoffCount: Int = 0,

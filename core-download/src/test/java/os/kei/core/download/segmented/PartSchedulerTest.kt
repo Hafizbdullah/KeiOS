@@ -10,6 +10,97 @@ import kotlin.test.assertTrue
 
 class PartSchedulerTest {
     @Test
+    fun `foreground boost admits eight workers at startup`() = runBlocking {
+        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
+        val scheduler = PartScheduler(
+            totalBytes = 256L * 1024L * 1024L,
+            initialPartSizeBytes = 4L * 1024L * 1024L,
+            maxRetriesPerPart = 3,
+            concurrency = 12,
+            tuning = tuning,
+        )
+
+        val admitted = (0 until 8).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+
+        assertEquals(8, tuning.startupActiveConnections)
+        assertNull(scheduler.nextPart(workerId = 8))
+        admitted.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+        }
+    }
+
+    @Test
+    fun `progressive growth waits for one successful wave`() = runBlocking {
+        val scheduler = PartScheduler(
+            totalBytes = 10_000,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 4,
+            tuning = testTuning.copy(
+                startupActiveConnections = 2,
+                tailWindowInitialMultiplier = 0,
+            ),
+        )
+        val first = assertNotNull(scheduler.nextPart(workerId = 0))
+        val second = assertNotNull(scheduler.nextPart(workerId = 1))
+
+        scheduler.finish(workerId = 0, active = first)
+        scheduler.recordSuccess(workerId = 0, part = first.part, bytes = first.part.length, elapsedMs = 100)
+        val replacement = assertNotNull(scheduler.nextPart(workerId = 2))
+        assertNull(scheduler.nextPart(workerId = 3))
+
+        scheduler.finish(workerId = 1, active = second)
+        scheduler.recordSuccess(workerId = 1, part = second.part, bytes = second.part.length, elapsedMs = 100)
+        assertNotNull(scheduler.nextPart(workerId = 3))
+        assertNotNull(scheduler.nextPart(workerId = 0))
+        assertNull(scheduler.nextPart(workerId = 1))
+        assertEquals(3, scheduler.stats().peakActiveConnections)
+
+        scheduler.finish(workerId = 2, active = replacement)
+    }
+
+    @Test
+    fun `progressive growth can reach the configured hard limit`() = runBlocking {
+        val scheduler = PartScheduler(
+            totalBytes = 1_000_000,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 12,
+            tuning = testTuning.copy(
+                startupActiveConnections = 8,
+                tailWindowInitialMultiplier = 0,
+            ),
+        )
+
+        for (expectedActive in 8 until 12) {
+            val wave = (0 until expectedActive).map { workerId ->
+                assertNotNull(scheduler.nextPart(workerId))
+            }
+            assertNull(scheduler.nextPart(workerId = expectedActive))
+            wave.forEachIndexed { workerId, active ->
+                scheduler.finish(workerId, active)
+                scheduler.recordSuccess(
+                    workerId = workerId,
+                    part = active.part,
+                    bytes = active.part.length,
+                    elapsedMs = 100,
+                )
+            }
+        }
+
+        val finalWave = (0 until 12).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+        assertNull(scheduler.nextPart(workerId = 0))
+        assertEquals(12, scheduler.stats().peakActiveConnections)
+        finalWave.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+        }
+    }
+
+    @Test
     fun `scheduler allocates head and tail parts on demand before tail window`() = runBlocking {
         val scheduler = PartScheduler(
             totalBytes = 200,
@@ -125,13 +216,18 @@ class PartSchedulerTest {
         assertNull(scheduler.nextPart(workerId = 1))
         assertEquals(499, active.currentEndInclusive())
         assertEquals(
-            PartSchedulerStats(retryCount = 0, stealCount = 0, handoffCount = 0),
+            PartSchedulerStats(
+                retryCount = 0,
+                stealCount = 0,
+                handoffCount = 0,
+                peakActiveConnections = 2,
+            ),
             scheduler.stats(),
         )
     }
 
     @Test
-    fun `scheduler starts four workers and grows after a successful part`() = runBlocking {
+    fun `scheduler reuses a released startup slot before growth`() = runBlocking {
         val scheduler = PartScheduler(
             totalBytes = 1_200,
             initialPartSizeBytes = 100,

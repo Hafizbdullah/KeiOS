@@ -176,7 +176,7 @@ class SegmentedDownloadControlledBenchmarkTest {
             bytes = bytes,
             outputFile = temp.newFile("$name-foreground-boost.bin").apply { delete() },
             partSizeBytes = 4L * MIB,
-            maxConnections = 8,
+            maxConnections = 12,
             speedProfile = SegmentedDownloadSpeedProfile.ForegroundBoost,
             connectionStrategy = SegmentedDownloadConnectionStrategy.IsolatedPerWorker,
             transport = transport,

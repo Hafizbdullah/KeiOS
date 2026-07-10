@@ -159,11 +159,16 @@ class SegmentedDownloadClient(
         val totalBytes = probeResult.totalBytes
         val effectiveConnections =
             if (parallel) {
-                effectiveConnections(totalBytes, options)
+                effectiveConnectionCount(totalBytes, options)
             } else {
                 1
             }
-        val schedulerTuning = options.speedProfile.schedulerTuning().let { tuning ->
+        val effectiveInitialPartSizeBytes =
+            effectiveInitialPartSizeBytes(
+                options = options,
+                effectiveConnections = effectiveConnections,
+            )
+        val schedulerTuning = schedulerTuningFor(options, effectiveConnections).let { tuning ->
             if (parallel) {
                 tuning
             } else {
@@ -178,7 +183,7 @@ class SegmentedDownloadClient(
         }
         val scheduler = PartScheduler(
             totalBytes = totalBytes,
-            initialPartSizeBytes = options.initialPartSizeBytes,
+            initialPartSizeBytes = effectiveInitialPartSizeBytes,
             maxRetriesPerPart = options.maxRetriesPerPart,
             concurrency = effectiveConnections,
             tuning = schedulerTuning,
@@ -254,6 +259,8 @@ class SegmentedDownloadClient(
             parallel = parallel,
             rangeSupported = true,
             finalUrl = probeResult.finalUrl,
+            workerConnections = effectiveConnections,
+            peakActiveConnections = stats.peakActiveConnections,
             retryCount = stats.retryCount,
             stealCount = stats.stealCount,
             handoffCount = stats.handoffCount,
@@ -607,6 +614,8 @@ class SegmentedDownloadClient(
             parallel = false,
             rangeSupported = probeResult.rangeSupported,
             finalUrl = finalUrl,
+            workerConnections = 1,
+            peakActiveConnections = 1,
             retryCount = retryCount,
             fallbackReason = fallbackReason,
         )
@@ -705,18 +714,6 @@ class SegmentedDownloadClient(
             return ParallelDecision(parallel = false, reason = "non-https")
         }
         return ParallelDecision(parallel = true, reason = null)
-    }
-
-    private fun effectiveConnections(
-        totalBytes: Long,
-        options: SegmentedDownloadOptions,
-    ): Int {
-        val usefulPartBytes = min(options.initialPartSizeBytes, MIN_DYNAMIC_PARALLEL_PART_BYTES)
-            .coerceAtLeast(1L)
-        val partCount = ((totalBytes + usefulPartBytes - 1L) / usefulPartBytes)
-            .toInt()
-            .coerceAtLeast(1)
-        return min(options.maxConnections, partCount).coerceAtLeast(1)
     }
 
     private fun writeAt(
@@ -884,8 +881,47 @@ private fun Throwable?.singleStreamFailureKindOrNull(): RangeFailureKind? =
         else -> null
     }
 
-private const val MIN_DYNAMIC_PARALLEL_PART_BYTES = 512L * 1024L
 private const val MAX_RESOURCE_SNAPSHOT_RESTARTS = 1
+
+internal fun effectiveConnectionCount(
+    totalBytes: Long,
+    options: SegmentedDownloadOptions,
+): Int {
+    val usefulBytesPerConnection =
+        maxOf(options.initialPartSizeBytes, options.minBytesPerConnection)
+    val usefulConnectionCount =
+        (totalBytes / usefulBytesPerConnection +
+            if (totalBytes % usefulBytesPerConnection == 0L) 0L else 1L)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+            .coerceAtLeast(1)
+    return min(options.maxConnections, usefulConnectionCount).coerceAtLeast(1)
+}
+
+internal fun effectiveInitialPartSizeBytes(
+    options: SegmentedDownloadOptions,
+    effectiveConnections: Int,
+): Long =
+    if (effectiveConnections <= LOW_CONNECTION_BUDGET_THRESHOLD) {
+        maxOf(options.initialPartSizeBytes, options.minBytesPerConnection / 2L)
+    } else {
+        options.initialPartSizeBytes
+    }
+
+internal fun schedulerTuningFor(
+    options: SegmentedDownloadOptions,
+    effectiveConnections: Int,
+): PartSchedulerTuning =
+    if (
+        options.speedProfile == SegmentedDownloadSpeedProfile.ForegroundBoost &&
+        effectiveConnections <= LOW_CONNECTION_BUDGET_THRESHOLD
+    ) {
+        SegmentedDownloadSpeedProfile.Balanced.schedulerTuning()
+    } else {
+        options.speedProfile.schedulerTuning()
+    }
+
+private const val LOW_CONNECTION_BUDGET_THRESHOLD = 4
 
 internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTuning =
     when (this) {
@@ -895,7 +931,10 @@ internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTunin
             PartSchedulerTuning(
                 minDynamicPartSizeBytes = 256L * 1024L,
                 minTailPartSizeBytes = 64L * 1024L,
-                partSizeTargetDurationMs = 10_000L,
-                idlePollMs = 30L,
+                tailPartsPerConnection = 3,
+                partSizeTargetDurationMs = 16_000L,
+                startupActiveConnections = 8,
+                rateLimitedMinPartSizeBytes = 32L * 1024L * 1024L,
+                idlePollMs = 20L,
             )
     }

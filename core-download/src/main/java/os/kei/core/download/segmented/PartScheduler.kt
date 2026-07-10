@@ -183,6 +183,7 @@ internal data class PartSchedulerStats(
     val retryCount: Int,
     val stealCount: Int,
     val handoffCount: Int,
+    val peakActiveConnections: Int,
 )
 
 internal class PartScheduler(
@@ -201,12 +202,15 @@ internal class PartScheduler(
     private val workerDone = IntArray(concurrency)
     private val workerSpeedBytesPerMs = DoubleArray(concurrency)
     private val workerPartSizeBytes = LongArray(concurrency) { initialPartSizeBytes }
+    private val growthWaveWorkers = BooleanArray(concurrency)
     private val maxDynamicPartSizeBytes: Long
     private var partSizeHint = initialPartSizeBytes
     private var tailPartSizeHint = 0L
     private val rateLimitFloor = min(concurrency, tuning.rateLimitMinActiveConnections)
     private var activeCount = 0
     private var maxActive = min(concurrency, tuning.startupActiveConnections)
+    private var peakActiveConnections = maxActive
+    private var growthWaveSamples = 0
     private var front = 0L
     private var back = totalBytes - 1L
     private var sequence = 0
@@ -332,9 +336,7 @@ internal class PartScheduler(
                     rateLimited = false
                 }
             }
-            if (!rateLimited && maxActive < concurrency) {
-                maxActive += 1
-            }
+            recordProgressiveGrowthLocked(workerId)
         }
     }
 
@@ -345,6 +347,7 @@ internal class PartScheduler(
         mutex.withLock {
             val now = nowMs()
             normalizeMaxActiveLocked()
+            resetProgressiveGrowthLocked()
             val rejectedProbe = part.rateProbe && probeLimit == maxActive
             if (rejectedProbe) {
                 if (maxActive > rateLimitFloor) {
@@ -386,6 +389,7 @@ internal class PartScheduler(
                 retryCount = retryCount,
                 stealCount = 0,
                 handoffCount = 0,
+                peakActiveConnections = peakActiveConnections,
             )
         }
 
@@ -470,6 +474,8 @@ internal class PartScheduler(
         normalizeMaxActiveLocked()
         if (!rateLimited || maxActive >= concurrency || now < recoverAtMs) return
         maxActive += 1
+        peakActiveConnections = max(peakActiveConnections, maxActive)
+        resetProgressiveGrowthLocked()
         probeLimit = maxActive
         recoverAtMs = now + tuning.rateLimitRecoveryMs
     }
@@ -481,6 +487,22 @@ internal class PartScheduler(
 
     private fun normalizeMaxActiveLocked() {
         maxActive = maxActive.coerceIn(1, concurrency)
+    }
+
+    private fun recordProgressiveGrowthLocked(workerId: Int) {
+        if (rateLimited || maxActive >= concurrency || workerId !in growthWaveWorkers.indices) return
+        if (growthWaveWorkers[workerId]) return
+        growthWaveWorkers[workerId] = true
+        growthWaveSamples += 1
+        if (growthWaveSamples < maxActive) return
+        maxActive += 1
+        peakActiveConnections = max(peakActiveConnections, maxActive)
+        resetProgressiveGrowthLocked()
+    }
+
+    private fun resetProgressiveGrowthLocked() {
+        growthWaveWorkers.fill(false)
+        growthWaveSamples = 0
     }
 
     private fun extendRecoveryLocked(
