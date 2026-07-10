@@ -173,7 +173,7 @@ Benchmark run rules:
 
 ## Reference Summary
 
-`piko` is a GPL-3.0 Go downloader in `.tmp/piko`, currently at commit `4f5ba27`.
+`piko` is a GPL-3.0 Go downloader in `.tmp/piko`, currently at commit `42d8928`.
 
 Useful behavior-level ideas:
 
@@ -181,9 +181,12 @@ Useful behavior-level ideas:
 - Enable parallel workers only when `Content-Length > 0` and byte ranges return `206`.
 - Adapt each worker's part size from observed throughput.
 - Allocate parts from both file head and file tail.
-- Let idle workers split remaining bytes from active slow parts.
-- Requeue failed parts from the last written offset.
-- Use delayed retry for HTTP 429 and bounded retry budgets for failed parts.
+- Keep active ranges immutable and requeue failed suffixes from the last accepted offset.
+- Start with limited concurrency, grow after successful parts, and reduce concurrency after repeated HTTP 429 responses.
+- Recover rate-limited concurrency through delayed probe connections.
+- Use independent retry budgets for EOF, timeouts, connection resets, rate limits, and other transient failures.
+- Queue positioned file writes through a bounded asynchronous writer.
+- Reuse the final CDN URL resolved by the range probe.
 - Detect persistently slow range connections against active peer average.
 
 Clean-room rule:
@@ -332,7 +335,7 @@ dependencies {
 | Component | Responsibility |
 | --- | --- |
 | `RangeProbe` | Resolve final URL, size, file name hint, Range support, and validation errors. |
-| `PartScheduler` | Hand out byte ranges, adapt part size, maintain active parts, and split slow tail work. |
+| `PartScheduler` | Hand out immutable byte ranges, adapt part size, gate progressive concurrency, and requeue failed suffixes. |
 | `RangeWorker` | Execute one byte-range request at a time, validate `206` and `Content-Range`, write bytes into `RandomAccessFile` or `FileChannel`. |
 | `RetryPolicy` | Requeue retryable part failures, delay 429, cap retry budget, and fail the download after exhausted retries. |
 | `ProgressAggregator` | Aggregate atomic completed bytes and emit throttled progress for notifications/UI. |
@@ -343,10 +346,14 @@ Scheduler rules:
 - Start with `initialPartSizeBytes`.
 - Alternate head and tail allocations while unassigned bytes remain.
 - In the tail window, split remaining bytes into at least `connections * 4` smaller parts.
-- When workers become idle and no unassigned bytes remain, split the largest active remaining part.
+- When workers become idle and all remaining bytes belong to active workers, wait for completion or explicit failure requeue.
+- Start at four active connections and grow toward the configured limit after successful range completion.
+- Reduce active concurrency after repeated HTTP 429 responses and recover with delayed probe connections.
 - Requeue failed bytes from the last confirmed written offset.
 - Clamp active connections by file size and part size.
-- Emit final progress after all ranges finish and final byte count matches expected size.
+- Drain bounded asynchronous positioned writes before final validation.
+- Emit final progress after written-byte coverage and file length both match the expected size.
+- Reuse the range probe's final CDN URL for all data requests in the same download.
 - Validate optional `expectedSha256` on the completed `.part` file before replacing the previous output.
 - Keep the previous output file intact when length, range, or hash validation fails.
 
@@ -377,10 +384,10 @@ Execution rules:
 | Topic | Plan |
 | --- | --- |
 | Worker lifecycle | Start workers inside `coroutineScope`; one parent job owns probe, temp file, workers, progress, and cleanup. |
-| Scheduler state | Protect part assignment, active-part mutation, retry queues, and tail splitting with `Mutex`. |
+| Scheduler state | Protect part assignment, active counts, retry queues, rate-limit state, and recovery probes with `Mutex`. |
 | Progress state | Use `AtomicLong` for completed bytes and a throttled progress emitter for UI/notification callbacks. |
 | OkHttp cancellation | Use the existing cancellable call pattern so coroutine cancellation invokes `Call.cancel()`. |
-| File writes | Use `RandomAccessFile` or `FileChannel` with per-part offsets; serialize scheduler state while each worker writes its own assigned range. |
+| File writes | Feed copied chunks into a bounded channel; one child coroutine performs positioned `FileChannel` writes and reports successful bytes. |
 | Thread control | Keep connection count tied to effective HTTP connections because each synchronous OkHttp stream occupies a real IO thread. |
 | Structured cleanup | Parent cancellation closes calls, closes the file channel, deletes `.part`, and returns control through existing failure paths. |
 
