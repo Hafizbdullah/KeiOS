@@ -12,6 +12,7 @@ import os.kei.feature.github.model.actionsUpdateIntervalMs
 import os.kei.feature.github.model.excludesAutomaticReleaseRefresh
 import os.kei.feature.github.model.updateIntervalMs
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaAccountReminderSnapshot
 import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
 import os.kei.ui.page.main.sync.WebDavProvider
 import os.kei.ui.page.main.sync.WebDavSyncStore
@@ -110,27 +111,49 @@ object AppBackgroundScheduler {
     fun scheduleBaApThreshold(context: Context) {
         val appContext = context.applicationContext
         val nowMs = System.currentTimeMillis()
-        BASettingsStore.reconcileApAcknowledgements(nowMs)
-        val reminderSnapshots = BASettingsStore.loadReminderSnapshots()
-        val snapshots = reminderSnapshots.map { it.snapshot }
+        val schedulePlan = buildBaReminderScheduleAfterAcknowledgementReconciliation(nowMs)
+        val reminderSnapshots = schedulePlan.reminderSnapshots
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
         val pending = AppBackgroundTickReceiver.baApTickPendingIntent(appContext)
-        if (!AppBackgroundSchedulePolicy.hasEnabledBaReminder(snapshots)) {
+        if (!schedulePlan.hasEnabledReminder) {
             alarmManager.cancel(pending)
             pending.cancel()
             BASettingsStore.resetReminderRuntimeForAccounts(reminderSnapshots.map { it.accountId })
             return
         }
-        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
-            snapshots = snapshots,
-            nowMs = nowMs
-        )
+        val schedule = schedulePlan.schedule
         if (schedule == null) {
             alarmManager.cancel(pending)
             pending.cancel()
             return
         }
         scheduleWithAlarmManager(alarmManager, schedule, pending)
+    }
+
+    internal fun buildBaReminderScheduleAfterAcknowledgementReconciliation(
+        nowMs: Long,
+        reconcile: (Long) -> Boolean = BASettingsStore::reconcileApAcknowledgements,
+        loadReminderSnapshots: () -> List<BaAccountReminderSnapshot> = BASettingsStore::loadReminderSnapshots,
+    ): BaReminderScheduleAfterReconciliation {
+        val reconciled = reconcile(nowMs)
+        val reminderSnapshots = loadReminderSnapshots()
+        val snapshots = reminderSnapshots.map { it.snapshot }
+        val hasEnabledReminder = AppBackgroundSchedulePolicy.hasEnabledBaReminder(snapshots)
+        val schedule =
+            if (hasEnabledReminder) {
+                AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                    snapshots = snapshots,
+                    nowMs = nowMs,
+                )
+            } else {
+                null
+            }
+        return BaReminderScheduleAfterReconciliation(
+            reconciled = reconciled,
+            reminderSnapshots = reminderSnapshots,
+            hasEnabledReminder = hasEnabledReminder,
+            schedule = schedule,
+        )
     }
 
     fun scheduleWebDavAutoSync(context: Context) {
@@ -241,3 +264,10 @@ object AppBackgroundScheduler {
             WebDavProvider.Custom -> 2L * 60L * 1000L
         }
 }
+
+internal data class BaReminderScheduleAfterReconciliation(
+    val reconciled: Boolean,
+    val reminderSnapshots: List<BaAccountReminderSnapshot>,
+    val hasEnabledReminder: Boolean,
+    val schedule: BackgroundAlarmSchedule?,
+)

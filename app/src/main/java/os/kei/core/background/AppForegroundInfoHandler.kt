@@ -581,9 +581,10 @@ object AppForegroundInfoHandler {
                 nowMs = nowMs,
             )
         } else {
-            withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveAccountApLastNotifiedLevel(accountId, -1)
-            }
+            persistBaForegroundApReminderWrites(
+                accountId = accountId,
+                writes = BaForegroundApReminderPersistencePolicy.disabledWrites(BaApReminderKind.Ap),
+            )
         }
 
         coroutineContext.ensureActive()
@@ -596,9 +597,10 @@ object AppForegroundInfoHandler {
                 nowMs = nowMs,
             )
         } else {
-            withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, -1)
-            }
+            persistBaForegroundApReminderWrites(
+                accountId = accountId,
+                writes = BaForegroundApReminderPersistencePolicy.disabledWrites(BaApReminderKind.CafeAp),
+            )
         }
 
         coroutineContext.ensureActive()
@@ -651,21 +653,18 @@ object AppForegroundInfoHandler {
             accountDisplayName = accountDisplayName,
             accountId = accountId,
         )
-        if (sent) {
-            withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveAccountCafeApLastNotifiedLevel(
-                    accountId = accountId,
-                    level = notification.currentDisplay,
-                )
-                if (plan.advanceSuppressionAnchorAfterDelivery) {
-                    BASettingsStore.saveAccountApSuppressionAnchor(
-                        accountId = accountId,
-                        kind = BaApReminderKind.CafeAp,
-                        anchorAtMs = nowMs,
-                    )
-                }
-            }
-        }
+        persistBaForegroundApReminderWrites(
+            accountId = accountId,
+            writes =
+                BaForegroundApReminderPersistencePolicy.deliveryWrites(
+                    kind = BaApReminderKind.CafeAp,
+                    sent = sent,
+                    currentDisplay = notification.currentDisplay,
+                    advanceSuppressionAnchorAfterDelivery =
+                        plan.advanceSuppressionAnchorAfterDelivery,
+                    nowMs = nowMs,
+                ),
+        )
     }
 
     private suspend fun persistBaCafeApReminderPlan(
@@ -720,21 +719,18 @@ object AppForegroundInfoHandler {
             accountDisplayName = accountDisplayName,
             accountId = accountId,
         )
-        if (sent) {
-            withContext(AppDispatchers.mcpServer) {
-                BASettingsStore.saveAccountApLastNotifiedLevel(
-                    accountId = accountId,
-                    level = notification.currentDisplay,
-                )
-                if (plan.advanceSuppressionAnchorAfterDelivery) {
-                    BASettingsStore.saveAccountApSuppressionAnchor(
-                        accountId = accountId,
-                        kind = BaApReminderKind.Ap,
-                        anchorAtMs = nowMs,
-                    )
-                }
-            }
-        }
+        persistBaForegroundApReminderWrites(
+            accountId = accountId,
+            writes =
+                BaForegroundApReminderPersistencePolicy.deliveryWrites(
+                    kind = BaApReminderKind.Ap,
+                    sent = sent,
+                    currentDisplay = notification.currentDisplay,
+                    advanceSuppressionAnchorAfterDelivery =
+                        plan.advanceSuppressionAnchorAfterDelivery,
+                    nowMs = nowMs,
+                ),
+        )
     }
 
     private suspend fun persistBaApReminderPlan(
@@ -766,6 +762,33 @@ object AppForegroundInfoHandler {
                     kind = BaApReminderKind.Ap,
                     anchorAtMs = 0L,
                 )
+            }
+        }
+    }
+
+    private suspend fun persistBaForegroundApReminderWrites(
+        accountId: BaAccountId,
+        writes: List<BaForegroundApReminderWrite>,
+    ) {
+        if (writes.isEmpty()) return
+        withContext(AppDispatchers.mcpServer) {
+            writes.forEach { write ->
+                write.lastNotifiedLevel?.let { level ->
+                    when (write.kind) {
+                        BaApReminderKind.Ap ->
+                            BASettingsStore.saveAccountApLastNotifiedLevel(accountId, level)
+
+                        BaApReminderKind.CafeAp ->
+                            BASettingsStore.saveAccountCafeApLastNotifiedLevel(accountId, level)
+                    }
+                }
+                write.suppressionAnchorAtMs?.let { anchorAtMs ->
+                    BASettingsStore.saveAccountApSuppressionAnchor(
+                        accountId = accountId,
+                        kind = write.kind,
+                        anchorAtMs = anchorAtMs,
+                    )
+                }
             }
         }
     }
@@ -853,4 +876,50 @@ object AppForegroundInfoHandler {
 internal enum class AppShortcutGitHubRefreshResult {
     Completed,
     NoTrackedItems
+}
+
+internal data class BaForegroundApReminderWrite(
+    val kind: BaApReminderKind,
+    val lastNotifiedLevel: Int? = null,
+    val suppressionAnchorAtMs: Long? = null,
+)
+
+internal object BaForegroundApReminderPersistencePolicy {
+    fun disabledWrites(kind: BaApReminderKind): List<BaForegroundApReminderWrite> =
+        listOf(
+            BaForegroundApReminderWrite(
+                kind = kind,
+                lastNotifiedLevel = -1,
+            ),
+            BaForegroundApReminderWrite(
+                kind = kind,
+                suppressionAnchorAtMs = 0L,
+            ),
+        )
+
+    fun deliveryWrites(
+        kind: BaApReminderKind,
+        sent: Boolean,
+        currentDisplay: Int,
+        advanceSuppressionAnchorAfterDelivery: Boolean,
+        nowMs: Long,
+    ): List<BaForegroundApReminderWrite> {
+        if (!sent) return emptyList()
+        return buildList {
+            add(
+                BaForegroundApReminderWrite(
+                    kind = kind,
+                    lastNotifiedLevel = currentDisplay,
+                ),
+            )
+            if (advanceSuppressionAnchorAfterDelivery) {
+                add(
+                    BaForegroundApReminderWrite(
+                        kind = kind,
+                        suppressionAnchorAtMs = nowMs,
+                    ),
+                )
+            }
+        }
+    }
 }

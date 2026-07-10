@@ -74,6 +74,55 @@ class BaApAcknowledgementPolicyTest {
         assertFalse(decision.eligible)
     }
 
+    @Test
+    fun `notification disabled resets existing read state`() {
+        val decision =
+            BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = false,
+                currentDisplay = 130,
+                thresholdDisplay = 120,
+                keepReadUntilBelowThreshold = true,
+                suppressionAnchorAtMs = NOW_MS,
+                nowMs = NOW_MS,
+            )
+
+        assertTrue(decision.resetSuppressionAnchor)
+        assertFalse(decision.eligible)
+    }
+
+    @Test
+    fun `no suppression anchor remains eligible above threshold`() {
+        val decision =
+            BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = 130,
+                thresholdDisplay = 120,
+                keepReadUntilBelowThreshold = true,
+                suppressionAnchorAtMs = 0L,
+                nowMs = NOW_MS,
+            )
+
+        assertTrue(decision.eligible)
+        assertFalse(decision.suppressed)
+        assertNull(decision.nextEligibleAtMs)
+    }
+
+    @Test
+    fun `hourly read overflow clamps next eligibility to max value`() {
+        val decision =
+            BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = 130,
+                thresholdDisplay = 120,
+                keepReadUntilBelowThreshold = false,
+                suppressionAnchorAtMs = Long.MAX_VALUE,
+                nowMs = NOW_MS,
+            )
+
+        assertTrue(decision.suppressed)
+        assertEquals(Long.MAX_VALUE, decision.nextEligibleAtMs)
+    }
+
     private companion object {
         private const val NOW_MS = 20_000_000L
     }

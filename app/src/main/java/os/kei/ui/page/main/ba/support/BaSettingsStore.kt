@@ -379,8 +379,37 @@ internal object BASettingsStore {
 
     fun reconcileApAcknowledgements(nowMs: Long): Boolean {
         val acknowledgementStore = apAcknowledgementStore()
+        val changed =
+            reconcileApAcknowledgements(
+                accountState = loadAccountState(),
+                baseSnapshot = loadBaSettingsSnapshot(kv()),
+                acknowledgementStore = acknowledgementStore,
+                nowMs = nowMs,
+            )
+        if (changed) notifyChanged(notifyHomeOverview = false)
+        return changed
+    }
+
+    internal fun reconcileApAcknowledgements(
+        accountState: BaAccountStoreSnapshot,
+        baseSnapshot: BaPageSnapshot,
+        acknowledgementStore: BaApAcknowledgementStore,
+        nowMs: Long,
+    ): Boolean {
         var changed = false
-        loadReminderSnapshots(includeDisabledAccounts = true)
+        accountState
+            .accounts
+            .map { account ->
+                BaAccountReminderSnapshot(
+                    accountId = account.profile.id,
+                    displayName = account.profile.displayName,
+                    snapshot =
+                        baseSnapshot.withBaAccount(
+                            accountState = accountState,
+                            account = account,
+                        ).withLocalApAcknowledgementAnchors(account.profile.id, acknowledgementStore),
+                )
+            }
             .forEach { reminderSnapshot ->
                 val accountId = reminderSnapshot.accountId
                 val snapshot = reminderSnapshot.snapshot
@@ -405,7 +434,6 @@ internal object BASettingsStore {
                                 changed
                 }
             }
-        if (changed) notifyChanged(notifyHomeOverview = false)
         return changed
     }
 
