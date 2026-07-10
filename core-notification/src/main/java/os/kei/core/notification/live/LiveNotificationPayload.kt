@@ -14,6 +14,7 @@ data class LiveNotificationPayload(
     val onlyAlertOnce: Boolean,
     val openPendingIntent: PendingIntent,
     val stopPendingIntent: PendingIntent,
+    val deletePendingIntent: PendingIntent = stopPendingIntent,
     val focusOpenPendingIntent: PendingIntent = openPendingIntent,
     val primaryActionLabel: String? = null,
     val secondaryActionLabel: String? = null,

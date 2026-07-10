@@ -60,8 +60,9 @@ class ModernNotificationBuilder(
                 if (showSecondaryAction) {
                     builder.addAction(0, state.stopActionTitle(context), state.stopPendingIntent)
                 }
-                if (isDismissibleCalendarPoolUpdate && showSecondaryAction) {
-                    builder.setDeleteIntent(state.stopPendingIntent)
+                val hasCustomDeleteAction = state.deletePendingIntent != state.stopPendingIntent
+                if (showSecondaryAction && (isDismissibleCalendarPoolUpdate || hasCustomDeleteAction)) {
+                    builder.setDeleteIntent(state.deletePendingIntent)
                 }
             }
             .build()

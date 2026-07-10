@@ -12,6 +12,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import os.kei.core.notification.live.LiveNotificationPayload
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -44,6 +45,58 @@ class McpNotificationMarkReadIntentTest {
             "cn-main",
             intent.getStringExtra(McpNotificationMarkReadContract.EXTRA_TARGET_BA_ACCOUNT_ID),
         )
+    }
+
+    @Test
+    fun `dismiss intent carries immutable BA AP metadata`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+
+        val intent =
+            McpNotificationHelper.buildDismissIntent(
+                context = context,
+                notificationId = 243_220,
+                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
+                targetBaAccountId = "cn-main",
+            )
+
+        assertEquals(
+            243_220,
+            intent.getIntExtra(McpNotificationDismissContract.EXTRA_NOTIFICATION_ID, -1),
+        )
+        assertEquals(
+            LiveNotificationPayload.BA_AP_SERVER_NAME,
+            intent.getStringExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME),
+        )
+        assertEquals(
+            "cn-main",
+            intent.getStringExtra(McpNotificationDismissContract.EXTRA_TARGET_BA_ACCOUNT_ID),
+        )
+    }
+
+    @Test
+    fun `mark read and dismiss production PendingIntents have distinct identities`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationId = 243_220
+        val markRead =
+            McpNotificationHelper.markReadPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
+                targetBaAccountId = "cn-main",
+            )
+        val dismiss =
+            McpNotificationHelper.dismissPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
+                targetBaAccountId = "cn-main",
+            )
+
+        assertNotEquals(markRead, dismiss)
+        assertEquals(210_200 + notificationId, shadowOf(markRead).requestCode)
+        assertEquals(310_200 + notificationId, shadowOf(dismiss).requestCode)
+        assertEquals(McpNotificationMarkReadContract.ACTION, shadowOf(markRead).savedIntent.action)
+        assertEquals(McpNotificationDismissContract.ACTION, shadowOf(dismiss).savedIntent.action)
     }
 
     @Test
@@ -108,6 +161,44 @@ class McpNotificationMarkReadIntentTest {
         assertEquals(
             "cn-main",
             currentIntent.getStringExtra(McpNotificationMarkReadContract.EXTRA_TARGET_BA_ACCOUNT_ID),
+        )
+    }
+
+    @Test
+    fun `dismiss PendingIntent updates current account metadata`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val notificationId = 243_223
+        val first =
+            McpNotificationHelper.dismissPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
+                targetBaAccountId = "cn-old",
+            )
+        val updated =
+            McpNotificationHelper.dismissPendingIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
+                targetBaAccountId = "cn-new",
+            )
+        val shadow = shadowOf(updated)
+        val currentIntent = shadow.savedIntent
+
+        assertEquals(first, updated)
+        assertEquals(310_200 + notificationId, shadow.requestCode)
+        assertEquals(
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            shadow.flags,
+        )
+        assertEquals(McpNotificationDismissContract.ACTION, currentIntent.action)
+        assertEquals(
+            LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
+            currentIntent.getStringExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME),
+        )
+        assertEquals(
+            "cn-new",
+            currentIntent.getStringExtra(McpNotificationDismissContract.EXTRA_TARGET_BA_ACCOUNT_ID),
         )
     }
 

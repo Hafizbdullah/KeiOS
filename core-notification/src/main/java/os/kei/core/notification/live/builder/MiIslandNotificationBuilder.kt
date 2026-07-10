@@ -196,8 +196,11 @@ class MiIslandNotificationBuilder(
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .applyDeadline(state.deadlineAtMs)
 
-        if (!presentation.notificationOngoing && state.stopPendingIntent != state.openPendingIntent) {
-            builder.setDeleteIntent(state.stopPendingIntent)
+        val hasCustomDeleteAction = state.deletePendingIntent != state.stopPendingIntent
+        if (state.stopPendingIntent != state.openPendingIntent &&
+            (!presentation.notificationOngoing || hasCustomDeleteAction)
+        ) {
+            builder.setDeleteIntent(state.deletePendingIntent)
         }
         presentation.notificationAccentColor?.let { accentColor ->
             builder

@@ -233,6 +233,17 @@ object McpNotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ) to context.getString(R.string.mcp_action_stop_service)
         }
+        val deletePendingIntent =
+            if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
+                dismissPendingIntent(
+                    context = context,
+                    notificationId = notificationId,
+                    serverName = serverName,
+                    targetBaAccountId = resolvedTargetBaAccountId,
+                )
+            } else {
+                stopPendingIntent
+            }
         val effectiveSecondaryActionLabel =
             secondaryActionLabelOverride?.takeIf { it.isNotBlank() } ?: resolvedSecondaryActionLabel
         val resolvedMiFocusOrderId =
@@ -252,6 +263,7 @@ object McpNotificationHelper {
             onlyAlertOnce = onlyAlertOnce,
             openPendingIntent = openPendingIntent,
             stopPendingIntent = stopPendingIntent,
+            deletePendingIntent = deletePendingIntent,
             focusOpenPendingIntent = focusOpenPendingIntent,
             primaryActionLabel = primaryActionLabel,
             secondaryActionLabel = effectiveSecondaryActionLabel,
@@ -889,6 +901,47 @@ object McpNotificationHelper {
         return PendingIntent.getBroadcast(
             context,
             210_200 + notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    internal fun buildDismissIntent(
+        context: Context,
+        notificationId: Int,
+        serverName: String,
+        targetBaAccountId: String?,
+    ): Intent =
+        Intent().apply {
+            setClassName(
+                context.packageName,
+                McpNotificationActionContract.MI_FOCUS_ACTION_RECEIVER_CLASS_NAME,
+            )
+            action = McpNotificationDismissContract.ACTION
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+            putExtra(McpNotificationDismissContract.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME, serverName)
+            targetBaAccountId?.let {
+                putExtra(McpNotificationDismissContract.EXTRA_TARGET_BA_ACCOUNT_ID, it)
+            }
+        }
+
+    internal fun dismissPendingIntent(
+        context: Context,
+        notificationId: Int,
+        serverName: String,
+        targetBaAccountId: String?,
+    ): PendingIntent {
+        val intent =
+            buildDismissIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
+        return PendingIntent.getBroadcast(
+            context,
+            310_200 + notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

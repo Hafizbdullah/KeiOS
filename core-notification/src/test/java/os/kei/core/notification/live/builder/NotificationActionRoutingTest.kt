@@ -21,52 +21,89 @@ class NotificationActionRoutingTest {
     @Config(sdk = [36])
     fun `modern live update routes secondary action to mark read intent`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val (openPendingIntent, markReadPendingIntent) = pendingIntents(context)
+        val (openPendingIntent, markReadPendingIntent, dismissPendingIntent) = pendingIntents(context)
 
-        val modern = ModernNotificationBuilder(context).build(payload(context, openPendingIntent, markReadPendingIntent))
+        val modern =
+            ModernNotificationBuilder(context).build(
+                payload(
+                    context = context,
+                    openPendingIntent = openPendingIntent,
+                    markReadPendingIntent = markReadPendingIntent,
+                    dismissPendingIntent = dismissPendingIntent,
+                ),
+            )
 
         assertEquals(markReadPendingIntent, modern.actions[1].actionIntent)
+        assertEquals(dismissPendingIntent, modern.deleteIntent)
     }
 
     @Test
     @Config(sdk = [35])
     fun `legacy live update routes secondary action to mark read intent`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val (openPendingIntent, markReadPendingIntent) = pendingIntents(context)
+        val (openPendingIntent, markReadPendingIntent, dismissPendingIntent) = pendingIntents(context)
 
-        val legacy = LegacyNotificationBuilder(context).build(payload(context, openPendingIntent, markReadPendingIntent))
+        val legacy =
+            LegacyNotificationBuilder(context).build(
+                payload(
+                    context = context,
+                    openPendingIntent = openPendingIntent,
+                    markReadPendingIntent = markReadPendingIntent,
+                    dismissPendingIntent = dismissPendingIntent,
+                ),
+            )
 
         assertEquals(markReadPendingIntent, legacy.actions[1].actionIntent)
+        assertEquals(dismissPendingIntent, legacy.deleteIntent)
     }
 
     @Test
     @Config(sdk = [35])
     fun `super island routes stop action to mark read intent`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val (openPendingIntent, markReadPendingIntent) = pendingIntents(context)
+        val (openPendingIntent, markReadPendingIntent, dismissPendingIntent) = pendingIntents(context)
 
-        val island = MiIslandNotificationBuilder(context).build(payload(context, openPendingIntent, markReadPendingIntent))
+        val island =
+            MiIslandNotificationBuilder(context).build(
+                payload(
+                    context = context,
+                    openPendingIntent = openPendingIntent,
+                    markReadPendingIntent = markReadPendingIntent,
+                    dismissPendingIntent = dismissPendingIntent,
+                ),
+            )
 
         assertEquals(markReadPendingIntent, island.focusAction("mcp_action_stop").actionIntent)
+        assertEquals(dismissPendingIntent, island.deleteIntent)
     }
 
-    private fun pendingIntents(context: Application): Pair<PendingIntent, PendingIntent> =
-        PendingIntent.getActivity(
-            context,
-            243_221,
-            Intent("os.kei.test.OPEN_BA_AP").setPackage(context.packageName),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        ) to PendingIntent.getBroadcast(
-            context,
-            243_222,
-            Intent("os.kei.test.MARK_BA_AP_READ").setPackage(context.packageName),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    private fun pendingIntents(context: Application): Triple<PendingIntent, PendingIntent, PendingIntent> =
+        Triple(
+            PendingIntent.getActivity(
+                context,
+                243_221,
+                Intent("os.kei.test.OPEN_BA_AP").setPackage(context.packageName),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
+            PendingIntent.getBroadcast(
+                context,
+                243_222,
+                Intent("os.kei.test.MARK_BA_AP_READ").setPackage(context.packageName),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
+            PendingIntent.getBroadcast(
+                context,
+                243_223,
+                Intent("os.kei.test.DISMISS_BA_AP").setPackage(context.packageName),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            ),
         )
 
     private fun payload(
         context: Application,
         openPendingIntent: PendingIntent,
         markReadPendingIntent: PendingIntent,
+        dismissPendingIntent: PendingIntent,
     ): NotificationPayload =
         NotificationPayload(
             state =
@@ -80,6 +117,7 @@ class NotificationActionRoutingTest {
                     onlyAlertOnce = true,
                     openPendingIntent = openPendingIntent,
                     stopPendingIntent = markReadPendingIntent,
+                    deletePendingIntent = dismissPendingIntent,
                     focusOpenPendingIntent = openPendingIntent,
                     notificationId = 243_220,
                     miFocusOrderId = "ba-ap-routing",
