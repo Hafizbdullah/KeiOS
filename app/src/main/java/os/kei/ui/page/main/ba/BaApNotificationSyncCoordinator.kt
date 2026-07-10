@@ -23,6 +23,7 @@ internal data class BaApNotificationSyncRequest(
 internal data class BaApNotificationSyncResult(
     val lastNotifiedLevel: Int? = null,
     val suppressionAnchorAtMs: Long? = null,
+    val committedDuringDelivery: Boolean = false,
 )
 
 internal data class BaApNotificationSyncPlan(
@@ -37,6 +38,15 @@ internal data class BaApNotificationSyncPlan(
 internal interface BaApNotificationDelivery {
     suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean
 
+    suspend fun sendThresholdWithCommit(
+        request: BaApNotificationSyncRequest,
+        onDelivered: suspend () -> Unit,
+    ): Boolean {
+        val sent = sendThreshold(request)
+        if (sent) onDelivered()
+        return sent
+    }
+
     suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean
 }
 
@@ -46,11 +56,13 @@ internal object BaApNotificationSyncCoordinator {
     suspend fun sync(
         context: Context,
         request: BaApNotificationSyncRequest,
+        onThresholdDelivered: (suspend (BaApNotificationSyncResult) -> Unit)? = null,
     ): BaApNotificationSyncResult =
         sync(
             request = request,
             nowMs = System.currentTimeMillis(),
             delivery = AndroidBaApNotificationDelivery(context),
+            onThresholdDelivered = onThresholdDelivered,
         )
 
     internal suspend fun sync(
@@ -58,11 +70,27 @@ internal object BaApNotificationSyncCoordinator {
         nowMs: Long,
         delivery: BaApNotificationDelivery,
         timeoutMs: Long = NOTIFICATION_SYNC_TIMEOUT_MS,
+        onThresholdDelivered: (suspend (BaApNotificationSyncResult) -> Unit)? = null,
     ): BaApNotificationSyncResult {
         val plan = planBaApNotificationSync(request, nowMs)
         var nextLastNotifiedLevel = plan.nextLastNotifiedLevel
+        var committedDuringDelivery = false
+        val deliveredResult =
+            BaApNotificationSyncResult(
+                lastNotifiedLevel = plan.request.currentDisplay,
+                suppressionAnchorAtMs = nowMs.takeIf { plan.advanceSuppressionAnchorAfterDelivery },
+            )
         val thresholdNotificationSent = if (plan.shouldSendThresholdNotification) {
-            withNotificationTimeout(timeoutMs) { delivery.sendThreshold(plan.request) }
+            withNotificationTimeout(timeoutMs) {
+                if (onThresholdDelivered == null) {
+                    delivery.sendThreshold(plan.request)
+                } else {
+                    delivery.sendThresholdWithCommit(plan.request) {
+                        onThresholdDelivered(deliveredResult)
+                        committedDuringDelivery = true
+                    }
+                }
+            }
         } else {
             false
         }
@@ -77,6 +105,7 @@ internal object BaApNotificationSyncCoordinator {
                 plan.nextSuppressionAnchorAtMs ?: nowMs.takeIf {
                     thresholdNotificationSent && plan.advanceSuppressionAnchorAfterDelivery
                 },
+            committedDuringDelivery = thresholdNotificationSent && committedDuringDelivery,
         )
     }
 
@@ -104,6 +133,23 @@ private class AndroidBaApNotificationDelivery(
                 notificationId = request.notificationId,
                 accountDisplayName = request.accountDisplayName,
                 accountId = request.accountId,
+            )
+        }
+
+    override suspend fun sendThresholdWithCommit(
+        request: BaApNotificationSyncRequest,
+        onDelivered: suspend () -> Unit,
+    ): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            BaApNotificationDispatcher.sendAwaitingDelivery(
+                context = context,
+                currentDisplay = request.currentDisplay,
+                limitDisplay = request.limitDisplay,
+                thresholdDisplay = request.thresholdDisplay,
+                notificationId = request.notificationId,
+                accountDisplayName = request.accountDisplayName,
+                accountId = request.accountId,
+                onDelivered = onDelivered,
             )
         }
 

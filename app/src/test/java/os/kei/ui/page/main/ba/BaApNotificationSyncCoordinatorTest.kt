@@ -1,15 +1,19 @@
 package os.kei.ui.page.main.ba
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Test
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -230,6 +234,33 @@ class BaApNotificationSyncCoordinatorTest {
         )
     }
 
+    @Test
+    fun `delivery commit callback receives success state before cancellation escapes`() = runTest {
+        val committedResult = CompletableDeferred<BaApNotificationSyncResult>()
+        val request =
+            request(
+                keepReadUntilBelowThreshold = false,
+                suppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+            )
+
+        assertFailsWith<CancellationException> {
+            BaApNotificationSyncCoordinator.sync(
+                request = request,
+                nowMs = NOW_MS,
+                delivery = CancellingAfterCommitDelivery,
+                onThresholdDelivered = { result -> committedResult.complete(result) },
+            )
+        }
+
+        assertEquals(
+            BaApNotificationSyncResult(
+                lastNotifiedLevel = request.currentDisplay,
+                suppressionAnchorAtMs = NOW_MS,
+            ),
+            committedResult.await(),
+        )
+    }
+
     private fun request(
         currentDisplay: Int = 120,
         lastNotifiedLevel: Int = 120,
@@ -278,6 +309,20 @@ private object DelayedDelivery : BaApNotificationDelivery {
     override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean {
         delay(Long.MAX_VALUE)
         return true
+    }
+
+    override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean = true
+}
+
+private object CancellingAfterCommitDelivery : BaApNotificationDelivery {
+    override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean = true
+
+    override suspend fun sendThresholdWithCommit(
+        request: BaApNotificationSyncRequest,
+        onDelivered: suspend () -> Unit,
+    ): Boolean {
+        withContext(NonCancellable) { onDelivered() }
+        throw CancellationException("cancel after accepted delivery")
     }
 
     override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean = true

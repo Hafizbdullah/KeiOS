@@ -10,7 +10,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -70,6 +72,7 @@ internal object McpXiaomiMagicDispatcher {
         environment: McpXiaomiMagicDispatchEnvironment = productionEnvironment(context),
         dispatchScope: CoroutineScope = scope,
         mutex: Mutex = networkMutex,
+        onDelivered: suspend () -> Unit = {},
     ): Boolean {
         if (!environment.canPostNotifications()) return false
         val notificationManager = NotificationManagerCompat.from(context)
@@ -83,6 +86,7 @@ internal object McpXiaomiMagicDispatcher {
             dispatchScope = dispatchScope,
             mutex = mutex,
             initialPostResult = initialPostResult,
+            onDelivered = onDelivered,
         )
         return try {
             initialPostResult.await()
@@ -123,6 +127,7 @@ internal object McpXiaomiMagicDispatcher {
             dispatchScope = scope,
             mutex = networkMutex,
             initialPostResult = CompletableDeferred(),
+            onDelivered = {},
         )
         return true
     }
@@ -136,6 +141,7 @@ internal object McpXiaomiMagicDispatcher {
         dispatchScope: CoroutineScope,
         mutex: Mutex,
         initialPostResult: CompletableDeferred<Boolean>,
+        onDelivered: suspend () -> Unit,
     ): Job =
         dispatchScope.launch {
             mutex.withLock {
@@ -146,6 +152,7 @@ internal object McpXiaomiMagicDispatcher {
                     notification = notification,
                     environment = environment,
                     initialPostResult = initialPostResult,
+                    onDelivered = onDelivered,
                 )
             }
         }
@@ -157,6 +164,7 @@ internal object McpXiaomiMagicDispatcher {
         notification: Notification,
         environment: McpXiaomiMagicDispatchEnvironment,
         initialPostResult: CompletableDeferred<Boolean>,
+        onDelivered: suspend () -> Unit,
     ) {
         var networkTouched = false
         try {
@@ -164,14 +172,15 @@ internal object McpXiaomiMagicDispatcher {
             AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
             if (targetUid == null) {
                 AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
-                initialPostResult.complete(
-                    postNotificationSafely(
-                        context = context,
-                        notificationManager = notificationManager,
-                        notificationId = notificationId,
-                        notification = notification,
-                        environment = environment,
-                    ),
+                completeInitialPostAtomically(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                    initialPostResult = initialPostResult,
+                    retryOnFailure = false,
+                    onDelivered = onDelivered,
                 )
                 return
             }
@@ -180,14 +189,15 @@ internal object McpXiaomiMagicDispatcher {
                 if (environment.canUseCommand()) {
                     environment.healNetworking()
                 }
-                initialPostResult.complete(
-                    postNotificationSafely(
-                        context = context,
-                        notificationManager = notificationManager,
-                        notificationId = notificationId,
-                        notification = notification,
-                        environment = environment,
-                    ),
+                completeInitialPostAtomically(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                    initialPostResult = initialPostResult,
+                    retryOnFailure = false,
+                    onDelivered = onDelivered,
                 )
                 return
             }
@@ -195,24 +205,16 @@ internal object McpXiaomiMagicDispatcher {
             environment.healNetworking()
             AppLogger.i(TAG, "blocking xmsf network")
             networkTouched = environment.blockNetworking()
-            val primaryResult =
-                postNotificationSafely(
-                    context = context,
-                    notificationManager = notificationManager,
-                    notificationId = notificationId,
-                    notification = notification,
-                    environment = environment,
-                )
-            val delivered =
-                primaryResult ||
-                    postNotificationSafely(
-                        context = context,
-                        notificationManager = notificationManager,
-                        notificationId = notificationId,
-                        notification = notification,
-                        environment = environment,
-                    )
-            initialPostResult.complete(delivered)
+            completeInitialPostAtomically(
+                context = context,
+                notificationManager = notificationManager,
+                notificationId = notificationId,
+                notification = notification,
+                environment = environment,
+                initialPostResult = initialPostResult,
+                retryOnFailure = true,
+                onDelivered = onDelivered,
+            )
             environment.awaitRestore()
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
@@ -221,14 +223,15 @@ internal object McpXiaomiMagicDispatcher {
             }
             AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
             if (!initialPostResult.isCompleted) {
-                initialPostResult.complete(
-                    postNotificationSafely(
-                        context = context,
-                        notificationManager = notificationManager,
-                        notificationId = notificationId,
-                        notification = notification,
-                        environment = environment,
-                    ),
+                completeInitialPostAtomically(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                    initialPostResult = initialPostResult,
+                    retryOnFailure = false,
+                    onDelivered = onDelivered,
                 )
             }
         } finally {
@@ -247,6 +250,52 @@ internal object McpXiaomiMagicDispatcher {
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun completeInitialPostAtomically(
+        context: Context,
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification,
+        environment: McpXiaomiMagicDispatchEnvironment,
+        initialPostResult: CompletableDeferred<Boolean>,
+        retryOnFailure: Boolean,
+        onDelivered: suspend () -> Unit,
+    ) {
+        currentCoroutineContext().ensureActive()
+        withContext(NonCancellable) {
+            val primaryResult =
+                postNotificationSafely(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                )
+            val delivered =
+                primaryResult ||
+                    retryOnFailure &&
+                    postNotificationSafely(
+                        context = context,
+                        notificationManager = notificationManager,
+                        notificationId = notificationId,
+                        notification = notification,
+                        environment = environment,
+                    )
+            var commitFailure: Throwable? = null
+            if (delivered) {
+                try {
+                    onDelivered()
+                } catch (throwable: Throwable) {
+                    commitFailure = throwable
+                    if (throwable !is CancellationException) {
+                        AppLogger.e(TAG, "Xiaomi magic delivery commit failed", throwable)
+                    }
+                }
+            }
+            initialPostResult.complete(delivered)
+            commitFailure?.let { throw it }
         }
     }
 

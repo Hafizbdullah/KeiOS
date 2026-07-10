@@ -70,6 +70,7 @@ internal object BaApNotificationDispatcher {
         notificationId: Int = McpNotificationHelper.BA_AP_NOTIFICATION_ID,
         accountDisplayName: String = "",
         accountId: BaAccountId? = null,
+        onDelivered: suspend () -> Unit = {},
     ): Boolean {
         val notificationsGranted =
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
@@ -105,6 +106,7 @@ internal object BaApNotificationDispatcher {
                             ),
                         targetBaAccountId = accountId?.value,
                     ),
+                onDelivered = onDelivered,
             ).also { sent ->
                 AppLogger.i(TAG) {
                     "awaited send result=$sent id=$notificationId current=$currentDisplay limit=$limitDisplay account=${accountId?.value.orEmpty()}"

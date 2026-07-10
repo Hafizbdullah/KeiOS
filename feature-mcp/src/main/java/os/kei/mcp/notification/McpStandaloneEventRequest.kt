@@ -3,6 +3,11 @@ package os.kei.mcp.notification
 import android.app.Notification
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import os.kei.core.log.AppLogger
 
 data class McpStandaloneEventRequest(
@@ -41,29 +46,45 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
     notificationId: Int,
     notification: Notification,
     useXiaomiMagic: Boolean,
+    onDelivered: suspend () -> Unit = {},
 ): Boolean {
+    val commitDelivery: suspend () -> Unit = {
+        McpNotificationActiveStateCache.markActive(notificationId, active = true)
+        onDelivered()
+    }
     val dispatched =
         if (useXiaomiMagic) {
             McpXiaomiMagicDispatcher.notify(
                 context = context,
                 notificationId = notificationId,
                 notification = notification,
+                onDelivered = commitDelivery,
             )
         } else {
             val notificationManager = NotificationManagerCompat.from(context)
             if (McpXiaomiMagicDispatcher.canUseCommand()) {
                 McpNotificationHelper.restoreXiaomiNetworkIfNeeded(context)
             }
-            McpNotificationHelper.notifySafely(
-                context,
-                notificationManager,
-                notificationId,
-                notification,
-            )
+            currentCoroutineContext().ensureActive()
+            withContext(NonCancellable) {
+                val delivered =
+                    McpNotificationHelper.notifySafely(
+                        context,
+                        notificationManager,
+                        notificationId,
+                        notification,
+                    )
+                if (delivered) {
+                    try {
+                        commitDelivery()
+                    } catch (throwable: Throwable) {
+                        if (throwable is CancellationException) throw throwable
+                        AppLogger.e("McpStandaloneEvent", "delivery commit failed", throwable)
+                    }
+                }
+                delivered
+            }
         }
-    if (dispatched) {
-        McpNotificationActiveStateCache.markActive(notificationId, active = true)
-    }
     AppLogger.i("McpStandaloneEvent") {
         "awaited dispatch result=$dispatched id=$notificationId xiaomiMagic=$useXiaomiMagic"
     }

@@ -10,6 +10,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import os.kei.feature.mcp.R
 import os.kei.core.intent.PendingIntentLaunchOptionsCompat
 import os.kei.core.log.AppLogger
@@ -384,22 +386,27 @@ object McpNotificationHelper {
         context: Context,
         notificationId: Int,
         request: McpStandaloneEventRequest,
+        onDelivered: suspend () -> Unit = {},
     ): Boolean {
         val prepared = prepareStandaloneEvent(
             context = context,
             notificationId = notificationId,
             request = request,
         )
-        if (prepared.alreadyActive) return true
+        if (prepared.alreadyActive) {
+            withContext(NonCancellable) { onDelivered() }
+            return true
+        }
         val dispatched = dispatchStandaloneEventAwaitingDelivery(
             context = context,
             notificationId = notificationId,
             notification = prepared.notification,
             useXiaomiMagic = prepared.useXiaomiMagic,
+            onDelivered = {
+                McpNotificationSnapshotStore.put(notificationId, prepared.snapshot)
+                onDelivered()
+            },
         )
-        if (dispatched) {
-            McpNotificationSnapshotStore.put(notificationId, prepared.snapshot)
-        }
         return dispatched
     }
 

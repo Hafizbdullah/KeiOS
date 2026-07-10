@@ -644,7 +644,16 @@ object AppForegroundInfoHandler {
         val plan = BaReminderCoordinator.evaluateCafeApThreshold(snapshot = snapshot, nowMs = nowMs)
         persistBaCafeApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
-        val sent = BaCafeApNotificationDispatcher.sendAwaitingDelivery(
+        val deliveryWrites =
+            BaForegroundApReminderPersistencePolicy.deliveryWrites(
+                kind = BaApReminderKind.CafeAp,
+                sent = true,
+                currentDisplay = notification.currentDisplay,
+                advanceSuppressionAnchorAfterDelivery =
+                    plan.advanceSuppressionAnchorAfterDelivery,
+                nowMs = nowMs,
+            )
+        BaCafeApNotificationDispatcher.sendAwaitingDelivery(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,
@@ -652,18 +661,12 @@ object AppForegroundInfoHandler {
             notificationId = BaAccountNotificationKind.CafeAp.notificationId(accountId),
             accountDisplayName = accountDisplayName,
             accountId = accountId,
-        )
-        persistBaForegroundApReminderWrites(
-            accountId = accountId,
-            writes =
-                BaForegroundApReminderPersistencePolicy.deliveryWrites(
-                    kind = BaApReminderKind.CafeAp,
-                    sent = sent,
-                    currentDisplay = notification.currentDisplay,
-                    advanceSuppressionAnchorAfterDelivery =
-                        plan.advanceSuppressionAnchorAfterDelivery,
-                    nowMs = nowMs,
-                ),
+            onDelivered = {
+                persistBaForegroundApReminderWrites(
+                    accountId = accountId,
+                    writes = deliveryWrites,
+                )
+            },
         )
     }
 
@@ -710,7 +713,16 @@ object AppForegroundInfoHandler {
         val plan = BaReminderCoordinator.evaluateApThreshold(snapshot = snapshot, nowMs = nowMs)
         persistBaApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
-        val sent = BaApNotificationDispatcher.sendAwaitingDelivery(
+        val deliveryWrites =
+            BaForegroundApReminderPersistencePolicy.deliveryWrites(
+                kind = BaApReminderKind.Ap,
+                sent = true,
+                currentDisplay = notification.currentDisplay,
+                advanceSuppressionAnchorAfterDelivery =
+                    plan.advanceSuppressionAnchorAfterDelivery,
+                nowMs = nowMs,
+            )
+        BaApNotificationDispatcher.sendAwaitingDelivery(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,
@@ -718,18 +730,12 @@ object AppForegroundInfoHandler {
             notificationId = BaAccountNotificationKind.Ap.notificationId(accountId),
             accountDisplayName = accountDisplayName,
             accountId = accountId,
-        )
-        persistBaForegroundApReminderWrites(
-            accountId = accountId,
-            writes =
-                BaForegroundApReminderPersistencePolicy.deliveryWrites(
-                    kind = BaApReminderKind.Ap,
-                    sent = sent,
-                    currentDisplay = notification.currentDisplay,
-                    advanceSuppressionAnchorAfterDelivery =
-                        plan.advanceSuppressionAnchorAfterDelivery,
-                    nowMs = nowMs,
-                ),
+            onDelivered = {
+                persistBaForegroundApReminderWrites(
+                    accountId = accountId,
+                    writes = deliveryWrites,
+                )
+            },
         )
     }
 

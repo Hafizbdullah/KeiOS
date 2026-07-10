@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -59,6 +60,7 @@ internal suspend fun persistBaForegroundApSyncResult(
     anchorWriter: BaApSuppressionAnchorWriter = BaSettingsStoreApSuppressionAnchorWriter,
     onLastNotifiedLevel: (Int) -> Unit,
 ) {
+    if (result.committedDuringDelivery) return
     result.suppressionAnchorAtMs?.let { anchorAtMs ->
         withContext(NonCancellable) {
             request.accountId?.let { accountId ->
@@ -218,18 +220,24 @@ internal fun BaPageCommonEffects(
         }.distinctUntilChanged()
             .collectLatest { request ->
                 delay(250.milliseconds)
+                val persistResult: suspend (BaApNotificationSyncResult) -> Unit = { result ->
+                    withContext(NonCancellable + Dispatchers.Main.immediate) {
+                        persistBaForegroundApSyncResult(
+                            request = request,
+                            result = result,
+                            office = office,
+                        ) { level ->
+                            runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
+                        }
+                    }
+                }
                 val result =
                     BaApNotificationSyncCoordinator.sync(
                         context = notificationContext,
                         request = request,
+                        onThresholdDelivered = persistResult,
                     )
-                persistBaForegroundApSyncResult(
-                    request = request,
-                    result = result,
-                    office = office,
-                ) { level ->
-                    runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
-                }
+                persistResult(result)
             }
     }
 }
