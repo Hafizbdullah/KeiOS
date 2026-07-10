@@ -644,7 +644,7 @@ object AppForegroundInfoHandler {
         val plan = BaReminderCoordinator.evaluateCafeApThreshold(snapshot = snapshot, nowMs = nowMs)
         persistBaCafeApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
-        val sent = BaCafeApNotificationDispatcher.send(
+        val sent = BaCafeApNotificationDispatcher.sendAwaitingDelivery(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,
@@ -710,7 +710,7 @@ object AppForegroundInfoHandler {
         val plan = BaReminderCoordinator.evaluateApThreshold(snapshot = snapshot, nowMs = nowMs)
         persistBaApReminderPlan(accountId = accountId, plan = plan)
         val notification = plan.notification ?: return
-        val sent = BaApNotificationDispatcher.send(
+        val sent = BaApNotificationDispatcher.sendAwaitingDelivery(
             context = context,
             currentDisplay = notification.currentDisplay,
             limitDisplay = notification.limitDisplay,

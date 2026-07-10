@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -19,6 +21,19 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.shizuku.ShizukuConnectivityBridge
 import kotlin.time.Duration.Companion.milliseconds
+
+internal data class McpXiaomiMagicDispatchEnvironment(
+    val canPostNotifications: () -> Boolean,
+    val resolveTargetUid: () -> Int?,
+    val canUseCommand: () -> Boolean,
+    val shouldExecute: suspend () -> Boolean,
+    val healNetworking: suspend () -> Unit,
+    val blockNetworking: suspend () -> Boolean,
+    val postNotification: (Context, NotificationManagerCompat, Int, Notification) -> Boolean,
+    val awaitRestore: suspend () -> Unit,
+    val restoreNetworking: suspend () -> Unit,
+    val needsRestore: () -> Boolean,
+)
 
 internal object McpXiaomiMagicDispatcher {
     private const val TAG = "McpXiaomiMagic"
@@ -48,85 +63,231 @@ internal object McpXiaomiMagicDispatcher {
         return shizukuApiUtils.canUseCommand()
     }
 
-    fun notify(
+    suspend fun notify(
         context: Context,
         notificationId: Int,
-        notification: Notification
+        notification: Notification,
+        environment: McpXiaomiMagicDispatchEnvironment = productionEnvironment(context),
+        dispatchScope: CoroutineScope = scope,
+        mutex: Mutex = networkMutex,
     ): Boolean {
-        if (!McpNotificationHelper.canPostNotifications(context)) return false
+        if (!environment.canPostNotifications()) return false
         val notificationManager = NotificationManagerCompat.from(context)
-        val targetUid = resolveXmsfUid(context)
-        AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
-        val nonNullUid = targetUid ?: run {
+        val initialPostResult = CompletableDeferred<Boolean>()
+        val dispatchJob = launchDispatchLifecycle(
+            context = context,
+            notificationManager = notificationManager,
+            notificationId = notificationId,
+            notification = notification,
+            environment = environment,
+            dispatchScope = dispatchScope,
+            mutex = mutex,
+            initialPostResult = initialPostResult,
+        )
+        return try {
+            initialPostResult.await()
+        } catch (cancellation: CancellationException) {
+            if (!initialPostResult.isCompleted) {
+                dispatchJob.cancel(cancellation)
+            }
+            throw cancellation
+        }
+    }
+
+    fun enqueue(
+        context: Context,
+        notificationId: Int,
+        notification: Notification,
+    ): Boolean {
+        val environment = productionEnvironment(context)
+        if (!environment.canPostNotifications()) return false
+        val notificationManager = NotificationManagerCompat.from(context)
+        val targetUid = environment.resolveTargetUid()
+        AppLogger.i(TAG, "enqueue: targetUid=$targetUid notifId=$notificationId")
+        if (targetUid == null) {
             AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
-            return McpNotificationHelper.notifySafely(
+            return environment.postNotification(
                 context,
                 notificationManager,
                 notificationId,
-                notification
+                notification,
             )
         }
 
-        scope.launch {
-            networkMutex.withLock {
-                if (!shouldExecuteLocked(nonNullUid)) {
-                    AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
-                    if (canUseCommand()) {
-                        healXmsfNetworkingLocked(nonNullUid)
-                    }
-                    McpNotificationHelper.notifySafely(
-                        context,
-                        notificationManager,
-                        notificationId,
-                        notification
-                    )
-                    return@withLock
-                }
-                var notificationDispatched = false
-                var networkTouched = false
-                try {
-                    healXmsfNetworkingLocked(nonNullUid)
-                    AppLogger.i(TAG, "blocking xmsf network for uid=$nonNullUid")
-                    blockXmsfNetworkingLocked(nonNullUid)
-                    networkTouched = isXmsfNetworkBlocked || isUidFirewallChainEnabled
-                    notificationDispatched = McpNotificationHelper.notifySafely(
+        launchDispatchLifecycle(
+            context = context,
+            notificationManager = notificationManager,
+            notificationId = notificationId,
+            notification = notification,
+            environment = environment,
+            dispatchScope = scope,
+            mutex = networkMutex,
+            initialPostResult = CompletableDeferred(),
+        )
+        return true
+    }
+
+    private fun launchDispatchLifecycle(
+        context: Context,
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification,
+        environment: McpXiaomiMagicDispatchEnvironment,
+        dispatchScope: CoroutineScope,
+        mutex: Mutex,
+        initialPostResult: CompletableDeferred<Boolean>,
+    ): Job =
+        dispatchScope.launch {
+            mutex.withLock {
+                runDispatchLifecycle(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                    initialPostResult = initialPostResult,
+                )
+            }
+        }
+
+    private suspend fun runDispatchLifecycle(
+        context: Context,
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification,
+        environment: McpXiaomiMagicDispatchEnvironment,
+        initialPostResult: CompletableDeferred<Boolean>,
+    ) {
+        var networkTouched = false
+        try {
+            val targetUid = environment.resolveTargetUid()
+            AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
+            if (targetUid == null) {
+                AppLogger.w(TAG, "skip Xiaomi magic: xmsf uid is null")
+                initialPostResult.complete(
+                    postNotificationSafely(
                         context = context,
                         notificationManager = notificationManager,
                         notificationId = notificationId,
-                        notification = notification
+                        notification = notification,
+                        environment = environment,
+                    ),
+                )
+                return
+            }
+            if (!environment.shouldExecute()) {
+                AppLogger.w(TAG, "skip Xiaomi magic: preconditions not satisfied")
+                if (environment.canUseCommand()) {
+                    environment.healNetworking()
+                }
+                initialPostResult.complete(
+                    postNotificationSafely(
+                        context = context,
+                        notificationManager = notificationManager,
+                        notificationId = notificationId,
+                        notification = notification,
+                        environment = environment,
+                    ),
+                )
+                return
+            }
+
+            environment.healNetworking()
+            AppLogger.i(TAG, "blocking xmsf network")
+            networkTouched = environment.blockNetworking()
+            val primaryResult =
+                postNotificationSafely(
+                    context = context,
+                    notificationManager = notificationManager,
+                    notificationId = notificationId,
+                    notification = notification,
+                    environment = environment,
+                )
+            val delivered =
+                primaryResult ||
+                    postNotificationSafely(
+                        context = context,
+                        notificationManager = notificationManager,
+                        notificationId = notificationId,
+                        notification = notification,
+                        environment = environment,
                     )
-                    delay(resolveBlockIntervalMs().milliseconds)
-                } catch (throwable: Throwable) {
-                    if (throwable is CancellationException) throw throwable
-                    AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
-                    if (!notificationDispatched) {
-                        McpNotificationHelper.notifySafely(
-                            context = context,
-                            notificationManager = notificationManager,
-                            notificationId = notificationId,
-                            notification = notification
-                        )
+            initialPostResult.complete(delivered)
+            environment.awaitRestore()
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                initialPostResult.completeExceptionally(throwable)
+                throw throwable
+            }
+            AppLogger.e(TAG, "Xiaomi magic execution failed", throwable)
+            if (!initialPostResult.isCompleted) {
+                initialPostResult.complete(
+                    postNotificationSafely(
+                        context = context,
+                        notificationManager = notificationManager,
+                        notificationId = notificationId,
+                        notification = notification,
+                        environment = environment,
+                    ),
+                )
+            }
+        } finally {
+            withContext(NonCancellable) {
+                if (networkTouched || environment.needsRestore()) {
+                    AppLogger.i(TAG, "restoring xmsf network")
+                    runCatching {
+                        environment.restoreNetworking()
+                    }.onFailure {
+                        AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
                     }
-                } finally {
-                    withContext(NonCancellable) {
-                        if (networkTouched || isXmsfNetworkBlocked || isUidFirewallChainEnabled) {
-                            AppLogger.i(TAG, "restoring xmsf network for uid=$nonNullUid")
-                            runCatching {
-                                restoreXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
-                            }
-                            runCatching {
-                                healXmsfNetworkingLocked(nonNullUid)
-                            }.onFailure {
-                                AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
-                            }
-                        }
+                    runCatching {
+                        environment.healNetworking()
+                    }.onFailure {
+                        AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
                     }
                 }
             }
         }
-        return true
+    }
+
+    private fun postNotificationSafely(
+        context: Context,
+        notificationManager: NotificationManagerCompat,
+        notificationId: Int,
+        notification: Notification,
+        environment: McpXiaomiMagicDispatchEnvironment,
+    ): Boolean =
+        runCatching {
+            environment.postNotification(
+                context,
+                notificationManager,
+                notificationId,
+                notification,
+            )
+        }.getOrElse { throwable ->
+            AppLogger.e(TAG, "Xiaomi magic notification post failed", throwable)
+            false
+        }
+
+    private fun productionEnvironment(context: Context): McpXiaomiMagicDispatchEnvironment {
+        val targetUid by lazy { resolveXmsfUid(context) }
+        return McpXiaomiMagicDispatchEnvironment(
+            canPostNotifications = { McpNotificationHelper.canPostNotifications(context) },
+            resolveTargetUid = { targetUid },
+            canUseCommand = ::canUseCommand,
+            shouldExecute = { targetUid?.let { uid -> shouldExecuteLocked(uid) } ?: false },
+            healNetworking = { targetUid?.let { healXmsfNetworkingLocked(it) } },
+            blockNetworking = {
+                targetUid?.let { uid ->
+                    blockXmsfNetworkingLocked(uid)
+                    isXmsfNetworkBlocked || isUidFirewallChainEnabled
+                } ?: false
+            },
+            postNotification = McpNotificationHelper::notifySafely,
+            awaitRestore = { delay(resolveBlockIntervalMs().milliseconds) },
+            restoreNetworking = { targetUid?.let { restoreXmsfNetworkingLocked(it) } },
+            needsRestore = { isXmsfNetworkBlocked || isUidFirewallChainEnabled },
+        )
     }
 
     fun restoreNetworkIfNeeded(context: Context) {

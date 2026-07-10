@@ -22,12 +22,13 @@ import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
-internal class BaOfficeViewModel(
+internal class BaOfficeViewModel private constructor(
     application: Application,
+    private val repository: BaOfficePageRepository,
+    private val persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit,
+    private val scheduleBaApThreshold: () -> Unit,
 ) : AndroidViewModel(application) {
     private val defaultSnapshot = BaPageSnapshot()
-    private val clock = BaSystemOfficeClock
-    private val repository = BaOfficePageRepository(clock)
     private val _chromeUiState = MutableStateFlow(BaOfficeChromeUiState())
     val chromeUiState: StateFlow<BaOfficeChromeUiState> = _chromeUiState.asStateFlow()
     private val _accountUiState = MutableStateFlow(BaOfficeAccountUiState())
@@ -92,6 +93,15 @@ internal class BaOfficeViewModel(
     private val _events = MutableSharedFlow<BaOfficeEvent>(replay = 0, extraBufferCapacity = 8)
     val events: SharedFlow<BaOfficeEvent> = _events.asSharedFlow()
     val office: BaOfficeController = BaOfficeController(defaultSnapshot)
+
+    constructor(application: Application) : this(
+        application = application,
+        repository = BaOfficePageRepository(BaSystemOfficeClock),
+        persistRuntimeUpdate = { update -> update.persistAsync() },
+        scheduleBaApThreshold = {
+            AppBackgroundScheduler.scheduleBaApThreshold(application)
+        },
+    )
 
     init {
         viewModelScope.launch {
@@ -368,7 +378,7 @@ internal class BaOfficeViewModel(
                 accountState = accountState,
                 persistRuntimeTick = true,
             )
-            AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+            scheduleBaApThreshold()
         }
     }
 
@@ -379,7 +389,7 @@ internal class BaOfficeViewModel(
         if (_accountUiState.value.activeAccountId == accountId) return
         viewModelScope.launch {
             try {
-                currentRuntimeUpdate?.persistAsync()
+                currentRuntimeUpdate?.let { update -> persistRuntimeUpdate(update) }
                 val snapshot = repository.selectActiveAccount(accountId) ?: return@launch
                 val accountState = repository.loadAccountState()
                 applyOfficeSnapshot(
@@ -389,7 +399,7 @@ internal class BaOfficeViewModel(
                 )
                 refreshCalendar(force = true)
                 refreshPool(force = true)
-                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                scheduleBaApThreshold()
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
                 _events.emit(BaOfficeEvent.OperationFailed(error))
@@ -402,7 +412,7 @@ internal class BaOfficeViewModel(
             try {
                 val accountState = repository.saveAllAccountsFollowGlobalNotificationSettings(enabled)
                 _accountUiState.value = accountState.toOfficeAccountUiState()
-                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                scheduleBaApThreshold()
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
                 _events.emit(BaOfficeEvent.OperationFailed(error))
@@ -422,7 +432,7 @@ internal class BaOfficeViewModel(
                         enabled = enabled,
                     )
                 _accountUiState.value = accountState.toOfficeAccountUiState()
-                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                scheduleBaApThreshold()
             } catch (error: Throwable) {
                 error.rethrowIfCancellation()
                 _events.emit(BaOfficeEvent.OperationFailed(error))
@@ -513,7 +523,7 @@ internal class BaOfficeViewModel(
                         ),
                     )
 
-                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                scheduleBaApThreshold()
                 _events.emit(
                     BaOfficeEvent.SettingsSaved(
                         persisted = persisted,
@@ -568,7 +578,7 @@ internal class BaOfficeViewModel(
                     office.cafeVisitLastNotifiedSlotMs = slotMs
                 }
 
-                AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+                scheduleBaApThreshold()
                 _notificationDraftUiState.value =
                     BaOfficeNotificationDraftUiState(
                         draft = savedDraft,
@@ -601,7 +611,7 @@ internal class BaOfficeViewModel(
             refreshCalendar(force = true)
             refreshPool(force = true)
         }
-        AppBackgroundScheduler.scheduleBaApThreshold(getApplication())
+        scheduleBaApThreshold()
     }
 
     private suspend fun applyOfficeSnapshot(
@@ -618,7 +628,7 @@ internal class BaOfficeViewModel(
             } else {
                 null
             }
-        runtimeUpdate?.persistAsync()
+        runtimeUpdate?.let { update -> persistRuntimeUpdate(update) }
         updateOfficeUiStateFromSnapshot(
             snapshot = snapshot,
             accountState = accountState,
@@ -645,6 +655,21 @@ internal class BaOfficeViewModel(
                     savedDraft = notificationDraft,
                 )
         }
+    }
+
+    companion object {
+        internal fun createForTest(
+            application: Application,
+            repository: BaOfficePageRepository,
+            persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit,
+            scheduleBaApThreshold: () -> Unit,
+        ): BaOfficeViewModel =
+            BaOfficeViewModel(
+                application = application,
+                repository = repository,
+                persistRuntimeUpdate = persistRuntimeUpdate,
+                scheduleBaApThreshold = scheduleBaApThreshold,
+            )
     }
 }
 

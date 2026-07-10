@@ -96,7 +96,7 @@ private class AndroidBaApNotificationDelivery(
 ) : BaApNotificationDelivery {
     override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean =
         withContext(AppDispatchers.baFetch) {
-            BaApNotificationDispatcher.send(
+            BaApNotificationDispatcher.sendAwaitingDelivery(
                 context = context,
                 currentDisplay = request.currentDisplay,
                 limitDisplay = request.limitDisplay,

@@ -25,12 +25,12 @@ internal data class BaOfficeNotificationSavePersistenceResult(
     val cafeVisitLastNotifiedSlotMs: Long?,
 )
 
-internal class BaOfficePageRepository(
+internal open class BaOfficePageRepository(
     private val clock: BaOfficeClock = BaSystemOfficeClock,
 ) {
-    suspend fun loadInitialSnapshot(): BaPageSnapshot = BaOfficeRepository.loadSnapshotAsync()
+    open suspend fun loadInitialSnapshot(): BaPageSnapshot = BaOfficeRepository.loadSnapshotAsync()
 
-    suspend fun loadAccountState(): BaAccountStoreSnapshot = BaOfficeRepository.loadAccountStateAsync()
+    open suspend fun loadAccountState(): BaAccountStoreSnapshot = BaOfficeRepository.loadAccountStateAsync()
 
     suspend fun selectActiveAccount(accountId: BaAccountId): BaPageSnapshot? =
         BaOfficeRepository.selectActiveAccountAsync(accountId)
@@ -90,7 +90,7 @@ internal class BaOfficePageRepository(
             )
         }
 
-    suspend fun persistNotificationSettings(
+    open suspend fun persistNotificationSettings(
         sheetState: BaNotificationSettingsSheetState,
         previousCafeApNotifyEnabled: Boolean,
         previousCafeApNotifyThreshold: Int,

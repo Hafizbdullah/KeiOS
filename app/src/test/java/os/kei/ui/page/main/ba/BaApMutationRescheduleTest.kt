@@ -66,7 +66,9 @@ class BaApMutationRescheduleTest {
     }
 
     @Test
-    fun `AP limit save persists limit and account runtime before reschedule`() = runTest {
+    fun `AP limit sheet callback persists merged account runtime before reschedule`() = runTest {
+        val office = sheetOffice()
+        office.apLimitInput = "200"
         val events = mutableListOf<String>()
         val limits = mutableListOf<Int>()
         val updates = mutableListOf<BaRuntimePersistenceUpdate>()
@@ -83,20 +85,34 @@ class BaApMutationRescheduleTest {
                 },
                 scheduleBaApThreshold = { events += "schedule" },
             )
+        val callbacks =
+            buildBaPageSheetApMutationCallbacks(
+                office = office,
+                scope = this,
+                persistenceCoordinator = coordinator,
+            )
+        val expectedOffice = sheetOffice()
+        val expectedLimitUpdate = expectedOffice.updateApLimit(200)
+        val expectedRegenUpdate = expectedOffice.applyApRegen()
+        val expectedRuntimeUpdate =
+            when {
+                expectedLimitUpdate.runtimeUpdate != null && expectedRegenUpdate != null ->
+                    expectedLimitUpdate.runtimeUpdate.mergedWith(expectedRegenUpdate)
 
-        coordinator.persistApLimit(
-            limit = 300,
-            runtimeUpdate = BaRuntimePersistenceUpdate(apCurrent = 240.0),
-        )
+                else -> expectedLimitUpdate.runtimeUpdate ?: expectedRegenUpdate
+            }
 
-        assertEquals(listOf(300), limits)
-        assertEquals(ACCOUNT_ID, updates.single().accountId)
-        assertEquals(240.0, updates.single().apCurrent)
+        callbacks.onSaveApLimit()
+        advanceUntilIdle()
+
+        assertEquals(listOf(200), limits)
+        assertEquals(expectedRuntimeUpdate?.withAccountId(ACCOUNT_ID), updates.single())
         assertEquals(listOf("limit", "runtime", "schedule"), events)
     }
 
     @Test
-    fun `cafe calibration persists account update before reschedule`() = runTest {
+    fun `cafe clear calibration sheet callback persists account update before reschedule`() = runTest {
+        val office = sheetOffice()
         val events = mutableListOf<String>()
         val updates = mutableListOf<BaRuntimePersistenceUpdate>()
         val coordinator =
@@ -109,16 +125,49 @@ class BaApMutationRescheduleTest {
                 },
                 scheduleBaApThreshold = { events += "schedule" },
             )
+        val callbacks =
+            buildBaPageSheetApMutationCallbacks(
+                office = office,
+                scope = this,
+                persistenceCoordinator = coordinator,
+            )
 
-        coordinator.persistCafeCalibration(
-            BaRuntimePersistenceUpdate(
-                cafeStoredAp = 0.0,
-                cafeApLastNotifiedLevel = -1,
-            ),
-        )
+        callbacks.onClearCafeStoredAp()
+        advanceUntilIdle()
 
         assertEquals(ACCOUNT_ID, updates.single().accountId)
         assertEquals(0.0, updates.single().cafeStoredAp)
+        assertEquals(-1, updates.single().cafeApLastNotifiedLevel)
+        assertEquals(listOf("runtime", "schedule"), events)
+    }
+
+    @Test
+    fun `cafe fill calibration sheet callback persists account update before reschedule`() = runTest {
+        val office = sheetOffice()
+        val events = mutableListOf<String>()
+        val updates = mutableListOf<BaRuntimePersistenceUpdate>()
+        val coordinator =
+            BaPageSheetApMutationPersistenceCoordinator(
+                accountIdProvider = { ACCOUNT_ID },
+                saveApLimit = {},
+                persistRuntimeUpdate = { update ->
+                    events += "runtime"
+                    updates += update
+                },
+                scheduleBaApThreshold = { events += "schedule" },
+            )
+        val callbacks =
+            buildBaPageSheetApMutationCallbacks(
+                office = office,
+                scope = this,
+                persistenceCoordinator = coordinator,
+            )
+
+        callbacks.onFillCafeStoredAp()
+        advanceUntilIdle()
+
+        assertEquals(ACCOUNT_ID, updates.single().accountId)
+        assertEquals(office.cafeStoredAp, updates.single().cafeStoredAp)
         assertEquals(-1, updates.single().cafeApLastNotifiedLevel)
         assertEquals(listOf("runtime", "schedule"), events)
     }
@@ -172,6 +221,21 @@ class BaApMutationRescheduleTest {
             persistedUpdates = persistedUpdates,
         )
     }
+
+    private fun sheetOffice(): BaOfficeController =
+        BaOfficeController(
+            snapshot =
+                BaPageSnapshot(
+                    apCurrent = 100.0,
+                    apRegenBaseMs = NOW_MS - 12 * 60_000L,
+                    apSyncMs = NOW_MS - 12 * 60_000L,
+                    apLimit = 240,
+                    cafeLevel = 10,
+                    cafeStoredAp = 50.0,
+                    cafeLastHourMs = NOW_MS,
+                ),
+            clock = TestClock,
+        )
 
     private data class ActionFixture(
         val actions: BaPageContentActions,

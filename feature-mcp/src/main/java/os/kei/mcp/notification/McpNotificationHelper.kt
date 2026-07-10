@@ -338,90 +338,155 @@ object McpNotificationHelper {
         targetBaAccountId: String? = null,
         targetRoute: String? = null,
     ): Boolean {
-        ensureChannel(context)
-        val resolvedTargetBaAccountId =
-            normalizeTargetBaAccountId(
+        val request =
+            McpStandaloneEventRequest(
                 serverName = serverName,
-                targetBaAccountId = targetBaAccountId,
-            )
-        val resolvedMiFocusOrderId =
-            resolveMiFocusOrderId(
-                serverName = serverName,
-                notificationId = notificationId,
+                running = running,
+                port = port,
+                path = path,
+                clients = clients,
+                ongoing = ongoing,
+                onlyAlertOnce = onlyAlertOnce,
+                primaryActionLabel = primaryActionLabel,
+                secondaryActionLabel = secondaryActionLabel,
+                showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
+                outerGlow = outerGlow,
+                overrideTitle = overrideTitle,
+                overrideContent = overrideContent,
+                overrideOnlineText = overrideOnlineText,
+                overrideShortText = overrideShortText,
+                overrideProgressPercent = overrideProgressPercent,
+                overrideAccentColor = overrideAccentColor,
+                deadlineAtMs = deadlineAtMs,
                 miFocusOrderId = miFocusOrderId,
+                targetBaAccountId = targetBaAccountId,
+                targetRoute = targetRoute,
             )
-        val buildResult = buildForegroundNotificationResult(
+        val prepared = prepareStandaloneEvent(
             context = context,
-            serverName = serverName,
-            running = running,
-            port = port,
-            path = path,
-            clients = clients,
-            ongoing = ongoing,
-            onlyAlertOnce = onlyAlertOnce,
-            secondaryActionMode = SecondaryActionMode.MARK_READ,
             notificationId = notificationId,
-            primaryActionLabel = primaryActionLabel,
-            secondaryActionLabelOverride = secondaryActionLabel,
-            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
-            outerGlow = outerGlow,
-            overrideTitle = overrideTitle,
-            overrideContent = overrideContent,
-            overrideOnlineText = overrideOnlineText,
-            overrideShortText = overrideShortText,
-            overrideProgressPercent = overrideProgressPercent,
-            overrideAccentColor = overrideAccentColor,
-            deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId,
-            targetBaAccountId = resolvedTargetBaAccountId,
-            targetRoute = targetRoute,
+            request = request,
         )
-        val snapshot = McpNotificationSnapshot(
-            serverName = serverName,
-            running = running,
-            port = port,
-            path = path,
-            clients = clients,
-            ongoing = ongoing,
-            onlyAlertOnce = onlyAlertOnce,
-            style = buildResult.style,
-            useXiaomiMagic = buildResult.useXiaomiMagic,
-            primaryActionLabel = primaryActionLabel,
-            secondaryActionLabel = secondaryActionLabel,
-            showSecondaryActionWhenStopped = showSecondaryActionWhenStopped,
-            outerGlow = outerGlow,
-            overrideTitle = overrideTitle,
-            overrideContent = overrideContent,
-            overrideOnlineText = overrideOnlineText,
-            overrideShortText = overrideShortText,
-            overrideProgressPercent = overrideProgressPercent,
-            overrideAccentColor = overrideAccentColor,
-            deadlineAtMs = deadlineAtMs,
-            miFocusOrderId = resolvedMiFocusOrderId,
-            targetBaAccountId = resolvedTargetBaAccountId,
-            targetRoute = targetRoute,
-        )
-        val manager = context.getSystemService(NotificationManager::class.java)
-        if (
-            McpNotificationSnapshotStore.get(notificationId) == snapshot &&
-            manager != null &&
-            isNotificationActive(manager, notificationId)
-        ) {
-            AppLogger.d(TAG) {
-                "skip identical active notification id=$notificationId server=$serverName"
-            }
-            return true
-        }
+        if (prepared.alreadyActive) return true
         val dispatched = notifyWithResolvedDispatcher(
             context = context,
             notificationId = notificationId,
-            notification = buildResult.notification,
-            useXiaomiMagic = buildResult.useXiaomiMagic
+            notification = prepared.notification,
+            useXiaomiMagic = prepared.useXiaomiMagic,
         )
         if (dispatched) {
-            McpNotificationSnapshotStore.put(notificationId, snapshot)
+            McpNotificationSnapshotStore.put(notificationId, prepared.snapshot)
         }
         return dispatched
+    }
+
+    suspend fun notifyStandaloneEventAwaitingDelivery(
+        context: Context,
+        notificationId: Int,
+        request: McpStandaloneEventRequest,
+    ): Boolean {
+        val prepared = prepareStandaloneEvent(
+            context = context,
+            notificationId = notificationId,
+            request = request,
+        )
+        if (prepared.alreadyActive) return true
+        val dispatched = dispatchStandaloneEventAwaitingDelivery(
+            context = context,
+            notificationId = notificationId,
+            notification = prepared.notification,
+            useXiaomiMagic = prepared.useXiaomiMagic,
+        )
+        if (dispatched) {
+            McpNotificationSnapshotStore.put(notificationId, prepared.snapshot)
+        }
+        return dispatched
+    }
+
+    private fun prepareStandaloneEvent(
+        context: Context,
+        notificationId: Int,
+        request: McpStandaloneEventRequest,
+    ): PreparedStandaloneEvent {
+        ensureChannel(context)
+        val resolvedTargetBaAccountId =
+            normalizeTargetBaAccountId(
+                serverName = request.serverName,
+                targetBaAccountId = request.targetBaAccountId,
+            )
+        val resolvedMiFocusOrderId =
+            resolveMiFocusOrderId(
+                serverName = request.serverName,
+                notificationId = notificationId,
+                miFocusOrderId = request.miFocusOrderId,
+            )
+        val buildResult = buildForegroundNotificationResult(
+            context = context,
+            serverName = request.serverName,
+            running = request.running,
+            port = request.port,
+            path = request.path,
+            clients = request.clients,
+            ongoing = request.ongoing,
+            onlyAlertOnce = request.onlyAlertOnce,
+            secondaryActionMode = SecondaryActionMode.MARK_READ,
+            notificationId = notificationId,
+            primaryActionLabel = request.primaryActionLabel,
+            secondaryActionLabelOverride = request.secondaryActionLabel,
+            showSecondaryActionWhenStopped = request.showSecondaryActionWhenStopped,
+            outerGlow = request.outerGlow,
+            overrideTitle = request.overrideTitle,
+            overrideContent = request.overrideContent,
+            overrideOnlineText = request.overrideOnlineText,
+            overrideShortText = request.overrideShortText,
+            overrideProgressPercent = request.overrideProgressPercent,
+            overrideAccentColor = request.overrideAccentColor,
+            deadlineAtMs = request.deadlineAtMs,
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = request.targetRoute,
+        )
+        val snapshot = McpNotificationSnapshot(
+            serverName = request.serverName,
+            running = request.running,
+            port = request.port,
+            path = request.path,
+            clients = request.clients,
+            ongoing = request.ongoing,
+            onlyAlertOnce = request.onlyAlertOnce,
+            style = buildResult.style,
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            primaryActionLabel = request.primaryActionLabel,
+            secondaryActionLabel = request.secondaryActionLabel,
+            showSecondaryActionWhenStopped = request.showSecondaryActionWhenStopped,
+            outerGlow = request.outerGlow,
+            overrideTitle = request.overrideTitle,
+            overrideContent = request.overrideContent,
+            overrideOnlineText = request.overrideOnlineText,
+            overrideShortText = request.overrideShortText,
+            overrideProgressPercent = request.overrideProgressPercent,
+            overrideAccentColor = request.overrideAccentColor,
+            deadlineAtMs = request.deadlineAtMs,
+            miFocusOrderId = resolvedMiFocusOrderId,
+            targetBaAccountId = resolvedTargetBaAccountId,
+            targetRoute = request.targetRoute,
+        )
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val alreadyActive =
+            McpNotificationSnapshotStore.get(notificationId) == snapshot &&
+                manager != null &&
+                isNotificationActive(manager, notificationId)
+        if (alreadyActive) {
+            AppLogger.d(TAG) {
+                "skip identical active notification id=$notificationId server=${request.serverName}"
+            }
+        }
+        return PreparedStandaloneEvent(
+            notification = buildResult.notification,
+            snapshot = snapshot,
+            useXiaomiMagic = buildResult.useXiaomiMagic,
+            alreadyActive = alreadyActive,
+        )
     }
 
     fun refreshStandaloneEventIfActive(
@@ -840,7 +905,7 @@ object McpNotificationHelper {
         useXiaomiMagic: Boolean
     ): Boolean {
         val dispatched = if (useXiaomiMagic) {
-            McpXiaomiMagicDispatcher.notify(
+            McpXiaomiMagicDispatcher.enqueue(
                 context = context,
                 notificationId = notificationId,
                 notification = notification

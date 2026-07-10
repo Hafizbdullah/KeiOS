@@ -71,17 +71,28 @@ class BaForegroundApReminderPersistencePolicyTest {
     }
 
     @Test
-    fun `failed expired delivery preserves anchor and last notified level`() {
-        val writes =
-            BaForegroundApReminderPersistencePolicy.deliveryWrites(
-                kind = BaApReminderKind.Ap,
-                sent = false,
-                currentDisplay = 130,
-                advanceSuppressionAnchorAfterDelivery = true,
-                nowMs = NOW_MS,
-            )
+    fun `failed Xiaomi style ordinary and cafe delivery preserve anchors and last levels`() {
+        listOf(BaApReminderKind.Ap, BaApReminderKind.CafeAp).forEach { kind ->
+            var lastNotifiedLevel = 130
+            var suppressionAnchorAtMs = NOW_MS - 3_600_000L
+            val writes =
+                BaForegroundApReminderPersistencePolicy.deliveryWrites(
+                    kind = kind,
+                    sent = false,
+                    currentDisplay = 140,
+                    advanceSuppressionAnchorAfterDelivery = true,
+                    nowMs = NOW_MS,
+                )
 
-        assertTrue(writes.isEmpty())
+            writes.forEach { write ->
+                write.lastNotifiedLevel?.let { lastNotifiedLevel = it }
+                write.suppressionAnchorAtMs?.let { suppressionAnchorAtMs = it }
+            }
+
+            assertTrue(writes.isEmpty())
+            assertEquals(130, lastNotifiedLevel)
+            assertEquals(NOW_MS - 3_600_000L, suppressionAnchorAtMs)
+        }
     }
 
     private companion object {

@@ -2,9 +2,11 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.pm.PackageManager
+import kotlinx.coroutines.CancellationException
 import os.kei.R
 import os.kei.core.log.AppLogger
 import os.kei.mcp.notification.McpNotificationHelper
+import os.kei.mcp.notification.McpStandaloneEventRequest
 import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.ui.page.main.ba.support.BaAccountId
 
@@ -57,5 +59,59 @@ internal object BaCafeApNotificationDispatcher {
         }.onFailure { throwable ->
             AppLogger.e(TAG, "send failed id=$notificationId", throwable)
         }.getOrDefault(false)
+    }
+
+    suspend fun sendAwaitingDelivery(
+        context: Context,
+        currentDisplay: Int,
+        limitDisplay: Int,
+        thresholdDisplay: Int,
+        notificationId: Int = McpNotificationHelper.BA_CAFE_AP_NOTIFICATION_ID,
+        accountDisplayName: String = "",
+        accountId: BaAccountId? = null,
+    ): Boolean {
+        val notificationsGranted =
+            context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (!notificationsGranted) {
+            AppLogger.w(TAG) { "skip cafe AP notification: permission missing id=$notificationId" }
+            return false
+        }
+
+        return try {
+            val content = context.getString(
+                R.string.ba_cafe_ap_notification_content,
+                currentDisplay,
+                thresholdDisplay.toString(),
+                limitDisplay,
+            )
+            McpNotificationHelper.notifyStandaloneEventAwaitingDelivery(
+                context = context,
+                notificationId = notificationId,
+                request =
+                    McpStandaloneEventRequest(
+                        serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
+                        running = true,
+                        port = currentDisplay,
+                        path = thresholdDisplay.toString(),
+                        clients = limitDisplay,
+                        overrideContent =
+                            baAccountNotificationContent(
+                                context = context,
+                                accountDisplayName = accountDisplayName,
+                                content = content,
+                            ),
+                        targetBaAccountId = accountId?.value,
+                    ),
+            ).also { sent ->
+                AppLogger.i(TAG) {
+                    "awaited send result=$sent id=$notificationId current=$currentDisplay limit=$limitDisplay account=${accountId?.value.orEmpty()}"
+                }
+            }
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            AppLogger.e(TAG, "awaited send failed id=$notificationId", throwable)
+            false
+        }
     }
 }

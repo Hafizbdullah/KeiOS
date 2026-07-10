@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import com.kyant.backdrop.Backdrop
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
@@ -51,6 +52,54 @@ internal class BaPageSheetApMutationPersistenceCoordinator(
     }
 }
 
+internal data class BaPageSheetApMutationCallbacks(
+    val onSaveApLimit: () -> Unit,
+    val onClearCafeStoredAp: () -> Unit,
+    val onFillCafeStoredAp: () -> Unit,
+)
+
+internal fun buildBaPageSheetApMutationCallbacks(
+    office: BaOfficeController,
+    scope: CoroutineScope,
+    persistenceCoordinator: BaPageSheetApMutationPersistenceCoordinator,
+): BaPageSheetApMutationCallbacks {
+    fun persistCafeCalibration(update: BaRuntimePersistenceUpdate) {
+        scope.launch {
+            persistenceCoordinator.persistCafeCalibration(update)
+        }
+        office.cafeStoredApInput = office.displayCafeStoredApInputText()
+    }
+
+    return BaPageSheetApMutationCallbacks(
+        onSaveApLimit = {
+            val finalValue =
+                office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
+                    ?: office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX)
+            val limitUpdate = office.updateApLimit(finalValue)
+            val regenRuntimeUpdate = office.applyApRegen()
+            val runtimeUpdate =
+                if (limitUpdate.runtimeUpdate != null && regenRuntimeUpdate != null) {
+                    limitUpdate.runtimeUpdate.mergedWith(regenRuntimeUpdate)
+                } else {
+                    limitUpdate.runtimeUpdate ?: regenRuntimeUpdate
+                }
+            office.apLimitInput = limitUpdate.limit.toString()
+            scope.launch {
+                persistenceCoordinator.persistApLimit(
+                    limit = limitUpdate.limit,
+                    runtimeUpdate = runtimeUpdate,
+                )
+            }
+        },
+        onClearCafeStoredAp = {
+            persistCafeCalibration(office.clearCafeStoredAp())
+        },
+        onFillCafeStoredAp = {
+            persistCafeCalibration(office.fillCafeStoredAp())
+        },
+    )
+}
+
 @Composable
 internal fun BaPageSheetHost(
     backdrop: Backdrop?,
@@ -83,39 +132,17 @@ internal fun BaPageSheetHost(
                 AppBackgroundScheduler.scheduleBaApThreshold(context)
             },
         )
+    val apMutationCallbacks =
+        buildBaPageSheetApMutationCallbacks(
+            office = office,
+            scope = sheetScope,
+            persistenceCoordinator = apMutationPersistenceCoordinator,
+        )
 
     LaunchedEffect(routeState.showApLimitToolsSheet) {
         if (routeState.showApLimitToolsSheet) {
             office.apLimitInput = office.apLimit.toString()
         }
-    }
-
-    fun persistApLimitInput() {
-        val finalValue =
-            office.apLimitInput.toIntOrNull()?.coerceIn(0, BA_AP_LIMIT_MAX)
-                ?: office.apLimit.coerceIn(0, BA_AP_LIMIT_MAX)
-        val limitUpdate = office.updateApLimit(finalValue)
-        val regenRuntimeUpdate = office.applyApRegen()
-        val runtimeUpdate =
-            if (limitUpdate.runtimeUpdate != null && regenRuntimeUpdate != null) {
-                limitUpdate.runtimeUpdate.mergedWith(regenRuntimeUpdate)
-            } else {
-                limitUpdate.runtimeUpdate ?: regenRuntimeUpdate
-        }
-        office.apLimitInput = limitUpdate.limit.toString()
-        sheetScope.launch {
-            apMutationPersistenceCoordinator.persistApLimit(
-                limit = limitUpdate.limit,
-                runtimeUpdate = runtimeUpdate,
-            )
-        }
-    }
-
-    fun persistCafeStoredApCalibration(update: BaRuntimePersistenceUpdate) {
-        sheetScope.launch {
-            apMutationPersistenceCoordinator.persistCafeCalibration(update)
-        }
-        office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }
 
     fun persistCooldown(update: BaOfficeCooldownPersistenceUpdate?) {
@@ -258,7 +285,7 @@ internal fun BaPageSheetHost(
             office.apLimitInput = input
         },
         onSaveApLimit = {
-            persistApLimitInput()
+            apMutationCallbacks.onSaveApLimit()
             viewModel.hideApLimitToolsSheet()
         },
         onDismissRequest = viewModel::hideApLimitToolsSheet,
@@ -270,12 +297,8 @@ internal fun BaPageSheetHost(
         cafeStoredAp = office.cafeStoredAp,
         cafeLastHourMs = office.cafeLastHourMs,
         uiMinuteMs = uiNowMsProvider(),
-        onClearCafeStoredAp = {
-            persistCafeStoredApCalibration(office.clearCafeStoredAp())
-        },
-        onFillCafeStoredAp = {
-            persistCafeStoredApCalibration(office.fillCafeStoredAp())
-        },
+        onClearCafeStoredAp = apMutationCallbacks.onClearCafeStoredAp,
+        onFillCafeStoredAp = apMutationCallbacks.onFillCafeStoredAp,
         onDismissRequest = viewModel::hideCafeApToolsSheet,
     )
     BaCafeCooldownEditSheet(

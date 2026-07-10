@@ -147,6 +147,44 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
+    fun `failed Xiaomi style foreground delivery preserves last level and anchor`() = runTest {
+        val initialAnchor = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS
+        val request =
+            request(
+                lastNotifiedLevel = 120,
+                keepReadUntilBelowThreshold = false,
+                suppressionAnchorAtMs = initialAnchor,
+            ).copy(accountId = BaAccountId("cn-main"))
+        val office =
+            BaOfficeController(
+                BaPageSnapshot(
+                    apLastNotifiedLevel = 120,
+                    apSuppressionAnchorAtMs = initialAnchor,
+                ),
+            )
+        val anchorWriter = RecordingAnchorWriter(mutableListOf())
+
+        val result =
+            BaApNotificationSyncCoordinator.sync(
+                request = request,
+                nowMs = NOW_MS,
+                delivery = FixedDelivery(sent = false),
+            )
+
+        assertNull(result.lastNotifiedLevel)
+        assertNull(result.suppressionAnchorAtMs)
+        persistBaForegroundApSyncResult(
+            request = request,
+            result = result,
+            office = office,
+            anchorWriter = anchorWriter,
+        ) {}
+        assertEquals(120, office.apLastNotifiedLevel)
+        assertEquals(initialAnchor, office.apSuppressionAnchorAtMs)
+        assertTrue(anchorWriter.writes.isEmpty())
+    }
+
+    @Test
     fun `cancellation after delivery still commits anchor and syncs office state`() = runTest {
         val accountId = BaAccountId("cn-main")
         val office = BaOfficeController(BaPageSnapshot(apSuppressionAnchorAtMs = 1L))
