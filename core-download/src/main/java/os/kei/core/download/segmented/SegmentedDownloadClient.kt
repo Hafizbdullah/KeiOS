@@ -156,15 +156,15 @@ class SegmentedDownloadClient(
     ) {
         while (true) {
             currentCoroutineContext().ensureActive()
-            val part = scheduler.nextPart(workerId)
-            if (part == null) {
+            val active = scheduler.nextPart(workerId)
+            if (active == null) {
                 if (scheduler.hasInFlight()) {
                     delay(scheduler.idlePollMs)
                     continue
                 }
                 return
             }
-            val active = scheduler.activate(workerId = workerId, part = part)
+            val part = active.part
             val startedNs = System.nanoTime()
             val outcome = runCatching {
                 downloadPart(
@@ -518,23 +518,17 @@ private class PartialPartDownloadException(
 private class SlowConnectionDownloadException : IOException("slow connection")
 
 private const val MIN_DYNAMIC_PARALLEL_PART_BYTES = 512L * 1024L
-private const val ANDROID_MIN_STEAL_PART_BYTES = 2L * 1024L * 1024L
 private const val PIKO_REQUEUE_BUDGET_MULTIPLIER = 4
 private const val PIKO_MIN_REQUEUE_BUDGET = 8
 
 internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTuning =
     when (this) {
-        SegmentedDownloadSpeedProfile.Balanced ->
-            PartSchedulerTuning(
-                minStealPartSizeBytes = ANDROID_MIN_STEAL_PART_BYTES,
-            )
+        SegmentedDownloadSpeedProfile.Balanced -> PartSchedulerTuning()
 
         SegmentedDownloadSpeedProfile.ForegroundBoost ->
             PartSchedulerTuning(
                 minDynamicPartSizeBytes = 256L * 1024L,
                 minTailPartSizeBytes = 64L * 1024L,
-                minStealPartSizeBytes = 64L * 1024L,
-                minStealAgeMs = 80L,
                 partSizeTargetDurationMs = 10_000L,
                 idlePollMs = 30L,
             )

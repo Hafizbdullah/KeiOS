@@ -2,10 +2,9 @@ package os.kei.core.download.segmented
 
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.assertNull
 
 class PartSchedulerTest {
     @Test
@@ -18,9 +17,16 @@ class PartSchedulerTest {
             tuning = testTuning,
         )
 
-        assertEquals(DownloadPart(start = 0, endInclusive = 9), scheduler.nextPart(workerId = 0))
-        assertEquals(DownloadPart(start = 190, endInclusive = 199), scheduler.nextPart(workerId = 1))
-        assertEquals(DownloadPart(start = 10, endInclusive = 19), scheduler.nextPart(workerId = 0))
+        val first = assertNotNull(scheduler.nextPart(workerId = 0))
+        assertEquals(DownloadPart(start = 0, endInclusive = 9), first.part)
+        scheduler.finish(workerId = 0, active = first)
+
+        val second = assertNotNull(scheduler.nextPart(workerId = 1))
+        assertEquals(DownloadPart(start = 190, endInclusive = 199), second.part)
+        scheduler.finish(workerId = 1, active = second)
+
+        val third = assertNotNull(scheduler.nextPart(workerId = 0))
+        assertEquals(DownloadPart(start = 10, endInclusive = 19), third.part)
     }
 
     @Test
@@ -33,9 +39,16 @@ class PartSchedulerTest {
             tuning = testTuning.copy(tailPartsPerConnection = 2),
         )
 
-        assertEquals(DownloadPart(start = 0, endInclusive = 4), scheduler.nextPart(workerId = 0))
-        assertEquals(DownloadPart(start = 16, endInclusive = 19), scheduler.nextPart(workerId = 1))
-        assertEquals(DownloadPart(start = 5, endInclusive = 7), scheduler.nextPart(workerId = 0))
+        val first = assertNotNull(scheduler.nextPart(workerId = 0))
+        assertEquals(DownloadPart(start = 0, endInclusive = 4), first.part)
+        scheduler.finish(workerId = 0, active = first)
+
+        val second = assertNotNull(scheduler.nextPart(workerId = 1))
+        assertEquals(DownloadPart(start = 16, endInclusive = 19), second.part)
+        scheduler.finish(workerId = 1, active = second)
+
+        val third = assertNotNull(scheduler.nextPart(workerId = 0))
+        assertEquals(DownloadPart(start = 5, endInclusive = 7), third.part)
     }
 
     @Test
@@ -52,102 +65,71 @@ class PartSchedulerTest {
         )
 
         val first = assertNotNull(scheduler.nextPart(workerId = 0))
-        assertEquals(DownloadPart(start = 0, endInclusive = 9), first)
+        assertEquals(DownloadPart(start = 0, endInclusive = 9), first.part)
 
-        scheduler.record(workerId = 0, bytes = first.length, elapsedMs = 100)
+        scheduler.finish(workerId = 0, active = first)
+        scheduler.record(workerId = 0, bytes = first.part.length, elapsedMs = 100)
 
-        assertEquals(DownloadPart(start = 600, endInclusive = 999), scheduler.nextPart(workerId = 0))
+        assertEquals(
+            DownloadPart(start = 600, endInclusive = 999),
+            assertNotNull(scheduler.nextPart(workerId = 0)).part,
+        )
     }
 
     @Test
-    fun `idle worker splits remaining bytes from active part`() = runBlocking {
+    fun `idle worker waits while remaining bytes belong to active part`() = runBlocking {
         val scheduler = PartScheduler(
             totalBytes = 500,
             initialPartSizeBytes = 500,
             maxRetriesPerPart = 2,
             concurrency = 2,
             tuning = testTuning.copy(
-                minStealAgeMs = 0,
-                minStealPartSizeBytes = 10,
                 tailWindowInitialMultiplier = 0,
             ),
             nowMs = { 1_000L },
         )
-        val part = assertNotNull(scheduler.nextPart(workerId = 0))
-        val active = scheduler.activate(workerId = 0, part = part)
+        val active = assertNotNull(scheduler.nextPart(workerId = 0))
         active.advanceTo(100)
 
-        assertEquals(DownloadPart(start = 300, endInclusive = 499, retryCount = 1), scheduler.nextPart(workerId = 1))
-        assertEquals(299, active.currentEndInclusive())
+        assertNull(scheduler.nextPart(workerId = 1))
+        assertEquals(499, active.currentEndInclusive())
+        assertEquals(
+            PartSchedulerStats(retryCount = 0, stealCount = 0, handoffCount = 0),
+            scheduler.stats(),
+        )
     }
 
     @Test
-    fun `idle worker cancels active attempt when handing off remaining bytes`() = runBlocking {
-        val cancelled = AtomicBoolean(false)
+    fun `scheduler starts four workers and grows after a successful part`() = runBlocking {
         val scheduler = PartScheduler(
-            totalBytes = 100,
+            totalBytes = 1_200,
             initialPartSizeBytes = 100,
             maxRetriesPerPart = 2,
-            concurrency = 2,
-            tuning = testTuning.copy(
-                minStealAgeMs = 0,
-                minStealPartSizeBytes = 64,
-                tailWindowInitialMultiplier = 0,
-            ),
-            nowMs = { 1_000L },
+            concurrency = 6,
+            tuning = testTuning.copy(tailWindowInitialMultiplier = 0),
         )
-        val part = assertNotNull(scheduler.nextPart(workerId = 0))
-        val active = scheduler.activate(workerId = 0, part = part)
-        active.setCancelAttempt { cancelled.set(true) }
-        active.advanceTo(10)
+        val active = (0 until 4).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
 
-        assertEquals(DownloadPart(start = 10, endInclusive = 99, retryCount = 1), scheduler.nextPart(workerId = 1))
-        assertEquals(9, active.currentEndInclusive())
-        assertTrue(active.isComplete())
-        assertTrue(cancelled.get())
-    }
+        assertNull(scheduler.nextPart(workerId = 4))
 
-    @Test
-    fun `foreground boost profile hands off smaller remaining ranges`() = runBlocking {
-        val cancelled = AtomicBoolean(false)
-        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
-        val totalBytes = 4 * 1024L * 1024L
-        val handoffStart = totalBytes - 80L * 1024L
-        val scheduler = PartScheduler(
-            totalBytes = totalBytes,
-            initialPartSizeBytes = totalBytes,
-            maxRetriesPerPart = 2,
-            concurrency = 2,
-            tuning = tuning.copy(
-                minStealAgeMs = 0,
-                tailWindowInitialMultiplier = 0,
-            ),
-            nowMs = { 1_000L },
+        val completed = active.first()
+        scheduler.finish(workerId = 0, active = completed)
+        scheduler.record(
+            workerId = 0,
+            bytes = completed.part.length,
+            elapsedMs = 100,
         )
-        val part = assertNotNull(scheduler.nextPart(workerId = 0))
-        val active = scheduler.activate(workerId = 0, part = part)
-        active.setCancelAttempt { cancelled.set(true) }
-        active.advanceTo(handoffStart)
 
-        assertEquals(
-            DownloadPart(
-                start = handoffStart,
-                endInclusive = totalBytes - 1L,
-                retryCount = 1,
-            ),
-            scheduler.nextPart(workerId = 1),
-        )
-        assertEquals(handoffStart - 1L, active.currentEndInclusive())
-        assertTrue(active.isComplete())
-        assertTrue(cancelled.get())
+        assertNotNull(scheduler.nextPart(workerId = 4))
+        Unit
     }
 
     private companion object {
         val testTuning = PartSchedulerTuning(
             minDynamicPartSizeBytes = 1,
             minTailPartSizeBytes = 1,
-            minStealPartSizeBytes = 1,
-            minStealAgeMs = 0,
         )
     }
 }

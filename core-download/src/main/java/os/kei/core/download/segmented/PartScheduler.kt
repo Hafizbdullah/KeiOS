@@ -23,8 +23,7 @@ internal data class PartSchedulerTuning(
     val tailWindowMinDynamicMultiplier: Int = 2,
     val speedSmoothFactor: Double = 0.35,
     val partSizeTargetDurationMs: Long = 16_000L,
-    val minStealPartSizeBytes: Long = 64L * 1024L,
-    val minStealAgeMs: Long = 200L,
+    val startupActiveConnections: Int = 4,
     val idlePollMs: Long = 50L,
 ) {
     init {
@@ -36,8 +35,7 @@ internal data class PartSchedulerTuning(
         require(tailWindowMinDynamicMultiplier >= 0) { "tailWindowMinDynamicMultiplier cannot be negative" }
         require(speedSmoothFactor in 0.0..1.0) { "speedSmoothFactor must be between 0 and 1" }
         require(partSizeTargetDurationMs > 0L) { "partSizeTargetDurationMs must be positive" }
-        require(minStealPartSizeBytes > 0L) { "minStealPartSizeBytes must be positive" }
-        require(minStealAgeMs >= 0L) { "minStealAgeMs cannot be negative" }
+        require(startupActiveConnections > 0) { "startupActiveConnections must be positive" }
         require(idlePollMs > 0L) { "idlePollMs must be positive" }
     }
 }
@@ -49,20 +47,19 @@ internal class ActiveDownloadPart internal constructor(
 ) {
     private val lock = Any()
     private var nextOffset: Long = part.start
-    private var endInclusive: Long = part.endInclusive
     private var cancelAttempt: (() -> Unit)? = null
 
     fun currentOffset(): Long =
         synchronized(lock) { nextOffset }
 
     fun currentEndInclusive(): Long =
-        synchronized(lock) { endInclusive }
+        part.endInclusive
 
     fun completedBytes(): Long =
         synchronized(lock) { (nextOffset - part.start).coerceAtLeast(0L) }
 
     fun isComplete(): Boolean =
-        synchronized(lock) { nextOffset > endInclusive }
+        synchronized(lock) { nextOffset > part.endInclusive }
 
     fun advanceTo(offset: Long) {
         synchronized(lock) {
@@ -95,62 +92,15 @@ internal class ActiveDownloadPart internal constructor(
         writer: (position: Long, byteCount: Int) -> Unit,
     ): Int =
         synchronized(lock) {
-            if (nextOffset > endInclusive) return@synchronized 0
-            val writable = min(byteCount.toLong(), endInclusive - nextOffset + 1L).toInt()
+            if (nextOffset > part.endInclusive) return@synchronized 0
+            val writable = min(byteCount.toLong(), part.endInclusive - nextOffset + 1L).toInt()
             if (writable <= 0) return@synchronized 0
             val position = nextOffset
             writer(position, writable)
             nextOffset += writable
             writable
         }
-
-    internal fun remainingSnapshot(): ActivePartRemaining =
-        synchronized(lock) {
-            ActivePartRemaining(
-                offset = nextOffset,
-                endInclusive = endInclusive,
-                remainingBytes = (endInclusive - nextOffset + 1L).coerceAtLeast(0L),
-            )
-        }
-
-    internal fun splitForSteal(minStealPartSizeBytes: Long): StolenDownloadPart? {
-        var shouldCancel = false
-        val stolen =
-            synchronized(lock) {
-                val remaining = endInclusive - nextOffset + 1L
-                if (remaining < minStealPartSizeBytes) return@synchronized null
-                val oldEnd = endInclusive
-                val handoff = remaining < minStealPartSizeBytes * 2L
-                val stolenStart = if (handoff) nextOffset else nextOffset + remaining / 2L
-                endInclusive = stolenStart - 1L
-                shouldCancel = handoff
-                DownloadPart(
-                    start = stolenStart,
-                    endInclusive = oldEnd,
-                    retryCount = part.retryCount + 1,
-                )
-            }
-                ?: return null
-        if (shouldCancel) {
-            cancelAttempt()
-        }
-        return StolenDownloadPart(
-            part = stolen,
-            handoff = shouldCancel,
-        )
-    }
 }
-
-internal data class ActivePartRemaining(
-    val offset: Long,
-    val endInclusive: Long,
-    val remainingBytes: Long,
-)
-
-internal data class StolenDownloadPart(
-    val part: DownloadPart,
-    val handoff: Boolean,
-)
 
 internal data class PartSchedulerStats(
     val retryCount: Int,
@@ -174,12 +124,12 @@ internal class PartScheduler(
     private val workerSpeedBytesPerMs = DoubleArray(concurrency)
     private val workerPartSizeBytes = LongArray(concurrency) { initialPartSizeBytes }
     private val maxDynamicPartSizeBytes: Long
+    private var activeCount = 0
+    private var maxActive = min(concurrency, tuning.startupActiveConnections)
     private var front = 0L
     private var back = totalBytes - 1L
     private var sequence = 0
     private var retryCount = 0
-    private var stealCount = 0
-    private var handoffCount = 0
 
     init {
         require(totalBytes > 0L) { "totalBytes must be positive" }
@@ -196,31 +146,25 @@ internal class PartScheduler(
     val idlePollMs: Long
         get() = tuning.idlePollMs
 
-    suspend fun nextPart(workerId: Int = 0): DownloadPart? =
+    suspend fun nextPart(workerId: Int = 0): ActiveDownloadPart? =
         mutex.withLock {
+            if (workerId !in activeParts.indices) return@withLock null
+            if (activeParts[workerId] != null || activeCount >= maxActive) return@withLock null
             moveReadyDelayedLocked()
-            if (queue.isNotEmpty()) {
-                return@withLock queue.removeLast()
-            }
-            if (front > back) {
-                return@withLock splitLargestActiveLocked(workerId)
-            }
-            allocateNextPartLocked(workerId)
-        }
-
-    suspend fun activate(
-        workerId: Int,
-        part: DownloadPart,
-    ): ActiveDownloadPart =
-        mutex.withLock {
+            val part =
+                when {
+                    queue.isNotEmpty() -> queue.removeLast()
+                    front <= back -> allocateNextPartLocked(workerId)
+                    else -> null
+                }
+                    ?: return@withLock null
             val active = ActiveDownloadPart(
                 workerId = workerId,
                 part = part,
                 startedMs = nowMs(),
             )
-            if (workerId in activeParts.indices) {
-                activeParts[workerId] = active
-            }
+            activeParts[workerId] = active
+            activeCount += 1
             active
         }
 
@@ -231,6 +175,7 @@ internal class PartScheduler(
         mutex.withLock {
             if (workerId in activeParts.indices && activeParts[workerId] === active) {
                 activeParts[workerId] = null
+                activeCount = (activeCount - 1).coerceAtLeast(0)
             }
         }
     }
@@ -285,6 +230,9 @@ internal class PartScheduler(
                 }
             adjustPartSizeLocked(workerId, bytes, elapsedMs)
             workerDone[workerId] += 1
+            if (maxActive < concurrency) {
+                maxActive += 1
+            }
         }
     }
 
@@ -300,8 +248,8 @@ internal class PartScheduler(
         mutex.withLock {
             PartSchedulerStats(
                 retryCount = retryCount,
-                stealCount = stealCount,
-                handoffCount = handoffCount,
+                stealCount = 0,
+                handoffCount = 0,
             )
         }
 
@@ -337,34 +285,6 @@ internal class PartScheduler(
             maxPartSize = initialPartSizeBytes,
             minPartSize = tuning.minTailPartSizeBytes,
         )
-    }
-
-    private fun splitLargestActiveLocked(workerId: Int): DownloadPart? {
-        val now = nowMs()
-        val chosen = activeParts
-            .withIndex()
-            .asSequence()
-            .filter { (index, active) -> index != workerId && active != null }
-            .mapNotNull { (_, active) ->
-                active ?: return@mapNotNull null
-                val ageMs = now - active.startedMs
-                val remaining = active.remainingSnapshot()
-                if (ageMs < tuning.minStealAgeMs || remaining.remainingBytes < tuning.minStealPartSizeBytes) {
-                    null
-                } else {
-                    active to remaining.remainingBytes
-                }
-            }
-            .maxByOrNull { it.second }
-            ?.first
-            ?: return null
-
-        val stolen = chosen.splitForSteal(tuning.minStealPartSizeBytes) ?: return null
-        stealCount += 1
-        if (stolen.handoff) {
-            handoffCount += 1
-        }
-        return stolen.part
     }
 
     private fun enqueueRetryChunksLocked(part: DownloadPart) {

@@ -348,9 +348,9 @@ class SegmentedDownloadClientTest {
     }
 
     @Test
-    fun `idle worker hands off slow active range tail`() = runBlocking {
-        val partSizeBytes = 3L * 1024L * 1024L
-        val bytes = ByteArray((30L * 1024L * 1024L).toInt()) { (it % 251).toByte() }
+    fun `slow active range keeps ownership until completion`() = runBlocking {
+        val partSizeBytes = 512L * 1024L
+        val bytes = ByteArray((2L * 1024L * 1024L).toInt()) { (it % 251).toByte() }
         MockWebServer().use { server ->
             val throttledOnce = AtomicBoolean(true)
             server.dispatcher = object : Dispatcher() {
@@ -362,7 +362,7 @@ class SegmentedDownloadClientTest {
                         range == "bytes=0-${partSizeBytes - 1L}" &&
                         throttledOnce.compareAndSet(true, false)
                     ) {
-                        response.throttleBody(16L * 1024L, 100, TimeUnit.MILLISECONDS)
+                        response.throttleBody(32L * 1024L, 20, TimeUnit.MILLISECONDS)
                     } else {
                         response
                     }
@@ -380,8 +380,8 @@ class SegmentedDownloadClientTest {
             )
 
             assertContentEquals(bytes, outputFile.readBytes())
-            assertTrue(result.stealCount > 0, "steal=${result.stealCount} handoff=${result.handoffCount}")
-            assertTrue(result.handoffCount > 0, "steal=${result.stealCount} handoff=${result.handoffCount}")
+            assertEquals(0, result.stealCount)
+            assertEquals(0, result.handoffCount)
         }
     }
 
