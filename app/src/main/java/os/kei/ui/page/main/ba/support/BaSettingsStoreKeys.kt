@@ -12,6 +12,8 @@ internal const val KEY_CAFE_AP_LAST_NOTIFIED_LEVEL = "cafe_ap_last_notified_leve
 internal const val KEY_AP_LIMIT = "ap_limit"
 internal const val KEY_AP_NOTIFY_ENABLED = "ap_notify_enabled"
 internal const val KEY_AP_NOTIFY_THRESHOLD = "ap_notify_threshold"
+internal const val KEY_KEEP_AP_REMINDERS_READ_UNTIL_BELOW_THRESHOLD =
+    "keep_ap_reminders_read_until_below_threshold"
 internal const val KEY_AP_LAST_NOTIFIED_LEVEL = "ap_last_notified_level"
 internal const val KEY_ARENA_REFRESH_NOTIFY_ENABLED = "arena_refresh_notify_enabled"
 internal const val KEY_ARENA_REFRESH_LAST_NOTIFIED_SLOT_MS = "arena_refresh_last_notified_slot_ms"

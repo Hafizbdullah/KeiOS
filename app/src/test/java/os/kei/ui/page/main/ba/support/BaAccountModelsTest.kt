@@ -2,6 +2,8 @@ package os.kei.ui.page.main.ba.support
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class BaAccountModelsTest {
     @Test
@@ -65,5 +67,21 @@ class BaAccountModelsTest {
         val normalized = runtime.normalized()
 
         assertEquals(cafeStorageCap(1), normalized.cafeStoredAp)
+    }
+
+    @Test
+    fun `global reminder settings default persistent AP read suppression on`() {
+        assertTrue(BaGlobalReminderSettings().keepApRemindersReadUntilBelowThreshold)
+    }
+
+    @Test
+    fun `account reminder override preserves AP read suppression mode`() {
+        val accountId = BaAccountId("cn-main")
+        val override =
+            BaGlobalReminderSettings(
+                keepApRemindersReadUntilBelowThreshold = false,
+            ).toAccountReminderOverride(accountId)
+
+        assertFalse(override.keepApRemindersReadUntilBelowThreshold)
     }
 }

@@ -18,6 +18,7 @@ internal data class BaPageSnapshot(
     val apSyncMs: Long = 0L,
     val apNotifyEnabled: Boolean = false,
     val apNotifyThreshold: Int = 120,
+    val keepApRemindersReadUntilBelowThreshold: Boolean = true,
     val apLastNotifiedLevel: Int = -1,
     val arenaRefreshNotifyEnabled: Boolean = false,
     val arenaRefreshLastNotifiedSlotMs: Long = 0L,

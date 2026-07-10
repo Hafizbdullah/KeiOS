@@ -177,6 +177,11 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
+    fun saveGlobalReminderSettings(settings: BaGlobalReminderSettings) {
+        migratedAccountStore().saveGlobalReminderSettings(settings)
+        notifyChanged()
+    }
+
     fun saveAccountEnabled(
         accountId: BaAccountId,
         enabled: Boolean,

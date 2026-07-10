@@ -103,6 +103,39 @@ class BaAccountSnapshotMapperTest {
     }
 
     @Test
+    fun `custom account override maps AP read suppression mode to snapshot`() {
+        val accountId = BaAccountId("account-custom")
+        val account =
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = accountId,
+                        serverIndex = 1,
+                        displayName = "Custom",
+                        nickname = "Custom",
+                        friendCode = "CUSTOM01",
+                        notificationMode = BaAccountNotificationMode.Custom,
+                    ),
+                reminderOverride =
+                    BaAccountReminderOverride(
+                        accountId = accountId,
+                        keepApRemindersReadUntilBelowThreshold = false,
+                    ),
+            )
+        val state =
+            BaAccountStoreSnapshot(
+                accounts = listOf(account),
+                activeAccountId = accountId,
+                allAccountsFollowGlobalNotificationSettings = false,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+
+        val snapshot = BaPageSnapshot().withActiveBaAccount(state)
+
+        assertFalse(snapshot.keepApRemindersReadUntilBelowThreshold)
+    }
+
+    @Test
     fun `friend code sanitizer keeps uppercase letters for default server policy`() {
         assertEquals("ABCDARIS", normalizeBaAccountFriendCodeInput("a1-b2 c3_d4 arisu"))
         assertEquals("ABCDARIS", sanitizeBaAccountFriendCode("a1-b2 c3_d4 arisu"))

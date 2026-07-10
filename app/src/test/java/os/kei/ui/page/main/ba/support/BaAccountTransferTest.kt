@@ -24,6 +24,7 @@ class BaAccountTransferTest {
                         apNotifyThreshold = 120,
                         cafeApNotifyEnabled = true,
                         cafeApNotifyThreshold = 80,
+                        keepApRemindersReadUntilBelowThreshold = false,
                     ),
             )
 
@@ -36,6 +37,7 @@ class BaAccountTransferTest {
         assertFalse(parsed.allAccountsFollowGlobalNotificationSettings)
         assertTrue(parsed.globalReminderSettings.apNotifyEnabled)
         assertEquals(120, parsed.globalReminderSettings.apNotifyThreshold)
+        assertFalse(parsed.globalReminderSettings.keepApRemindersReadUntilBelowThreshold)
         assertEquals(listOf("cn-main", "cn-alt"), parsed.accounts.map { it.profile.id.value })
     }
 

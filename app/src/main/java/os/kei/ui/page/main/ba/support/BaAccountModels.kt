@@ -52,6 +52,7 @@ internal data class BaGlobalReminderSettings(
     val apNotifyThreshold: Int = DEFAULT_AP_NOTIFY_THRESHOLD,
     val cafeApNotifyEnabled: Boolean = false,
     val cafeApNotifyThreshold: Int = DEFAULT_CAFE_AP_NOTIFY_THRESHOLD,
+    val keepApRemindersReadUntilBelowThreshold: Boolean = true,
     val arenaRefreshNotifyEnabled: Boolean = false,
     val cafeVisitNotifyEnabled: Boolean = false,
 )
@@ -63,6 +64,7 @@ internal data class BaAccountReminderOverride(
     val apNotifyThreshold: Int = DEFAULT_AP_NOTIFY_THRESHOLD,
     val cafeApNotifyEnabled: Boolean = false,
     val cafeApNotifyThreshold: Int = DEFAULT_CAFE_AP_NOTIFY_THRESHOLD,
+    val keepApRemindersReadUntilBelowThreshold: Boolean = true,
     val arenaRefreshNotifyEnabled: Boolean = false,
     val cafeVisitNotifyEnabled: Boolean = false,
 )
@@ -225,6 +227,7 @@ internal fun BaAccountRecord.effectiveReminderSettings(
                     apNotifyThreshold = it.apNotifyThreshold,
                     cafeApNotifyEnabled = it.cafeApNotifyEnabled,
                     cafeApNotifyThreshold = it.cafeApNotifyThreshold,
+                    keepApRemindersReadUntilBelowThreshold = it.keepApRemindersReadUntilBelowThreshold,
                     arenaRefreshNotifyEnabled = it.arenaRefreshNotifyEnabled,
                     cafeVisitNotifyEnabled = it.cafeVisitNotifyEnabled,
                 )
@@ -240,6 +243,7 @@ internal fun BaGlobalReminderSettings.toAccountReminderOverride(accountId: BaAcc
         apNotifyThreshold = normalized.apNotifyThreshold,
         cafeApNotifyEnabled = normalized.cafeApNotifyEnabled,
         cafeApNotifyThreshold = normalized.cafeApNotifyThreshold,
+        keepApRemindersReadUntilBelowThreshold = normalized.keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = normalized.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = normalized.cafeVisitNotifyEnabled,
     )

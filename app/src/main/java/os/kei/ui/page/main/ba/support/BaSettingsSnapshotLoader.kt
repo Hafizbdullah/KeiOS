@@ -60,6 +60,8 @@ internal fun loadBaSettingsSnapshot(store: MMKV): BaPageSnapshot {
                     KEY_AP_NOTIFY_THRESHOLD,
                     DEFAULT_AP_NOTIFY_THRESHOLD,
                 ).coerceIn(0, BA_AP_MAX),
+        keepApRemindersReadUntilBelowThreshold =
+            store.decodeBool(KEY_KEEP_AP_REMINDERS_READ_UNTIL_BELOW_THRESHOLD, true),
         apLastNotifiedLevel = store.decodeInt(KEY_AP_LAST_NOTIFIED_LEVEL, -1).coerceIn(-1, BA_AP_MAX),
         arenaRefreshNotifyEnabled = store.decodeBool(KEY_ARENA_REFRESH_NOTIFY_ENABLED, false),
         arenaRefreshLastNotifiedSlotMs =

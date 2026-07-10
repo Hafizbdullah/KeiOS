@@ -38,6 +38,7 @@ internal fun BaPageSnapshot.withBaAccount(
         apSyncMs = runtime.apSyncMs,
         apNotifyEnabled = reminderSettings.apNotifyEnabled,
         apNotifyThreshold = reminderSettings.apNotifyThreshold,
+        keepApRemindersReadUntilBelowThreshold = reminderSettings.keepApRemindersReadUntilBelowThreshold,
         apLastNotifiedLevel = reminderRuntime.apLastNotifiedLevel,
         arenaRefreshNotifyEnabled = reminderSettings.arenaRefreshNotifyEnabled,
         arenaRefreshLastNotifiedSlotMs = reminderRuntime.arenaRefreshLastNotifiedSlotMs,

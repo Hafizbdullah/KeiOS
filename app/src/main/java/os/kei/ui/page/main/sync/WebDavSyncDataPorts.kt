@@ -40,6 +40,8 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.buildBaAccountsSyncFingerprintJson
 import java.util.Locale
 
+internal const val BA_ACCOUNTS_FINGERPRINT_REVISION = 3
+
 /**
  * Builds the [WebDavSyncDataPort] for every [WebDavSyncItem].
  *
@@ -154,7 +156,7 @@ private fun buildWebDavSyncDataPorts(
                 runCatching { BASettingsStore.countAccountsSyncJson(raw) }.getOrDefault(0)
             },
             mergeRemoteOnAutoConflict = true,
-            fingerprintRevision = 2,
+            fingerprintRevision = BA_ACCOUNTS_FINGERPRINT_REVISION,
         ),
         WebDavSyncItem.BaCatalogFavorites to WebDavSyncDataPort(
             exportJson = {

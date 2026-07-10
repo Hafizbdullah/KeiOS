@@ -227,6 +227,8 @@ internal class BaAccountStore(
                 store
                     .decodeInt(KEY_CAFE_AP_NOTIFY_THRESHOLD, DEFAULT_CAFE_AP_NOTIFY_THRESHOLD)
                     .coerceIn(0, BA_AP_MAX),
+            keepApRemindersReadUntilBelowThreshold =
+                store.decodeBool(KEY_KEEP_AP_REMINDERS_READ_UNTIL_BELOW_THRESHOLD, true),
             arenaRefreshNotifyEnabled = store.decodeBool(KEY_ARENA_REFRESH_NOTIFY_ENABLED, false),
             cafeVisitNotifyEnabled = store.decodeBool(KEY_CAFE_VISIT_NOTIFY_ENABLED, false),
         )
@@ -238,6 +240,10 @@ internal class BaAccountStore(
         store.encode(KEY_AP_NOTIFY_THRESHOLD, normalized.apNotifyThreshold)
         store.encode(KEY_CAFE_AP_NOTIFY_ENABLED, normalized.cafeApNotifyEnabled)
         store.encode(KEY_CAFE_AP_NOTIFY_THRESHOLD, normalized.cafeApNotifyThreshold)
+        store.encode(
+            KEY_KEEP_AP_REMINDERS_READ_UNTIL_BELOW_THRESHOLD,
+            normalized.keepApRemindersReadUntilBelowThreshold,
+        )
         store.encode(KEY_ARENA_REFRESH_NOTIFY_ENABLED, normalized.arenaRefreshNotifyEnabled)
         store.encode(KEY_CAFE_VISIT_NOTIFY_ENABLED, normalized.cafeVisitNotifyEnabled)
         store.encode(KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS, nowMs())
@@ -263,6 +269,10 @@ internal class BaAccountStore(
         store.encode(KEY_AP_NOTIFY_THRESHOLD, normalized.apNotifyThreshold)
         store.encode(KEY_CAFE_AP_NOTIFY_ENABLED, normalized.cafeApNotifyEnabled)
         store.encode(KEY_CAFE_AP_NOTIFY_THRESHOLD, normalized.cafeApNotifyThreshold)
+        store.encode(
+            KEY_KEEP_AP_REMINDERS_READ_UNTIL_BELOW_THRESHOLD,
+            normalized.keepApRemindersReadUntilBelowThreshold,
+        )
         store.encode(KEY_ARENA_REFRESH_NOTIFY_ENABLED, normalized.arenaRefreshNotifyEnabled)
         store.encode(KEY_CAFE_VISIT_NOTIFY_ENABLED, normalized.cafeVisitNotifyEnabled)
         store.encode(KEY_BA_GLOBAL_REMINDER_SETTINGS_UPDATED_AT_MS, updatedAtMs.coerceAtLeast(0L))

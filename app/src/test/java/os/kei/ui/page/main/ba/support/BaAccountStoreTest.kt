@@ -301,6 +301,7 @@ class BaAccountStoreTest {
                         apNotifyThreshold = 50,
                         cafeApNotifyEnabled = true,
                         cafeApNotifyThreshold = 60,
+                        keepApRemindersReadUntilBelowThreshold = false,
                         arenaRefreshNotifyEnabled = true,
                         cafeVisitNotifyEnabled = true,
                     ),
@@ -316,6 +317,7 @@ class BaAccountStoreTest {
         assertEquals(50, effective.apNotifyThreshold)
         assertTrue(effective.cafeApNotifyEnabled)
         assertEquals(60, effective.cafeApNotifyThreshold)
+        assertFalse(effective.keepApRemindersReadUntilBelowThreshold)
         assertTrue(effective.arenaRefreshNotifyEnabled)
         assertTrue(effective.cafeVisitNotifyEnabled)
     }
