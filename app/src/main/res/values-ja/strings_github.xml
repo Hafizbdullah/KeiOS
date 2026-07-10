@@ -1203,6 +1203,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_action_view_tracking">追跡を表示</string>
     <string name="github_share_import_notify_action_view_github">GitHub を表示</string>
     <string name="github_page_install_notify_action_view_confirm">確認を表示</string>
+    <string name="github_page_install_notify_action_cancel">インストールをキャンセル</string>
     <string name="github_share_import_notify_title_resolving">共有インポートを準備中</string>
     <string name="github_share_import_notify_title_asset_ready">インストール可能な APK を検出</string>
     <string name="github_share_import_notify_title_delivering">インストーラーへ送信中</string>
@@ -1217,6 +1218,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_page_install_notify_title_confirm">インストール確認待ち</string>
     <string name="github_page_install_notify_title_completed">インストール完了</string>
     <string name="github_page_install_notify_title_failed">インストール失敗</string>
+    <string name="github_page_install_notify_title_cancelled">インストールをキャンセルしました</string>
     <string name="github_share_import_notify_title_failed">共有インポートに失敗</string>
     <string name="github_share_import_notify_title_cancelled">共有インポートをキャンセルしました</string>
     <string name="github_share_import_notify_content_resolving">%1$s を解析中</string>
@@ -1233,6 +1235,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_content_already_tracked">%1$s は %2$s で追跡済みです</string>
     <string name="github_page_install_notify_content_confirm">%1$s · %2$s · 確認待ち</string>
     <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
+    <string name="github_page_install_notify_content_cancelled">インストールをキャンセルしました</string>
     <string name="github_share_import_notify_content_cancelled">この共有インポート連携は停止しました</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
     <string name="github_share_import_notify_download_progress_unknown">%1$s ダウンロード済み</string>
@@ -1249,6 +1252,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_short_already_tracked">登録済み</string>
     <string name="github_page_install_notify_short_confirm">確認</string>
     <string name="github_page_install_notify_short_completed">完了</string>
+    <string name="github_page_install_notify_short_cancelled">キャンセル</string>
     <string name="github_share_import_notify_short_failed">失敗</string>
     <string name="github_share_import_notify_short_cancelled">取消済み</string>
     <string name="github_asset_badge_recommended">この端末に推奨</string>

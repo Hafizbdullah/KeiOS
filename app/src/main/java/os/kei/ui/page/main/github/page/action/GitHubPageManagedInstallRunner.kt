@@ -3,8 +3,10 @@ package os.kei.ui.page.main.github.page.action
 import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.R
 import os.kei.core.intent.SafeExternalIntents
@@ -25,10 +27,12 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
+import os.kei.feature.github.notification.GitHubPageManagedInstallCancelRegistry
 import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.localizedGitHubPageErrorMessage
 import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.github.page.githubManagedInstallKey
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val GITHUB_PAGE_MANAGED_INSTALL_TAG = "GitHubPageInstall"
 
@@ -41,12 +45,25 @@ internal class GitHubPageManagedInstallRunner(
         val appContext = env.context.applicationContext
         val installKey = item.githubManagedInstallKey(asset)
         if (env.state.managedInstallLoading[installKey] == true) return true
+        val installJob = checkNotNull(currentCoroutineContext()[Job]) {
+            "GitHub page install requires a coroutine Job"
+        }
+        val activeSessionId = AtomicInteger(-1)
+        val cancellationToken = GitHubPageManagedInstallCancelRegistry.register {
+            installJob.cancel(CancellationException("GitHub page install cancelled"))
+            activeSessionId.get().takeIf { it > 0 }?.let { sessionId ->
+                managedApkInstaller.cancel(appContext, sessionId)
+            }
+        }
         env.state.managedInstallLoading[installKey] = true
         env.toast(R.string.github_toast_page_install_started, assetDisplayName(asset.name))
         return try {
             try {
                 val request = buildRequest(appContext, item, asset)
                 val result = managedApkInstaller.install(appContext, request) { progress ->
+                    if (progress.sessionId > 0) {
+                        activeSessionId.set(progress.sessionId)
+                    }
                     notifyProgress(appContext, request, progress)
                 }
                 applyResult(appContext, item, asset, request, result)
@@ -79,6 +96,7 @@ internal class GitHubPageManagedInstallRunner(
                 false
             }
         } finally {
+            GitHubPageManagedInstallCancelRegistry.clear(cancellationToken)
             env.state.managedInstallLoading.remove(installKey)
         }
     }
@@ -93,7 +111,7 @@ internal class GitHubPageManagedInstallRunner(
             .ifBlank { item.packageName }
             .ifBlank { item.repo }
             .ifBlank { assetDisplayName(asset.name) }
-        GitHubShareImportNotificationHelper.notifyInstalling(
+        GitHubShareImportNotificationHelper.notifyPageInstallPreparing(
             context = context,
             owner = item.owner,
             repo = item.repo,
@@ -157,7 +175,7 @@ internal class GitHubPageManagedInstallRunner(
         when (progress.stage) {
             GitHubApkInstallStage.Preparing,
             GitHubApkInstallStage.Staging -> {
-                GitHubShareImportNotificationHelper.notifyInstalling(
+                GitHubShareImportNotificationHelper.notifyPageInstallPreparing(
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
@@ -172,7 +190,7 @@ internal class GitHubPageManagedInstallRunner(
             }
 
             GitHubApkInstallStage.Downloading -> {
-                GitHubShareImportNotificationHelper.notifyInstallDownloading(
+                GitHubShareImportNotificationHelper.notifyPageInstallDownloading(
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
@@ -190,7 +208,7 @@ internal class GitHubPageManagedInstallRunner(
 
             GitHubApkInstallStage.ReadyToCommit,
             GitHubApkInstallStage.Committing -> {
-                GitHubShareImportNotificationHelper.notifyInstallCommitting(
+                GitHubShareImportNotificationHelper.notifyPageInstallCommitting(
                     context = context,
                     owner = request.owner,
                     repo = request.repo,
@@ -251,8 +269,8 @@ internal class GitHubPageManagedInstallRunner(
             }
 
             is GitHubApkInstallResult.Cancelled -> {
-                GitHubShareImportNotificationHelper.notifyCancelled(context)
-                env.toast(R.string.github_share_import_notify_content_cancelled)
+                GitHubShareImportNotificationHelper.notifyPageInstallCancelled(context)
+                env.toast(R.string.github_page_install_notify_content_cancelled)
                 false
             }
 

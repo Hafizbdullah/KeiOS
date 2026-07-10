@@ -7,8 +7,14 @@ private const val GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR = "#22C55E"
 private const val GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR = "#EF4444"
 private const val GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR = "#64748B"
 
+internal enum class GitHubShareImportNotificationSource {
+    ShareImport,
+    PageInstall,
+}
+
 internal data class GitHubShareImportNotificationState(
     val phase: GitHubShareImportNotificationPhase,
+    val source: GitHubShareImportNotificationSource = GitHubShareImportNotificationSource.ShareImport,
     val owner: String = "",
     val repo: String = "",
     val releaseTag: String = "",
@@ -115,6 +121,22 @@ internal data class GitHubShareImportNotificationState(
     val resolvedProgressPercent: Int
         get() = progressPercentOverride?.coerceIn(0, 100) ?: phase.progressPercent
 
+    val opensGitHubPage: Boolean
+        get() = source == GitHubShareImportNotificationSource.PageInstall || phase.openGitHubPage
+
+    val pageInstallCancelActionEnabled: Boolean
+        get() =
+            source == GitHubShareImportNotificationSource.PageInstall &&
+                phase in pageInstallCancelablePhases
+
+    val focusOrderId: String
+        get() =
+            if (source == GitHubShareImportNotificationSource.PageInstall) {
+                "github_page_install"
+            } else {
+                "github_share_import"
+            }
+
     val primaryActionRes: Int
         get() {
             if (
@@ -164,6 +186,12 @@ private fun cleanNotificationAssetName(assetName: String): String {
 private val packageNameDisplayRegex = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
 private val apkFileSuffixRegex = Regex("""\.apk$""", RegexOption.IGNORE_CASE)
 private val notificationWhitespaceRegex = Regex("""\s+""")
+private val pageInstallCancelablePhases =
+    setOf(
+        GitHubShareImportNotificationPhase.InstallDownloading,
+        GitHubShareImportNotificationPhase.Installing,
+        GitHubShareImportNotificationPhase.InstallCommitting,
+    )
 
 internal enum class GitHubShareImportNotificationPhase(
     @param:StringRes val titleRes: Int,
@@ -329,6 +357,17 @@ internal enum class GitHubShareImportNotificationPhase(
         openGitHubPage = true,
         promotedLiveUpdate = true,
         miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR,
+        progressTemplateEnabled = false
+    ),
+    PageInstallCancelled(
+        titleRes = R.string.github_page_install_notify_title_cancelled,
+        shortTextRes = R.string.github_page_install_notify_short_cancelled,
+        primaryActionRes = R.string.github_share_import_notify_action_view_github,
+        progressPercent = 100,
+        ongoing = false,
+        openGitHubPage = true,
+        promotedLiveUpdate = true,
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR,
         progressTemplateEnabled = false
     ),
     Cancelled(

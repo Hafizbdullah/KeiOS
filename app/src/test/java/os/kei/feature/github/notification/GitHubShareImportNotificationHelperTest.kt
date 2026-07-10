@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.json.JSONObject
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import os.kei.MainActivity
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.ui.page.main.github.share.GitHubShareImportActivity
 import kotlin.test.assertEquals
@@ -417,6 +418,46 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `page install downloading uses github actions and focus safe content`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            source = GitHubShareImportNotificationSource.PageInstall,
+            phase = GitHubShareImportNotificationPhase.InstallDownloading,
+            owner = "T8RIN",
+            repo = "ImageToolbox",
+            releaseTag = "4.2.0-alpha01",
+            targetDisplayName = "Image Toolbox With A Very Long Display Name",
+            progressPercentOverride = 99,
+            downloadedBytes = 98_160_000L,
+            totalBytes = 98_560_000L,
+        )
+
+        val modern = buildModern(context, state)
+        val miIsland = buildMiIsland(context, state)
+        val focusParam = miIsland.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
+        val focusContent = focusJson.getJSONObject("baseInfo").getString("content")
+        val openIntent = shadowOf(modern.actions[0].actionIntent).savedIntent
+
+        assertEquals(2, modern.actions.size)
+        assertEquals("View progress", modern.actions[0].title.toString())
+        assertEquals("Cancel install", modern.actions[1].title.toString())
+        assertEquals(MainActivity::class.java.name, openIntent.component?.className)
+        assertEquals(
+            MainActivity.TARGET_BOTTOM_PAGE_GITHUB,
+            openIntent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
+        )
+        assertCancelPageInstallReceiverAction(context, modern.actions[1])
+        assertCancelPageInstallReceiverAction(
+            context,
+            miIsland.focusAction("mcp_action_stop"),
+        )
+        assertTrue(focusContent.length <= 28, focusContent)
+        assertFalse(focusContent.contains("..."), focusContent)
+        assertTrue(focusParam.contains("\"orderId\":\"github_page_install\""))
+    }
+
+    @Test
     fun `managed staging mi island uses phase title with progress ring`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(
@@ -818,6 +859,22 @@ class GitHubShareImportNotificationHelperTest {
         )
         assertEquals(
             GitHubShareImportActionReceiver.actionConfirmPageInstall(context),
+            intent.action,
+        )
+        assertTrue(intent.flags and Intent.FLAG_RECEIVER_FOREGROUND != 0)
+    }
+
+    private fun assertCancelPageInstallReceiverAction(
+        context: Context,
+        action: Notification.Action,
+    ) {
+        val intent = shadowOf(action.actionIntent).savedIntent
+        assertEquals(
+            GitHubShareImportActionReceiver::class.java.name,
+            intent.component?.className,
+        )
+        assertEquals(
+            GitHubShareImportActionReceiver.actionCancelPageInstall(context),
             intent.action,
         )
         assertTrue(intent.flags and Intent.FLAG_RECEIVER_FOREGROUND != 0)

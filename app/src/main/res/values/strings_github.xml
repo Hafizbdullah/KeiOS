@@ -1305,6 +1305,7 @@
     <string name="github_share_import_notify_action_view_tracking">查看跟踪</string>
     <string name="github_share_import_notify_action_view_github">查看 GitHub</string>
     <string name="github_page_install_notify_action_view_confirm">查看确认</string>
+    <string name="github_page_install_notify_action_cancel">取消安装</string>
     <string name="github_share_import_notify_title_resolving">正在准备分享导入</string>
     <string name="github_share_import_notify_title_asset_ready">已找到可安装 APK</string>
     <string name="github_share_import_notify_title_delivering">正在交给安装器</string>
@@ -1320,6 +1321,7 @@
     <string name="github_page_install_notify_title_confirm">等待安装确认</string>
     <string name="github_page_install_notify_title_completed">安装已完成</string>
     <string name="github_page_install_notify_title_failed">安装失败</string>
+    <string name="github_page_install_notify_title_cancelled">安装已取消</string>
     <string name="github_share_import_notify_title_failed">分享导入失败</string>
     <string name="github_share_import_notify_title_cancelled">分享导入已取消</string>
     <string name="github_share_import_notify_content_resolving">正在解析 %1$s</string>
@@ -1337,6 +1339,7 @@
     <string name="github_share_import_notify_content_already_tracked">%1$s 已在 %2$s 跟踪中</string>
     <string name="github_page_install_notify_content_confirm">%1$s · %2$s · 待确认</string>
     <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
+    <string name="github_page_install_notify_content_cancelled">安装已取消</string>
     <string name="github_share_import_notify_content_cancelled">本次分享导入联动已停止</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
     <string name="github_share_import_notify_download_progress_unknown">已下载 %1$s</string>
@@ -1354,6 +1357,7 @@
     <string name="github_share_import_notify_short_already_tracked">已存在</string>
     <string name="github_page_install_notify_short_confirm">确认</string>
     <string name="github_page_install_notify_short_completed">完成</string>
+    <string name="github_page_install_notify_short_cancelled">已取消</string>
     <string name="github_share_import_notify_short_failed">失败</string>
     <string name="github_share_import_notify_short_cancelled">已取消</string>
     <string name="github_asset_badge_recommended">推荐本机</string>

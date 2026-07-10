@@ -18,12 +18,13 @@ internal object GitHubShareImportNotificationActions {
     private const val REQUEST_CONFIRM_IMPORT = 2306
     private const val REQUEST_SEND_INSTALL = 2307
     private const val REQUEST_CONFIRM_PAGE_INSTALL = 2308
+    private const val REQUEST_CANCEL_PAGE_INSTALL = 2309
 
     fun buildOpenPendingIntent(
         context: Context,
         state: GitHubShareImportNotificationState
     ): PendingIntent {
-        return if (state.phase.openGitHubPage) {
+        return if (state.opensGitHubPage) {
             buildOpenGitHubPendingIntent(context)
         } else {
             buildOpenFlowPendingIntent(context)
@@ -47,6 +48,7 @@ internal object GitHubShareImportNotificationActions {
                     state.pageInstallConfirmActionEnabled ->
                 buildConfirmPageInstallPendingIntent(context)
 
+            state.pageInstallCancelActionEnabled -> buildCancelPageInstallPendingIntent(context)
             state.phase.refreshActionEnabled -> buildRefreshImportPendingIntent(context)
             state.phase.confirmActionEnabled -> buildConfirmImportPendingIntent(context)
             state.phase.cancelActionEnabled -> buildCancelImportPendingIntent(context)
@@ -59,7 +61,10 @@ internal object GitHubShareImportNotificationActions {
         if (state.phase == GitHubShareImportNotificationPhase.PageInstallConfirm) {
             return R.string.github_page_install_notify_action_view_confirm
         }
-        if (state.phase.openGitHubPage) return state.primaryActionRes
+        if (state.pageInstallCancelActionEnabled) {
+            return R.string.github_share_import_notify_action_view_progress
+        }
+        if (state.opensGitHubPage) return state.primaryActionRes
         return R.string.github_share_import_notify_action_open_flow
     }
 
@@ -79,6 +84,9 @@ internal object GitHubShareImportNotificationActions {
             state.phase == GitHubShareImportNotificationPhase.PageInstallConfirm &&
                     state.pageInstallConfirmActionEnabled ->
                 context.getString(R.string.github_page_install_confirm_action_install)
+
+            state.pageInstallCancelActionEnabled ->
+                context.getString(R.string.github_page_install_notify_action_cancel)
 
             state.phase.refreshActionEnabled -> context.getString(R.string.common_refresh)
             state.phase.confirmActionEnabled ->
@@ -195,6 +203,19 @@ internal object GitHubShareImportNotificationActions {
         return PendingIntent.getBroadcast(
             context,
             REQUEST_CONFIRM_PAGE_INSTALL,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private fun buildCancelPageInstallPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, GitHubShareImportActionReceiver::class.java).apply {
+            action = GitHubShareImportActionReceiver.actionCancelPageInstall(context)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            REQUEST_CANCEL_PAGE_INSTALL,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -122,6 +122,36 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyPageInstallPreparing(
+        context: Context,
+        owner: String,
+        repo: String,
+        releaseTag: String = "",
+        assetName: String,
+        progressPercent: Int,
+        appLabel: String = "",
+        packageName: String = "",
+        versionName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
+                phase = GitHubShareImportNotificationPhase.Installing,
+                owner = owner,
+                repo = repo,
+                releaseTag = releaseTag,
+                assetName = assetName,
+                appLabel = appLabel,
+                packageName = packageName,
+                versionName = versionName,
+                targetDisplayName = targetDisplayName,
+                progressPercentOverride = progressPercent.coerceIn(0, 100)
+            )
+        )
+    }
+
     fun notifyInstallDownloading(
         context: Context,
         owner: String,
@@ -155,6 +185,40 @@ object GitHubShareImportNotificationHelper {
         )
     }
 
+    fun notifyPageInstallDownloading(
+        context: Context,
+        owner: String,
+        repo: String,
+        releaseTag: String = "",
+        assetName: String,
+        progressPercent: Int,
+        downloadedBytes: Long,
+        totalBytes: Long,
+        appLabel: String = "",
+        packageName: String = "",
+        versionName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
+                phase = GitHubShareImportNotificationPhase.InstallDownloading,
+                owner = owner,
+                repo = repo,
+                releaseTag = releaseTag,
+                assetName = assetName,
+                appLabel = appLabel,
+                packageName = packageName,
+                versionName = versionName,
+                targetDisplayName = targetDisplayName,
+                progressPercentOverride = progressPercent.coerceIn(0, 100),
+                downloadedBytes = downloadedBytes.coerceAtLeast(0L),
+                totalBytes = totalBytes
+            )
+        )
+    }
+
     fun notifyInstallCommitting(
         context: Context,
         owner: String,
@@ -169,6 +233,34 @@ object GitHubShareImportNotificationHelper {
         notifyState(
             context = context,
             state = GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.InstallCommitting,
+                owner = owner,
+                repo = repo,
+                releaseTag = releaseTag,
+                assetName = assetName,
+                appLabel = appLabel,
+                packageName = packageName,
+                versionName = versionName,
+                targetDisplayName = targetDisplayName
+            )
+        )
+    }
+
+    fun notifyPageInstallCommitting(
+        context: Context,
+        owner: String,
+        repo: String,
+        releaseTag: String = "",
+        assetName: String,
+        appLabel: String = "",
+        packageName: String = "",
+        versionName: String = "",
+        targetDisplayName: String = ""
+    ) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
                 phase = GitHubShareImportNotificationPhase.InstallCommitting,
                 owner = owner,
                 repo = repo,
@@ -343,6 +435,7 @@ object GitHubShareImportNotificationHelper {
         notifyState(
             context = context,
             state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
                 phase = GitHubShareImportNotificationPhase.PageInstallConfirm,
                 owner = owner,
                 repo = repo,
@@ -371,6 +464,7 @@ object GitHubShareImportNotificationHelper {
         notifyState(
             context = context,
             state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
                 phase = GitHubShareImportNotificationPhase.PageInstallCompleted,
                 owner = owner,
                 repo = repo,
@@ -405,6 +499,7 @@ object GitHubShareImportNotificationHelper {
         notifyState(
             context = context,
             state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
                 phase = GitHubShareImportNotificationPhase.PageInstallFailed,
                 owner = owner,
                 repo = repo,
@@ -420,6 +515,16 @@ object GitHubShareImportNotificationHelper {
             context = context,
             state = GitHubShareImportNotificationState(
                 phase = GitHubShareImportNotificationPhase.Cancelled
+            )
+        )
+    }
+
+    fun notifyPageInstallCancelled(context: Context) {
+        notifyState(
+            context = context,
+            state = GitHubShareImportNotificationState(
+                source = GitHubShareImportNotificationSource.PageInstall,
+                phase = GitHubShareImportNotificationPhase.PageInstallCancelled
             )
         )
     }
@@ -581,7 +686,7 @@ object GitHubShareImportNotificationHelper {
             overrideShortText = islandSubtitle.ifBlank { shortText },
             overrideProgressPercent = overrideProgressPercent,
             notificationId = NOTIFICATION_ID,
-            miFocusOrderId = "github_share_import"
+            miFocusOrderId = state.focusOrderId
         )
     }
 
@@ -596,10 +701,13 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         state: GitHubShareImportNotificationState
     ): String {
+        if (state.pageInstallCancelActionEnabled) {
+            return resolvePageInstallActiveContent(context, state)
+        }
         val projectLabel = state.projectLabel
         val projectDisplayLabel = state.projectDisplayLabel
         val targetLabel = state.targetWithVersionLabel
-        return when (state.phase) {
+        val content = when (state.phase) {
             GitHubShareImportNotificationPhase.Resolving -> context.getString(
                 R.string.github_share_import_notify_content_resolving,
                 state.primaryLabel.ifBlank { projectDisplayLabel }
@@ -693,11 +801,67 @@ object GitHubShareImportNotificationHelper {
                 context.getString(R.string.github_share_import_error_app_managed_install_failed)
             }
 
+            GitHubShareImportNotificationPhase.PageInstallCancelled -> context.getString(
+                R.string.github_page_install_notify_content_cancelled
+            )
+
             GitHubShareImportNotificationPhase.Cancelled -> context.getString(
                 R.string.github_share_import_notify_content_cancelled
             )
         }
+        return if (state.source == GitHubShareImportNotificationSource.PageInstall) {
+            compactWithoutEllipsis(content, PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH)
+        } else {
+            content
+        }
     }
+
+    private fun resolvePageInstallActiveContent(
+        context: Context,
+        state: GitHubShareImportNotificationState,
+    ): String {
+        val status =
+            if (
+                state.phase == GitHubShareImportNotificationPhase.InstallDownloading &&
+                state.totalBytes > 0L
+            ) {
+                "${state.resolvedProgressPercent}%"
+            } else {
+                context.getString(state.phase.shortTextRes)
+            }
+        return compactStatusAndTarget(
+            status = status,
+            target = state.targetWithVersionLabel,
+            maxLength = PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
+        )
+    }
+
+    private fun compactStatusAndTarget(
+        status: String,
+        target: String,
+        maxLength: Int,
+    ): String {
+        val compactStatus = compactWithoutEllipsis(status, maxLength)
+        if (compactStatus.length >= maxLength) return compactStatus
+        val separator = " · "
+        val targetLimit = maxLength - compactStatus.length - separator.length
+        if (targetLimit <= 0) return compactStatus
+        val compactTarget = compactWithoutEllipsis(target, targetLimit)
+        return if (compactTarget.isBlank()) {
+            compactStatus
+        } else {
+            compactStatus + separator + compactTarget
+        }
+    }
+
+    private fun compactWithoutEllipsis(
+        value: String,
+        maxLength: Int,
+    ): String =
+        value
+            .trim()
+            .take(maxLength.coerceAtLeast(1))
+            .trimEnd()
 
     private fun formatDownloadProgress(
         context: Context,
@@ -723,6 +887,8 @@ object GitHubShareImportNotificationHelper {
                 PackageManager.PERMISSION_GRANTED
     }
 }
+
+private const val PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH = 28
 
 private data class ShareImportNotificationBuildResult(
     val notification: Notification,

@@ -1240,6 +1240,7 @@
     <string name="github_share_import_notify_action_view_tracking">View tracking</string>
     <string name="github_share_import_notify_action_view_github">View GitHub</string>
     <string name="github_page_install_notify_action_view_confirm">Review install</string>
+    <string name="github_page_install_notify_action_cancel">Cancel install</string>
     <string name="github_share_import_notify_title_resolving">Preparing share import</string>
     <string name="github_share_import_notify_title_asset_ready">Installable APK found</string>
     <string name="github_share_import_notify_title_delivering">Sending to installer</string>
@@ -1255,6 +1256,7 @@
     <string name="github_page_install_notify_title_confirm">Waiting for install confirmation</string>
     <string name="github_page_install_notify_title_completed">Install completed</string>
     <string name="github_page_install_notify_title_failed">Install failed</string>
+    <string name="github_page_install_notify_title_cancelled">Install cancelled</string>
     <string name="github_share_import_notify_title_failed">Share import failed</string>
     <string name="github_share_import_notify_title_cancelled">Share import cancelled</string>
     <string name="github_share_import_notify_content_resolving">Parsing %1$s</string>
@@ -1272,6 +1274,7 @@
     <string name="github_share_import_notify_content_already_tracked">%1$s is already tracked for %2$s</string>
     <string name="github_page_install_notify_content_confirm">%1$s · %2$s · waiting</string>
     <string name="github_page_install_notify_content_completed">%1$s · %2$s</string>
+    <string name="github_page_install_notify_content_cancelled">Install was cancelled</string>
     <string name="github_share_import_notify_content_cancelled">This share-import linkage has stopped</string>
     <string name="github_share_import_notify_download_progress_known">%1$s / %2$s</string>
     <string name="github_share_import_notify_download_progress_unknown">%1$s downloaded</string>
@@ -1289,6 +1292,7 @@
     <string name="github_share_import_notify_short_already_tracked">Exists</string>
     <string name="github_page_install_notify_short_confirm">Confirm</string>
     <string name="github_page_install_notify_short_completed">Done</string>
+    <string name="github_page_install_notify_short_cancelled">Cancelled</string>
     <string name="github_share_import_notify_short_failed">Failed</string>
     <string name="github_share_import_notify_short_cancelled">Cancelled</string>
     <string name="github_asset_badge_recommended">Recommended for this device</string>

@@ -51,6 +51,12 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                         )
                     }
                 }
+
+                actionCancelPageInstall(appContext) -> {
+                    if (GitHubPageManagedInstallCancelRegistry.cancelActive()) {
+                        GitHubShareImportNotificationHelper.notifyPageInstallCancelled(appContext)
+                    }
+                }
             }
         }
     }
@@ -64,10 +70,14 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
         const val ACTION_CONFIRM_SHARE_IMPORT = "os.kei.github.share_import.action.CONFIRM"
         const val ACTION_CONFIRM_PAGE_INSTALL =
             "os.kei.github.share_import.action.CONFIRM_PAGE_INSTALL"
+        const val ACTION_CANCEL_PAGE_INSTALL =
+            "os.kei.github.share_import.action.CANCEL_PAGE_INSTALL"
 
         private const val TAG = "GitHubShareImportAction"
         private const val ACTION_CONFIRM_PAGE_INSTALL_SUFFIX =
             ".github.share_import.action.CONFIRM_PAGE_INSTALL"
+        private const val ACTION_CANCEL_PAGE_INSTALL_SUFFIX =
+            ".github.share_import.action.CANCEL_PAGE_INSTALL"
 
         fun actionCancelShareImport(context: Context): String = "${context.packageName}.github.share_import.action.CANCEL"
 
@@ -81,6 +91,9 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
 
         fun actionConfirmPageInstall(context: Context): String = context.packageName + ACTION_CONFIRM_PAGE_INSTALL_SUFFIX
 
+        fun actionCancelPageInstall(context: Context): String =
+            context.packageName + ACTION_CANCEL_PAGE_INSTALL_SUFFIX
+
         private fun supportedActions(context: Context): Set<String> =
             setOf(
                 actionCancelShareImport(context),
@@ -89,6 +102,7 @@ class GitHubShareImportActionReceiver : BroadcastReceiver() {
                 actionSendInstallShareImport(context),
                 actionConfirmShareImport(context),
                 actionConfirmPageInstall(context),
+                actionCancelPageInstall(context),
             )
     }
 }
