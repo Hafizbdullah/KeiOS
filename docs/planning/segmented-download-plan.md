@@ -110,13 +110,13 @@ Release APK fixed sample:
 | Field | Value |
 | --- | --- |
 | Repository | `getpaseo/paseo` |
-| Release | `https://github.com/getpaseo/paseo/releases/tag/v0.1.104` |
-| Asset name | `paseo-v0.1.104-android.apk` |
-| Asset ID | `470196887` |
-| Asset API URL | `https://api.github.com/repos/getpaseo/paseo/releases/assets/470196887` |
-| Atom/direct URL | `https://github.com/getpaseo/paseo/releases/download/v0.1.104/paseo-v0.1.104-android.apk` |
-| Size | `183037443` bytes, about `174.56 MiB` |
-| Digest | `sha256:f98520a1d8c9df9fb54c11505fa5af32cd108b0b3581927a596f40d9fc5191d5` |
+| Release | `https://github.com/getpaseo/paseo/releases/tag/v0.1.105` |
+| Asset name | `paseo-v0.1.105-android.apk` |
+| Asset ID | `472420162` |
+| Asset API URL | `https://api.github.com/repos/getpaseo/paseo/releases/assets/472420162` |
+| Atom/direct URL | `https://github.com/getpaseo/paseo/releases/download/v0.1.105/paseo-v0.1.105-android.apk` |
+| Size | `183051959` bytes, about `174.57 MiB` |
+| Digest | `sha256:88e28ce20ca0a8bb0a0a0e2f455f2c66ee0f0bd8cb50ec70476ff699683e7065` |
 | Header check | Direct URL redirects to `release-assets.githubusercontent.com` and the final response advertises `Accept-Ranges: bytes`. |
 
 Release benchmark matrix:
@@ -548,7 +548,7 @@ Acceptance:
 - Direct APK with Range uses segmented downloader.
 - Direct APK without Range uses single-stream temp download.
 - AtomFeed and GitHubApiToken release downloads both route through the same `:core-download` adapter after each mode resolves its own URL.
-- Paseo v0.1.104 Android APK is available as a fixed release benchmark sample for both Atom/direct and GitHubApiToken API-resolved downloads.
+- Paseo v0.1.105 Android APK is available as a fixed release benchmark sample for both Atom/direct and GitHubApiToken API-resolved downloads.
 - Benchmark logging records release strategy, asset ID, asset name, expected size, resolved final URL host, parallel/fallback mode, elapsed time, average throughput, tail time, and retry count.
 - Temp APK is reused for archive info reading.
 - Session write runs from completed temp APK.
@@ -559,7 +559,7 @@ Tests:
 - Direct APK install writes expected session bytes.
 - Archive info scan reads the downloaded temp APK.
 - Download failure deletes temp APK and abandons session through existing failure path.
-- Paseo v0.1.104 Android APK benchmark produces rows for AtomFeed single-stream, AtomFeed segmented, GitHubApiToken single-stream, and GitHubApiToken segmented.
+- Paseo v0.1.105 Android APK benchmark produces rows for AtomFeed single-stream, AtomFeed segmented, GitHubApiToken single-stream, and GitHubApiToken segmented.
 
 ### P4 GameKee Large Media Bridge
 
@@ -594,7 +594,11 @@ Current defaults:
 | Setting | Value |
 | --- | ---: |
 | GitHub balanced max connections | 4 |
-| GitHub foreground boost max connections | 8 |
+| GitHub foreground boost hard limit | 12 |
+| GitHub useful bytes per connection | 16 MiB |
+| Foreground boost startup active connections | 8 |
+| Foreground boost dispatcher capacity | 20 |
+| Low-budget fallback threshold | 4 connections |
 | GameKee max connections | 3 |
 | GitHub balanced initial part size | 8 MiB |
 | GitHub foreground boost initial part size | 4 MiB |
@@ -603,6 +607,8 @@ Current defaults:
 | Foreground boost minimum parallel size | 4 MiB |
 | Max retries per part | 3 |
 | Default connection strategy | `IsolatedPerWorker` |
+| Foreground boost dynamic part target | 16 seconds |
+| Foreground boost tail parts per connection | 3 |
 | Recovered probe idle timeout | 1 second |
 | Progress-aware Range lease | 4-30 seconds when applicable |
 
@@ -611,20 +617,21 @@ Controlled benchmark evidence from 2026-07-11:
 | Scenario | Mode | Requests | Physical connections | Average MiB/s | Speedup |
 | --- | --- | ---: | ---: | ---: | ---: |
 | Per-connection cap HTTP/1.1 | Plain GET | 1 | 1 | 2.31 | 1.00x |
-| Per-connection cap HTTP/1.1 | Balanced isolated | 17 | 5 | 9.60 | 4.15x |
-| Per-connection cap HTTP/1.1 | Foreground boost isolated | 33 | 9 | 16.04 | 6.94x |
-| Slow head HTTP/1.1 | Plain GET | 1 | 1 | 0.35 | 1.00x |
-| Slow head HTTP/1.1 | Balanced isolated | 17 | 5 | 5.68 | 16.31x |
-| Slow head HTTP/1.1 | Foreground boost isolated | 33 | 9 | 11.37 | 32.64x |
+| Per-connection cap HTTP/1.1 | Balanced isolated, 3 workers | 13 | 4 | 7.09 | 3.07x |
+| Per-connection cap HTTP/1.1 | Foreground boost isolated, 6 workers | 19 | 7 | 14.04 | 6.07x |
+| Slow head HTTP/1.1 | Plain GET | 1 | 1 | 0.36 | 1.00x |
+| Slow head HTTP/1.1 | Balanced isolated, 4 workers | 17 | 5 | 5.72 | 15.95x |
+| Slow head HTTP/1.1 | Foreground boost isolated, 8 workers | 25 | 9 | 8.62 | 24.05x |
 | Per-stream cap HTTP/2 | Plain GET | 1 | 1 | 2.32 | 1.00x |
-| Per-stream cap HTTP/2 | Balanced shared | 17 | 1 | 9.80 | 4.23x |
-| Per-stream cap HTTP/2 | Balanced isolated | 17 | 5 | 9.77 | 4.21x |
+| Per-stream cap HTTP/2 | Balanced shared | 17 | 1 | 9.70 | 4.19x |
+| Per-stream cap HTTP/2 | Balanced isolated | 17 | 5 | 9.74 | 4.20x |
 
-The fixed tail-part scale reduced the 24 MiB controlled request counts from 56
-to 17 for Balanced and from 106 to 33 for ForegroundBoost. The HTTP/2
-per-stream-cap fixture gives Shared and Isolated comparable throughput, while
-confirming one physical connection for Shared and five for Isolated. Real CDN
-results decide whether the extra isolated sockets improve GitHub traffic.
+The connection budget now scales worker count from file size before the
+scheduler starts. The 24 MiB controlled fixture selects 3 Balanced workers and
+6 ForegroundBoost workers, while the 30 MiB slow-head fixture selects 4 and 8.
+This keeps request count proportional to useful work and preserves the expected
+speedup under deterministic per-connection caps. The HTTP/2 fixture continues
+to confirm one physical connection for Shared and five for Isolated.
 
 Paseo Atom/direct device evidence from 2026-07-11:
 
@@ -666,6 +673,90 @@ Device interpretation:
   downgrade has low expected benefit for 10-13 second APK transfers and would
   add cancellation or dynamic-scheduler complexity.
 
+Adaptive foreground profile revision from 2026-07-11:
+
+- ForegroundBoost has a 12-connection hard limit and starts with at most 8
+  active workers.
+- GitHub managed downloads reserve at least 16 MiB of artifact data per useful
+  connection. Effective worker count is `ceil(size / 16 MiB)`, clamped by the
+  selected profile limit.
+- A connection budget of 4 or fewer uses the Balanced scheduler tuning and an
+  8 MiB effective initial part size. Small APKs therefore avoid the extra
+  request churn of the aggressive large-file profile.
+- Large downloads grow one connection only after a complete wave of distinct
+  workers has succeeded. A 174.57 MiB Paseo run received an 11-worker budget,
+  started at 8, peaked at 9, and completed before the remaining budget opened.
+- Repeated 429 responses continue to reduce active concurrency, enlarge
+  rate-limited parts, honor retry delay, and recover through one probe slot.
+- Foreground managed downloads use the dedicated 20-slot
+  `AppDispatchers.githubManagedDownload` view. The capacity covers up to 12
+  blocking readers plus the bounded writer and cancellation work.
+
+The clean-room review used piko `v0.1.2` (`723abd6`) only as a behavioral
+reference. Relevant observations were a useful-bytes-per-connection cap, an
+8-connection startup probe, small concurrency-probe ranges, and aggressive
+backoff when startup probing encounters rate limits. KeiOS uses independently
+written Kotlin models, scheduler state, retry policy, tests, and Android
+dispatcher integration.
+
+Candidate screening before the adaptive profile:
+
+| Candidate | Sample/mode | Balanced mean | Boost mean | Result |
+| --- | --- | ---: | ---: | --- |
+| Immediate 16 workers | Paseo direct, API 36 device | 11.531 MiB/s | 11.249 MiB/s | Mean `-2.45%`; median `-12.79%` |
+| Immediate 12 workers | Paseo API-signed, API 36 device | 14.558 MiB/s | 14.498 MiB/s | Mean `-0.41%`; median `-5.39%` |
+| Immediate 10 workers | Paseo API-signed, API 36 device | 13.458 MiB/s | 13.925 MiB/s | Mean `+3.47%`; median `+6.42%` |
+
+These candidates established 8 as the strong startup tier and 12 as a useful
+hard ceiling. Size budgeting and wave-gated growth let large APK/ZIP transfers
+approach the ceiling while common APKs stay at 2-8 workers.
+
+Android 17 AVD size matrix:
+
+Current tuning and regression work targets `emulator-5556` on API 37. Direct
+and API-signed samples run through the same AVD so connection-budget changes,
+progressive growth, retries, integrity, and obvious throughput regressions can
+be compared on a stable test target. The API 36 Xiaomi device keeps the current
+Debug build for the final foreground/background and OEM install-flow pass after
+the algorithm settles.
+
+| Sample | Actual size | Balanced/Boost budget | Direct mean MiB/s | Direct delta | API-signed mean MiB/s | API delta |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| KeiOS 1.11.0 | 19.27 MiB | 2 / 2 | 5.056 / 4.037 | `-20.14%` | 4.278 / 2.385 | `-44.25%` |
+| Keyguard r20260616 | 37.13 MiB | 3 / 3 | 4.010 / 5.869 | `+46.38%` | 4.604 / 9.663 | `+109.88%` |
+| Momogram 12.8.1-1 | 60.45 MiB | 4 / 4 | 8.811 / 8.282 | `-6.00%` | 7.361 / 12.396 | `+68.40%` |
+| ImageToolbox 4.1.0 | 94.77 MiB | 4 / 6 | 4.301 / 10.048* | `+133.65%` | 9.532 / 7.473 | `-21.60%` |
+| Termux 0.119 beta 3 | 113.74 MiB | 4 / 8 | 9.430 / 6.532 | `-30.72%` | 7.147 / 9.930 | `+38.95%` |
+| Paseo 0.1.105 | 174.57 MiB | 4 / 11 | 5.532 / 11.831 | `+113.86%` | 7.357 / 11.999 | `+63.11%` |
+
+The matrix used two passes with reversed profile order. One ImageToolbox Direct
+Boost run hit the local 90-second harness timeout, so its Boost mean contains
+one completed sample. The other 47 transfers completed with Range support and
+matching per-asset SHA-256; five retries occurred across the four Paseo Boost
+or Direct runs. AVD throughput varied from roughly 1 to 14 MiB/s, so this matrix
+serves as correctness and regression screening. Final release-speed claims stay
+gated on the API 36 physical-device pass.
+
+AVD background screening for Paseo API-signed produced 9.546 MiB/s for Balanced
+and 7.357 MiB/s for ForegroundBoost in one paired run. Process importance moved
+from 100 to 125. This sample confirms lifecycle completion and provides a
+follow-up signal for the final physical-device foreground/background matrix.
+
+Size-matrix fixtures:
+
+| Approximate tier | Release asset | Actual bytes | Balanced budget | Boost budget |
+| --- | --- | ---: | ---: | ---: |
+| 20 MiB | [KeiOS 1.11.0](https://github.com/hosizoraru/KeiOS/releases/download/v1.11.0/KeiOS_1.11.0.apk) | 20,206,796 | 2 | 2 |
+| 40 MiB | [Keyguard r20260616](https://github.com/AChep/keyguard-app/releases/download/r20260616/androidApp-none-release.apk) | 38,929,150 | 3 | 3 |
+| 60 MiB | [Momogram 12.8.1-1](https://github.com/im030/Momogram/releases/download/v12.8.1-1/Momo-v12.8.1-8453086bc7-arm64-v8a.apk) | 63,384,858 | 4 | 4 |
+| 90 MiB | [ImageToolbox 4.1.0](https://github.com/T8RIN/ImageToolbox/releases/download/4.1.0/image-toolbox-4.1.0-arm64-v8a.apk) | 99,376,167 | 4 | 6 |
+| 110 MiB | [Termux 0.119 beta 3](https://github.com/termux/termux-app/releases/download/v0.119.0-beta.3/termux-app_v0.119.0-beta.3+apt-android-7-github-debug_universal.apk) | 119,267,555 | 4 | 8 |
+| 170 MiB | [Paseo 0.1.105](https://github.com/getpaseo/paseo/releases/download/v0.1.105/paseo-v0.1.105-android.apk) | 183,051,959 | 4 | 11 |
+
+Each fixture is measured twice: the public release URL used by Atom/direct mode
+and a fresh API-token asset URL resolved immediately before the run. Expiring
+signed URLs stay in ignored local evidence and never enter tracked docs.
+
 Live benchmark command template:
 
 ```bash
@@ -692,7 +783,7 @@ NightlyLink/nightly.build, and GitHub Actions API-resolved signed URL.
 Evidence to capture:
 
 - Average throughput for single-stream vs segmented on the same URL.
-- Paseo v0.1.104 Android APK benchmark rows for AtomFeed direct URL and GitHubApiToken API-resolved URL.
+- Paseo v0.1.105 Android APK benchmark rows for AtomFeed direct URL and GitHubApiToken API-resolved URL.
 - GitHub Actions artifact benchmark rows for NightlyLink/nightly.build and GitHubApiToken API modes.
 - Tail duration after 90% complete.
 - 429 and 5xx frequency.
@@ -703,10 +794,10 @@ Evidence to capture:
 
 ## Verification Checklist
 
-- `:core-download:testDebugUnitTest --rerun-tasks` passes 60 tests with the two
+- `:core-download:testDebugUnitTest --rerun-tasks` passes 66 tests with the two
   opt-in benchmark tests skipped by default.
 - Existing `RemoteZipEntryReaderTest` stays green.
-- `:feature-github:testDebugUnitTest --offline` passes 532 tests with one skip.
+- `:feature-github:testDebugUnitTest --offline` passes 534 tests with one skip.
 - Targeted GameKee media download tests pass.
 - `:app:testDebugUnitTest` relevant test filters pass.
 - `:app:compileDebugKotlin --offline` passes.
@@ -731,8 +822,9 @@ Evidence to capture:
 
 ## Next Validation Recommendation
 
-Run the four real-source comparison sets: Paseo Atom/direct, Paseo
-API-resolved, Actions NightlyLink/nightly.build, and Actions API-resolved. Use
-the three-mode Live matrix for each source, repeat the winning candidates three
-times, then decide whether `IsolatedPerWorker` remains the GitHub default or a
-host/protocol-aware strategy should select Shared HTTP/2 for specific CDNs.
+Keep the active tuning loop on the Android 17 `emulator-5556` AVD. Run the four
+real-source comparison sets there: Paseo Atom/direct, Paseo API-resolved,
+Actions NightlyLink/nightly.build, and Actions API-resolved. Use the three-mode
+Live matrix for each source and repeat winning candidates three times. Once the
+parameters settle, run the compact foreground/background matrix and managed
+install smoke on the API 36 Xiaomi device before choosing the release default.
