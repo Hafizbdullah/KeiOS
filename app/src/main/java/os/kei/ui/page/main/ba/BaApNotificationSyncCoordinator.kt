@@ -96,7 +96,7 @@ internal object BaApNotificationSyncCoordinator {
         }
         if (thresholdNotificationSent) {
             nextLastNotifiedLevel = plan.request.currentDisplay
-        } else if (plan.shouldRefreshActiveNotification || plan.shouldSendThresholdNotification) {
+        } else if (plan.shouldRefreshActiveNotification) {
             withNotificationTimeout(timeoutMs) { delivery.refreshActive(plan.request) }
         }
         return BaApNotificationSyncResult(

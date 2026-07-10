@@ -101,14 +101,12 @@ internal object BaCafeApNotificationDispatcher {
                         ),
                     targetBaAccountId = accountId?.value,
                 )
-            retryBaNotificationDeliveryCommit(TAG) {
-                McpNotificationHelper.notifyStandaloneEventAwaitingDelivery(
-                    context = context,
-                    notificationId = notificationId,
-                    request = request,
-                    onDelivered = onDelivered,
-                )
-            }.also { sent ->
+            McpNotificationHelper.notifyStandaloneEventAwaitingDelivery(
+                context = context,
+                notificationId = notificationId,
+                request = request,
+                onDelivered = onDelivered,
+            ).also { sent ->
                 AppLogger.i(TAG) {
                     "awaited send result=$sent id=$notificationId current=$currentDisplay limit=$limitDisplay account=${accountId?.value.orEmpty()}"
                 }

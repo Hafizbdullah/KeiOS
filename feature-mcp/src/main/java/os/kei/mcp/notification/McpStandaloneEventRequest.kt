@@ -93,11 +93,20 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
 }
 
 internal suspend fun runStandaloneEventDeliveryCommit(block: suspend () -> Unit) {
-    try {
-        block()
-    } catch (throwable: Throwable) {
-        if (throwable is CancellationException) throw throwable
-        if (throwable is McpNotificationDeliveryCommitException) throw throwable
-        throw McpNotificationDeliveryCommitException(throwable)
+    var lastFailure: Throwable? = null
+    repeat(2) {
+        try {
+            block()
+            return
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            lastFailure =
+                if (throwable is McpNotificationDeliveryCommitException) {
+                    throwable.cause ?: throwable
+                } else {
+                    throwable
+                }
+        }
     }
+    throw McpNotificationDeliveryCommitException(requireNotNull(lastFailure))
 }

@@ -8,7 +8,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Test
-import os.kei.mcp.notification.McpNotificationDeliveryCommitException
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
@@ -190,6 +189,20 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
+    fun `failed threshold delivery does not issue an active refresh post`() = runTest {
+        val delivery = RecordingFailedDelivery()
+
+        BaApNotificationSyncCoordinator.sync(
+            request = request(lastNotifiedLevel = 119),
+            nowMs = NOW_MS,
+            delivery = delivery,
+        )
+
+        assertEquals(1, delivery.sendAttempts)
+        assertEquals(0, delivery.refreshAttempts)
+    }
+
+    @Test
     fun `cancellation after delivery still commits anchor and syncs office state`() = runTest {
         val accountId = BaAccountId("cn-main")
         val office = BaOfficeController(BaPageSnapshot(apSuppressionAnchorAtMs = 1L))
@@ -331,25 +344,6 @@ class BaApNotificationSyncCoordinatorTest {
         )
     }
 
-    @Test
-    fun `delivery commit failure retries the active notification commit once`() = runTest {
-        var attempts = 0
-
-        val delivered =
-            retryBaNotificationDeliveryCommit(tag = "test") {
-                attempts += 1
-                if (attempts == 1) {
-                    throw McpNotificationDeliveryCommitException(
-                        IllegalStateException("first durable commit failed"),
-                    )
-                }
-                true
-            }
-
-        assertTrue(delivered)
-        assertEquals(2, attempts)
-    }
-
     private fun request(
         currentDisplay: Int = 120,
         lastNotifiedLevel: Int = 120,
@@ -401,6 +395,21 @@ private object DelayedDelivery : BaApNotificationDelivery {
     }
 
     override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean = true
+}
+
+private class RecordingFailedDelivery : BaApNotificationDelivery {
+    var sendAttempts = 0
+    var refreshAttempts = 0
+
+    override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean {
+        sendAttempts += 1
+        return false
+    }
+
+    override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean {
+        refreshAttempts += 1
+        return true
+    }
 }
 
 private object CancellingAfterCommitDelivery : BaApNotificationDelivery {

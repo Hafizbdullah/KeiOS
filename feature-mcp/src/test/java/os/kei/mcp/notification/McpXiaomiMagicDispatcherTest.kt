@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
@@ -159,13 +160,33 @@ class McpXiaomiMagicDispatcherTest {
     @Test
     fun `standalone delivery commit wraps failures for active-state recovery`() = runTest {
         val expectedFailure = IllegalStateException("snapshot or BA commit failed")
+        var commitAttempts = 0
 
         val actualFailure =
             assertFailsWith<McpNotificationDeliveryCommitException> {
-                runStandaloneEventDeliveryCommit { throw expectedFailure }
+                runStandaloneEventDeliveryCommit {
+                    commitAttempts += 1
+                    throw expectedFailure
+                }
             }
 
         assertEquals(expectedFailure.message, actualFailure.cause?.message)
+        assertEquals(2, commitAttempts)
+    }
+
+    @Test
+    fun `standalone delivery commit retries a slow callback once without republishing`() = runTest {
+        var commitAttempts = 0
+
+        runStandaloneEventDeliveryCommit {
+            commitAttempts += 1
+            if (commitAttempts == 1) {
+                delay(1_300L)
+                error("first commit attempt failed")
+            }
+        }
+
+        assertEquals(2, commitAttempts)
     }
 
     @Test
