@@ -155,7 +155,7 @@ class WebDavSyncClient(
 
             resource.get {
                 content = it.bodyAsText()
-                etag = GetETag.fromHttpResponse(it)?.eTag
+                etag = GetETag.fromHttpResponse(it)?.rawETag
             }
 
             val text = content
@@ -191,7 +191,7 @@ class WebDavSyncClient(
                         displayName = response.hrefName(),
                         lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
                         contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
-                        etag = response[GetETag::class.java]?.eTag,
+                        etag = response[GetETag::class.java]?.rawETag,
                     )
                 }
             }
@@ -226,7 +226,7 @@ class WebDavSyncClient(
         val resource = DavResource(httpClient, fileUrl(fileName))
         var resultEtag: String? = null
         resource.put(TextContent(content, JSON_CONTENT_TYPE), headers) { response ->
-            resultEtag = GetETag.fromHttpResponse(response)?.eTag
+            resultEtag = GetETag.fromHttpResponse(response)?.rawETag
         }
         return WebDavUploadResult.Success(resultEtag)
     }
