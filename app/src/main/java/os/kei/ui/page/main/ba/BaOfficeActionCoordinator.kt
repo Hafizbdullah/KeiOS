@@ -61,15 +61,13 @@ internal class BaOfficeActionCoordinator(
 
     private fun saveApCurrentInput() {
         val finalValue = office.apCurrentInput.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 0
-        persistRuntime(office.updateCurrentAp(finalValue, markSync = true))
-        AppBackgroundScheduler.scheduleBaApThreshold(context)
+        persistRuntimeAndReschedule(office.updateCurrentAp(finalValue, markSync = true))
         office.apCurrentInput = finalValue.toString()
     }
 
     private fun saveCafeStoredApInput() {
         val finalValue = office.cafeStoredApInput.replace(',', '.').toDoubleOrNull() ?: 0.0
-        persistRuntime(office.updateCafeStoredAp(finalValue))
-        AppBackgroundScheduler.scheduleBaApThreshold(context)
+        persistRuntimeAndReschedule(office.updateCafeStoredAp(finalValue))
         office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }
 
@@ -88,14 +86,21 @@ internal class BaOfficeActionCoordinator(
     }
 
     private fun claimCafeStoredAp() {
-        persistRuntime(office.claimCafeStoredAp(context))
-        AppBackgroundScheduler.scheduleBaApThreshold(context)
+        persistRuntimeAndReschedule(office.claimCafeStoredAp(context))
     }
 
     private fun persistRuntime(update: BaRuntimePersistenceUpdate?) {
         if (update == null) return
         scope.launch {
             update.withCurrentAccount().persistAsync()
+        }
+    }
+
+    private fun persistRuntimeAndReschedule(update: BaRuntimePersistenceUpdate?) {
+        if (update == null) return
+        scope.launch {
+            update.withCurrentAccount().persistAsync()
+            AppBackgroundScheduler.scheduleBaApThreshold(context)
         }
     }
 

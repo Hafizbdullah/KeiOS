@@ -16,10 +16,13 @@ internal data class BaApNotificationSyncRequest(
     val notificationId: Int = BaAccountNotificationKind.Ap.legacyId,
     val accountDisplayName: String = "",
     val accountId: BaAccountId? = null,
+    val keepReadUntilBelowThreshold: Boolean = true,
+    val suppressionAnchorAtMs: Long = 0L,
 )
 
 internal data class BaApNotificationSyncResult(
     val lastNotifiedLevel: Int? = null,
+    val suppressionAnchorAtMs: Long? = null,
 )
 
 internal data class BaApNotificationSyncPlan(
@@ -27,6 +30,8 @@ internal data class BaApNotificationSyncPlan(
     val shouldSendThresholdNotification: Boolean = false,
     val shouldRefreshActiveNotification: Boolean = true,
     val nextLastNotifiedLevel: Int? = null,
+    val nextSuppressionAnchorAtMs: Long? = null,
+    val advanceSuppressionAnchorAfterDelivery: Boolean = false,
 )
 
 internal object BaApNotificationSyncCoordinator {
@@ -36,7 +41,8 @@ internal object BaApNotificationSyncCoordinator {
         context: Context,
         request: BaApNotificationSyncRequest,
     ): BaApNotificationSyncResult {
-        val plan = planBaApNotificationSync(request)
+        val nowMs = System.currentTimeMillis()
+        val plan = planBaApNotificationSync(request, nowMs)
         var nextLastNotifiedLevel = plan.nextLastNotifiedLevel
         val thresholdNotificationSent = if (plan.shouldSendThresholdNotification) {
             sendThresholdNotification(
@@ -55,7 +61,11 @@ internal object BaApNotificationSyncCoordinator {
             )
         }
         return BaApNotificationSyncResult(
-            lastNotifiedLevel = nextLastNotifiedLevel
+            lastNotifiedLevel = nextLastNotifiedLevel,
+            suppressionAnchorAtMs =
+                plan.nextSuppressionAnchorAtMs ?: nowMs.takeIf {
+                    thresholdNotificationSent && plan.advanceSuppressionAnchorAfterDelivery
+                },
         )
     }
 
@@ -112,27 +122,43 @@ internal object BaApNotificationSyncCoordinator {
 
 internal fun planBaApNotificationSync(
     request: BaApNotificationSyncRequest,
+    nowMs: Long = System.currentTimeMillis(),
 ): BaApNotificationSyncPlan {
     val normalizedRequest = with(BaApNotificationSyncCoordinator) { request.normalized() }
     val resetLastNotifiedLevel = (-1).takeIf { normalizedRequest.lastNotifiedLevel != -1 }
-    if (!normalizedRequest.notifyEnabled) {
+    val acknowledgement =
+        BaApAcknowledgementPolicy.evaluate(
+            notificationEnabled = normalizedRequest.notifyEnabled,
+            currentDisplay = normalizedRequest.currentDisplay,
+            thresholdDisplay = normalizedRequest.thresholdDisplay,
+            keepReadUntilBelowThreshold = normalizedRequest.keepReadUntilBelowThreshold,
+            suppressionAnchorAtMs = normalizedRequest.suppressionAnchorAtMs,
+            nowMs = nowMs,
+        )
+    val resetSuppressionAnchor = 0L.takeIf { acknowledgement.resetSuppressionAnchor }
+    if (acknowledgement.suppressed) {
+        return BaApNotificationSyncPlan(
+            request = normalizedRequest,
+            shouldRefreshActiveNotification = false,
+        )
+    }
+    if (!acknowledgement.eligible) {
         return BaApNotificationSyncPlan(
             request = normalizedRequest,
             nextLastNotifiedLevel = resetLastNotifiedLevel,
+            nextSuppressionAnchorAtMs = resetSuppressionAnchor,
         )
     }
-    if (normalizedRequest.currentDisplay < normalizedRequest.thresholdDisplay) {
-        return BaApNotificationSyncPlan(
-            request = normalizedRequest,
-            nextLastNotifiedLevel = resetLastNotifiedLevel,
-        )
-    }
-    if (normalizedRequest.currentDisplay == normalizedRequest.lastNotifiedLevel) {
+    if (
+        !acknowledgement.bypassLastLevelDeduplication &&
+        normalizedRequest.currentDisplay == normalizedRequest.lastNotifiedLevel
+    ) {
         return BaApNotificationSyncPlan(request = normalizedRequest)
     }
     return BaApNotificationSyncPlan(
         request = normalizedRequest,
         shouldSendThresholdNotification = true,
         shouldRefreshActiveNotification = false,
+        advanceSuppressionAnchorAfterDelivery = acknowledgement.advanceSuppressionAnchorAfterDelivery,
     )
 }

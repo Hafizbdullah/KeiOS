@@ -11,10 +11,14 @@ import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.withContext
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 import os.kei.ui.page.main.widget.chrome.expandTopAppBarToPageTop
@@ -161,6 +165,8 @@ internal fun BaPageCommonEffects(
                     accountNotificationContext.notificationId(BaAccountNotificationKind.Ap),
                 accountDisplayName = accountNotificationContext.accountDisplayName,
                 accountId = accountNotificationContext.accountId,
+                keepReadUntilBelowThreshold = office.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = office.apSuppressionAnchorAtMs,
             )
         }.distinctUntilChanged()
             .collectLatest { request ->
@@ -172,6 +178,18 @@ internal fun BaPageCommonEffects(
                     )
                 result.lastNotifiedLevel?.let { level ->
                     runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
+                }
+                result.suppressionAnchorAtMs?.let { anchorAtMs ->
+                    request.accountId?.let { accountId ->
+                        withContext(AppDispatchers.baFetch) {
+                            BASettingsStore.saveAccountApSuppressionAnchor(
+                                accountId = accountId,
+                                kind = BaApReminderKind.Ap,
+                                anchorAtMs = anchorAtMs,
+                            )
+                        }
+                    }
+                    office.apSuppressionAnchorAtMs = anchorAtMs
                 }
             }
     }
