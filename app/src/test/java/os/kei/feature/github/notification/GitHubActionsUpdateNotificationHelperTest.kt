@@ -93,6 +93,13 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"business\":\"keios\""))
         assertTrue(focusParam.contains("\"notifyId\":\"$notificationId\""))
         assertEquals(snapshot.trackId, focusJson.getString("orderId"))
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertFalse(
+            notification.extras.getBoolean(
+                NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING,
+                false,
+            ),
+        )
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(

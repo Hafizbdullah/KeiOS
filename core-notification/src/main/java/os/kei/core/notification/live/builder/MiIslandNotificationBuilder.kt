@@ -66,7 +66,10 @@ class MiIslandNotificationBuilder(
         val progressTrackColor: String = BA_AP_PROGRESS_TRACK_COLOR,
         val notificationAccentColor: String? = null,
         val primaryActionColor: String = HIGHLIGHT_BG_COLOR
-    )
+    ) {
+        val effectiveRequestPromotedOngoing: Boolean
+            get() = notificationOngoing && requestPromotedOngoing
+    }
 
     private companion object {
         private const val TAG = "McpMiIslandBuilder"
@@ -160,7 +163,9 @@ class MiIslandNotificationBuilder(
                 "running=${state.running} ongoing=${state.ongoing} allowFloat=$resolvedAllowFloat " +
                 "rawAllowFloat=${presentation.allowFloat} firstFloat=${payload.settings.miIslandFirstFloat} " +
                 "finishFloat=${payload.settings.miIslandFinishFloat} updatable=${presentation.focusUpdatable} " +
-                "showNotification=${presentation.focusShowNotification} promoted=${presentation.requestPromotedOngoing} " +
+                "showNotification=${presentation.focusShowNotification} " +
+                "promoted=${presentation.effectiveRequestPromotedOngoing} " +
+                "rawPromoted=${presentation.requestPromotedOngoing} " +
                 "progress=${presentation.progressPercent} big=${presentation.bigTemplateKind} " +
                 "small=${presentation.smallTemplateKind} channel=${payload.environment.channelId}"
         }
@@ -187,7 +192,7 @@ class MiIslandNotificationBuilder(
             .setOngoing(presentation.notificationOngoing)
             .setOnlyAlertOnce(state.onlyAlertOnce)
             .setAutoCancel(isCalendarPoolUpdate && !presentation.notificationOngoing)
-            .setRequestPromotedOngoing(presentation.requestPromotedOngoing)
+            .setRequestPromotedOngoing(presentation.effectiveRequestPromotedOngoing)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .applyDeadline(state.deadlineAtMs)
 
@@ -561,10 +566,10 @@ class MiIslandNotificationBuilder(
                 compactContent = state.shortText
                     .takeIf {
                         it.isNotBlank() &&
-                                it != state.onlineText(context)
+                            it != state.onlineText(context)
                     },
                 notificationOngoing = state.ongoing,
-                requestPromotedOngoing = true,
+                requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
                 showExpandedProgress = useProgressTemplate,
@@ -593,7 +598,7 @@ class MiIslandNotificationBuilder(
                 ),
                 compactContent = state.shortText.takeIf { it.isNotBlank() },
                 notificationOngoing = state.ongoing,
-                requestPromotedOngoing = true,
+                requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
                 showExpandedProgress = true,
@@ -632,7 +637,7 @@ class MiIslandNotificationBuilder(
                     fallback = context.getString(R.string.common_status_running)
                 ),
                 notificationOngoing = state.ongoing,
-                requestPromotedOngoing = true,
+                requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 compactContent = resolveDefaultEndpointSummary(state),
                 notificationAccentColor = MCP_RUNNING_ACCENT_COLOR
@@ -671,7 +676,8 @@ class MiIslandNotificationBuilder(
         presentation: IslandPresentation
     ): Boolean {
         if (!state.onlyAlertOnce && presentation.notificationOngoing) return true
-        return !presentation.notificationOngoing && !presentation.requestPromotedOngoing
+        return !presentation.notificationOngoing &&
+                !presentation.effectiveRequestPromotedOngoing
     }
 
     private fun resolveShortCriticalText(

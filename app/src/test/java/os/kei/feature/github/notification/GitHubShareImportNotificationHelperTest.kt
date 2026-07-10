@@ -669,6 +669,9 @@ class GitHubShareImportNotificationHelperTest {
         assertEquals("View GitHub", notification.actions[0].title.toString())
         assertEquals("Mark read", notification.actions[1].title.toString())
         assertNotNull(notification.deleteIntent)
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertFalse(notification.extras.getBoolean("android.requestPromotedOngoing"))
+        assertTrue(focusJson.getBoolean("enableFloat"))
         assertTrue(focusParam.contains("imageTextInfoRight"))
         assertTrue(focusParam.contains("\"title\":\"Done\""))
         assertEquals(
@@ -747,7 +750,7 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
-    fun `final mi island notifications stay promoted and offer mark read`() {
+    fun `final mi island updates float once and offer mark read`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val states = listOf(
             GitHubShareImportNotificationState(
@@ -768,15 +771,36 @@ class GitHubShareImportNotificationHelperTest {
             ) to "View GitHub",
             GitHubShareImportNotificationState(
                 phase = GitHubShareImportNotificationPhase.Cancelled
+            ) to "View GitHub",
+            GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallCompleted,
+                owner = "owner",
+                repo = "repo",
+                appLabel = "Demo"
+            ) to "View GitHub",
+            GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallFailed,
+                owner = "owner",
+                repo = "repo",
+                appLabel = "Demo"
+            ) to "View GitHub",
+            GitHubShareImportNotificationState(
+                phase = GitHubShareImportNotificationPhase.PageInstallCancelled,
+                owner = "owner",
+                repo = "repo",
+                appLabel = "Demo"
             ) to "View GitHub"
         )
 
         states.forEach { (state, primaryAction) ->
             val notification = buildMiIsland(context, state)
             val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+            val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
 
             assertEquals(Notification.CATEGORY_PROGRESS, notification.category)
             assertTrue(notification.flags and Notification.FLAG_ONGOING_EVENT == 0)
+            assertFalse(notification.extras.getBoolean("android.requestPromotedOngoing"))
+            assertTrue(focusJson.getBoolean("enableFloat"))
             assertNotNull(notification.deleteIntent)
             assertEquals(primaryAction, notification.actions[0].title.toString())
             assertEquals("Mark read", notification.actions[1].title.toString())

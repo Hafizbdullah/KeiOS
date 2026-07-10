@@ -13,6 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.json.JSONObject
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import os.kei.core.notification.R
@@ -423,6 +424,57 @@ class MiIslandNotificationBuilderTest {
         assertFalse(focusParam.contains("progressTextInfo"))
         assertFalse(focusParam.contains("combinePicInfo"))
         assertFalse(focusParam.contains("multiProgressInfo"))
+    }
+
+    @Test
+    fun `non ongoing webdav event stays floatable without promoted ongoing request`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 721,
+            action = "os.kei.test.OPEN_WEBDAV_EVENT"
+        )
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            context,
+            722,
+            Intent("os.kei.test.MARK_WEBDAV_EVENT_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
+                running = true,
+                port = 100,
+                path = "sync",
+                clients = 1,
+                ongoing = false,
+                onlyAlertOnce = true,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = markReadPendingIntent,
+                focusOpenPendingIntent = openPendingIntent,
+                overrideTitle = "WebDAV sync complete",
+                overrideContent = "Synced 1/1",
+                overrideOnlineText = "Complete",
+                overrideShortText = "1/1",
+                overrideProgressPercent = 100,
+                notificationId = 38891,
+                miFocusOrderId = "webdav-sync"
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusJson = JSONObject(
+            notification.extras.getString("miui.focus.param").orEmpty()
+        ).getJSONObject("param_v2")
+
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertFalse(notification.extras.getBoolean("android.requestPromotedOngoing"))
+        assertTrue(focusJson.getBoolean("enableFloat"))
     }
 
     @Test

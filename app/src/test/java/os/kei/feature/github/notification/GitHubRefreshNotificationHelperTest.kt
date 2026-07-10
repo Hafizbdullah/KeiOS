@@ -162,6 +162,13 @@ class GitHubRefreshNotificationHelperTest {
         val notification = invokeMiIslandNotification(context, state)
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
+        assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertFalse(
+            notification.extras.getBoolean(
+                NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING,
+                false
+            )
+        )
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
     }
