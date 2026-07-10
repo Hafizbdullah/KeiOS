@@ -10,12 +10,19 @@ object McpAppIntentContract {
     const val TARGET_ROUTE_WEBDAV_SYNC = "WebDavSync"
 }
 
+object McpNotificationMarkReadContract {
+    const val ACTION = "os.kei.focus.notification.action.MARK_READ"
+    const val EXTRA_NOTIFICATION_ID = "notification_id"
+    const val EXTRA_SERVER_NAME = "server_name"
+    const val EXTRA_TARGET_BA_ACCOUNT_ID = "target_ba_account_id"
+}
+
 internal object McpNotificationActionContract {
     const val NOTIFICATION_ACTION_RECEIVER_CLASS_NAME =
         "os.kei.feature.notification.NotificationActionReceiver"
     const val MI_FOCUS_ACTION_RECEIVER_CLASS_NAME =
         "os.kei.feature.notification.MiFocusNotificationActionReceiver"
     const val ACTION_STOP_MCP_SERVER = "os.kei.notification.action.STOP_MCP_SERVER"
-    const val ACTION_MI_FOCUS_MARK_READ = "os.kei.focus.notification.action.MARK_READ"
-    const val EXTRA_NOTIFICATION_ID = "notification_id"
+    const val ACTION_MI_FOCUS_MARK_READ = McpNotificationMarkReadContract.ACTION
+    const val EXTRA_NOTIFICATION_ID = McpNotificationMarkReadContract.EXTRA_NOTIFICATION_ID
 }

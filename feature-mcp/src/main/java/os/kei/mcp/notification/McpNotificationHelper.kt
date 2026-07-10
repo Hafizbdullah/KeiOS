@@ -164,6 +164,11 @@ object McpNotificationHelper {
     ): SessionNotifier.NotificationBuildResult {
         val isBlueArchiveNotification =
             McpNotificationPayload.isBaNotificationServerName(serverName)
+        val resolvedTargetBaAccountId =
+            normalizeTargetBaAccountId(
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
         val openRequestCode = 110_100 + notificationId
         val focusOpenRequestCode = 410_100 + notificationId
         val secondaryRequestCode = 110_200 + notificationId
@@ -171,7 +176,7 @@ object McpNotificationHelper {
             buildOpenIntent(
                 context = context,
                 serverName = serverName,
-                targetBaAccountId = targetBaAccountId,
+                targetBaAccountId = resolvedTargetBaAccountId,
                 targetRoute = targetRoute,
             )
         val focusOpenPendingIntent = PendingIntent.getActivity(
@@ -191,6 +196,8 @@ object McpNotificationHelper {
                 context = context,
                 notificationId = notificationId,
                 requestCode = 210_200 + notificationId,
+                serverName = serverName,
+                targetBaAccountId = resolvedTargetBaAccountId,
             ) to context.getString(
                 if (isBlueArchiveNotification) {
                     R.string.common_mark_read
@@ -770,20 +777,40 @@ object McpNotificationHelper {
         }
     }
 
-    private fun markReadPendingIntent(
+    internal fun buildMarkReadIntent(
         context: Context,
         notificationId: Int,
-        requestCode: Int,
-    ): PendingIntent {
-        val intent = Intent().apply {
+        serverName: String,
+        targetBaAccountId: String?,
+    ): Intent =
+        Intent().apply {
             setClassName(
                 context.packageName,
                 McpNotificationActionContract.MI_FOCUS_ACTION_RECEIVER_CLASS_NAME,
             )
-            action = McpNotificationActionContract.ACTION_MI_FOCUS_MARK_READ
+            action = McpNotificationMarkReadContract.ACTION
             addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            putExtra(McpNotificationActionContract.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(McpNotificationMarkReadContract.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(McpNotificationMarkReadContract.EXTRA_SERVER_NAME, serverName)
+            targetBaAccountId?.let {
+                putExtra(McpNotificationMarkReadContract.EXTRA_TARGET_BA_ACCOUNT_ID, it)
+            }
         }
+
+    private fun markReadPendingIntent(
+        context: Context,
+        notificationId: Int,
+        requestCode: Int,
+        serverName: String,
+        targetBaAccountId: String?,
+    ): PendingIntent {
+        val intent =
+            buildMarkReadIntent(
+                context = context,
+                notificationId = notificationId,
+                serverName = serverName,
+                targetBaAccountId = targetBaAccountId,
+            )
         return PendingIntent.getBroadcast(
             context,
             requestCode,
