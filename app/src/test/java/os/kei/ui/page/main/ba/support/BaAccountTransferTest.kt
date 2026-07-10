@@ -32,6 +32,7 @@ class BaAccountTransferTest {
         val parsed = parseBaAccountsExportJson(raw)
 
         assertEquals(2, countBaAccountsExportJson(raw))
+        assertFalse(raw.contains("suppression_anchor", ignoreCase = true))
         assertEquals(42L, parsed.exportedAtMs)
         assertEquals(activeAccountId, parsed.activeAccountId)
         assertFalse(parsed.allAccountsFollowGlobalNotificationSettings)

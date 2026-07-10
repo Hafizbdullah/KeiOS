@@ -39,6 +39,8 @@ internal data class BaOfficeState(
     val apSyncMs: Long,
     val apNotifyEnabled: Boolean,
     val apNotifyThreshold: Int,
+    val apSuppressionAnchorAtMs: Long,
+    val cafeApSuppressionAnchorAtMs: Long,
     val arenaRefreshNotifyEnabled: Boolean,
     val arenaRefreshLastNotifiedSlotMs: Long,
     val cafeVisitNotifyEnabled: Boolean,
@@ -71,6 +73,8 @@ internal class BaOfficeController(
     var apSyncMs by mutableLongStateOf(snapshot.apSyncMs)
     var apNotifyEnabled by mutableStateOf(snapshot.apNotifyEnabled)
     var apNotifyThreshold by mutableIntStateOf(snapshot.apNotifyThreshold)
+    var apSuppressionAnchorAtMs by mutableLongStateOf(snapshot.apSuppressionAnchorAtMs)
+    var cafeApSuppressionAnchorAtMs by mutableLongStateOf(snapshot.cafeApSuppressionAnchorAtMs)
     var arenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
     var arenaRefreshLastNotifiedSlotMs by mutableLongStateOf(snapshot.arenaRefreshLastNotifiedSlotMs)
     var cafeVisitNotifyEnabled by mutableStateOf(snapshot.cafeVisitNotifyEnabled)
@@ -113,6 +117,8 @@ internal class BaOfficeController(
             apSyncMs == snapshot.apSyncMs &&
             apNotifyEnabled == snapshot.apNotifyEnabled &&
             apNotifyThreshold == snapshot.apNotifyThreshold &&
+            apSuppressionAnchorAtMs == snapshot.apSuppressionAnchorAtMs &&
+            cafeApSuppressionAnchorAtMs == snapshot.cafeApSuppressionAnchorAtMs &&
             arenaRefreshNotifyEnabled == snapshot.arenaRefreshNotifyEnabled &&
             arenaRefreshLastNotifiedSlotMs == snapshot.arenaRefreshLastNotifiedSlotMs &&
             cafeVisitNotifyEnabled == snapshot.cafeVisitNotifyEnabled &&
@@ -153,6 +159,8 @@ internal class BaOfficeController(
         apSyncMs = snapshot.apSyncMs
         apNotifyEnabled = snapshot.apNotifyEnabled
         apNotifyThreshold = snapshot.apNotifyThreshold
+        apSuppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs
+        cafeApSuppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs
         arenaRefreshNotifyEnabled = snapshot.arenaRefreshNotifyEnabled
         arenaRefreshLastNotifiedSlotMs = snapshot.arenaRefreshLastNotifiedSlotMs
         cafeVisitNotifyEnabled = snapshot.cafeVisitNotifyEnabled
@@ -182,6 +190,8 @@ internal class BaOfficeController(
             apSyncMs = apSyncMs,
             apNotifyEnabled = apNotifyEnabled,
             apNotifyThreshold = apNotifyThreshold,
+            apSuppressionAnchorAtMs = apSuppressionAnchorAtMs,
+            cafeApSuppressionAnchorAtMs = cafeApSuppressionAnchorAtMs,
             arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
             arenaRefreshLastNotifiedSlotMs = arenaRefreshLastNotifiedSlotMs,
             cafeVisitNotifyEnabled = cafeVisitNotifyEnabled,

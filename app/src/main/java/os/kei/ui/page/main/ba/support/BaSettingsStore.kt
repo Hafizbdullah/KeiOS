@@ -7,6 +7,20 @@ import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import java.util.UUID
 
+private fun BaPageSnapshot.withLocalApAcknowledgements(accountId: BaAccountId): BaPageSnapshot =
+    copy(
+        apSuppressionAnchorAtMs =
+            BASettingsStore.loadAccountApSuppressionAnchor(
+                accountId,
+                BaApReminderKind.Ap,
+            ),
+        cafeApSuppressionAnchorAtMs =
+            BASettingsStore.loadAccountApSuppressionAnchor(
+                accountId,
+                BaApReminderKind.CafeAp,
+            ),
+    )
+
 internal object BASettingsStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_SETTINGS_KV_ID) }
 
@@ -19,6 +33,9 @@ internal object BASettingsStore {
     private fun idSettings(): BaIdSettingsAccessor = BaIdSettingsAccessor(MmkvBaSettingsKeyValueStore(kv()))
 
     private fun accountKeyValueStore(): MmkvBaSettingsKeyValueStore = MmkvBaSettingsKeyValueStore(kv())
+
+    private fun apAcknowledgementStore(): BaApAcknowledgementStore =
+        BaApAcknowledgementStore(accountKeyValueStore())
 
     private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
         BaAccountStore(keyValueStore)
@@ -267,6 +284,7 @@ internal object BASettingsStore {
     fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
         if (store.deleteAccount(accountId)) {
+            apAcknowledgementStore().clearAccount(accountId)
             notifyChanged()
         }
         return store.loadState()
@@ -300,8 +318,16 @@ internal object BASettingsStore {
     fun loadSnapshot(): BaPageSnapshot =
         loadSnapshot(accountState = loadAccountState())
 
-    fun loadSnapshot(accountState: BaAccountStoreSnapshot): BaPageSnapshot =
-        loadBaSettingsSnapshot(kv()).withActiveBaAccount(accountState)
+    fun loadSnapshot(accountState: BaAccountStoreSnapshot): BaPageSnapshot {
+        val snapshot = loadBaSettingsSnapshot(kv()).withActiveBaAccount(accountState)
+        val activeAccountId =
+            accountState.accounts
+                .firstOrNull { it.profile.id == accountState.activeAccountId }
+                ?.profile
+                ?.id
+                ?: return snapshot
+        return snapshot.withLocalApAcknowledgements(activeAccountId)
+    }
 
     fun loadCalendarPoolSnapshot(): BaPageSnapshot =
         loadSnapshot().copy(serverIndex = loadCalendarPoolServerIndex())
@@ -320,10 +346,33 @@ internal object BASettingsStore {
                         baseSnapshot.withBaAccount(
                             accountState = accountState,
                             account = account,
-                        ),
+                        ).withLocalApAcknowledgements(account.profile.id),
                 )
             }
     }
+
+    fun loadAccountApSuppressionAnchor(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Long = apAcknowledgementStore().loadSuppressionAnchor(accountId, kind)
+
+    fun saveAccountApSuppressionAnchor(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        anchorAtMs: Long,
+    ): Boolean =
+        apAcknowledgementStore()
+            .setSuppressionAnchor(accountId, kind, anchorAtMs)
+            .also { changed ->
+                if (changed) notifyChanged(notifyHomeOverview = false)
+            }
+
+    fun clearAccountApAcknowledgements(accountId: BaAccountId): Boolean =
+        apAcknowledgementStore()
+            .clearAccount(accountId)
+            .also { changed ->
+                if (changed) notifyChanged(notifyHomeOverview = false)
+            }
 
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)
 
