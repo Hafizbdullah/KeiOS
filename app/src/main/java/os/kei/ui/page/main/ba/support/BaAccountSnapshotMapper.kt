@@ -49,3 +49,20 @@ internal fun BaPageSnapshot.withBaAccount(
         coffeeInvite2UsedMs = runtime.coffeeInvite2UsedMs,
     )
 }
+
+internal fun BaPageSnapshot.withLocalApAcknowledgementAnchors(
+    accountId: BaAccountId,
+    acknowledgementStore: BaApAcknowledgementStore,
+): BaPageSnapshot =
+    copy(
+        apSuppressionAnchorAtMs =
+            acknowledgementStore.loadSuppressionAnchor(
+                accountId,
+                BaApReminderKind.Ap,
+            ),
+        cafeApSuppressionAnchorAtMs =
+            acknowledgementStore.loadSuppressionAnchor(
+                accountId,
+                BaApReminderKind.CafeAp,
+            ),
+    )

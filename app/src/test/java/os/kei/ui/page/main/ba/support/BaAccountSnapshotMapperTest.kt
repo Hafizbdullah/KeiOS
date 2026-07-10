@@ -89,6 +89,94 @@ class BaAccountSnapshotMapperTest {
     }
 
     @Test
+    fun `active account snapshot loads its local AP acknowledgement anchors`() {
+        val accountId = BaAccountId("account-active")
+        val account =
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = accountId,
+                        serverIndex = 0,
+                        displayName = "Active",
+                        nickname = "Active",
+                        friendCode = "ACTIVE01",
+                    ),
+            )
+        val state =
+            BaAccountStoreSnapshot(
+                accounts = listOf(account),
+                activeAccountId = accountId,
+                allAccountsFollowGlobalNotificationSettings = true,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+        val acknowledgementStore = BaApAcknowledgementStore(InMemoryBaAccountKeyValueStore())
+        acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
+        acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
+
+        val snapshot =
+            BaPageSnapshot()
+                .withActiveBaAccount(state)
+                .withLocalApAcknowledgementAnchors(accountId, acknowledgementStore)
+
+        assertEquals(1_000L, snapshot.apSuppressionAnchorAtMs)
+        assertEquals(2_000L, snapshot.cafeApSuppressionAnchorAtMs)
+    }
+
+    @Test
+    fun `reminder snapshots load independent local anchors for each account`() {
+        val firstId = BaAccountId("account-first")
+        val secondId = BaAccountId("account-second")
+        val accounts =
+            listOf(
+                BaAccountRecord(
+                    profile =
+                        BaAccountProfile(
+                            id = firstId,
+                            serverIndex = 0,
+                            displayName = "First",
+                            nickname = "First",
+                            friendCode = "FIRST001",
+                        ),
+                ),
+                BaAccountRecord(
+                    profile =
+                        BaAccountProfile(
+                            id = secondId,
+                            serverIndex = 1,
+                            displayName = "Second",
+                            nickname = "Second",
+                            friendCode = "SECOND01",
+                        ),
+                ),
+            )
+        val state =
+            BaAccountStoreSnapshot(
+                accounts = accounts,
+                activeAccountId = firstId,
+                allAccountsFollowGlobalNotificationSettings = true,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+        val acknowledgementStore = BaApAcknowledgementStore(InMemoryBaAccountKeyValueStore())
+        acknowledgementStore.setSuppressionAnchor(firstId, BaApReminderKind.Ap, 1_000L)
+        acknowledgementStore.setSuppressionAnchor(firstId, BaApReminderKind.CafeAp, 2_000L)
+        acknowledgementStore.setSuppressionAnchor(secondId, BaApReminderKind.Ap, 3_000L)
+        acknowledgementStore.setSuppressionAnchor(secondId, BaApReminderKind.CafeAp, 4_000L)
+
+        val snapshots =
+            accounts.associate { account ->
+                account.profile.id to
+                    BaPageSnapshot()
+                        .withBaAccount(state, account)
+                        .withLocalApAcknowledgementAnchors(account.profile.id, acknowledgementStore)
+            }
+
+        assertEquals(1_000L, snapshots.getValue(firstId).apSuppressionAnchorAtMs)
+        assertEquals(2_000L, snapshots.getValue(firstId).cafeApSuppressionAnchorAtMs)
+        assertEquals(3_000L, snapshots.getValue(secondId).apSuppressionAnchorAtMs)
+        assertEquals(4_000L, snapshots.getValue(secondId).cafeApSuppressionAnchorAtMs)
+    }
+
+    @Test
     fun `base snapshot is preserved when active account is missing`() {
         val base = BaPageSnapshot(serverIndex = 0, idNickname = "Base")
         val state =

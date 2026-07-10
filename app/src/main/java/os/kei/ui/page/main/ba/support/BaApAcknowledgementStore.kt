@@ -22,10 +22,11 @@ internal class BaApAcknowledgementStore(
     ): Boolean {
         val key = key(accountId, kind)
         val normalized = anchorAtMs.coerceAtLeast(0L)
-        if (loadSuppressionAnchor(accountId, kind) == normalized) return false
         if (normalized == 0L) {
+            if (!store.containsKey(key)) return false
             store.removeValueForKey(key)
         } else {
+            if (store.containsKey(key) && store.decodeLong(key, 0L) == normalized) return false
             store.encode(key, normalized)
         }
         return true

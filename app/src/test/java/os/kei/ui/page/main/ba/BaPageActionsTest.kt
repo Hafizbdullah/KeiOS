@@ -101,6 +101,35 @@ class BaPageActionsTest {
     }
 
     @Test
+    fun `office controller carries AP read setting and local anchors through state and snapshots`() {
+        val initialSnapshot =
+            BaPageSnapshot(
+                keepApRemindersReadUntilBelowThreshold = false,
+                apSuppressionAnchorAtMs = 1_000L,
+                cafeApSuppressionAnchorAtMs = 2_000L,
+            )
+        val office = BaOfficeController(initialSnapshot)
+
+        assertTrue(office.matchesSnapshot(initialSnapshot))
+        assertFalse(office.state().keepApRemindersReadUntilBelowThreshold)
+        assertEquals(1_000L, office.state().apSuppressionAnchorAtMs)
+        assertEquals(2_000L, office.state().cafeApSuppressionAnchorAtMs)
+
+        val nextSnapshot =
+            initialSnapshot.copy(
+                keepApRemindersReadUntilBelowThreshold = true,
+                apSuppressionAnchorAtMs = 3_000L,
+                cafeApSuppressionAnchorAtMs = 4_000L,
+            )
+        office.applySnapshot(nextSnapshot)
+
+        assertTrue(office.matchesSnapshot(nextSnapshot))
+        assertTrue(office.state().keepApRemindersReadUntilBelowThreshold)
+        assertEquals(3_000L, office.state().apSuppressionAnchorAtMs)
+        assertEquals(4_000L, office.state().cafeApSuppressionAnchorAtMs)
+    }
+
+    @Test
     fun `runtime effects wait for active account hydration`() {
         assertFalse(
             shouldRunBaRuntimeEffects(

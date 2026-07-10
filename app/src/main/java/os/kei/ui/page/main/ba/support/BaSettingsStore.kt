@@ -7,19 +7,15 @@ import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import java.util.UUID
 
-private fun BaPageSnapshot.withLocalApAcknowledgements(accountId: BaAccountId): BaPageSnapshot =
-    copy(
-        apSuppressionAnchorAtMs =
-            BASettingsStore.loadAccountApSuppressionAnchor(
-                accountId,
-                BaApReminderKind.Ap,
-            ),
-        cafeApSuppressionAnchorAtMs =
-            BASettingsStore.loadAccountApSuppressionAnchor(
-                accountId,
-                BaApReminderKind.CafeAp,
-            ),
-    )
+internal fun deleteBaAccountAndClearAcknowledgements(
+    accountStore: BaAccountStore,
+    acknowledgementStore: BaApAcknowledgementStore,
+    accountId: BaAccountId,
+): Boolean {
+    if (!accountStore.deleteAccount(accountId)) return false
+    acknowledgementStore.clearAccount(accountId)
+    return true
+}
 
 internal object BASettingsStore {
     private val store: MMKV by lazy { KeiMmkv.byId(BA_SETTINGS_KV_ID) }
@@ -36,6 +32,9 @@ internal object BASettingsStore {
 
     private fun apAcknowledgementStore(): BaApAcknowledgementStore =
         BaApAcknowledgementStore(accountKeyValueStore())
+
+    private fun BaPageSnapshot.withLocalApAcknowledgements(accountId: BaAccountId): BaPageSnapshot =
+        withLocalApAcknowledgementAnchors(accountId, apAcknowledgementStore())
 
     private fun accountStore(keyValueStore: MmkvBaSettingsKeyValueStore = accountKeyValueStore()): BaAccountStore =
         BaAccountStore(keyValueStore)
@@ -283,8 +282,7 @@ internal object BASettingsStore {
 
     fun deleteAccount(accountId: BaAccountId): BaAccountStoreSnapshot {
         val store = migratedAccountStore()
-        if (store.deleteAccount(accountId)) {
-            apAcknowledgementStore().clearAccount(accountId)
+        if (deleteBaAccountAndClearAcknowledgements(store, apAcknowledgementStore(), accountId)) {
             notifyChanged()
         }
         return store.loadState()

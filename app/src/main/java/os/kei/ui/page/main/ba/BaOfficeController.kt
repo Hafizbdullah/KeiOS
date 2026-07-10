@@ -39,6 +39,7 @@ internal data class BaOfficeState(
     val apSyncMs: Long,
     val apNotifyEnabled: Boolean,
     val apNotifyThreshold: Int,
+    val keepApRemindersReadUntilBelowThreshold: Boolean,
     val apSuppressionAnchorAtMs: Long,
     val cafeApSuppressionAnchorAtMs: Long,
     val arenaRefreshNotifyEnabled: Boolean,
@@ -73,6 +74,7 @@ internal class BaOfficeController(
     var apSyncMs by mutableLongStateOf(snapshot.apSyncMs)
     var apNotifyEnabled by mutableStateOf(snapshot.apNotifyEnabled)
     var apNotifyThreshold by mutableIntStateOf(snapshot.apNotifyThreshold)
+    var keepApRemindersReadUntilBelowThreshold by mutableStateOf(snapshot.keepApRemindersReadUntilBelowThreshold)
     var apSuppressionAnchorAtMs by mutableLongStateOf(snapshot.apSuppressionAnchorAtMs)
     var cafeApSuppressionAnchorAtMs by mutableLongStateOf(snapshot.cafeApSuppressionAnchorAtMs)
     var arenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
@@ -117,6 +119,7 @@ internal class BaOfficeController(
             apSyncMs == snapshot.apSyncMs &&
             apNotifyEnabled == snapshot.apNotifyEnabled &&
             apNotifyThreshold == snapshot.apNotifyThreshold &&
+            keepApRemindersReadUntilBelowThreshold == snapshot.keepApRemindersReadUntilBelowThreshold &&
             apSuppressionAnchorAtMs == snapshot.apSuppressionAnchorAtMs &&
             cafeApSuppressionAnchorAtMs == snapshot.cafeApSuppressionAnchorAtMs &&
             arenaRefreshNotifyEnabled == snapshot.arenaRefreshNotifyEnabled &&
@@ -159,6 +162,7 @@ internal class BaOfficeController(
         apSyncMs = snapshot.apSyncMs
         apNotifyEnabled = snapshot.apNotifyEnabled
         apNotifyThreshold = snapshot.apNotifyThreshold
+        keepApRemindersReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold
         apSuppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs
         cafeApSuppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs
         arenaRefreshNotifyEnabled = snapshot.arenaRefreshNotifyEnabled
@@ -190,6 +194,7 @@ internal class BaOfficeController(
             apSyncMs = apSyncMs,
             apNotifyEnabled = apNotifyEnabled,
             apNotifyThreshold = apNotifyThreshold,
+            keepApRemindersReadUntilBelowThreshold = keepApRemindersReadUntilBelowThreshold,
             apSuppressionAnchorAtMs = apSuppressionAnchorAtMs,
             cafeApSuppressionAnchorAtMs = cafeApSuppressionAnchorAtMs,
             arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
