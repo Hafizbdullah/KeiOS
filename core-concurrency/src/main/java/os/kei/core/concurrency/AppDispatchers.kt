@@ -30,6 +30,13 @@ object AppDispatchers {
     val githubNetwork: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(10)
 
     /**
+     * User-triggered GitHub managed downloads. The foreground speed profile can run up to 12
+     * blocking range readers, while the remaining slots keep the bounded file writer and
+     * cancellation path responsive throughout the transfer.
+     */
+    val githubManagedDownload: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(20)
+
+    /**
      * GitHub notification operations: Live Updates, Xiaomi focus notification payloads, and
      * notification cleanup. Kept separate from network checks so progress surfaces stay responsive
      * while large refresh batches occupy the GitHub network dispatcher.

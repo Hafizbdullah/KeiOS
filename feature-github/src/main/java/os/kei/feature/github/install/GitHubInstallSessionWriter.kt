@@ -28,7 +28,8 @@ private const val GITHUB_SEGMENTED_PART_SIZE_BYTES = 8L * 1024L * 1024L
 private const val GITHUB_SEGMENTED_MAX_CONNECTIONS = 4
 private const val GITHUB_FOREGROUND_BOOST_MIN_SIZE_BYTES = 4L * 1024L * 1024L
 private const val GITHUB_FOREGROUND_BOOST_PART_SIZE_BYTES = 4L * 1024L * 1024L
-private const val GITHUB_FOREGROUND_BOOST_MAX_CONNECTIONS = 8
+private const val GITHUB_FOREGROUND_BOOST_MAX_CONNECTIONS = 12
+private const val GITHUB_MIN_BYTES_PER_CONNECTION = 16L * 1024L * 1024L
 
 data class GitHubInstallSessionWriteResult(
     val bytesWritten: Long,
@@ -38,12 +39,18 @@ data class GitHubInstallSessionWriteResult(
 
 class GitHubInstallSessionWriter(
     private val client: OkHttpClient,
-    downloadDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    balancedDownloadDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    foregroundBoostDownloadDispatcher: CoroutineDispatcher = AppDispatchers.githubManagedDownload,
 ) {
-    private val segmentedDownloadClient =
+    private val balancedDownloadClient =
         SegmentedDownloadClient(
             client = client,
-            dispatcher = downloadDispatcher,
+            dispatcher = balancedDownloadDispatcher,
+        )
+    private val foregroundBoostDownloadClient =
+        SegmentedDownloadClient(
+            client = client,
+            dispatcher = foregroundBoostDownloadDispatcher,
         )
 
     suspend fun streamApkIntoSession(
@@ -269,7 +276,7 @@ class GitHubInstallSessionWriter(
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ) {
         val result =
-            segmentedDownloadClient.downloadToFile(
+            segmentedDownloadClient(downloadSpeedProfile).downloadToFile(
                 request = SegmentedDownloadRequest(
                     url = resolvedUrl,
                     outputFile = outputFile,
@@ -306,10 +313,19 @@ class GitHubInstallSessionWriter(
         AppLogger.i(GITHUB_INSTALL_SESSION_WRITER_TAG) {
             "asset downloaded profile=${downloadSpeedProfile.name} parallel=${result.parallel} " +
                 "range=${result.rangeSupported} " +
-                "bytes=${result.totalBytes} retry=${result.retryCount} steal=${result.stealCount} " +
+                "bytes=${result.totalBytes} workers=${result.workerConnections} " +
+                "peak=${result.peakActiveConnections} retry=${result.retryCount} steal=${result.stealCount} " +
                 "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         }
     }
+
+    private fun segmentedDownloadClient(
+        speedProfile: SegmentedDownloadSpeedProfile,
+    ): SegmentedDownloadClient =
+        when (speedProfile) {
+            SegmentedDownloadSpeedProfile.Balanced -> balancedDownloadClient
+            SegmentedDownloadSpeedProfile.ForegroundBoost -> foregroundBoostDownloadClient
+        }
 
     private suspend fun emitStagingProgress(
         sessionId: Int,
@@ -336,7 +352,7 @@ class GitHubInstallSessionWriter(
     }
 }
 
-private fun githubSegmentedDownloadOptions(
+internal fun githubSegmentedDownloadOptions(
     speedProfile: SegmentedDownloadSpeedProfile,
 ): SegmentedDownloadOptions =
     when (speedProfile) {
@@ -344,6 +360,7 @@ private fun githubSegmentedDownloadOptions(
             SegmentedDownloadOptions(
                 minParallelSizeBytes = GITHUB_SEGMENTED_MIN_SIZE_BYTES,
                 initialPartSizeBytes = GITHUB_SEGMENTED_PART_SIZE_BYTES,
+                minBytesPerConnection = GITHUB_MIN_BYTES_PER_CONNECTION,
                 maxConnections = GITHUB_SEGMENTED_MAX_CONNECTIONS,
                 maxRetriesPerPart = 3,
                 retryDelayMs = 1_000L,
@@ -357,6 +374,7 @@ private fun githubSegmentedDownloadOptions(
             SegmentedDownloadOptions(
                 minParallelSizeBytes = GITHUB_FOREGROUND_BOOST_MIN_SIZE_BYTES,
                 initialPartSizeBytes = GITHUB_FOREGROUND_BOOST_PART_SIZE_BYTES,
+                minBytesPerConnection = GITHUB_MIN_BYTES_PER_CONNECTION,
                 maxConnections = GITHUB_FOREGROUND_BOOST_MAX_CONNECTIONS,
                 maxRetriesPerPart = 3,
                 retryDelayMs = 1_000L,
