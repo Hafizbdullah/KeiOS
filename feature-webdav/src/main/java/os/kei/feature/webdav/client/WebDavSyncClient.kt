@@ -2,9 +2,8 @@ package os.kei.feature.webdav.client
 
 import at.bitfire.dav4jvm.ktor.DavCollection
 import at.bitfire.dav4jvm.ktor.DavResource
+import at.bitfire.dav4jvm.ktor.PreemptiveBasicDigestAuthProvider
 import at.bitfire.dav4jvm.ktor.Response
-import at.bitfire.dav4jvm.ktor.createDomainBasicAuthProvider
-import at.bitfire.dav4jvm.ktor.createDomainDigestAuthProvider
 import at.bitfire.dav4jvm.ktor.exception.ConflictException
 import at.bitfire.dav4jvm.ktor.exception.DavException
 import at.bitfire.dav4jvm.ktor.exception.ForbiddenException
@@ -68,15 +67,9 @@ class WebDavSyncClient(
 
         install(Auth) {
             providers.add(
-                createDomainBasicAuthProvider(
-                    username = config.username,
-                    password = config.appPassword,
-                ),
-            )
-            providers.add(
-                createDomainDigestAuthProvider(
-                    username = config.username,
-                    password = config.appPassword,
+                PreemptiveBasicDigestAuthProvider(
+                    config.username,
+                    config.appPassword,
                 ),
             )
         }
