@@ -15,6 +15,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+import java.io.IOException
+import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -48,6 +50,46 @@ class SegmentedDownloadClientTest {
             assertContentEquals(bytes, outputFile.readBytes())
             assertEquals(32, progress.last().downloadedBytes)
             assertEquals(4, progress.first { it.parallel }.activeConnections)
+        }
+    }
+
+    @Test
+    fun `data ranges reuse final url resolved by probe`() = runBlocking {
+        val bytes = ByteArray(32) { (it + 3).toByte() }
+        MockWebServer().use { origin ->
+            MockWebServer().use { cdn ->
+                origin.dispatcher = object : Dispatcher() {
+                    override fun dispatch(request: RecordedRequest): MockResponse =
+                        MockResponse()
+                            .setResponseCode(302)
+                            .addHeader("Location", cdn.url("/asset.bin"))
+                }
+                cdn.dispatcher = byteRangeDispatcher(bytes)
+                val outputFile = temp.newFile("final-url.bin").apply { delete() }
+
+                client().downloadToFile(
+                    request = SegmentedDownloadRequest(
+                        url = origin.url("/download.bin").toString(),
+                        outputFile = outputFile,
+                    ),
+                    options = testOptions(partSizeBytes = 8, maxConnections = 4),
+                )
+
+                assertEquals(1, origin.requestCount)
+                assertTrue(cdn.requestCount > 1)
+                assertContentEquals(bytes, outputFile.readBytes())
+            }
+        }
+    }
+
+    @Test
+    fun `preallocated file length does not satisfy written byte coverage`() {
+        val file = temp.newFile("preallocated.part")
+        RandomAccessFile(file, "rw").use { it.setLength(32) }
+
+        assertEquals(32, file.length())
+        assertFailsWith<IOException> {
+            validateWrittenByteCount(writtenBytes = 31, expectedBytes = 32)
         }
     }
 

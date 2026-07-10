@@ -173,20 +173,6 @@ internal class ActiveDownloadPart internal constructor(
             }
         cancel?.invoke()
     }
-
-    fun writeAvailable(
-        byteCount: Int,
-        writer: (position: Long, byteCount: Int) -> Unit,
-    ): Int =
-        synchronized(lock) {
-            if (nextOffset > part.endInclusive) return@synchronized 0
-            val writable = min(byteCount.toLong(), part.endInclusive - nextOffset + 1L).toInt()
-            if (writable <= 0) return@synchronized 0
-            val position = nextOffset
-            writer(position, writable)
-            nextOffset += writable
-            writable
-        }
 }
 
 internal data class PartSchedulerStats(

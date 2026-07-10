@@ -5,11 +5,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -104,30 +106,47 @@ class SegmentedDownloadClient(
         )
         val workerClients = List(effectiveConnections) { client }
         val speedTracker = RangeSpeedTracker()
+        val dataRequest = request.copy(url = probeResult.finalUrl)
         progress.emit(force = true)
         RandomAccessFile(partFile, "rw").use { randomFile ->
             randomFile.setLength(totalBytes)
             randomFile.channel.use { channel ->
                 coroutineScope {
-                    repeat(effectiveConnections) { workerId ->
-                        launch {
-                            runWorker(
-                                workerId = workerId,
-                                httpClient = workerClients[workerId % workerClients.size],
-                                speedTracker = speedTracker,
-                                request = request,
-                                options = options,
-                                scheduler = scheduler,
-                                channel = channel,
-                                totalBytes = totalBytes,
-                                progress = progress,
-                            )
+                    val writer = BoundedAsyncFileWriter(
+                        scope = this,
+                        capacity = options.writeQueueCapacity,
+                        writeAt = { position, bytes ->
+                            writeAt(channel, position, bytes)
+                        },
+                        onBytesWritten = progress::addBytes,
+                    )
+                    try {
+                        val workers = List(effectiveConnections) { workerId ->
+                            launch {
+                                runWorker(
+                                    workerId = workerId,
+                                    httpClient = workerClients[workerId % workerClients.size],
+                                    speedTracker = speedTracker,
+                                    request = dataRequest,
+                                    options = options,
+                                    scheduler = scheduler,
+                                    writer = writer,
+                                    totalBytes = totalBytes,
+                                )
+                            }
+                        }
+                        workers.joinAll()
+                        writer.closeAndJoin()
+                    } finally {
+                        withContext(NonCancellable) {
+                            writer.cancelAndJoin()
                         }
                     }
                 }
                 channel.force(true)
             }
         }
+        validateWrittenByteCount(progress.downloadedBytes, totalBytes)
         validateLength(partFile, totalBytes)
         verifyDownloadedSha256(partFile, request.expectedSha256)
         movePartToOutput(partFile, outputFile)
@@ -152,9 +171,8 @@ class SegmentedDownloadClient(
         request: SegmentedDownloadRequest,
         options: SegmentedDownloadOptions,
         scheduler: PartScheduler,
-        channel: FileChannel,
+        writer: BoundedAsyncFileWriter,
         totalBytes: Long,
-        progress: ProgressAggregator,
     ) {
         while (true) {
             currentCoroutineContext().ensureActive()
@@ -175,9 +193,8 @@ class SegmentedDownloadClient(
                     request = request,
                     options = options,
                     active = active,
-                    channel = channel,
+                    writer = writer,
                     totalBytes = totalBytes,
-                    progress = progress,
                 )
             }
             val elapsedMs = elapsedMsSince(startedNs)
@@ -244,9 +261,8 @@ class SegmentedDownloadClient(
         request: SegmentedDownloadRequest,
         options: SegmentedDownloadOptions,
         active: ActiveDownloadPart,
-        channel: FileChannel,
+        writer: BoundedAsyncFileWriter,
         totalBytes: Long,
-        progress: ProgressAggregator,
     ) {
         val requestStart = active.currentOffset()
         val requestEnd = active.currentEndInclusive()
@@ -316,15 +332,18 @@ class SegmentedDownloadClient(
                                 val read = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
                                 if (read < 0) break
                                 if (read == 0) continue
-                                val written = active.writeAvailable(read) { position, byteCount ->
-                                    writeAt(channel, position, buffer, byteCount)
-                                }
+                                val written = min(read.toLong(), remaining).toInt()
                                 if (written > 0) {
+                                    writer.enqueue(
+                                        position = offset,
+                                        source = buffer,
+                                        byteCount = written,
+                                    )
+                                    active.advanceTo(offset + written)
                                     val currentOffset = active.currentOffset()
                                     leaseTracker.recordProgress(
                                         remainingBytes = (end - currentOffset + 1L).coerceAtLeast(0L),
                                     )
-                                    progress.addBytes(written.toLong())
                                     val nowNs = System.nanoTime()
                                     val checkElapsedMs = (nowNs - lastCheckNs) / 1_000_000L
                                     if (checkElapsedMs >= SLOW_CONNECTION_CHECK_INTERVAL_MS) {
@@ -386,7 +405,7 @@ class SegmentedDownloadClient(
         fallbackReason: String?,
         onProgress: suspend (SegmentedDownloadProgress) -> Unit,
     ): SegmentedDownloadResult {
-        val singleRequest = request.newRequestBuilder().get().build()
+        val singleRequest = request.copy(url = probeResult.finalUrl).newRequestBuilder().get().build()
         var downloaded = 0L
         var finalUrl = probeResult.finalUrl
         var totalBytes = probeResult.totalBytes
@@ -465,17 +484,14 @@ class SegmentedDownloadClient(
     private fun writeAt(
         channel: FileChannel,
         position: Long,
-        buffer: ByteArray,
-        byteCount: Int,
+        bytes: ByteArray,
     ) {
         var written = 0
-        synchronized(channel) {
-            while (written < byteCount) {
-                written += channel.write(
-                    ByteBuffer.wrap(buffer, written, byteCount - written),
-                    position + written,
-                )
-            }
+        while (written < bytes.size) {
+            written += channel.write(
+                ByteBuffer.wrap(bytes, written, bytes.size - written),
+                position + written,
+            )
         }
     }
 
@@ -555,6 +571,17 @@ class SegmentedDownloadClient(
             active?.clearCancelAttempt()
             cancellationHandle?.dispose()
         }
+    }
+}
+
+internal fun validateWrittenByteCount(
+    writtenBytes: Long,
+    expectedBytes: Long,
+) {
+    if (writtenBytes != expectedBytes) {
+        throw IOException(
+            "download byte coverage mismatch expected=$expectedBytes written=$writtenBytes",
+        )
     }
 }
 

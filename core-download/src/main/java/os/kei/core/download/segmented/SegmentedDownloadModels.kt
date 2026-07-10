@@ -20,6 +20,7 @@ data class SegmentedDownloadOptions(
     val progressIntervalMs: Long = 250L,
     val requireHttpsForParallel: Boolean = true,
     val bufferSizeBytes: Int = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES,
+    val writeQueueCapacity: Int = DEFAULT_SEGMENTED_DOWNLOAD_WRITE_QUEUE_CAPACITY,
     val speedProfile: SegmentedDownloadSpeedProfile = SegmentedDownloadSpeedProfile.Balanced,
 ) {
     init {
@@ -30,6 +31,7 @@ data class SegmentedDownloadOptions(
         require(retryDelayMs >= 0L) { "retryDelayMs cannot be negative" }
         require(progressIntervalMs >= 0L) { "progressIntervalMs cannot be negative" }
         require(bufferSizeBytes > 0) { "bufferSizeBytes must be positive" }
+        require(writeQueueCapacity > 0) { "writeQueueCapacity must be positive" }
     }
 }
 
@@ -39,6 +41,7 @@ enum class SegmentedDownloadSpeedProfile {
 }
 
 const val DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES: Int = 1024 * 1024
+const val DEFAULT_SEGMENTED_DOWNLOAD_WRITE_QUEUE_CAPACITY: Int = 8
 
 data class SegmentedDownloadProgress(
     val downloadedBytes: Long,
