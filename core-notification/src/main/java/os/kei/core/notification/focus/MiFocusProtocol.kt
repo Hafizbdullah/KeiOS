@@ -10,6 +10,7 @@ internal const val MI_FOCUS_PARAM_V3_KEY = "param_v2"
 internal const val MI_FOCUS_ISLAND_KEY = "param_island"
 internal const val MI_FOCUS_PICTURES_KEY = "miui.focus.pics"
 internal const val MI_FOCUS_ACTIONS_KEY = "miui.focus.actions"
+private const val MI_FOCUS_PAYLOAD_PROTOCOL_VERSION = 1
 
 /**
  * Local encoder for the public HyperOS Focus Notification V3 Bundle contract.
@@ -145,6 +146,7 @@ internal class MiFocusProtocolTemplateV3 {
     }
 
     private fun toJson(): JSONObject = JSONObject().apply {
+        put("protocol", MI_FOCUS_PAYLOAD_PROTOCOL_VERSION)
         putNullable("cancel", cancel)
         putNullable("enableFloat", enableFloat)
         putNullable("updatable", updatable)

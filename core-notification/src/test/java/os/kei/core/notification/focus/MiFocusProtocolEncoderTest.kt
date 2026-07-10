@@ -66,6 +66,7 @@ class MiFocusProtocolEncoderTest {
 
         val root = JSONObject(bundle.getString(MI_FOCUS_PARAM_KEY).orEmpty())
         val param = root.getJSONObject(MI_FOCUS_PARAM_V3_KEY)
+        assertEquals(1, param.optInt("protocol", -1))
         assertEquals("KeiOS", param.getString("ticker"))
         assertEquals("keios", param.getString("business"))
         assertEquals(
