@@ -149,9 +149,8 @@ class SegmentedDownloadClientTest {
     }
 
     @Test
-    fun `unexpected content range fails and keeps existing output intact`() = runBlocking {
+    fun `unexpected content range falls back to full stream`() = runBlocking {
         val bytes = ByteArray(16) { (it + 29).toByte() }
-        val existingBytes = byteArrayOf(9, 8, 7, 6)
         MockWebServer().use { server ->
             server.dispatcher = object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
@@ -166,21 +165,21 @@ class SegmentedDownloadClientTest {
                     return rangeResponse(bytes, range)
                 }
             }
-            val outputFile = temp.newFile("bad-range.bin").apply { writeBytes(existingBytes) }
+            val outputFile = temp.newFile("bad-range.bin").apply { writeText("old") }
             val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
 
-            assertFailsWith<SegmentedDownloadException> {
-                client().downloadToFile(
-                    request = request(server, outputFile),
-                    options = testOptions(
-                        partSizeBytes = 4,
-                        maxConnections = 2,
-                        maxRetriesPerPart = 0,
-                    ),
-                )
-            }
+            val result = client().downloadToFile(
+                request = request(server, outputFile),
+                options = testOptions(
+                    partSizeBytes = 4,
+                    maxConnections = 2,
+                    maxRetriesPerPart = 0,
+                ),
+            )
 
-            assertContentEquals(existingBytes, outputFile.readBytes())
+            assertEquals(false, result.parallel)
+            assertEquals("range-protocol-error", result.fallbackReason)
+            assertContentEquals(bytes, outputFile.readBytes())
             assertFalse(partFile.exists())
         }
     }

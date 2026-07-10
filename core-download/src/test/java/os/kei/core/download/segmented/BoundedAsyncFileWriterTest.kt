@@ -78,4 +78,23 @@ class BoundedAsyncFileWriterTest {
             assertTrue(error.message.orEmpty().contains("disk failed"))
         }
     }
+
+    @Test
+    fun `progress callback failure has a distinct fatal type`() = runBlocking(Dispatchers.IO) {
+        coroutineScope {
+            val writer = BoundedAsyncFileWriter(
+                scope = this,
+                capacity = 1,
+                writeAt = { _, _ -> },
+                onBytesWritten = { throw IllegalStateException("progress failed") },
+            )
+
+            writer.enqueue(0, byteArrayOf(1), 1)
+
+            assertFailsWith<BoundedAsyncProgressException> {
+                writer.closeAndJoin()
+            }
+            Unit
+        }
+    }
 }

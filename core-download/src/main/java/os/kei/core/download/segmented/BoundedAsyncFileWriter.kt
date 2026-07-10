@@ -14,7 +14,7 @@ internal class BoundedAsyncFileWriter(
     private val writeAt: (position: Long, bytes: ByteArray) -> Unit,
     private val onBytesWritten: suspend (Long) -> Unit = {},
 ) {
-    private val failure = AtomicReference<BoundedAsyncFileWriterException?>(null)
+    private val failure = AtomicReference<BoundedAsyncWriterException?>(null)
     private val writes: Channel<QueuedWrite>
     private val writerJob: kotlinx.coroutines.Job
 
@@ -24,12 +24,25 @@ internal class BoundedAsyncFileWriter(
         writerJob = scope.launch {
             try {
                 for (write in writes) {
-                    writeAt(write.position, write.bytes)
-                    onBytesWritten(write.bytes.size.toLong())
+                    try {
+                        writeAt(write.position, write.bytes)
+                    } catch (error: Throwable) {
+                        throw BoundedAsyncFileWriterException(error)
+                    }
+                    try {
+                        onBytesWritten(write.bytes.size.toLong())
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        throw BoundedAsyncProgressException(error)
+                    }
                 }
             } catch (error: CancellationException) {
                 writes.cancel(error)
                 throw error
+            } catch (error: BoundedAsyncWriterException) {
+                failure.compareAndSet(null, error)
+                writes.close(error)
             } catch (error: Throwable) {
                 val writeFailure = BoundedAsyncFileWriterException(error)
                 failure.compareAndSet(null, writeFailure)
@@ -81,9 +94,21 @@ internal class BoundedAsyncFileWriter(
     )
 }
 
+internal sealed class BoundedAsyncWriterException(
+    message: String,
+    cause: Throwable,
+) : IOException(message, cause)
+
 internal class BoundedAsyncFileWriterException(
     cause: Throwable,
-) : IOException(
-    "positioned file write failed: ${cause.message.orEmpty()}",
-    cause,
+) : BoundedAsyncWriterException(
+    message = "positioned file write failed: ${cause.message.orEmpty()}",
+    cause = cause,
+)
+
+internal class BoundedAsyncProgressException(
+    cause: Throwable,
+) : BoundedAsyncWriterException(
+    message = "download progress callback failed: ${cause.message.orEmpty()}",
+    cause = cause,
 )

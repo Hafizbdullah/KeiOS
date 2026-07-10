@@ -75,4 +75,5 @@ class SegmentedDownloadException(
 internal class SegmentedDownloadHttpException(
     val code: Int,
     val retryable: Boolean,
+    val retryAfterMs: Long? = null,
 ) : IOException("HTTP $code")

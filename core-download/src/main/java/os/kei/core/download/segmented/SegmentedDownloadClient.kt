@@ -28,6 +28,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 
@@ -36,6 +37,9 @@ class SegmentedDownloadClient(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val probe = RangeProbe(client)
+    private val downloadClient = client.newBuilder()
+        .callTimeout(0L, TimeUnit.MILLISECONDS)
+        .build()
 
     suspend fun downloadToFile(
         request: SegmentedDownloadRequest,
@@ -59,12 +63,25 @@ class SegmentedDownloadClient(
                     val parallelDecision = resolveParallelDecision(probeResult, options)
                     val result =
                         if (parallelDecision.parallel) {
-                            downloadParallel(
+                            downloadRangesWithProtocolFallback(
                                 request = request,
                                 options = options,
                                 probeResult = probeResult,
                                 outputFile = outputFile,
                                 partFile = partFile,
+                                parallel = true,
+                                rangeFallbackReason = null,
+                                onProgress = onProgress,
+                            )
+                        } else if (probeResult.rangeSupported) {
+                            downloadRangesWithProtocolFallback(
+                                request = request,
+                                options = options,
+                                probeResult = probeResult,
+                                outputFile = outputFile,
+                                partFile = partFile,
+                                parallel = false,
+                                rangeFallbackReason = parallelDecision.reason,
                                 onProgress = onProgress,
                             )
                         } else {
@@ -95,31 +112,85 @@ class SegmentedDownloadClient(
             error("unreachable download loop")
         }
 
-    private suspend fun downloadParallel(
+    private suspend fun downloadRangesWithProtocolFallback(
         request: SegmentedDownloadRequest,
         options: SegmentedDownloadOptions,
         probeResult: RangeProbeResult,
         outputFile: File,
         partFile: File,
+        parallel: Boolean,
+        rangeFallbackReason: String?,
+        onProgress: suspend (SegmentedDownloadProgress) -> Unit,
+    ): SegmentedDownloadResult =
+        try {
+            downloadRanges(
+                request = request,
+                options = options,
+                probeResult = probeResult,
+                outputFile = outputFile,
+                partFile = partFile,
+                parallel = parallel,
+                fallbackReason = rangeFallbackReason,
+                onProgress = onProgress,
+            )
+        } catch (error: RangeProtocolException) {
+            runCatching { partFile.delete() }
+            downloadSingleStream(
+                request = request,
+                options = options,
+                probeResult = probeResult,
+                outputFile = outputFile,
+                partFile = partFile,
+                fallbackReason = "range-protocol-error",
+                onProgress = onProgress,
+            )
+        }
+
+    private suspend fun downloadRanges(
+        request: SegmentedDownloadRequest,
+        options: SegmentedDownloadOptions,
+        probeResult: RangeProbeResult,
+        outputFile: File,
+        partFile: File,
+        parallel: Boolean,
+        fallbackReason: String?,
         onProgress: suspend (SegmentedDownloadProgress) -> Unit,
     ): SegmentedDownloadResult {
         val totalBytes = probeResult.totalBytes
-        val effectiveConnections = effectiveConnections(totalBytes, options)
+        val effectiveConnections =
+            if (parallel) {
+                effectiveConnections(totalBytes, options)
+            } else {
+                1
+            }
+        val schedulerTuning = options.speedProfile.schedulerTuning().let { tuning ->
+            if (parallel) {
+                tuning
+            } else {
+                tuning.copy(
+                    tailPartsPerConnection = 1,
+                    tailWindowInitialMultiplier = 0,
+                    tailWindowMinDynamicMultiplier = 0,
+                    startupActiveConnections = 1,
+                    rateLimitMinActiveConnections = 1,
+                )
+            }
+        }
         val scheduler = PartScheduler(
             totalBytes = totalBytes,
             initialPartSizeBytes = options.initialPartSizeBytes,
             maxRetriesPerPart = options.maxRetriesPerPart,
             concurrency = effectiveConnections,
-            tuning = options.speedProfile.schedulerTuning(),
+            tuning = schedulerTuning,
         )
         val progress = ProgressAggregator(
             totalBytes = totalBytes,
             activeConnections = effectiveConnections,
-            parallel = true,
+            parallel = parallel,
             intervalMs = options.progressIntervalMs,
             onProgress = onProgress,
         )
-        val workerClients = List(effectiveConnections) { client }
+        val workerClients = List(effectiveConnections) { downloadClient }
         val speedTracker = RangeSpeedTracker()
         progress.emit(force = true)
         RandomAccessFile(partFile, "rw").use { randomFile ->
@@ -172,12 +243,13 @@ class SegmentedDownloadClient(
         return SegmentedDownloadResult(
             outputFile = outputFile,
             totalBytes = totalBytes,
-            parallel = true,
+            parallel = parallel,
             rangeSupported = true,
             finalUrl = probeResult.finalUrl,
             retryCount = stats.retryCount,
             stealCount = stats.stealCount,
             handoffCount = stats.handoffCount,
+            fallbackReason = fallbackReason,
         )
     }
 
@@ -233,6 +305,7 @@ class SegmentedDownloadClient(
             val error = outcome.exceptionOrNull()
             if (error is CancellationException) throw error
             if (error is RangeResourceChangedException) throw error
+            if (error is RangeProtocolException) throw error
             if (active.isComplete()) {
                 scheduler.recordSuccess(
                     workerId = workerId,
@@ -247,15 +320,14 @@ class SegmentedDownloadClient(
             val failureKind = error.rangeFailureKindOrNull()
             val rateLimited = failureKind == RangeFailureKind.RateLimited
             val retryable = failureKind != null
-            val retryDelayMs =
-                if (rateLimited) {
-                    rateLimitRetryDelayMs(
-                        baseDelayMs = options.retryDelayMs,
-                        previousRateLimitRetries = part.retryCounts.rateLimited,
-                    )
-                } else {
-                    0L
-                }
+            val retryDelayMs = failureKind?.let { kind ->
+                rangeRetryDelayMs(
+                    error = error,
+                    failureKind = kind,
+                    retryCounts = part.retryCounts,
+                    baseDelayMs = options.retryDelayMs,
+                )
+            } ?: 0L
             if (rateLimited) {
                 scheduler.recordRateLimit(part = part, delayMs = retryDelayMs)
             } else if (retryable) {
@@ -329,19 +401,31 @@ class SegmentedDownloadClient(
                         if (response.code == 200 && resourceValidator != null) {
                             throw RangeResourceChangedException()
                         }
+                        if (response.code == 200) {
+                            throw RangeProtocolException("range request was ignored")
+                        }
+                        if (response.code == 416) {
+                            throw RangeResourceChangedException()
+                        }
                         throw SegmentedDownloadHttpException(
                             code = response.code,
-                            retryable = response.code == 429 || response.code in 500..599,
+                            retryable =
+                                response.code == 408 ||
+                                    response.code == 425 ||
+                                    response.code == 429 ||
+                                    response.code in 500..599,
+                            retryAfterMs = parseRetryAfterMs(response.header("Retry-After")),
                         )
                     }
                     val contentRange = parseContentRange(response.header("Content-Range"))
-                        ?: throw IOException("missing Content-Range")
-                    if (
-                        contentRange.start != requestStart ||
-                        contentRange.end != requestEnd ||
-                        contentRange.totalBytes != totalBytes
-                    ) {
-                        throw IOException("unexpected Content-Range ${response.header("Content-Range").orEmpty()}")
+                        ?: throw RangeProtocolException("missing Content-Range")
+                    if (contentRange.totalBytes != totalBytes) {
+                        throw RangeResourceChangedException()
+                    }
+                    if (contentRange.start != requestStart || contentRange.end != requestEnd) {
+                        throw RangeProtocolException(
+                            "unexpected Content-Range ${response.header("Content-Range").orEmpty()}",
+                        )
                     }
                     if (resourceValidator?.responseChanged(response) == true) {
                         throw RangeResourceChangedException()
@@ -436,41 +520,48 @@ class SegmentedDownloadClient(
         fallbackReason: String?,
         onProgress: suspend (SegmentedDownloadProgress) -> Unit,
     ): SegmentedDownloadResult {
-        val singleRequest = request.newRequestBuilder(targetUrl = probeResult.finalUrl).get().build()
-        var downloaded = 0L
-        var finalUrl = probeResult.finalUrl
-        var totalBytes = probeResult.totalBytes
-        executeStreaming(client, singleRequest) { response ->
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code}")
-            }
-            finalUrl = response.request.url.toString()
-            totalBytes = response.body.contentLength().takeIf { it > 0L }
-                ?: probeResult.totalBytes
-            val progress = ProgressAggregator(
-                totalBytes = totalBytes,
-                activeConnections = 1,
-                parallel = false,
-                intervalMs = options.progressIntervalMs,
-                onProgress = onProgress,
-            )
-            progress.emit(force = true)
-            response.body.byteStream().use { input ->
-                FileOutputStream(partFile).use { output ->
-                    val buffer = ByteArray(options.bufferSizeBytes)
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        output.write(buffer, 0, read)
-                        downloaded += read
-                        progress.addBytes(read.toLong())
-                    }
-                    output.flush()
+        var retryCount = 0
+        var completedAttempt: SingleStreamAttemptResult? = null
+        while (completedAttempt == null) {
+            try {
+                completedAttempt = downloadSingleStreamAttempt(
+                        request = request,
+                        options = options,
+                        probeResult = probeResult,
+                        partFile = partFile,
+                        onProgress = onProgress,
+                    )
+            } catch (error: Throwable) {
+                runCatching { partFile.delete() }
+                if (error is CancellationException) throw error
+                val failureKind = error.singleStreamFailureKindOrNull()
+                    ?: throw error
+                if (retryCount >= options.maxRetriesPerPart) {
+                    throw SegmentedDownloadException(
+                        message = "single stream retry budget exhausted",
+                        cause = error,
+                    )
                 }
+                val retryCounts =
+                    if (failureKind == RangeFailureKind.RateLimited) {
+                        RangeRetryCounts(rateLimited = retryCount)
+                    } else {
+                        RangeRetryCounts(transient = retryCount)
+                    }
+                val retryDelayMs = rangeRetryDelayMs(
+                    error = error,
+                    failureKind = failureKind,
+                    retryCounts = retryCounts,
+                    baseDelayMs = options.retryDelayMs,
+                )
+                retryCount += 1
+                if (retryDelayMs > 0L) delay(retryDelayMs)
             }
-            progress.emit(force = true)
         }
+        val attemptResult = requireNotNull(completedAttempt)
+        val downloaded = attemptResult.downloadedBytes
+        val totalBytes = attemptResult.totalBytes
+        val finalUrl = attemptResult.finalUrl
         if (totalBytes > 0L) validateLength(partFile, totalBytes)
         validateExpectedDownloadSize(partFile.length(), request.expectedSizeBytes)
         verifyDownloadedSha256(partFile, request.expectedSha256)
@@ -481,7 +572,87 @@ class SegmentedDownloadClient(
             parallel = false,
             rangeSupported = probeResult.rangeSupported,
             finalUrl = finalUrl,
+            retryCount = retryCount,
             fallbackReason = fallbackReason,
+        )
+    }
+
+    private suspend fun downloadSingleStreamAttempt(
+        request: SegmentedDownloadRequest,
+        options: SegmentedDownloadOptions,
+        probeResult: RangeProbeResult,
+        partFile: File,
+        onProgress: suspend (SegmentedDownloadProgress) -> Unit,
+    ): SingleStreamAttemptResult {
+        val singleRequest = request.newRequestBuilder(targetUrl = probeResult.finalUrl).get().build()
+        var downloaded = 0L
+        var finalUrl = probeResult.finalUrl
+        var totalBytes = probeResult.totalBytes
+        executeStreaming(downloadClient, singleRequest) { response ->
+            if (!response.isSuccessful) {
+                throw SegmentedDownloadHttpException(
+                    code = response.code,
+                    retryable =
+                        response.code == 408 ||
+                            response.code == 425 ||
+                            response.code == 429 ||
+                            response.code in 500..599,
+                    retryAfterMs = parseRetryAfterMs(response.header("Retry-After")),
+                )
+            }
+            finalUrl = response.request.url.toString()
+            totalBytes = response.body.contentLength().takeIf { it > 0L }
+                ?: probeResult.totalBytes
+            val progress = ProgressAggregator(
+                totalBytes = totalBytes,
+                activeConnections = 1,
+                parallel = false,
+                intervalMs = options.progressIntervalMs,
+                onProgress = { progress ->
+                    try {
+                        onProgress(progress)
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        throw SegmentedDownloadProgressException(error)
+                    }
+                },
+            )
+            progress.emit(force = true)
+            response.body.byteStream().use { input ->
+                val output = try {
+                    FileOutputStream(partFile)
+                } catch (error: IOException) {
+                    throw SegmentedDownloadStorageException(error)
+                }
+                output.use {
+                    val buffer = ByteArray(options.bufferSizeBytes)
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        try {
+                            output.write(buffer, 0, read)
+                        } catch (error: IOException) {
+                            throw SegmentedDownloadStorageException(error)
+                        }
+                        downloaded += read
+                        progress.addBytes(read.toLong())
+                    }
+                    try {
+                        output.flush()
+                        output.fd.sync()
+                    } catch (error: IOException) {
+                        throw SegmentedDownloadStorageException(error)
+                    }
+                }
+            }
+            progress.emit(force = true)
+        }
+        return SingleStreamAttemptResult(
+            downloadedBytes = downloaded,
+            totalBytes = totalBytes,
+            finalUrl = finalUrl,
         )
     }
 
@@ -557,25 +728,6 @@ class SegmentedDownloadClient(
         }
     }
 
-    private fun Throwable?.rangeFailureKindOrNull(): RangeFailureKind? =
-        when (this) {
-            is PartialPartDownloadException -> RangeFailureKind.PartialEof
-            is RangeLeaseExpiredException,
-            is SlowConnectionDownloadException,
-            is SocketTimeoutException -> RangeFailureKind.Timeout
-
-            is SocketException -> RangeFailureKind.ConnectionReset
-            is SegmentedDownloadHttpException ->
-                when {
-                    code == 429 -> RangeFailureKind.RateLimited
-                    retryable -> RangeFailureKind.Transient
-                    else -> null
-                }
-
-            is IOException -> RangeFailureKind.Transient
-            else -> null
-        }
-
     private fun File.partFile(): File =
         File(parentFile ?: File("."), "$name.part")
 
@@ -622,6 +774,12 @@ private data class ParallelDecision(
     val reason: String?,
 )
 
+private data class SingleStreamAttemptResult(
+    val downloadedBytes: Long,
+    val totalBytes: Long,
+    val finalUrl: String,
+)
+
 private class PartialPartDownloadException(
     val expectedBytes: Long,
     val writtenBytes: Long,
@@ -635,24 +793,58 @@ private class RangeLeaseExpiredException(
 
 private class RangeResourceChangedException : IOException("remote resource changed during segmented download")
 
-private fun rateLimitRetryDelayMs(
-    baseDelayMs: Long,
-    previousRateLimitRetries: Int,
-): Long {
-    if (baseDelayMs <= 0L) return 0L
-    val shift = previousRateLimitRetries.coerceIn(0, 5)
-    val multiplier = 1L shl shift
-    val delay =
-        if (baseDelayMs > Long.MAX_VALUE / multiplier) {
-            Long.MAX_VALUE
-        } else {
-            baseDelayMs * multiplier
-        }
-    return delay.coerceAtMost(MAX_RATE_LIMIT_RETRY_DELAY_MS)
-}
+private class RangeProtocolException(
+    message: String,
+) : IOException(message)
+
+private class SegmentedDownloadStorageException(
+    cause: Throwable,
+) : IOException("download storage write failed: ${cause.message.orEmpty()}", cause)
+
+private class SegmentedDownloadProgressException(
+    cause: Throwable,
+) : IOException("download progress callback failed: ${cause.message.orEmpty()}", cause)
+
+internal fun Throwable?.rangeFailureKindOrNull(): RangeFailureKind? =
+    when (this) {
+        is BoundedAsyncWriterException -> null
+        is PartialPartDownloadException -> RangeFailureKind.PartialEof
+        is RangeLeaseExpiredException,
+        is SlowConnectionDownloadException,
+        is SocketTimeoutException -> RangeFailureKind.Timeout
+
+        is SocketException -> RangeFailureKind.ConnectionReset
+        is SegmentedDownloadHttpException ->
+            when {
+                code == 429 -> RangeFailureKind.RateLimited
+                retryable -> RangeFailureKind.Transient
+                else -> null
+            }
+
+        is IOException -> RangeFailureKind.Transient
+        else -> null
+    }
+
+private fun Throwable?.singleStreamFailureKindOrNull(): RangeFailureKind? =
+    when (this) {
+        is SegmentedDownloadStorageException,
+        is SegmentedDownloadProgressException -> null
+
+        is SegmentedDownloadHttpException ->
+            when {
+                code == 429 -> RangeFailureKind.RateLimited
+                retryable -> RangeFailureKind.Transient
+                else -> null
+            }
+
+        is SocketTimeoutException,
+        is SocketException,
+        is IOException -> RangeFailureKind.Transient
+
+        else -> null
+    }
 
 private const val MIN_DYNAMIC_PARALLEL_PART_BYTES = 512L * 1024L
-private const val MAX_RATE_LIMIT_RETRY_DELAY_MS = 30_000L
 private const val MAX_RESOURCE_SNAPSHOT_RESTARTS = 1
 
 internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTuning =
