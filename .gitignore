@@ -50,6 +50,8 @@ captures/
 /app/release/
 /app/debug/
 /app/benchmark/
+/app/benchmarkRelease/
+/app/nonMinifiedRelease/
 
 # Logs / crash dumps
 *.log
