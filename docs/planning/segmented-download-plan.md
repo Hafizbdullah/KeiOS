@@ -626,6 +626,46 @@ per-stream-cap fixture gives Shared and Isolated comparable throughput, while
 confirming one physical connection for Shared and five for Isolated. Real CDN
 results decide whether the extra isolated sockets improve GitHub traffic.
 
+Paseo Atom/direct device evidence from 2026-07-11:
+
+- Device: Xiaomi `25098PN5AC`, Android 16 / API 36, HyperOS 3.0.
+- Network: 5 GHz Wi-Fi, 432 Mbps link rate, Android-estimated downstream
+  bandwidth 132 Mbps, Data Saver disabled, device idle state ACTIVE.
+- Sample: Paseo `v0.1.104`, `183037443` bytes (`174.56 MiB`), direct release URL.
+- Each combination ran three times with a cold Debug process. Every run used
+  Range, completed with zero retries, and matched SHA-256.
+- Foreground means process importance `100`. Background means the benchmark
+  started from the Activity and immediately moved its task behind the Home/app
+  stack; process importance remained `400` for the entire timed download.
+
+| Foreground boost setting | App state | Runtime profile | Run speeds MiB/s | Mean MiB/s | Median MiB/s | Mean elapsed | Median elapsed |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| Off | Foreground | Balanced, 4 workers, 8 MiB parts | 14.706 / 15.212 / 13.704 | 14.541 | 14.706 | 12.028 s | 11.870 s |
+| Off | Background | Balanced, 4 workers, 8 MiB parts | 13.936 / 17.445 / 13.532 | 14.971 | 13.936 | 11.811 s | 12.526 s |
+| On | Foreground | ForegroundBoost, 8 workers, 4 MiB parts | 18.225 / 13.709 / 18.659 | 16.864 | 18.225 | 10.555 s | 9.578 s |
+| On | Background | ForegroundBoost, 8 workers, 4 MiB parts | 17.843 / 13.319 / 14.307 | 15.156 | 14.307 | 11.697 s | 12.201 s |
+
+Device interpretation:
+
+- ForegroundBoost in the foreground improved mean throughput by `15.98%` and
+  median throughput by `23.93%`. Mean elapsed time fell by `12.24%`; median
+  elapsed time fell by `19.31%`, saving about `2.29` seconds on this 174.56 MiB
+  sample.
+- ForegroundBoost after moving the app to the background improved mean
+  throughput by `1.24%` and median throughput by `2.66%`. Mean elapsed time
+  improved by `0.97%`, about `0.11` seconds.
+- Paired foreground/background comparisons showed a median background effect
+  of `-1.26%` for Balanced and `-2.84%` for ForegroundBoost. One Boost pair had
+  a `-23.32%` background outlier, showing greater sensitivity to CDN and
+  scheduler variance with eight physical worker connections.
+- The speed profile is captured when a managed-install request is created. A
+  foreground Boost download keeps the Boost profile after the task moves to the
+  background. Background refresh checks metadata and does not download APKs.
+- Keep the user-controlled foreground boost for manual foreground installs.
+  Keep background-originated work on Balanced. A lifecycle-driven mid-download
+  downgrade has low expected benefit for 10-13 second APK transfers and would
+  add cancellation or dynamic-scheduler complexity.
+
 Live benchmark command template:
 
 ```bash
