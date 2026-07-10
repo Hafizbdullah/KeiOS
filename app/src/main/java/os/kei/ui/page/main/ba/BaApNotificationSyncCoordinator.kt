@@ -2,8 +2,8 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import kotlinx.coroutines.withContext
-import os.kei.core.concurrency.AppDispatchers
 import kotlinx.coroutines.withTimeoutOrNull
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 
@@ -34,31 +34,42 @@ internal data class BaApNotificationSyncPlan(
     val advanceSuppressionAnchorAfterDelivery: Boolean = false,
 )
 
+internal interface BaApNotificationDelivery {
+    suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean
+
+    suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean
+}
+
 internal object BaApNotificationSyncCoordinator {
     private const val NOTIFICATION_SYNC_TIMEOUT_MS = 1_500L
 
     suspend fun sync(
         context: Context,
         request: BaApNotificationSyncRequest,
+    ): BaApNotificationSyncResult =
+        sync(
+            request = request,
+            nowMs = System.currentTimeMillis(),
+            delivery = AndroidBaApNotificationDelivery(context),
+        )
+
+    internal suspend fun sync(
+        request: BaApNotificationSyncRequest,
+        nowMs: Long,
+        delivery: BaApNotificationDelivery,
+        timeoutMs: Long = NOTIFICATION_SYNC_TIMEOUT_MS,
     ): BaApNotificationSyncResult {
-        val nowMs = System.currentTimeMillis()
         val plan = planBaApNotificationSync(request, nowMs)
         var nextLastNotifiedLevel = plan.nextLastNotifiedLevel
         val thresholdNotificationSent = if (plan.shouldSendThresholdNotification) {
-            sendThresholdNotification(
-                context = context,
-                request = plan.request,
-            )
+            withNotificationTimeout(timeoutMs) { delivery.sendThreshold(plan.request) }
         } else {
             false
         }
         if (thresholdNotificationSent) {
             nextLastNotifiedLevel = plan.request.currentDisplay
         } else if (plan.shouldRefreshActiveNotification || plan.shouldSendThresholdNotification) {
-            refreshActiveNotification(
-                context = context,
-                request = plan.request,
-            )
+            withNotificationTimeout(timeoutMs) { delivery.refreshActive(plan.request) }
         }
         return BaApNotificationSyncResult(
             lastNotifiedLevel = nextLastNotifiedLevel,
@@ -67,46 +78,6 @@ internal object BaApNotificationSyncCoordinator {
                     thresholdNotificationSent && plan.advanceSuppressionAnchorAfterDelivery
                 },
         )
-    }
-
-    private suspend fun sendThresholdNotification(
-        context: Context,
-        request: BaApNotificationSyncRequest,
-    ): Boolean {
-        return withNotificationTimeout {
-            BaApNotificationDispatcher.send(
-                context = context,
-                currentDisplay = request.currentDisplay,
-                limitDisplay = request.limitDisplay,
-                thresholdDisplay = request.thresholdDisplay,
-                notificationId = request.notificationId,
-                accountDisplayName = request.accountDisplayName,
-                accountId = request.accountId,
-            )
-        }
-    }
-
-    private suspend fun refreshActiveNotification(
-        context: Context,
-        request: BaApNotificationSyncRequest,
-    ) {
-        withNotificationTimeout {
-            BaApNotificationDispatcher.refreshIfActive(
-                context = context,
-                currentDisplay = request.currentDisplay,
-                limitDisplay = request.limitDisplay,
-                thresholdDisplay = request.thresholdDisplay,
-                notificationId = request.notificationId,
-                accountDisplayName = request.accountDisplayName,
-                accountId = request.accountId,
-            )
-        }
-    }
-
-    private suspend fun withNotificationTimeout(block: () -> Boolean): Boolean {
-        return withTimeoutOrNull(NOTIFICATION_SYNC_TIMEOUT_MS) {
-            withContext(AppDispatchers.baFetch) { block() }
-        } ?: false
     }
 
     internal fun BaApNotificationSyncRequest.normalized(): BaApNotificationSyncRequest {
@@ -119,6 +90,41 @@ internal object BaApNotificationSyncCoordinator {
         )
     }
 }
+
+private class AndroidBaApNotificationDelivery(
+    private val context: Context,
+) : BaApNotificationDelivery {
+    override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            BaApNotificationDispatcher.send(
+                context = context,
+                currentDisplay = request.currentDisplay,
+                limitDisplay = request.limitDisplay,
+                thresholdDisplay = request.thresholdDisplay,
+                notificationId = request.notificationId,
+                accountDisplayName = request.accountDisplayName,
+                accountId = request.accountId,
+            )
+        }
+
+    override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean =
+        withContext(AppDispatchers.baFetch) {
+            BaApNotificationDispatcher.refreshIfActive(
+                context = context,
+                currentDisplay = request.currentDisplay,
+                limitDisplay = request.limitDisplay,
+                thresholdDisplay = request.thresholdDisplay,
+                notificationId = request.notificationId,
+                accountDisplayName = request.accountDisplayName,
+                accountId = request.accountId,
+            )
+        }
+}
+
+private suspend fun withNotificationTimeout(
+    timeoutMs: Long,
+    block: suspend () -> Boolean,
+): Boolean = withTimeoutOrNull(timeoutMs) { block() } ?: false
 
 internal fun planBaApNotificationSync(
     request: BaApNotificationSyncRequest,

@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -26,6 +27,52 @@ import os.kei.ui.page.main.widget.chrome.isPageSettledAtTop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import kotlin.time.Duration.Companion.milliseconds
+
+internal interface BaApSuppressionAnchorWriter {
+    suspend fun save(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        anchorAtMs: Long,
+    )
+}
+
+private object BaSettingsStoreApSuppressionAnchorWriter : BaApSuppressionAnchorWriter {
+    override suspend fun save(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        anchorAtMs: Long,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveAccountApSuppressionAnchor(
+                accountId = accountId,
+                kind = kind,
+                anchorAtMs = anchorAtMs,
+            )
+        }
+    }
+}
+
+internal suspend fun persistBaForegroundApSyncResult(
+    request: BaApNotificationSyncRequest,
+    result: BaApNotificationSyncResult,
+    office: BaOfficeController,
+    anchorWriter: BaApSuppressionAnchorWriter = BaSettingsStoreApSuppressionAnchorWriter,
+    onLastNotifiedLevel: (Int) -> Unit,
+) {
+    result.suppressionAnchorAtMs?.let { anchorAtMs ->
+        withContext(NonCancellable) {
+            request.accountId?.let { accountId ->
+                anchorWriter.save(
+                    accountId = accountId,
+                    kind = BaApReminderKind.Ap,
+                    anchorAtMs = anchorAtMs,
+                )
+            }
+            office.apSuppressionAnchorAtMs = anchorAtMs
+        }
+    }
+    result.lastNotifiedLevel?.let(onLastNotifiedLevel)
+}
 
 @Composable
 internal fun BaPageCommonEffects(
@@ -176,20 +223,12 @@ internal fun BaPageCommonEffects(
                         context = notificationContext,
                         request = request,
                     )
-                result.lastNotifiedLevel?.let { level ->
+                persistBaForegroundApSyncResult(
+                    request = request,
+                    result = result,
+                    office = office,
+                ) { level ->
                     runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
-                }
-                result.suppressionAnchorAtMs?.let { anchorAtMs ->
-                    request.accountId?.let { accountId ->
-                        withContext(AppDispatchers.baFetch) {
-                            BASettingsStore.saveAccountApSuppressionAnchor(
-                                accountId = accountId,
-                                kind = BaApReminderKind.Ap,
-                                anchorAtMs = anchorAtMs,
-                            )
-                        }
-                    }
-                    office.apSuppressionAnchorAtMs = anchorAtMs
                 }
             }
     }

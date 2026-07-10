@@ -60,23 +60,31 @@ internal fun BaPageSheetHost(
                 limitUpdate.runtimeUpdate.mergedWith(regenRuntimeUpdate)
             } else {
                 limitUpdate.runtimeUpdate ?: regenRuntimeUpdate
-            }
+        }
         office.apLimitInput = limitUpdate.limit.toString()
         sheetScope.launch {
-            BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
-            runtimeUpdate
-                ?.withAccountId(accountUiState.activeAccountId)
-                ?.persistAsync()
-            AppBackgroundScheduler.scheduleBaApThreshold(context)
+            persistBaApMutationAndReschedule(
+                persist = {
+                    BaOfficeRepository.saveApLimitAsync(limitUpdate.limit)
+                    runtimeUpdate
+                        ?.withAccountId(accountUiState.activeAccountId)
+                        ?.persistAsync()
+                },
+                schedule = { AppBackgroundScheduler.scheduleBaApThreshold(context) },
+            )
         }
     }
 
     fun persistCafeStoredApCalibration(update: BaRuntimePersistenceUpdate) {
         sheetScope.launch {
-            update
-                .withAccountId(accountUiState.activeAccountId)
-                .persistAsync()
-            AppBackgroundScheduler.scheduleBaApThreshold(context)
+            persistBaApMutationAndReschedule(
+                persist = {
+                    update
+                        .withAccountId(accountUiState.activeAccountId)
+                        .persistAsync()
+                },
+                schedule = { AppBackgroundScheduler.scheduleBaApThreshold(context) },
+            )
         }
         office.cafeStoredApInput = office.displayCafeStoredApInputText()
     }
