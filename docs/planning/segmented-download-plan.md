@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a clean-room segmented HTTP downloader for high-value KeiOS download paths.
+Maintain a clean-room segmented HTTP downloader for high-value KeiOS download paths.
 
 The first delivery targets large files where HTTP Range is usually available:
 
@@ -24,7 +24,7 @@ The first delivery targets large files where HTTP Range is usually available:
 
 Implement the high-speed downloader as an independent Gradle module.
 
-Proposed module:
+Implemented module:
 
 `include(":core-download")`
 
@@ -58,21 +58,21 @@ Boundary rules:
 
 ## Dependency Version Policy
 
-Use the latest stable dependency versions verified from Maven metadata before implementation.
+Use the latest stable dependency versions verified from Maven metadata.
 
-Maven metadata checked on 2026-07-09:
+Maven metadata checked on 2026-07-11:
 
-| Dependency | Planned Version | Evidence | Source |
+| Dependency | Current Version | Evidence | Source |
 | --- | ---: | --- | --- |
 | `com.squareup.okhttp3:okhttp` | `5.4.0` | Maven metadata `latest` and `release` are `5.4.0`; project already uses `5.4.0`. | `https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml` |
 | `com.squareup.okhttp3:mockwebserver` | `5.4.0` | Maven metadata `latest` and `release` are `5.4.0`; keep tests aligned with OkHttp runtime. | `https://repo1.maven.org/maven2/com/squareup/okhttp3/mockwebserver/maven-metadata.xml` |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-core` | `1.11.0` | Maven metadata `latest` and `release` are `1.11.0`; project already uses `1.11.0`. | `https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/maven-metadata.xml` |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-test` | `1.11.0` | Maven metadata `latest` and `release` are `1.11.0`; keep tests aligned with coroutines runtime. | `https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-test/maven-metadata.xml` |
-| `org.jetbrains.kotlin:kotlin-test` | `2.4.0` | Maven metadata has newer prerelease entries such as `2.4.10-RC2` and `2.4.20-Beta1`; use the latest stable that matches the root Kotlin plugin. | `https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-test/maven-metadata.xml` |
+| `org.jetbrains.kotlin:kotlin-test` | `2.4.0` | Maven metadata `latest`/`release` point to prerelease `2.4.20-Beta1`; the newest stable entry is `2.4.0`, matching the root Kotlin plugin. | `https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-test/maven-metadata.xml` |
 
 Version rules:
 
-- Re-check Maven metadata at the start of P1 and update the plan if a newer stable release exists.
+- Re-check Maven metadata before dependency updates and adopt newer stable releases after API and target-SDK verification.
 - Keep OkHttp runtime and MockWebServer test versions identical.
 - Keep `kotlin-test` aligned with the root Kotlin plugin version.
 - Keep coroutines runtime and coroutines test versions identical.
@@ -89,13 +89,13 @@ curl -fsSL https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutin
 curl -fsSL https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-test/maven-metadata.xml | rg '<version>2\\.' | tail -40
 ```
 
-## Current Baseline
+## Current Implementation
 
 | Path | Current Behavior | File |
 | --- | --- | --- |
-| GitHub direct APK managed install | Single OkHttp stream writes into install session and temp APK copy. | `feature-github/src/main/java/os/kei/feature/github/install/GitHubInstallSessionWriter.kt` |
-| GitHub Actions ZIP managed install | Single OkHttp stream writes full ZIP to temp file, then `ZipFile` extracts APK. | `feature-github/src/main/java/os/kei/feature/github/install/GitHubInstallSessionWriter.kt` |
-| GameKee media download | Single OkHttp stream writes `.part`, then renames to target file. | `app/src/main/java/os/kei/feature/ba/data/remote/GameKeeFetchHelper.kt` |
+| GitHub direct APK managed install | Large Range-capable APKs use `:core-download`, then the completed temp APK streams into `PackageInstaller.Session`; Range-unavailable files use the module's single-stream fallback. | `feature-github/src/main/java/os/kei/feature/github/install/GitHubInstallSessionWriter.kt` |
+| GitHub Actions ZIP managed install | Large Range-capable artifact ZIPs use `:core-download`, then `ZipFile` selects and stages the APK. | `feature-github/src/main/java/os/kei/feature/github/install/GitHubInstallSessionWriter.kt` |
+| GameKee media download | Large video/archive-like media uses `:core-download`; common image cache traffic keeps the existing single-stream path. | `app/src/main/java/os/kei/feature/ba/data/remote/GameKeeFetchHelper.kt` |
 | Remote APK metadata scan | Uses precise HTTP Range requests and validates `Content-Range`. | `feature-github/src/main/java/os/kei/feature/github/data/apk/RemoteZipEntryReader.kt` |
 | User-visible GitHub asset download | Uses system `DownloadManager` or external downloader package. | `app/src/main/java/os/kei/core/download/AppPrivateDownloadManager.kt` |
 
@@ -157,6 +157,10 @@ Benchmark metrics:
 | Range support result | Confirms segmented activation or fallback reason. |
 | Final URL host | Distinguishes `github.com`, `release-assets.githubusercontent.com`, and Actions storage redirects. |
 | Active connections | Confirms effective parallelism. |
+| Connection strategy | Distinguishes one shared HTTP/2 pool from one pool per worker. |
+| Negotiated protocol | Separates HTTP/1.1, HTTP/2, and fallback behavior. |
+| Physical connections | Confirms whether concurrent HTTP/2 streams share one socket or use isolated worker sockets. |
+| Request count | Detects tail-splitting amplification and CDN pressure. |
 | Retry count and status codes | Captures 429/5xx/range failures. |
 | Temp-file cleanup result | Keeps managed install and benchmark reruns safe. |
 
@@ -168,8 +172,14 @@ Benchmark run rules:
 - Keep raw per-run rows; compare medians for the decision.
 - Clear only the downloader temp files between runs; leave HTTP/TLS connection
   behavior representative of normal app usage.
-- Capture both current single-stream baseline and new segmented downloader
-  results before changing default rollout behavior.
+- Use a direct ordinary GET plus sequential file write for the single-stream
+  baseline. Keep Range probing and Range recovery out of that baseline.
+- Stop elapsed-time measurement after file flush/sync. Run length and SHA-256
+  verification after the timed section for every mode.
+- Capture `plain_get`, `segmented_shared`, and `segmented_isolated` rows before
+  changing the default connection strategy.
+- Rotate row order between repeated runs to reduce connection warm-up and
+  transient network bias.
 
 ## Reference Summary
 
@@ -188,6 +198,12 @@ Useful behavior-level ideas:
 - Queue positioned file writes through a bounded asynchronous writer.
 - Reuse the final CDN URL resolved by the range probe.
 - Detect persistently slow range connections against active peer average.
+- Keep a fixed, nondecreasing fresh-part size after entering the tail window so
+  repeated allocation does not create a geometric series of tiny requests.
+- Isolate worker connection pools when physical HTTP/2 connections are needed,
+  while retaining a shared-pool strategy for measured comparison.
+- Cancel a recovered-concurrency probe after one second without byte progress
+  and feed that result back into rate-limit concurrency control.
 
 Clean-room rule:
 
@@ -345,15 +361,23 @@ Scheduler rules:
 
 - Start with `initialPartSizeBytes`.
 - Alternate head and tail allocations while unassigned bytes remain.
-- In the tail window, split remaining bytes into at least `connections * 4` smaller parts.
+- On first entry to the normal tail window, derive a part size from
+  `configured connections * 4`, then keep that size nondecreasing until fresh
+  allocation completes.
+- Under rate limiting, derive the tail target from reduced active connections,
+  use two parts per active connection, and raise normal fresh-part size toward
+  the 16 MiB rate-limited floor.
 - When workers become idle and all remaining bytes belong to active workers, wait for completion or explicit failure requeue.
 - Start at four active connections and grow toward the configured limit after successful range completion.
 - Reduce active concurrency after repeated HTTP 429 responses and recover with delayed probe connections.
+- Give recovered-concurrency probes a one-second continuous-idle timeout.
 - Requeue failed bytes from the last confirmed written offset.
 - Clamp active connections by file size and part size.
 - Drain bounded asynchronous positioned writes before final validation.
 - Emit final progress after written-byte coverage and file length both match the expected size.
 - Reuse the range probe's final CDN URL for all data requests in the same download.
+- Support shared and isolated-per-worker OkHttp connection pools; keep isolated
+  pools bounded to one idle connection and evict them after all workers finish.
 - Validate optional `expectedSha256` on the completed `.part` file before replacing the previous output.
 - Keep the previous output file intact when length, range, or hash validation fails.
 
@@ -439,15 +463,15 @@ File IO should be measured before adding native kernel-API work.
 
 ## Integration Plan
 
-### Implementation Status 2026-07-09
+### Implementation Status 2026-07-11
 
 | Priority | Status | Notes |
 | --- | --- | --- |
-| P1 Core downloader foundation | Implemented | Added `:core-download` with Range probe, segmented writes, retry, cancellation cleanup, progress aggregation, and unit tests. |
+| P1 Core downloader foundation | Implemented and hardened | Added redirect-safe probing, resource validators, expected-size/SHA validation, bounded writes, resumable single-Range recovery, categorized retries, rate-limit recovery, slow-tail recovery, and connection strategies. |
 | P2 GitHub Actions ZIP bridge | Implemented | `GitHubInstallSessionWriter` downloads Actions ZIP assets through `:core-download`, then keeps the existing `ZipFile` APK selection and staging flow. |
 | P3 GitHub direct APK bridge | Implemented | Direct APK install now downloads to an app-private temp APK through `:core-download`, then streams the completed file into `PackageInstaller.Session`. |
 | P4 GameKee large media bridge | Implemented with Kotlin-side scope guard | Video/archive-like media extensions (`mp4`, `m4v`, `mov`, `webm`, `mkv`, `zip`) use `:core-download`; common image cache downloads keep the previous single-stream path to avoid doubling request count with Range probes during image prefetch. |
-| P5 Runtime tuning | Pending evidence | Needs device/network benchmark rows before changing connection counts, part sizes, or rollout thresholds. |
+| P5 Runtime tuning | Controlled evidence complete; live evidence pending | Controlled HTTP/1.1 and HTTP/2 matrices validate request bounding, speed profiles, and physical connection behavior. Paseo Atom/API and Actions Nightly/API rows remain required for final default-strategy tuning. |
 
 ### P0 Plan Setup
 
@@ -565,16 +589,65 @@ Tests:
 
 Tune defaults from local evidence.
 
-Initial defaults:
+Current defaults:
 
 | Setting | Value |
 | --- | ---: |
-| GitHub max connections | 4 |
+| GitHub balanced max connections | 4 |
+| GitHub foreground boost max connections | 8 |
 | GameKee max connections | 3 |
-| Initial part size | 4 MiB |
-| Minimum parallel size | 8 MiB |
-| Stall timeout | 15 seconds |
+| GitHub balanced initial part size | 8 MiB |
+| GitHub foreground boost initial part size | 4 MiB |
+| GameKee initial part size | 4 MiB |
+| Balanced minimum parallel size | 8 MiB |
+| Foreground boost minimum parallel size | 4 MiB |
 | Max retries per part | 3 |
+| Default connection strategy | `IsolatedPerWorker` |
+| Recovered probe idle timeout | 1 second |
+| Progress-aware Range lease | 4-30 seconds when applicable |
+
+Controlled benchmark evidence from 2026-07-11:
+
+| Scenario | Mode | Requests | Physical connections | Average MiB/s | Speedup |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Per-connection cap HTTP/1.1 | Plain GET | 1 | 1 | 2.31 | 1.00x |
+| Per-connection cap HTTP/1.1 | Balanced isolated | 17 | 5 | 9.60 | 4.15x |
+| Per-connection cap HTTP/1.1 | Foreground boost isolated | 33 | 9 | 16.04 | 6.94x |
+| Slow head HTTP/1.1 | Plain GET | 1 | 1 | 0.35 | 1.00x |
+| Slow head HTTP/1.1 | Balanced isolated | 17 | 5 | 5.68 | 16.31x |
+| Slow head HTTP/1.1 | Foreground boost isolated | 33 | 9 | 11.37 | 32.64x |
+| Per-stream cap HTTP/2 | Plain GET | 1 | 1 | 2.32 | 1.00x |
+| Per-stream cap HTTP/2 | Balanced shared | 17 | 1 | 9.80 | 4.23x |
+| Per-stream cap HTTP/2 | Balanced isolated | 17 | 5 | 9.77 | 4.21x |
+
+The fixed tail-part scale reduced the 24 MiB controlled request counts from 56
+to 17 for Balanced and from 106 to 33 for ForegroundBoost. The HTTP/2
+per-stream-cap fixture gives Shared and Isolated comparable throughput, while
+confirming one physical connection for Shared and five for Isolated. Real CDN
+results decide whether the extra isolated sockets improve GitHub traffic.
+
+Live benchmark command template:
+
+```bash
+gtimeout 20m ./gradlew :core-download:testDebugUnitTest \
+  --tests 'os.kei.core.download.segmented.SegmentedDownloadLiveBenchmarkTest' \
+  -Dkeios.download.liveBenchmark=true \
+  -Dkeios.download.liveRuns=1 \
+  -Dkeios.download.liveUrl='<fresh direct or signed URL>' \
+  -Dkeios.download.liveBytes='<expected bytes>' \
+  -Dkeios.download.liveSha256='<expected sha256>' \
+  -Dkeios.download.maxConnections=4 \
+  -Dkeios.download.partMiB=4 \
+  -Dkeios.download.protocol=auto \
+  --no-daemon --console=plain \
+  > .tmp/codex-gradle/core-download-live.log 2>&1
+```
+
+Each Live run downloads three copies: `plain_get`, `segmented_shared`, and
+`segmented_isolated`. Repeat the same resolved asset with
+`-Dkeios.download.protocol=http1` for the forced HTTP/1.1 control. Run separate
+comparison sets for Paseo Atom/direct, Paseo API-resolved signed URL,
+NightlyLink/nightly.build, and GitHub Actions API-resolved signed URL.
 
 Evidence to capture:
 
@@ -590,12 +663,13 @@ Evidence to capture:
 
 ## Verification Checklist
 
-- Targeted unit tests for segmented downloader pass.
+- `:core-download:testDebugUnitTest --rerun-tasks` passes 60 tests with the two
+  opt-in benchmark tests skipped by default.
 - Existing `RemoteZipEntryReaderTest` stays green.
-- Targeted GitHub install tests pass.
+- `:feature-github:testDebugUnitTest --offline` passes 532 tests with one skip.
 - Targeted GameKee media download tests pass.
 - `:app:testDebugUnitTest` relevant test filters pass.
-- `:app:compileDebugKotlin` passes.
+- `:app:compileDebugKotlin --offline` passes.
 - `git diff --check` passes.
 - Manual managed-install smoke confirms notification progress and successful install on a Range-supported APK.
 - Cancellation smoke confirms notification cleanup, temp-file deletion, and session failure handling.
@@ -605,7 +679,7 @@ Evidence to capture:
 | Risk | Mitigation |
 | --- | --- |
 | GPL contamination | Keep implementation clean-room, use independent Kotlin code and KeiOS-owned tests. |
-| CDN rate limits | Cap default GitHub connections at 4, delay 429 retries, and fallback to single stream when segmented attempts fail early. |
+| CDN rate limits | Cap balanced GitHub connections at 4, honor `Retry-After`, reduce active concurrency after repeated 429 responses, enlarge rate-limited parts, and recover through one probe slot. |
 | Install session complexity | Download to temp file first, then use the existing session write flow. |
 | Temp storage pressure | Check available cache space before large downloads and clean temp files on cancellation/failure. |
 | Progress noise | Throttle progress emissions through the existing progress emitter cadence. |
@@ -615,8 +689,10 @@ Evidence to capture:
 | Native IO complexity | Keep io_uring/native download backends outside P1 and require file-IO bottleneck evidence before revisiting. |
 | Scheduler race conditions | Keep scheduler state behind `Mutex` and cover allocation, requeue, stealing, and cancellation with deterministic unit tests. |
 
-## First Implementation Recommendation
+## Next Validation Recommendation
 
-Start with P1 and P2.
-
-P2 gives the strongest safety profile because Actions ZIP already lands in a temp file before package staging. After that path is stable, direct APK managed install can move to the same temp-file-first model.
+Run the four real-source comparison sets: Paseo Atom/direct, Paseo
+API-resolved, Actions NightlyLink/nightly.build, and Actions API-resolved. Use
+the three-mode Live matrix for each source, repeat the winning candidates three
+times, then decide whether `IsolatedPerWorker` remains the GitHub default or a
+host/protocol-aware strategy should select Shared HTTP/2 for specific CDNs.
