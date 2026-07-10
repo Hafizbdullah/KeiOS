@@ -36,6 +36,7 @@ import os.kei.ui.page.main.ba.BaSlotReminderPlan
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountReminderSnapshot
+import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.coroutines.coroutineContext
 
@@ -656,6 +657,13 @@ object AppForegroundInfoHandler {
                     accountId = accountId,
                     level = notification.currentDisplay,
                 )
+                if (plan.advanceSuppressionAnchorAfterDelivery) {
+                    BASettingsStore.saveAccountApSuppressionAnchor(
+                        accountId = accountId,
+                        kind = BaApReminderKind.CafeAp,
+                        anchorAtMs = nowMs,
+                    )
+                }
             }
         }
     }
@@ -679,6 +687,15 @@ object AppForegroundInfoHandler {
                 BASettingsStore.saveAccountCafeApLastNotifiedLevel(
                     accountId = accountId,
                     level = -1,
+                )
+            }
+        }
+        if (plan.resetSuppressionAnchor) {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountApSuppressionAnchor(
+                    accountId = accountId,
+                    kind = BaApReminderKind.CafeAp,
+                    anchorAtMs = 0L,
                 )
             }
         }
@@ -709,6 +726,13 @@ object AppForegroundInfoHandler {
                     accountId = accountId,
                     level = notification.currentDisplay,
                 )
+                if (plan.advanceSuppressionAnchorAfterDelivery) {
+                    BASettingsStore.saveAccountApSuppressionAnchor(
+                        accountId = accountId,
+                        kind = BaApReminderKind.Ap,
+                        anchorAtMs = nowMs,
+                    )
+                }
             }
         }
     }
@@ -732,6 +756,15 @@ object AppForegroundInfoHandler {
                 BASettingsStore.saveAccountApLastNotifiedLevel(
                     accountId = accountId,
                     level = -1,
+                )
+            }
+        }
+        if (plan.resetSuppressionAnchor) {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountApSuppressionAnchor(
+                    accountId = accountId,
+                    kind = BaApReminderKind.Ap,
+                    anchorAtMs = 0L,
                 )
             }
         }

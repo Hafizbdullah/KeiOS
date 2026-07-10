@@ -98,6 +98,170 @@ class BaReminderCoordinatorTest {
     }
 
     @Test
+    fun `ap threshold plan suppresses persistent read`() {
+        val plan = BaReminderCoordinator.evaluateApThreshold(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = true,
+                apSuppressionAnchorAtMs = NOW_MS - 10_000L,
+                apLastNotifiedLevel = -1
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertFalse(plan.resetSuppressionAnchor)
+        assertFalse(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `cafe ap threshold plan suppresses persistent read`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = true,
+                cafeApSuppressionAnchorAtMs = NOW_MS - 10_000L
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertFalse(plan.resetSuppressionAnchor)
+        assertFalse(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `ap threshold plan suppresses hourly read before expiry`() {
+        val plan = BaReminderCoordinator.evaluateApThreshold(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = false,
+                apSuppressionAnchorAtMs = NOW_MS - 30L * 60L * 1000L,
+                apLastNotifiedLevel = -1
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertFalse(plan.resetSuppressionAnchor)
+        assertFalse(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `cafe ap threshold plan suppresses hourly read before expiry`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = false,
+                cafeApSuppressionAnchorAtMs = NOW_MS - 30L * 60L * 1000L
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertFalse(plan.resetSuppressionAnchor)
+        assertFalse(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `ap threshold plan expires hourly read`() {
+        val plan = BaReminderCoordinator.evaluateApThreshold(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = false,
+                apSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+                apLastNotifiedLevel = 130
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(plan.notification)
+        assertTrue(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `cafe ap threshold plan expires hourly read`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = 130,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = false,
+                cafeApSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(plan.notification)
+        assertTrue(plan.advanceSuppressionAnchorAfterDelivery)
+    }
+
+    @Test
+    fun `ap threshold plan resets read state below threshold`() {
+        val plan = BaReminderCoordinator.evaluateApThreshold(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 119.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = true,
+                apSuppressionAnchorAtMs = NOW_MS,
+                apLastNotifiedLevel = 120
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertTrue(plan.resetSuppressionAnchor)
+    }
+
+    @Test
+    fun `cafe ap threshold plan resets read state below threshold`() {
+        val plan = BaReminderCoordinator.evaluateCafeApThreshold(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 119.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = 120,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = true,
+                cafeApSuppressionAnchorAtMs = NOW_MS
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(plan.notification)
+        assertTrue(plan.resetSuppressionAnchor)
+    }
+
+    @Test
     fun `cafe visit reminder seeds baseline then notifies on later slot`() {
         val currentSlot = currentCafeStudentRefreshSlotMs(NOW_MS, serverIndex = 2)
 

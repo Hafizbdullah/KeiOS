@@ -109,6 +109,8 @@ object AppBackgroundScheduler {
 
     fun scheduleBaApThreshold(context: Context) {
         val appContext = context.applicationContext
+        val nowMs = System.currentTimeMillis()
+        BASettingsStore.reconcileApAcknowledgements(nowMs)
         val reminderSnapshots = BASettingsStore.loadReminderSnapshots()
         val snapshots = reminderSnapshots.map { it.snapshot }
         val alarmManager = appContext.getSystemService(AlarmManager::class.java) ?: return
@@ -121,7 +123,7 @@ object AppBackgroundScheduler {
         }
         val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
             snapshots = snapshots,
-            nowMs = System.currentTimeMillis()
+            nowMs = nowMs
         )
         if (schedule == null) {
             alarmManager.cancel(pending)

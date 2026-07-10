@@ -331,11 +331,16 @@ internal object BASettingsStore {
         loadSnapshot().copy(serverIndex = loadCalendarPoolServerIndex())
 
     fun loadReminderSnapshots(): List<BaAccountReminderSnapshot> {
+        return loadReminderSnapshots(includeDisabledAccounts = false)
+    }
+
+    private fun loadReminderSnapshots(includeDisabledAccounts: Boolean): List<BaAccountReminderSnapshot> {
         val accountState = loadAccountState()
         val baseSnapshot = loadBaSettingsSnapshot(kv())
+        val acknowledgementStore = apAcknowledgementStore()
         return accountState
             .accounts
-            .filter { it.profile.enabled }
+            .filter { includeDisabledAccounts || it.profile.enabled }
             .map { account ->
                 BaAccountReminderSnapshot(
                     accountId = account.profile.id,
@@ -344,7 +349,7 @@ internal object BASettingsStore {
                         baseSnapshot.withBaAccount(
                             accountState = accountState,
                             account = account,
-                        ).withLocalApAcknowledgements(account.profile.id),
+                        ).withLocalApAcknowledgementAnchors(account.profile.id, acknowledgementStore),
                 )
             }
     }
@@ -371,6 +376,38 @@ internal object BASettingsStore {
             .also { changed ->
                 if (changed) notifyChanged(notifyHomeOverview = false)
             }
+
+    fun reconcileApAcknowledgements(nowMs: Long): Boolean {
+        val acknowledgementStore = apAcknowledgementStore()
+        var changed = false
+        loadReminderSnapshots(includeDisabledAccounts = true)
+            .forEach { reminderSnapshot ->
+                val accountId = reminderSnapshot.accountId
+                val snapshot = reminderSnapshot.snapshot
+                val apPlan =
+                    BaReminderCoordinator.evaluateApThreshold(
+                        snapshot = snapshot,
+                        nowMs = nowMs,
+                    )
+                if (apPlan.resetSuppressionAnchor) {
+                    changed =
+                        acknowledgementStore.clear(accountId, BaApReminderKind.Ap) ||
+                                changed
+                }
+                val cafeApPlan =
+                    BaReminderCoordinator.evaluateCafeApThreshold(
+                        snapshot = snapshot,
+                        nowMs = nowMs,
+                    )
+                if (cafeApPlan.resetSuppressionAnchor) {
+                    changed =
+                        acknowledgementStore.clear(accountId, BaApReminderKind.CafeAp) ||
+                                changed
+                }
+            }
+        if (changed) notifyChanged(notifyHomeOverview = false)
+        return changed
+    }
 
     fun loadCalendarCacheSnapshot(serverIndex: Int): BaCacheSnapshot = cacheStore().loadCalendarCacheSnapshot(serverIndex)
 

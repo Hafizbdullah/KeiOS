@@ -14,6 +14,7 @@ import os.kei.ui.page.main.ba.support.BA_CAFE_STUDENT_REFRESH_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
+import os.kei.ui.page.main.ba.BA_AP_READ_REPEAT_INTERVAL_MS
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -317,6 +318,152 @@ class AppBackgroundSchedulePolicyTest {
         assertNotNull(schedule)
         assertEquals(NOW_MS, schedule.triggerAtMillis)
         assertEquals(BackgroundAlarmPrecision.Prompt, schedule.precision)
+    }
+
+    @Test
+    fun `ba ap persistent read contributes no alarm candidate`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = true,
+                apSuppressionAnchorAtMs = NOW_MS - 10_000L,
+                apLastNotifiedLevel = -1,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(schedule)
+    }
+
+    @Test
+    fun `ba cafe ap persistent read contributes no alarm candidate`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = true,
+                cafeApSuppressionAnchorAtMs = NOW_MS - 10_000L,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNull(schedule)
+    }
+
+    @Test
+    fun `ba ap persistent read leaves other reminder candidates`() {
+        val currentSlot = currentCafeStudentRefreshSlotMs(
+            nowMs = NOW_MS,
+            serverIndex = 2
+        )
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = true,
+                apSuppressionAnchorAtMs = NOW_MS - 10_000L,
+                cafeVisitNotifyEnabled = true,
+                cafeVisitLastNotifiedSlotMs = currentSlot - BA_CAFE_STUDENT_REFRESH_INTERVAL_MS,
+                serverIndex = 2,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba ap hourly read schedules exact repeat boundary`() {
+        val anchor = NOW_MS - 30L * 60L * 1000L
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = false,
+                apSuppressionAnchorAtMs = anchor,
+                apLastNotifiedLevel = -1,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba cafe ap hourly read schedules exact repeat boundary`() {
+        val anchor = NOW_MS - 30L * 60L * 1000L
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = -1,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = false,
+                cafeApSuppressionAnchorAtMs = anchor,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba ap expired hourly read prompts immediately`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                apNotifyEnabled = true,
+                apCurrent = 130.0,
+                apRegenBaseMs = NOW_MS,
+                apNotifyThreshold = 120,
+                apLimit = 240,
+                keepApRemindersReadUntilBelowThreshold = false,
+                apSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+                apLastNotifiedLevel = 130,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba cafe ap expired hourly read prompts immediately`() {
+        val schedule = AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+            snapshot = BaPageSnapshot(
+                cafeApNotifyEnabled = true,
+                cafeStoredAp = 130.0,
+                cafeLastHourMs = floorToHourMs(NOW_MS),
+                cafeApNotifyThreshold = 120,
+                cafeApLastNotifiedLevel = 130,
+                cafeLevel = 10,
+                keepApRemindersReadUntilBelowThreshold = false,
+                cafeApSuppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+            ),
+            nowMs = NOW_MS
+        )
+
+        assertNotNull(schedule)
+        assertEquals(NOW_MS, schedule.triggerAtMillis)
     }
 
     @Test

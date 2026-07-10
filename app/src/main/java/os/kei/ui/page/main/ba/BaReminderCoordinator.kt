@@ -15,7 +15,18 @@ internal object BaReminderCoordinator {
         nowMs: Long
     ): BaApReminderPlan {
         if (!snapshot.apNotifyEnabled) {
-            return BaApReminderPlan(resetLastNotifiedLevel = true)
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = false,
+                currentDisplay = 0,
+                thresholdDisplay = snapshot.apNotifyThreshold.coerceIn(0, BA_AP_MAX),
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
+            return BaApReminderPlan(
+                resetLastNotifiedLevel = true,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
+            )
         }
 
         val (nextAp, nextBase) = applyBaApRegenTick(
@@ -28,18 +39,45 @@ internal object BaReminderCoordinator {
         val threshold = snapshot.apNotifyThreshold.coerceIn(0, BA_AP_MAX)
         val shouldSaveAp = nextAp != snapshot.apCurrent || nextBase != snapshot.apRegenBaseMs
         if (currentDisplay < threshold) {
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = currentDisplay,
+                thresholdDisplay = threshold,
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
             return BaApReminderPlan(
                 nextAp = nextAp,
                 nextApRegenBaseMs = nextBase,
                 shouldSaveAp = shouldSaveAp,
-                resetLastNotifiedLevel = true
+                resetLastNotifiedLevel = true,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
             )
         }
-        if (currentDisplay == snapshot.apLastNotifiedLevel) {
+        val decision = BaApAcknowledgementPolicy.evaluate(
+            notificationEnabled = true,
+            currentDisplay = currentDisplay,
+            thresholdDisplay = threshold,
+            keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+            suppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs,
+            nowMs = nowMs,
+        )
+        if (decision.suppressed) {
             return BaApReminderPlan(
                 nextAp = nextAp,
                 nextApRegenBaseMs = nextBase,
-                shouldSaveAp = shouldSaveAp
+                shouldSaveAp = shouldSaveAp,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
+                advanceSuppressionAnchorAfterDelivery = decision.advanceSuppressionAnchorAfterDelivery,
+            )
+        }
+        if (!decision.bypassLastLevelDeduplication && currentDisplay == snapshot.apLastNotifiedLevel) {
+            return BaApReminderPlan(
+                nextAp = nextAp,
+                nextApRegenBaseMs = nextBase,
+                shouldSaveAp = shouldSaveAp,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
             )
         }
 
@@ -47,6 +85,8 @@ internal object BaReminderCoordinator {
             nextAp = nextAp,
             nextApRegenBaseMs = nextBase,
             shouldSaveAp = shouldSaveAp,
+            resetSuppressionAnchor = decision.resetSuppressionAnchor,
+            advanceSuppressionAnchorAfterDelivery = decision.advanceSuppressionAnchorAfterDelivery,
             notification = BaApReminderNotification(
                 currentDisplay = currentDisplay,
                 limitDisplay = snapshot.apLimit.coerceIn(0, BA_AP_MAX),
@@ -60,7 +100,18 @@ internal object BaReminderCoordinator {
         nowMs: Long
     ): BaCafeApReminderPlan {
         if (!snapshot.cafeApNotifyEnabled) {
-            return BaCafeApReminderPlan(resetLastNotifiedLevel = true)
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = false,
+                currentDisplay = 0,
+                thresholdDisplay = snapshot.cafeApNotifyThreshold.coerceIn(0, BA_AP_MAX),
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
+            return BaCafeApReminderPlan(
+                resetLastNotifiedLevel = true,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
+            )
         }
 
         val (nextStoredAp, nextHourMs) = applyBaCafeStorageTick(
@@ -74,18 +125,45 @@ internal object BaReminderCoordinator {
         val threshold = snapshot.cafeApNotifyThreshold.coerceIn(0, capDisplay)
         val shouldSaveCafe = nextStoredAp != snapshot.cafeStoredAp || nextHourMs != snapshot.cafeLastHourMs
         if (currentDisplay < threshold) {
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = currentDisplay,
+                thresholdDisplay = threshold,
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
             return BaCafeApReminderPlan(
                 nextStoredAp = nextStoredAp,
                 nextCafeLastHourMs = nextHourMs,
                 shouldSaveCafe = shouldSaveCafe,
-                resetLastNotifiedLevel = true
+                resetLastNotifiedLevel = true,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
             )
         }
-        if (currentDisplay == snapshot.cafeApLastNotifiedLevel) {
+        val decision = BaApAcknowledgementPolicy.evaluate(
+            notificationEnabled = true,
+            currentDisplay = currentDisplay,
+            thresholdDisplay = threshold,
+            keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+            suppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs,
+            nowMs = nowMs,
+        )
+        if (decision.suppressed) {
             return BaCafeApReminderPlan(
                 nextStoredAp = nextStoredAp,
                 nextCafeLastHourMs = nextHourMs,
-                shouldSaveCafe = shouldSaveCafe
+                shouldSaveCafe = shouldSaveCafe,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
+                advanceSuppressionAnchorAfterDelivery = decision.advanceSuppressionAnchorAfterDelivery,
+            )
+        }
+        if (!decision.bypassLastLevelDeduplication && currentDisplay == snapshot.cafeApLastNotifiedLevel) {
+            return BaCafeApReminderPlan(
+                nextStoredAp = nextStoredAp,
+                nextCafeLastHourMs = nextHourMs,
+                shouldSaveCafe = shouldSaveCafe,
+                resetSuppressionAnchor = decision.resetSuppressionAnchor,
             )
         }
 
@@ -93,6 +171,8 @@ internal object BaReminderCoordinator {
             nextStoredAp = nextStoredAp,
             nextCafeLastHourMs = nextHourMs,
             shouldSaveCafe = shouldSaveCafe,
+            resetSuppressionAnchor = decision.resetSuppressionAnchor,
+            advanceSuppressionAnchorAfterDelivery = decision.advanceSuppressionAnchorAfterDelivery,
             notification = BaCafeApReminderNotification(
                 currentDisplay = currentDisplay,
                 limitDisplay = capDisplay,
@@ -340,6 +420,8 @@ internal data class BaApReminderPlan(
     val nextApRegenBaseMs: Long = 0L,
     val shouldSaveAp: Boolean = false,
     val resetLastNotifiedLevel: Boolean = false,
+    val resetSuppressionAnchor: Boolean = false,
+    val advanceSuppressionAnchorAfterDelivery: Boolean = false,
     val notification: BaApReminderNotification? = null
 )
 
@@ -354,6 +436,8 @@ internal data class BaCafeApReminderPlan(
     val nextCafeLastHourMs: Long = 0L,
     val shouldSaveCafe: Boolean = false,
     val resetLastNotifiedLevel: Boolean = false,
+    val resetSuppressionAnchor: Boolean = false,
+    val advanceSuppressionAnchorAfterDelivery: Boolean = false,
     val notification: BaCafeApReminderNotification? = null
 )
 

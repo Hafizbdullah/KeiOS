@@ -1,5 +1,6 @@
 package os.kei.core.background
 
+import os.kei.ui.page.main.ba.BaApAcknowledgementPolicy
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
@@ -127,16 +128,27 @@ internal object AppBackgroundSchedulePolicy {
         val projected = projectAp(snapshot = snapshot, nowMs = nowMs, limit = limit)
         val currentDisplay = displayAp(projected.currentAp)
         if (currentDisplay >= threshold) {
-            if (currentDisplay != snapshot.apLastNotifiedLevel) {
-                return promptUserReminder(nowMs)
-            }
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = currentDisplay,
+                thresholdDisplay = threshold,
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
             val nextPointAtMs = nextApPointAtMs(
                 currentAp = projected.currentAp,
                 apRegenBaseMs = projected.apRegenBaseMs,
                 limit = limit,
                 nowMs = nowMs
-            ) ?: return null
-            return userReminderWindow(nextPointAtMs)
+            )
+            return when {
+                decision.suppressed && decision.nextEligibleAtMs == null -> null
+                decision.suppressed -> userReminderWindow(requireNotNull(decision.nextEligibleAtMs))
+                decision.bypassLastLevelDeduplication -> promptUserReminder(nowMs)
+                currentDisplay != snapshot.apLastNotifiedLevel -> promptUserReminder(nowMs)
+                else -> nextPointAtMs?.let(::userReminderWindow)
+            }
         }
 
         val pointsNeeded = ceil(threshold.toDouble() - projected.currentAp).toLong()
@@ -162,11 +174,27 @@ internal object AppBackgroundSchedulePolicy {
         val projected = projectCafeStorage(snapshot = snapshot, nowMs = nowMs, cap = cap)
         val currentDisplay = displayAp(projected.storedAp)
         if (currentDisplay >= threshold) {
-            if (currentDisplay != snapshot.cafeApLastNotifiedLevel) {
-                return promptUserReminder(nowMs)
+            val decision = BaApAcknowledgementPolicy.evaluate(
+                notificationEnabled = true,
+                currentDisplay = currentDisplay,
+                thresholdDisplay = threshold,
+                keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
+                suppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs,
+                nowMs = nowMs,
+            )
+            val nextPointAtMs =
+                if (currentDisplay >= cap) {
+                    null
+                } else {
+                    nextCafeStorageHourAtMs(nowMs)
+                }
+            return when {
+                decision.suppressed && decision.nextEligibleAtMs == null -> null
+                decision.suppressed -> userReminderWindow(requireNotNull(decision.nextEligibleAtMs))
+                decision.bypassLastLevelDeduplication -> promptUserReminder(nowMs)
+                currentDisplay != snapshot.cafeApLastNotifiedLevel -> promptUserReminder(nowMs)
+                else -> nextPointAtMs?.let(::userReminderWindow)
             }
-            if (currentDisplay >= cap) return null
-            return userReminderWindow(nextCafeStorageHourAtMs(nowMs))
         }
 
         val hourlyGain = cafeHourlyGain(snapshot.cafeLevel)
