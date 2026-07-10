@@ -27,6 +27,8 @@ data class SegmentedDownloadOptions(
     val bufferSizeBytes: Int = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES,
     val writeQueueCapacity: Int = DEFAULT_SEGMENTED_DOWNLOAD_WRITE_QUEUE_CAPACITY,
     val speedProfile: SegmentedDownloadSpeedProfile = SegmentedDownloadSpeedProfile.Balanced,
+    val connectionStrategy: SegmentedDownloadConnectionStrategy =
+        SegmentedDownloadConnectionStrategy.IsolatedPerWorker,
 ) {
     init {
         require(minParallelSizeBytes > 0L) { "minParallelSizeBytes must be positive" }
@@ -43,6 +45,11 @@ data class SegmentedDownloadOptions(
 enum class SegmentedDownloadSpeedProfile {
     Balanced,
     ForegroundBoost,
+}
+
+enum class SegmentedDownloadConnectionStrategy {
+    Shared,
+    IsolatedPerWorker,
 }
 
 const val DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES: Int = 1024 * 1024

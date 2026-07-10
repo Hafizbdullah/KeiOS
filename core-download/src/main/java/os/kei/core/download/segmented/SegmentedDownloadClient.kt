@@ -190,48 +190,56 @@ class SegmentedDownloadClient(
             intervalMs = options.progressIntervalMs,
             onProgress = onProgress,
         )
-        val workerClients = List(effectiveConnections) { downloadClient }
+        val workerClientSet = createDownloadWorkerClientSet(
+            baseClient = downloadClient,
+            count = effectiveConnections,
+            strategy = options.connectionStrategy,
+        )
         val speedTracker = RangeSpeedTracker()
         progress.emit(force = true)
-        RandomAccessFile(partFile, "rw").use { randomFile ->
-            randomFile.setLength(totalBytes)
-            randomFile.channel.use { channel ->
-                coroutineScope {
-                    val writer = BoundedAsyncFileWriter(
-                        scope = this,
-                        capacity = options.writeQueueCapacity,
-                        writeAt = { position, bytes ->
-                            writeAt(channel, position, bytes)
-                        },
-                        onBytesWritten = progress::addBytes,
-                    )
-                    try {
-                        val workers = List(effectiveConnections) { workerId ->
-                            launch {
-                                runWorker(
-                                    workerId = workerId,
-                                    httpClient = workerClients[workerId % workerClients.size],
-                                    speedTracker = speedTracker,
-                                    request = request,
-                                    dataUrl = probeResult.finalUrl,
-                                    resourceValidator = probeResult.resourceValidator,
-                                    options = options,
-                                    scheduler = scheduler,
-                                    writer = writer,
-                                    totalBytes = totalBytes,
-                                )
+        try {
+            RandomAccessFile(partFile, "rw").use { randomFile ->
+                randomFile.setLength(totalBytes)
+                randomFile.channel.use { channel ->
+                    coroutineScope {
+                        val writer = BoundedAsyncFileWriter(
+                            scope = this,
+                            capacity = options.writeQueueCapacity,
+                            writeAt = { position, bytes ->
+                                writeAt(channel, position, bytes)
+                            },
+                            onBytesWritten = progress::addBytes,
+                        )
+                        try {
+                            val workers = List(effectiveConnections) { workerId ->
+                                launch {
+                                    runWorker(
+                                        workerId = workerId,
+                                        httpClient = workerClientSet.clients[workerId],
+                                        speedTracker = speedTracker,
+                                        request = request,
+                                        dataUrl = probeResult.finalUrl,
+                                        resourceValidator = probeResult.resourceValidator,
+                                        options = options,
+                                        scheduler = scheduler,
+                                        writer = writer,
+                                        totalBytes = totalBytes,
+                                    )
+                                }
+                            }
+                            workers.joinAll()
+                            writer.closeAndJoin()
+                        } finally {
+                            withContext(NonCancellable) {
+                                writer.cancelAndJoin()
                             }
                         }
-                        workers.joinAll()
-                        writer.closeAndJoin()
-                    } finally {
-                        withContext(NonCancellable) {
-                            writer.cancelAndJoin()
-                        }
                     }
+                    channel.force(true)
                 }
-                channel.force(true)
             }
+        } finally {
+            workerClientSet.close()
         }
         validateWrittenByteCount(progress.downloadedBytes, totalBytes)
         validateLength(partFile, totalBytes)
@@ -375,6 +383,9 @@ class SegmentedDownloadClient(
             retryCount = active.part.retryCount,
         )
         val leaseExpired = AtomicBoolean(false)
+        val rateProbeIdleExpired = AtomicBoolean(false)
+        val rateProbeIdleTracker =
+            if (active.part.rateProbe) RateProbeIdleTracker() else null
         val leaseJob =
             if (leaseTracker.millisUntilExpiration() != Long.MAX_VALUE) {
                 CoroutineScope(currentCoroutineContext()).launch {
@@ -394,6 +405,21 @@ class SegmentedDownloadClient(
             } else {
                 null
             }
+        val rateProbeIdleJob = rateProbeIdleTracker?.let { tracker ->
+            CoroutineScope(currentCoroutineContext()).launch {
+                while (true) {
+                    val remainingMs = tracker.millisUntilExpiration()
+                    if (remainingMs > 0L) {
+                        delay(min(remainingMs, RATE_PROBE_IDLE_POLL_MS))
+                        continue
+                    }
+                    if (rateProbeIdleExpired.compareAndSet(false, true)) {
+                        active.cancelAttempt()
+                    }
+                    return@launch
+                }
+            }
+        }
         try {
             try {
                 executeStreaming(httpClient, rangeRequest, active) { response ->
@@ -447,6 +473,7 @@ class SegmentedDownloadClient(
                                 val read = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
                                 if (read < 0) break
                                 if (read == 0) continue
+                                rateProbeIdleTracker?.recordProgress()
                                 val written = min(read.toLong(), remaining).toInt()
                                 if (written > 0) {
                                     writer.enqueue(
@@ -472,6 +499,8 @@ class SegmentedDownloadClient(
                                                 measuredPeerCount = snapshot.measuredPeerCount,
                                                 ageMs = (nowNs - startedNs) / 1_000_000L,
                                                 bytes = currentOffset - requestStart,
+                                                remainingBytes =
+                                                    (end - currentOffset + 1L).coerceAtLeast(0L),
                                             )
                                         ) {
                                             slowStrikes += 1
@@ -495,13 +524,19 @@ class SegmentedDownloadClient(
             } catch (error: Throwable) {
                 if (error is CancellationException) throw error
                 currentCoroutineContext().ensureActive()
+                if (rateProbeIdleExpired.get()) {
+                    throw RateProbeIdleTimeoutException(error)
+                }
                 if (leaseExpired.get()) {
                     throw RangeLeaseExpiredException(error)
                 }
                 throw error
             }
         } finally {
-            leaseJob?.cancelAndJoin()
+            withContext(NonCancellable) {
+                rateProbeIdleJob?.cancelAndJoin()
+                leaseJob?.cancelAndJoin()
+            }
         }
         if (active.currentOffset() <= active.currentEndInclusive()) {
             throw PartialPartDownloadException(
@@ -791,6 +826,10 @@ private class RangeLeaseExpiredException(
     cause: Throwable,
 ) : IOException("range lease expired", cause)
 
+internal class RateProbeIdleTimeoutException(
+    cause: Throwable,
+) : IOException("rate probe idle timeout", cause)
+
 private class RangeResourceChangedException : IOException("remote resource changed during segmented download")
 
 private class RangeProtocolException(
@@ -809,6 +848,7 @@ internal fun Throwable?.rangeFailureKindOrNull(): RangeFailureKind? =
     when (this) {
         is BoundedAsyncWriterException -> null
         is PartialPartDownloadException -> RangeFailureKind.PartialEof
+        is RateProbeIdleTimeoutException -> RangeFailureKind.RateLimited
         is RangeLeaseExpiredException,
         is SlowConnectionDownloadException,
         is SocketTimeoutException -> RangeFailureKind.Timeout

@@ -206,6 +206,7 @@ class PartSchedulerTest {
                 rateLimitWindowMs = 1_000,
                 rateLimitCooldownMs = 100,
                 rateLimitRecoveryMs = 100,
+                rateLimitedMinPartSizeBytes = 100,
             ),
             nowMs = { now },
         )
@@ -232,6 +233,30 @@ class PartSchedulerTest {
         scheduler.recordRateLimit(part = probe.part, delayMs = 100)
         scheduler.finish(workerId = 5, active = probe)
         assertNull(scheduler.nextPart(workerId = 5))
+    }
+
+    @Test
+    fun `rate limited scheduler increases part size floor`() = runBlocking {
+        val scheduler = PartScheduler(
+            totalBytes = 5_000,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 4,
+            tuning = testTuning.copy(
+                tailWindowInitialMultiplier = 0,
+                tailWindowMinDynamicMultiplier = 0,
+                rateLimitStrikeThreshold = 1,
+                rateLimitedMinPartSizeBytes = 400,
+                limitedTailPartsPerConnection = 1,
+            ),
+        )
+        val limited = assertNotNull(scheduler.nextPart(workerId = 0))
+        scheduler.finish(workerId = 0, active = limited)
+        scheduler.recordRateLimit(part = limited.part, delayMs = 100)
+
+        val next = assertNotNull(scheduler.nextPart(workerId = 1))
+
+        assertEquals(400, next.part.length)
     }
 
     private companion object {

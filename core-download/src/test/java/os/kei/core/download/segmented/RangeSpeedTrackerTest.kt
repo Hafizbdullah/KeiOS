@@ -63,4 +63,18 @@ class RangeSpeedTrackerTest {
             )
         )
     }
+
+    @Test
+    fun `slow tail closes from absolute speed with one peer`() {
+        assertTrue(
+            shouldCloseSlowConnection(
+                speedBytesPerMs = 32.0,
+                averageBytesPerMs = 0.0,
+                measuredPeerCount = 1,
+                ageMs = 8_000,
+                bytes = 256L * 1024L,
+                remainingBytes = 2L * 1024L * 1024L,
+            )
+        )
+    }
 }

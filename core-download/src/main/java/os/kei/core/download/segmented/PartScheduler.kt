@@ -96,6 +96,7 @@ internal data class PartSchedulerTuning(
     val minTailPartSizeBytes: Long = 128L * 1024L,
     val maxDynamicPartSizeBytes: Long = 1L * 1024L * 1024L * 1024L,
     val tailPartsPerConnection: Int = 4,
+    val limitedTailPartsPerConnection: Int = 2,
     val tailWindowInitialMultiplier: Int = 8,
     val tailWindowMinDynamicMultiplier: Int = 2,
     val speedSmoothFactor: Double = 0.35,
@@ -106,6 +107,7 @@ internal data class PartSchedulerTuning(
     val rateLimitWindowMs: Long = 30_000L,
     val rateLimitCooldownMs: Long = 10_000L,
     val rateLimitRecoveryMs: Long = 15_000L,
+    val rateLimitedMinPartSizeBytes: Long = 16L * 1024L * 1024L,
     val idlePollMs: Long = 50L,
 ) {
     init {
@@ -113,6 +115,7 @@ internal data class PartSchedulerTuning(
         require(minTailPartSizeBytes > 0L) { "minTailPartSizeBytes must be positive" }
         require(maxDynamicPartSizeBytes > 0L) { "maxDynamicPartSizeBytes must be positive" }
         require(tailPartsPerConnection > 0) { "tailPartsPerConnection must be positive" }
+        require(limitedTailPartsPerConnection > 0) { "limitedTailPartsPerConnection must be positive" }
         require(tailWindowInitialMultiplier >= 0) { "tailWindowInitialMultiplier cannot be negative" }
         require(tailWindowMinDynamicMultiplier >= 0) { "tailWindowMinDynamicMultiplier cannot be negative" }
         require(speedSmoothFactor in 0.0..1.0) { "speedSmoothFactor must be between 0 and 1" }
@@ -123,6 +126,7 @@ internal data class PartSchedulerTuning(
         require(rateLimitWindowMs > 0L) { "rateLimitWindowMs must be positive" }
         require(rateLimitCooldownMs >= 0L) { "rateLimitCooldownMs cannot be negative" }
         require(rateLimitRecoveryMs > 0L) { "rateLimitRecoveryMs must be positive" }
+        require(rateLimitedMinPartSizeBytes > 0L) { "rateLimitedMinPartSizeBytes must be positive" }
         require(idlePollMs > 0L) { "idlePollMs must be positive" }
     }
 }
@@ -187,7 +191,7 @@ internal class PartScheduler(
     maxRetriesPerPart: Int,
     private val concurrency: Int,
     private val tuning: PartSchedulerTuning = PartSchedulerTuning(),
-    private val nowMs: () -> Long = { System.currentTimeMillis() },
+    private val nowMs: () -> Long = { System.nanoTime() / 1_000_000L },
     private val retryBudgets: RangeRetryBudgets = RangeRetryBudgets.fromBase(maxRetriesPerPart),
 ) {
     private val mutex = Mutex()
@@ -198,6 +202,7 @@ internal class PartScheduler(
     private val workerSpeedBytesPerMs = DoubleArray(concurrency)
     private val workerPartSizeBytes = LongArray(concurrency) { initialPartSizeBytes }
     private val maxDynamicPartSizeBytes: Long
+    private var partSizeHint = initialPartSizeBytes
     private val rateLimitFloor = min(concurrency, tuning.rateLimitMinActiveConnections)
     private var activeCount = 0
     private var maxActive = min(concurrency, tuning.startupActiveConnections)
@@ -292,7 +297,7 @@ internal class PartScheduler(
             if (delayMs > 0L) {
                 delayed += DelayedPart(
                     part = failedPart,
-                    readyAtMs = nowMs() + delayMs,
+                    readyAtMs = nowMs().saturatingAdd(delayMs),
                 )
                 return@withLock true
             }
@@ -317,6 +322,7 @@ internal class PartScheduler(
                             speed * tuning.speedSmoothFactor
                     }
                 adjustPartSizeLocked(workerId, bytes, elapsedMs)
+                updatePartSizeHintLocked(workerPartSizeBytes[workerId])
                 workerDone[workerId] += 1
             }
             if (part.rateProbe && probeLimit == maxActive) {
@@ -406,12 +412,23 @@ internal class PartScheduler(
         if (remaining > tailWindowBytes()) {
             return min(remaining, workerPartSizeLocked(workerId))
         }
-        val targetParts = maxActive.toLong() * tuning.tailPartsPerConnection.toLong()
+        val tailPartsPerConnection =
+            if (rateLimited) {
+                tuning.limitedTailPartsPerConnection
+            } else {
+                tuning.tailPartsPerConnection
+            }
+        val targetParts = maxActive.toLong() * tailPartsPerConnection.toLong()
         val partSize = ceilDiv(remaining, targetParts)
         return clampPartSize(
             size = partSize,
             remaining = remaining,
-            maxPartSize = initialPartSizeBytes,
+            maxPartSize =
+                if (rateLimited) {
+                    max(initialPartSizeBytes, rateLimitedPartFloorLocked())
+                } else {
+                    initialPartSizeBytes
+                },
             minPartSize = tuning.minTailPartSizeBytes,
         )
     }
@@ -505,11 +522,34 @@ internal class PartScheduler(
         )
 
     private fun workerPartSizeLocked(workerId: Int): Long =
-        if (workerId in workerPartSizeBytes.indices) {
-            workerPartSizeBytes[workerId].takeIf { it > 0L } ?: initialPartSizeBytes
-        } else {
-            initialPartSizeBytes
+        run {
+            var size =
+                if (workerId in workerPartSizeBytes.indices) {
+                    workerPartSizeBytes[workerId].takeIf { it > 0L } ?: initialPartSizeBytes
+                } else {
+                    initialPartSizeBytes
+                }
+            if (rateLimited) {
+                size = maxOf(size, partSizeHint, rateLimitedPartFloorLocked())
+            }
+            min(size, maxDynamicPartSizeBytes)
         }
+
+    private fun updatePartSizeHintLocked(size: Long) {
+        if (size <= 0L) return
+        partSizeHint =
+            if (partSizeHint <= initialPartSizeBytes) {
+                size
+            } else {
+                partSizeHint - partSizeHint / 3L + size / 3L
+            }
+    }
+
+    private fun rateLimitedPartFloorLocked(): Long =
+        min(
+            max(initialPartSizeBytes, tuning.rateLimitedMinPartSizeBytes),
+            maxDynamicPartSizeBytes,
+        )
 
     private data class DelayedPart(
         val part: DownloadPart,

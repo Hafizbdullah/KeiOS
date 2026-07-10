@@ -49,13 +49,23 @@ internal fun shouldCloseSlowConnection(
     measuredPeerCount: Int,
     ageMs: Long,
     bytes: Long,
-): Boolean =
-    measuredPeerCount >= SLOW_CONNECTION_MIN_PEERS &&
+    remainingBytes: Long = Long.MAX_VALUE,
+): Boolean {
+    val relativelySlow =
+        measuredPeerCount >= SLOW_CONNECTION_MIN_PEERS &&
         ageMs >= SLOW_CONNECTION_MIN_AGE_MS &&
         bytes >= SLOW_CONNECTION_MIN_BYTES &&
         averageBytesPerMs > 0.0 &&
         speedBytesPerMs > 0.0 &&
         speedBytesPerMs < averageBytesPerMs * SLOW_CONNECTION_RATIO
+    val absolutelySlowTail =
+        remainingBytes in 1..SLOW_TAIL_MAX_REMAINING_BYTES &&
+            ageMs >= SLOW_TAIL_MIN_AGE_MS &&
+            bytes >= SLOW_TAIL_MIN_BYTES &&
+            speedBytesPerMs > 0.0 &&
+            speedBytesPerMs < SLOW_TAIL_MIN_BYTES_PER_MS
+    return relativelySlow || absolutelySlowTail
+}
 
 internal const val SLOW_CONNECTION_CHECK_INTERVAL_MS = 2_000L
 internal const val SLOW_CONNECTION_MIN_AGE_MS = 5_000L
@@ -63,3 +73,7 @@ internal const val SLOW_CONNECTION_MIN_BYTES = 1024L * 1024L
 internal const val SLOW_CONNECTION_STRIKES = 2
 internal const val SLOW_CONNECTION_MIN_PEERS = 4
 internal const val SLOW_CONNECTION_RATIO = 0.45
+internal const val SLOW_TAIL_MAX_REMAINING_BYTES = 2L * 1024L * 1024L
+internal const val SLOW_TAIL_MIN_AGE_MS = 4_000L
+internal const val SLOW_TAIL_MIN_BYTES = 256L * 1024L
+internal const val SLOW_TAIL_MIN_BYTES_PER_MS = 64.0 * 1024.0 / 1_000.0
