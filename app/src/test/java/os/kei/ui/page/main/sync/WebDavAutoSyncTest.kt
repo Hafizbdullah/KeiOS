@@ -13,23 +13,18 @@ class WebDavAutoSyncTest {
         assertEquals(
             intervalMs,
             autoSyncScheduleCooldownMs(
-                provider = WebDavProvider.Jianguoyun,
-                lastStatus = WebDavAutoSyncStatus.Success,
                 intervalMs = intervalMs,
             ),
         )
     }
 
     @Test
-    fun `failed auto sync uses bounded retry cooldown`() {
+    fun `failed auto sync still honors configured interval cooldown`() {
         val intervalMs = 3L * 60L * 60L * 1000L
 
-        assertEquals(5L * 60L * 1000L, retryAutoSyncCooldownMs(WebDavProvider.Jianguoyun))
         assertEquals(
-            60L * 60L * 1000L,
+            intervalMs,
             autoSyncScheduleCooldownMs(
-                provider = WebDavProvider.Jianguoyun,
-                lastStatus = WebDavAutoSyncStatus.Failed,
                 intervalMs = intervalMs,
             ),
         )

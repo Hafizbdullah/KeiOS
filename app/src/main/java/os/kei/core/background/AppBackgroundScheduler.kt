@@ -144,8 +144,6 @@ object AppBackgroundScheduler {
         val provider = WebDavSyncStore.loadProvider()
         val summary = WebDavSyncStore.loadLastAutoSyncSummary()
         val cooldownMs = autoSyncScheduleCooldownMs(
-            provider = provider,
-            lastStatus = summary?.status,
             intervalMs = WebDavSyncStore.getAutoSyncIntervalMs(),
         )
         val lastTouchMs = maxOf(
