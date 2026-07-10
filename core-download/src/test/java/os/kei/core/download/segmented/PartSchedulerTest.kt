@@ -3,8 +3,10 @@ package os.kei.core.download.segmented
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class PartSchedulerTest {
     @Test
@@ -68,7 +70,12 @@ class PartSchedulerTest {
         assertEquals(DownloadPart(start = 0, endInclusive = 9), first.part)
 
         scheduler.finish(workerId = 0, active = first)
-        scheduler.record(workerId = 0, bytes = first.part.length, elapsedMs = 100)
+        scheduler.recordSuccess(
+            workerId = 0,
+            part = first.part,
+            bytes = first.part.length,
+            elapsedMs = 100,
+        )
 
         assertEquals(
             DownloadPart(start = 600, endInclusive = 999),
@@ -116,14 +123,115 @@ class PartSchedulerTest {
 
         val completed = active.first()
         scheduler.finish(workerId = 0, active = completed)
-        scheduler.record(
+        scheduler.recordSuccess(
             workerId = 0,
+            part = completed.part,
             bytes = completed.part.length,
             elapsedMs = 100,
         )
 
         assertNotNull(scheduler.nextPart(workerId = 4))
         Unit
+    }
+
+    @Test
+    fun `retry budgets are independent for eof and rate limit failures`() = runBlocking {
+        val scheduler = PartScheduler(
+            totalBytes = 100,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 1,
+            tuning = testTuning,
+            retryBudgets = RangeRetryBudgets(
+                partialEof = 1,
+                timeout = 0,
+                connectionReset = 0,
+                rateLimited = 1,
+                transient = 0,
+            ),
+        )
+        val initial = assertNotNull(scheduler.nextPart(workerId = 0))
+        scheduler.finish(workerId = 0, active = initial)
+
+        assertTrue(
+            scheduler.requeueFailed(
+                part = initial.part,
+                nextStart = 0,
+                failureKind = RangeFailureKind.PartialEof,
+            ),
+        )
+        val afterEof = assertNotNull(scheduler.nextPart(workerId = 0))
+        scheduler.finish(workerId = 0, active = afterEof)
+
+        assertTrue(
+            scheduler.requeueFailed(
+                part = afterEof.part,
+                nextStart = 0,
+                failureKind = RangeFailureKind.RateLimited,
+            ),
+        )
+        val afterBoth = assertNotNull(scheduler.nextPart(workerId = 0))
+        scheduler.finish(workerId = 0, active = afterBoth)
+
+        assertFalse(
+            scheduler.requeueFailed(
+                part = afterBoth.part,
+                nextStart = 0,
+                failureKind = RangeFailureKind.PartialEof,
+            ),
+        )
+        assertFalse(
+            scheduler.requeueFailed(
+                part = afterBoth.part,
+                nextStart = 0,
+                failureKind = RangeFailureKind.RateLimited,
+            ),
+        )
+        assertEquals(2, scheduler.stats().retryCount)
+    }
+
+    @Test
+    fun `rate limit strikes reduce concurrency and recover with one probe`() = runBlocking {
+        var now = 0L
+        val scheduler = PartScheduler(
+            totalBytes = 10_000,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 6,
+            tuning = testTuning.copy(
+                startupActiveConnections = 6,
+                tailWindowInitialMultiplier = 0,
+                rateLimitMinActiveConnections = 2,
+                rateLimitStrikeThreshold = 2,
+                rateLimitWindowMs = 1_000,
+                rateLimitCooldownMs = 100,
+                rateLimitRecoveryMs = 100,
+            ),
+            nowMs = { now },
+        )
+
+        repeat(2) { workerId ->
+            val limited = assertNotNull(scheduler.nextPart(workerId))
+            scheduler.finish(workerId, limited)
+            scheduler.recordRateLimit(part = limited.part, delayMs = 100)
+        }
+
+        val admitted = (0 until 5).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+        assertNull(scheduler.nextPart(workerId = 5))
+
+        scheduler.finish(workerId = 0, active = admitted.first())
+        now = 99
+        assertNotNull(scheduler.nextPart(workerId = 0))
+        now = 100
+        val probe = assertNotNull(scheduler.nextPart(workerId = 5))
+
+        assertTrue(probe.part.rateProbe)
+
+        scheduler.recordRateLimit(part = probe.part, delayMs = 100)
+        scheduler.finish(workerId = 5, active = probe)
+        assertNull(scheduler.nextPart(workerId = 5))
     }
 
     private companion object {
