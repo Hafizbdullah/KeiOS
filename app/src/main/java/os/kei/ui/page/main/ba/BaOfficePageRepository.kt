@@ -161,6 +161,8 @@ private fun BaNotificationSettingsSheetState.toSavedDraft(
     BaPageNotificationDraftState(
         apNotifyEnabled = apNotifyEnabled,
         cafeApNotifyEnabled = persisted.cafeApNotifyEnabled,
+        keepApRemindersReadUntilBelowThreshold =
+            persisted.keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled,
         calendarUpcomingNotifyEnabled = persisted.calendarUpcomingNotifyEnabled,

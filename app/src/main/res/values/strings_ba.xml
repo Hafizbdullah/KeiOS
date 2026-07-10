@@ -178,6 +178,9 @@
     <string name="ba_settings_label_ap_notify">AP 通知</string>
     <string name="ba_settings_label_cafe_ap_notify">咖啡厅 AP 通知</string>
     <string name="ba_settings_summary_cafe_ap_notify">咖啡厅库存 AP 达到阈值后提醒</string>
+    <string name="ba_settings_label_ap_read_suppression">已读后持续静默</string>
+    <string name="ba_settings_summary_ap_read_suppression_persistent">已读后，直到对应 AP 低于阈值前保持静默</string>
+    <string name="ba_settings_summary_ap_read_suppression_hourly">已读后仍达到阈值时，每小时最多再次提醒一次</string>
     <string name="ba_settings_label_cafe_visit_notify">咖啡厅学生来访通知</string>
     <string name="ba_settings_summary_cafe_visit_notify">按当前服务器时区在 04:00 / 16:00 各提醒一次</string>
     <string name="ba_settings_label_arena_refresh_notify">竞技场刷新通知</string>

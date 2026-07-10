@@ -5,6 +5,7 @@ import org.json.JSONArray
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
+import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.ba.support.normalizeGameKeeImageLink
 
 internal data class BaSettingsPersistenceResult(
@@ -18,6 +19,7 @@ internal data class BaNotificationSettingsPersistenceResult(
     val savedThreshold: Int,
     val savedCafeApThreshold: Int,
     val cafeApNotifyEnabled: Boolean,
+    val keepApRemindersReadUntilBelowThreshold: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -125,18 +127,24 @@ internal object BaSettingsPersistenceRepository {
         val savedCafeApThreshold =
             sheetState.cafeApNotifyThresholdText.toIntOrNull()?.coerceIn(0, BA_AP_MAX) ?: 120
 
-        BASettingsStore.saveApNotifyEnabled(sheetState.apNotifyEnabled)
-        BASettingsStore.saveCafeApNotifyEnabled(sheetState.cafeApNotifyEnabled)
-        BASettingsStore.saveCafeApNotifyThreshold(savedCafeApThreshold)
-        BASettingsStore.saveArenaRefreshNotifyEnabled(sheetState.arenaRefreshNotifyEnabled)
-        BASettingsStore.saveCafeVisitNotifyEnabled(sheetState.cafeVisitNotifyEnabled)
+        BASettingsStore.saveGlobalReminderSettings(
+            BaGlobalReminderSettings(
+                apNotifyEnabled = sheetState.apNotifyEnabled,
+                apNotifyThreshold = savedThreshold,
+                cafeApNotifyEnabled = sheetState.cafeApNotifyEnabled,
+                cafeApNotifyThreshold = savedCafeApThreshold,
+                keepApRemindersReadUntilBelowThreshold =
+                    sheetState.keepApRemindersReadUntilBelowThreshold,
+                arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
+                cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
+            ),
+        )
         BASettingsStore.saveCalendarUpcomingNotifyEnabled(sheetState.calendarUpcomingNotifyEnabled)
         BASettingsStore.saveCalendarEndingNotifyEnabled(sheetState.calendarEndingNotifyEnabled)
         BASettingsStore.savePoolUpcomingNotifyEnabled(sheetState.poolUpcomingNotifyEnabled)
         BASettingsStore.savePoolEndingNotifyEnabled(sheetState.poolEndingNotifyEnabled)
         BASettingsStore.saveCalendarPoolChangeNotifyEnabled(sheetState.calendarPoolChangeNotifyEnabled)
         BASettingsStore.saveCalendarPoolNotifyLeadHours(sheetState.calendarPoolNotifyLeadHours)
-        BASettingsStore.saveApNotifyThreshold(savedThreshold)
         BASettingsStore.pruneCalendarPoolNotifiedKeysForPolicy(
             serverIndex = BASettingsStore.loadCalendarPoolServerIndex(),
             leadHours = sheetState.calendarPoolNotifyLeadHours,
@@ -151,6 +159,8 @@ internal object BaSettingsPersistenceRepository {
             savedThreshold = savedThreshold,
             savedCafeApThreshold = savedCafeApThreshold,
             cafeApNotifyEnabled = sheetState.cafeApNotifyEnabled,
+            keepApRemindersReadUntilBelowThreshold =
+                sheetState.keepApRemindersReadUntilBelowThreshold,
             arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
             cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
             calendarUpcomingNotifyEnabled = sheetState.calendarUpcomingNotifyEnabled,

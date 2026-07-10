@@ -483,6 +483,26 @@ private fun BaAccountCustomReminderEditor(
         )
     }
     SheetControlRow(
+        label = stringResource(R.string.ba_settings_label_ap_read_suppression),
+        summary =
+            stringResource(
+                if (settings.keepApRemindersReadUntilBelowThreshold) {
+                    R.string.ba_settings_summary_ap_read_suppression_persistent
+                } else {
+                    R.string.ba_settings_summary_ap_read_suppression_hourly
+                },
+            ),
+    ) {
+        AppSwitch(
+            checked = settings.keepApRemindersReadUntilBelowThreshold,
+            onCheckedChange = { enabled ->
+                onSettingsChange(
+                    settings.copy(keepApRemindersReadUntilBelowThreshold = enabled),
+                )
+            },
+        )
+    }
+    SheetControlRow(
         label = stringResource(R.string.ba_settings_label_arena_refresh_notify),
         summary = stringResource(R.string.ba_settings_summary_arena_refresh_notify),
     ) {

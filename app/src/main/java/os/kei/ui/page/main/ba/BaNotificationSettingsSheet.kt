@@ -51,6 +51,7 @@ import kotlin.math.roundToInt
 internal data class BaNotificationSettingsSheetState(
     val apNotifyEnabled: Boolean,
     val cafeApNotifyEnabled: Boolean,
+    val keepApRemindersReadUntilBelowThreshold: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -72,6 +73,7 @@ internal fun BaNotificationSettingsSheet(
     cafeApThresholdMax: Int,
     onApNotifyEnabledChange: (Boolean) -> Unit,
     onCafeApNotifyEnabledChange: (Boolean) -> Unit,
+    onKeepApRemindersReadUntilBelowThresholdChange: (Boolean) -> Unit,
     onArenaRefreshNotifyEnabledChange: (Boolean) -> Unit,
     onCafeVisitNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarUpcomingNotifyEnabledChange: (Boolean) -> Unit,
@@ -211,6 +213,22 @@ internal fun BaNotificationSettingsSheet(
                             ),
                         activeColor = settingsAccent,
                         onThresholdChange = onCafeApNotifyThresholdTextChange,
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.ba_settings_label_ap_read_suppression),
+                    summary =
+                        stringResource(
+                            if (state.keepApRemindersReadUntilBelowThreshold) {
+                                R.string.ba_settings_summary_ap_read_suppression_persistent
+                            } else {
+                                R.string.ba_settings_summary_ap_read_suppression_hourly
+                            },
+                        ),
+                ) {
+                    AppSwitch(
+                        checked = state.keepApRemindersReadUntilBelowThreshold,
+                        onCheckedChange = onKeepApRemindersReadUntilBelowThresholdChange,
                     )
                 }
             }

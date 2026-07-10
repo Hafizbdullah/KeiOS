@@ -163,6 +163,9 @@
     <string name="ba_settings_label_ap_notify">AP notification</string>
     <string name="ba_settings_label_cafe_ap_notify">Cafe AP notification</string>
     <string name="ba_settings_summary_cafe_ap_notify">Reminds when stored Cafe AP reaches the threshold.</string>
+    <string name="ba_settings_label_ap_read_suppression">Keep read AP reminders silent</string>
+    <string name="ba_settings_summary_ap_read_suppression_persistent">After marking as read, stays silent until the corresponding AP drops below its threshold.</string>
+    <string name="ba_settings_summary_ap_read_suppression_hourly">After marking as read, reminds at most once per hour while AP remains above its threshold.</string>
     <string name="ba_settings_label_cafe_visit_notify">Cafe student visit notification</string>
     <string name="ba_settings_summary_cafe_visit_notify">Reminds at 04:00 and 16:00 in the selected server time zone.</string>
     <string name="ba_settings_label_arena_refresh_notify">Tactical Challenge reset notification</string>

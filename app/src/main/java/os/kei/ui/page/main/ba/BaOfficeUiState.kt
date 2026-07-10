@@ -134,6 +134,8 @@ internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiS
                                 apNotifyThreshold = override.apNotifyThreshold,
                                 cafeApNotifyEnabled = override.cafeApNotifyEnabled,
                                 cafeApNotifyThreshold = override.cafeApNotifyThreshold,
+                                keepApRemindersReadUntilBelowThreshold =
+                                    override.keepApRemindersReadUntilBelowThreshold,
                                 arenaRefreshNotifyEnabled = override.arenaRefreshNotifyEnabled,
                                 cafeVisitNotifyEnabled = override.cafeVisitNotifyEnabled,
                             )

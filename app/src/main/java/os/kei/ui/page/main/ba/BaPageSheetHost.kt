@@ -176,6 +176,11 @@ internal fun BaPageSheetHost(
         onCafeApNotifyEnabledChange = { enabled ->
             viewModel.updateNotificationDraft { draft -> draft.copy(cafeApNotifyEnabled = enabled) }
         },
+        onKeepApRemindersReadUntilBelowThresholdChange = { enabled ->
+            viewModel.updateNotificationDraft { draft ->
+                draft.copy(keepApRemindersReadUntilBelowThreshold = enabled)
+            }
+        },
         onArenaRefreshNotifyEnabledChange = { enabled ->
             viewModel.updateNotificationDraft { draft -> draft.copy(arenaRefreshNotifyEnabled = enabled) }
         },

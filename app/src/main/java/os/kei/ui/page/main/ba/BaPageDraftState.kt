@@ -15,6 +15,7 @@ internal data class BaPageSettingsDraftState(
 internal data class BaPageNotificationDraftState(
     val apNotifyEnabled: Boolean,
     val cafeApNotifyEnabled: Boolean,
+    val keepApRemindersReadUntilBelowThreshold: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
@@ -39,6 +40,7 @@ internal fun BaPageSnapshot.toNotificationDraftState(): BaPageNotificationDraftS
     BaPageNotificationDraftState(
         apNotifyEnabled = apNotifyEnabled,
         cafeApNotifyEnabled = cafeApNotifyEnabled,
+        keepApRemindersReadUntilBelowThreshold = keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = cafeVisitNotifyEnabled,
         calendarUpcomingNotifyEnabled = calendarUpcomingNotifyEnabled,

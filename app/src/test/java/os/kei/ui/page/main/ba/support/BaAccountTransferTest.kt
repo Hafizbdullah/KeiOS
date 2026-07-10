@@ -7,6 +7,34 @@ import kotlin.test.assertTrue
 
 class BaAccountTransferTest {
     @Test
+    fun `custom reminder settings retain hourly AP read suppression through editor input and export`() {
+        val customSettings =
+            BaGlobalReminderSettings(
+                apNotifyEnabled = true,
+                cafeApNotifyEnabled = true,
+                keepApRemindersReadUntilBelowThreshold = false,
+            )
+        val accountId = BaAccountId("cn-main")
+        val account =
+            testAccount(id = accountId.value, serverIndex = 0).copy(
+                reminderOverride = customSettings.toAccountReminderOverride(accountId),
+            )
+        val snapshot =
+            BaAccountStoreSnapshot(
+                accounts = listOf(account),
+                activeAccountId = accountId,
+                allAccountsFollowGlobalNotificationSettings = false,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+
+        val parsed = parseBaAccountsExportJson(buildBaAccountsExportJson(snapshot, nowMs = 42L))
+        val restoredOverride = parsed.accounts.single().reminderOverride
+
+        assertFalse(customSettings.keepApRemindersReadUntilBelowThreshold)
+        assertFalse(restoredOverride?.keepApRemindersReadUntilBelowThreshold ?: true)
+    }
+
+    @Test
     fun `export json round trips account state and count`() {
         val activeAccountId = BaAccountId("cn-alt")
         val snapshot =

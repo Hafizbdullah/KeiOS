@@ -19,6 +19,7 @@ internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraf
     BaNotificationSettingsSheetState(
         apNotifyEnabled = draft.apNotifyEnabled,
         cafeApNotifyEnabled = draft.cafeApNotifyEnabled,
+        keepApRemindersReadUntilBelowThreshold = draft.keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = draft.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = draft.cafeVisitNotifyEnabled,
         calendarUpcomingNotifyEnabled = draft.calendarUpcomingNotifyEnabled,

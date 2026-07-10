@@ -547,6 +547,8 @@ internal class BaOfficeViewModel(
 
                 office.apNotifyEnabled = sheetState.apNotifyEnabled
                 office.cafeApNotifyEnabled = persisted.cafeApNotifyEnabled
+                office.keepApRemindersReadUntilBelowThreshold =
+                    persisted.keepApRemindersReadUntilBelowThreshold
                 office.arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled
                 office.cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled
                 office.apNotifyThreshold = persisted.savedThreshold

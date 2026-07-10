@@ -163,6 +163,9 @@
     <string name="ba_settings_label_ap_notify">AP 通知</string>
     <string name="ba_settings_label_cafe_ap_notify">カフェ AP 通知</string>
     <string name="ba_settings_summary_cafe_ap_notify">カフェの保存 AP がしきい値に達したら通知します。</string>
+    <string name="ba_settings_label_ap_read_suppression">既読後は継続して通知を抑制</string>
+    <string name="ba_settings_summary_ap_read_suppression_persistent">既読にすると、対象の AP がしきい値を下回るまで通知を抑制します。</string>
+    <string name="ba_settings_summary_ap_read_suppression_hourly">既読後も AP がしきい値以上の場合、再通知は最大 1 時間に 1 回です。</string>
     <string name="ba_settings_label_cafe_visit_notify">カフェ生徒訪問通知</string>
     <string name="ba_settings_summary_cafe_visit_notify">選択したサーバー時刻の 04:00 と 16:00 に通知します。</string>
     <string name="ba_settings_label_arena_refresh_notify">戦術対抗戦リセット通知</string>
