@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -117,6 +118,54 @@ class McpXiaomiMagicDispatcherTest {
 
         assertEquals(1, postAttempts)
         assertTrue(caller.isCancelled)
+    }
+
+    @Test
+    fun `delivery commit failure fails the awaited transaction and restores networking`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val expectedFailure = IllegalStateException("durable commit failed")
+        val restoreCompleted = CompletableDeferred<Unit>()
+        val environment =
+            McpXiaomiMagicDispatchEnvironment(
+                canPostNotifications = { true },
+                resolveTargetUid = { 12_345 },
+                canUseCommand = { true },
+                shouldExecute = { true },
+                healNetworking = {},
+                blockNetworking = { true },
+                postNotification = { _, _, _, _ -> true },
+                awaitRestore = {},
+                restoreNetworking = { restoreCompleted.complete(Unit) },
+                needsRestore = { true },
+            )
+
+        val actualFailure =
+            assertFailsWith<IllegalStateException> {
+                McpXiaomiMagicDispatcher.notify(
+                    context = context,
+                    notificationId = 44,
+                    notification = Notification(),
+                    environment = environment,
+                    dispatchScope = backgroundScope,
+                    mutex = Mutex(),
+                    onDelivered = { throw expectedFailure },
+                )
+        }
+
+        restoreCompleted.await()
+        assertEquals(expectedFailure.message, actualFailure.message)
+    }
+
+    @Test
+    fun `standalone delivery commit wraps failures for active-state recovery`() = runTest {
+        val expectedFailure = IllegalStateException("snapshot or BA commit failed")
+
+        val actualFailure =
+            assertFailsWith<McpNotificationDeliveryCommitException> {
+                runStandaloneEventDeliveryCommit { throw expectedFailure }
+            }
+
+        assertEquals(expectedFailure.message, actualFailure.cause?.message)
     }
 
     @Test

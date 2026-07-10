@@ -283,19 +283,15 @@ internal object McpXiaomiMagicDispatcher {
                         notification = notification,
                         environment = environment,
                     )
-            var commitFailure: Throwable? = null
             if (delivered) {
                 try {
                     onDelivered()
                 } catch (throwable: Throwable) {
-                    commitFailure = throwable
-                    if (throwable !is CancellationException) {
-                        AppLogger.e(TAG, "Xiaomi magic delivery commit failed", throwable)
-                    }
+                    initialPostResult.completeExceptionally(throwable)
+                    throw throwable
                 }
             }
             initialPostResult.complete(delivered)
-            commitFailure?.let { throw it }
         }
     }
 

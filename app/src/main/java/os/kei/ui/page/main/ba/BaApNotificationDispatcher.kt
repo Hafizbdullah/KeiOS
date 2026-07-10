@@ -87,27 +87,30 @@ internal object BaApNotificationDispatcher {
                 thresholdDisplay.toString(),
                 limitDisplay,
             )
-            McpNotificationHelper.notifyStandaloneEventAwaitingDelivery(
-                context = context,
-                notificationId = notificationId,
-                request =
-                    McpStandaloneEventRequest(
-                        serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
-                        running = true,
-                        port = currentDisplay,
-                        path = thresholdDisplay.toString(),
-                        clients = limitDisplay,
-                        overrideTitle = context.getString(R.string.ba_ap_notification_title),
-                        overrideContent =
-                            baAccountNotificationContent(
-                                context = context,
-                                accountDisplayName = accountDisplayName,
-                                content = content,
-                            ),
-                        targetBaAccountId = accountId?.value,
-                    ),
-                onDelivered = onDelivered,
-            ).also { sent ->
+            val request =
+                McpStandaloneEventRequest(
+                    serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
+                    running = true,
+                    port = currentDisplay,
+                    path = thresholdDisplay.toString(),
+                    clients = limitDisplay,
+                    overrideTitle = context.getString(R.string.ba_ap_notification_title),
+                    overrideContent =
+                        baAccountNotificationContent(
+                            context = context,
+                            accountDisplayName = accountDisplayName,
+                            content = content,
+                        ),
+                    targetBaAccountId = accountId?.value,
+                )
+            retryBaNotificationDeliveryCommit(TAG) {
+                McpNotificationHelper.notifyStandaloneEventAwaitingDelivery(
+                    context = context,
+                    notificationId = notificationId,
+                    request = request,
+                    onDelivered = onDelivered,
+                )
+            }.also { sent ->
                 AppLogger.i(TAG) {
                     "awaited send result=$sent id=$notificationId current=$currentDisplay limit=$limitDisplay account=${accountId?.value.orEmpty()}"
                 }

@@ -34,6 +34,10 @@ data class McpStandaloneEventRequest(
     val targetRoute: String? = null,
 )
 
+class McpNotificationDeliveryCommitException(
+    cause: Throwable,
+) : IllegalStateException("Notification delivery commit failed", cause)
+
 internal data class PreparedStandaloneEvent(
     val notification: Notification,
     val snapshot: McpNotificationSnapshot,
@@ -49,8 +53,10 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
     onDelivered: suspend () -> Unit = {},
 ): Boolean {
     val commitDelivery: suspend () -> Unit = {
-        McpNotificationActiveStateCache.markActive(notificationId, active = true)
-        onDelivered()
+        runStandaloneEventDeliveryCommit {
+            McpNotificationActiveStateCache.markActive(notificationId, active = true)
+            onDelivered()
+        }
     }
     val dispatched =
         if (useXiaomiMagic) {
@@ -75,12 +81,7 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
                         notification,
                     )
                 if (delivered) {
-                    try {
-                        commitDelivery()
-                    } catch (throwable: Throwable) {
-                        if (throwable is CancellationException) throw throwable
-                        AppLogger.e("McpStandaloneEvent", "delivery commit failed", throwable)
-                    }
+                    commitDelivery()
                 }
                 delivered
             }
@@ -89,4 +90,14 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
         "awaited dispatch result=$dispatched id=$notificationId xiaomiMagic=$useXiaomiMagic"
     }
     return dispatched
+}
+
+internal suspend fun runStandaloneEventDeliveryCommit(block: suspend () -> Unit) {
+    try {
+        block()
+    } catch (throwable: Throwable) {
+        if (throwable is CancellationException) throw throwable
+        if (throwable is McpNotificationDeliveryCommitException) throw throwable
+        throw McpNotificationDeliveryCommitException(throwable)
+    }
 }

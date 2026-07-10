@@ -394,7 +394,12 @@ object McpNotificationHelper {
             request = request,
         )
         if (prepared.alreadyActive) {
-            withContext(NonCancellable) { onDelivered() }
+            withContext(NonCancellable) {
+                runStandaloneEventDeliveryCommit {
+                    McpNotificationSnapshotStore.put(notificationId, prepared.snapshot)
+                    onDelivered()
+                }
+            }
             return true
         }
         val dispatched = dispatchStandaloneEventAwaitingDelivery(

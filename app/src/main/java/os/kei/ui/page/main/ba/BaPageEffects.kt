@@ -7,8 +7,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -76,6 +76,49 @@ internal suspend fun persistBaForegroundApSyncResult(
     result.lastNotifiedLevel?.let(onLastNotifiedLevel)
 }
 
+internal suspend fun persistBaForegroundApDeliveredResult(
+    request: BaApNotificationSyncRequest,
+    result: BaApNotificationSyncResult,
+    persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit = { update ->
+        update.persistAsync()
+    },
+    anchorWriter: BaApSuppressionAnchorWriter = BaSettingsStoreApSuppressionAnchorWriter,
+) {
+    val accountId = requireNotNull(request.accountId) {
+        "Foreground BA AP delivery requires an account ID"
+    }
+    withContext(NonCancellable) {
+        result.lastNotifiedLevel?.let { level ->
+            persistRuntimeUpdate(
+                BaRuntimePersistenceUpdate(
+                    accountId = accountId,
+                    apLastNotifiedLevel = level,
+                ),
+            )
+        }
+        result.suppressionAnchorAtMs?.let { anchorAtMs ->
+            anchorWriter.save(
+                accountId = accountId,
+                kind = BaApReminderKind.Ap,
+                anchorAtMs = anchorAtMs,
+            )
+        }
+    }
+}
+
+internal fun applyBaForegroundApCommittedResult(
+    result: BaApNotificationSyncResult,
+    office: BaOfficeController,
+) {
+    result.suppressionAnchorAtMs?.let { office.apSuppressionAnchorAtMs = it }
+    result.lastNotifiedLevel?.let { office.applyApLastNotifiedLevel(it) }
+}
+
+internal fun shouldApplyBaForegroundApCommittedResult(
+    requestAccountId: BaAccountId?,
+    activeAccountId: BaAccountId?,
+): Boolean = requestAccountId != null && requestAccountId == activeAccountId
+
 @Composable
 internal fun BaPageCommonEffects(
     listState: LazyListState,
@@ -96,6 +139,7 @@ internal fun BaPageCommonEffects(
     accountUiState: BaOfficeAccountUiState,
     runtimeEffectsActive: Boolean,
 ) {
+    val currentActiveAccountId = rememberUpdatedState(accountUiState.activeAccountId)
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
     val runtimeTickerCoordinator = rememberBaRuntimeTickerCoordinator()
@@ -220,24 +264,34 @@ internal fun BaPageCommonEffects(
         }.distinctUntilChanged()
             .collectLatest { request ->
                 delay(250.milliseconds)
-                val persistResult: suspend (BaApNotificationSyncResult) -> Unit = { result ->
-                    withContext(NonCancellable + Dispatchers.Main.immediate) {
-                        persistBaForegroundApSyncResult(
-                            request = request,
-                            result = result,
-                            office = office,
-                        ) { level ->
-                            runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
-                        }
-                    }
-                }
                 val result =
                     BaApNotificationSyncCoordinator.sync(
                         context = notificationContext,
                         request = request,
-                        onThresholdDelivered = persistResult,
+                        onThresholdDelivered = { deliveredResult ->
+                            persistBaForegroundApDeliveredResult(
+                                request = request,
+                                result = deliveredResult,
+                            )
+                        },
                     )
-                persistResult(result)
+                if (
+                    result.committedDuringDelivery &&
+                    shouldApplyBaForegroundApCommittedResult(
+                        requestAccountId = request.accountId,
+                        activeAccountId = currentActiveAccountId.value,
+                    )
+                ) {
+                    applyBaForegroundApCommittedResult(result = result, office = office)
+                } else if (!result.committedDuringDelivery) {
+                    persistBaForegroundApSyncResult(
+                        request = request,
+                        result = result,
+                        office = office,
+                    ) { level ->
+                        runtimePersistenceCoordinator.submit(office.applyApLastNotifiedLevel(level))
+                    }
+                }
             }
     }
 }

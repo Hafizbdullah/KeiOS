@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Test
+import os.kei.mcp.notification.McpNotificationDeliveryCommitException
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaApReminderKind
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
@@ -259,6 +260,94 @@ class BaApNotificationSyncCoordinatorTest {
             ),
             committedResult.await(),
         )
+    }
+
+    @Test
+    fun `delivered foreground state uses captured account and waits for durable persistence`() = runTest {
+        val accountA = BaAccountId("account-a")
+        val officeForAccountB =
+            BaOfficeController(
+                BaPageSnapshot(
+                    apLastNotifiedLevel = 77,
+                    apSuppressionAnchorAtMs = 88L,
+                ),
+            )
+        val persistenceStarted = CompletableDeferred<Unit>()
+        val releasePersistence = CompletableDeferred<Unit>()
+        val persistedUpdates = mutableListOf<BaRuntimePersistenceUpdate>()
+        val events = mutableListOf<String>()
+        val anchorWriter = RecordingAnchorWriter(events)
+        val request = request().copy(accountId = accountA)
+        val result =
+            BaApNotificationSyncResult(
+                lastNotifiedLevel = 120,
+                suppressionAnchorAtMs = NOW_MS,
+            )
+
+        val job =
+            launch {
+                persistBaForegroundApDeliveredResult(
+                    request = request,
+                    result = result,
+                    persistRuntimeUpdate = { update ->
+                        persistenceStarted.complete(Unit)
+                        releasePersistence.await()
+                        persistedUpdates += update
+                        events += "level"
+                    },
+                    anchorWriter = anchorWriter,
+                )
+            }
+
+        persistenceStarted.await()
+        assertFalse(job.isCompleted)
+        releasePersistence.complete(Unit)
+        job.join()
+
+        assertEquals(
+            listOf(
+                BaRuntimePersistenceUpdate(
+                    accountId = accountA,
+                    apLastNotifiedLevel = 120,
+                ),
+            ),
+            persistedUpdates,
+        )
+        assertEquals(listOf(Triple(accountA, BaApReminderKind.Ap, NOW_MS)), anchorWriter.writes)
+        assertEquals(listOf("level", "anchor"), events)
+        assertEquals(77, officeForAccountB.apLastNotifiedLevel)
+        assertEquals(88L, officeForAccountB.apSuppressionAnchorAtMs)
+        assertFalse(
+            shouldApplyBaForegroundApCommittedResult(
+                requestAccountId = accountA,
+                activeAccountId = BaAccountId("account-b"),
+            ),
+        )
+        assertTrue(
+            shouldApplyBaForegroundApCommittedResult(
+                requestAccountId = accountA,
+                activeAccountId = accountA,
+            ),
+        )
+    }
+
+    @Test
+    fun `delivery commit failure retries the active notification commit once`() = runTest {
+        var attempts = 0
+
+        val delivered =
+            retryBaNotificationDeliveryCommit(tag = "test") {
+                attempts += 1
+                if (attempts == 1) {
+                    throw McpNotificationDeliveryCommitException(
+                        IllegalStateException("first durable commit failed"),
+                    )
+                }
+                true
+            }
+
+        assertTrue(delivered)
+        assertEquals(2, attempts)
     }
 
     private fun request(
