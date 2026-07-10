@@ -14,6 +14,19 @@
 
 展开态用于承载完整标题、正文、进度和操作。项目内按钮最多放 2 个，主操作高亮，次操作普通。
 
+## 浮现与通知生命周期
+
+- `islandFirstFloat` 控制同一 `orderId` 首次加入超级岛时的浮现。
+- `enableFloat` 控制已有超级岛收到更新时的再次浮现，适合完成、失败、取消等终态。
+- `android.requestPromotedOngoing=true` 只用于同时带有 `FLAG_ONGOING_EVENT` 的持续通知。
+- 终态更新保持原 `orderId`、`updatable=true`、`setOngoing(false)`、
+  `setRequestPromotedOngoing(false)`，并按用户设置决定 `enableFloat`。
+- 单次提醒可以使用 `islandFirstFloat=true`、`enableFloat=false`，首次展示后保持安静更新。
+- `MiIslandNotificationBuilder` 会统一约束 promoted ongoing 与普通通知 ongoing 标志，防止终态被打落为普通通知。
+
+实体机上的 HyperOS SystemUI 行为：首次加入读取 `islandFirstFloat`；同一超级岛的后续更新读取
+`enableFloat`。终态若继续请求 promoted ongoing，SystemUI 可能结束进度岛后只保留普通通知。
+
 ## 文字样式与颜色
 
 摘要态文字样式有限，优先靠短文本、图标和进度色表达状态：
