@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
@@ -40,6 +41,9 @@ internal data class McpXiaomiMagicDispatchEnvironment(
 internal object McpXiaomiMagicDispatcher {
     private const val TAG = "McpXiaomiMagic"
     private const val XMSF_PACKAGE_NAME = "com.xiaomi.xmsf"
+    private const val CANCELLATION_JOIN_TIMEOUT_MS = 6_000L
+    private const val RESTORE_DELAY_TIMEOUT_MS = 1_000L
+    private const val RESTORE_COMMAND_TIMEOUT_MS = 1_500L
 
     private enum class CommandSet {
         DIRECT_UID_FIREWALL,
@@ -93,6 +97,16 @@ internal object McpXiaomiMagicDispatcher {
         } catch (cancellation: CancellationException) {
             if (!initialPostResult.isCompleted) {
                 dispatchJob.cancel(cancellation)
+            }
+            val joined =
+                withContext(NonCancellable) {
+                    withTimeoutOrNull(CANCELLATION_JOIN_TIMEOUT_MS) {
+                        dispatchJob.join()
+                        true
+                    } ?: false
+                }
+            if (!joined) {
+                AppLogger.e(TAG, "Xiaomi magic cancellation cleanup timed out")
             }
             throw cancellation
         }
@@ -167,6 +181,7 @@ internal object McpXiaomiMagicDispatcher {
         onDelivered: suspend () -> Unit,
     ) {
         var networkTouched = false
+        var restorationHandled = false
         try {
             val targetUid = environment.resolveTargetUid()
             AppLogger.i(TAG, "notify: targetUid=$targetUid notifId=$notificationId")
@@ -181,6 +196,8 @@ internal object McpXiaomiMagicDispatcher {
                     initialPostResult = initialPostResult,
                     retryOnFailure = false,
                     onDelivered = onDelivered,
+                    restoreAfterPost = false,
+                    onRestorationHandled = {},
                 )
                 return
             }
@@ -198,6 +215,8 @@ internal object McpXiaomiMagicDispatcher {
                     initialPostResult = initialPostResult,
                     retryOnFailure = false,
                     onDelivered = onDelivered,
+                    restoreAfterPost = false,
+                    onRestorationHandled = {},
                 )
                 return
             }
@@ -214,8 +233,9 @@ internal object McpXiaomiMagicDispatcher {
                 initialPostResult = initialPostResult,
                 retryOnFailure = true,
                 onDelivered = onDelivered,
+                restoreAfterPost = networkTouched || environment.needsRestore(),
+                onRestorationHandled = { restorationHandled = true },
             )
-            environment.awaitRestore()
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
                 initialPostResult.completeExceptionally(throwable)
@@ -232,22 +252,14 @@ internal object McpXiaomiMagicDispatcher {
                     initialPostResult = initialPostResult,
                     retryOnFailure = false,
                     onDelivered = onDelivered,
+                    restoreAfterPost = networkTouched || environment.needsRestore(),
+                    onRestorationHandled = { restorationHandled = true },
                 )
             }
         } finally {
             withContext(NonCancellable) {
-                if (networkTouched || environment.needsRestore()) {
-                    AppLogger.i(TAG, "restoring xmsf network")
-                    runCatching {
-                        environment.restoreNetworking()
-                    }.onFailure {
-                        AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
-                    }
-                    runCatching {
-                        environment.healNetworking()
-                    }.onFailure {
-                        AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
-                    }
+                if (!restorationHandled && (networkTouched || environment.needsRestore())) {
+                    restoreNetworkSafely(environment)
                 }
             }
         }
@@ -262,6 +274,8 @@ internal object McpXiaomiMagicDispatcher {
         initialPostResult: CompletableDeferred<Boolean>,
         retryOnFailure: Boolean,
         onDelivered: suspend () -> Unit,
+        restoreAfterPost: Boolean,
+        onRestorationHandled: () -> Unit,
     ) {
         currentCoroutineContext().ensureActive()
         withContext(NonCancellable) {
@@ -283,15 +297,80 @@ internal object McpXiaomiMagicDispatcher {
                         notification = notification,
                         environment = environment,
                     )
-            if (delivered) {
-                try {
-                    onDelivered()
-                } catch (throwable: Throwable) {
-                    initialPostResult.completeExceptionally(throwable)
-                    throw throwable
-                }
+            if (!delivered) {
+                initialPostResult.complete(false)
+                return@withContext
             }
-            initialPostResult.complete(delivered)
+
+            val restorationJob =
+                if (restoreAfterPost) {
+                    launch {
+                        try {
+                            val delayCompleted =
+                                runCatching {
+                                    withTimeoutOrNull(RESTORE_DELAY_TIMEOUT_MS) {
+                                        environment.awaitRestore()
+                                        true
+                                    } ?: false
+                                }.getOrElse { throwable ->
+                                    AppLogger.e(TAG, "Xiaomi magic restore delay failed", throwable)
+                                    false
+                                }
+                            if (!delayCompleted) {
+                                AppLogger.e(TAG, "Xiaomi magic restore delay timed out")
+                            }
+                        } finally {
+                            restoreNetworkSafely(environment)
+                            onRestorationHandled()
+                        }
+                    }
+                } else {
+                    null
+                }
+
+            var commitFailure: Throwable? = null
+            try {
+                onDelivered()
+            } catch (throwable: Throwable) {
+                commitFailure = throwable
+            }
+            if (commitFailure == null) {
+                initialPostResult.complete(true)
+            } else {
+                initialPostResult.completeExceptionally(commitFailure)
+            }
+            restorationJob?.join()
+            commitFailure?.let { throw it }
+        }
+    }
+
+    private suspend fun restoreNetworkSafely(environment: McpXiaomiMagicDispatchEnvironment) {
+        AppLogger.i(TAG, "restoring xmsf network")
+        val restored =
+            runCatching {
+                withTimeoutOrNull(RESTORE_COMMAND_TIMEOUT_MS) {
+                    environment.restoreNetworking()
+                    true
+                } ?: false
+            }.getOrElse {
+                AppLogger.e(TAG, "Xiaomi magic network restoration failed", it)
+                false
+            }
+        if (!restored) {
+            AppLogger.e(TAG, "Xiaomi magic network restoration timed out")
+        }
+        val healed =
+            runCatching {
+                withTimeoutOrNull(RESTORE_COMMAND_TIMEOUT_MS) {
+                    environment.healNetworking()
+                    true
+                } ?: false
+            }.getOrElse {
+                AppLogger.e(TAG, "Xiaomi magic network healing failed", it)
+                false
+            }
+        if (!healed) {
+            AppLogger.e(TAG, "Xiaomi magic network healing timed out")
         }
     }
 

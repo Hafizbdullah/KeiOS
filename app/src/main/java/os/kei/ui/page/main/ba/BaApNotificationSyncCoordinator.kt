@@ -6,6 +6,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal data class BaApNotificationSyncRequest(
     val currentDisplay: Int,
@@ -74,7 +75,7 @@ internal object BaApNotificationSyncCoordinator {
     ): BaApNotificationSyncResult {
         val plan = planBaApNotificationSync(request, nowMs)
         var nextLastNotifiedLevel = plan.nextLastNotifiedLevel
-        var committedDuringDelivery = false
+        val committedDuringDelivery = AtomicBoolean(false)
         val deliveredResult =
             BaApNotificationSyncResult(
                 lastNotifiedLevel = plan.request.currentDisplay,
@@ -87,14 +88,15 @@ internal object BaApNotificationSyncCoordinator {
                 } else {
                     delivery.sendThresholdWithCommit(plan.request) {
                         onThresholdDelivered(deliveredResult)
-                        committedDuringDelivery = true
+                        committedDuringDelivery.set(true)
                     }
                 }
             }
         } else {
             false
         }
-        if (thresholdNotificationSent) {
+        val delivered = thresholdNotificationSent || committedDuringDelivery.get()
+        if (delivered) {
             nextLastNotifiedLevel = plan.request.currentDisplay
         } else if (plan.shouldRefreshActiveNotification) {
             withNotificationTimeout(timeoutMs) { delivery.refreshActive(plan.request) }
@@ -103,9 +105,9 @@ internal object BaApNotificationSyncCoordinator {
             lastNotifiedLevel = nextLastNotifiedLevel,
             suppressionAnchorAtMs =
                 plan.nextSuppressionAnchorAtMs ?: nowMs.takeIf {
-                    thresholdNotificationSent && plan.advanceSuppressionAnchorAfterDelivery
+                    delivered && plan.advanceSuppressionAnchorAfterDelivery
                 },
-            committedDuringDelivery = thresholdNotificationSent && committedDuringDelivery,
+            committedDuringDelivery = committedDuringDelivery.get(),
         )
     }
 

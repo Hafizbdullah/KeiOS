@@ -203,6 +203,27 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
+    fun `threshold timeout returns the delivery state committed during cancellation cleanup`() = runTest {
+        val result =
+            BaApNotificationSyncCoordinator.sync(
+                request =
+                    request(
+                        lastNotifiedLevel = 119,
+                        keepReadUntilBelowThreshold = false,
+                        suppressionAnchorAtMs = NOW_MS - BA_AP_READ_REPEAT_INTERVAL_MS,
+                    ),
+                nowMs = NOW_MS,
+                delivery = SlowCommittedDelivery,
+                timeoutMs = 1L,
+                onThresholdDelivered = {},
+            )
+
+        assertEquals(120, result.lastNotifiedLevel)
+        assertEquals(NOW_MS, result.suppressionAnchorAtMs)
+        assertTrue(result.committedDuringDelivery)
+    }
+
+    @Test
     fun `cancellation after delivery still commits anchor and syncs office state`() = runTest {
         val accountId = BaAccountId("cn-main")
         val office = BaOfficeController(BaPageSnapshot(apSuppressionAnchorAtMs = 1L))
@@ -410,6 +431,23 @@ private class RecordingFailedDelivery : BaApNotificationDelivery {
         refreshAttempts += 1
         return true
     }
+}
+
+private object SlowCommittedDelivery : BaApNotificationDelivery {
+    override suspend fun sendThreshold(request: BaApNotificationSyncRequest): Boolean = true
+
+    override suspend fun sendThresholdWithCommit(
+        request: BaApNotificationSyncRequest,
+        onDelivered: suspend () -> Unit,
+    ): Boolean {
+        withContext(NonCancellable) {
+            delay(10L)
+            onDelivered()
+        }
+        return true
+    }
+
+    override suspend fun refreshActive(request: BaApNotificationSyncRequest): Boolean = true
 }
 
 private object CancellingAfterCommitDelivery : BaApNotificationDelivery {

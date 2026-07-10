@@ -87,22 +87,20 @@ internal suspend fun persistBaForegroundApDeliveredResult(
     val accountId = requireNotNull(request.accountId) {
         "Foreground BA AP delivery requires an account ID"
     }
-    withContext(NonCancellable) {
-        result.lastNotifiedLevel?.let { level ->
-            persistRuntimeUpdate(
-                BaRuntimePersistenceUpdate(
-                    accountId = accountId,
-                    apLastNotifiedLevel = level,
-                ),
-            )
-        }
-        result.suppressionAnchorAtMs?.let { anchorAtMs ->
-            anchorWriter.save(
+    result.lastNotifiedLevel?.let { level ->
+        persistRuntimeUpdate(
+            BaRuntimePersistenceUpdate(
                 accountId = accountId,
-                kind = BaApReminderKind.Ap,
-                anchorAtMs = anchorAtMs,
-            )
-        }
+                apLastNotifiedLevel = level,
+            ),
+        )
+    }
+    result.suppressionAnchorAtMs?.let { anchorAtMs ->
+        anchorWriter.save(
+            accountId = accountId,
+            kind = BaApReminderKind.Ap,
+            anchorAtMs = anchorAtMs,
+        )
     }
 }
 

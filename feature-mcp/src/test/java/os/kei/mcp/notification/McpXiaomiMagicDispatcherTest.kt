@@ -11,6 +11,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,7 +78,8 @@ class McpXiaomiMagicDispatcherTest {
     @Test
     fun `successful post commits delivery and restores networking when caller is cancelled`() = runTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
-        val deliveryCommitted = CompletableDeferred<Unit>()
+        val deliveryStarted = CompletableDeferred<Unit>()
+        val releaseDelivery = CompletableDeferred<Unit>()
         val restoreCompleted = CompletableDeferred<Unit>()
         var postAttempts = 0
         var callerJob: kotlinx.coroutines.Job? = null
@@ -108,14 +110,20 @@ class McpXiaomiMagicDispatcherTest {
                     environment = environment,
                     dispatchScope = backgroundScope,
                     mutex = Mutex(),
-                    onDelivered = { deliveryCommitted.complete(Unit) },
+                    onDelivered = {
+                        deliveryStarted.complete(Unit)
+                        releaseDelivery.await()
+                    },
                 )
             }
         callerJob = caller
 
+        deliveryStarted.await()
+        runCurrent()
+        assertFalse(caller.isCompleted)
+        assertTrue(restoreCompleted.isCompleted)
+        releaseDelivery.complete(Unit)
         caller.join()
-        deliveryCommitted.await()
-        restoreCompleted.await()
 
         assertEquals(1, postAttempts)
         assertTrue(caller.isCancelled)
@@ -184,6 +192,18 @@ class McpXiaomiMagicDispatcherTest {
                 delay(1_300L)
                 error("first commit attempt failed")
             }
+        }
+
+        assertEquals(2, commitAttempts)
+    }
+
+    @Test
+    fun `standalone delivery commit bounds a stalled attempt before retry`() = runTest {
+        var commitAttempts = 0
+
+        runStandaloneEventDeliveryCommit {
+            commitAttempts += 1
+            if (commitAttempts == 1) delay(Long.MAX_VALUE)
         }
 
         assertEquals(2, commitAttempts)

@@ -5,10 +5,14 @@ import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import os.kei.core.log.AppLogger
+
+private const val DELIVERY_COMMIT_ATTEMPT_TIMEOUT_MS = 2_000L
 
 data class McpStandaloneEventRequest(
     val serverName: String,
@@ -96,10 +100,12 @@ internal suspend fun runStandaloneEventDeliveryCommit(block: suspend () -> Unit)
     var lastFailure: Throwable? = null
     repeat(2) {
         try {
-            block()
+            withTimeout(DELIVERY_COMMIT_ATTEMPT_TIMEOUT_MS) { block() }
             return
         } catch (throwable: Throwable) {
-            if (throwable is CancellationException) throw throwable
+            if (throwable is CancellationException && throwable !is TimeoutCancellationException) {
+                throw throwable
+            }
             lastFailure =
                 if (throwable is McpNotificationDeliveryCommitException) {
                     throwable.cause ?: throwable

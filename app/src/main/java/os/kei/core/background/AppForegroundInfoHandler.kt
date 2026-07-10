@@ -665,6 +665,7 @@ object AppForegroundInfoHandler {
                 persistBaForegroundApReminderWrites(
                     accountId = accountId,
                     writes = deliveryWrites,
+                    cancellationResilient = false,
                 )
             },
         )
@@ -734,6 +735,7 @@ object AppForegroundInfoHandler {
                 persistBaForegroundApReminderWrites(
                     accountId = accountId,
                     writes = deliveryWrites,
+                    cancellationResilient = false,
                 )
             },
         )
@@ -775,14 +777,20 @@ object AppForegroundInfoHandler {
     internal suspend fun persistBaForegroundApReminderWrites(
         accountId: BaAccountId,
         writes: List<BaForegroundApReminderWrite>,
+        cancellationResilient: Boolean = true,
         persistWrite: suspend (BaAccountId, BaForegroundApReminderWrite) -> Unit =
             ::persistBaForegroundApReminderWrite,
     ) {
         if (writes.isEmpty()) return
-        withContext(NonCancellable + AppDispatchers.mcpServer) {
+        val persistAll: suspend () -> Unit = {
             writes.forEach { write ->
                 persistWrite(accountId, write)
             }
+        }
+        if (cancellationResilient) {
+            withContext(NonCancellable + AppDispatchers.mcpServer) { persistAll() }
+        } else {
+            withContext(AppDispatchers.mcpServer) { persistAll() }
         }
     }
 
