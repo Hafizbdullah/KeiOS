@@ -134,6 +134,7 @@ internal object AppBackgroundSchedulePolicy {
                 thresholdDisplay = threshold,
                 keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
                 suppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs,
+                dismissedUntilAtMs = snapshot.apDismissedUntilAtMs,
                 nowMs = nowMs,
             )
             val nextPointAtMs = nextApPointAtMs(
@@ -180,6 +181,7 @@ internal object AppBackgroundSchedulePolicy {
                 thresholdDisplay = threshold,
                 keepReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold,
                 suppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs,
+                dismissedUntilAtMs = snapshot.cafeApDismissedUntilAtMs,
                 nowMs = nowMs,
             )
             val nextPointAtMs =

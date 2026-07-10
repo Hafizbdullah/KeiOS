@@ -19,11 +19,13 @@ internal data class BaApNotificationSyncRequest(
     val accountId: BaAccountId? = null,
     val keepReadUntilBelowThreshold: Boolean = true,
     val suppressionAnchorAtMs: Long = 0L,
+    val dismissedUntilAtMs: Long = 0L,
 )
 
 internal data class BaApNotificationSyncResult(
     val lastNotifiedLevel: Int? = null,
     val suppressionAnchorAtMs: Long? = null,
+    val dismissedUntilAtMs: Long? = null,
     val committedDuringDelivery: Boolean = false,
 )
 
@@ -33,7 +35,9 @@ internal data class BaApNotificationSyncPlan(
     val shouldRefreshActiveNotification: Boolean = true,
     val nextLastNotifiedLevel: Int? = null,
     val nextSuppressionAnchorAtMs: Long? = null,
+    val nextDismissedUntilAtMs: Long? = null,
     val advanceSuppressionAnchorAfterDelivery: Boolean = false,
+    val clearDismissedUntilAfterDelivery: Boolean = false,
 )
 
 internal interface BaApNotificationDelivery {
@@ -80,6 +84,7 @@ internal object BaApNotificationSyncCoordinator {
             BaApNotificationSyncResult(
                 lastNotifiedLevel = plan.request.currentDisplay,
                 suppressionAnchorAtMs = nowMs.takeIf { plan.advanceSuppressionAnchorAfterDelivery },
+                dismissedUntilAtMs = 0L.takeIf { plan.clearDismissedUntilAfterDelivery },
             )
         val thresholdNotificationSent = if (plan.shouldSendThresholdNotification) {
             withNotificationTimeout(timeoutMs) {
@@ -107,6 +112,10 @@ internal object BaApNotificationSyncCoordinator {
                 plan.nextSuppressionAnchorAtMs ?: nowMs.takeIf {
                     delivered && plan.advanceSuppressionAnchorAfterDelivery
                 },
+            dismissedUntilAtMs =
+                plan.nextDismissedUntilAtMs ?: 0L.takeIf {
+                    delivered && plan.clearDismissedUntilAfterDelivery
+                },
             committedDuringDelivery = committedDuringDelivery.get(),
         )
     }
@@ -118,6 +127,7 @@ internal object BaApNotificationSyncCoordinator {
             limitDisplay = normalizedLimit,
             thresholdDisplay = thresholdDisplay.coerceIn(0, BA_AP_MAX),
             lastNotifiedLevel = lastNotifiedLevel.coerceIn(-1, BA_AP_MAX),
+            dismissedUntilAtMs = dismissedUntilAtMs.coerceAtLeast(0L),
         )
     }
 }
@@ -187,9 +197,11 @@ internal fun planBaApNotificationSync(
             thresholdDisplay = normalizedRequest.thresholdDisplay,
             keepReadUntilBelowThreshold = normalizedRequest.keepReadUntilBelowThreshold,
             suppressionAnchorAtMs = normalizedRequest.suppressionAnchorAtMs,
+            dismissedUntilAtMs = normalizedRequest.dismissedUntilAtMs,
             nowMs = nowMs,
         )
     val resetSuppressionAnchor = 0L.takeIf { acknowledgement.resetSuppressionAnchor }
+    val resetDismissedUntil = 0L.takeIf { acknowledgement.resetDismissedUntil }
     if (acknowledgement.suppressed) {
         return BaApNotificationSyncPlan(
             request = normalizedRequest,
@@ -201,6 +213,7 @@ internal fun planBaApNotificationSync(
             request = normalizedRequest,
             nextLastNotifiedLevel = resetLastNotifiedLevel,
             nextSuppressionAnchorAtMs = resetSuppressionAnchor,
+            nextDismissedUntilAtMs = resetDismissedUntil,
         )
     }
     if (
@@ -214,5 +227,6 @@ internal fun planBaApNotificationSync(
         shouldSendThresholdNotification = true,
         shouldRefreshActiveNotification = false,
         advanceSuppressionAnchorAfterDelivery = acknowledgement.advanceSuppressionAnchorAfterDelivery,
+        clearDismissedUntilAfterDelivery = acknowledgement.clearDismissedUntilAfterDelivery,
     )
 }

@@ -67,6 +67,63 @@ class BaApNotificationSyncCoordinatorTest {
     }
 
     @Test
+    fun `foreground dismissal suppresses AP growth without refreshing notification`() {
+        val plan =
+            planBaApNotificationSync(
+                request =
+                    request(
+                        currentDisplay = 121,
+                        lastNotifiedLevel = 120,
+                        dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS,
+                    ),
+                nowMs = NOW_MS,
+            )
+
+        assertFalse(plan.shouldSendThresholdNotification)
+        assertFalse(plan.shouldRefreshActiveNotification)
+    }
+
+    @Test
+    fun `expired foreground dismissal sends same level and clears snooze after delivery`() = runTest {
+        val request =
+            request(
+                currentDisplay = 120,
+                lastNotifiedLevel = 120,
+                dismissedUntilAtMs = NOW_MS,
+            )
+        val plan = planBaApNotificationSync(request = request, nowMs = NOW_MS)
+
+        assertTrue(plan.shouldSendThresholdNotification)
+        assertTrue(plan.clearDismissedUntilAfterDelivery)
+
+        val result =
+            BaApNotificationSyncCoordinator.sync(
+                request = request,
+                nowMs = NOW_MS,
+                delivery = FixedDelivery(sent = true),
+            )
+
+        assertEquals(0L, result.dismissedUntilAtMs)
+    }
+
+    @Test
+    fun `foreground recovery clears read and dismissal state`() {
+        val plan =
+            planBaApNotificationSync(
+                request =
+                    request(
+                        currentDisplay = 119,
+                        suppressionAnchorAtMs = NOW_MS,
+                        dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS,
+                    ),
+                nowMs = NOW_MS,
+            )
+
+        assertEquals(0L, plan.nextSuppressionAnchorAtMs)
+        assertEquals(0L, plan.nextDismissedUntilAtMs)
+    }
+
+    @Test
     fun `successful hourly delivery commits anchor before replacement state can run`() = runTest {
         val accountId = BaAccountId("cn-main")
         val office =
@@ -370,6 +427,7 @@ class BaApNotificationSyncCoordinatorTest {
         lastNotifiedLevel: Int = 120,
         keepReadUntilBelowThreshold: Boolean = true,
         suppressionAnchorAtMs: Long = 0L,
+        dismissedUntilAtMs: Long = 0L,
     ): BaApNotificationSyncRequest =
         BaApNotificationSyncRequest(
             currentDisplay = currentDisplay,
@@ -379,6 +437,7 @@ class BaApNotificationSyncCoordinatorTest {
             lastNotifiedLevel = lastNotifiedLevel,
             keepReadUntilBelowThreshold = keepReadUntilBelowThreshold,
             suppressionAnchorAtMs = suppressionAnchorAtMs,
+            dismissedUntilAtMs = dismissedUntilAtMs,
         )
 
     private companion object {

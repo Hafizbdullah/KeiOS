@@ -26,7 +26,7 @@ class McpNotificationMarkReadIntentTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
 
         val intent =
-            McpNotificationHelper.buildMarkReadIntent(
+            McpNotificationInteractionIntents.buildMarkReadIntent(
                 context = context,
                 notificationId = 243_220,
                 serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
@@ -52,7 +52,7 @@ class McpNotificationMarkReadIntentTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
 
         val intent =
-            McpNotificationHelper.buildDismissIntent(
+            McpNotificationInteractionIntents.buildDismissIntent(
                 context = context,
                 notificationId = 243_220,
                 serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
@@ -78,14 +78,14 @@ class McpNotificationMarkReadIntentTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationId = 243_220
         val markRead =
-            McpNotificationHelper.markReadPendingIntent(
+            McpNotificationInteractionIntents.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
                 targetBaAccountId = "cn-main",
             )
         val dismiss =
-            McpNotificationHelper.dismissPendingIntent(
+            McpNotificationInteractionIntents.dismissPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
@@ -139,7 +139,7 @@ class McpNotificationMarkReadIntentTest {
             )
 
         val updated =
-            McpNotificationHelper.markReadPendingIntent(
+            McpNotificationInteractionIntents.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = LiveNotificationPayload.BA_AP_SERVER_NAME,
@@ -169,14 +169,14 @@ class McpNotificationMarkReadIntentTest {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationId = 243_223
         val first =
-            McpNotificationHelper.dismissPendingIntent(
+            McpNotificationInteractionIntents.dismissPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
                 targetBaAccountId = "cn-old",
             )
         val updated =
-            McpNotificationHelper.dismissPendingIntent(
+            McpNotificationInteractionIntents.dismissPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = LiveNotificationPayload.BA_CAFE_AP_SERVER_NAME,
@@ -208,14 +208,14 @@ class McpNotificationMarkReadIntentTest {
     ) {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val first =
-            McpNotificationHelper.markReadPendingIntent(
+            McpNotificationInteractionIntents.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = serverName,
                 targetBaAccountId = "cn-old",
             )
         val updated =
-            McpNotificationHelper.markReadPendingIntent(
+            McpNotificationInteractionIntents.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = serverName,

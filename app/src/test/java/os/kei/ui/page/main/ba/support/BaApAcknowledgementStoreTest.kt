@@ -24,14 +24,33 @@ class BaApAcknowledgementStoreTest {
     }
 
     @Test
+    fun `dismissal deadlines are isolated by account and AP kind`() {
+        val first = BaAccountId("cn-main")
+        val second = BaAccountId("jp-main")
+
+        store.setDismissedUntil(first, BaApReminderKind.Ap, 4_000L)
+        store.setDismissedUntil(first, BaApReminderKind.CafeAp, 5_000L)
+        store.setDismissedUntil(second, BaApReminderKind.Ap, 6_000L)
+
+        assertEquals(4_000L, store.loadDismissedUntil(first, BaApReminderKind.Ap))
+        assertEquals(5_000L, store.loadDismissedUntil(first, BaApReminderKind.CafeAp))
+        assertEquals(6_000L, store.loadDismissedUntil(second, BaApReminderKind.Ap))
+        assertEquals(0L, store.loadSuppressionAnchor(first, BaApReminderKind.Ap))
+    }
+
+    @Test
     fun `clear account removes both AP anchors`() {
         val accountId = BaAccountId("cn-main")
         store.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
         store.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
+        store.setDismissedUntil(accountId, BaApReminderKind.Ap, 3_000L)
+        store.setDismissedUntil(accountId, BaApReminderKind.CafeAp, 4_000L)
 
         assertTrue(store.clearAccount(accountId))
         assertEquals(0L, store.loadSuppressionAnchor(accountId, BaApReminderKind.Ap))
         assertEquals(0L, store.loadSuppressionAnchor(accountId, BaApReminderKind.CafeAp))
+        assertEquals(0L, store.loadDismissedUntil(accountId, BaApReminderKind.Ap))
+        assertEquals(0L, store.loadDismissedUntil(accountId, BaApReminderKind.CafeAp))
     }
 
     @Test
@@ -75,12 +94,18 @@ class BaApAcknowledgementStoreTest {
         )
         store.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
         store.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
+        store.setDismissedUntil(accountId, BaApReminderKind.Ap, 3_000L)
+        store.setDismissedUntil(accountId, BaApReminderKind.CafeAp, 4_000L)
 
         assertTrue(deleteBaAccountAndClearAcknowledgements(accountStore, store, accountId))
         assertTrue(accountStore.loadAccounts().none { it.profile.id == accountId })
         assertEquals(0L, store.loadSuppressionAnchor(accountId, BaApReminderKind.Ap))
         assertEquals(0L, store.loadSuppressionAnchor(accountId, BaApReminderKind.CafeAp))
+        assertEquals(0L, store.loadDismissedUntil(accountId, BaApReminderKind.Ap))
+        assertEquals(0L, store.loadDismissedUntil(accountId, BaApReminderKind.CafeAp))
         assertFalse(backing.containsKey("ba_ap_read_anchor:ap:${accountId.value}"))
         assertFalse(backing.containsKey("ba_ap_read_anchor:cafe_ap:${accountId.value}"))
+        assertFalse(backing.containsKey("ba_ap_dismissed_until:ap:${accountId.value}"))
+        assertFalse(backing.containsKey("ba_ap_dismissed_until:cafe_ap:${accountId.value}"))
     }
 }

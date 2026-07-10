@@ -29,6 +29,11 @@ internal class BaApAcknowledgementRuntimeRepository(
         kind: BaApReminderKind,
     ): Long = acknowledgementStore.loadSuppressionAnchor(accountId, kind)
 
+    fun loadDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Long = acknowledgementStore.loadDismissedUntil(accountId, kind)
+
     fun saveSuppressionAnchor(
         accountId: BaAccountId,
         kind: BaApReminderKind,
@@ -37,6 +42,33 @@ internal class BaApAcknowledgementRuntimeRepository(
         acknowledgementStore
             .setSuppressionAnchor(accountId, kind, anchorAtMs)
             .also { changed ->
+                if (changed) onLocalStateChanged()
+            }
+
+    fun saveDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        dismissedUntilAtMs: Long,
+    ): Boolean =
+        acknowledgementStore
+            .setDismissedUntil(accountId, kind, dismissedUntilAtMs)
+            .also { changed ->
+                if (changed) onLocalStateChanged()
+            }
+
+    fun saveInteractionState(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        suppressionAnchorAtMs: Long? = null,
+        dismissedUntilAtMs: Long? = null,
+    ): Boolean =
+        acknowledgementStore
+            .updateState(
+                accountId = accountId,
+                kind = kind,
+                suppressionAnchorAtMs = suppressionAnchorAtMs,
+                dismissedUntilAtMs = dismissedUntilAtMs,
+            ).also { changed ->
                 if (changed) onLocalStateChanged()
             }
 
@@ -100,6 +132,10 @@ internal fun reconcileBaApAcknowledgements(
                 changed =
                     acknowledgementStore.clear(accountId, BaApReminderKind.Ap) || changed
             }
+            if (apPlan.resetDismissedUntil) {
+                changed =
+                    acknowledgementStore.clearDismissedUntil(accountId, BaApReminderKind.Ap) || changed
+            }
             val cafeApPlan =
                 BaReminderCoordinator.evaluateCafeApThreshold(
                     snapshot = snapshot,
@@ -114,6 +150,10 @@ internal fun reconcileBaApAcknowledgements(
             if (cafeApPlan.resetSuppressionAnchor) {
                 changed =
                     acknowledgementStore.clear(accountId, BaApReminderKind.CafeAp) || changed
+            }
+            if (cafeApPlan.resetDismissedUntil) {
+                changed =
+                    acknowledgementStore.clearDismissedUntil(accountId, BaApReminderKind.CafeAp) || changed
             }
         }
     return changed

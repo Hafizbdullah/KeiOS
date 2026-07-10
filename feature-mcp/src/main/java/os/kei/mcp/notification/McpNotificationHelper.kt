@@ -194,7 +194,7 @@ object McpNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val (stopPendingIntent, resolvedSecondaryActionLabel) = if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
-            markReadPendingIntent(
+            McpNotificationInteractionIntents.markReadPendingIntent(
                 context = context,
                 notificationId = notificationId,
                 serverName = serverName,
@@ -235,7 +235,7 @@ object McpNotificationHelper {
         }
         val deletePendingIntent =
             if (secondaryActionMode == SecondaryActionMode.MARK_READ) {
-                dismissPendingIntent(
+                McpNotificationInteractionIntents.dismissPendingIntent(
                     context = context,
                     notificationId = notificationId,
                     serverName = serverName,
@@ -865,88 +865,6 @@ object McpNotificationHelper {
         }
     }
 
-    internal fun buildMarkReadIntent(
-        context: Context,
-        notificationId: Int,
-        serverName: String,
-        targetBaAccountId: String?,
-    ): Intent =
-        Intent().apply {
-            setClassName(
-                context.packageName,
-                McpNotificationActionContract.MI_FOCUS_ACTION_RECEIVER_CLASS_NAME,
-            )
-            action = McpNotificationMarkReadContract.ACTION
-            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            putExtra(McpNotificationMarkReadContract.EXTRA_NOTIFICATION_ID, notificationId)
-            putExtra(McpNotificationMarkReadContract.EXTRA_SERVER_NAME, serverName)
-            targetBaAccountId?.let {
-                putExtra(McpNotificationMarkReadContract.EXTRA_TARGET_BA_ACCOUNT_ID, it)
-            }
-        }
-
-    internal fun markReadPendingIntent(
-        context: Context,
-        notificationId: Int,
-        serverName: String,
-        targetBaAccountId: String?,
-    ): PendingIntent {
-        val intent =
-            buildMarkReadIntent(
-                context = context,
-                notificationId = notificationId,
-                serverName = serverName,
-                targetBaAccountId = targetBaAccountId,
-            )
-        return PendingIntent.getBroadcast(
-            context,
-            210_200 + notificationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
-
-    internal fun buildDismissIntent(
-        context: Context,
-        notificationId: Int,
-        serverName: String,
-        targetBaAccountId: String?,
-    ): Intent =
-        Intent().apply {
-            setClassName(
-                context.packageName,
-                McpNotificationActionContract.MI_FOCUS_ACTION_RECEIVER_CLASS_NAME,
-            )
-            action = McpNotificationDismissContract.ACTION
-            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            putExtra(McpNotificationDismissContract.EXTRA_NOTIFICATION_ID, notificationId)
-            putExtra(McpNotificationDismissContract.EXTRA_SERVER_NAME, serverName)
-            targetBaAccountId?.let {
-                putExtra(McpNotificationDismissContract.EXTRA_TARGET_BA_ACCOUNT_ID, it)
-            }
-        }
-
-    internal fun dismissPendingIntent(
-        context: Context,
-        notificationId: Int,
-        serverName: String,
-        targetBaAccountId: String?,
-    ): PendingIntent {
-        val intent =
-            buildDismissIntent(
-                context = context,
-                notificationId = notificationId,
-                serverName = serverName,
-                targetBaAccountId = targetBaAccountId,
-            )
-        return PendingIntent.getBroadcast(
-            context,
-            310_200 + notificationId,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-    }
-
     private fun normalizeTargetBaAccountId(
         serverName: String,
         targetBaAccountId: String?,
@@ -1009,12 +927,16 @@ object McpNotificationHelper {
         context: Context,
         notificationId: Int
     ) {
-        McpNotificationSnapshotStore.clear(notificationId)
-        McpNotificationActiveStateCache.markActive(notificationId, active = false)
+        invalidateNotificationRuntimeState(notificationId)
         if (McpXiaomiMagicDispatcher.canUseCommand()) {
             restoreXiaomiNetworkIfNeeded(context)
         }
         NotificationManagerCompat.from(context).cancel(notificationId)
+    }
+
+    fun invalidateNotificationRuntimeState(notificationId: Int) {
+        McpNotificationSnapshotStore.clear(notificationId)
+        McpNotificationActiveStateCache.clear(notificationId)
     }
 
     internal fun canPostNotifications(context: Context): Boolean {

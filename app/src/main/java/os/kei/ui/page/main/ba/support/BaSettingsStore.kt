@@ -371,6 +371,34 @@ internal object BASettingsStore {
         apAcknowledgementRuntimeRepository()
             .saveSuppressionAnchor(accountId, kind, anchorAtMs)
 
+    fun loadAccountApDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Long =
+        apAcknowledgementRuntimeRepository().loadDismissedUntil(accountId, kind)
+
+    fun saveAccountApDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        dismissedUntilAtMs: Long,
+    ): Boolean =
+        apAcknowledgementRuntimeRepository()
+            .saveDismissedUntil(accountId, kind, dismissedUntilAtMs)
+
+    fun saveAccountApInteractionState(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        suppressionAnchorAtMs: Long? = null,
+        dismissedUntilAtMs: Long? = null,
+    ): Boolean =
+        apAcknowledgementRuntimeRepository()
+            .saveInteractionState(
+                accountId = accountId,
+                kind = kind,
+                suppressionAnchorAtMs = suppressionAnchorAtMs,
+                dismissedUntilAtMs = dismissedUntilAtMs,
+            )
+
     fun clearAccountApAcknowledgements(accountId: BaAccountId): Boolean =
         apAcknowledgementRuntimeRepository().clearAccount(accountId)
 

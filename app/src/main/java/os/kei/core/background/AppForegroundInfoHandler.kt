@@ -651,6 +651,8 @@ object AppForegroundInfoHandler {
                 currentDisplay = notification.currentDisplay,
                 advanceSuppressionAnchorAfterDelivery =
                     plan.advanceSuppressionAnchorAfterDelivery,
+                clearDismissedUntilAfterDelivery =
+                    plan.clearDismissedUntilAfterDelivery,
                 nowMs = nowMs,
             )
         BaCafeApNotificationDispatcher.sendAwaitingDelivery(
@@ -702,6 +704,15 @@ object AppForegroundInfoHandler {
                 )
             }
         }
+        if (plan.resetDismissedUntil) {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountApDismissedUntil(
+                    accountId = accountId,
+                    kind = BaApReminderKind.CafeAp,
+                    dismissedUntilAtMs = 0L,
+                )
+            }
+        }
     }
 
     private suspend fun handleBaApThresholdTick(
@@ -721,6 +732,8 @@ object AppForegroundInfoHandler {
                 currentDisplay = notification.currentDisplay,
                 advanceSuppressionAnchorAfterDelivery =
                     plan.advanceSuppressionAnchorAfterDelivery,
+                clearDismissedUntilAfterDelivery =
+                    plan.clearDismissedUntilAfterDelivery,
                 nowMs = nowMs,
             )
         BaApNotificationDispatcher.sendAwaitingDelivery(
@@ -772,6 +785,15 @@ object AppForegroundInfoHandler {
                 )
             }
         }
+        if (plan.resetDismissedUntil) {
+            withContext(AppDispatchers.mcpServer) {
+                BASettingsStore.saveAccountApDismissedUntil(
+                    accountId = accountId,
+                    kind = BaApReminderKind.Ap,
+                    dismissedUntilAtMs = 0L,
+                )
+            }
+        }
     }
 
     internal suspend fun persistBaForegroundApReminderWrites(
@@ -812,6 +834,13 @@ object AppForegroundInfoHandler {
                 accountId = accountId,
                 kind = write.kind,
                 anchorAtMs = anchorAtMs,
+            )
+        }
+        write.dismissedUntilAtMs?.let { dismissedUntilAtMs ->
+            BASettingsStore.saveAccountApDismissedUntil(
+                accountId = accountId,
+                kind = write.kind,
+                dismissedUntilAtMs = dismissedUntilAtMs,
             )
         }
     }
@@ -905,6 +934,7 @@ internal data class BaForegroundApReminderWrite(
     val kind: BaApReminderKind,
     val lastNotifiedLevel: Int? = null,
     val suppressionAnchorAtMs: Long? = null,
+    val dismissedUntilAtMs: Long? = null,
 )
 
 internal object BaForegroundApReminderPersistencePolicy {
@@ -918,6 +948,10 @@ internal object BaForegroundApReminderPersistencePolicy {
                 kind = kind,
                 suppressionAnchorAtMs = 0L,
             ),
+            BaForegroundApReminderWrite(
+                kind = kind,
+                dismissedUntilAtMs = 0L,
+            ),
         )
 
     fun deliveryWrites(
@@ -925,6 +959,7 @@ internal object BaForegroundApReminderPersistencePolicy {
         sent: Boolean,
         currentDisplay: Int,
         advanceSuppressionAnchorAfterDelivery: Boolean,
+        clearDismissedUntilAfterDelivery: Boolean = false,
         nowMs: Long,
     ): List<BaForegroundApReminderWrite> {
         if (!sent) return emptyList()
@@ -940,6 +975,14 @@ internal object BaForegroundApReminderPersistencePolicy {
                     BaForegroundApReminderWrite(
                         kind = kind,
                         suppressionAnchorAtMs = nowMs,
+                    ),
+                )
+            }
+            if (clearDismissedUntilAfterDelivery) {
+                add(
+                    BaForegroundApReminderWrite(
+                        kind = kind,
+                        dismissedUntilAtMs = 0L,
                     ),
                 )
             }

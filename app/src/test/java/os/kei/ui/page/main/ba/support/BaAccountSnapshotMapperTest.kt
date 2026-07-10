@@ -112,6 +112,8 @@ class BaAccountSnapshotMapperTest {
         val acknowledgementStore = BaApAcknowledgementStore(InMemoryBaAccountKeyValueStore())
         acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.Ap, 1_000L)
         acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, 2_000L)
+        acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.Ap, 3_000L)
+        acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.CafeAp, 4_000L)
 
         val snapshot =
             BaPageSnapshot()
@@ -120,6 +122,8 @@ class BaAccountSnapshotMapperTest {
 
         assertEquals(1_000L, snapshot.apSuppressionAnchorAtMs)
         assertEquals(2_000L, snapshot.cafeApSuppressionAnchorAtMs)
+        assertEquals(3_000L, snapshot.apDismissedUntilAtMs)
+        assertEquals(4_000L, snapshot.cafeApDismissedUntilAtMs)
     }
 
     @Test
@@ -161,6 +165,10 @@ class BaAccountSnapshotMapperTest {
         acknowledgementStore.setSuppressionAnchor(firstId, BaApReminderKind.CafeAp, 2_000L)
         acknowledgementStore.setSuppressionAnchor(secondId, BaApReminderKind.Ap, 3_000L)
         acknowledgementStore.setSuppressionAnchor(secondId, BaApReminderKind.CafeAp, 4_000L)
+        acknowledgementStore.setDismissedUntil(firstId, BaApReminderKind.Ap, 5_000L)
+        acknowledgementStore.setDismissedUntil(firstId, BaApReminderKind.CafeAp, 6_000L)
+        acknowledgementStore.setDismissedUntil(secondId, BaApReminderKind.Ap, 7_000L)
+        acknowledgementStore.setDismissedUntil(secondId, BaApReminderKind.CafeAp, 8_000L)
 
         val snapshots =
             accounts.associate { account ->
@@ -174,6 +182,10 @@ class BaAccountSnapshotMapperTest {
         assertEquals(2_000L, snapshots.getValue(firstId).cafeApSuppressionAnchorAtMs)
         assertEquals(3_000L, snapshots.getValue(secondId).apSuppressionAnchorAtMs)
         assertEquals(4_000L, snapshots.getValue(secondId).cafeApSuppressionAnchorAtMs)
+        assertEquals(5_000L, snapshots.getValue(firstId).apDismissedUntilAtMs)
+        assertEquals(6_000L, snapshots.getValue(firstId).cafeApDismissedUntilAtMs)
+        assertEquals(7_000L, snapshots.getValue(secondId).apDismissedUntilAtMs)
+        assertEquals(8_000L, snapshots.getValue(secondId).cafeApDismissedUntilAtMs)
     }
 
     @Test

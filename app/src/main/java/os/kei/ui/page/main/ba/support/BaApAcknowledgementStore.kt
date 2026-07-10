@@ -13,15 +13,69 @@ internal class BaApAcknowledgementStore(
     fun loadSuppressionAnchor(
         accountId: BaAccountId,
         kind: BaApReminderKind,
-    ): Long = store.decodeLong(key(accountId, kind), 0L).coerceAtLeast(0L)
+    ): Long = loadTimestamp(readAnchorKey(accountId, kind))
 
     fun setSuppressionAnchor(
         accountId: BaAccountId,
         kind: BaApReminderKind,
         anchorAtMs: Long,
+    ): Boolean = setTimestamp(readAnchorKey(accountId, kind), anchorAtMs)
+
+    fun loadDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Long = loadTimestamp(dismissedUntilKey(accountId, kind))
+
+    fun setDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        dismissedUntilAtMs: Long,
+    ): Boolean = setTimestamp(dismissedUntilKey(accountId, kind), dismissedUntilAtMs)
+
+    fun updateState(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        suppressionAnchorAtMs: Long? = null,
+        dismissedUntilAtMs: Long? = null,
     ): Boolean {
-        val key = key(accountId, kind)
-        val normalized = anchorAtMs.coerceAtLeast(0L)
+        var changed = false
+        suppressionAnchorAtMs?.let { value ->
+            changed = setSuppressionAnchor(accountId, kind, value) || changed
+        }
+        dismissedUntilAtMs?.let { value ->
+            changed = setDismissedUntil(accountId, kind, value) || changed
+        }
+        return changed
+    }
+
+    fun clear(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Boolean = setSuppressionAnchor(accountId, kind, 0L)
+
+    fun clearDismissedUntil(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): Boolean = setDismissedUntil(accountId, kind, 0L)
+
+    fun clearAccount(accountId: BaAccountId): Boolean =
+        BaApReminderKind.entries
+            .flatMap { kind ->
+                listOf(
+                    clear(accountId, kind),
+                    clearDismissedUntil(accountId, kind),
+                )
+            }
+            .any { it }
+
+    private fun loadTimestamp(key: String): Long =
+        store.decodeLong(key, 0L).coerceAtLeast(0L)
+
+    private fun setTimestamp(
+        key: String,
+        value: Long,
+    ): Boolean {
+        val normalized = value.coerceAtLeast(0L)
         if (normalized == 0L) {
             if (!store.containsKey(key)) return false
             store.removeValueForKey(key)
@@ -32,18 +86,13 @@ internal class BaApAcknowledgementStore(
         return true
     }
 
-    fun clear(
-        accountId: BaAccountId,
-        kind: BaApReminderKind,
-    ): Boolean = setSuppressionAnchor(accountId, kind, 0L)
-
-    fun clearAccount(accountId: BaAccountId): Boolean =
-        BaApReminderKind.entries
-            .map { kind -> clear(accountId, kind) }
-            .any { it }
-
-    private fun key(
+    private fun readAnchorKey(
         accountId: BaAccountId,
         kind: BaApReminderKind,
     ): String = "ba_ap_read_anchor:${kind.keyPart}:${accountId.value}"
+
+    private fun dismissedUntilKey(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+    ): String = "ba_ap_dismissed_until:${kind.keyPart}:${accountId.value}"
 }

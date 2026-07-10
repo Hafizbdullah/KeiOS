@@ -42,6 +42,8 @@ internal data class BaOfficeState(
     val keepApRemindersReadUntilBelowThreshold: Boolean,
     val apSuppressionAnchorAtMs: Long,
     val cafeApSuppressionAnchorAtMs: Long,
+    val apDismissedUntilAtMs: Long,
+    val cafeApDismissedUntilAtMs: Long,
     val arenaRefreshNotifyEnabled: Boolean,
     val arenaRefreshLastNotifiedSlotMs: Long,
     val cafeVisitNotifyEnabled: Boolean,
@@ -77,6 +79,8 @@ internal class BaOfficeController(
     var keepApRemindersReadUntilBelowThreshold by mutableStateOf(snapshot.keepApRemindersReadUntilBelowThreshold)
     var apSuppressionAnchorAtMs by mutableLongStateOf(snapshot.apSuppressionAnchorAtMs)
     var cafeApSuppressionAnchorAtMs by mutableLongStateOf(snapshot.cafeApSuppressionAnchorAtMs)
+    var apDismissedUntilAtMs by mutableLongStateOf(snapshot.apDismissedUntilAtMs)
+    var cafeApDismissedUntilAtMs by mutableLongStateOf(snapshot.cafeApDismissedUntilAtMs)
     var arenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
     var arenaRefreshLastNotifiedSlotMs by mutableLongStateOf(snapshot.arenaRefreshLastNotifiedSlotMs)
     var cafeVisitNotifyEnabled by mutableStateOf(snapshot.cafeVisitNotifyEnabled)
@@ -122,6 +126,8 @@ internal class BaOfficeController(
             keepApRemindersReadUntilBelowThreshold == snapshot.keepApRemindersReadUntilBelowThreshold &&
             apSuppressionAnchorAtMs == snapshot.apSuppressionAnchorAtMs &&
             cafeApSuppressionAnchorAtMs == snapshot.cafeApSuppressionAnchorAtMs &&
+            apDismissedUntilAtMs == snapshot.apDismissedUntilAtMs &&
+            cafeApDismissedUntilAtMs == snapshot.cafeApDismissedUntilAtMs &&
             arenaRefreshNotifyEnabled == snapshot.arenaRefreshNotifyEnabled &&
             arenaRefreshLastNotifiedSlotMs == snapshot.arenaRefreshLastNotifiedSlotMs &&
             cafeVisitNotifyEnabled == snapshot.cafeVisitNotifyEnabled &&
@@ -165,6 +171,8 @@ internal class BaOfficeController(
         keepApRemindersReadUntilBelowThreshold = snapshot.keepApRemindersReadUntilBelowThreshold
         apSuppressionAnchorAtMs = snapshot.apSuppressionAnchorAtMs
         cafeApSuppressionAnchorAtMs = snapshot.cafeApSuppressionAnchorAtMs
+        apDismissedUntilAtMs = snapshot.apDismissedUntilAtMs
+        cafeApDismissedUntilAtMs = snapshot.cafeApDismissedUntilAtMs
         arenaRefreshNotifyEnabled = snapshot.arenaRefreshNotifyEnabled
         arenaRefreshLastNotifiedSlotMs = snapshot.arenaRefreshLastNotifiedSlotMs
         cafeVisitNotifyEnabled = snapshot.cafeVisitNotifyEnabled
@@ -197,6 +205,8 @@ internal class BaOfficeController(
             keepApRemindersReadUntilBelowThreshold = keepApRemindersReadUntilBelowThreshold,
             apSuppressionAnchorAtMs = apSuppressionAnchorAtMs,
             cafeApSuppressionAnchorAtMs = cafeApSuppressionAnchorAtMs,
+            apDismissedUntilAtMs = apDismissedUntilAtMs,
+            cafeApDismissedUntilAtMs = cafeApDismissedUntilAtMs,
             arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
             arenaRefreshLastNotifiedSlotMs = arenaRefreshLastNotifiedSlotMs,
             cafeVisitNotifyEnabled = cafeVisitNotifyEnabled,

@@ -22,6 +22,7 @@ class BASettingsStoreApAcknowledgementReconciliationTest {
                     ),
             )
         fixture.seedAnchors(ap = 1_000L, cafeAp = 2_000L)
+        fixture.seedDismissals(ap = 3_000L, cafeAp = 4_000L)
 
         val changed = fixture.reconcile()
 
@@ -44,6 +45,7 @@ class BASettingsStoreApAcknowledgementReconciliationTest {
                     ),
             )
         fixture.seedAnchors(ap = 3_000L, cafeAp = 4_000L)
+        fixture.seedDismissals(ap = 5_000L, cafeAp = 6_000L)
 
         val changed = fixture.reconcile()
 
@@ -161,6 +163,11 @@ class BASettingsStoreApAcknowledgementReconciliationTest {
             acknowledgementStore.setSuppressionAnchor(accountId, BaApReminderKind.CafeAp, cafeAp)
         }
 
+        fun seedDismissals(ap: Long, cafeAp: Long) {
+            acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.Ap, ap)
+            acknowledgementStore.setDismissedUntil(accountId, BaApReminderKind.CafeAp, cafeAp)
+        }
+
         fun reconcile(): Boolean =
             BASettingsStore.reconcileApAcknowledgements(
                 accountState = accountStore.loadState(),
@@ -181,6 +188,14 @@ class BASettingsStoreApAcknowledgementReconciliationTest {
             assertEquals(
                 0L,
                 acknowledgementStore.loadSuppressionAnchor(accountId, BaApReminderKind.CafeAp),
+            )
+            assertEquals(
+                0L,
+                acknowledgementStore.loadDismissedUntil(accountId, BaApReminderKind.Ap),
+            )
+            assertEquals(
+                0L,
+                acknowledgementStore.loadDismissedUntil(accountId, BaApReminderKind.CafeAp),
             )
         }
     }

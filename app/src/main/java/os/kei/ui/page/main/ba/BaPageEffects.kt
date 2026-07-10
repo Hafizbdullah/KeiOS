@@ -37,6 +37,14 @@ internal interface BaApSuppressionAnchorWriter {
     )
 }
 
+internal interface BaApDismissedUntilWriter {
+    suspend fun save(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        dismissedUntilAtMs: Long,
+    )
+}
+
 private object BaSettingsStoreApSuppressionAnchorWriter : BaApSuppressionAnchorWriter {
     override suspend fun save(
         accountId: BaAccountId,
@@ -53,24 +61,51 @@ private object BaSettingsStoreApSuppressionAnchorWriter : BaApSuppressionAnchorW
     }
 }
 
+private object BaSettingsStoreApDismissedUntilWriter : BaApDismissedUntilWriter {
+    override suspend fun save(
+        accountId: BaAccountId,
+        kind: BaApReminderKind,
+        dismissedUntilAtMs: Long,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveAccountApDismissedUntil(
+                accountId = accountId,
+                kind = kind,
+                dismissedUntilAtMs = dismissedUntilAtMs,
+            )
+        }
+    }
+}
+
 internal suspend fun persistBaForegroundApSyncResult(
     request: BaApNotificationSyncRequest,
     result: BaApNotificationSyncResult,
     office: BaOfficeController,
     anchorWriter: BaApSuppressionAnchorWriter = BaSettingsStoreApSuppressionAnchorWriter,
+    dismissedUntilWriter: BaApDismissedUntilWriter = BaSettingsStoreApDismissedUntilWriter,
     onLastNotifiedLevel: (Int) -> Unit,
 ) {
     if (result.committedDuringDelivery) return
-    result.suppressionAnchorAtMs?.let { anchorAtMs ->
+    if (result.suppressionAnchorAtMs != null || result.dismissedUntilAtMs != null) {
         withContext(NonCancellable) {
             request.accountId?.let { accountId ->
-                anchorWriter.save(
-                    accountId = accountId,
-                    kind = BaApReminderKind.Ap,
-                    anchorAtMs = anchorAtMs,
-                )
+                result.suppressionAnchorAtMs?.let { anchorAtMs ->
+                    anchorWriter.save(
+                        accountId = accountId,
+                        kind = BaApReminderKind.Ap,
+                        anchorAtMs = anchorAtMs,
+                    )
+                }
+                result.dismissedUntilAtMs?.let { dismissedUntilAtMs ->
+                    dismissedUntilWriter.save(
+                        accountId = accountId,
+                        kind = BaApReminderKind.Ap,
+                        dismissedUntilAtMs = dismissedUntilAtMs,
+                    )
+                }
             }
-            office.apSuppressionAnchorAtMs = anchorAtMs
+            result.suppressionAnchorAtMs?.let { office.apSuppressionAnchorAtMs = it }
+            result.dismissedUntilAtMs?.let { office.apDismissedUntilAtMs = it }
         }
     }
     result.lastNotifiedLevel?.let(onLastNotifiedLevel)
@@ -83,6 +118,7 @@ internal suspend fun persistBaForegroundApDeliveredResult(
         update.persistAsync()
     },
     anchorWriter: BaApSuppressionAnchorWriter = BaSettingsStoreApSuppressionAnchorWriter,
+    dismissedUntilWriter: BaApDismissedUntilWriter = BaSettingsStoreApDismissedUntilWriter,
 ) {
     val accountId = requireNotNull(request.accountId) {
         "Foreground BA AP delivery requires an account ID"
@@ -102,6 +138,13 @@ internal suspend fun persistBaForegroundApDeliveredResult(
             anchorAtMs = anchorAtMs,
         )
     }
+    result.dismissedUntilAtMs?.let { dismissedUntilAtMs ->
+        dismissedUntilWriter.save(
+            accountId = accountId,
+            kind = BaApReminderKind.Ap,
+            dismissedUntilAtMs = dismissedUntilAtMs,
+        )
+    }
 }
 
 internal fun applyBaForegroundApCommittedResult(
@@ -109,6 +152,7 @@ internal fun applyBaForegroundApCommittedResult(
     office: BaOfficeController,
 ) {
     result.suppressionAnchorAtMs?.let { office.apSuppressionAnchorAtMs = it }
+    result.dismissedUntilAtMs?.let { office.apDismissedUntilAtMs = it }
     result.lastNotifiedLevel?.let { office.applyApLastNotifiedLevel(it) }
 }
 
@@ -258,6 +302,7 @@ internal fun BaPageCommonEffects(
                 accountId = accountNotificationContext.accountId,
                 keepReadUntilBelowThreshold = office.keepApRemindersReadUntilBelowThreshold,
                 suppressionAnchorAtMs = office.apSuppressionAnchorAtMs,
+                dismissedUntilAtMs = office.apDismissedUntilAtMs,
             )
         }.distinctUntilChanged()
             .collectLatest { request ->

@@ -65,4 +65,14 @@ internal fun BaPageSnapshot.withLocalApAcknowledgementAnchors(
                 accountId,
                 BaApReminderKind.CafeAp,
             ),
+        apDismissedUntilAtMs =
+            acknowledgementStore.loadDismissedUntil(
+                accountId,
+                BaApReminderKind.Ap,
+            ),
+        cafeApDismissedUntilAtMs =
+            acknowledgementStore.loadDismissedUntil(
+                accountId,
+                BaApReminderKind.CafeAp,
+            ),
     )

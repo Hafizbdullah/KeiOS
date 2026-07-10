@@ -15,6 +15,7 @@ import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.floorToHourMs
 import os.kei.ui.page.main.ba.BA_AP_READ_REPEAT_INTERVAL_MS
+import os.kei.ui.page.main.ba.BA_AP_DISMISS_SNOOZE_INTERVAL_MS
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -424,6 +425,52 @@ class AppBackgroundSchedulePolicyTest {
 
         assertNotNull(schedule)
         assertEquals(anchor + BA_AP_READ_REPEAT_INTERVAL_MS, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba ap dismissal schedules exact snooze boundary despite AP growth`() {
+        val dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS
+        val schedule =
+            assertNotNull(
+                AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                    snapshot =
+                        BaPageSnapshot(
+                            apNotifyEnabled = true,
+                            apCurrent = 131.0,
+                            apRegenBaseMs = NOW_MS,
+                            apNotifyThreshold = 120,
+                            apLimit = 240,
+                            apLastNotifiedLevel = 130,
+                            apDismissedUntilAtMs = dismissedUntilAtMs,
+                        ),
+                    nowMs = NOW_MS,
+                ),
+            )
+
+        assertEquals(dismissedUntilAtMs, schedule.triggerAtMillis)
+    }
+
+    @Test
+    fun `ba cafe ap dismissal schedules exact snooze boundary`() {
+        val dismissedUntilAtMs = NOW_MS + BA_AP_DISMISS_SNOOZE_INTERVAL_MS
+        val schedule =
+            assertNotNull(
+                AppBackgroundSchedulePolicy.nextBaReminderSchedule(
+                    snapshot =
+                        BaPageSnapshot(
+                            cafeApNotifyEnabled = true,
+                            cafeStoredAp = 131.0,
+                            cafeLastHourMs = NOW_MS,
+                            cafeApNotifyThreshold = 120,
+                            cafeApLastNotifiedLevel = 130,
+                            cafeLevel = 10,
+                            cafeApDismissedUntilAtMs = dismissedUntilAtMs,
+                        ),
+                    nowMs = NOW_MS,
+                ),
+            )
+
+        assertEquals(dismissedUntilAtMs, schedule.triggerAtMillis)
     }
 
     @Test
