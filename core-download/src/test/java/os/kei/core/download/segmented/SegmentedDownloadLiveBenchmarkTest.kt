@@ -1,10 +1,15 @@
 package os.kei.core.download.segmented
 
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okio.Buffer
 import okio.HashingSource
@@ -14,14 +19,12 @@ import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
-import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Opt-in live benchmark for the segmented downloader.
+ * Opt-in live benchmark for plain GET, shared HTTP/2, and isolated worker downloads.
  *
  * Property lookup order:
  * 1. JVM system properties
@@ -33,8 +36,9 @@ import kotlin.test.assertTrue
  * ./gradlew :core-download:testDebugUnitTest \
  *   --tests "os.kei.core.download.segmented.SegmentedDownloadLiveBenchmarkTest" \
  *   -Dkeios.download.liveBenchmark=true \
- *   -Dkeios.download.liveRuns=3 \
- *   -Dkeios.download.partMiB=4
+ *   -Dkeios.download.liveRuns=1 \
+ *   -Dkeios.download.partMiB=4 \
+ *   -Dkeios.download.protocol=auto
  */
 class SegmentedDownloadLiveBenchmarkTest {
     @get:Rule
@@ -56,118 +60,145 @@ class SegmentedDownloadLiveBenchmarkTest {
             (readProperty("keios.download.partMiB")?.toLongOrNull()?.coerceIn(1L, 64L) ?: 4L) *
                 1024L *
                 1024L
-        val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .callTimeout(10, TimeUnit.MINUTES)
-            .followRedirects(true)
-            .followSslRedirects(true)
-            .retryOnConnectionFailure(true)
-            .build()
+        val protocolMode = LiveProtocolMode.from(readProperty("keios.download.protocol"))
 
         val rows = mutableListOf<DownloadBenchmarkRow>()
         repeat(runs) { index ->
             val runIndex = index + 1
-            val single = suspend {
-                runSingleStreamBenchmark(
-                    client = client,
-                    url = url,
-                    outputFile = temp.newFile("single-$runIndex.apk").apply { delete() },
-                    expectedBytes = expectedBytes,
-                    expectedSha256 = expectedSha256,
-                    runIndex = runIndex,
-                )
-            }
-            val segmented = suspend {
-                runSegmentedBenchmark(
-                    client = client,
-                    url = url,
-                    outputFile = temp.newFile("segmented-$runIndex.apk").apply { delete() },
-                    expectedBytes = expectedBytes,
-                    expectedSha256 = expectedSha256,
-                    runIndex = runIndex,
-                    maxConnections = maxConnections,
-                    partSizeBytes = partSizeBytes,
-                )
-            }
-            if (runIndex % 2 == 0) {
-                rows += segmented()
-                rows += single()
-            } else {
-                rows += single()
-                rows += segmented()
+            val operations: List<suspend () -> DownloadBenchmarkRow> = listOf(
+                {
+                    runSingleStreamBenchmark(
+                        url = url,
+                        outputFile = temp.newFile("plain-get-$runIndex.apk").apply { delete() },
+                        expectedBytes = expectedBytes,
+                        expectedSha256 = expectedSha256,
+                        runIndex = runIndex,
+                        protocolMode = protocolMode,
+                    )
+                },
+                {
+                    runSegmentedBenchmark(
+                        url = url,
+                        outputFile = temp.newFile("segmented-shared-$runIndex.apk").apply { delete() },
+                        expectedBytes = expectedBytes,
+                        expectedSha256 = expectedSha256,
+                        runIndex = runIndex,
+                        maxConnections = maxConnections,
+                        partSizeBytes = partSizeBytes,
+                        connectionStrategy = SegmentedDownloadConnectionStrategy.Shared,
+                        protocolMode = protocolMode,
+                    )
+                },
+                {
+                    runSegmentedBenchmark(
+                        url = url,
+                        outputFile = temp.newFile("segmented-isolated-$runIndex.apk").apply { delete() },
+                        expectedBytes = expectedBytes,
+                        expectedSha256 = expectedSha256,
+                        runIndex = runIndex,
+                        maxConnections = maxConnections,
+                        partSizeBytes = partSizeBytes,
+                        connectionStrategy = SegmentedDownloadConnectionStrategy.IsolatedPerWorker,
+                        protocolMode = protocolMode,
+                    )
+                },
+            )
+            val offset = index % operations.size
+            val ordered = operations.drop(offset) + operations.take(offset)
+            for (operation in ordered) {
+                rows += operation()
             }
         }
 
-        println(buildBenchmarkReport(rows, url, expectedBytes, maxConnections, partSizeBytes))
+        println(
+            buildBenchmarkReport(
+                rows = rows,
+                url = url,
+                expectedBytes = expectedBytes,
+                maxConnections = maxConnections,
+                partSizeBytes = partSizeBytes,
+                protocolMode = protocolMode,
+            ),
+        )
 
-        assertEquals(runs, rows.count { it.mode == "single" })
-        assertEquals(runs, rows.count { it.mode == "segmented" })
+        LIVE_MODE_ORDER.forEach { mode ->
+            assertEquals(runs, rows.count { it.mode == mode })
+        }
         assertTrue(rows.all { it.bytes == expectedBytes })
     }
 
     private suspend fun runSingleStreamBenchmark(
-        client: OkHttpClient,
         url: String,
         outputFile: File,
         expectedBytes: Long,
         expectedSha256: String,
         runIndex: Int,
-    ): DownloadBenchmarkRow =
-        withContext(Dispatchers.IO) {
-            val recorder = ProgressRecorder()
-            var finalHost = ""
-            val startedNs = System.nanoTime()
-            val request = Request.Builder()
-                .url(url)
-                .get()
-                .header("User-Agent", USER_AGENT)
-                .header("Accept", ACCEPT_APK)
-                .build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) error("HTTP ${response.code}")
-                finalHost = response.request.url.host
-                val totalBytes = response.body.contentLength().takeIf { it > 0L } ?: expectedBytes
-                recorder.start(totalBytes)
-                response.body.byteStream().use { input ->
-                    outputFile.outputStream().use { output ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        var downloaded = 0L
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            downloaded += read
-                            recorder.record(downloaded)
+        protocolMode: LiveProtocolMode,
+    ): DownloadBenchmarkRow {
+        val tracker = BenchmarkConnectionTracker()
+        val client = createBenchmarkClient(protocolMode, tracker)
+        return try {
+            withContext(Dispatchers.IO) {
+                val startedNs = System.nanoTime()
+                val recorder = ProgressRecorder(startedNs)
+                recorder.start(expectedBytes)
+                var finalHost = ""
+                val request = Request.Builder()
+                    .url(url)
+                    .get()
+                    .header("User-Agent", USER_AGENT)
+                    .header("Accept", ACCEPT_APK)
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    check(response.isSuccessful) { "HTTP ${response.code}" }
+                    finalHost = response.request.url.host
+                    response.body.byteStream().use { input ->
+                        FileOutputStream(outputFile).use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            var downloaded = 0L
+                            while (true) {
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                if (read == 0) continue
+                                output.write(buffer, 0, read)
+                                downloaded += read
+                                recorder.record(downloaded)
+                            }
+                            output.flush()
+                            output.fd.sync()
                         }
-                        output.flush()
                     }
+                    recorder.record(outputFile.length(), force = true)
                 }
-                recorder.record(outputFile.length(), force = true)
+                val elapsedMs = elapsedMs(startedNs)
+                val downloadedBytes = outputFile.length()
+                verifyOutput(outputFile, expectedBytes, expectedSha256)
+                DownloadBenchmarkRow(
+                    runIndex = runIndex,
+                    mode = "plain_get",
+                    elapsedMs = elapsedMs,
+                    bytes = downloadedBytes,
+                    parallel = false,
+                    activeConnections = 1,
+                    physicalConnections = tracker.physicalConnectionCount,
+                    requestCount = tracker.requestCount,
+                    connectionStrategy = "Single",
+                    protocol = tracker.protocolLabel(protocolMode.label),
+                    rangeSupported = false,
+                    retryCount = 0,
+                    stealCount = 0,
+                    handoffCount = 0,
+                    fallbackReason = "",
+                    finalHost = finalHost,
+                    samples = recorder.samples,
+                )
             }
-            val elapsedMs = elapsedMs(startedNs)
-            val downloadedBytes = outputFile.length()
-            verifyOutput(outputFile, expectedBytes, expectedSha256)
-            DownloadBenchmarkRow(
-                runIndex = runIndex,
-                mode = "single",
-                elapsedMs = elapsedMs,
-                bytes = downloadedBytes,
-                parallel = false,
-                activeConnections = 1,
-                rangeSupported = false,
-                retryCount = 0,
-                stealCount = 0,
-                handoffCount = 0,
-                fallbackReason = "",
-                finalHost = finalHost,
-                samples = recorder.samples,
-            )
+        } finally {
+            disposeBenchmarkClient(client)
         }
+    }
 
     private suspend fun runSegmentedBenchmark(
-        client: OkHttpClient,
         url: String,
         outputFile: File,
         expectedBytes: Long,
@@ -175,60 +206,98 @@ class SegmentedDownloadLiveBenchmarkTest {
         runIndex: Int,
         maxConnections: Int,
         partSizeBytes: Long,
+        connectionStrategy: SegmentedDownloadConnectionStrategy,
+        protocolMode: LiveProtocolMode,
     ): DownloadBenchmarkRow {
-        val downloader = SegmentedDownloadClient(client = client, dispatcher = Dispatchers.IO)
-        val recorder = ProgressRecorder()
-        val startedNs = System.nanoTime()
-        var activeConnections = 0
-        val result = downloader.downloadToFile(
-            request = SegmentedDownloadRequest(
-                url = url,
-                outputFile = outputFile,
-                expectedSizeBytes = expectedBytes,
-                expectedSha256 = expectedSha256,
-                headers = mapOf(
-                    "User-Agent" to USER_AGENT,
-                    "Accept" to ACCEPT_APK,
+        val tracker = BenchmarkConnectionTracker()
+        val client = createBenchmarkClient(protocolMode, tracker)
+        return try {
+            val downloader = SegmentedDownloadClient(client = client, dispatcher = Dispatchers.IO)
+            val startedNs = System.nanoTime()
+            val recorder = ProgressRecorder(startedNs)
+            recorder.start(expectedBytes)
+            var activeConnections = 0
+            val result = downloader.downloadToFile(
+                request = SegmentedDownloadRequest(
+                    url = url,
+                    outputFile = outputFile,
+                    expectedSizeBytes = expectedBytes,
+                    headers = mapOf(
+                        "User-Agent" to USER_AGENT,
+                        "Accept" to ACCEPT_APK,
+                    ),
+                    fileNameHint = outputFile.name,
                 ),
-                fileNameHint = outputFile.name,
-            ),
-            options = SegmentedDownloadOptions(
-                minParallelSizeBytes = 1L,
-                initialPartSizeBytes = partSizeBytes,
-                maxConnections = maxConnections,
-                maxRetriesPerPart = 3,
-                retryDelayMs = 1_000L,
-                progressIntervalMs = 250L,
-                requireHttpsForParallel = true,
-                bufferSizeBytes = BUFFER_SIZE,
-            ),
-            onProgress = { progress ->
-                activeConnections = progress.activeConnections
-                if (recorder.totalBytes <= 0L) {
-                    recorder.start(progress.totalBytes.takeIf { it > 0L } ?: expectedBytes)
-                }
-                recorder.record(progress.downloadedBytes)
-            },
-        )
-        recorder.record(outputFile.length(), force = true)
-        val elapsedMs = elapsedMs(startedNs)
-        val downloadedBytes = outputFile.length()
-        verifyOutput(outputFile, expectedBytes, expectedSha256)
-        return DownloadBenchmarkRow(
-            runIndex = runIndex,
-            mode = "segmented",
-            elapsedMs = elapsedMs,
-            bytes = downloadedBytes,
-            parallel = result.parallel,
-            activeConnections = activeConnections,
-            rangeSupported = result.rangeSupported,
-            retryCount = result.retryCount,
-            stealCount = result.stealCount,
-            handoffCount = result.handoffCount,
-            fallbackReason = result.fallbackReason.orEmpty(),
-            finalHost = result.finalUrl.toHttpUrlOrNull()?.host.orEmpty(),
-            samples = recorder.samples,
-        )
+                options = SegmentedDownloadOptions(
+                    minParallelSizeBytes = 1L,
+                    initialPartSizeBytes = partSizeBytes,
+                    maxConnections = maxConnections,
+                    maxRetriesPerPart = 3,
+                    retryDelayMs = 1_000L,
+                    progressIntervalMs = 250L,
+                    requireHttpsForParallel = true,
+                    bufferSizeBytes = BUFFER_SIZE,
+                    connectionStrategy = connectionStrategy,
+                ),
+                onProgress = { progress ->
+                    activeConnections = progress.activeConnections
+                    recorder.record(progress.downloadedBytes)
+                },
+            )
+            recorder.record(outputFile.length(), force = true)
+            val elapsedMs = elapsedMs(startedNs)
+            val downloadedBytes = outputFile.length()
+            verifyOutput(outputFile, expectedBytes, expectedSha256)
+            DownloadBenchmarkRow(
+                runIndex = runIndex,
+                mode =
+                    when (connectionStrategy) {
+                        SegmentedDownloadConnectionStrategy.Shared -> "segmented_shared"
+                        SegmentedDownloadConnectionStrategy.IsolatedPerWorker -> "segmented_isolated"
+                    },
+                elapsedMs = elapsedMs,
+                bytes = downloadedBytes,
+                parallel = result.parallel,
+                activeConnections = activeConnections,
+                physicalConnections = tracker.physicalConnectionCount,
+                requestCount = tracker.requestCount,
+                connectionStrategy = connectionStrategy.name,
+                protocol = tracker.protocolLabel(protocolMode.label),
+                rangeSupported = result.rangeSupported,
+                retryCount = result.retryCount,
+                stealCount = result.stealCount,
+                handoffCount = result.handoffCount,
+                fallbackReason = result.fallbackReason.orEmpty(),
+                finalHost = result.finalUrl.toHttpUrlOrNull()?.host.orEmpty(),
+                samples = recorder.samples,
+            )
+        } finally {
+            disposeBenchmarkClient(client)
+        }
+    }
+
+    private fun createBenchmarkClient(
+        protocolMode: LiveProtocolMode,
+        tracker: BenchmarkConnectionTracker,
+    ): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(30L, TimeUnit.SECONDS)
+            .readTimeout(60L, TimeUnit.SECONDS)
+            .writeTimeout(60L, TimeUnit.SECONDS)
+            .callTimeout(10L, TimeUnit.MINUTES)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .retryOnConnectionFailure(true)
+            .eventListener(tracker)
+        if (protocolMode == LiveProtocolMode.Http1) {
+            builder.protocols(listOf(Protocol.HTTP_1_1))
+        }
+        return builder.build()
+    }
+
+    private fun disposeBenchmarkClient(client: OkHttpClient) {
+        client.connectionPool.evictAll()
+        client.dispatcher.executorService.shutdown()
     }
 
     private fun verifyOutput(
@@ -249,34 +318,48 @@ class SegmentedDownloadLiveBenchmarkTest {
         expectedBytes: Long,
         maxConnections: Int,
         partSizeBytes: Long,
+        protocolMode: LiveProtocolMode,
     ): String {
-        val singles = rows.filter { it.mode == "single" }
-        val segmented = rows.filter { it.mode == "segmented" }
+        val baselineRows = rows.filter { it.mode == "plain_get" }
         return buildString {
             appendLine("Segmented Download Live Benchmark")
             appendLine("URL: $url")
             appendLine("Bytes: $expectedBytes")
             appendLine("Max connections: $maxConnections")
             appendLine("Part size: ${partSizeBytes / 1024L / 1024L} MiB")
+            appendLine("Protocol mode: ${protocolMode.label}")
             appendLine()
-            appendLine("run,mode,elapsed_ms,avg_mib_s,early_0_10_mib_s,mid_10_90_mib_s,tail_90_100_mib_s,tail_ms,parallel,connections,range,retry,steal,handoff,fallback,host")
+            appendLine(
+                "run,mode,elapsed_ms,avg_mib_s,early_0_10_mib_s,mid_10_90_mib_s," +
+                    "tail_90_100_mib_s,tail_ms,parallel,workers,physical_connections,requests," +
+                    "strategy,protocol,range,retry,steal,handoff,fallback,host",
+            )
             rows.forEach { row ->
                 val speed = row.speedBreakdown()
                 appendLine(
                     "${row.runIndex},${row.mode},${row.elapsedMs},${row.averageMiBs().format2()}," +
                         "${speed.earlyMiBs.format2()},${speed.midMiBs.format2()},${speed.tailMiBs.format2()}," +
-                        "${speed.tailMs},${row.parallel},${row.activeConnections},${row.rangeSupported}," +
+                        "${speed.tailMs},${row.parallel},${row.activeConnections},${row.physicalConnections}," +
+                        "${row.requestCount},${row.connectionStrategy},${row.protocol},${row.rangeSupported}," +
                         "${row.retryCount},${row.stealCount},${row.handoffCount}," +
-                        "${row.fallbackReason.ifBlank { "-" }},${row.finalHost}"
+                        "${row.fallbackReason.ifBlank { "-" }},${row.finalHost}",
                 )
             }
             appendLine()
             appendLine("Median")
-            val singleElapsed = singles.medianElapsedMs()
-            val segmentedElapsed = segmented.medianElapsedMs()
-            appendLine("single elapsed=${singleElapsed.format2()}ms avg=${singles.medianAverageMiBs().format2()} MiB/s tail=${singles.medianTailMs().format2()}ms")
-            appendLine("segmented elapsed=${segmentedElapsed.format2()}ms avg=${segmented.medianAverageMiBs().format2()} MiB/s tail=${segmented.medianTailMs().format2()}ms")
-            appendLine("speedup=${speedup(singleElapsed, segmentedElapsed).format2()}x")
+            val baselineElapsedMs = baselineRows.medianElapsedMs()
+            LIVE_MODE_ORDER.forEach { mode ->
+                val modeRows = rows.filter { it.mode == mode }
+                val line = buildString {
+                    append("$mode elapsed=${modeRows.medianElapsedMs().format2()}ms")
+                    append(" avg=${modeRows.medianAverageMiBs().format2()} MiB/s")
+                    append(" tail=${modeRows.medianTailMs().format2()}ms")
+                    if (mode != "plain_get") {
+                        append(" speedup=${speedup(baselineElapsedMs, modeRows.medianElapsedMs()).format2()}x")
+                    }
+                }
+                appendLine(line)
+            }
         }
     }
 
@@ -340,10 +423,9 @@ class SegmentedDownloadLiveBenchmarkTest {
         }
     }
 
-    private fun isLiveBenchmarkEnabled(): Boolean {
-        return readProperty("keios.download.liveBenchmark")
+    private fun isLiveBenchmarkEnabled(): Boolean =
+        readProperty("keios.download.liveBenchmark")
             ?.let { value -> value.equals("true", ignoreCase = true) || value == "1" } == true
-    }
 
     private fun readProperty(key: String): String? {
         val sysValue = System.getProperty(key)?.trim()
@@ -384,10 +466,10 @@ class SegmentedDownloadLiveBenchmarkTest {
     }
 
     private fun elapsedMs(startedNs: Long): Long =
-        (System.nanoTime() - startedNs) / 1_000_000L
+        ((System.nanoTime() - startedNs) / 1_000_000L).coerceAtLeast(1L)
 
     private fun Double.format2(): String =
-        "%.2f".format(this)
+        String.format(Locale.US, "%.2f", this)
 
     private data class DownloadBenchmarkRow(
         val runIndex: Int,
@@ -396,6 +478,10 @@ class SegmentedDownloadLiveBenchmarkTest {
         val bytes: Long,
         val parallel: Boolean,
         val activeConnections: Int,
+        val physicalConnections: Int,
+        val requestCount: Int,
+        val connectionStrategy: String,
+        val protocol: String,
         val rangeSupported: Boolean,
         val retryCount: Int,
         val stealCount: Int,
@@ -417,8 +503,9 @@ class SegmentedDownloadLiveBenchmarkTest {
         val tailMs: Long = 0L,
     )
 
-    private class ProgressRecorder {
-        private val startedNs = System.nanoTime()
+    private class ProgressRecorder(
+        private val startedNs: Long,
+    ) {
         private val mutableSamples = mutableListOf<ProgressSample>()
         private var lastSampleMs = Long.MIN_VALUE
 
@@ -451,9 +538,28 @@ class SegmentedDownloadLiveBenchmarkTest {
         }
     }
 
+    private enum class LiveProtocolMode(val label: String) {
+        Auto("auto"),
+        Http1("http/1.1");
+
+        companion object {
+            fun from(value: String?): LiveProtocolMode =
+                when (value?.trim()?.lowercase()) {
+                    "h1", "http1", "http/1.1" -> Http1
+                    else -> Auto
+                }
+        }
+    }
+
     private companion object {
+        private val LIVE_MODE_ORDER = listOf(
+            "plain_get",
+            "segmented_shared",
+            "segmented_isolated",
+        )
         private const val USER_AGENT = "KeiOS-App/1.0 (Android)"
-        private const val ACCEPT_APK = "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1"
+        private const val ACCEPT_APK =
+            "application/vnd.android.package-archive, application/octet-stream;q=0.9, */*;q=0.1"
         private const val BUFFER_SIZE = DEFAULT_SEGMENTED_DOWNLOAD_BUFFER_SIZE_BYTES
         private const val MIB = 1024.0 * 1024.0
         private const val PASEO_APK_URL =

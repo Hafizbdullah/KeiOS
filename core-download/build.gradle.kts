@@ -11,6 +11,7 @@ val liveBenchmarkSystemPropertyKeys =
         "keios.download.liveRuns",
         "keios.download.maxConnections",
         "keios.download.partMiB",
+        "keios.download.protocol",
         "keios.download.controlledBenchmark",
     )
 

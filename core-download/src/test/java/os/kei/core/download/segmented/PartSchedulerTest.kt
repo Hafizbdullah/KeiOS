@@ -46,11 +46,35 @@ class PartSchedulerTest {
         scheduler.finish(workerId = 0, active = first)
 
         val second = assertNotNull(scheduler.nextPart(workerId = 1))
-        assertEquals(DownloadPart(start = 16, endInclusive = 19), second.part)
+        assertEquals(DownloadPart(start = 15, endInclusive = 19), second.part)
         scheduler.finish(workerId = 1, active = second)
 
         val third = assertNotNull(scheduler.nextPart(workerId = 0))
-        assertEquals(DownloadPart(start = 5, endInclusive = 7), third.part)
+        assertEquals(DownloadPart(start = 5, endInclusive = 9), third.part)
+    }
+
+    @Test
+    fun `tail scheduler keeps a bounded fresh part count`() = runBlocking {
+        val scheduler = PartScheduler(
+            totalBytes = 320,
+            initialPartSizeBytes = 100,
+            maxRetriesPerPart = 1,
+            concurrency = 8,
+            tuning = testTuning.copy(tailPartsPerConnection = 4),
+        )
+        val parts = buildList {
+            var workerId = 0
+            while (true) {
+                val active = scheduler.nextPart(workerId) ?: break
+                add(active.part)
+                scheduler.finish(workerId, active)
+                workerId = (workerId + 1) % 8
+            }
+        }
+
+        assertEquals(32, parts.size)
+        assertEquals(320, parts.sumOf(DownloadPart::length))
+        assertTrue(parts.all { it.length == 10L })
     }
 
     @Test

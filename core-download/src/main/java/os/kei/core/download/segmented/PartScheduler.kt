@@ -203,6 +203,7 @@ internal class PartScheduler(
     private val workerPartSizeBytes = LongArray(concurrency) { initialPartSizeBytes }
     private val maxDynamicPartSizeBytes: Long
     private var partSizeHint = initialPartSizeBytes
+    private var tailPartSizeHint = 0L
     private val rateLimitFloor = min(concurrency, tuning.rateLimitMinActiveConnections)
     private var activeCount = 0
     private var maxActive = min(concurrency, tuning.startupActiveConnections)
@@ -418,10 +419,10 @@ internal class PartScheduler(
             } else {
                 tuning.tailPartsPerConnection
             }
-        val targetParts = maxActive.toLong() * tailPartsPerConnection.toLong()
-        val partSize = ceilDiv(remaining, targetParts)
-        return clampPartSize(
-            size = partSize,
+        val targetConnections = if (rateLimited) maxActive else concurrency
+        val targetParts = targetConnections.toLong() * tailPartsPerConnection.toLong()
+        val proposedPartSize = clampPartSize(
+            size = ceilDiv(remaining, targetParts),
             remaining = remaining,
             maxPartSize =
                 if (rateLimited) {
@@ -431,6 +432,8 @@ internal class PartScheduler(
                 },
             minPartSize = tuning.minTailPartSizeBytes,
         )
+        tailPartSizeHint = max(tailPartSizeHint, proposedPartSize)
+        return min(remaining, tailPartSizeHint)
     }
 
     private fun enqueueRetryChunksLocked(part: DownloadPart) {
