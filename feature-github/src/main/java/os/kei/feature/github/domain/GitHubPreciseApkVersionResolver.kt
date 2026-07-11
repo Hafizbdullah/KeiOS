@@ -8,6 +8,8 @@ import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseAssetRepository
 import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.engine.apk.GitHubApkCandidateSelectionEngine
+import os.kei.feature.github.engine.apk.GitHubInspectedApkCandidate
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
@@ -57,9 +59,10 @@ class GitHubPreciseApkVersionResolver(
                 releaseUrl = releaseUrl,
                 lookupConfig = request.lookupConfig
             ).getOrThrow()
-            val apkAssets = bundle.assets
-                .filter { asset -> asset.name.endsWith(".apk", ignoreCase = true) }
-                .take(MAX_APK_INSPECT_CANDIDATES)
+            val apkAssets = GitHubApkCandidateSelectionEngine.planInspection(
+                assets = bundle.assets,
+                expectedPackageName = request.packageName,
+            )
             check(apkAssets.isNotEmpty()) { "Release contains no APK asset" }
 
             val requestedPackageName = request.packageName.trim()
@@ -87,16 +90,12 @@ class GitHubPreciseApkVersionResolver(
             )
         }
 
-    private fun GitHubApkManifestInfo.hasRemoteVersion(): Boolean {
-        return versionName.isNotBlank() || versionCode.isNotBlank()
-    }
-
     private suspend fun inspectApkAssetsUntilSelected(
         apkAssets: List<GitHubReleaseAssetFile>,
         requestedPackageName: String,
         lookupConfig: GitHubLookupConfig
     ): ApkInspectSelection {
-        var firstSuccess: Pair<GitHubReleaseAssetFile, GitHubApkManifestInfo>? = null
+        val inspectedCandidates = mutableListOf<GitHubInspectedApkCandidate>()
         var firstFailure: Throwable? = null
         apkAssets.chunked(MAX_PARALLEL_APK_INSPECTS).forEach { chunk ->
             val inspected = GitHubExecution.mapOrderedBounded(
@@ -107,27 +106,40 @@ class GitHubPreciseApkVersionResolver(
             }
             inspected.forEach { (asset, result) ->
                 val info = result.getOrNull()
-                if (info != null && info.hasRemoteVersion()) {
-                    if (firstSuccess == null) firstSuccess = asset to info
-                    if (
-                        requestedPackageName.isNotBlank() &&
-                        info.packageName.equals(requestedPackageName, ignoreCase = true)
-                    ) {
-                        return ApkInspectSelection(selected = asset to info, firstFailure = firstFailure)
-                    }
+                if (info != null) {
+                    inspectedCandidates += GitHubInspectedApkCandidate(
+                        asset = asset,
+                        manifest = info,
+                    )
                 } else if (firstFailure == null) {
                     firstFailure = result.exceptionOrNull()
                 }
             }
-            if (requestedPackageName.isBlank() && firstSuccess != null) {
-                return ApkInspectSelection(selected = firstSuccess, firstFailure = firstFailure)
+            val selection = GitHubApkCandidateSelectionEngine.selectInspected(
+                inspected = inspectedCandidates,
+                expectedPackageName = requestedPackageName,
+            )
+            if (
+                selection != null &&
+                (requestedPackageName.isBlank() || selection.packageMatched)
+            ) {
+                return ApkInspectSelection(
+                    selected = selection.candidate.asset to selection.candidate.manifest,
+                    firstFailure = firstFailure,
+                )
             }
         }
-        return ApkInspectSelection(selected = firstSuccess, firstFailure = firstFailure)
+        val fallback = GitHubApkCandidateSelectionEngine.selectInspected(
+            inspected = inspectedCandidates,
+            expectedPackageName = requestedPackageName,
+        )
+        return ApkInspectSelection(
+            selected = fallback?.candidate?.let { it.asset to it.manifest },
+            firstFailure = firstFailure,
+        )
     }
 
     private companion object {
-        const val MAX_APK_INSPECT_CANDIDATES = 12
         const val MAX_PARALLEL_APK_INSPECTS = 4
     }
 

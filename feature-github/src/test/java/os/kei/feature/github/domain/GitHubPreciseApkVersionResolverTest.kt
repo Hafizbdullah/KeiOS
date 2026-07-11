@@ -121,6 +121,38 @@ class GitHubPreciseApkVersionResolverTest {
         assertEquals(4, source.inspectCount)
     }
 
+    @Test
+    fun `resolver promotes likely target apk into bounded inspection window`() {
+        val unrelated = (1..12).map { index -> asset("other-$index.apk") }
+        val target = asset("demo-target-arm64-v8a-release.apk")
+        val assets = unrelated + target + asset("other-13.apk")
+        val source = FakePreciseSource(
+            assets = assets,
+            manifests = assets.associate { asset ->
+                asset.name to manifest(
+                    packageName = if (asset == target) "demo.target" else "other.app",
+                    versionName = "2.0.0",
+                    versionCode = 20L,
+                )
+            },
+        )
+
+        val result = runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
+                GitHubPreciseApkVersionRequest(
+                    owner = "demo",
+                    repo = "app",
+                    release = release("v2.0.0"),
+                    packageName = "demo.target",
+                    lookupConfig = GitHubLookupConfig(),
+                ),
+            )
+        }.getOrThrow()
+
+        assertEquals(target.name, result.assetName)
+        assertEquals(4, source.inspectCount)
+    }
+
     private fun release(
         tag: String,
         title: String = tag
