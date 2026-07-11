@@ -47,7 +47,10 @@ class GitHubRepositoryProfileRepository(
 
     suspend fun fetchProfile(request: GitHubRepositoryProfileRequest): GitHubRepositoryProfileSnapshot {
         val fetchedAtMillis = System.currentTimeMillis()
-        val policy = GitHubRepositoryProfileFetchPolicy.from(request)
+        val policy = GitHubRepositoryProfileFetchPolicy.of(
+            purpose = request.purpose,
+            profileDepth = request.lookupConfig.profileDepth,
+        )
         val sourceConfigSignature = request.lookupConfig.githubProfileSourceSignature(
             policy.capabilities
         )

@@ -1,5 +1,7 @@
 package os.kei.feature.github.data.remote
 
+import os.kei.core.versioning.VersionChannel
+import os.kei.core.versioning.VersioningEngine
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.util.Locale
 
@@ -87,7 +89,7 @@ object GitHubAtomHeuristics {
     }
 
     private fun detectFieldChannel(text: String): GitHubReleaseChannel? {
-        GitHubVersionUtils.classifyVersionChannel(text)?.let { return it }
+        VersioningEngine.classifyChannel(text)?.toGitHubReleaseChannel()?.let { return it }
         return detectKeywordChannel(text)
     }
 
@@ -130,5 +132,17 @@ object GitHubAtomHeuristics {
     private fun looksLikeHeading(line: String): Boolean {
         val normalized = line.lowercase(Locale.ROOT)
         return strongStableHints.any { it in normalized }
+    }
+}
+
+private fun VersionChannel.toGitHubReleaseChannel(): GitHubReleaseChannel {
+    return when (this) {
+        VersionChannel.DEV -> GitHubReleaseChannel.DEV
+        VersionChannel.ALPHA -> GitHubReleaseChannel.ALPHA
+        VersionChannel.BETA -> GitHubReleaseChannel.BETA
+        VersionChannel.RC -> GitHubReleaseChannel.RC
+        VersionChannel.PREVIEW -> GitHubReleaseChannel.PREVIEW
+        VersionChannel.STABLE -> GitHubReleaseChannel.STABLE
+        VersionChannel.UNKNOWN -> GitHubReleaseChannel.UNKNOWN
     }
 }

@@ -32,6 +32,7 @@ dependencies {
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
     implementation(project(":core-versioning"))
+    api(project(":feature-github-engine"))
     implementation(project(":feature-mcp"))
 
     implementation("androidx.core:core-ktx:1.19.0")

@@ -67,19 +67,6 @@ enum class GitHubShareImportFlowMode(
     }
 }
 
-enum class GitHubProfileDepth(
-    val storageId: String
-) {
-    Basic("basic"),
-    Deep("deep");
-
-    companion object {
-        fun fromStorageId(value: String): GitHubProfileDepth {
-            return entries.firstOrNull { it.storageId == value } ?: Basic
-        }
-    }
-}
-
 data class GitHubLookupConfig(
     val selectedStrategy: GitHubLookupStrategyOption = GitHubLookupStrategyOption.AtomFeed,
     val actionsStrategy: GitHubActionsLookupStrategyOption = GitHubActionsLookupStrategyOption.NightlyLink,

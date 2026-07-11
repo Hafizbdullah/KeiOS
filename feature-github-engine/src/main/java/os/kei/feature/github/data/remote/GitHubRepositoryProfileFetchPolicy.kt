@@ -27,14 +27,17 @@ data class GitHubRepositoryProfileFetchPolicy(
             it == GitHubRepositoryProfileCapability.Traffic ||
                     it == GitHubRepositoryProfileCapability.ForkSync ||
                     it == GitHubRepositoryProfileCapability.Security
-        }
+    }
 
     companion object {
-        fun from(request: GitHubRepositoryProfileRequest): GitHubRepositoryProfileFetchPolicy {
+        fun of(
+            purpose: GitHubRepositoryProfilePurpose,
+            profileDepth: GitHubProfileDepth,
+        ): GitHubRepositoryProfileFetchPolicy {
             return GitHubRepositoryProfileFetchPolicy(
-                purpose = request.purpose,
-                profileDepth = request.lookupConfig.profileDepth,
-                capabilities = request.purpose.requiredCapabilities(request.lookupConfig.profileDepth)
+                purpose = purpose,
+                profileDepth = profileDepth,
+                capabilities = purpose.requiredCapabilities(profileDepth),
             )
         }
     }
