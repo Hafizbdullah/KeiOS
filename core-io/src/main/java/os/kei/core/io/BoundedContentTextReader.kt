@@ -18,9 +18,32 @@ data class BoundedContentTextReadResult(
     val byteCount: Long
 )
 
+enum class BoundedContentReadLimitStage {
+    DeclaredLength,
+    Streaming,
+}
+
 class BoundedContentTextReadTooLargeException(
-    val maxBytes: Long
-) : IllegalArgumentException("content text exceeds $maxBytes bytes")
+    val maxBytes: Long,
+    val observedBytes: Long = maxBytes + 1L,
+    val declaredBytes: Long? = null,
+    val stage: BoundedContentReadLimitStage = BoundedContentReadLimitStage.Streaming,
+) : IllegalArgumentException(
+    buildString {
+        append("content text exceeds ")
+        append(maxBytes)
+        append(" bytes")
+        append(" (stage=")
+        append(stage.name)
+        append(", observed=")
+        append(observedBytes)
+        declaredBytes?.let { declared ->
+            append(", declared=")
+            append(declared)
+        }
+        append(')')
+    },
+)
 
 suspend fun ContentResolver.readTextFromUriLimited(
     uri: Uri,
@@ -39,7 +62,10 @@ suspend fun ContentResolver.readTextFromUriLimited(
                 if (read < 0) break
                 total += read
                 if (total > maxBytes) {
-                    throw BoundedContentTextReadTooLargeException(maxBytes)
+                    throw BoundedContentTextReadTooLargeException(
+                        maxBytes = maxBytes,
+                        observedBytes = total,
+                    )
                 }
                 output.write(buffer, 0, read)
                 if (total % YIELD_EVERY_BYTES < read) {
@@ -66,7 +92,10 @@ fun InputStream.readTextLimitedBlocking(
         if (read < 0) break
         total += read
         if (total > maxBytes) {
-            throw BoundedContentTextReadTooLargeException(maxBytes)
+            throw BoundedContentTextReadTooLargeException(
+                maxBytes = maxBytes,
+                observedBytes = total,
+            )
         }
         output.write(buffer, 0, read)
     }
