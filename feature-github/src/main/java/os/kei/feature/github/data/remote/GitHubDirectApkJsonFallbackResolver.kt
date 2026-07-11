@@ -9,6 +9,7 @@ import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
 import os.kei.core.json.optObject
@@ -53,14 +54,7 @@ class GitHubDirectApkJsonFallbackResolver(
             check(response.isSuccessful) {
                 "direct APK companion JSON failed (HTTP ${response.code})"
             }
-            val contentLength = response.body.contentLength()
-            check(contentLength < 0L || contentLength <= MAX_JSON_FEED_CHARS) {
-                "direct APK companion JSON is too large"
-            }
-            val raw = response.body.string()
-            check(raw.length <= MAX_JSON_FEED_CHARS) {
-                "direct APK companion JSON is too large"
-            }
+            val raw = response.body.stringLimitedBlocking(MAX_JSON_FEED_BYTES)
             val candidate = parseJsonFeedCandidates(raw)
                 .latestCandidate()
                 ?: return@executeCancellable null
@@ -186,7 +180,7 @@ class GitHubDirectApkJsonFallbackResolver(
 
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
-        const val MAX_JSON_FEED_CHARS = 512 * 1024
+        const val MAX_JSON_FEED_BYTES = 512L * 1024L
         const val MAX_JSON_NESTING_DEPTH = 4
         val fileUrlKeys = arrayOf("file_url", "download_url", "apk_url", "url")
         val versionNameKeys = arrayOf(

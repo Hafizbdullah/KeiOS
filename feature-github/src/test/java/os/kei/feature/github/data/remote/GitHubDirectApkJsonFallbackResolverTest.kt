@@ -4,9 +4,28 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GitHubDirectApkJsonFallbackResolverTest {
+    @Test
+    fun `resolve rejects oversized chunked json while streaming`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(600 * 1024), 4 * 1024),
+            )
+
+            val error = GitHubDirectApkJsonFallbackResolver()
+                .resolve(server.url("/feeds/app.json").toString())
+                .exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
+    }
+
     @Test
     fun `resolve reads companion json and exposes apk asset`() = runBlocking {
         MockWebServer().use { server ->

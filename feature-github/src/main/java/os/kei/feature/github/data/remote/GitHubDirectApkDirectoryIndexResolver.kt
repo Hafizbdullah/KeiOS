@@ -5,6 +5,7 @@ import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -76,10 +77,7 @@ class GitHubDirectApkDirectoryIndexResolver(
             check(response.isSuccessful) {
                 "direct APK directory index failed (HTTP ${response.code})"
             }
-            response.body.string()
-        }
-        check(html.length <= MAX_INDEX_HTML_CHARS) {
-            "direct APK directory index is too large"
+            response.body.stringLimitedBlocking(MAX_INDEX_HTML_BYTES)
         }
         val candidates = parseApkCandidates(
             indexUri = pattern.indexUri,
@@ -184,10 +182,7 @@ class GitHubDirectApkDirectoryIndexResolver(
                 check(response.isSuccessful) {
                     "direct APK release logs failed (HTTP ${response.code})"
                 }
-                val raw = response.body.string()
-                check(raw.length <= MAX_LOG_TEXT_CHARS) {
-                    "direct APK release logs are too large"
-                }
+                val raw = response.body.stringLimitedBlocking(MAX_LOG_TEXT_BYTES)
                 versions.associateWith { version ->
                     GitHubDirectApkIndexReleaseNotesParser.extractForVersion(
                         raw = raw,
@@ -365,8 +360,8 @@ class GitHubDirectApkDirectoryIndexResolver(
 
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
-        const val MAX_INDEX_HTML_CHARS = 512 * 1024
-        const val MAX_LOG_TEXT_CHARS = 256 * 1024
+        const val MAX_INDEX_HTML_BYTES = 512L * 1024L
+        const val MAX_LOG_TEXT_BYTES = 256L * 1024L
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionInFileRegex = Regex(
             """(?i)(\d+(?:\.\d+){1,4})(?:[\s._-]*(alpha|beta|rc|preview|pre|nightly|canary|snapshot|unstable|dev)\s*([0-9]+)?)?"""

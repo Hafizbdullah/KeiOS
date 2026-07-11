@@ -5,6 +5,7 @@ import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.feature.github.model.GitHubReleaseChannel
 import java.net.URI
 import java.util.Locale
@@ -73,10 +74,7 @@ class GitHubDirectApkVersionedDirectoryResolver(
                 check(response.isSuccessful) {
                     "direct APK version directory failed (HTTP ${response.code})"
                 }
-                response.body.string()
-            }
-            check(html.length <= MAX_INDEX_HTML_CHARS) {
-                "direct APK version directory is too large"
+                response.body.stringLimitedBlocking(MAX_INDEX_HTML_BYTES)
             }
             val candidates = parseVersionDirectories(
                 indexUri = pattern.indexUri,
@@ -234,7 +232,7 @@ class GitHubDirectApkVersionedDirectoryResolver(
 
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
-        const val MAX_INDEX_HTML_CHARS = 512 * 1024
+        const val MAX_INDEX_HTML_BYTES = 512L * 1024L
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionSegmentRegex =
             Regex("""^[vV]?(\d+(?:\.\d+){1,4})(?:[-_]?([A-Za-z][A-Za-z0-9._-]*))?/?$""")

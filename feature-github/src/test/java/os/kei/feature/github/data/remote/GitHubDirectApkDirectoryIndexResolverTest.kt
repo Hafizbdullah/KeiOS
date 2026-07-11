@@ -4,12 +4,30 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import os.kei.feature.github.model.GitHubReleaseChannel
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GitHubDirectApkDirectoryIndexResolverTest {
+    @Test
+    fun `resolve rejects oversized chunked directory index while streaming`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(600 * 1024), 4 * 1024),
+            )
+
+            val error = GitHubDirectApkDirectoryIndexResolver()
+                .resolve(server.url("/builds/").toString())
+                .exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
+    }
+
     @Test
     fun `resolve directory index picks latest stable standard apk by default`() = runBlocking {
         MockWebServer().use { server ->
