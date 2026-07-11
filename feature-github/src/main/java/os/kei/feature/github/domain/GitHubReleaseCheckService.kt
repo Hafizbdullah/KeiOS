@@ -13,11 +13,12 @@ import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.data.remote.GitRepositoryReleaseStrategy
 import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckEvaluator
 import os.kei.feature.github.domain.fdroid.FdroidReleaseCheckSource
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
+import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
-import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
@@ -25,24 +26,20 @@ import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import os.kei.feature.github.model.GitHubStrategyLoadTrace
 import os.kei.feature.github.model.GitHubTrackedApp
-import os.kei.feature.github.model.GitHubTrackedIgnoreMode
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
-import os.kei.feature.github.model.buildGitHubReleaseIgnoreKey
 import os.kei.feature.github.model.buildGitRepositoryTrackIdentity
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.defaultRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
-import os.kei.feature.github.model.githubReleaseIgnoreKeyMatches
 import os.kei.feature.github.model.githubReleaseLookupItemOrNull
 import os.kei.feature.github.model.githubProfileSourceSignature
 import os.kei.feature.github.model.isDirectApkTrack
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.requiredCapabilities
-import os.kei.feature.github.model.suppressesAllReleaseUpdates
 import java.io.IOException
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -342,150 +339,35 @@ object GitHubReleaseCheckService {
         sourceConfigSignature: String = "",
         repositoryProfile: GitHubRepositoryProfileSnapshot? = snapshot.repositoryProfile
     ): GitHubTrackedReleaseCheck {
-        val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
-            GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, entry.versionCandidates) == 0
-        }
-        val matchedCurrentStable = snapshot.hasStableRelease &&
-            matchedEntry != null &&
-            GitHubVersionUtils.compareCandidateSetsWithSources(
-                matchedEntry.versionCandidates.map { it.value },
-                snapshot.latestStable.versionCandidates
-            ) == 0
-        val latestStable = snapshot.latestStable.takeIf { snapshot.hasStableRelease }
-        val latestPre = snapshot.latestPreRelease
-        val hasOnlyPreReleases = !snapshot.hasStableRelease && latestPre != null
-        val localChannel = when {
-            matchedCurrentStable -> GitHubReleaseChannel.STABLE
-            else -> matchedEntry?.channel
-        }
-            ?: GitHubVersionUtils.classifyVersionChannel(localVersion)
-            ?: GitHubReleaseChannel.UNKNOWN
-        val isLocalPreReleaseInstalled =
-            (matchedEntry?.isLikelyPreRelease == true && !matchedCurrentStable) || localChannel.isPreRelease
-        val inspectPreRelease = checkAllTrackedPreReleases || item.preferPreRelease || isLocalPreReleaseInstalled
-
-        val stableCmp = latestStable?.let {
-            GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, it.versionCandidates)
-        }
-        val stableTagMatchesLocalNameAndCode = latestStable?.let {
-            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
-                localVersion = localVersion,
-                localVersionCode = localVersionCode,
-                remoteCandidates = it.versionCandidates
-            )
-        } == true
-        val latestPreIsRelevant = when {
-            latestPre == null -> false
-            latestStable == null -> true
-            else -> GitHubVersionUtils.isRelevantPreRelease(
-                preReleaseCandidates = latestPre.versionCandidates,
-                stableCandidates = latestStable.versionCandidates,
-                preReleaseUpdatedAtMillis = latestPre.updatedAtMillis,
-                stableUpdatedAtMillis = latestStable.updatedAtMillis
-            )
-        }
-        val latestPreCmp = if (latestPre != null) {
-            GitHubVersionUtils.compareVersionToStructuredCandidates(localVersion, latestPre.versionCandidates)
-        } else {
-            null
-        }
-        val preTagMatchesLocalNameAndCode = latestPre?.let {
-            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
-                localVersion = localVersion,
-                localVersionCode = localVersionCode,
-                remoteCandidates = it.versionCandidates
-            )
-        } == true
-
-        val preciseStableCmp = preciseStableApkVersion
-            ?.versionCodeLong
-            ?.takeIf { localVersionCode >= 0L }
-            ?.compareTo(localVersionCode)
-        val precisePreCmp = precisePreReleaseApkVersion
-            ?.versionCodeLong
-            ?.takeIf { localVersionCode >= 0L }
-            ?.compareTo(localVersionCode)
-        val rawHasPreReleaseUpdate = inspectPreRelease &&
-            latestPreIsRelevant &&
-                (precisePreCmp?.let { it > 0 }
-                    ?: (!preTagMatchesLocalNameAndCode && latestPreCmp?.let { it < 0 } == true))
-        val rawStableHasUpdate = preciseStableCmp?.let { it > 0 }
-            ?: (!stableTagMatchesLocalNameAndCode && stableCmp?.let { it < 0 } == true)
-        val suppressAllReleaseUpdates = item.ignoreMode.suppressesAllReleaseUpdates()
-        val stableReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
-            release = latestStable,
-            preciseApkVersion = preciseStableApkVersion
+        val evaluation = GitHubReleaseEvaluationEngine.evaluate(
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            snapshot = snapshot,
+            policy = GitHubReleaseEvaluationPolicy(
+                preferPreRelease = item.preferPreRelease,
+                checkAllTrackedPreReleases = checkAllTrackedPreReleases,
+                ignoreMode = item.ignoreMode,
+                ignoredStableReleaseKey = item.ignoredStableReleaseKey,
+                ignoredPreReleaseKey = item.ignoredPreReleaseKey,
+            ),
+            preciseStableApkVersion = preciseStableApkVersion,
+            precisePreReleaseApkVersion = precisePreReleaseApkVersion,
         )
-        val preReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
-            release = latestPre,
-            preciseApkVersion = precisePreReleaseApkVersion
-        )
-        val stableUpdateIgnored = rawStableHasUpdate &&
-            (
-                suppressAllReleaseUpdates ||
-                    item.ignoreMode == GitHubTrackedIgnoreMode.CurrentStable &&
-                    githubReleaseIgnoreKeyMatches(
-                        storedKey = item.ignoredStableReleaseKey,
-                        releaseKey = stableReleaseIgnoreKey
-                    )
-            )
-        val preReleaseUpdateIgnored = rawHasPreReleaseUpdate &&
-            (
-                suppressAllReleaseUpdates ||
-                    item.ignoreMode == GitHubTrackedIgnoreMode.CurrentPreRelease &&
-                    githubReleaseIgnoreKeyMatches(
-                        storedKey = item.ignoredPreReleaseKey,
-                        releaseKey = preReleaseIgnoreKey
-                    )
-            )
-        val stableHasUpdate = rawStableHasUpdate && !stableUpdateIgnored
-        val hasPreReleaseUpdate = rawHasPreReleaseUpdate && !preReleaseUpdateIgnored
-        val recommendsPreRelease = hasPreReleaseUpdate &&
-            (item.preferPreRelease || (isLocalPreReleaseInstalled && !stableHasUpdate))
-        val hasUpdate = stableHasUpdate || recommendsPreRelease
-        val showIgnoredStatus =
-            suppressAllReleaseUpdates ||
-                stableUpdateIgnored ||
-                preReleaseUpdateIgnored
-
-        val preReleaseInfo = when {
-            inspectPreRelease && latestPre != null -> latestPre.displayVersion
-            inspectPreRelease && isLocalPreReleaseInstalled && matchedEntry != null -> matchedEntry.displayVersion
-            else -> ""
-        }
-        val showPreReleaseInfo = inspectPreRelease && preReleaseInfo.isNotBlank()
-        val releaseHint = when {
-            hasOnlyPreReleases && !inspectPreRelease -> GitHubTrackedReleaseStatus.ONLY_PRERELEASES_HINT_MESSAGE
-            else -> ""
-        }
-
-        val stableCompared = stableCmp != null || preciseStableCmp != null
-        val status = when {
-            recommendsPreRelease -> GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable
-            stableHasUpdate -> GitHubTrackedReleaseStatus.UpdateAvailable
-            hasPreReleaseUpdate -> GitHubTrackedReleaseStatus.PreReleaseOptional
-            showIgnoredStatus -> GitHubTrackedReleaseStatus.Ignored
-            inspectPreRelease && isLocalPreReleaseInstalled -> GitHubTrackedReleaseStatus.PreReleaseTracked
-            stableCompared && !hasUpdate -> GitHubTrackedReleaseStatus.UpToDate
-            matchedEntry != null -> GitHubTrackedReleaseStatus.MatchedRelease
-            else -> GitHubTrackedReleaseStatus.ComparisonUncertain
-        }
-
         return GitHubTrackedReleaseCheck(
             strategyId = snapshot.strategyId,
             localVersion = localVersion,
             localVersionCode = localVersionCode,
-            matchedRelease = matchedEntry,
-            stableRelease = latestStable,
-            preRelease = latestPre,
-            hasStableRelease = snapshot.hasStableRelease,
-            hasUpdate = hasUpdate,
-            hasPreReleaseUpdate = hasPreReleaseUpdate,
-            recommendsPreRelease = recommendsPreRelease,
-            isPreReleaseInstalled = isLocalPreReleaseInstalled,
-            preReleaseInfo = preReleaseInfo,
-            showPreReleaseInfo = showPreReleaseInfo,
-            releaseHint = releaseHint,
+            matchedRelease = evaluation.matchedRelease,
+            stableRelease = evaluation.stableRelease,
+            preRelease = evaluation.preRelease,
+            hasStableRelease = evaluation.hasStableRelease,
+            hasUpdate = evaluation.hasUpdate,
+            hasPreReleaseUpdate = evaluation.hasPreReleaseUpdate,
+            recommendsPreRelease = evaluation.recommendsPreRelease,
+            isPreReleaseInstalled = evaluation.isPreReleaseInstalled,
+            preReleaseInfo = evaluation.preReleaseInfo,
+            showPreReleaseInfo = evaluation.showPreReleaseInfo,
+            releaseHint = evaluation.releaseHint,
             preciseStableApkVersion = preciseStableApkVersion,
             precisePreApkVersion = precisePreReleaseApkVersion,
             repositoryArchived = snapshot.repositoryArchived,
@@ -496,8 +378,8 @@ object GitHubReleaseCheckService {
             upstreamPushedAtMillis = snapshot.upstreamPushedAtMillis,
             repositoryProfile = repositoryProfile,
             sourceConfigSignature = sourceConfigSignature,
-            status = status,
-            message = status.defaultMessage
+            status = evaluation.status,
+            message = evaluation.status.defaultMessage,
         )
     }
 
