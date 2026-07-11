@@ -164,6 +164,7 @@ object AppBackgroundScheduler {
         if (config == null || !WebDavSyncStore.isAutoSyncEnabled()) {
             alarmManager.cancel(pending)
             pending.cancel()
+            WebDavAutoSyncJobService.cancel(appContext)
             return
         }
         val provider = WebDavSyncStore.loadProvider()
@@ -182,20 +183,14 @@ object AppBackgroundScheduler {
         } else {
             nowMs + firstWebDavAutoSyncDelayMs(provider)
         }
-        val precision =
-            if (summary?.status == WebDavAutoSyncStatus.Failed) {
-                BackgroundAlarmPrecision.Prompt
-            } else {
-                BackgroundAlarmPrecision.Windowed
-            }
-        scheduleWithAlarmManager(
-            alarmManager = alarmManager,
-            schedule = BackgroundAlarmSchedule(
-                triggerAtMillis = dueAtMs.coerceAtLeast(nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS),
-                workload = BackgroundAlarmWorkload.RoutineSync,
-                precision = precision,
+        alarmManager.cancel(pending)
+        pending.cancel()
+        WebDavAutoSyncJobService.scheduleAt(
+            context = appContext,
+            dueAtMillis = dueAtMs.coerceAtLeast(
+                nowMs + AppBackgroundSchedulePolicy.MIN_ALARM_DELAY_MS,
             ),
-            pendingIntent = pending,
+            replacePending = summary?.status == WebDavAutoSyncStatus.Failed,
         )
     }
 

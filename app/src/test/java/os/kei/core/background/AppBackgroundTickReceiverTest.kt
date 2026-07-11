@@ -70,6 +70,42 @@ class AppBackgroundTickReceiverTest {
             jobInfo.extras.getLong("github_background_enqueued_at_ms"),
         )
     }
+
+    @Test
+    fun `legacy WebDAV alarm enqueues a network constrained job`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val scheduler = context.getSystemService(JobScheduler::class.java)
+        scheduler.cancel(WEBDAV_AUTO_SYNC_JOB_ID)
+
+        AppBackgroundTickReceiver().onReceive(
+            context,
+            Intent(context, AppBackgroundTickReceiver::class.java).apply {
+                action = AppBackgroundTickReceiver.ACTION_WEBDAV_SYNC
+            },
+        )
+
+        val pendingJob = scheduler.getPendingJob(WEBDAV_AUTO_SYNC_JOB_ID)
+        assertNotNull(pendingJob)
+        assertEquals(WebDavAutoSyncJobService::class.java.name, pendingJob.service.className)
+        assertNotNull(pendingJob.requiredNetwork)
+        assertTrue(pendingJob.isPersisted)
+    }
+
+    @Test
+    fun `WebDAV job preserves due time and waits for network`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val jobInfo = WebDavAutoSyncJobService.buildJobInfo(
+            context = context,
+            dueAtMillis = 160_000L,
+            nowMillis = 100_000L,
+        )
+
+        assertEquals(60_000L, jobInfo.minLatencyMillis)
+        assertEquals(160_000L, jobInfo.extras.getLong("webdav_auto_sync_due_at_ms"))
+        assertEquals(100_000L, jobInfo.extras.getLong("webdav_auto_sync_enqueued_at_ms"))
+        assertNotNull(jobInfo.requiredNetwork)
+        assertTrue(jobInfo.isPersisted)
+    }
 }
 
 class BackgroundTickReceiverTestApp : Application()

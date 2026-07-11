@@ -64,10 +64,10 @@ internal object WebDavAutoSync {
         scope.launch { runLaunchSync(appContext) }
     }
 
-    suspend fun handleScheduledTick(context: Context) {
+    suspend fun handleScheduledTick(context: Context): WebDavAutoSyncSummary? {
         val appContext = context.applicationContext
-        val config = WebDavSyncStore.loadConfig() ?: return
-        if (!WebDavSyncStore.isAutoSyncEnabled()) return
+        val config = WebDavSyncStore.loadConfig() ?: return null
+        if (!WebDavSyncStore.isAutoSyncEnabled()) return null
         val nowMs = System.currentTimeMillis()
         val cooldownMs = autoSyncScheduleCooldownMs(
             intervalMs = WebDavSyncStore.getAutoSyncIntervalMs(),
@@ -80,9 +80,9 @@ internal object WebDavAutoSync {
                 cooldownMs = cooldownMs,
             )
         ) {
-            return
+            return null
         }
-        runAutoSync(appContext, config, reason = "alarm")
+        return runAutoSync(appContext, config, reason = "job")
     }
 
     fun handleScheduledTickTimeout(context: Context) {

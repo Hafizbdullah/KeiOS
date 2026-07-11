@@ -18,6 +18,13 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
             }
             return
         }
+        if (action == ACTION_WEBDAV_SYNC) {
+            val enqueued = WebDavAutoSyncJobService.enqueueNow(context)
+            if (!enqueued) {
+                AppBackgroundScheduler.onTickHandled(context.applicationContext, action)
+            }
+            return
+        }
         val rescheduled = AtomicBoolean(false)
         val rescheduleOnce: suspend (Context) -> Unit = { appContext ->
             if (rescheduled.compareAndSet(false, true)) {
@@ -26,7 +33,6 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
         }
         val recoverTimeout: suspend (Context) -> Unit = { appContext ->
             when (action) {
-                ACTION_WEBDAV_SYNC -> WebDavAutoSync.handleScheduledTickTimeout(appContext)
                 else -> Unit
             }
             rescheduleOnce(appContext)
@@ -42,7 +48,6 @@ class AppBackgroundTickReceiver : BroadcastReceiver() {
             try {
                 when (action) {
                     ACTION_BA_AP_TICK -> AppForegroundInfoHandler.handleBaApTick(appContext)
-                    ACTION_WEBDAV_SYNC -> WebDavAutoSync.handleScheduledTick(appContext)
                 }
             } finally {
                 rescheduleOnce(appContext)
