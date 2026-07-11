@@ -113,7 +113,7 @@ object GitHubVersionUtils {
         )?.order?.legacyValue
     }
 
-    internal fun referToSameReleaseVersion(
+    fun referToSameReleaseVersion(
         leftCandidates: List<GitHubVersionCandidate>,
         rightCandidates: List<GitHubVersionCandidate>,
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority,
@@ -125,7 +125,7 @@ object GitHubVersionUtils {
         )
     }
 
-    internal fun hasComparableVersionCandidates(
+    fun hasComparableVersionCandidates(
         candidates: List<GitHubVersionCandidate>,
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority,
     ): Boolean {
@@ -135,7 +135,7 @@ object GitHubVersionUtils {
         )
     }
 
-    internal fun hasMeaningfulPreReleaseVersionCandidates(
+    fun hasMeaningfulPreReleaseVersionCandidates(
         candidates: List<GitHubVersionCandidate>,
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority,
     ): Boolean {
@@ -145,7 +145,7 @@ object GitHubVersionUtils {
         )
     }
 
-    internal fun isRelevantPreRelease(
+    fun isRelevantPreRelease(
         preReleaseCandidates: List<GitHubVersionCandidate>,
         stableCandidates: List<GitHubVersionCandidate>,
         preReleaseUpdatedAtMillis: Long? = null,

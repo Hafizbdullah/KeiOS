@@ -127,6 +127,22 @@ class VersioningEngineTest {
     }
 
     @Test
+    fun `complete semantic candidate outranks a revision only tag alias`() {
+        val alpha = candidates(
+            0 to "Version.26.4.Alpha2_C384",
+        )
+        val canaryAlias = candidates(
+            0 to "Canary.Version_C384",
+            1 to "Canary Build Version.26.4.Canary_C384",
+        )
+
+        assertEquals(
+            VersionOrder.Newer,
+            VersioningEngine.compareRemoteCandidateSets(alpha, canaryAlias)?.order,
+        )
+    }
+
+    @Test
     fun `release ranker uses publication time after semantic equality`() {
         val older = ReleaseRankingEvidence(
             versionCandidates = candidates(0 to "v1.0.0"),
@@ -140,6 +156,38 @@ class VersioningEngineTest {
         )
 
         assertTrue(ReleaseCandidateRanker.compare(older, newer) < 0)
+    }
+
+    @Test
+    fun `release ranker keeps structured semantic order ahead of publication time`() {
+        val older = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v1.9.0"),
+            publishedAtMillis = 200L,
+            stableKey = "older-version",
+        )
+        val newer = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v2.0.0"),
+            publishedAtMillis = 100L,
+            stableKey = "newer-version",
+        )
+
+        assertTrue(ReleaseCandidateRanker.compare(older, newer) < 0)
+    }
+
+    @Test
+    fun `release ranker uses publication time for low confidence date tag conflicts`() {
+        val dateTag = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "r20260410"),
+            publishedAtMillis = 100L,
+            stableKey = "date-tag",
+        )
+        val semanticTag = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v2.7.0"),
+            publishedAtMillis = 200L,
+            stableKey = "semantic-tag",
+        )
+
+        assertTrue(ReleaseCandidateRanker.compare(dateTag, semanticTag) < 0)
     }
 
     @Test

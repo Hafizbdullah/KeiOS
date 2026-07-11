@@ -9,7 +9,11 @@ object ReleaseCandidateRanker {
             leftCandidates = left.versionCandidates,
             rightCandidates = right.versionCandidates,
         )
-        if (versionComparison != null && versionComparison.order != VersionOrder.Same) {
+        if (
+            versionComparison != null &&
+            versionComparison.order != VersionOrder.Same &&
+            versionComparison.confidence != VersionConfidence.Low
+        ) {
             return versionComparison.order.legacyValue
         }
 
@@ -18,6 +22,10 @@ object ReleaseCandidateRanker {
             right.publishedAtMillis ?: Long.MIN_VALUE,
         )
         if (publishedComparison != 0) return publishedComparison
+
+        if (versionComparison != null && versionComparison.order != VersionOrder.Same) {
+            return versionComparison.order.legacyValue
+        }
 
         return left.stableKey.compareTo(right.stableKey)
     }

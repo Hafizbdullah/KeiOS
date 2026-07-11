@@ -7,6 +7,7 @@ import org.xmlpull.v1.XmlPullParserFactory
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubReleaseSignalSource
@@ -443,31 +444,11 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
     }
 
     private fun pickLatestStableEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull(
-            compareBy<GitHubAtomReleaseEntry> { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenComparator { left, right ->
-                    GitHubVersionUtils.compareStructuredCandidateSets(
-                        left.versionCandidates,
-                        right.versionCandidates
-                    ) ?: 0
-                }
-        )
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private fun pickLatestPreReleaseEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull { left, right ->
-            val byPublishedAt = compareValues(
-                left.updatedAtMillis ?: Long.MIN_VALUE,
-                right.updatedAtMillis ?: Long.MIN_VALUE
-            )
-            when {
-                byPublishedAt != 0 -> byPublishedAt
-                else -> GitHubVersionUtils.compareStructuredCandidateSets(
-                    left.versionCandidates,
-                    right.versionCandidates
-                ) ?: 0
-            }
-        }
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private fun extractTag(

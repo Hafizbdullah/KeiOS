@@ -15,6 +15,7 @@ import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitRepositoryPlatform
 import os.kei.feature.github.model.GitRepositoryTrackIdentity
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -197,7 +198,7 @@ class GitRepositoryReleaseStrategy(
     ): Result<GitHubRepositoryReleaseSnapshot> = runCatching {
         val sortedEntries = entries
             .distinctBy { it.tag.lowercase(Locale.ROOT) }
-            .sortedWith(entryComparator.reversed())
+            .let(GitHubReleaseCandidateRanker::newestFirst)
         val latestStableEntry = pickLatestStableEntry(sortedEntries.filter { !it.isLikelyPreRelease })
         val latestPreEntry = pickLatestPreReleaseEntry(
             sortedEntries.filter { entry ->
@@ -526,11 +527,11 @@ class GitRepositoryReleaseStrategy(
     }
 
     private fun pickLatestStableEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull(entryComparator)
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private fun pickLatestPreReleaseEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull(entryComparator)
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private val GitHubAtomReleaseEntry.mergeKey: String
@@ -547,24 +548,6 @@ class GitRepositoryReleaseStrategy(
         private val leadingVersionPrefixRegex = Regex("""^v(?=\d)""", RegexOption.IGNORE_CASE)
         private val snapshotCache =
             ConcurrentHashMap<String, GitRepositoryCachedSnapshot>()
-        private val entryComparator = Comparator<GitHubAtomReleaseEntry> { left, right ->
-            val versionCompare =
-                GitHubVersionUtils.compareStructuredCandidateSets(
-                    left.versionCandidates,
-                    right.versionCandidates
-                )
-            if (versionCompare != null && versionCompare != 0) {
-                versionCompare
-            } else {
-                val updatedCompare =
-                    compareValues(
-                        left.updatedAtMillis ?: Long.MIN_VALUE,
-                        right.updatedAtMillis ?: Long.MIN_VALUE
-                    )
-                if (updatedCompare != 0) updatedCompare else left.link.compareTo(right.link)
-            }
-        }
-
         private val defaultClient: OkHttpClient by lazy {
             SharedHttpClient.base.newBuilder()
                 .callTimeout(18.seconds)

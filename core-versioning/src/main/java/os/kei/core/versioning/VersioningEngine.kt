@@ -306,10 +306,12 @@ object VersioningEngine {
             candidate.looksLikeDateStamp -> 420
             else -> 0
         }
+        val revisionAliasPenalty = if (candidate.looksLikeRevisionOnlyAlias) 220 else 0
         return sourceReliabilityBonus(candidate.sourcePriority) +
             candidate.semanticDepth * 70 +
             candidate.parts.revisionNumbers.size * 15 -
-            datePenalty
+            datePenalty -
+            revisionAliasPenalty
     }
 
     private fun canonicalizeCandidate(raw: String): String {
@@ -369,6 +371,8 @@ object VersioningEngine {
                 looksLikeDateStamp = parts.numbers.size == 1 && parts.numbers.first().isDateStamp(),
                 looksLikeDatePrefixedSemantic =
                     parts.numbers.size >= 3 && parts.numbers.first().isDateStamp(),
+                looksLikeRevisionOnlyAlias =
+                    parts.numbers.size == 1 && revisionTokenRegex.containsMatchIn(normalized),
             )
         }
     }
@@ -386,6 +390,9 @@ object VersioningEngine {
             exact -> VersionConfidence.Exact
             sharedPrefix >= 2 -> VersionConfidence.High
             sharedPrefix == 1 -> VersionConfidence.Medium
+            reason == VersionComparisonReason.ReleaseRanking &&
+                left.isStructuredReleaseCandidate() &&
+                right.isStructuredReleaseCandidate() -> VersionConfidence.Medium
             else -> VersionConfidence.Low
         }
         return VersionComparison(
@@ -437,6 +444,13 @@ object VersioningEngine {
             3 -> 160
             else -> 40
         }
+    }
+
+    private fun ComparableVersionCandidate.isStructuredReleaseCandidate(): Boolean {
+        return semanticDepth >= 2 &&
+            !looksLikeDateStamp &&
+            !looksLikeDatePrefixedSemantic &&
+            !looksLikeRevisionOnlyAlias
     }
 
     private fun versionPartsSpecificityScore(parts: VersionParts): Int {
@@ -594,6 +608,7 @@ object VersioningEngine {
         val semanticDepth: Int,
         val looksLikeDateStamp: Boolean,
         val looksLikeDatePrefixedSemantic: Boolean,
+        val looksLikeRevisionOnlyAlias: Boolean,
     )
 
     private data class ComparableCandidateKey(

@@ -16,6 +16,7 @@ import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitHubApiAuthMode
 import os.kei.feature.github.model.GitHubApiCredentialStatus
 import os.kei.feature.github.model.GitHubAtomFeed
@@ -417,31 +418,11 @@ class GitHubApiTokenReleaseStrategy(
     }
 
     private fun pickLatestStableEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull(
-            compareBy<GitHubAtomReleaseEntry> { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenComparator { left, right ->
-                    GitHubVersionUtils.compareStructuredCandidateSets(
-                        left.versionCandidates,
-                        right.versionCandidates
-                    ) ?: 0
-                }
-        )
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private fun pickLatestPreReleaseEntry(entries: List<GitHubAtomReleaseEntry>): GitHubAtomReleaseEntry? {
-        return entries.maxWithOrNull { left, right ->
-            val byPublishedAt = compareValues(
-                left.updatedAtMillis ?: Long.MIN_VALUE,
-                right.updatedAtMillis ?: Long.MIN_VALUE
-            )
-            when {
-                byPublishedAt != 0 -> byPublishedAt
-                else -> GitHubVersionUtils.compareStructuredCandidateSets(
-                    left.versionCandidates,
-                    right.versionCandidates
-                ) ?: 0
-            }
-        }
+        return GitHubReleaseCandidateRanker.latest(entries)
     }
 
     private fun GitHubAtomReleaseEntry.toReleaseSignal(): GitHubReleaseVersionSignals {
