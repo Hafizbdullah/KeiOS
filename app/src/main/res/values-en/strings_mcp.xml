@@ -73,6 +73,8 @@
     <string name="mcp_overview_label_clients_short">Clients</string>
     <string name="mcp_overview_label_token_short">Token</string>
     <string name="mcp_clients_count">%1$d clients</string>
+    <string name="mcp_overview_clients_pill">%1$d</string>
+    <string name="mcp_overview_token_pill">Token %1$s</string>
     <string name="mcp_network_mode_lan_accessible">LAN accessible</string>
     <string name="mcp_network_mode_local_only_access">Local-only access</string>
     <string name="mcp_network_mode_local_only_short">Local only</string>

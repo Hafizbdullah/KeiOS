@@ -7,9 +7,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
-import os.kei.ui.page.main.mcp.model.McpOverviewMetric
 import os.kei.ui.page.main.mcp.model.toMcpTokenPreview
 import os.kei.ui.page.main.mcp.util.formatMcpUptimeText
+import os.kei.ui.page.main.widget.core.AppOverviewPill
+
+@Immutable
+internal data class McpOverviewPills(
+    val service: AppOverviewPill,
+    val endpoint: AppOverviewPill,
+    val network: AppOverviewPill,
+    val clients: AppOverviewPill,
+    val token: AppOverviewPill,
+)
 
 @Immutable
 internal data class McpPageOverviewState(
@@ -17,7 +26,7 @@ internal data class McpPageOverviewState(
     val overviewCardColor: Color,
     val overviewBorderColor: Color,
     val runtimeText: String,
-    val overviewMetrics: List<McpOverviewMetric>
+    val overviewPills: McpOverviewPills
 )
 
 @Composable
@@ -26,8 +35,8 @@ internal fun rememberMcpPageOverviewState(
     uiState: McpServerUiState,
     runtimeNowMs: Long,
     isDark: Boolean,
-    titleColor: Color,
     subtitleColor: Color,
+    infoColor: Color,
     runningColor: Color,
     stoppedColor: Color,
     runtimePendingText: String
@@ -58,68 +67,51 @@ internal fun rememberMcpPageOverviewState(
     val tokenPreview = remember(uiState.authToken) {
         uiState.authToken.toMcpTokenPreview()
     }.ifBlank { context.getString(R.string.common_na) }
-    val overviewMetrics = remember(
+    val endpoint = remember(bindAddress, uiState.port, uiState.endpointPath) {
+        val host = if (':' in bindAddress && !bindAddress.startsWith("[")) "[$bindAddress]" else bindAddress
+        "$host:${uiState.port}${uiState.endpointPath}"
+    }
+    val overviewPills = remember(
         context,
         uiState.serverName,
-        uiState.endpointPath,
-        uiState.port,
         uiState.allowExternal,
         uiState.connectedClients,
-        bindAddress,
+        endpoint,
         tokenPreview,
+        overviewAccentColor,
         runningColor,
         subtitleColor,
-        titleColor
+        infoColor,
+        uiState.authToken,
     ) {
-        listOf(
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_service_short),
-                value = uiState.serverName.ifBlank { context.getString(R.string.mcp_default_service_name) },
-                spanFullWidth = true,
-                valueMaxLines = 1,
-                labelWeight = 0.24f,
-                valueWeight = 0.76f
+        McpOverviewPills(
+            service = AppOverviewPill(
+                label = uiState.serverName.ifBlank { context.getString(R.string.mcp_default_service_name) },
+                color = infoColor,
             ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_endpoint_short),
-                value = uiState.endpointPath,
-                valueMaxLines = 1,
-                labelWeight = 0.34f,
-                valueWeight = 0.66f
+            endpoint = AppOverviewPill(
+                label = endpoint,
+                color = infoColor,
             ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_bind_short),
-                value = bindAddress,
-                valueMaxLines = 1,
-                labelWeight = 0.24f,
-                valueWeight = 0.76f
-            ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_port_short),
-                value = uiState.port.toString()
-            ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_network_short),
-                value = if (uiState.allowExternal) {
+            network = AppOverviewPill(
+                label = if (uiState.allowExternal) {
                     context.getString(R.string.mcp_network_mode_lan_short)
                 } else {
                     context.getString(R.string.mcp_network_mode_local_only_short)
-                }
+                },
+                color = overviewAccentColor,
             ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_clients_short),
-                value = context.getString(R.string.mcp_clients_count, uiState.connectedClients),
-                valueColor = if (uiState.connectedClients > 0) runningColor else subtitleColor,
-                valueMaxLines = 1
+            clients = AppOverviewPill(
+                label = context.getString(
+                    R.string.mcp_overview_clients_pill,
+                    uiState.connectedClients,
+                ),
+                color = if (uiState.connectedClients > 0) runningColor else subtitleColor,
             ),
-            McpOverviewMetric(
-                label = context.getString(R.string.mcp_overview_label_token_short),
-                value = tokenPreview,
-                valueColor = titleColor,
-                valueMaxLines = 1,
-                labelWeight = 0.34f,
-                valueWeight = 0.66f
-            )
+            token = AppOverviewPill(
+                label = context.getString(R.string.mcp_overview_token_pill, tokenPreview),
+                color = if (uiState.authToken.isBlank()) subtitleColor else infoColor,
+            ),
         )
     }
     return remember(
@@ -127,14 +119,14 @@ internal fun rememberMcpPageOverviewState(
         overviewCardColor,
         overviewBorderColor,
         runtimeText,
-        overviewMetrics
+        overviewPills
     ) {
         McpPageOverviewState(
             overviewAccentColor = overviewAccentColor,
             overviewCardColor = overviewCardColor,
             overviewBorderColor = overviewBorderColor,
             runtimeText = runtimeText,
-            overviewMetrics = overviewMetrics
+            overviewPills = overviewPills
         )
     }
 }

@@ -64,14 +64,13 @@ internal fun McpPageContent(
                 McpOverviewCardSection(
                     backdrop = backdrops.content,
                     titleColor = titleColor,
-                    subtitleColor = subtitleColor,
                     overviewCardColor = overviewState.overviewCardColor,
                     overviewBorderColor = overviewState.overviewBorderColor,
                     overviewAccentColor = overviewState.overviewAccentColor,
                     runtimeText = overviewState.runtimeText,
                     isDark = isDark,
                     running = uiState.running,
-                    overviewMetrics = overviewState.overviewMetrics,
+                    overviewPills = overviewState.overviewPills,
                     onToggleServer = actions.onToggleServer,
                     onOpenEditSheet = actions.onOpenEditSheet,
                 )
