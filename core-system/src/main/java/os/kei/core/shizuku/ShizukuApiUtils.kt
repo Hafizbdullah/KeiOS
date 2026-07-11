@@ -175,7 +175,8 @@ class ShizukuApiUtils(
                 }
 
                 Shizuku.shouldShowRequestPermissionRationale() -> {
-                    publishStatus("Shizuku permission denied permanently")
+                    publishStatus("Requesting Shizuku permission again...")
+                    Shizuku.requestPermission(requestCode)
                 }
 
                 else -> {

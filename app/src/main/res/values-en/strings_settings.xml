@@ -281,7 +281,7 @@
     <string name="settings_shizuku_status_pre_v11_unsupported">Version too old</string>
     <string name="settings_shizuku_status_permission_not_granted">Shizuku permission not granted</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku permission denied</string>
-    <string name="settings_shizuku_status_permission_denied_permanently">Permission denied permanently</string>
+    <string name="settings_shizuku_status_requesting_permission_again">Requesting permission again…</string>
     <string name="settings_shizuku_status_requesting_permission">Requesting permission…</string>
     <string name="settings_shizuku_status_process_api_unavailable">Process API unavailable</string>
     <string name="settings_shizuku_status_unsupported_service_uid">Unsupported UID: %1$s</string>

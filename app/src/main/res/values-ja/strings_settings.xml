@@ -281,7 +281,7 @@
     <string name="settings_shizuku_status_pre_v11_unsupported">バージョンが古い</string>
     <string name="settings_shizuku_status_permission_not_granted">Shizuku は未認可です</string>
     <string name="settings_shizuku_status_permission_denied">Shizuku 認可が拒否されました</string>
-    <string name="settings_shizuku_status_permission_denied_permanently">認可を恒久拒否</string>
+    <string name="settings_shizuku_status_requesting_permission_again">認可を再リクエスト中…</string>
     <string name="settings_shizuku_status_requesting_permission">認可リクエスト中…</string>
     <string name="settings_shizuku_status_process_api_unavailable">プロセス API 不可</string>
     <string name="settings_shizuku_status_unsupported_service_uid">非対応 UID: %1$s</string>
