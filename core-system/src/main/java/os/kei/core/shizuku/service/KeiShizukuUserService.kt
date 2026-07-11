@@ -2,22 +2,40 @@ package os.kei.core.shizuku.service
 
 import android.content.Context
 import android.os.IBinder
+import android.system.Os
+import android.system.OsConstants
 import androidx.annotation.Keep
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 
 class KeiShizukuUserService() : IShizukuCommandService.Stub() {
+    private val threadIndex = AtomicInteger(0)
     private val executor: ExecutorService =
-        Executors.newCachedThreadPool { runnable ->
-            Thread(runnable, "KeiOS-ShizukuUserService").apply { isDaemon = true }
-        }
+        ThreadPoolExecutor(
+            MAX_CONCURRENT_COMMANDS,
+            MAX_CONCURRENT_COMMANDS,
+            30L,
+            TimeUnit.SECONDS,
+            ArrayBlockingQueue(MAX_QUEUED_COMMANDS),
+            { runnable ->
+                Thread(
+                    runnable,
+                    "KeiOS-ShizukuCommand-${threadIndex.incrementAndGet()}",
+                ).apply { isDaemon = true }
+            },
+            ThreadPoolExecutor.AbortPolicy(),
+        ).apply { allowCoreThreadTimeOut(true) }
     private val commands = ConcurrentHashMap<String, RunningCommand>()
 
     @Keep
@@ -44,6 +62,18 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
             )
             return
         }
+        if (normalizedCommand.length > MAX_COMMAND_CHARS) {
+            callback.safeComplete(
+                stdout = "",
+                stderr = "Shizuku command exceeds $MAX_COMMAND_CHARS characters",
+                exitCode = null,
+                timedOut = false,
+                cancelled = false,
+                stdoutTruncated = false,
+                stderrTruncated = false,
+            )
+            return
+        }
         cancel(normalizedId)
         val running = RunningCommand(callback)
         commands[normalizedId] = running
@@ -56,14 +86,30 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
             return
         }
         val future =
-            executor.submit {
-                runCommand(
-                    commandId = normalizedId,
-                    command = normalizedCommand,
-                    timeoutMs = timeoutMs.coerceAtLeast(1L),
-                    maxOutputBytes = maxOutputBytes.coerceAtLeast(1),
-                    running = running,
+            try {
+                executor.submit {
+                    runCommand(
+                        commandId = normalizedId,
+                        command = normalizedCommand,
+                        timeoutMs = timeoutMs.coerceIn(1L, MAX_COMMAND_TIMEOUT_MS),
+                        maxOutputBytes = maxOutputBytes.coerceIn(1, MAX_OUTPUT_BYTES_PER_STREAM),
+                        running = running,
+                    )
+                }
+            } catch (_: RejectedExecutionException) {
+                commands.remove(normalizedId, running)
+                running.unlinkDeathRecipient()
+                running.completed.set(true)
+                callback.safeComplete(
+                    stdout = "",
+                    stderr = "Shizuku command capacity reached",
+                    exitCode = null,
+                    timedOut = false,
+                    cancelled = false,
+                    stdoutTruncated = false,
+                    stderrTruncated = false,
                 )
+                return
             }
         running.future = future
         if (running.cancelled.get()) {
@@ -74,6 +120,8 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
     override fun cancel(commandId: String) {
         commands.remove(commandId)?.cancel()
     }
+
+    override fun getServiceVersion(): Int = ShizukuUserServiceContract.VERSION
 
     override fun destroy() {
         commands.values.forEach(RunningCommand::cancel)
@@ -100,11 +148,13 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
                 cancelled = true
                 return
             }
-            process = ProcessBuilder("sh", "-c", command).start()
+            val startedCommand = startCommand(commandId, command)
+            process = startedCommand.process
             running.process = process
+            running.processPid = startedCommand.pid
             if (running.cancelled.get()) {
                 cancelled = true
-                process.terminate()
+                process.terminateTree(startedCommand.pid)
                 return
             }
             process.outputStream.closeQuietly()
@@ -116,14 +166,14 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
                 exitCode = process.exitValue()
             } else {
                 timedOut = true
-                process.terminate()
+                process.terminateTree(startedCommand.pid)
             }
             stdoutReader.join(READER_JOIN_TIMEOUT_MS)
             stderrReader.join(READER_JOIN_TIMEOUT_MS)
             publisher.publish(force = true)
         } catch (_: InterruptedException) {
             cancelled = true
-            process?.terminate()
+            process?.terminateTree(running.processPid)
             Thread.currentThread().interrupt()
         } catch (error: Throwable) {
             stderr.append(error.message?.ifBlank { null } ?: error.javaClass.simpleName)
@@ -177,12 +227,13 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
         val cancelled = AtomicBoolean(false)
         val completed = AtomicBoolean(false)
         @Volatile var process: Process? = null
+        @Volatile var processPid: Int? = null
         @Volatile var future: Future<*>? = null
         @Volatile var deathRecipient: IBinder.DeathRecipient? = null
 
         fun cancel() {
             cancelled.set(true)
-            process?.terminate()
+            process?.terminateTree(processPid)
             future?.cancel(true)
             unlinkDeathRecipient()
         }
@@ -246,6 +297,11 @@ class KeiShizukuUserService() : IShizukuCommandService.Stub() {
     }
 
     private companion object {
+        const val MAX_CONCURRENT_COMMANDS = 4
+        const val MAX_QUEUED_COMMANDS = 24
+        const val MAX_COMMAND_CHARS = 64 * 1024
+        const val MAX_COMMAND_TIMEOUT_MS = 10 * 60 * 1000L
+        const val MAX_OUTPUT_BYTES_PER_STREAM = 192 * 1024
         const val READER_JOIN_TIMEOUT_MS = 600L
         const val SNAPSHOT_INTERVAL_NANOS = 120_000_000L
     }
@@ -274,11 +330,113 @@ private fun IShizukuCommandCallback.safeComplete(
     }
 }
 
-private fun Process.terminate() {
+private fun startCommand(commandId: String, command: String): StartedCommand {
+    val pidFile = File("/data/local/tmp/.keios_command_$commandId.pid")
+    runCatching { pidFile.delete() }
+    val process =
+        ProcessBuilder(
+            "sh",
+            "-c",
+            "printf '%s' \"\$\$\" > \"\$0\"; exec sh -c \"\$1\"",
+            pidFile.absolutePath,
+            command,
+        ).start()
+    return try {
+        val pid =
+            repeatUntilNotNull(PID_CAPTURE_ATTEMPTS) {
+                pidFile.readTextOrNull()?.trim()?.toIntOrNull()?.takeIf { it > 0 }
+            }
+        StartedCommand(process = process, pid = pid)
+    } catch (error: InterruptedException) {
+        runCatching { process.destroyForcibly() }
+        throw error
+    } finally {
+        runCatching { pidFile.delete() }
+    }
+}
+
+private fun Process.terminateTree(rootPid: Int?) {
+    rootPid?.descendants()
+        ?.asReversed()
+        ?.forEach { childPid -> childPid.signalQuietly(OsConstants.SIGTERM) }
+    rootPid?.signalQuietly(OsConstants.SIGTERM)
     runCatching { destroy() }
     runCatching {
-        if (!waitFor(250L, TimeUnit.MILLISECONDS)) destroyForcibly()
+        if (!waitFor(250L, TimeUnit.MILLISECONDS)) {
+            rootPid?.descendants()
+                ?.asReversed()
+                ?.forEach { childPid -> childPid.signalQuietly(OsConstants.SIGKILL) }
+            rootPid?.signalQuietly(OsConstants.SIGKILL)
+            destroyForcibly()
+        }
     }
+}
+
+private inline fun <T> repeatUntilNotNull(attempts: Int, block: () -> T?): T? {
+    repeat(attempts) {
+        block()?.let { return it }
+        Thread.sleep(PID_CAPTURE_RETRY_MS)
+    }
+    return null
+}
+
+private fun File.readTextOrNull(): String? = runCatching { readText() }.getOrNull()
+
+private fun Int.descendants(): List<Int> {
+    val childPidsByParent =
+        runCatching {
+            val output =
+                ProcessBuilder("ps", "-A", "-o", "PID,PPID")
+                .start()
+                .also { it.outputStream.closeQuietly() }
+                .inputStream
+                .bufferedReader()
+                .use { it.readText() }
+            parseProcessParentMap(output)
+        }.getOrDefault(emptyMap())
+    return collectDescendantPids(this, childPidsByParent, MAX_DESCENDANT_PIDS)
+}
+
+internal fun parseProcessParentMap(output: String): Map<Int, List<Int>> =
+    output.lineSequence()
+        .mapNotNull { line ->
+            val columns = line.trim().split(Regex("\\s+"))
+            if (columns.size < 2) return@mapNotNull null
+            val pid = columns[0].toIntOrNull() ?: return@mapNotNull null
+            val parentPid = columns[1].toIntOrNull() ?: return@mapNotNull null
+            parentPid to pid
+        }.groupBy(
+            keySelector = Pair<Int, Int>::first,
+            valueTransform = Pair<Int, Int>::second,
+        )
+
+internal fun collectDescendantPids(
+    rootPid: Int,
+    childPidsByParent: Map<Int, List<Int>>,
+    limit: Int,
+): List<Int> {
+    val discovered = LinkedHashSet<Int>()
+    val visited = hashSetOf(rootPid)
+    val pending = ArrayDeque<Int>()
+    pending.add(rootPid)
+    while (pending.isNotEmpty() && discovered.size < limit.coerceAtLeast(0)) {
+        val parentPid = pending.removeFirst()
+        childPidsByParent[parentPid]
+            .orEmpty()
+            .asSequence()
+            .filter { visited.add(it) }
+            .forEach { childPid ->
+                if (discovered.size < limit.coerceAtLeast(0)) {
+                    discovered += childPid
+                    pending.addLast(childPid)
+                }
+            }
+    }
+    return discovered.toList()
+}
+
+private fun Int.signalQuietly(signal: Int) {
+    runCatching { Os.kill(this, signal) }
 }
 
 private fun Process.closeStreams() {
@@ -290,3 +448,12 @@ private fun Process.closeStreams() {
 private fun AutoCloseable.closeQuietly() {
     runCatching { close() }
 }
+
+private const val MAX_DESCENDANT_PIDS = 256
+private const val PID_CAPTURE_ATTEMPTS = 20
+private const val PID_CAPTURE_RETRY_MS = 5L
+
+private data class StartedCommand(
+    val process: Process,
+    val pid: Int?,
+)

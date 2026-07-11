@@ -14,4 +14,6 @@ interface IShizukuCommandService {
     ) = 1;
 
     void cancel(String commandId) = 2;
+
+    int getServiceVersion() = 3;
 }
