@@ -88,6 +88,7 @@ class ShizukuApiUtils(
     private var statusCallback: ((String) -> Unit)? = null
     @Volatile
     private var attached = false
+    private val listenerLock = Any()
     @Volatile
     private var cachedRuntimeState: CachedRuntimeState? = null
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -114,30 +115,54 @@ class ShizukuApiUtils(
     }
 
     fun attach(onStatusChanged: (String) -> Unit) {
-        statusCallback = onStatusChanged
-        if (!attached) {
-            runCatching {
-                Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
-                Shizuku.addBinderDeadListener(binderDeadListener)
-                Shizuku.addRequestPermissionResultListener(permissionResultListener)
-                attached = true
-            }.onFailure {
-                publishStatus("Shizuku init failed: ${it.javaClass.simpleName}")
+        synchronized(listenerLock) {
+            statusCallback = onStatusChanged
+            if (!attached) {
+                registerListeners().onFailure { error ->
+                    publishStatus("Shizuku init failed: ${error.javaClass.simpleName}")
+                }
             }
         }
         publishStatus(currentStatus())
     }
 
     fun detach() {
-        if (attached) {
-            runCatching {
-                Shizuku.removeBinderReceivedListener(binderReceivedListener)
-                Shizuku.removeBinderDeadListener(binderDeadListener)
-                Shizuku.removeRequestPermissionResultListener(permissionResultListener)
+        synchronized(listenerLock) {
+            statusCallback = null
+            if (attached) {
+                unregisterListeners()
             }
-            attached = false
         }
-        statusCallback = null
+    }
+
+    private fun registerListeners(): Result<Unit> = runCatching {
+        var binderReceivedRegistered = false
+        var binderDeadRegistered = false
+        try {
+            Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+            binderReceivedRegistered = true
+            Shizuku.addBinderDeadListener(binderDeadListener)
+            binderDeadRegistered = true
+            Shizuku.addRequestPermissionResultListener(permissionResultListener)
+            attached = true
+        } catch (error: Throwable) {
+            if (binderReceivedRegistered) {
+                runCatching { Shizuku.removeBinderReceivedListener(binderReceivedListener) }
+            }
+            if (binderDeadRegistered) {
+                runCatching { Shizuku.removeBinderDeadListener(binderDeadListener) }
+            }
+            runCatching { Shizuku.removeRequestPermissionResultListener(permissionResultListener) }
+            attached = false
+            throw error
+        }
+    }
+
+    private fun unregisterListeners() {
+        runCatching { Shizuku.removeBinderReceivedListener(binderReceivedListener) }
+        runCatching { Shizuku.removeBinderDeadListener(binderDeadListener) }
+        runCatching { Shizuku.removeRequestPermissionResultListener(permissionResultListener) }
+        attached = false
     }
 
     fun requestPermissionIfNeeded() {
@@ -445,12 +470,21 @@ class ShizukuApiUtils(
     private fun publishStatus(message: String) {
         val callback = statusCallback ?: return
         if (Looper.myLooper() == Looper.getMainLooper()) {
-            callback(message)
+            callback.publishStatusSafely(message)
         } else {
             mainHandler.post {
-                statusCallback?.invoke(message)
+                if (statusCallback === callback) {
+                    callback.publishStatusSafely(message)
+                }
             }
         }
+    }
+
+    private fun ((String) -> Unit).publishStatusSafely(message: String) {
+        runCatching { invoke(message) }
+            .onFailure { error ->
+                AppLogger.w(TAG, "Status callback failed: ${error.javaClass.simpleName}", error)
+            }
     }
 
     companion object {
