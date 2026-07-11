@@ -8,6 +8,25 @@ import kotlin.test.assertTrue
 
 class VersioningEngineTest {
     @Test
+    fun `hma oss release suffix compares by build number`() {
+        assertOrder(
+            expected = VersionOrder.Same,
+            localVersion = "oss-164",
+            remoteVersion = "oss-164",
+        )
+        assertOrder(
+            expected = VersionOrder.Older,
+            localVersion = "oss-162",
+            remoteVersion = "oss-164",
+        )
+        assertOrder(
+            expected = VersionOrder.Same,
+            localVersion = "oss-164 (7304647)",
+            remoteVersion = "oss-164",
+        )
+    }
+
+    @Test
     fun `unstable suffix is classified as development channel`() {
         assertEquals(
             VersionChannel.DEV,

@@ -18,6 +18,9 @@ const val GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE =
 fun GitHubReleaseAssetFile.isGitHubActionsApkArtifactArchive(): Boolean =
     contentType.equals(GITHUB_ACTIONS_APK_ARTIFACT_CONTENT_TYPE, ignoreCase = true)
 
+fun GitHubReleaseAssetFile.isPotentialNestedApkArchive(): Boolean =
+    isGitHubActionsApkArtifactArchive() || name.endsWith(".zip", ignoreCase = true)
+
 data class GitHubReleaseAssetBundle(
     val releaseName: String,
     val tagName: String,

@@ -19,10 +19,44 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import java.util.zip.CRC32
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GitHubApkManifestReaderTest {
+    @Test
+    fun `hma release zip exposes nested manager manifest`() = runBlocking {
+        val managerApk = apkWithManifestAndNativeLib(
+            manifestBytes = BinaryManifestFixture.build(
+                packageName = "org.frknkrc44.hma_oss",
+                versionName = "oss-164",
+                versionCode = 7_304_647L,
+            ),
+        )
+        val releaseZip = zipWithStoredEntry("manager.apk", managerApk)
+        MockWebServer().use { server ->
+            server.dispatcher = rangeDispatcher(releaseZip)
+            val reader = GitHubApkManifestReader(
+                zipEntryReader = RemoteZipEntryReader(client = OkHttpClient()),
+            )
+
+            val info = reader.inspect(
+                asset = GitHubReleaseAssetFile(
+                    name = "HMA-OSS-ZYGISK-oss-164-release.zip",
+                    downloadUrl = server.url("/release.zip").toString(),
+                    sizeBytes = releaseZip.size.toLong(),
+                    downloadCount = 1,
+                ),
+                lookupConfig = GitHubLookupConfig(),
+            ).getOrThrow()
+
+            assertEquals("org.frknkrc44.hma_oss", info.packageName)
+            assertEquals("oss-164", info.versionName)
+            assertEquals("7304647", info.versionCode)
+            assertTrue(server.requestCount <= 6)
+        }
+    }
+
     @Test
     fun `inspect reuses one zip directory for manifest and entry metadata`() = runBlocking {
         val apkBytes = apkWithManifestAndNativeLib(
@@ -220,6 +254,27 @@ class GitHubApkManifestReaderTest {
             zip.closeEntry()
             zip.putNextEntry(ZipEntry("lib/arm64-v8a/libfixture.so"))
             zip.write(byteArrayOf(1, 2, 3, 4))
+            zip.closeEntry()
+        }
+        return output.toByteArray()
+    }
+
+    private fun zipWithStoredEntry(
+        name: String,
+        bytes: ByteArray,
+    ): ByteArray {
+        val crc = CRC32().apply { update(bytes) }
+        val output = ByteArrayOutputStream()
+        ZipOutputStream(output).use { zip ->
+            zip.putNextEntry(
+                ZipEntry(name).apply {
+                    method = ZipEntry.STORED
+                    size = bytes.size.toLong()
+                    compressedSize = bytes.size.toLong()
+                    this.crc = crc.value
+                },
+            )
+            zip.write(bytes)
             zip.closeEntry()
         }
         return output.toByteArray()

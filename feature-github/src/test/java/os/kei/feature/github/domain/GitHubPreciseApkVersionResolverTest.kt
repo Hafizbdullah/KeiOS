@@ -187,6 +187,35 @@ class GitHubPreciseApkVersionResolverTest {
         assertEquals(4, source.inspectCount)
     }
 
+    @Test
+    fun `hma corpus resolves manager apk from release zip`() {
+        val releaseZip = asset("HMA-OSS-ZYGISK-oss-164-release.zip")
+        val debugZip = asset("HMA-OSS-ZYGISK-oss-164-debug.zip")
+        val source = FakePreciseSource(
+            assets = listOf(debugZip, releaseZip, asset("translators.json")),
+            manifests = mapOf(
+                releaseZip.name to manifest("org.frknkrc44.hma_oss", "oss-164", 7_304_647L),
+                debugZip.name to manifest("org.frknkrc44.hma_oss", "oss-164", 7_304_647L),
+            ),
+        )
+
+        val result = runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
+                GitHubPreciseApkVersionRequest(
+                    owner = "frknkrc44",
+                    repo = "HMA-OSS",
+                    release = release("oss-164"),
+                    packageName = "org.frknkrc44.hma_oss",
+                    lookupConfig = GitHubLookupConfig(),
+                ),
+            )
+        }.getOrThrow()
+
+        assertEquals(releaseZip.name, result.assetName)
+        assertEquals("oss-164", result.versionName)
+        assertEquals("7304647", result.versionCode)
+    }
+
     private fun release(
         tag: String,
         title: String = tag

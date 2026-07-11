@@ -24,9 +24,13 @@ object GitHubApkCandidateSelectionEngine {
     ): List<GitHubReleaseAssetFile> {
         if (maxCandidates <= 0) return emptyList()
         val packageEvidence = PackageNameEvidence.from(expectedPackageName)
-        return assets
+        val directApkAssets = assets.filter { asset -> asset.isDirectApk() }
+        val inspectableAssets = directApkAssets.ifEmpty {
+            assets.filter { asset -> asset.isPotentialNestedApkArchive() }
+        }
+        return inspectableAssets
             .mapIndexedNotNull { index, asset ->
-                asset.takeIf { it.isInspectableApk() }?.let {
+                asset.takeIf { it.isInspectablePackage() }?.let {
                     RankedApkAsset(
                         asset = it,
                         originalIndex = index,
@@ -65,11 +69,17 @@ object GitHubApkCandidateSelectionEngine {
         )
     }
 
-    private fun GitHubReleaseAssetFile.isInspectableApk(): Boolean {
+    private fun GitHubReleaseAssetFile.isInspectablePackage(): Boolean {
         val lowerName = name.lowercase(Locale.ROOT)
-        return lowerName.endsWith(".apk") &&
+        return (lowerName.endsWith(".apk") || lowerName.endsWith(".zip")) &&
             "metadata" !in lowerName
     }
+
+    private fun GitHubReleaseAssetFile.isDirectApk(): Boolean =
+        name.endsWith(".apk", ignoreCase = true)
+
+    private fun GitHubReleaseAssetFile.isPotentialNestedApkArchive(): Boolean =
+        name.endsWith(".zip", ignoreCase = true)
 
     private fun GitHubApkManifestInfo.hasRemoteVersion(): Boolean {
         return versionName.isNotBlank() || versionCode.isNotBlank()
@@ -89,6 +99,7 @@ object GitHubApkCandidateSelectionEngine {
             else -> 100
         }
         if (releaseRegex.containsMatchIn(lowerName)) score += 90
+        if (lowerName.endsWith(".zip")) score -= 80
         if (signedRegex.containsMatchIn(lowerName)) score += 25
         if (debugRegex.containsMatchIn(lowerName)) score -= 620
         if (testRegex.containsMatchIn(lowerName)) score -= 520

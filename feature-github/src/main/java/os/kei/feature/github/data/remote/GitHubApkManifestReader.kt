@@ -19,7 +19,7 @@ class GitHubApkManifestReader(
         return inspectionEngine.inspect(
             assetName = asset.name,
             targets = resolveReadTargets(asset, lookupConfig),
-            nestedArtifactArchive = asset.isGitHubActionsApkArtifactArchive(),
+            nestedArtifactArchive = asset.isPotentialNestedApkArchive(),
         )
     }
 

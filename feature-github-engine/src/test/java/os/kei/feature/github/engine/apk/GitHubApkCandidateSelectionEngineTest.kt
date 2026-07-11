@@ -74,6 +74,39 @@ class GitHubApkCandidateSelectionEngineTest {
     }
 
     @Test
+    fun `hma corpus inspects release zip when release has no top level apk`() {
+        val planned = GitHubApkCandidateSelectionEngine.planInspection(
+            assets = listOf(
+                asset("HMA-OSS-ZYGISK-oss-164-debug.zip"),
+                asset("HMA-OSS-ZYGISK-oss-164-release.zip"),
+                asset("translators.json"),
+            ),
+            expectedPackageName = "org.frknkrc44.hma_oss",
+        )
+
+        assertEquals(
+            listOf(
+                "HMA-OSS-ZYGISK-oss-164-release.zip",
+                "HMA-OSS-ZYGISK-oss-164-debug.zip",
+            ),
+            planned.map { it.name },
+        )
+    }
+
+    @Test
+    fun `top level apk prevents unrelated zip inspection`() {
+        val planned = GitHubApkCandidateSelectionEngine.planInspection(
+            assets = listOf(
+                asset("app-release.apk"),
+                asset("source.zip"),
+            ),
+            expectedPackageName = "demo.app",
+        )
+
+        assertEquals(listOf("app-release.apk"), planned.map { it.name })
+    }
+
+    @Test
     fun `manifest selection prefers exact package over earlier valid fallback`() {
         val selection = GitHubApkCandidateSelectionEngine.selectInspected(
             inspected = listOf(
