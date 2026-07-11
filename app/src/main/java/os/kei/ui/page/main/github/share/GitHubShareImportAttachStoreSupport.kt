@@ -4,9 +4,9 @@ import android.content.Context
 import kotlinx.coroutines.withContext
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedLocalAppType
@@ -81,7 +81,7 @@ private fun GitHubPendingShareImportAttachCandidate.toTrackedApp(context: Contex
         packageName = packageName,
         appLabel = appLabel.ifBlank { packageName },
         localAppType =
-            GitHubVersionUtils
+            GitHubInstalledAppRepository
                 .localVersionInfoOrNull(
                     context = context,
                     packageName = packageName,

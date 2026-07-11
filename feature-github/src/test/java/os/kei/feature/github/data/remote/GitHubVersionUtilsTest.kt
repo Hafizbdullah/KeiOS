@@ -5,6 +5,7 @@ import android.os.DeadObjectException
 import android.os.TransactionTooLargeException
 import org.junit.Test
 import os.kei.core.system.isPackageManagerBulkQueryFailure
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import os.kei.feature.github.model.InstalledAppItem
 import kotlin.test.assertEquals
@@ -52,7 +53,7 @@ class GitHubVersionUtilsTest {
             isSystemApp = true
         )
 
-        val filtered = GitHubVersionUtils.filterGitHubInstalledAppsByScanScope(
+        val filtered = GitHubInstalledAppRepository.filterByScanScope(
             apps = listOf(userApp, systemApp, pinnedSystemApp),
             includeSystemApps = false,
             pinnedSystemPackageNames = setOf("COM.EXAMPLE.PINNED")

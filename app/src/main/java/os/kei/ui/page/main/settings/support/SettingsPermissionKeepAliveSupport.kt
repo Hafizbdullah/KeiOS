@@ -23,7 +23,7 @@ import os.kei.core.background.AppBackgroundRecoveryStore
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.core.system.findPropString
-import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 
 internal enum class SettingsAppListAccessMode {
     Direct,
@@ -89,7 +89,8 @@ internal class SettingsPermissionKeepAliveController(
         val shizukuGranted = shizukuApiUtils.canUseCommand()
         val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
         val oemAutoStartSnapshot = resolveOemAutoStartSnapshot(appContext)
-        val appListSettingsActionAvailable = GitHubVersionUtils.buildAppListPermissionIntent(appContext) != null
+        val appListSettingsActionAvailable =
+            GitHubInstalledAppRepository.buildAppListPermissionIntent(appContext) != null
 
         val appListState =
             withContext(AppDispatchers.fileIo) {
@@ -126,7 +127,8 @@ internal class SettingsPermissionKeepAliveController(
     }
 
     fun openAppListPermissionSettings(): Boolean {
-        val intent = GitHubVersionUtils.buildAppListPermissionIntent(appContext) ?: return false
+        val intent = GitHubInstalledAppRepository.buildAppListPermissionIntent(appContext)
+            ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return runCatching { appContext.startActivity(intent) }.isSuccess
     }
@@ -193,7 +195,7 @@ private suspend fun resolveAppListAccessState(
 
     val directApps =
         runCatching {
-            GitHubVersionUtils.queryInstalledLaunchableApps(
+            GitHubInstalledAppRepository.queryInstalledLaunchableApps(
                 context = context,
                 forceRefresh = true,
                 ttlMs = 0L,

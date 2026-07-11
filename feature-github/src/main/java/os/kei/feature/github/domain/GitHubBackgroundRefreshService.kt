@@ -6,11 +6,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
@@ -278,7 +278,7 @@ class GitHubBackgroundRefreshService(
 
     private suspend fun prepareShortcutRefreshCaches() {
         withContext(AppDispatchers.githubLocal) {
-            GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
+            GitHubInstalledAppRepository.invalidateCache()
             GitHubReleaseStrategyRegistry.clearAllCaches()
             GitHubTrackStore.clearCheckCache()
         }

@@ -1,11 +1,11 @@
 package os.kei.feature.github.mcp
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubCacheService
 import os.kei.feature.github.domain.GitHubTrackService
 import os.kei.feature.github.domain.GitHubTrackedItemsTransferService
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedSourceMode
@@ -236,7 +236,10 @@ internal class McpGitHubTrackingTools(
                 .distinct()
                 .filter { packageName ->
                     runCatching {
-                        GitHubVersionUtils.localVersionInfoOrNull(appContext, packageName) != null
+                        GitHubInstalledAppRepository.localVersionInfoOrNull(
+                            appContext,
+                            packageName,
+                        ) != null
                     }.getOrDefault(false)
                 }
                 .toSet()

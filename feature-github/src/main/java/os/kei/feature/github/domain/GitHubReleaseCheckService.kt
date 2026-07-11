@@ -2,6 +2,7 @@ package os.kei.feature.github.domain
 
 import android.content.Context
 import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.remote.GitHubApiTokenReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubAtomReleaseStrategy
 import os.kei.feature.github.data.remote.GitHubReleaseLookupStrategy
@@ -112,7 +113,7 @@ object GitHubReleaseCheckService {
         val sourceConfigSignature = item.checkSourceSignature(lookupConfig)
         val localVersionStartNs = System.nanoTime()
         val localVersionInfo = runCatching {
-            GitHubVersionUtils.localVersionInfoOrNull(context, item.packageName)
+            GitHubInstalledAppRepository.localVersionInfoOrNull(context, item.packageName)
         }.getOrNull()
         val localVersionElapsedMs = elapsedMsSince(localVersionStartNs)
         val localVersion = localVersionInfo?.versionName.orEmpty()

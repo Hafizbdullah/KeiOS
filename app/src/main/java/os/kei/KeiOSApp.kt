@@ -29,8 +29,8 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.core.system.AppBuildEnv
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.core.system.AppPackageChangedEvents
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.domain.GitHubAppInstallHistoryService
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
 import os.kei.ui.page.main.student.BaStudentGuideStore
@@ -98,7 +98,7 @@ class KeiOSApp : Application() {
                             )
                         }
                     }
-                    GitHubVersionUtils.invalidateInstalledLaunchableAppsCache()
+                    GitHubInstalledAppRepository.invalidateCache()
                 }
             }
         }

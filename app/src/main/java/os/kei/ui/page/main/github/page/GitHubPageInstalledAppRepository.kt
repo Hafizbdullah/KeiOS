@@ -6,7 +6,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.AppIconCache
-import os.kei.feature.github.data.remote.GitHubVersionUtils
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
+import os.kei.feature.github.model.GitHubLocalVersionInfo
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -34,7 +35,7 @@ internal class GitHubPageInstalledAppRepository(
     }
 
     fun buildAppListPermissionIntent(context: Context): Intent? {
-        return GitHubVersionUtils.buildAppListPermissionIntent(context)
+        return GitHubInstalledAppRepository.buildAppListPermissionIntent(context)
     }
 
     suspend fun queryInstalledLaunchableApps(
@@ -44,7 +45,7 @@ internal class GitHubPageInstalledAppRepository(
         pinnedSystemPackageNames: Set<String> = emptySet()
     ): List<InstalledAppItem> {
         return withContext(ioDispatcher) {
-            GitHubVersionUtils.queryInstalledLaunchableApps(
+            GitHubInstalledAppRepository.queryInstalledLaunchableApps(
                 context = context,
                 forceRefresh = forceRefresh,
                 includeSystemApps = includeSystemApps,
@@ -66,9 +67,9 @@ internal class GitHubPageInstalledAppRepository(
     suspend fun localVersionInfoOrNull(
         context: Context,
         packageName: String
-    ): GitHubVersionUtils.LocalVersionInfo? {
+    ): GitHubLocalVersionInfo? {
         return withContext(ioDispatcher) {
-            GitHubVersionUtils.localVersionInfoOrNull(context, packageName)
+            GitHubInstalledAppRepository.localVersionInfoOrNull(context, packageName)
         }
     }
 }

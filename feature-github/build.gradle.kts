@@ -31,6 +31,7 @@ dependencies {
     implementation(project(":core-log"))
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
+    implementation(project(":core-versioning"))
     implementation(project(":feature-mcp"))
 
     implementation("androidx.core:core-ktx:1.19.0")

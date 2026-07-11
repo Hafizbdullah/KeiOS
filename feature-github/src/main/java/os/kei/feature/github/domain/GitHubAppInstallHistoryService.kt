@@ -8,8 +8,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppInstallHistoryStore
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackStore
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubAppInstallHistoryAction
 import os.kei.feature.github.model.GitHubAppInstallHistoryRecord
 import os.kei.feature.github.model.GitHubAppInstallHistorySource
@@ -148,7 +148,7 @@ class GitHubAppInstallHistoryService(
         if (normalizedPackage.isBlank()) return null
         val info =
             runCatching {
-                GitHubVersionUtils.localVersionInfoOrNull(context, normalizedPackage)
+                GitHubInstalledAppRepository.localVersionInfoOrNull(context, normalizedPackage)
             }.getOrNull() ?: return null
         return GitHubTrackedAppInstallSnapshot(
             packageName = normalizedPackage,

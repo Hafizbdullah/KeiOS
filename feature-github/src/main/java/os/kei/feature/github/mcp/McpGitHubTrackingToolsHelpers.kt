@@ -2,11 +2,11 @@ package os.kei.feature.github.mcp
 
 import android.content.Context
 import os.kei.feature.github.GitHubExecution
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.remote.GitHubShareImportResolver
 import os.kei.feature.github.data.remote.GitHubShareIntentParser
-import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.feature.github.model.GitHubTrackedActionsUpdateIntervalMode
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -52,7 +52,7 @@ internal suspend fun checkTrackedGitHub(
             GitHubCheckRow(
                 item = item,
                 localVersion = runCatching {
-                    GitHubVersionUtils.localVersionName(appContext, item.packageName)
+                    GitHubInstalledAppRepository.localVersionName(appContext, item.packageName)
                 }.getOrDefault("unknown"),
                 stableVersion = "unknown",
                 preReleaseVersion = "",
