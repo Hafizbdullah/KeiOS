@@ -92,6 +92,7 @@ class GitHubMithkaReleaseCorpusTest {
         )
         val currentPreRelease = evaluate(
             snapshot = snapshot,
+            localVersion = "0.4.0",
             localVersionCode = MithkaReleaseCorpus.latestPreReleaseVersionCode,
         )
 
@@ -122,10 +123,11 @@ class GitHubMithkaReleaseCorpusTest {
 
     private fun evaluate(
         snapshot: GitHubRepositoryReleaseSnapshot,
+        localVersion: String = "0.3.0",
         localVersionCode: Long,
         policy: GitHubReleaseEvaluationPolicy = GitHubReleaseEvaluationPolicy(),
     ) = GitHubReleaseEvaluationEngine.evaluate(
-        localVersion = "0.3.0",
+        localVersion = localVersion,
         localVersionCode = localVersionCode,
         snapshot = snapshot,
         policy = policy,

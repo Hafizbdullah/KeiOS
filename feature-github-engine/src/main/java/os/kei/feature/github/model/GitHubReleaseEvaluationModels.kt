@@ -1,5 +1,7 @@
 package os.kei.feature.github.model
 
+import os.kei.core.versioning.VersionCandidate
+import os.kei.core.versioning.VersioningEngine
 import java.util.Locale
 
 enum class GitHubTrackedIgnoreMode(val storageId: String) {
@@ -146,10 +148,20 @@ fun buildGitHubReleaseIgnoreKey(
                 info.packageName,
                 info.versionName,
                 info.versionCode,
-                info.releaseTag,
             ).normalizedReleaseIgnoreKeyParts()
         }
     if (!apkKey.isNullOrBlank()) return apkKey
+
+    val structuredReleaseKey = VersioningEngine.releaseIdentityKey(
+        candidates = buildList {
+            if (rawTag.isNotBlank()) add(VersionCandidate(rawTag, sourcePriority = 0))
+            if (rawName.isNotBlank()) add(VersionCandidate(rawName, sourcePriority = 1))
+            if (displayVersion.isNotBlank()) {
+                add(VersionCandidate(displayVersion, sourcePriority = 2))
+            }
+        },
+    )
+    if (!structuredReleaseKey.isNullOrBlank()) return "version|$structuredReleaseKey"
 
     val releaseKey = listOf(rawTag, link, rawName, displayVersion)
         .firstNotNullOfOrNull { value ->
@@ -164,9 +176,27 @@ fun githubReleaseIgnoreKeyMatches(
     storedKey: String,
     releaseKey: String,
 ): Boolean {
-    val normalizedStored = storedKey.normalizedReleaseIgnoreKey()
-    val normalizedRelease = releaseKey.normalizedReleaseIgnoreKey()
+    val normalizedStored = storedKey.normalizedComparableReleaseIgnoreKey()
+    val normalizedRelease = releaseKey.normalizedComparableReleaseIgnoreKey()
     return normalizedStored.isNotBlank() && normalizedStored == normalizedRelease
+}
+
+private fun String.normalizedComparableReleaseIgnoreKey(): String {
+    val normalized = normalizedReleaseIgnoreKey()
+    if (normalized.startsWith("apk|")) {
+        val parts = normalized.split('|')
+        if (parts.size >= 4) return parts.take(4).joinToString("|")
+    }
+    if (normalized.startsWith("release|")) {
+        val legacyValue = normalized.substringAfter("release|")
+        val identity = VersioningEngine.releaseIdentityKey(
+            candidates = listOf(VersionCandidate(legacyValue, sourcePriority = 0)),
+        )
+        if (!identity.isNullOrBlank()) {
+            return "version|$identity".normalizedReleaseIgnoreKey()
+        }
+    }
+    return normalized
 }
 
 private fun List<String>.normalizedReleaseIgnoreKeyParts(): String {

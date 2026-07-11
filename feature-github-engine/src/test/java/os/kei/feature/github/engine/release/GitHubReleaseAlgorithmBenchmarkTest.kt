@@ -51,7 +51,7 @@ class GitHubReleaseAlgorithmBenchmarkTest {
         assertEquals(MithkaReleaseCorpus.stableTag, stableEntry.tag)
         assertEquals(MithkaReleaseCorpus.latestPreReleaseTag, preReleaseEntry.tag)
         assertEquals(
-            1,
+            -1,
             GitHubVersionUtils.compareVersionToStructuredCandidates(
                 localVersion = "0.3.0",
                 candidates = preReleaseEntry.versionCandidates,
@@ -77,7 +77,11 @@ class GitHubReleaseAlgorithmBenchmarkTest {
         )
         assertEquals(
             GitHubTrackedReleaseStatus.PreReleaseTracked,
-            evaluate(snapshot, MithkaReleaseCorpus.latestPreReleaseVersionCode).status,
+            evaluate(
+                snapshot = snapshot,
+                localVersionCode = MithkaReleaseCorpus.latestPreReleaseVersionCode,
+                localVersion = "0.4.0",
+            ).status,
         )
 
         val observedScalePreReleases = rollingEntries(
@@ -225,8 +229,9 @@ class GitHubReleaseAlgorithmBenchmarkTest {
     private fun evaluate(
         snapshot: GitHubRepositoryReleaseSnapshot,
         localVersionCode: Long,
+        localVersion: String = "0.3.0",
     ) = GitHubReleaseEvaluationEngine.evaluate(
-        localVersion = "0.3.0",
+        localVersion = localVersion,
         localVersionCode = localVersionCode,
         snapshot = snapshot,
         policy = GitHubReleaseEvaluationPolicy(checkAllTrackedPreReleases = true),

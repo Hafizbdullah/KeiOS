@@ -276,10 +276,9 @@ class GitHubApiTokenReleaseStrategy(
             }
         }
 
-        return entries.sortedWith(
-            compareByDescending<GitHubAtomReleaseEntry> { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenByDescending { it.link }
-        )
+        return entries.sortedByDescending { entry ->
+            entry.updatedAtMillis ?: Long.MIN_VALUE
+        }
     }
 
     private fun buildApiUrl(owner: String, repo: String): String {

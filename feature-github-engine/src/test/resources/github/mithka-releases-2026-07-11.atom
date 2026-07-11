@@ -1,7 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Release notes from mithka</title>
-  <updated>2026-07-11T04:27:26Z</updated>
+  <updated>2026-07-11T05:45:43Z</updated>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v0.4.0-master.26071105.9ba3ba5</id>
+    <updated>2026-07-11T05:33:02Z</updated>
+    <title>Mithka 0.4.0 master 9ba3ba5</title>
+    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.4.0-master.26071105.9ba3ba5" />
+    <content type="html">Automated master APK build 26071105.</content>
+    <author><name>github-actions[bot]</name></author>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v0.4.0-master.26071105.7ce0794</id>
+    <updated>2026-07-11T05:41:55Z</updated>
+    <title>Mithka 0.4.0 master 7ce0794</title>
+    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.4.0-master.26071105.7ce0794" />
+    <content type="html">Automated master APK build 26071105.</content>
+    <author><name>github-actions[bot]</name></author>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Repository/1277041207/v0.4.0-master.26071105.cbde2a0</id>
+    <updated>2026-07-11T05:45:43Z</updated>
+    <title>Mithka 0.4.0 master cbde2a0</title>
+    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.4.0-master.26071105.cbde2a0" />
+    <content type="html">Automated master APK build 26071105.</content>
+    <author><name>github-actions[bot]</name></author>
+  </entry>
   <entry>
     <id>tag:github.com,2008:Repository/1277041207/v0.3.0-master.26071104.7880c18</id>
     <updated>2026-07-11T04:27:26Z</updated>
@@ -56,30 +80,6 @@
     <title>Mithka 0.3.0 master 756717d</title>
     <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.756717d" />
     <content type="html">Automated master APK build 26071017.</content>
-    <author><name>iebb</name></author>
-  </entry>
-  <entry>
-    <id>tag:github.com,2008:Repository/1277041207/v0.3.0-master.26071017.89ede9e</id>
-    <updated>2026-07-10T17:31:21Z</updated>
-    <title>Mithka 0.3.0 master 89ede9e</title>
-    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.89ede9e" />
-    <content type="html">Automated master APK build 26071017.</content>
-    <author><name>iebb</name></author>
-  </entry>
-  <entry>
-    <id>tag:github.com,2008:Repository/1277041207/v0.3.0-master.26071017.88ef68a</id>
-    <updated>2026-07-10T17:31:33Z</updated>
-    <title>Mithka 0.3.0 master 88ef68a</title>
-    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.88ef68a" />
-    <content type="html">Automated master APK build 26071017.</content>
-    <author><name>iebb</name></author>
-  </entry>
-  <entry>
-    <id>tag:github.com,2008:Repository/1277041207/v0.3.0-master.26071016.91f7dfc</id>
-    <updated>2026-07-10T17:05:59Z</updated>
-    <title>Mithka 0.3.0 master 91f7dfc</title>
-    <link rel="alternate" href="https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071016.91f7dfc" />
-    <content type="html">Automated master APK build 26071016.</content>
     <author><name>iebb</name></author>
   </entry>
 </feed>

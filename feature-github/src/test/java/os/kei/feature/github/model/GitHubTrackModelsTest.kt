@@ -226,15 +226,48 @@ class GitHubTrackModelsTest {
             )
         )
 
-        assertEquals("apk|com.demo.app|2.0.0|20|v2.0.0", key)
+        assertEquals("apk|com.demo.app|2.0.0|20", key)
         assertTrue(githubReleaseIgnoreKeyMatches(key.uppercase(), key))
+    }
+
+    @Test
+    fun `rolling release ignore key collapses commit hash variants`() {
+        val first = buildGitHubReleaseIgnoreKey(
+            rawTag = "v0.4.0-master.26071105.9ba3ba5",
+        )
+        val second = buildGitHubReleaseIgnoreKey(
+            rawTag = "v0.4.0-master.26071105.cbde2a0",
+        )
+
+        assertEquals(first, second)
+        assertEquals("version|0.4.0|DEV|26071105|", first)
+    }
+
+    @Test
+    fun `legacy apk ignore key remains compatible after release tag removal`() {
+        val current = buildGitHubReleaseIgnoreKey(
+            preciseApkVersion = GitHubRemoteApkVersionInfo(
+                packageName = "com.demo.app",
+                versionName = "2.0.0",
+                versionCode = "20",
+                releaseTag = "v2.0.0",
+            ),
+        )
+
+        assertTrue(
+            githubReleaseIgnoreKeyMatches(
+                storedKey = "apk|com.demo.app|2.0.0|20|v2.0.0",
+                releaseKey = current,
+            ),
+        )
     }
 
     @Test
     fun `release ignore key falls back to release tag`() {
         val key = buildGitHubReleaseIgnoreKey(rawTag = "v1.0.0")
 
-        assertEquals("release|v1.0.0", key)
+        assertEquals("version|1.0.0|STABLE|0|", key)
+        assertTrue(githubReleaseIgnoreKeyMatches("release|v1.0.0", key))
         assertFalse(githubReleaseIgnoreKeyMatches("", key))
     }
 

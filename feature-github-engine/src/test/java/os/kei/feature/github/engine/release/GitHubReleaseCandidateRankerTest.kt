@@ -31,6 +31,23 @@ class GitHubReleaseCandidateRankerTest {
     }
 
     @Test
+    fun `equal rolling builds retain source order instead of hash order`() {
+        val firstFromSource = entry(
+            tag = "v0.4.0-master.26071105.1aaaaaa",
+            publishedAtMillis = 200L,
+        )
+        val secondFromSource = entry(
+            tag = "v0.4.0-master.26071105.fbbbbbb",
+            publishedAtMillis = 200L,
+        )
+
+        assertEquals(
+            firstFromSource,
+            GitHubReleaseCandidateRanker.latest(listOf(firstFromSource, secondFromSource)),
+        )
+    }
+
+    @Test
     fun `content noise cannot outrank a trusted release tag`() {
         val older = entry(
             tag = "v1.0.0",

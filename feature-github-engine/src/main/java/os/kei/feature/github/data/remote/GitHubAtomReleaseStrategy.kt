@@ -435,10 +435,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             eventType = parser.next()
         }
 
-        val sortedEntries = entries.sortedWith(
-            compareByDescending<GitHubAtomReleaseEntry> { it.updatedAtMillis ?: Long.MIN_VALUE }
-                .thenByDescending { it.link }
-        )
+        val sortedEntries = entries.sortedByDescending { entry ->
+            entry.updatedAtMillis ?: Long.MIN_VALUE
+        }
 
         return GitHubAtomFeed(
             title = feedTitle,

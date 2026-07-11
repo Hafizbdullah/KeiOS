@@ -5,10 +5,10 @@ internal object MithkaReleaseCorpus {
     const val owner = "iebb"
     const val repo = "mithka"
     const val stableTag = "v0.3.0"
-    const val latestPreReleaseTag = "v0.3.0-master.26071104.7880c18"
+    const val latestPreReleaseTag = "v0.4.0-master.26071105.cbde2a0"
     const val stableVersionCode = 26_071_014L
     const val olderPreReleaseVersionCode = 26_071_018L
-    const val latestPreReleaseVersionCode = 26_071_104L
+    const val latestPreReleaseVersionCode = 26_071_105L
 
     val atomXml: String by lazy {
         loadResource("/github/mithka-releases-2026-07-11.atom")
