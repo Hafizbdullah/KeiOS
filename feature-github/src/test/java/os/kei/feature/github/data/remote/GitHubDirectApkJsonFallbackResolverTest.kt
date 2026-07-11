@@ -107,4 +107,76 @@ class GitHubDirectApkJsonFallbackResolverTest {
             assertEquals("Nested notes", result?.changelog)
         }
     }
+
+    @Test
+    fun `resolve selects newest release when feed is oldest first`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        {
+                          "releases": [
+                            {
+                              "versionName": "1.2.0",
+                              "versionCode": 120,
+                              "apk_url": "${server.url("/files/app-1.2.0.apk")}",
+                              "release_notes": "Old"
+                            },
+                            {
+                              "versionName": "1.4.0",
+                              "versionCode": 140,
+                              "apk_url": "${server.url("/files/app-1.4.0.apk")}",
+                              "release_notes": "Latest"
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    ),
+            )
+
+            val result = GitHubDirectApkJsonFallbackResolver()
+                .resolve(server.url("/feeds/app.json").toString())
+                .getOrThrow()
+
+            assertEquals("1.4.0", result?.versionName)
+            assertEquals("140", result?.versionCode)
+            assertEquals("app-1.4.0.apk", result?.toAsset()?.name)
+            assertEquals("Latest", result?.changelog)
+        }
+    }
+
+    @Test
+    fun `resolve uses semantic version when feed omits version codes`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody(
+                        """
+                        [
+                          {
+                            "version": "2.0.0-beta1",
+                            "download_url": "${server.url("/files/app-beta.apk")}"
+                          },
+                          {
+                            "version": "2.0.0",
+                            "download_url": "${server.url("/files/app-stable.apk")}"
+                          }
+                        ]
+                        """.trimIndent(),
+                    ),
+            )
+
+            val result = GitHubDirectApkJsonFallbackResolver()
+                .resolve(server.url("/feeds/app.json").toString())
+                .getOrThrow()
+
+            assertEquals("2.0.0", result?.versionName)
+            assertEquals("app-stable.apk", result?.toAsset()?.name)
+        }
+    }
 }
