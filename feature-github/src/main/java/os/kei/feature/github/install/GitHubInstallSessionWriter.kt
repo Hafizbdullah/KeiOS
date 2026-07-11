@@ -13,7 +13,7 @@ import os.kei.core.download.segmented.SegmentedDownloadRequest
 import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
-import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
+import os.kei.feature.github.data.remote.isPotentialNestedApkArchive
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -62,8 +62,8 @@ class GitHubInstallSessionWriter(
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult =
-        if (asset.isGitHubActionsApkArtifactArchive()) {
-            streamActionsApkArchiveIntoSession(
+        if (asset.isPotentialNestedApkArchive()) {
+            streamApkArchiveIntoSession(
                 context = context,
                 resolvedUrl = resolvedUrl,
                 assetName = asset.name,
@@ -120,7 +120,7 @@ class GitHubInstallSessionWriter(
         }
     }
 
-    private suspend fun streamActionsApkArchiveIntoSession(
+    private suspend fun streamApkArchiveIntoSession(
         context: Context,
         resolvedUrl: String,
         assetName: String,
@@ -156,7 +156,7 @@ class GitHubInstallSessionWriter(
                 }
                 val apkEntry =
                     selectGitHubInstallApkEntry(zipFile)
-                        ?: throw IOException("Actions artifact contains no installable APK")
+                        ?: throw IOException("APK archive contains no installable APK")
                 return streamZipEntryIntoSession(
                     context = context,
                     zipFile = zipFile,

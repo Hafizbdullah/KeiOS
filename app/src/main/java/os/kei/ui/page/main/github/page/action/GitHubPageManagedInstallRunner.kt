@@ -13,6 +13,7 @@ import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.log.AppLogger
 import os.kei.feature.github.data.remote.GitHubApkInfoRepository
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.isPotentialNestedApkArchive
 import os.kei.feature.github.install.GitHubApkInstallFailureReason
 import os.kei.feature.github.install.GitHubApkInstallProgress
 import os.kei.feature.github.install.GitHubApkInstallRequest
@@ -131,6 +132,16 @@ internal class GitHubPageManagedInstallRunner(
             resolvePreferredAssetUrl(asset)
         }
         val manifestInfo = manifestDeferred.await()
+        if (asset.isPotentialNestedApkArchive()) {
+            val expectedPackage = item.packageName.trim()
+            val inspectedPackage = manifestInfo?.packageName.orEmpty().trim()
+            check(expectedPackage.isNotBlank()) {
+                "Tracked package is required for nested APK installation"
+            }
+            check(inspectedPackage.equals(expectedPackage, ignoreCase = true)) {
+                "Nested APK package $inspectedPackage does not match $expectedPackage"
+            }
+        }
         val resolvedDownloadUrl = urlDeferred.await()
         GitHubApkInstallRequest(
             owner = item.owner,

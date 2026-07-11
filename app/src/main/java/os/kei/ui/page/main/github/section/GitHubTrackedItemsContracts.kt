@@ -7,6 +7,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -37,6 +38,7 @@ internal data class GitHubTrackedItemsAssetState(
     val apkAssetLoading: SnapshotStateMap<String, Boolean>,
     val apkAssetErrors: SnapshotStateMap<String, String>,
     val apkAssetExpanded: SnapshotStateMap<String, Boolean>,
+    val apkInfoResults: SnapshotStateMap<String, GitHubApkManifestInfo>,
     val managedInstallLoading: SnapshotStateMap<String, Boolean>,
 )
 

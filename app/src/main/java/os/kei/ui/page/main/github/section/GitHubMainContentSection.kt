@@ -305,6 +305,7 @@ internal fun GitHubMainContent(
                                 apkAssetLoading = tracked.apkAssetLoading,
                                 apkAssetErrors = tracked.apkAssetErrors,
                                 apkAssetExpanded = tracked.apkAssetExpanded,
+                                apkInfoResults = tracked.apkInfoResults,
                                 managedInstallLoading = tracked.managedInstallLoading,
                             ),
                         expansionState =

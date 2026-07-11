@@ -10,6 +10,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
+import os.kei.feature.github.data.remote.isPotentialNestedApkArchive
+import os.kei.feature.github.data.remote.isVerifiedManagedInstallAsset
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.ui.page.main.github.GitHubApkTrustReason
 import os.kei.ui.page.main.github.GitHubDecisionLevel
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -37,6 +40,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubTrackedItemAssetRow(
     asset: GitHubReleaseAssetFile,
+    expectedPackageName: String,
     alwaysLatestReleaseDownload: Boolean,
     targetAccent: Color,
     summaryContainerColor: Color,
@@ -45,6 +49,7 @@ internal fun GitHubTrackedItemAssetRow(
     relativeTimeNowMillis: Long,
     showApkTrustCheck: Boolean,
     managedInstallEnabled: Boolean,
+    manifestInfo: GitHubApkManifestInfo?,
     managedInstallRunning: Boolean,
     installActionColor: Color,
     context: Context,
@@ -63,6 +68,13 @@ internal fun GitHubTrackedItemAssetRow(
     val abiLabel = assetAbiLabel(asset.name)
     val extensionLabel = assetFileExtensionLabel(asset.name)
     val isApkAsset = asset.name.endsWith(".apk", ignoreCase = true)
+    val isNestedApkArchive = asset.isPotentialNestedApkArchive()
+    val isInspectableAsset = isApkAsset || isNestedApkArchive
+    val isInstallableAsset =
+        asset.isVerifiedManagedInstallAsset(
+            expectedPackageName = expectedPackageName,
+            inspectedPackageName = manifestInfo?.packageName.orEmpty(),
+        )
     val displayName = assetDisplayName(asset.name)
     val sizeLabel = formatAssetSize(asset.sizeBytes, context)
     val relativeTimeLabel =
@@ -146,7 +158,7 @@ internal fun GitHubTrackedItemAssetRow(
             }
         },
         actions = {
-            if (isApkAsset) {
+            if (isInspectableAsset) {
                 AppCompactIconAction(
                     icon = appLucideInfoIcon(),
                     contentDescription =
@@ -159,7 +171,7 @@ internal fun GitHubTrackedItemAssetRow(
                     minSize = 34.dp,
                 )
             }
-            if (managedInstallEnabled && isApkAsset) {
+            if (managedInstallEnabled && isInstallableAsset) {
                 AppCompactIconAction(
                     icon = appLucidePackageIcon(),
                     contentDescription =

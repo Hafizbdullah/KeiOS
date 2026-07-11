@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.isGitHubActionsApkArtifactArchive
+import os.kei.feature.github.data.remote.isVerifiedManagedInstallAsset
 import os.kei.feature.github.install.GitHubPageManagedInstallConfirmRegistry
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -14,6 +15,7 @@ import os.kei.feature.github.notification.GitHubShareImportNotificationHelper
 import os.kei.ui.page.main.github.asset.assetDisplayName
 import os.kei.ui.page.main.github.page.GitHubManagedInstallConfirmRequest
 import os.kei.ui.page.main.github.page.githubManagedInstallKey
+import os.kei.ui.page.main.github.page.githubApkInfoKey
 
 internal class GitHubManagedInstallConfirmActions(
     private val env: GitHubPageActionEnvironment,
@@ -35,7 +37,7 @@ internal class GitHubManagedInstallConfirmActions(
         onFallbackDownload: suspend (GitHubReleaseAssetFile) -> Unit,
     ) {
         scope.launch {
-            if (shouldInstallWithKeiOs(asset)) {
+            if (shouldInstallWithKeiOs(item, asset)) {
                 onOpenConfirm(item, asset)
             } else {
                 onFallbackDownload(asset)
@@ -99,9 +101,16 @@ internal class GitHubManagedInstallConfirmActions(
         )
     }
 
-    private fun shouldInstallWithKeiOs(asset: GitHubReleaseAssetFile): Boolean =
-        state.lookupConfig.appManagedShareInstallEnabled &&
-            asset.name.endsWith(".apk", ignoreCase = true)
+    private fun shouldInstallWithKeiOs(
+        item: GitHubTrackedApp,
+        asset: GitHubReleaseAssetFile,
+    ): Boolean {
+        if (!state.lookupConfig.appManagedShareInstallEnabled) return false
+        return asset.isVerifiedManagedInstallAsset(
+            expectedPackageName = item.packageName,
+            inspectedPackageName = state.apkInfoResults[asset.githubApkInfoKey()]?.packageName.orEmpty(),
+        )
+    }
 
     private fun consumeConfirmRequest(): GitHubManagedInstallConfirmRequest? {
         val request = state.managedInstallConfirmRequest ?: return null

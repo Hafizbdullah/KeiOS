@@ -21,6 +21,17 @@ fun GitHubReleaseAssetFile.isGitHubActionsApkArtifactArchive(): Boolean =
 fun GitHubReleaseAssetFile.isPotentialNestedApkArchive(): Boolean =
     isGitHubActionsApkArtifactArchive() || name.endsWith(".zip", ignoreCase = true)
 
+fun GitHubReleaseAssetFile.isVerifiedManagedInstallAsset(
+    expectedPackageName: String,
+    inspectedPackageName: String,
+): Boolean {
+    if (name.endsWith(".apk", ignoreCase = true)) return true
+    if (!isPotentialNestedApkArchive()) return false
+    val expected = expectedPackageName.trim()
+    val inspected = inspectedPackageName.trim()
+    return expected.isNotBlank() && inspected.equals(expected, ignoreCase = true)
+}
+
 data class GitHubReleaseAssetBundle(
     val releaseName: String,
     val tagName: String,

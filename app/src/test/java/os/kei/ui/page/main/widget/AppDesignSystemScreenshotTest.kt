@@ -387,6 +387,7 @@ class AppDesignSystemScreenshotTest {
                     ) {
                         GitHubTrackedItemAssetRow(
                             asset = GitHubEnhancedInfoFixture.releaseAsset,
+                            expectedPackageName = "os.kei.example",
                             alwaysLatestReleaseDownload = false,
                             targetAccent = Color(0xFF06B6D4),
                             summaryContainerColor = Color(0x3322D3EE),
@@ -396,6 +397,7 @@ class AppDesignSystemScreenshotTest {
                             showApkTrustCheck = true,
                             managedInstallEnabled = false,
                             managedInstallRunning = false,
+                            manifestInfo = null,
                             installActionColor = MiuixTheme.colorScheme.primary,
                             context = ApplicationProvider.getApplicationContext(),
                             onOpenApkInfo = {},

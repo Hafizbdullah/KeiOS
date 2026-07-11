@@ -5,6 +5,7 @@ package os.kei.ui.page.main.github.page
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.feature.github.data.remote.isVerifiedManagedInstallAsset
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
@@ -53,7 +54,12 @@ internal fun GitHubApkInfoSheetBinding(
         error = state.apkInfoErrors[key].orEmpty(),
         sheetState = visibleSheetState,
         backdrop = backdrop,
-        managedInstallEnabled = state.lookupConfig.appManagedShareInstallEnabled,
+        managedInstallEnabled =
+            state.lookupConfig.appManagedShareInstallEnabled &&
+                asset?.isVerifiedManagedInstallAsset(
+                    expectedPackageName = request.item.packageName,
+                    inspectedPackageName = info?.packageName.orEmpty(),
+                ) == true,
         managedInstallRunning = managedInstallRunning,
         onSearchQueryChange = onSearchQueryChange,
         onRefresh = {

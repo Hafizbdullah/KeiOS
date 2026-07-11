@@ -17,6 +17,7 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubLookupConfig
+import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.isFdroidRepositoryTrack
 import os.kei.ui.page.main.github.GitHubStatusPalette
@@ -26,6 +27,7 @@ import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.asset.directApkAssetPanelData
 import os.kei.ui.page.main.github.isLocalAppUninstalled
 import os.kei.ui.page.main.github.page.githubManagedInstallKey
+import os.kei.ui.page.main.github.page.githubApkInfoKey
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -40,6 +42,7 @@ internal fun GitHubTrackedItemAssetPanel(
     assetLoading: Boolean,
     assetError: String,
     assetExpanded: Boolean,
+    apkInfoResults: SnapshotStateMap<String, GitHubApkManifestInfo>,
     managedInstallLoading: SnapshotStateMap<String, Boolean>,
     onOpenExternalUrl: (String) -> Unit,
     onLoadApkAssets: (GitHubTrackedApp, VersionCheckUi, Boolean, Boolean, Boolean) -> Unit,
@@ -172,6 +175,7 @@ internal fun GitHubTrackedItemAssetPanel(
                     renderedAssetBundle.assets.forEach { asset ->
                         GitHubTrackedItemAssetRow(
                             asset = asset,
+                            expectedPackageName = item.packageName,
                             alwaysLatestReleaseDownload = alwaysLatestReleaseDownload,
                             targetAccent = targetAccent,
                             summaryContainerColor = summaryContainerColor,
@@ -182,6 +186,7 @@ internal fun GitHubTrackedItemAssetPanel(
                                 lookupConfig.decisionAssistEnabled &&
                                     lookupConfig.apkTrustCheckEnabled,
                             managedInstallEnabled = lookupConfig.appManagedShareInstallEnabled,
+                            manifestInfo = apkInfoResults[asset.githubApkInfoKey()],
                             managedInstallRunning =
                                 managedInstallLoading[
                                     item.githubManagedInstallKey(asset),
