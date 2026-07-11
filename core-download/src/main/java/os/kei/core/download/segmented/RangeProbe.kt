@@ -1,6 +1,7 @@
 package os.kei.core.download.segmented
 
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Response
 import os.kei.core.io.executeCancellable
 import java.io.IOException
@@ -9,6 +10,7 @@ internal data class RangeProbeResult(
     val rangeSupported: Boolean,
     val totalBytes: Long,
     val finalUrl: String,
+    val protocol: Protocol,
     val fallbackReason: String? = null,
     val resourceValidator: RangeResourceValidator? = null,
 )
@@ -114,6 +116,7 @@ private fun Response.toRangeProbeResult(): RangeProbeResult {
                     rangeSupported = false,
                     totalBytes = -1L,
                     finalUrl = finalUrl,
+                    protocol = protocol,
                     fallbackReason = "invalid-content-range",
                 )
             } else {
@@ -121,6 +124,7 @@ private fun Response.toRangeProbeResult(): RangeProbeResult {
                     rangeSupported = true,
                     totalBytes = range.totalBytes,
                     finalUrl = finalUrl,
+                    protocol = protocol,
                     resourceValidator = RangeResourceValidator.from(this),
                 )
             }
@@ -131,6 +135,7 @@ private fun Response.toRangeProbeResult(): RangeProbeResult {
                 rangeSupported = false,
                 totalBytes = body.contentLength().takeIf { it > 0L } ?: -1L,
                 finalUrl = finalUrl,
+                protocol = protocol,
                 fallbackReason = "range-ignored",
                 resourceValidator = RangeResourceValidator.from(this),
             )

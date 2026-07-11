@@ -254,6 +254,7 @@ class SegmentedDownloadLiveBenchmarkTest {
                     when (connectionStrategy) {
                         SegmentedDownloadConnectionStrategy.Shared -> "segmented_shared"
                         SegmentedDownloadConnectionStrategy.IsolatedPerWorker -> "segmented_isolated"
+                        SegmentedDownloadConnectionStrategy.Adaptive -> "segmented_adaptive"
                     },
                 elapsedMs = elapsedMs,
                 bytes = downloadedBytes,

@@ -20,6 +20,9 @@ internal fun createDownloadWorkerClientSet(
     strategy: SegmentedDownloadConnectionStrategy,
 ): DownloadWorkerClientSet {
     require(count > 0) { "worker client count must be positive" }
+    require(strategy != SegmentedDownloadConnectionStrategy.Adaptive) {
+        "adaptive strategy must be resolved before creating worker clients"
+    }
     if (strategy == SegmentedDownloadConnectionStrategy.Shared) {
         return DownloadWorkerClientSet(
             clients = List(count) { baseClient },

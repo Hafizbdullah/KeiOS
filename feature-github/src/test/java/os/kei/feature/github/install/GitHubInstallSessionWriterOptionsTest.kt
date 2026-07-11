@@ -3,6 +3,7 @@ package os.kei.feature.github.install
 import kotlin.test.assertEquals
 import org.junit.Test
 import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
+import os.kei.core.download.segmented.SegmentedDownloadConnectionStrategy
 
 class GitHubInstallSessionWriterOptionsTest {
     @Test
@@ -12,6 +13,7 @@ class GitHubInstallSessionWriterOptionsTest {
         assertEquals(4, options.maxConnections)
         assertEquals(8L * 1024L * 1024L, options.initialPartSizeBytes)
         assertEquals(16L * 1024L * 1024L, options.minBytesPerConnection)
+        assertEquals(SegmentedDownloadConnectionStrategy.Adaptive, options.connectionStrategy)
     }
 
     @Test
@@ -21,5 +23,6 @@ class GitHubInstallSessionWriterOptionsTest {
         assertEquals(12, options.maxConnections)
         assertEquals(4L * 1024L * 1024L, options.initialPartSizeBytes)
         assertEquals(16L * 1024L * 1024L, options.minBytesPerConnection)
+        assertEquals(SegmentedDownloadConnectionStrategy.Adaptive, options.connectionStrategy)
     }
 }

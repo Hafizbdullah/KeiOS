@@ -15,6 +15,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
@@ -195,10 +196,14 @@ class SegmentedDownloadClient(
             intervalMs = options.progressIntervalMs,
             onProgress = onProgress,
         )
+        val connectionStrategy = resolveConnectionStrategy(
+            configured = options.connectionStrategy,
+            protocol = probeResult.protocol,
+        )
         val workerClientSet = createDownloadWorkerClientSet(
             baseClient = downloadClient,
             count = effectiveConnections,
-            strategy = options.connectionStrategy,
+            strategy = connectionStrategy,
         )
         val speedTracker = RangeSpeedTracker()
         progress.emit(force = true)
@@ -264,6 +269,7 @@ class SegmentedDownloadClient(
             retryCount = stats.retryCount,
             stealCount = stats.stealCount,
             handoffCount = stats.handoffCount,
+            connectionStrategy = connectionStrategy,
             fallbackReason = fallbackReason,
         )
     }
@@ -617,6 +623,7 @@ class SegmentedDownloadClient(
             workerConnections = 1,
             peakActiveConnections = 1,
             retryCount = retryCount,
+            connectionStrategy = SegmentedDownloadConnectionStrategy.Shared,
             fallbackReason = fallbackReason,
         )
     }
@@ -710,6 +717,9 @@ class SegmentedDownloadClient(
         if (probeResult.totalBytes < options.minParallelSizeBytes) {
             return ParallelDecision(parallel = false, reason = "below-threshold")
         }
+        if (effectiveConnectionCount(probeResult.totalBytes, options) < 2) {
+            return ParallelDecision(parallel = false, reason = "single-connection-budget")
+        }
         if (options.requireHttpsForParallel && !probeResult.finalUrl.startsWith("https://", ignoreCase = true)) {
             return ParallelDecision(parallel = false, reason = "non-https")
         }
@@ -789,6 +799,24 @@ class SegmentedDownloadClient(
         }
     }
 }
+
+internal fun resolveConnectionStrategy(
+    configured: SegmentedDownloadConnectionStrategy,
+    protocol: Protocol,
+): SegmentedDownloadConnectionStrategy =
+    when (configured) {
+        SegmentedDownloadConnectionStrategy.Adaptive ->
+            when (protocol) {
+                Protocol.HTTP_2, Protocol.H2_PRIOR_KNOWLEDGE ->
+                    SegmentedDownloadConnectionStrategy.IsolatedPerWorker
+
+                else -> SegmentedDownloadConnectionStrategy.Shared
+            }
+
+        SegmentedDownloadConnectionStrategy.Shared -> SegmentedDownloadConnectionStrategy.Shared
+        SegmentedDownloadConnectionStrategy.IsolatedPerWorker ->
+            SegmentedDownloadConnectionStrategy.IsolatedPerWorker
+    }
 
 internal fun validateWrittenByteCount(
     writtenBytes: Long,

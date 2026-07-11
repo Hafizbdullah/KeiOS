@@ -50,6 +50,7 @@ enum class SegmentedDownloadSpeedProfile {
 }
 
 enum class SegmentedDownloadConnectionStrategy {
+    Adaptive,
     Shared,
     IsolatedPerWorker,
 }
@@ -75,6 +76,8 @@ data class SegmentedDownloadResult(
     val retryCount: Int = 0,
     val stealCount: Int = 0,
     val handoffCount: Int = 0,
+    val connectionStrategy: SegmentedDownloadConnectionStrategy =
+        SegmentedDownloadConnectionStrategy.IsolatedPerWorker,
     val fallbackReason: String? = null,
 )
 

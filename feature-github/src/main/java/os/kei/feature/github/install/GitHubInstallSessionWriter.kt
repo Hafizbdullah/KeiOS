@@ -8,6 +8,7 @@ import kotlinx.coroutines.ensureActive
 import okhttp3.OkHttpClient
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.segmented.SegmentedDownloadClient
+import os.kei.core.download.segmented.SegmentedDownloadConnectionStrategy
 import os.kei.core.download.segmented.DownloadSizeMismatchException
 import os.kei.core.download.segmented.SegmentedDownloadOptions
 import os.kei.core.download.segmented.SegmentedDownloadProgress
@@ -329,6 +330,7 @@ class GitHubInstallSessionWriter(
             "asset downloaded profile=${downloadSpeedProfile.name} parallel=${result.parallel} " +
                 "range=${result.rangeSupported} " +
                 "bytes=${result.totalBytes} workers=${result.workerConnections} " +
+                "connection=${result.connectionStrategy.name} " +
                 "peak=${result.peakActiveConnections} retry=${result.retryCount} steal=${result.stealCount} " +
                 "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         }
@@ -428,6 +430,7 @@ internal fun githubSegmentedDownloadOptions(
                 requireHttpsForParallel = true,
                 bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
                 speedProfile = speedProfile,
+                connectionStrategy = SegmentedDownloadConnectionStrategy.Adaptive,
             )
 
         SegmentedDownloadSpeedProfile.ForegroundBoost ->
@@ -442,5 +445,6 @@ internal fun githubSegmentedDownloadOptions(
                 requireHttpsForParallel = true,
                 bufferSizeBytes = GITHUB_APK_STREAM_BUFFER_SIZE,
                 speedProfile = speedProfile,
+                connectionStrategy = SegmentedDownloadConnectionStrategy.Adaptive,
             )
     }
