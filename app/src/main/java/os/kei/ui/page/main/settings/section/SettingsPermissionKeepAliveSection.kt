@@ -681,8 +681,8 @@ private fun localizedShizukuStatusText(
             stringResource(R.string.settings_shizuku_status_permission_denied)
         }
 
-        trimmed == "Requesting Shizuku permission again..." -> {
-            stringResource(R.string.settings_shizuku_status_requesting_permission_again)
+        trimmed == "Shizuku permission blocked; grant it in Shizuku manager" -> {
+            stringResource(R.string.settings_shizuku_status_permission_blocked)
         }
 
         trimmed == "Requesting Shizuku permission..." -> {
