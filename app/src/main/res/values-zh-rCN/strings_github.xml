@@ -84,7 +84,7 @@
     <string name="github_history_refresh_empty_summary">主动刷新、自动刷新、后台刷新完成后会保存在这里</string>
     <string name="github_history_refresh_filter_completed">成功完成</string>
     <string name="github_history_refresh_filter_updatable">有更新</string>
-    <string name="github_history_refresh_filter_cancelled">已中断</string>
+    <string name="github_history_refresh_filter_cancelled">中断/重排</string>
     <string name="github_history_refresh_sort_finished">完成时间</string>
     <string name="github_history_refresh_sort_elapsed">耗时</string>
     <string name="github_history_refresh_sort_target">刷新数量</string>
@@ -94,6 +94,8 @@
     <string name="github_history_refresh_record_summary">%1$d/%2$d 已完成 · 更新 %3$d · 预发 %4$d · 失败 %5$d</string>
     <string name="github_history_refresh_time_finished">完成 %1$s</string>
     <string name="github_history_refresh_outcome_cancelled">已中断</string>
+    <string name="github_history_refresh_outcome_rescheduled">系统重排</string>
+    <string name="github_history_refresh_note_rescheduled">系统暂停了本次后台任务，剩余项目已交由调度器续跑</string>
     <string name="github_history_refresh_outcome_partial_failed">部分失败</string>
     <string name="github_history_refresh_action_retry_incremental_count">增量刷新 %1$d 项</string>
     <string name="github_history_refresh_retry_requested">已请求增量刷新 %1$d 项</string>

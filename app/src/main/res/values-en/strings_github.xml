@@ -84,7 +84,7 @@
     <string name="github_history_refresh_empty_summary">Manual, automatic, and background refreshes will appear here after completion</string>
     <string name="github_history_refresh_filter_completed">Completed</string>
     <string name="github_history_refresh_filter_updatable">Has updates</string>
-    <string name="github_history_refresh_filter_cancelled">Interrupted</string>
+    <string name="github_history_refresh_filter_cancelled">Interrupted/rescheduled</string>
     <string name="github_history_refresh_sort_finished">Finished time</string>
     <string name="github_history_refresh_sort_elapsed">Elapsed time</string>
     <string name="github_history_refresh_sort_target">Refresh count</string>
@@ -94,6 +94,8 @@
     <string name="github_history_refresh_record_summary">%1$d/%2$d done · updates %3$d · pre %4$d · failed %5$d</string>
     <string name="github_history_refresh_time_finished">Finished %1$s</string>
     <string name="github_history_refresh_outcome_cancelled">Interrupted</string>
+    <string name="github_history_refresh_outcome_rescheduled">System rescheduled</string>
+    <string name="github_history_refresh_note_rescheduled">The system paused this background job and queued the remaining items to continue</string>
     <string name="github_history_refresh_outcome_partial_failed">Partial failed</string>
     <string name="github_history_refresh_action_retry_incremental_count">Refresh %1$d items</string>
     <string name="github_history_refresh_retry_requested">Queued refresh for %1$d items</string>

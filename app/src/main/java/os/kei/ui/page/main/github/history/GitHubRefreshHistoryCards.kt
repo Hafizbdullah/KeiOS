@@ -332,7 +332,7 @@ internal fun GitHubRefreshHistoryRecordCard(
             if (record.note.isNotBlank()) {
                 AppInfoRow(
                     label = stringResource(R.string.github_history_refresh_label_note),
-                    value = record.note,
+                    value = rememberRefreshHistoryNote(record),
                     stacked = true,
                     valueMaxLines = 3,
                     valueOverflow = TextOverflow.Ellipsis,
@@ -516,6 +516,8 @@ internal fun rememberGitHubHistoryDateTime(millis: Long): String {
 @Composable
 private fun rememberRefreshOutcomeLabel(record: GitHubRefreshHistoryRecord): String {
     return when {
+        record.isBackgroundSchedulerReschedule() ->
+            stringResource(R.string.github_history_refresh_outcome_rescheduled)
         record.outcome == GitHubRefreshHistoryOutcome.Cancelled ->
             stringResource(R.string.github_history_refresh_outcome_cancelled)
         record.outcome == GitHubRefreshHistoryOutcome.Failed ->
@@ -530,10 +532,27 @@ private fun rememberRefreshOutcomeLabel(record: GitHubRefreshHistoryRecord): Str
 @Composable
 private fun refreshOutcomeColor(record: GitHubRefreshHistoryRecord): Color =
     when {
+        record.isBackgroundSchedulerReschedule() -> Color(0xFF3B82F6)
         record.outcome == GitHubRefreshHistoryOutcome.Cancelled -> MiuixTheme.colorScheme.onBackgroundVariant
         record.outcome == GitHubRefreshHistoryOutcome.Failed || record.failedCount > 0 -> MiuixTheme.colorScheme.error
         else -> Color(0xFF22C55E)
     }
+
+@Composable
+private fun rememberRefreshHistoryNote(record: GitHubRefreshHistoryRecord): String =
+    if (record.isBackgroundSchedulerReschedule()) {
+        stringResource(R.string.github_history_refresh_note_rescheduled)
+    } else {
+        record.note
+    }
+
+internal fun GitHubRefreshHistoryRecord.isBackgroundSchedulerReschedule(): Boolean =
+    outcome == GitHubRefreshHistoryOutcome.Cancelled &&
+        source == GitHubRefreshSource.BackgroundTick &&
+        (
+            schedulerRescheduled ||
+                note.trim().startsWith("github tick stopped", ignoreCase = true)
+        )
 
 @Composable
 private fun rememberRefreshScopeLabel(scope: GitHubRefreshScope): String =

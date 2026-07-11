@@ -84,7 +84,7 @@
     <string name="github_history_refresh_empty_summary">手動更新、自動更新、バックグラウンド更新が完了するとここに保存されます</string>
     <string name="github_history_refresh_filter_completed">完了</string>
     <string name="github_history_refresh_filter_updatable">更新あり</string>
-    <string name="github_history_refresh_filter_cancelled">中断</string>
+    <string name="github_history_refresh_filter_cancelled">中断 / 再スケジュール</string>
     <string name="github_history_refresh_sort_finished">完了日時</string>
     <string name="github_history_refresh_sort_elapsed">所要時間</string>
     <string name="github_history_refresh_sort_target">更新数</string>
@@ -94,6 +94,8 @@
     <string name="github_history_refresh_record_summary">%1$d/%2$d 完了 · 更新 %3$d · 事前 %4$d · 失敗 %5$d</string>
     <string name="github_history_refresh_time_finished">完了 %1$s</string>
     <string name="github_history_refresh_outcome_cancelled">中断</string>
+    <string name="github_history_refresh_outcome_rescheduled">システム再スケジュール</string>
+    <string name="github_history_refresh_note_rescheduled">システムがバックグラウンド処理を一時停止し、残りの項目を再実行キューに登録しました</string>
     <string name="github_history_refresh_outcome_partial_failed">一部失敗</string>
     <string name="github_history_refresh_action_retry_incremental_count">%1$d件を再更新</string>
     <string name="github_history_refresh_retry_requested">%1$d件の再更新を予約しました</string>

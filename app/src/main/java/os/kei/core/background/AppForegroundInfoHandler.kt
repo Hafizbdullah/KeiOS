@@ -359,8 +359,14 @@ object AppForegroundInfoHandler {
             return
         }
         if (runtime.targetCount > 0) {
+            val systemWillReschedule =
+                outcome == GitHubRefreshHistoryOutcome.Cancelled &&
+                    runtime.source == GitHubRefreshSource.BackgroundTick &&
+                    schedulerDiagnostics.rescheduled
             val terminalPosted =
-                runCatching {
+                if (systemWillReschedule) {
+                    false
+                } else runCatching {
                     when (outcome) {
                         GitHubRefreshHistoryOutcome.Failed ->
                             GitHubRefreshNotificationHelper.notifyFailed(
