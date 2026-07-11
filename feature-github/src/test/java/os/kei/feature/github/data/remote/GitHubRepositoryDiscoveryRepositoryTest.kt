@@ -4,12 +4,55 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class GitHubRepositoryDiscoveryRepositoryTest {
+    @Test
+    fun `repository search rejects oversized chunked api response`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(5 * 1024 * 1024), 16 * 1024),
+            )
+            val repository = GitHubRepositoryDiscoveryRepository(
+                client = OkHttpClient(),
+                apiBaseUrl = server.url("/").toString(),
+            )
+
+            val error = repository.searchRepositories("KeiOS", limit = 10).exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
+    }
+
+    @Test
+    fun `star list rejects oversized html response`() {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setBody("x".repeat(3 * 1024 * 1024)),
+            )
+            val repository = GitHubRepositoryDiscoveryRepository(
+                client = OkHttpClient(),
+                apiBaseUrl = server.url("/api").toString(),
+                webBaseUrl = server.url("/").toString(),
+            )
+
+            val error = repository.fetchStarListRepositories(
+                starListUrl = "https://github.com/stars/voyager/lists/android",
+                limit = 10,
+            ).exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
+    }
+
     @Test
     fun `authenticated stars request sends bearer token and follows pagination`() {
         MockWebServer().use { server ->

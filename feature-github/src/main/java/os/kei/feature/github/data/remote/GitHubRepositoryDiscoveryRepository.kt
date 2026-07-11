@@ -14,6 +14,7 @@ import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
 import os.kei.core.json.parseJsonObjectOrNull
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.feature.github.domain.GitHubRepositoryDiscoveryHttpException
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.model.GitHubRepositoryCandidate
@@ -155,7 +156,7 @@ class GitHubRepositoryDiscoveryRepository(
             requestBuilder.header("Authorization", "Bearer $sanitizedToken")
         }
         client.newCall(requestBuilder.build()).execute().use { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_API_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 throw response.buildHttpException(bodyText)
             }
@@ -176,7 +177,7 @@ class GitHubRepositoryDiscoveryRepository(
             requestBuilder.header("Authorization", "Bearer $sanitizedToken")
         }
         client.newCall(requestBuilder.build()).execute().use { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_WEB_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 throw response.buildHttpException(bodyText)
             }
@@ -430,6 +431,8 @@ class GitHubRepositoryDiscoveryRepository(
         private const val STAR_PAGE_SIZE = 100
         private const val SEARCH_PAGE_SIZE = 50
         private const val MAX_STAR_LIMIT = 1_000
+        private const val MAX_API_RESPONSE_BYTES = 4L * 1024L * 1024L
+        private const val MAX_WEB_RESPONSE_BYTES = 2L * 1024L * 1024L
         private val htmlRepositoryLinkRegex = Regex(
             """href=["']([^"']+)["']""",
             RegexOption.IGNORE_CASE
