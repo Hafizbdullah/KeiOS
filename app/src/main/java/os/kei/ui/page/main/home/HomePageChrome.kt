@@ -643,15 +643,11 @@ internal fun HomePageOverviewCards(
     homeCardBackdrop: Backdrop?,
     blurEnabled: Boolean,
     homeNa: String,
-    homeCardMcp: String,
-    mcpStats: List<HomeCardStatItem>,
-    homeCardGitHub: String,
-    githubStats: List<HomeCardStatItem>,
+    mcpPills: List<HomeCardPillItem>,
+    githubPills: List<HomeCardPillItem>,
     onOpenWebDavSync: () -> Unit,
-    homeCardWebDav: String,
-    webDavStats: List<HomeCardStatItem>,
-    homeCardBa: String,
-    baStats: List<HomeCardStatItem>,
+    webDavPills: List<HomeCardPillItem>,
+    baPills: List<HomeCardPillItem>,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -662,11 +658,9 @@ internal fun HomePageOverviewCards(
                 backdrop = homeCardBackdrop,
                 blurEnabled = blurEnabled,
             ) {
-                HomeInfoGridCard(
-                    title = homeCardMcp,
+                HomeInfoPillCard(
                     naText = homeNa,
-                    columns = 3,
-                    stats = mcpStats,
+                    pills = mcpPills,
                 )
             }
         }
@@ -676,11 +670,9 @@ internal fun HomePageOverviewCards(
                 backdrop = homeCardBackdrop,
                 blurEnabled = blurEnabled,
             ) {
-                HomeInfoGridCard(
-                    title = homeCardGitHub,
+                HomeInfoPillCard(
                     naText = homeNa,
-                    columns = 3,
-                    stats = githubStats,
+                    pills = githubPills,
                 )
             }
         }
@@ -691,11 +683,9 @@ internal fun HomePageOverviewCards(
                 blurEnabled = blurEnabled,
                 onClick = onOpenWebDavSync,
             ) {
-                HomeInfoGridCard(
-                    title = homeCardWebDav,
+                HomeInfoPillCard(
                     naText = homeNa,
-                    columns = 3,
-                    stats = webDavStats,
+                    pills = webDavPills,
                 )
             }
         }
@@ -705,11 +695,9 @@ internal fun HomePageOverviewCards(
                 backdrop = homeCardBackdrop,
                 blurEnabled = blurEnabled,
             ) {
-                HomeInfoGridCard(
-                    title = homeCardBa,
+                HomeInfoPillCard(
                     naText = homeNa,
-                    columns = 3,
-                    stats = baStats,
+                    pills = baPills,
                 )
             }
         }

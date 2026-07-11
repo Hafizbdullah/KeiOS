@@ -79,12 +79,7 @@ class HomePageContentDeriverTest {
             )
 
         assertEquals("1h", state.mcpRuntimeText)
-        assertEquals("2 devices", state.mcpFocusLine)
         assertEquals("failed 1", state.githubFocusLine)
-        assertEquals("GH1 Git1 APK0", state.githubSourcesLine)
-        assertEquals("1", state.githubActionsLine)
-        assertEquals("2", state.githubPreciseVersionLine)
-        assertEquals("120/240", state.baFocusLine)
         assertEquals("2/3", state.baAccountsLine)
         assertEquals("Hoshino", state.baActiveAccountLine)
         assertEquals("fresh", state.githubCacheFreshnessLine)
@@ -261,6 +256,8 @@ class HomePageContentDeriverTest {
             appVersionUnknown = "unknown",
             networkLanShort = "LAN",
             networkLocalOnlyShort = "local",
+            githubStrategyAtom = "Atom",
+            githubStrategyApi = "API",
             mcpStatusRunning = "running",
             mcpStatusStopped = "stopped",
             statStatus = "status",

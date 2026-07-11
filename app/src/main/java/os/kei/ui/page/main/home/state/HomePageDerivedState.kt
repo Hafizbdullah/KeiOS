@@ -21,11 +21,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.onEach
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
-import os.kei.ui.page.main.home.HomeCardStatItem
+import os.kei.feature.home.model.HomeBaOverview
+import os.kei.feature.home.model.HomeGitHubOverview
+import os.kei.feature.home.model.HomeMcpOverview
+import os.kei.feature.home.model.HomeWebDavOverview
+import os.kei.ui.page.main.home.HomeCardPillItem
 import os.kei.ui.page.main.home.HomeHeaderStatusPillState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
+import os.kei.ui.page.main.widget.status.AppStatusColors
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val HOME_HEADER_SINK_PER_HIDDEN_CARD_DP = 22
 private val HOME_HERO_AVOIDANCE_SCROLL_DISTANCE_DP = 128.dp
@@ -50,10 +56,10 @@ internal data class HomePageHeroMotionState(
 @Immutable
 internal data class HomePageOverviewCardState(
     val homeHeaderStatusPills: List<HomeHeaderStatusPillState>,
-    val mcpOverviewStats: List<HomeCardStatItem>,
-    val githubOverviewStats: List<HomeCardStatItem>,
-    val webDavOverviewStats: List<HomeCardStatItem>,
-    val baOverviewStats: List<HomeCardStatItem>,
+    val mcpOverviewPills: List<HomeCardPillItem>,
+    val githubOverviewPills: List<HomeCardPillItem>,
+    val webDavOverviewPills: List<HomeCardPillItem>,
+    val baOverviewPills: List<HomeCardPillItem>,
 )
 
 @Composable
@@ -238,114 +244,45 @@ private fun homeHeroAvoidanceProgress(
 
 @Composable
 internal fun rememberHomePageOverviewCardState(
-    homeStatusMcp: String,
-    homeStatusGitHub: String,
-    homeStatusWebDav: String,
-    homeStatusShizuku: String,
-    mcpRunning: Boolean,
-    cacheStateColor: Color,
-    webDavConfigured: Boolean,
-    shizukuGranted: Boolean,
-    runningColor: Color,
-    stoppedColor: Color,
-    inactiveColor: Color,
-    shizukuStatusLine: String,
-    mcpFocusLine: String,
-    githubFocusLine: String,
-    baFocusLine: String,
-    homeStatStatus: String,
-    mcpStatusText: String,
-    homeStatRuntime: String,
-    mcpRuntimeText: String,
-    homeStatClients: String,
-    mcpConnectedClients: Int,
-    homeStatNetwork: String,
-    networkModeText: String,
-    homeStatPort: String,
-    mcpPort: Int,
-    homeStatToken: String,
-    mcpTokenStatusText: String,
-    homeStatStableUpdates: String,
-    githubUpdatableLine: String,
-    homeStatPreReleaseUpdates: String,
-    githubPreReleaseUpdateLine: String,
-    homeStatFailed: String,
-    githubFailedLine: String,
-    homeStatTracked: String,
-    trackedCountLine: String,
-    homeStatGitHubSources: String,
-    githubSourcesLine: String,
-    homeStatActions: String,
-    githubActionsLine: String,
-    homeStatPreciseVersion: String,
-    githubPreciseVersionLine: String,
-    homeStatCached: String,
-    cacheHitCountLine: String,
-    homeStatCacheState: String,
-    githubCacheFreshnessLine: String,
+    content: HomePageContentState,
+    mcpOverview: HomeMcpOverview,
+    githubOverview: HomeGitHubOverview,
+    webDavOverview: HomeWebDavOverview,
+    baOverview: HomeBaOverview,
     showCacheFreshnessInCards: Boolean,
-    homeStatShare: String,
-    githubShareLine: String,
-    githubPendingShareImport: Boolean,
-    homeStatLastUpdate: String,
-    githubLastUpdateLine: String,
-    webDavStatusLine: String,
-    homeStatSyncItems: String,
-    webDavSyncItemsLine: String,
-    homeStatLastAutoSync: String,
-    webDavLastAutoSyncLine: String,
-    homeStatLastFullSync: String,
-    webDavLastFullSyncLine: String,
-    baActivationLine: String,
-    homeStatAp: String,
-    baApLine: String,
-    homeStatCafeAp: String,
-    baCafeApLine: String,
-    homeStatApRemaining: String,
-    baApRemainingLine: String,
-    homeStatBaAccounts: String,
-    baAccountsLine: String,
-    homeStatBaActiveAccount: String,
-    baActiveAccountLine: String,
-    homeStatBaServer: String,
-    baServerLine: String,
-    homeStatBaNotify: String,
-    baNotifyLine: String,
-    baCacheFreshnessLine: String,
 ): HomePageOverviewCardState {
-    val homeHeaderStatusPills =
-        remember(
-            homeStatusMcp,
-            homeStatusGitHub,
-            homeStatusWebDav,
-            homeStatusShizuku,
-            mcpRunning,
-            cacheStateColor,
-            webDavConfigured,
-            shizukuGranted,
-            runningColor,
-            stoppedColor,
-            inactiveColor,
-        ) {
+    val infoColor = MiuixTheme.colorScheme.primary
+    val warningColor = Color(0xFFF59E0B)
+    return remember(
+        content,
+        mcpOverview,
+        githubOverview,
+        webDavOverview,
+        baOverview,
+        showCacheFreshnessInCards,
+        infoColor,
+        warningColor,
+    ) {
+        val homeHeaderStatusPills =
             listOf(
                 HomeHeaderStatusPillState(
-                    label = homeStatusMcp,
-                    color = if (mcpRunning) runningColor else stoppedColor,
+                    label = content.homeStatusMcp,
+                    color = if (mcpOverview.running) content.runningColor else content.stoppedColor,
                     minWidth = 62.dp,
                 ),
                 HomeHeaderStatusPillState(
-                    label = homeStatusGitHub,
-                    color = cacheStateColor,
+                    label = content.homeStatusGitHub,
+                    color = content.cacheStateColor,
                     minWidth = 72.dp,
                 ),
                 HomeHeaderStatusPillState(
-                    label = homeStatusWebDav,
-                    color = if (webDavConfigured) runningColor else stoppedColor,
+                    label = content.homeStatusWebDav,
+                    color = if (webDavOverview.configured) content.runningColor else content.stoppedColor,
                     minWidth = 78.dp,
                 ),
                 HomeHeaderStatusPillState(
-                    label = homeStatusShizuku,
-                    color = if (shizukuGranted) runningColor else stoppedColor,
+                    label = content.homeStatusShizuku,
+                    color = if (content.shizukuGranted) content.runningColor else content.stoppedColor,
                     minWidth = 70.dp,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(
@@ -354,182 +291,235 @@ internal fun rememberHomePageOverviewCardState(
                         ),
                 ),
             )
-        }
-    val mcpOverviewStats =
-        remember(
-            homeStatStatus,
-            mcpStatusText,
-            homeStatRuntime,
-            mcpRuntimeText,
-            homeStatClients,
-            mcpConnectedClients,
-            homeStatNetwork,
-            networkModeText,
-            homeStatPort,
-            mcpPort,
-            homeStatToken,
-            mcpTokenStatusText,
-        ) {
-            listOf(
-                HomeCardStatItem(label = homeStatStatus, value = mcpStatusText, emphasize = true),
-                HomeCardStatItem(label = homeStatRuntime, value = mcpRuntimeText, emphasize = true),
-                HomeCardStatItem(label = homeStatClients, value = mcpConnectedClients.toString()),
-                HomeCardStatItem(label = homeStatNetwork, value = networkModeText),
-                HomeCardStatItem(label = homeStatPort, value = mcpPort.toString()),
-                HomeCardStatItem(label = homeStatToken, value = mcpTokenStatusText),
-            )
-        }
-    val githubOverviewStats =
-        remember(
-            homeStatStableUpdates,
-            githubUpdatableLine,
-            homeStatPreReleaseUpdates,
-            githubPreReleaseUpdateLine,
-            homeStatFailed,
-            githubFailedLine,
-            homeStatTracked,
-            trackedCountLine,
-            homeStatGitHubSources,
-            githubSourcesLine,
-            homeStatActions,
-            githubActionsLine,
-            homeStatPreciseVersion,
-            githubPreciseVersionLine,
-            homeStatCached,
-            cacheHitCountLine,
-            homeStatCacheState,
-            githubCacheFreshnessLine,
-            showCacheFreshnessInCards,
-            homeStatShare,
-            githubShareLine,
-            githubPendingShareImport,
-            homeStatLastUpdate,
-            githubLastUpdateLine,
-        ) {
-            val shareStat =
-                HomeCardStatItem(
-                    label = homeStatShare,
-                    value = githubShareLine,
-                    emphasize = githubPendingShareImport,
-                )
-            val baseStats =
-                buildList {
-                    add(
-                        HomeCardStatItem(
-                            label = homeStatStableUpdates,
-                            value = githubUpdatableLine,
-                            emphasize = true,
-                        ),
-                    )
-                    add(
-                        HomeCardStatItem(
-                            label = homeStatPreReleaseUpdates,
-                            value = githubPreReleaseUpdateLine,
-                            emphasize = true,
-                        ),
-                    )
-                    add(HomeCardStatItem(label = homeStatActions, value = githubActionsLine))
-                    add(HomeCardStatItem(label = homeStatTracked, value = trackedCountLine))
-                    add(
-                        HomeCardStatItem(
-                            label = homeStatGitHubSources,
-                            value = githubSourcesLine,
-                            valueMaxLines = 2,
-                        ),
-                    )
-                    add(HomeCardStatItem(label = homeStatPreciseVersion, value = githubPreciseVersionLine))
-                    add(HomeCardStatItem(label = homeStatFailed, value = githubFailedLine))
-                    add(HomeCardStatItem(label = homeStatCached, value = cacheHitCountLine))
-                    if (showCacheFreshnessInCards) {
-                        add(HomeCardStatItem(label = homeStatCacheState, value = githubCacheFreshnessLine))
-                    }
-                    add(HomeCardStatItem(label = homeStatLastUpdate, value = githubLastUpdateLine))
-                }
-            if (githubPendingShareImport) {
-                listOf(shareStat) + baseStats
-            } else {
-                baseStats.take(6) + shareStat + baseStats.drop(6)
-            }
-        }
-    val webDavOverviewStats =
-        remember(
-            homeStatStatus,
-            webDavStatusLine,
-            homeStatSyncItems,
-            webDavSyncItemsLine,
-            homeStatLastAutoSync,
-            webDavLastAutoSyncLine,
-            homeStatLastFullSync,
-            webDavLastFullSyncLine,
-        ) {
-            listOf(
-                HomeCardStatItem(
-                    label = homeStatStatus,
-                    value = webDavStatusLine,
-                    emphasize = true
-                ),
-                HomeCardStatItem(label = homeStatSyncItems, value = webDavSyncItemsLine),
-                HomeCardStatItem(label = homeStatLastAutoSync, value = webDavLastAutoSyncLine),
-                HomeCardStatItem(label = homeStatLastFullSync, value = webDavLastFullSyncLine),
-            )
-        }
-    val baOverviewStats =
-        remember(
-            homeStatStatus,
-            baActivationLine,
-            homeStatAp,
-            baApLine,
-            homeStatCafeAp,
-            baCafeApLine,
-            homeStatApRemaining,
-            baApRemainingLine,
-            homeStatBaAccounts,
-            baAccountsLine,
-            homeStatBaActiveAccount,
-            baActiveAccountLine,
-            homeStatBaServer,
-            baServerLine,
-            homeStatBaNotify,
-            baNotifyLine,
-            homeStatCacheState,
-            showCacheFreshnessInCards,
-            baCacheFreshnessLine,
-        ) {
+
+        val mcpEndpoint =
+            mcpOverview.port
+                .takeIf { it > 0 }
+                ?.let { port -> "$port${mcpOverview.endpointPath}" }
+                ?: content.homeNa
+        val mcpOverviewPills =
             buildList {
-                add(HomeCardStatItem(label = homeStatBaAccounts, value = baAccountsLine, emphasize = true))
                 add(
-                    HomeCardStatItem(
-                        label = homeStatBaActiveAccount,
-                        value = baActiveAccountLine,
-                        emphasize = true,
-                        valueMaxLines = 2,
+                    HomeCardPillItem(
+                        value = mcpOverview.serverName.ifBlank { content.homeCardMcp },
+                        color = infoColor,
                     ),
                 )
-                add(HomeCardStatItem(label = homeStatAp, value = baApLine, emphasize = true))
-                add(HomeCardStatItem(label = homeStatCafeAp, value = baCafeApLine))
-                add(HomeCardStatItem(label = homeStatApRemaining, value = baApRemainingLine))
-                add(HomeCardStatItem(label = homeStatBaServer, value = baServerLine))
-                add(HomeCardStatItem(label = homeStatBaNotify, value = baNotifyLine))
-                add(HomeCardStatItem(label = homeStatStatus, value = baActivationLine))
+                add(
+                    HomeCardPillItem(
+                        value = content.mcpStatusText,
+                        color = if (mcpOverview.running) content.runningColor else content.stoppedColor,
+                    ),
+                )
+                if (mcpOverview.running) {
+                    add(HomeCardPillItem(value = content.mcpRuntimeText, color = content.runningColor))
+                }
+                add(HomeCardPillItem(value = content.networkModeText, color = infoColor))
+                add(
+                    HomeCardPillItem(
+                        value = mcpOverview.connectedClients.toString(),
+                        color = if (mcpOverview.connectedClients > 0) content.runningColor else content.inactiveColor,
+                    ),
+                )
+                add(HomeCardPillItem(value = mcpEndpoint, color = infoColor))
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatToken,
+                        value = content.mcpTokenStatusText,
+                        color = if (mcpOverview.authTokenConfigured) infoColor else content.inactiveColor,
+                    ),
+                )
+            }
+
+        val githubOverviewPills =
+            buildList {
+                add(HomeCardPillItem(value = content.homeCardGitHub, color = infoColor))
+                add(HomeCardPillItem(value = content.githubStrategyLine, color = infoColor))
+                if (!githubOverview.loaded) {
+                    add(HomeCardPillItem(value = content.githubFocusLine, color = content.inactiveColor))
+                    return@buildList
+                }
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatTracked,
+                        value = githubOverview.trackedCount.toString(),
+                        color = infoColor,
+                    ),
+                )
+                if (githubOverview.trackedCount == 0) {
+                    add(HomeCardPillItem(value = content.githubLastUpdateLine, color = content.inactiveColor))
+                    return@buildList
+                }
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatStableUpdates,
+                        value = githubOverview.updatableCount.toString(),
+                        color = if (githubOverview.updatableCount > 0) AppStatusColors.Fresh else content.inactiveColor,
+                    ),
+                )
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatPreReleaseUpdates,
+                        value = githubOverview.preReleaseUpdateCount.toString(),
+                        color = if (githubOverview.preReleaseUpdateCount > 0) warningColor else content.inactiveColor,
+                    ),
+                )
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatActions,
+                        value = githubOverview.actionsTrackedCount.toString(),
+                        color = if (githubOverview.actionsTrackedCount > 0) infoColor else content.inactiveColor,
+                    ),
+                )
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatCached,
+                        value = githubOverview.cacheHitCount.toString(),
+                        color = content.cacheStateColor,
+                    ),
+                )
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatLastUpdate,
+                        value = content.githubLastUpdateLine,
+                        color = content.cacheStateColor,
+                    ),
+                )
+                if (githubOverview.failedCount > 0) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatFailed,
+                            value = githubOverview.failedCount.toString(),
+                            color = AppStatusColors.Failed,
+                        ),
+                    )
+                }
+                if (githubOverview.pendingShareImport) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatShare,
+                            value = content.githubShareLine,
+                            color = warningColor,
+                        ),
+                    )
+                }
+                if (githubOverview.preciseApkVersionCount > 0) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatPreciseVersion,
+                            value = githubOverview.preciseApkVersionCount.toString(),
+                            color = infoColor,
+                        ),
+                    )
+                }
                 if (showCacheFreshnessInCards) {
-                    add(HomeCardStatItem(label = homeStatCacheState, value = baCacheFreshnessLine))
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatCacheState,
+                            value = content.githubCacheFreshnessLine,
+                            color = content.cacheStateColor,
+                        ),
+                    )
                 }
             }
-        }
 
-    return remember(
-        homeHeaderStatusPills,
-        mcpOverviewStats,
-        githubOverviewStats,
-        webDavOverviewStats,
-        baOverviewStats,
-    ) {
+        val webDavStatusColor =
+            when {
+                webDavOverview.autoSyncFailed -> AppStatusColors.Failed
+                webDavOverview.autoSyncNeedsReview -> warningColor
+                webDavOverview.configured -> AppStatusColors.Fresh
+                else -> content.stoppedColor
+            }
+        val webDavOverviewPills =
+            buildList {
+                add(HomeCardPillItem(value = content.homeCardWebDav, color = infoColor))
+                add(HomeCardPillItem(value = content.webDavStatusLine, color = webDavStatusColor))
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatSyncItems,
+                        value = content.webDavSyncItemsLine,
+                        color = infoColor,
+                    ),
+                )
+                if (webDavOverview.lastAutoSyncTimeMs <= 0L && webDavOverview.lastFullSyncTimeMs <= 0L) {
+                    add(HomeCardPillItem(value = content.webDavLastFullSyncLine, color = content.inactiveColor))
+                } else {
+                    if (webDavOverview.lastAutoSyncTimeMs > 0L) {
+                        add(
+                            HomeCardPillItem(
+                                label = content.homeStatLastAutoSync,
+                                value = content.webDavLastAutoSyncLine,
+                                color = infoColor,
+                            ),
+                        )
+                    }
+                    if (webDavOverview.lastFullSyncTimeMs > 0L) {
+                        add(
+                            HomeCardPillItem(
+                                label = content.homeStatLastFullSync,
+                                value = content.webDavLastFullSyncLine,
+                                color = infoColor,
+                            ),
+                        )
+                    }
+                }
+            }
+
+        val baOverviewPills =
+            buildList {
+                if (!baOverview.loaded) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeCardBa,
+                            value = content.baActivationLine,
+                            color = content.inactiveColor,
+                        ),
+                    )
+                    return@buildList
+                }
+                add(
+                    HomeCardPillItem(
+                        label = content.homeCardBa,
+                        value = content.baActiveAccountLine,
+                        color = if (baOverview.activated) infoColor else content.stoppedColor,
+                    ),
+                )
+                add(
+                    HomeCardPillItem(
+                        label = content.homeStatBaAccounts,
+                        value = content.baAccountsLine,
+                        color = if (baOverview.enabledAccountCount > 0) AppStatusColors.Fresh else content.inactiveColor,
+                    ),
+                )
+                add(HomeCardPillItem(value = content.baServerLine, color = infoColor))
+                add(HomeCardPillItem(label = content.homeStatAp, value = content.baApLine, color = infoColor))
+                add(HomeCardPillItem(label = content.homeStatCafeAp, value = content.baCafeApLine, color = infoColor))
+                if (baOverview.apNotifyEnabled) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatBaNotify,
+                            value = content.baNotifyLine,
+                            color = warningColor,
+                        ),
+                    )
+                }
+                if (showCacheFreshnessInCards) {
+                    add(
+                        HomeCardPillItem(
+                            label = content.homeStatCacheState,
+                            value = content.baCacheFreshnessLine,
+                            color = content.cacheStateColor,
+                        ),
+                    )
+                }
+            }
+
         HomePageOverviewCardState(
             homeHeaderStatusPills = homeHeaderStatusPills,
-            mcpOverviewStats = mcpOverviewStats,
-            githubOverviewStats = githubOverviewStats,
-            webDavOverviewStats = webDavOverviewStats,
-            baOverviewStats = baOverviewStats,
+            mcpOverviewPills = mcpOverviewPills,
+            githubOverviewPills = githubOverviewPills,
+            webDavOverviewPills = webDavOverviewPills,
+            baOverviewPills = baOverviewPills,
         )
     }
 }

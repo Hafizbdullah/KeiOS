@@ -24,6 +24,7 @@
     <string name="home_card_title_github_cache">GitHub</string>
     <string name="home_card_title_webdav">WebDAV</string>
     <string name="home_card_title_ba">BA</string>
+    <string name="home_overview_pill_metric">%1$s %2$s</string>
     <string name="home_ba_status_active">Active</string>
     <string name="home_ba_status_inactive">Inactive</string>
     <string name="home_webdav_status_unconfigured">Unconfigured</string>

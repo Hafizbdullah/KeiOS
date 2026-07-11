@@ -7,6 +7,7 @@ import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeWebDavOverview
+import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.ui.page.main.home.model.formatGitHubCacheAgo
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import java.text.SimpleDateFormat
@@ -56,12 +57,6 @@ internal fun deriveHomePageContentState(
         } else {
             text.mcpStatusStopped
         }
-    val mcpFocusLine =
-        if (mcpOverview.running && mcpOverview.connectedClients > 0) {
-            text.devicesCount(mcpOverview.connectedClients)
-        } else {
-            mcpStatusText
-        }
     val mcpTokenStatusText =
         if (mcpOverview.authTokenConfigured) {
             mcpOverview.authTokenPreview.ifBlank { text.commonFilled }
@@ -69,14 +64,11 @@ internal fun deriveHomePageContentState(
             text.commonNotUsed
         }
     val githubRefreshIntervalLine = text.shortHours(githubOverview.refreshIntervalHours.coerceAtLeast(1))
-    val githubSourcesLine =
-        text.githubSources(
-            github = githubOverview.githubRepositoryCount,
-            git = githubOverview.gitRepositoryCount,
-            directApk = githubOverview.directApkCount,
-        )
-    val githubActionsLine = text.githubCount(githubOverview.actionsTrackedCount)
-    val githubPreciseVersionLine = text.githubCount(githubOverview.preciseApkVersionCount)
+    val githubStrategyLine =
+        when (githubOverview.strategy) {
+            GitHubLookupStrategyOption.AtomFeed -> text.githubStrategyAtom
+            GitHubLookupStrategyOption.GitHubApiToken -> text.githubStrategyApi
+        }
     val cacheRefreshLine =
         formatGitHubCacheAgo(
             lastRefreshMs = githubOverview.cachedRefreshMs,
@@ -97,23 +89,6 @@ internal fun deriveHomePageContentState(
             trackedCount == 0 -> text.githubUnconfigured
             cacheHitCount == 0 -> text.refreshPair(githubRefreshIntervalLine, text.githubNoCache)
             else -> text.refreshPair(githubRefreshIntervalLine, cacheRefreshLine)
-        }
-    val githubUpdatableLine =
-        when {
-            !githubOverview.loaded -> text.loading
-            trackedCount == 0 -> text.githubCount(0)
-            cacheHitCount == 0 -> text.githubPendingRefresh
-            else -> text.githubCount(updatableCount)
-        }
-    val githubPreReleaseUpdateLine =
-        when {
-            !githubOverview.loaded || trackedCount == 0 || cacheHitCount == 0 -> text.githubCount(0)
-            else -> text.githubCount(preReleaseUpdateCount)
-        }
-    val githubFailedLine =
-        when {
-            !githubOverview.loaded || trackedCount == 0 || cacheHitCount == 0 -> text.githubCount(0)
-            else -> text.githubCount(failedCount)
         }
     val githubFocusLine =
         when {
@@ -182,18 +157,6 @@ internal fun deriveHomePageContentState(
         } else {
             text.loading
         }
-    val baFocusLine =
-        if (baOverview.loaded && baOverview.activated) {
-            text.fraction(baOverview.apCurrent, baOverview.apLimit)
-        } else {
-            baActivationLine
-        }
-    val baApRemainingLine =
-        if (baOverview.loaded) {
-            (baOverview.apLimit - baOverview.apCurrent).coerceAtLeast(0).toString()
-        } else {
-            text.loading
-        }
     val baServerLine =
         if (baOverview.loaded) {
             when (baOverview.serverIndex.coerceIn(0, 2)) {
@@ -233,44 +196,26 @@ internal fun deriveHomePageContentState(
         inactiveColor = colors.inactiveColor,
         cacheStateColor = cacheStateColor,
         appVersionText = homeAppVersionText(appOverview, text),
-        shizukuStatusLine = if (shizukuGranted) text.valueAuthorized else text.valueUnauthorized,
-        mcpFocusLine = mcpFocusLine,
         githubFocusLine = githubFocusLine,
-        baFocusLine = baFocusLine,
-        homeStatStatus = text.statStatus,
         mcpStatusText = mcpStatusText,
-        homeStatRuntime = text.statRuntime,
         mcpRuntimeText = mcpRuntimeText,
-        homeStatClients = text.statClients,
-        mcpConnectedClients = mcpOverview.connectedClients,
-        homeStatNetwork = text.statNetwork,
         networkModeText = networkModeText,
-        homeStatPort = text.statPort,
-        mcpPort = mcpOverview.port,
         homeStatToken = text.statToken,
         mcpTokenStatusText = mcpTokenStatusText,
         homeStatStableUpdates = text.statStableUpdates,
-        githubUpdatableLine = githubUpdatableLine,
         homeStatPreReleaseUpdates = text.statPreReleaseUpdates,
-        githubPreReleaseUpdateLine = githubPreReleaseUpdateLine,
         homeStatFailed = text.statFailed,
-        githubFailedLine = githubFailedLine,
         homeStatTracked = text.statTracked,
-        trackedCountLine = text.githubCount(trackedCount),
-        homeStatGitHubSources = text.statGitHubSources,
-        githubSourcesLine = githubSourcesLine,
         homeStatActions = text.statActions,
-        githubActionsLine = githubActionsLine,
         homeStatPreciseVersion = text.statPreciseVersion,
-        githubPreciseVersionLine = githubPreciseVersionLine,
         homeStatCached = text.statCached,
-        cacheHitCountLine = text.githubCount(cacheHitCount),
         homeStatCacheState = text.statCacheState,
         githubCacheFreshnessLine = homeCacheFreshnessLine(githubOverview.cacheFreshness, text),
         homeStatShare = text.statShare,
         githubShareLine = githubShareLine,
         homeStatLastUpdate = text.statLastUpdate,
         githubLastUpdateLine = githubLastUpdateLine,
+        githubStrategyLine = githubStrategyLine,
         webDavStatusLine = webDavStatusLine,
         webDavSyncItemsLine = webDavSyncItemsLine,
         webDavLastAutoSyncLine = webDavLastAutoSyncLine,
@@ -283,8 +228,6 @@ internal fun deriveHomePageContentState(
         baApLine = baApLine,
         homeStatCafeAp = text.statCafeAp,
         baCafeApLine = baCafeApLine,
-        homeStatApRemaining = text.statApRemaining,
-        baApRemainingLine = baApRemainingLine,
         homeStatBaAccounts = text.statBaAccounts,
         baAccountsLine = baAccountsLine,
         homeStatBaActiveAccount = text.statBaActiveAccount,
