@@ -14,32 +14,6 @@ data class GitHubRepoTarget(
         get() = repoUrl.trim().ifBlank { "https://github.com/$owner/$repo" }
 }
 
-enum class GitHubApiAuthMode(val label: String) {
-    Guest("Guest"),
-    Token("Token")
-}
-
-data class GitHubStrategyLoadTrace<T>(
-    val result: Result<T>,
-    val fromCache: Boolean,
-    val elapsedMs: Long,
-    val authMode: GitHubApiAuthMode? = null
-)
-
-data class GitHubApiCredentialStatus(
-    val authMode: GitHubApiAuthMode,
-    val coreLimit: Int,
-    val coreRemaining: Int,
-    val coreUsed: Int,
-    val resetAtMillis: Long? = null
-) {
-    val summaryLabel: String
-        get() = when (authMode) {
-            GitHubApiAuthMode.Guest -> "Guest API available"
-            GitHubApiAuthMode.Token -> "Token available"
-        }
-}
-
 data class GitHubStrategyBenchmarkSample(
     val target: GitHubRepoTarget,
     val testType: GitHubStrategyBenchmarkTestType = GitHubStrategyBenchmarkTestType.ReleaseSnapshot,
