@@ -19,6 +19,138 @@ import kotlin.test.assertTrue
 
 class GitHubPackageRepositoryResolverTest {
     @Test
+    fun `fixed repository discovery corpus bounds query cost without losing matches`() = runBlocking {
+        val cases = listOf(
+            RepositoryDiscoveryCorpusCase(
+                name = "exact-package-libchecker",
+                packageName = "com.absinthe.libchecker",
+                appLabel = "LibChecker",
+                expectedRepoKey = "absinthe/libchecker",
+                candidatesForQuery = { query ->
+                    if (query.contains("com.absinthe.libchecker")) {
+                        listOf(
+                            candidate(
+                                owner = "Absinthe",
+                                repo = "LibChecker",
+                                description = "Android app com.absinthe.libchecker",
+                                stars = 12_000,
+                            ),
+                        )
+                    } else {
+                        emptyList()
+                    }
+                },
+                packagesByRepo = mapOf("absinthe/libchecker" to "com.absinthe.libchecker"),
+                maxQueryCount = 1,
+            ),
+            RepositoryDiscoveryCorpusCase(
+                name = "readme-false-positive-fallback",
+                packageName = "com.example.realapp",
+                appLabel = "RealApp",
+                expectedRepoKey = "example/realapp",
+                candidatesForQuery = { query ->
+                    when {
+                        query.contains("com.example.realapp") -> listOf(
+                            candidate(
+                                owner = "demo",
+                                repo = "package-name-docs",
+                                description = "Mentions com.example.realapp",
+                                stars = 50,
+                            ),
+                        )
+                        query.contains("RealApp") && query.contains("realapp") -> listOf(
+                            candidate(
+                                owner = "example",
+                                repo = "RealApp",
+                                description = "RealApp Android client",
+                                stars = 200,
+                            ),
+                        )
+                        else -> emptyList()
+                    }
+                },
+                packagesByRepo = mapOf(
+                    "demo/package-name-docs" to "com.other.app",
+                    "example/realapp" to "com.example.realapp",
+                ),
+                maxQueryCount = 2,
+                expectedMismatchCount = 1,
+            ),
+            RepositoryDiscoveryCorpusCase(
+                name = "separator-neutral-hma",
+                packageName = "org.frknkrc44.hma_oss",
+                appLabel = "HMA",
+                expectedRepoKey = "frknkrc44/hma-oss",
+                candidatesForQuery = { query ->
+                    if (query == "hma oss in:name,description,readme") {
+                        listOf(
+                            candidate(
+                                owner = "frknkrc44",
+                                repo = "HMA-OSS",
+                                description = "Hide My Applist Android module",
+                                stars = 1_821,
+                            ),
+                        )
+                    } else {
+                        emptyList()
+                    }
+                },
+                packagesByRepo = mapOf("frknkrc44/hma-oss" to "org.frknkrc44.hma_oss"),
+                maxQueryCount = 2,
+            ),
+            RepositoryDiscoveryCorpusCase(
+                name = "preferred-updater-repository",
+                packageName = "top.yukonga.updater.kmp",
+                appLabel = "Updater",
+                preferredRepoUrl = "https://github.com/YuKongA/Updater-KMP",
+                expectedRepoKey = "yukonga/updater-kmp",
+                candidatesForQuery = { emptyList() },
+                packagesByRepo = mapOf("yukonga/updater-kmp" to "top.yukonga.updater.kmp"),
+                maxQueryCount = 0,
+            ),
+        )
+
+        var totalQueries = 0
+        var totalScans = 0
+        cases.forEach { corpusCase ->
+            val discovery = QueryAwareDiscoverySource(
+                candidatesForQuery = corpusCase.candidatesForQuery,
+            )
+            val resolver = GitHubPackageRepositoryResolver(
+                discoverySource = discovery,
+                packageNameScanner = GitHubApkPackageNameScanner(
+                    FakePackageScanSource(corpusCase.packagesByRepo),
+                ),
+            )
+
+            val result = resolver.scanRepositoriesForPackage(
+                GitHubPackageRepositoryScanRequest(
+                    packageName = corpusCase.packageName,
+                    appLabel = corpusCase.appLabel,
+                    preferredRepoUrl = corpusCase.preferredRepoUrl,
+                    lookupConfig = GitHubLookupConfig(),
+                    candidateLimit = 10,
+                    verificationLimit = 3,
+                ),
+            ).getOrThrow()
+
+            val match = result.matchedCandidates.single()
+            assertEquals(
+                corpusCase.expectedRepoKey,
+                "${match.repository.owner.lowercase()}/${match.repository.repo.lowercase()}",
+                corpusCase.name,
+            )
+            assertTrue(result.queryCount <= corpusCase.maxQueryCount, corpusCase.name)
+            assertEquals(corpusCase.expectedMismatchCount, result.mismatchedCandidateCount)
+            totalQueries += result.queryCount
+            totalScans += result.scannedCandidateCount
+        }
+
+        assertTrue(totalQueries <= 5)
+        assertTrue(totalScans <= 5)
+    }
+
+    @Test
     fun `resolver confirms repository by scanning latest stable apk package name`() = runBlocking {
         val target = candidate(
             owner = "Absinthe",
@@ -531,6 +663,18 @@ class GitHubPackageRepositoryResolverTest {
             return Result.success(emptyList())
         }
     }
+
+    private data class RepositoryDiscoveryCorpusCase(
+        val name: String,
+        val packageName: String,
+        val appLabel: String,
+        val preferredRepoUrl: String = "",
+        val expectedRepoKey: String,
+        val candidatesForQuery: (String) -> List<GitHubRepositoryCandidate>,
+        val packagesByRepo: Map<String, String>,
+        val maxQueryCount: Int,
+        val expectedMismatchCount: Int = 0,
+    )
 
     private class QueryAwareDiscoverySource(
         private val failureForQuery: (String) -> Throwable? = { null },

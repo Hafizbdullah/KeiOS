@@ -516,6 +516,9 @@ object GitHubPackageRepositoryQueries {
             if (normalizedPackageName.isNotBlank()) {
                 add("$normalizedPackageName android in:description,readme")
             }
+            if (packageTailTokens.size >= 2) {
+                add("${packageTailTokens.take(4).joinToString(" ")} in:name,description,readme")
+            }
             if (normalizedAppLabel.isNotBlank() && packageTail.length >= 3) {
                 add("$normalizedAppLabel $packageTail android in:name,description,readme")
             }
@@ -525,9 +528,6 @@ object GitHubPackageRepositoryQueries {
                         packageTailTokens.take(4).joinToString(" ")
                     } android in:name,description,readme"
                 )
-            }
-            if (packageTailTokens.size >= 2) {
-                add("${packageTailTokens.take(4).joinToString(" ")} in:name,description,readme")
             }
             if (packageTokens.size >= 2) {
                 add("${packageTokens.joinToString(" ")} android in:name,description,readme")
