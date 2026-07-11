@@ -2,6 +2,7 @@ package os.kei.core.versioning
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -199,6 +200,114 @@ class VersioningEngineTest {
                 remoteCandidates = candidates(0 to "v1.2.18.2102"),
             ),
         )
+    }
+
+    @Test
+    fun `rolling branch aliases classify as development releases`() {
+        assertEquals(
+            VersionChannel.DEV,
+            VersioningEngine.classifyChannel("v0.3.0-master.26071104.7880c18"),
+        )
+        assertEquals(
+            VersionChannel.DEV,
+            VersioningEngine.classifyChannel("Mithka 0.3.0 main 7880c18"),
+        )
+        assertEquals(
+            VersionChannel.STABLE,
+            VersioningEngine.classifyChannel("v0.3.0-maintenance1"),
+        )
+    }
+
+    @Test
+    fun `rolling build number compares against android version code`() {
+        val remote = candidates(0 to "v0.3.0-master.26071104.7880c18")
+
+        assertEquals(
+            VersionOrder.Older,
+            VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+                localVersion = "0.3.0",
+                localVersionCode = 26_071_103L,
+                remoteCandidates = remote,
+            )?.order,
+        )
+        assertEquals(
+            VersionOrder.Same,
+            VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+                localVersion = "0.3.0",
+                localVersionCode = 26_071_104L,
+                remoteCandidates = remote,
+            )?.order,
+        )
+    }
+
+    @Test
+    fun `different android version code schemes fall back to semantic comparison`() {
+        val comparison = VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+            localVersion = "0.3.0",
+            localVersionCode = 1_788_000_000L,
+            remoteCandidates = candidates(0 to "v0.3.0-master.26071104.7880c18"),
+        )
+
+        assertEquals(VersionComparisonReason.SemanticVersion, comparison?.reason)
+        assertEquals(VersionOrder.Newer, comparison?.order)
+    }
+
+    @Test
+    fun `newer rolling build remains relevant after same base stable release`() {
+        assertTrue(
+            VersioningEngine.isRelevantPreRelease(
+                preReleaseCandidates = candidates(
+                    0 to "v0.3.0-master.26071104.7880c18",
+                ),
+                stableCandidates = candidates(0 to "v0.3.0"),
+                preReleaseUpdatedAtMillis = 200L,
+                stableUpdatedAtMillis = 100L,
+            ),
+        )
+    }
+
+    @Test
+    fun `explicit prerelease channel keeps stable looking tag identity separate`() {
+        val preRelease = listOf(
+            VersionCandidate(
+                value = "v2.0.0",
+                sourcePriority = 0,
+                channelHint = VersionChannel.PREVIEW,
+            ),
+        )
+        val stable = listOf(
+            VersionCandidate(
+                value = "v2.0.0",
+                sourcePriority = 0,
+                channelHint = VersionChannel.STABLE,
+            ),
+        )
+
+        assertFalse(VersioningEngine.referToSameReleaseVersion(preRelease, stable))
+        assertTrue(
+            VersioningEngine.isRelevantPreRelease(
+                preReleaseCandidates = preRelease,
+                stableCandidates = stable,
+                preReleaseUpdatedAtMillis = 200L,
+                stableUpdatedAtMillis = 100L,
+            ),
+        )
+    }
+
+    @Test
+    fun `rolling build sequence outranks misleading publication order`() {
+        val olderBuild = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v0.3.0-master.26071103.46079b6"),
+            publishedAtMillis = 300L,
+            stableKey = "older-build",
+        )
+        val newerBuild = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v0.3.0-master.26071104.7880c18"),
+            publishedAtMillis = 200L,
+            stableKey = "newer-build",
+        )
+
+        assertTrue(ReleaseCandidateRanker.compare(olderBuild, newerBuild) < 0)
     }
 
     private fun assertOrder(

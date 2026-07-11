@@ -12,21 +12,26 @@ object VersioningEngine {
     private val datePrefixedVersionRegex =
         Regex("""^(?:20\d{4}|\d{6,8})[._-]+([vV]?\d+(?:[._-]\d+)+.*)$""")
     private val versionCandidateRegex = Regex(
-        """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?""",
+        """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|master|main|develop(?:ment)?|trunk|edge|alpha|beta|rc|preview|pre(?:-?release)?)(?![A-Za-z])(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?""",
     )
-    private val preReleaseKeywordRegex = Regex("""pre[- ]release""", RegexOption.IGNORE_CASE)
+    private val preReleaseKeywordRegex = Regex("""pre[- ]?release""", RegexOption.IGNORE_CASE)
     private val snapshotKeywordRegex = Regex("""snapshot""", RegexOption.IGNORE_CASE)
     private val nightlyKeywordRegex = Regex("""nightly""", RegexOption.IGNORE_CASE)
     private val canaryKeywordRegex = Regex("""canary""", RegexOption.IGNORE_CASE)
+    private val rollingBranchKeywordRegex = Regex(
+        """(?<![a-z])(?:master|main|develop(?:ment)?|trunk|edge)(?![a-z])""",
+        RegexOption.IGNORE_CASE,
+    )
     private val whitespaceRegex = Regex("""\s+""")
     private val separatorCleanupRegex = Regex("""\.\-|\-\.|--""")
     private val coreVersionRegex = Regex("""\d+(?:[._-]\d+)*""")
     private val channelSuffixRegex = Regex(
-        """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-release)?)(?:[^a-z0-9]*(\d+))?""",
+        """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-?release)?)(?=$|[^a-z])(?:[^a-z0-9]*(\d+)(?=$|[^a-z0-9]))?""",
     )
     private val revisionTokenRegex = Regex(
         """(?:^|[^a-z0-9])(?:fix|build|rev|revision|r|c)[._-]?(\d+)""",
     )
+    private val buildMetadataNumberRegex = Regex("""\+(\d{3,10})(?=$|[^0-9])""")
 
     private val normalizedCandidateCache =
         BoundedVersionCache<String, List<String>>(VERSION_NORMALIZATION_CACHE_SIZE)
@@ -62,6 +67,22 @@ object VersioningEngine {
     ): VersionComparison? {
         return compareLocalCandidateSets(
             leftCandidates = normalizeCandidates(localVersion),
+            rightCandidates = remoteCandidates,
+        )
+    }
+
+    fun compareLocalVersionNameAndCodeToRemote(
+        localVersion: String,
+        localVersionCode: Long,
+        remoteCandidates: List<VersionCandidate>,
+    ): VersionComparison? {
+        val localCandidates = normalizeCandidates(localVersion)
+        return compareLocalVersionCodeEvidence(
+            localCandidates = localCandidates,
+            localVersionCode = localVersionCode,
+            remoteCandidates = remoteCandidates,
+        ) ?: compareLocalCandidateSets(
+            leftCandidates = localCandidates,
             rightCandidates = remoteCandidates,
         )
     }
@@ -112,36 +133,11 @@ object VersioningEngine {
         localVersionCode: Long,
         remoteCandidates: List<VersionCandidate>,
     ): Boolean {
-        if (localVersionCode < 100L) return false
-        val code = localVersionCode.toString()
-        if (code.length < 3) return false
-        val localCandidates = linkedSetOf<String>()
-        normalizeCandidates(localVersion).forEach { candidate ->
-            val normalized = canonicalizeCandidate(candidate)
-                .lowercase(Locale.ROOT)
-                .removePrefix("v")
-            if (normalized.isNotBlank()) localCandidates += normalized
-        }
-        if (localCandidates.isEmpty()) return false
-
-        preferredSourceCandidates(remoteCandidates).forEach { remoteCandidate ->
-            normalizeCandidates(remoteCandidate.value).forEach { candidate ->
-                val remote = canonicalizeCandidate(candidate)
-                    .lowercase(Locale.ROOT)
-                    .removePrefix("v")
-                if (remote.isBlank()) return@forEach
-                localCandidates.forEach { local ->
-                    if (
-                        remote == "$local.$code" ||
-                        remote == "$local-$code" ||
-                        remote == "$local+$code"
-                    ) {
-                        return true
-                    }
-                }
-            }
-        }
-        return false
+        return compareLocalVersionCodeEvidence(
+            localCandidates = normalizeCandidates(localVersion),
+            localVersionCode = localVersionCode,
+            remoteCandidates = remoteCandidates,
+        )?.order == VersionOrder.Same
     }
 
     fun referToSameReleaseVersion(
@@ -187,13 +183,30 @@ object VersioningEngine {
         preReleaseUpdatedAtMillis: Long? = null,
         stableUpdatedAtMillis: Long? = null,
     ): Boolean {
-        val comparison = compareRemoteCandidateSets(preReleaseCandidates, stableCandidates)
+        val preRelease = selectReleaseRankingCandidate(preReleaseCandidates)
+        val stable = selectReleaseRankingCandidate(stableCandidates)
+        val comparison = if (preRelease != null && stable != null) {
+            compareCandidates(
+                left = preRelease,
+                right = stable,
+                reason = VersionComparisonReason.ReleaseRanking,
+            )
+        } else {
+            null
+        }
+        val preReleaseIsRollingSibling = preRelease != null && stable != null &&
+            preRelease.parts.numbers == stable.parts.numbers &&
+            preRelease.isRollingDevelopmentCandidate()
+        val preReleaseIsNewerByTime = preReleaseUpdatedAtMillis != null &&
+            stableUpdatedAtMillis != null &&
+            preReleaseUpdatedAtMillis > stableUpdatedAtMillis
         return when {
             comparison != null && comparison.order != VersionOrder.Same ->
-                comparison.order == VersionOrder.Newer
+                comparison.order == VersionOrder.Newer ||
+                    (preReleaseIsRollingSibling && preReleaseIsNewerByTime)
 
             preReleaseUpdatedAtMillis != null && stableUpdatedAtMillis != null ->
-                preReleaseUpdatedAtMillis > stableUpdatedAtMillis
+                preReleaseIsNewerByTime
 
             else ->
                 (preReleaseUpdatedAtMillis ?: Long.MIN_VALUE) >
@@ -266,7 +279,11 @@ object VersioningEngine {
         candidates.forEach { candidate ->
             normalizeCandidates(candidate).forEach { normalized ->
                 if (seen.add(normalized)) {
-                    parseComparableCandidate(normalized, sourcePriority = 0)?.let(parsed::add)
+                    parseComparableCandidate(
+                        raw = normalized,
+                        sourcePriority = 0,
+                        channelHint = null,
+                    )?.let(parsed::add)
                 }
             }
         }
@@ -281,13 +298,105 @@ object VersioningEngine {
         val parsed = ArrayList<ComparableVersionCandidate>()
         candidates.forEach { candidate ->
             normalizeCandidates(candidate.value).forEach { normalized ->
-                val key = ComparableCandidateKey(normalized, candidate.sourcePriority)
+                val key = ComparableCandidateKey(
+                    raw = normalized,
+                    sourcePriority = candidate.sourcePriority,
+                    channelHint = candidate.channelHint,
+                )
                 if (seen.add(key)) {
-                    parseComparableCandidate(normalized, candidate.sourcePriority)?.let(parsed::add)
+                    parseComparableCandidate(
+                        raw = normalized,
+                        sourcePriority = candidate.sourcePriority,
+                        channelHint = candidate.channelHint,
+                    )?.let(parsed::add)
                 }
             }
         }
         return parsed
+    }
+
+    private fun compareLocalVersionCodeEvidence(
+        localCandidates: List<String>,
+        localVersionCode: Long,
+        remoteCandidates: List<VersionCandidate>,
+    ): VersionComparison? {
+        if (localVersionCode < MIN_COMPARABLE_VERSION_CODE) return null
+        val local = parseComparableLocalCandidates(localCandidates)
+        val remote = parseComparableRemoteCandidates(preferredSourceCandidates(remoteCandidates))
+        if (local.isEmpty() || remote.isEmpty()) return null
+
+        var bestMatch: VersionCodeMatch? = null
+        for (localCandidate in local) {
+            for (remoteCandidate in remote) {
+                val evidence = remoteCandidate.buildCodeEvidenceFor(localCandidate.parts.numbers)
+                    ?: continue
+                if (!versionCodesShareScheme(localVersionCode, evidence.value)) continue
+                val score = similarityScore(localCandidate, remoteCandidate) + evidence.quality
+                if (bestMatch == null || score > bestMatch.score) {
+                    bestMatch = VersionCodeMatch(
+                        local = localCandidate,
+                        remote = remoteCandidate,
+                        remoteVersionCode = evidence.value,
+                        score = score,
+                    )
+                }
+            }
+        }
+        val match = bestMatch ?: return null
+        val order = localVersionCode.compareTo(match.remoteVersionCode).toVersionOrder()
+        return VersionComparison(
+            order = order,
+            confidence = if (order == VersionOrder.Same) {
+                VersionConfidence.Exact
+            } else {
+                VersionConfidence.High
+            },
+            reason = VersionComparisonReason.VersionCode,
+            leftEvidence = "${match.local.normalized}+$localVersionCode",
+            rightEvidence = "${match.remote.normalized}+${match.remoteVersionCode}",
+        )
+    }
+
+    private fun ComparableVersionCandidate.buildCodeEvidenceFor(
+        localBaseNumbers: List<Long>,
+    ): BuildCodeEvidence? {
+        if (localBaseNumbers.isEmpty()) return null
+        val candidates = buildList {
+            if (
+                parts.numbers == localBaseNumbers &&
+                parts.channel.isPreRelease &&
+                parts.channelNumber >= MIN_COMPARABLE_VERSION_CODE
+            ) {
+                add(BuildCodeEvidence(parts.channelNumber, quality = 520))
+            }
+            if (parts.numbers == localBaseNumbers) {
+                parts.revisionNumbers.lastOrNull()
+                    ?.takeIf { it >= MIN_COMPARABLE_VERSION_CODE }
+                    ?.let { add(BuildCodeEvidence(it, quality = 480)) }
+                buildMetadataNumberRegex.find(normalized)
+                    ?.groupValues
+                    ?.getOrNull(1)
+                    ?.toLongOrNull()
+                    ?.takeIf { it >= MIN_COMPARABLE_VERSION_CODE }
+                    ?.let { add(BuildCodeEvidence(it, quality = 460)) }
+            }
+            if (
+                parts.numbers.size == localBaseNumbers.size + 1 &&
+                parts.numbers.take(localBaseNumbers.size) == localBaseNumbers
+            ) {
+                parts.numbers.lastOrNull()
+                    ?.takeIf { it >= MIN_COMPARABLE_VERSION_CODE }
+                    ?.let { add(BuildCodeEvidence(it, quality = 400)) }
+            }
+        }
+        return candidates.maxByOrNull { evidence -> evidence.quality }
+    }
+
+    private fun versionCodesShareScheme(left: Long, right: Long): Boolean {
+        if (left < MIN_COMPARABLE_VERSION_CODE || right < MIN_COMPARABLE_VERSION_CODE) {
+            return false
+        }
+        return left.toString().length == right.toString().length
     }
 
     private fun selectReleaseRankingCandidate(
@@ -320,6 +429,7 @@ object VersioningEngine {
             .replace(snapshotKeywordRegex, "dev")
             .replace(nightlyKeywordRegex, "dev")
             .replace(canaryKeywordRegex, "dev")
+            .replace(rollingBranchKeywordRegex, "dev")
             .replace('_', '.')
             .replace(whitespaceRegex, "")
             .replace(separatorCleanupRegex, "-")
@@ -358,10 +468,14 @@ object VersioningEngine {
     private fun parseComparableCandidate(
         raw: String,
         sourcePriority: Int,
+        channelHint: VersionChannel?,
     ): ComparableVersionCandidate? {
-        return comparableCandidateCache.getOrPut(ComparableCandidateKey(raw, sourcePriority)) {
+        return comparableCandidateCache.getOrPut(
+            ComparableCandidateKey(raw, sourcePriority, channelHint),
+        ) {
             val normalized = canonicalizeCandidate(raw).lowercase(Locale.ROOT)
-            val parts = parseVersionParts(normalized) ?: return@getOrPut null
+            val parsedParts = parseVersionParts(normalized) ?: return@getOrPut null
+            val parts = parsedParts.withChannelHint(channelHint)
             ComparableVersionCandidate(
                 normalized = normalized,
                 parts = parts,
@@ -373,7 +487,21 @@ object VersioningEngine {
                     parts.numbers.size >= 3 && parts.numbers.first().isDateStamp(),
                 looksLikeRevisionOnlyAlias =
                     parts.numbers.size == 1 && revisionTokenRegex.containsMatchIn(normalized),
+                channelWasHinted = parts.channel != parsedParts.channel,
             )
+        }
+    }
+
+    private fun VersionParts.withChannelHint(channelHint: VersionChannel?): VersionParts {
+        val hint = channelHint?.takeUnless { it == VersionChannel.UNKNOWN } ?: return this
+        return when {
+            hint == VersionChannel.STABLE -> copy(
+                channel = VersionChannel.STABLE,
+                channelNumber = 0L,
+            )
+            channel == VersionChannel.STABLE || channel == VersionChannel.UNKNOWN ->
+                copy(channel = hint)
+            else -> this
         }
     }
 
@@ -453,6 +581,11 @@ object VersioningEngine {
             !looksLikeRevisionOnlyAlias
     }
 
+    private fun ComparableVersionCandidate.isRollingDevelopmentCandidate(): Boolean {
+        return parts.channel == VersionChannel.DEV ||
+            (channelWasHinted && parts.channel.isPreRelease)
+    }
+
     private fun versionPartsSpecificityScore(parts: VersionParts): Int {
         val channelBonus = if (parts.channel != VersionChannel.STABLE) 100 else 0
         return channelBonus +
@@ -518,7 +651,9 @@ object VersioningEngine {
         candidates.forEach { candidate ->
             if (candidate.sourcePriority <= maxSourcePriority) {
                 normalizeCandidates(candidate.value).forEach { normalized ->
-                    val parts = parseVersionParts(normalized) ?: return@forEach
+                    val parts = parseVersionParts(normalized)
+                        ?.withChannelHint(candidate.channelHint)
+                        ?: return@forEach
                     if (isMeaningfulReleaseIdentity(parts)) keys += releaseIdentityKey(parts)
                 }
             }
@@ -561,7 +696,7 @@ object VersioningEngine {
                 "alpha" -> VersionChannel.ALPHA
                 "beta" -> VersionChannel.BETA
                 "rc" -> VersionChannel.RC
-                "preview", "pre", "pre-release" -> VersionChannel.PREVIEW
+                "preview", "pre", "prerelease", "pre-release" -> VersionChannel.PREVIEW
                 else -> VersionChannel.STABLE
             }
             val channelNumber = channelMatch
@@ -609,11 +744,25 @@ object VersioningEngine {
         val looksLikeDateStamp: Boolean,
         val looksLikeDatePrefixedSemantic: Boolean,
         val looksLikeRevisionOnlyAlias: Boolean,
+        val channelWasHinted: Boolean,
     )
 
     private data class ComparableCandidateKey(
         val raw: String,
         val sourcePriority: Int,
+        val channelHint: VersionChannel?,
+    )
+
+    private data class BuildCodeEvidence(
+        val value: Long,
+        val quality: Int,
+    )
+
+    private data class VersionCodeMatch(
+        val local: ComparableVersionCandidate,
+        val remote: ComparableVersionCandidate,
+        val remoteVersionCode: Long,
+        val score: Int,
     )
 
     private data class VersionParts(
@@ -650,4 +799,6 @@ object VersioningEngine {
             }
         }
     }
+
+    private const val MIN_COMPARABLE_VERSION_CODE = 100L
 }

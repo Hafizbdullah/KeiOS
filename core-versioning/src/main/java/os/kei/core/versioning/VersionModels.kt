@@ -13,6 +13,7 @@ enum class VersionChannel(val isPreRelease: Boolean) {
 data class VersionCandidate(
     val value: String,
     val sourcePriority: Int,
+    val channelHint: VersionChannel? = null,
 )
 
 enum class VersionOrder(val legacyValue: Int) {
@@ -31,6 +32,7 @@ enum class VersionConfidence {
 enum class VersionComparisonReason {
     ExactCandidate,
     SemanticVersion,
+    VersionCode,
     ReleaseRanking,
 }
 
