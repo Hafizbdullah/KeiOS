@@ -65,6 +65,8 @@
     <string name="github_debug_toast_background_due_refresh_started">已发起后台到期增量刷新</string>
     <string name="github_debug_toast_background_due_refresh_completed">后台到期增量检查已完成</string>
     <string name="github_debug_toast_background_due_refresh_failed">后台到期增量刷新失败：%1$s</string>
+    <string name="github_debug_toast_force_due_refresh_scheduled">已将 %1$d 项标记到期并交给后台调度</string>
+    <string name="github_debug_toast_force_due_refresh_failed">后台到期复测调度失败</string>
     <string name="github_debug_toast_visible_incremental_refresh_failed">可见项目增量刷新失败：%1$s</string>
     <string name="github_actions_history_title">Actions 历史</string>
     <string name="github_history_title">历史</string>
@@ -900,6 +902,8 @@
     <string name="github_debug_sheet_summary_background_full_refresh">按后台快捷全量链路刷新全部 %1$d 项</string>
     <string name="github_debug_sheet_label_background_due_refresh">后台到期增量</string>
     <string name="github_debug_sheet_summary_background_due_refresh">立即执行一次后台 tick，只刷新达到间隔的项目</string>
+    <string name="github_debug_sheet_label_force_due_refresh">模拟到期并调度</string>
+    <string name="github_debug_sheet_summary_force_due_refresh">保留缓存内容，将全部追踪标记到期并触发真实后台任务</string>
     <string name="github_debug_sheet_label_visible_incremental_refresh">可见增量刷新</string>
     <string name="github_debug_sheet_summary_visible_incremental_refresh">当前可刷 %1$d 项，最多取前 %2$d 项</string>
     <string name="github_debug_sheet_label_failed_incremental_refresh">失败项增量</string>

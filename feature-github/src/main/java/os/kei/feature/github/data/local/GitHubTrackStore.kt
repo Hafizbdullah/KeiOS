@@ -682,6 +682,24 @@ object GitHubTrackStore {
             }
         }
 
+    fun markAllTrackedChecksDue(): Int =
+        synchronized(checkCacheLock) {
+            val trackedItems = load()
+            if (trackedItems.isEmpty()) return@synchronized 0
+            val (currentCache, currentRefreshTimestamp) =
+                loadCheckCacheLocked(includeRepositoryProfiles = true)
+            val expiredCache =
+                buildDueCheckCache(
+                    trackedIds = trackedItems.map { item -> item.id },
+                    currentCache = currentCache,
+                )
+            saveCheckCacheLocked(
+                states = expiredCache,
+                lastRefreshMs = currentRefreshTimestamp,
+            )
+            trackedItems.size
+        }
+
     fun removeCheckCacheEntries(trackIds: Set<String>, refreshTimestamp: Long = 0L): Long =
         synchronized(checkCacheLock) {
             if (trackIds.isEmpty()) {
@@ -951,6 +969,14 @@ object GitHubTrackStore {
     }
 
 }
+
+internal fun buildDueCheckCache(
+    trackedIds: List<String>,
+    currentCache: Map<String, GitHubCheckCacheEntry>,
+): Map<String, GitHubCheckCacheEntry> =
+    trackedIds.associateWith { trackId ->
+        (currentCache[trackId] ?: GitHubCheckCacheEntry()).copy(checkedAtMillis = 1L)
+    }
 
 internal fun normalizeTrackedItems(
     items: List<GitHubTrackedApp>

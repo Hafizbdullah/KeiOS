@@ -209,7 +209,10 @@ class GitHubBackgroundRefreshJobService : JobService() {
         private const val EXTRA_ENQUEUED_AT_MS = "github_background_enqueued_at_ms"
         private val jobRunning = AtomicBoolean(false)
 
-        fun enqueueNow(context: Context): Boolean {
+        fun enqueueNow(
+            context: Context,
+            replacePending: Boolean = false,
+        ): Boolean {
             val appContext = context.applicationContext
             val scheduler = appContext.getSystemService(JobScheduler::class.java)
                 ?: return false
@@ -218,8 +221,11 @@ class GitHubBackgroundRefreshJobService : JobService() {
                 return true
             }
             val existing = scheduler.getPendingJob(GITHUB_BACKGROUND_REFRESH_JOB_ID)
-            if (existing != null) return true
+            if (existing != null && !replacePending) return true
             if (jobRunning.get()) return true
+            if (existing != null) {
+                scheduler.cancel(GITHUB_BACKGROUND_REFRESH_JOB_ID)
+            }
             val jobInfo = buildJobInfo(
                 context = appContext,
                 enqueuedAtMillis = System.currentTimeMillis(),

@@ -52,6 +52,7 @@ internal class GitHubActionsPageStateHolder(
     var debugActionsUpdateNotificationLoading by mutableStateOf(false)
     var debugBackgroundFullRefreshLoading by mutableStateOf(false)
     var debugBackgroundDueRefreshLoading by mutableStateOf(false)
+    var debugForceDueRefreshLoading by mutableStateOf(false)
     var debugVisibleIncrementalRefreshLoading by mutableStateOf(false)
     var actionsRecommendedRunRefreshJob by mutableStateOf<Job?>(null)
     val actionsStatusRefreshingRunIds = mutableStateMapOf<Long, Boolean>()

@@ -65,6 +65,8 @@
     <string name="github_debug_toast_background_due_refresh_started">バックグラウンド期限更新を開始しました</string>
     <string name="github_debug_toast_background_due_refresh_completed">バックグラウンド期限更新の確認が完了しました</string>
     <string name="github_debug_toast_background_due_refresh_failed">バックグラウンド期限更新に失敗しました: %1$s</string>
+    <string name="github_debug_toast_force_due_refresh_scheduled">%1$d 件を期限切れにしてバックグラウンドスケジューラへ渡しました</string>
+    <string name="github_debug_toast_force_due_refresh_failed">期限更新の再現ジョブをスケジュールできませんでした</string>
     <string name="github_debug_toast_visible_incremental_refresh_failed">表示項目の増分更新に失敗しました: %1$s</string>
     <string name="github_actions_history_title">Actions 履歴</string>
     <string name="github_history_title">履歴</string>
@@ -832,6 +834,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_debug_sheet_summary_background_full_refresh">全 %1$d 件をバックグラウンドショートカット全件経路で更新します</string>
     <string name="github_debug_sheet_label_background_due_refresh">バックグラウンド期限更新</string>
     <string name="github_debug_sheet_summary_background_due_refresh">バックグラウンド tick を今すぐ 1 回実行し、間隔を過ぎた項目だけ更新します</string>
+    <string name="github_debug_sheet_label_force_due_refresh">期限切れを再現して予約</string>
+    <string name="github_debug_sheet_summary_force_due_refresh">キャッシュ内容を保持し、全追跡を期限切れにして実際のバックグラウンドジョブを起動します</string>
     <string name="github_debug_sheet_label_visible_incremental_refresh">表示項目の増分更新</string>
     <string name="github_debug_sheet_summary_visible_incremental_refresh">現在 %1$d 件更新可能、最大で先頭 %2$d 件</string>
     <string name="github_debug_sheet_label_failed_incremental_refresh">失敗項目の増分更新</string>

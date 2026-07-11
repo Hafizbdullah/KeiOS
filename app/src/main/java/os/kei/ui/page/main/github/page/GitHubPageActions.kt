@@ -169,6 +169,8 @@ internal class GitHubPageActions(
 
     fun runDebugBackgroundDueRefresh() = debugRefreshActions.runBackgroundDueRefresh()
 
+    fun forceDebugBackgroundDueRefresh() = debugRefreshActions.forceBackgroundDueRefresh()
+
     fun refreshDebugVisibleIncremental(items: List<GitHubTrackedApp>) =
         debugRefreshActions.refreshVisibleIncremental(items)
 

@@ -2,10 +2,15 @@ package os.kei.ui.page.main.github.page
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import os.kei.R
+import os.kei.core.background.GitHubBackgroundRefreshJobService
 import os.kei.core.background.AppForegroundInfoHandler
 import os.kei.core.background.AppShortcutGitHubRefreshResult
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
+import os.kei.feature.github.data.local.GitHubTrackStore
+import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.domain.GitHubRefreshScope
 import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -79,6 +84,45 @@ internal class GitHubDebugRefreshActionFacade(
                 )
             } finally {
                 env.state.debugBackgroundDueRefreshLoading = false
+            }
+        }
+    }
+
+    fun forceBackgroundDueRefresh() {
+        if (env.state.debugForceDueRefreshLoading) return
+        env.state.debugForceDueRefreshLoading = true
+        env.durableScope.launch {
+            try {
+                val expiredCount =
+                    withContext(AppDispatchers.githubLocal) {
+                        GitHubTrackStore.markAllTrackedChecksDue().also { count ->
+                            if (count > 0) GitHubTrackStoreSignals.notifyChanged()
+                        }
+                    }
+                if (expiredCount == 0) {
+                    env.toast(R.string.github_debug_toast_background_full_refresh_empty)
+                    return@launch
+                }
+                val scheduled =
+                    GitHubBackgroundRefreshJobService.enqueueNow(
+                        env.context.applicationContext,
+                        replacePending = true,
+                    )
+                if (scheduled) {
+                    env.toast(R.string.github_debug_toast_force_due_refresh_scheduled, expiredCount)
+                } else {
+                    env.toast(R.string.github_debug_toast_force_due_refresh_failed)
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                AppLogger.w("GitHubDebugRefresh", "force background due refresh failed", error)
+                env.toast(
+                    R.string.github_debug_toast_background_due_refresh_failed,
+                    debugFailureMessage(error),
+                )
+            } finally {
+                env.state.debugForceDueRefreshLoading = false
             }
         }
     }

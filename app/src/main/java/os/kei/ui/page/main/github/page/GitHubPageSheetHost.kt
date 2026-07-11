@@ -192,11 +192,13 @@ internal fun GitHubPageSheetHost(
             },
         backgroundFullRefreshLoading = state.debugBackgroundFullRefreshLoading,
         backgroundDueRefreshLoading = state.debugBackgroundDueRefreshLoading,
+        forceDueRefreshLoading = state.debugForceDueRefreshLoading,
         visibleIncrementalRefreshLoading = state.debugVisibleIncrementalRefreshLoading,
         actionsUpdateNotificationLoading = state.debugActionsUpdateNotificationLoading,
         onDismissRequest = actions::closeDebugSheet,
         onRunBackgroundFullRefresh = actions::runDebugBackgroundFullRefresh,
         onRunBackgroundDueRefresh = actions::runDebugBackgroundDueRefresh,
+        onForceBackgroundDueRefresh = actions::forceDebugBackgroundDueRefresh,
         onRefreshVisibleIncremental = {
             actions.refreshDebugVisibleIncremental(contentDerivedState.trackedUi.sortedTracked)
         },

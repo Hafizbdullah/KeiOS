@@ -29,11 +29,13 @@ internal fun GitHubDebugSheet(
     failedCount: Int,
     backgroundFullRefreshLoading: Boolean,
     backgroundDueRefreshLoading: Boolean,
+    forceDueRefreshLoading: Boolean,
     visibleIncrementalRefreshLoading: Boolean,
     actionsUpdateNotificationLoading: Boolean,
     onDismissRequest: () -> Unit,
     onRunBackgroundFullRefresh: () -> Unit,
     onRunBackgroundDueRefresh: () -> Unit,
+    onForceBackgroundDueRefresh: () -> Unit,
     onRefreshVisibleIncremental: () -> Unit,
     onRefreshFailedIncremental: () -> Unit,
     onSendActionsUpdateNotification: () -> Unit,
@@ -75,6 +77,23 @@ internal fun GitHubDebugSheet(
                             },
                         loading = backgroundFullRefreshLoading,
                         onClick = onRunBackgroundFullRefresh,
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.github_debug_sheet_label_force_due_refresh),
+                    summary = stringResource(R.string.github_debug_sheet_summary_force_due_refresh),
+                ) {
+                    GitHubDebugActionButton(
+                        backdrop = backdrop,
+                        text =
+                            if (forceDueRefreshLoading) {
+                                stringResource(R.string.github_debug_sheet_action_running)
+                            } else {
+                                stringResource(R.string.github_debug_sheet_action_run)
+                            },
+                        loading = forceDueRefreshLoading,
+                        enabled = trackedCount > 0,
+                        onClick = onForceBackgroundDueRefresh,
                     )
                 }
                 SheetControlRow(

@@ -89,6 +89,7 @@ internal class GitHubPageState(
     var actionsRunWatchJob by actionsState::actionsRunWatchJob
     var debugBackgroundFullRefreshLoading by actionsState::debugBackgroundFullRefreshLoading
     var debugBackgroundDueRefreshLoading by actionsState::debugBackgroundDueRefreshLoading
+    var debugForceDueRefreshLoading by actionsState::debugForceDueRefreshLoading
     var debugVisibleIncrementalRefreshLoading by actionsState::debugVisibleIncrementalRefreshLoading
     var preferPreReleaseInput by trackEditorState::preferPreReleaseInput
     var alwaysShowLatestReleaseDownloadButtonInput by trackEditorState::alwaysShowLatestReleaseDownloadButtonInput

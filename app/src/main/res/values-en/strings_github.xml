@@ -65,6 +65,8 @@
     <string name="github_debug_toast_background_due_refresh_started">Started background due refresh</string>
     <string name="github_debug_toast_background_due_refresh_completed">Background due refresh check completed</string>
     <string name="github_debug_toast_background_due_refresh_failed">Background due refresh failed: %1$s</string>
+    <string name="github_debug_toast_force_due_refresh_scheduled">Marked %1$d items due and handed them to background scheduling</string>
+    <string name="github_debug_toast_force_due_refresh_failed">Failed to schedule the due-refresh reproduction</string>
     <string name="github_debug_toast_visible_incremental_refresh_failed">Visible incremental refresh failed: %1$s</string>
     <string name="github_actions_history_title">Actions history</string>
     <string name="github_history_title">History</string>
@@ -841,6 +843,8 @@
     <string name="github_debug_sheet_summary_background_full_refresh">Run the background shortcut full path for all %1$d items</string>
     <string name="github_debug_sheet_label_background_due_refresh">Background due refresh</string>
     <string name="github_debug_sheet_summary_background_due_refresh">Run one background tick now and refresh only items past their interval</string>
+    <string name="github_debug_sheet_label_force_due_refresh">Simulate due and schedule</string>
+    <string name="github_debug_sheet_summary_force_due_refresh">Keep cached content, mark every track due, and trigger the real background job</string>
     <string name="github_debug_sheet_label_visible_incremental_refresh">Visible incremental refresh</string>
     <string name="github_debug_sheet_summary_visible_incremental_refresh">%1$d refreshable now, first %2$d items at most</string>
     <string name="github_debug_sheet_label_failed_incremental_refresh">Failed item incremental</string>
