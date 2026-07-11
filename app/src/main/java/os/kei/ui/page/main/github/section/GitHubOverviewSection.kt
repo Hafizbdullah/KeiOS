@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -145,25 +147,35 @@ internal fun GitHubOverviewCard(
                 )
             }
             StatusPill(
-                label = formatRefreshAgo(context = context, lastRefreshMs = lastRefreshMs),
-                color = displayRefreshState.color(
-                    neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
+                label = formatRefreshAgo(
+                    context = context,
+                    lastRefreshMs = metrics.latestCheckedAtMillis,
                 ),
+                color = GitHubStatusPalette.Cache,
+                modifier = Modifier.semantics {
+                    contentDescription = context.getString(
+                        R.string.github_overview_incremental_refresh_time,
+                        formatRefreshAgo(
+                            context = context,
+                            lastRefreshMs = metrics.latestCheckedAtMillis,
+                        ),
+                    )
+                },
                 backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
                 borderAlphaOverride = if (isDark) 0.35f else 0.42f,
                 backdrop = backdrop
             )
             StatusPill(
-                label = when (displayRefreshState) {
-                    OverviewRefreshState.Cached -> stringResource(R.string.common_status_cached)
-                    OverviewRefreshState.Refreshing -> stringResource(R.string.common_status_checking)
-                    OverviewRefreshState.Completed -> stringResource(R.string.common_status_checked)
-                    OverviewRefreshState.Failed -> stringResource(R.string.common_status_failed)
-                    OverviewRefreshState.Idle -> stringResource(R.string.common_status_pending_check)
+                label = formatRefreshAgo(context = context, lastRefreshMs = lastRefreshMs),
+                color = GitHubStatusPalette.Update,
+                modifier = Modifier.semantics {
+                    contentDescription = context.getString(
+                        R.string.github_overview_full_refresh_time,
+                        formatRefreshAgo(context = context, lastRefreshMs = lastRefreshMs),
+                    )
                 },
-                color = displayRefreshState.color(
-                    neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
-                ),
+                backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
+                borderAlphaOverride = if (isDark) 0.35f else 0.42f,
                 backdrop = backdrop
             )
         }

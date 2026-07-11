@@ -545,6 +545,8 @@
     <string name="github_toast_app_list_refresh_failed">应用列表刷新失败</string>
     <string name="github_topbar_search_label">搜索已跟踪项目（仓库/App/包名）</string>
     <string name="github_overview_title">版本追踪</string>
+    <string name="github_overview_incremental_refresh_time">增量缓存更新：%1$s</string>
+    <string name="github_overview_full_refresh_time">完整刷新：%1$s</string>
     <string name="github_overview_label_strategy">策略</string>
     <string name="github_overview_label_api">API</string>
     <string name="github_overview_label_tracked">已追踪</string>

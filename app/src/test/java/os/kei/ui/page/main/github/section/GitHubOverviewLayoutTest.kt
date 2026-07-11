@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -74,6 +75,7 @@ class GitHubOverviewLayoutTest {
         refreshState: OverviewRefreshState = OverviewRefreshState.Completed,
         lastRefreshMs: Long = System.currentTimeMillis() - 3_600_000L,
     ) {
+        val incrementalRefreshMs = System.currentTimeMillis() - 30 * 60_000L
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -97,6 +99,7 @@ class GitHubOverviewLayoutTest {
                                 preReleaseCount = 8,
                                 preReleaseUpdateCount = 8,
                                 failedCount = 0,
+                                latestCheckedAtMillis = incrementalRefreshMs,
                             ),
                         failedFilterActive = false,
                         onEditVisibleEntries = {},
@@ -123,10 +126,24 @@ class GitHubOverviewLayoutTest {
         val stable = boundsFor(context.getString(R.string.github_overview_pill_stable_pair, 36, 72))
         val preRelease = boundsFor(context.getString(R.string.github_overview_pill_prerelease_pair, 8, 8))
         val failed = boundsFor(context.getString(R.string.github_overview_pill_failed, 0))
+        val incrementalTime = boundsForContentDescription(
+            context.getString(
+                R.string.github_overview_incremental_refresh_time,
+                os.kei.ui.page.main.github.formatRefreshAgo(context, incrementalRefreshMs),
+            ),
+        )
+        val fullTime = boundsForContentDescription(
+            context.getString(
+                R.string.github_overview_full_refresh_time,
+                os.kei.ui.page.main.github.formatRefreshAgo(context, lastRefreshMs),
+            ),
+        )
         val tolerancePx = with(composeRule.density) { 2.dp.toPx() }
         val maxSingleLineTitleHeightPx = with(composeRule.density) { 28.dp.toPx() }
 
         assertVerticallyCentered(title, mode, tolerancePx)
+        assertVerticallyCentered(title, incrementalTime, tolerancePx)
+        assertVerticallyCentered(title, fullTime, tolerancePx)
         assertSameRow(tracked, stable, tolerancePx)
         assertSameRow(stable, preRelease, tolerancePx)
         assertSameRow(stable, failed, tolerancePx)
@@ -140,7 +157,8 @@ class GitHubOverviewLayoutTest {
         )
 
         val rowCenters =
-            listOf(title, mode, tracked, stable, preRelease, failed).map { bounds -> bounds.center.y }
+            listOf(title, mode, incrementalTime, fullTime, tracked, stable, preRelease, failed)
+                .map { bounds -> bounds.center.y }
         val distinctRows =
             rowCenters.fold(mutableListOf<Float>()) { rows, centerY ->
                 if (rows.none { existing -> abs(existing - centerY) <= tolerancePx }) rows += centerY
@@ -152,6 +170,12 @@ class GitHubOverviewLayoutTest {
     private fun boundsFor(text: String, substring: Boolean = false): Rect =
         composeRule
             .onNodeWithText(text, substring = substring, useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .boundsInRoot
+
+    private fun boundsForContentDescription(description: String): Rect =
+        composeRule
+            .onNodeWithContentDescription(description, useUnmergedTree = true)
             .fetchSemanticsNode()
             .boundsInRoot
 
