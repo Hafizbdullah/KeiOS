@@ -217,7 +217,9 @@ class GitRepositoryReleaseStrategy(
                 hasStableRelease &&
                     GitHubVersionUtils.referToSameReleaseVersion(
                         pre.versionCandidates,
-                        latestStableSignal.versionCandidates
+                        latestStableSignal.versionCandidates,
+                        leftChannel = pre.channel,
+                        rightChannel = latestStableSignal.channel,
                     )
             }
             ?.toReleaseSignal()

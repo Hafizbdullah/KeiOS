@@ -95,7 +95,9 @@ class GitHubApiTokenReleaseStrategy(
                 ?.takeUnless { preReleaseSignal ->
                     hasStableRelease && GitHubVersionUtils.referToSameReleaseVersion(
                         preReleaseSignal.versionCandidates,
-                        latestStableSignal.versionCandidates
+                        latestStableSignal.versionCandidates,
+                        leftChannel = preReleaseSignal.channel,
+                        rightChannel = latestStableSignal.channel,
                     )
                 }
             val updatedAt = entries.maxOfOrNull { it.updatedAtMillis ?: Long.MIN_VALUE }

@@ -84,10 +84,24 @@ object GitHubVersionUtils {
     fun compareVersionToStructuredCandidates(
         localVersion: String,
         candidates: List<GitHubVersionCandidate>,
+        remoteChannel: GitHubReleaseChannel? = null,
     ): Int? {
         return VersioningEngine.compareLocalVersionToRemote(
             localVersion = localVersion,
-            remoteCandidates = candidates.toCoreCandidates(),
+            remoteCandidates = candidates.toCoreCandidates(remoteChannel),
+        )?.order?.legacyValue
+    }
+
+    fun compareVersionNameAndCodeToStructuredCandidates(
+        localVersion: String,
+        localVersionCode: Long,
+        candidates: List<GitHubVersionCandidate>,
+        remoteChannel: GitHubReleaseChannel? = null,
+    ): Int? {
+        return VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+            localVersion = localVersion,
+            localVersionCode = localVersionCode,
+            remoteCandidates = candidates.toCoreCandidates(remoteChannel),
         )?.order?.legacyValue
     }
 
@@ -95,21 +109,24 @@ object GitHubVersionUtils {
         localVersion: String,
         localVersionCode: Long,
         remoteCandidates: List<GitHubVersionCandidate>,
+        remoteChannel: GitHubReleaseChannel? = null,
     ): Boolean {
         return VersioningEngine.remoteCandidateMatchesLocalVersionNameAndCode(
             localVersion = localVersion,
             localVersionCode = localVersionCode,
-            remoteCandidates = remoteCandidates.toCoreCandidates(),
+            remoteCandidates = remoteCandidates.toCoreCandidates(remoteChannel),
         )
     }
 
     fun compareStructuredCandidateSets(
         leftCandidates: List<GitHubVersionCandidate>,
         rightCandidates: List<GitHubVersionCandidate>,
+        leftChannel: GitHubReleaseChannel? = null,
+        rightChannel: GitHubReleaseChannel? = null,
     ): Int? {
         return VersioningEngine.compareRemoteCandidateSets(
-            leftCandidates = leftCandidates.toCoreCandidates(),
-            rightCandidates = rightCandidates.toCoreCandidates(),
+            leftCandidates = leftCandidates.toCoreCandidates(leftChannel),
+            rightCandidates = rightCandidates.toCoreCandidates(rightChannel),
         )?.order?.legacyValue
     }
 
@@ -117,10 +134,12 @@ object GitHubVersionUtils {
         leftCandidates: List<GitHubVersionCandidate>,
         rightCandidates: List<GitHubVersionCandidate>,
         maxSourcePriority: Int = GitHubVersionCandidateSource.Link.priority,
+        leftChannel: GitHubReleaseChannel? = null,
+        rightChannel: GitHubReleaseChannel? = null,
     ): Boolean {
         return VersioningEngine.referToSameReleaseVersion(
-            leftCandidates = leftCandidates.toCoreCandidates(),
-            rightCandidates = rightCandidates.toCoreCandidates(),
+            leftCandidates = leftCandidates.toCoreCandidates(leftChannel),
+            rightCandidates = rightCandidates.toCoreCandidates(rightChannel),
             maxSourcePriority = maxSourcePriority,
         )
     }
@@ -150,10 +169,12 @@ object GitHubVersionUtils {
         stableCandidates: List<GitHubVersionCandidate>,
         preReleaseUpdatedAtMillis: Long? = null,
         stableUpdatedAtMillis: Long? = null,
+        preReleaseChannel: GitHubReleaseChannel? = null,
+        stableChannel: GitHubReleaseChannel? = null,
     ): Boolean {
         return VersioningEngine.isRelevantPreRelease(
-            preReleaseCandidates = preReleaseCandidates.toCoreCandidates(),
-            stableCandidates = stableCandidates.toCoreCandidates(),
+            preReleaseCandidates = preReleaseCandidates.toCoreCandidates(preReleaseChannel),
+            stableCandidates = stableCandidates.toCoreCandidates(stableChannel),
             preReleaseUpdatedAtMillis = preReleaseUpdatedAtMillis,
             stableUpdatedAtMillis = stableUpdatedAtMillis,
         )
@@ -178,19 +199,24 @@ object GitHubVersionUtils {
     fun compareCandidateSetsWithSources(
         leftCandidates: List<String>,
         rightCandidates: List<GitHubVersionCandidate>,
+        rightChannel: GitHubReleaseChannel? = null,
     ): Int? {
         return VersioningEngine.compareLocalCandidateSets(
             leftCandidates = leftCandidates,
-            rightCandidates = rightCandidates.toCoreCandidates(),
+            rightCandidates = rightCandidates.toCoreCandidates(rightChannel),
         )?.order?.legacyValue
     }
 }
 
-private fun List<GitHubVersionCandidate>.toCoreCandidates(): List<VersionCandidate> {
+private fun List<GitHubVersionCandidate>.toCoreCandidates(
+    channelHint: GitHubReleaseChannel? = null,
+): List<VersionCandidate> {
+    val coreChannelHint = channelHint?.toCoreVersionChannelHint()
     return map { candidate ->
         VersionCandidate(
             value = candidate.value,
             sourcePriority = candidate.source.priority,
+            channelHint = coreChannelHint,
         )
     }
 }
@@ -211,5 +237,17 @@ private fun VersionChannel.toGitHubChannel(): GitHubReleaseChannel {
         VersionChannel.PREVIEW -> GitHubReleaseChannel.PREVIEW
         VersionChannel.STABLE -> GitHubReleaseChannel.STABLE
         VersionChannel.UNKNOWN -> GitHubReleaseChannel.UNKNOWN
+    }
+}
+
+internal fun GitHubReleaseChannel.toCoreVersionChannelHint(): VersionChannel? {
+    return when (this) {
+        GitHubReleaseChannel.DEV -> VersionChannel.DEV
+        GitHubReleaseChannel.ALPHA -> VersionChannel.ALPHA
+        GitHubReleaseChannel.BETA -> VersionChannel.BETA
+        GitHubReleaseChannel.RC -> VersionChannel.RC
+        GitHubReleaseChannel.PREVIEW -> VersionChannel.PREVIEW
+        GitHubReleaseChannel.STABLE -> VersionChannel.STABLE
+        GitHubReleaseChannel.UNKNOWN -> null
     }
 }

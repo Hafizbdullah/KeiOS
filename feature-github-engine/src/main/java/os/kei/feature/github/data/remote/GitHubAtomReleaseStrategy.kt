@@ -10,6 +10,7 @@ import os.kei.core.io.executeCancellable
 import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
+import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
@@ -111,7 +112,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                 hasStableRelease &&
                     GitHubVersionUtils.referToSameReleaseVersion(
                         preReleaseSignal.versionCandidates,
-                        latestStable.versionCandidates
+                        latestStable.versionCandidates,
+                        leftChannel = preReleaseSignal.channel,
+                        rightChannel = latestStable.channel,
                     )
             }
 
@@ -214,7 +217,9 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
                                 GitHubVersionUtils.buildVersionCandidates(
                                     GitHubVersionCandidateSource.Tag to rawTag
                                 ),
-                                entry.versionCandidates
+                                entry.versionCandidates,
+                                leftChannel = GitHubReleaseChannel.STABLE,
+                                rightChannel = entry.channel,
                             )
                     }
                     GitHubAtomLatestStableLookup(

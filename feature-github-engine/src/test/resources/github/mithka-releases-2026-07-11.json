@@ -1,0 +1,172 @@
+[
+  {
+    "id": 352423274,
+    "node_id": "RE_mithka_352423274",
+    "tag_name": "v0.3.0-master.26071104.7880c18",
+    "name": "Mithka 0.3.0 master 7880c18",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071104.7880c18",
+    "body": "Automated master APK build 26071104.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-11T04:17:17Z",
+    "published_at": "2026-07-11T04:27:22Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071104-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071104-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352416036,
+    "node_id": "RE_mithka_352416036",
+    "tag_name": "v0.3.0-master.26071103.46079b6",
+    "name": "Mithka 0.3.0 master 46079b6",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071103.46079b6",
+    "body": "Automated master APK build 26071103.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-11T03:36:23Z",
+    "published_at": "2026-07-11T03:45:30Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071103-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071103-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352413332,
+    "node_id": "RE_mithka_352413332",
+    "tag_name": "v0.3.0-master.26071103.02bf113",
+    "name": "Mithka 0.3.0 master 02bf113",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071103.02bf113",
+    "body": "Automated master APK build 26071103.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-11T03:16:53Z",
+    "published_at": "2026-07-11T03:26:56Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071103-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071103-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352406096,
+    "node_id": "RE_mithka_352406096",
+    "tag_name": "v0.3.0-master.26071102.7f82266",
+    "name": "Mithka 0.3.0 master 7f82266",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071102.7f82266",
+    "body": "Automated master APK build 26071102.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-11T02:31:46Z",
+    "published_at": "2026-07-11T02:40:55Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071102-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071102-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352008970,
+    "node_id": "RE_mithka_352008970",
+    "tag_name": "v0.3.0",
+    "name": "Mithka 0.3.0",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0",
+    "body": "Stable Mithka 0.3.0 release.",
+    "draft": false,
+    "prerelease": false,
+    "created_at": "2026-07-10T14:57:56Z",
+    "published_at": "2026-07-10T09:42:13Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071014-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071014-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352282073,
+    "node_id": "RE_mithka_352282073",
+    "tag_name": "v0.3.0-master.26071018.95a062d",
+    "name": "Mithka 0.3.0 master 95a062d",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071018.95a062d",
+    "body": "Automated master APK build 26071018.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-10T18:56:22Z",
+    "published_at": "2026-07-10T19:06:53Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071018-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071018-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352238375,
+    "node_id": "RE_mithka_352238375",
+    "tag_name": "v0.3.0-master.26071017.89ede9e",
+    "name": "Mithka 0.3.0 master 89ede9e",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.89ede9e",
+    "body": "Automated master APK build 26071017.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-10T17:22:54Z",
+    "published_at": "2026-07-10T17:31:16Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071017-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071017-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352238471,
+    "node_id": "RE_mithka_352238471",
+    "tag_name": "v0.3.0-master.26071017.88ef68a",
+    "name": "Mithka 0.3.0 master 88ef68a",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.88ef68a",
+    "body": "Automated master APK build 26071017.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-10T17:22:18Z",
+    "published_at": "2026-07-10T17:31:29Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071017-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071017-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352230985,
+    "node_id": "RE_mithka_352230985",
+    "tag_name": "v0.3.0-master.26071017.756717d",
+    "name": "Mithka 0.3.0 master 756717d",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071017.756717d",
+    "body": "Automated master APK build 26071017.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-10T17:05:36Z",
+    "published_at": "2026-07-10T17:14:18Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071017-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071017-armeabi-v7a-release.apk" }
+    ]
+  },
+  {
+    "id": 352227230,
+    "node_id": "RE_mithka_352227230",
+    "tag_name": "v0.3.0-master.26071016.91f7dfc",
+    "name": "Mithka 0.3.0 master 91f7dfc",
+    "html_url": "https://github.com/iebb/mithka/releases/tag/v0.3.0-master.26071016.91f7dfc",
+    "body": "Automated master APK build 26071016.",
+    "draft": false,
+    "prerelease": true,
+    "created_at": "2026-07-10T16:55:33Z",
+    "published_at": "2026-07-10T17:05:54Z",
+    "author": { "login": "iebb", "avatar_url": "https://avatars.githubusercontent.com/u/iebb" },
+    "assets": [
+      { "name": "mithka-0.3.0+26071016-arm64-v8a-release.apk" },
+      { "name": "mithka-0.3.0+26071016-armeabi-v7a-release.apk" }
+    ]
+  }
+]

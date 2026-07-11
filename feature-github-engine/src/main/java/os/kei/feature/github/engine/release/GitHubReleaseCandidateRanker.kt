@@ -3,6 +3,7 @@ package os.kei.feature.github.engine.release
 import os.kei.core.versioning.ReleaseCandidateRanker
 import os.kei.core.versioning.ReleaseRankingEvidence
 import os.kei.core.versioning.VersionCandidate
+import os.kei.feature.github.data.remote.toCoreVersionChannelHint
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 
 object GitHubReleaseCandidateRanker {
@@ -47,11 +48,13 @@ object GitHubReleaseCandidateRanker {
 }
 
 private fun GitHubAtomReleaseEntry.toRankingEvidence(): ReleaseRankingEvidence {
+    val channelHint = channel.toCoreVersionChannelHint()
     return ReleaseRankingEvidence(
         versionCandidates = versionCandidates.map { candidate ->
             VersionCandidate(
                 value = candidate.value,
                 sourcePriority = candidate.source.priority,
+                channelHint = channelHint,
             )
         },
         publishedAtMillis = updatedAtMillis,

@@ -45,16 +45,20 @@ object GitHubReleaseEvaluationEngine {
         precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo? = null,
     ): GitHubReleaseEvaluationResult {
         val matchedEntry = snapshot.feed.entries.firstOrNull { entry ->
-            GitHubVersionUtils.compareVersionToStructuredCandidates(
-                localVersion,
-                entry.versionCandidates,
+            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
+                localVersion = localVersion,
+                localVersionCode = localVersionCode,
+                candidates = entry.versionCandidates,
+                remoteChannel = entry.channel,
             ) == 0
         }
         val matchedCurrentStable = snapshot.hasStableRelease &&
             matchedEntry != null &&
-            GitHubVersionUtils.compareCandidateSetsWithSources(
-                matchedEntry.versionCandidates.map { it.value },
-                snapshot.latestStable.versionCandidates,
+            GitHubVersionUtils.compareStructuredCandidateSets(
+                leftCandidates = matchedEntry.versionCandidates,
+                rightCandidates = snapshot.latestStable.versionCandidates,
+                leftChannel = matchedEntry.channel,
+                rightChannel = snapshot.latestStable.channel,
             ) == 0
         val latestStable = snapshot.latestStable.takeIf { snapshot.hasStableRelease }
         val latestPre = snapshot.latestPreRelease
@@ -73,18 +77,13 @@ object GitHubReleaseEvaluationEngine {
             isLocalPreReleaseInstalled
 
         val stableCmp = latestStable?.let {
-            GitHubVersionUtils.compareVersionToStructuredCandidates(
-                localVersion,
-                it.versionCandidates,
-            )
-        }
-        val stableTagMatchesLocalNameAndCode = latestStable?.let {
-            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                remoteCandidates = it.versionCandidates,
+                candidates = it.versionCandidates,
+                remoteChannel = it.channel,
             )
-        } == true
+        }
         val latestPreIsRelevant = when {
             latestPre == null -> false
             latestStable == null -> true
@@ -93,21 +92,18 @@ object GitHubReleaseEvaluationEngine {
                 stableCandidates = latestStable.versionCandidates,
                 preReleaseUpdatedAtMillis = latestPre.updatedAtMillis,
                 stableUpdatedAtMillis = latestStable.updatedAtMillis,
+                preReleaseChannel = latestPre.channel,
+                stableChannel = latestStable.channel,
             )
         }
         val latestPreCmp = latestPre?.let {
-            GitHubVersionUtils.compareVersionToStructuredCandidates(
-                localVersion,
-                it.versionCandidates,
-            )
-        }
-        val preTagMatchesLocalNameAndCode = latestPre?.let {
-            GitHubVersionUtils.remoteCandidateMatchesLocalVersionNameAndCode(
+            GitHubVersionUtils.compareVersionNameAndCodeToStructuredCandidates(
                 localVersion = localVersion,
                 localVersionCode = localVersionCode,
-                remoteCandidates = it.versionCandidates,
+                candidates = it.versionCandidates,
+                remoteChannel = it.channel,
             )
-        } == true
+        }
 
         val preciseStableCmp = preciseStableApkVersion
             ?.versionCodeLong
@@ -121,10 +117,10 @@ object GitHubReleaseEvaluationEngine {
             latestPreIsRelevant &&
             (
                 precisePreCmp?.let { it > 0 }
-                    ?: (!preTagMatchesLocalNameAndCode && latestPreCmp?.let { it < 0 } == true)
+                    ?: (latestPreCmp?.let { it < 0 } == true)
             )
         val rawStableHasUpdate = preciseStableCmp?.let { it > 0 }
-            ?: (!stableTagMatchesLocalNameAndCode && stableCmp?.let { it < 0 } == true)
+            ?: (stableCmp?.let { it < 0 } == true)
         val suppressAllReleaseUpdates = policy.ignoreMode.suppressesAllReleaseUpdates()
         val stableReleaseIgnoreKey = buildGitHubReleaseIgnoreKey(
             release = latestStable,
