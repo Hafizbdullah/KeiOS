@@ -155,7 +155,7 @@ fun GitHubPage(
     }
     val appListPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            scope.launch { actions.reloadApps(forceRefresh = true) }
+            actions.refreshInstalledAppsAfterPermissionChange()
         }
     val launchAppListPermission: (Intent) -> Unit =
         remember(appListPermissionLauncher) {
@@ -385,6 +385,7 @@ fun GitHubPage(
                     onOpenCheckLogicSheet = actions::openCheckLogicSheet,
                     onOpenDroidSourcesSheet = actions::openDroidSourcesSheet,
                     onOpenDebugSheet = actions::openDebugSheet,
+                    onRefreshInstalledApps = actions::refreshInstalledAppsManually,
                     onOpenActionsNotificationHistory = onOpenActionsNotificationHistory,
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
                     onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,

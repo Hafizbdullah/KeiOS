@@ -3,7 +3,9 @@ package os.kei.ui.page.main.github.page
 import android.content.Context
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
@@ -299,6 +301,41 @@ internal class GitHubPageActions(
     }
 
     suspend fun reloadApps(forceRefresh: Boolean = false) = refreshActions.reloadApps(forceRefresh = forceRefresh)
+
+    fun refreshInstalledAppsManually() {
+        if (env.state.appListRefreshing) return
+        env.state.showActionMenuPopup = false
+        env.scope.launch {
+            runCatching {
+                refreshActions.reloadApps(
+                    forceRefresh = true,
+                    includeSystemApps = true,
+                )
+                refreshActions.syncLocalAppStateWithInstalledApps(forceRefreshApps = false)
+            }.onSuccess {
+                env.toast(R.string.github_toast_app_list_refreshed, env.state.appList.size)
+            }.onFailure { error ->
+                env.toast(
+                    error.message.orEmpty().ifBlank {
+                        env.string(R.string.github_toast_app_list_refresh_failed)
+                    },
+                )
+            }
+        }
+    }
+
+    fun refreshInstalledAppsAfterPermissionChange() {
+        env.scope.launch {
+            runCatching {
+                refreshActions.reloadApps(forceRefresh = true, includeSystemApps = true)
+                delay(APP_LIST_PERMISSION_RECHECK_DELAY_MS)
+                refreshActions.reloadApps(forceRefresh = true, includeSystemApps = true)
+                refreshActions.syncLocalAppStateWithInstalledApps(forceRefreshApps = false)
+            }.onFailure {
+                env.toast(R.string.github_toast_app_list_refresh_failed)
+            }
+        }
+    }
 
     suspend fun initializeWarmSnapshot() = refreshActions.initializeWarmSnapshot()
 
@@ -758,4 +795,8 @@ internal class GitHubPageActions(
     }
 
     suspend fun handlePackageChangedEvent(event: AppPackageChangedEvent) = packageChangedActions.handle(event)
+
+    private companion object {
+        const val APP_LIST_PERMISSION_RECHECK_DELAY_MS = 750L
+    }
 }

@@ -405,6 +405,7 @@ internal fun GitHubMainContent(
                 onOpenCheckLogicSheet = actions.onOpenCheckLogicSheet,
                 onOpenDroidSourcesSheet = actions.onOpenDroidSourcesSheet,
                 onOpenDebugSheet = actions.onOpenDebugSheet,
+                onRefreshInstalledApps = actions.onRefreshInstalledApps,
                 onShowActionMenuPopupChange = actions.onShowActionMenuPopupChange,
                 onSortModeChange = actions.onSortModeChange,
                 onSortDirectionChange = actions.onSortDirectionChange,

@@ -21,6 +21,7 @@ import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideFlaskIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
@@ -81,6 +82,7 @@ internal fun GitHubTopBarActions(
     onOpenCheckLogicSheet: () -> Unit,
     onOpenDroidSourcesSheet: () -> Unit,
     onOpenDebugSheet: () -> Unit,
+    onRefreshInstalledApps: () -> Unit,
     onShowActionMenuPopupChange: (Boolean) -> Unit,
     onSortModeChange: (GitHubSortMode) -> Unit,
     onSortDirectionChange: (GitHubSortDirection) -> Unit,
@@ -101,6 +103,7 @@ internal fun GitHubTopBarActions(
     val intervalIcon = appLucideTimeIcon()
     val droidSourcesIcon = appLucideDatabaseIcon()
     val debugIcon = appLucideFlaskIcon()
+    val refreshAppsIcon = appLucideRefreshIcon()
     val moreIcon = appLucideMoreIcon()
     val chevronRightIcon = appLucideChevronRightIcon()
     val editStrategyContentDescription = stringResource(R.string.github_topbar_cd_edit_strategy)
@@ -114,6 +117,8 @@ internal fun GitHubTopBarActions(
         stringResource(R.string.github_topbar_droid_sources_count, fdroidCommonRepoCount)
     val debugLabel = stringResource(R.string.github_topbar_debug_tools)
     val debugSummary = stringResource(R.string.github_topbar_debug_tools_summary)
+    val refreshAppsLabel = stringResource(R.string.github_topbar_refresh_app_list)
+    val refreshAppsSummary = stringResource(R.string.github_topbar_refresh_app_list_summary)
     val moreContentDescription = stringResource(R.string.github_item_cd_more_actions)
     val exportTracksLabel =
         if (tracksExporting) {
@@ -278,6 +283,13 @@ internal fun GitHubTopBarActions(
                                                 onShowActionMenuPopupChange(false)
                                                 onOpenDebugSheet()
                                             },
+                                        ),
+                                        LiquidGlassActionMenuActionRow(
+                                            id = "refresh_app_list",
+                                            text = refreshAppsLabel,
+                                            subtitle = refreshAppsSummary,
+                                            leadingIcon = refreshAppsIcon,
+                                            onClick = onRefreshInstalledApps,
                                         ),
                                         LiquidGlassActionMenuSubmenuRow(
                                             id = "sort",

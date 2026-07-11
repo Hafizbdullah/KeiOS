@@ -516,6 +516,10 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_topbar_droid_sources_count">%1$d 件有効</string>
     <string name="github_topbar_debug_tools">Debug</string>
     <string name="github_topbar_debug_tools_summary">更新と通知のテスト</string>
+    <string name="github_topbar_refresh_app_list">アプリ一覧を更新</string>
+    <string name="github_topbar_refresh_app_list_summary">ユーザーアプリとシステムアプリを再スキャン</string>
+    <string name="github_toast_app_list_refreshed">更新完了：%1$d 個のアプリを検出</string>
+    <string name="github_toast_app_list_refresh_failed">アプリ一覧の更新に失敗しました</string>
     <string name="github_topbar_search_label">追跡プロジェクトを検索（リポジトリ / アプリ / パッケージ）</string>
     <string name="github_overview_title">バージョン追跡</string>
     <string name="github_overview_label_strategy">方式</string>

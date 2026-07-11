@@ -109,6 +109,7 @@ internal data class GitHubMainContentActions(
     val onOpenCheckLogicSheet: () -> Unit,
     val onOpenDroidSourcesSheet: () -> Unit,
     val onOpenDebugSheet: () -> Unit,
+    val onRefreshInstalledApps: () -> Unit,
     val onOpenActionsNotificationHistory: () -> Unit,
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,
