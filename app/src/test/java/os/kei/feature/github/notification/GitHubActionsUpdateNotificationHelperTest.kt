@@ -81,6 +81,8 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertTrue(focusParam.contains("\"highlightColor\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
         assertTrue(focusParam.contains("\"specialTitle\":\"#44\""))
+        assertTrue(focusParam.contains("\"content\":\"Animeko\""))
+        assertFalse(focusParam.contains("Animeko · #44"))
         assertTrue(focusParam.contains("\"colorTitle\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"colorContent\":\"#64748B\""))
@@ -169,13 +171,13 @@ class GitHubActionsUpdateNotificationHelperTest {
     }
 
     @Test
-    fun `notification content keeps app label and run label compact`() {
+    fun `notification content keeps the full app label without repeating run number`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val snapshot = createSnapshot("me.him188.ani")
         val notification = invokeFrameworkNotification(context, snapshot)
 
         assertEquals(
-            "Animeko #44 · CI / Benchmark APK",
+            "Animeko",
             notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
         )
     }

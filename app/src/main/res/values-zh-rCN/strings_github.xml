@@ -51,8 +51,8 @@
     <string name="github_refresh_mi_label_failed">败%1$d</string>
     <string name="github_refresh_badge_failed_tooltip">角标显示失败 %1$d 项 · 可更新 %2$d 项（稳定 %3$d · 预发 %4$d）</string>
     <string name="github_refresh_badge_updates_tooltip">角标显示可更新 %1$d 项（稳定 %2$d · 预发 %3$d）</string>
-    <string name="github_actions_update_notification_title">GitHub Actions 有新构建</string>
-    <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
+    <string name="github_actions_update_notification_title">Actions 有新构建了</string>
+    <string name="github_actions_update_notification_content">%1$s</string>
     <string name="github_actions_update_island_content">Actions</string>
     <string name="github_actions_update_debug_toast_sent">已发送 KeiOS Actions 更新测试通知</string>
     <string name="github_actions_update_debug_toast_failed">通知权限未开启，测试通知未发送</string>

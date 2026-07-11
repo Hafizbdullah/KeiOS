@@ -161,7 +161,7 @@ object GitHubActionsUpdateNotificationHelper {
         notificationId: Int,
     ): Notification {
         val title = title(context)
-        val content = compactContent(snapshot)
+        val content = targetLabel(snapshot)
         val compactRunLabel = compactText(snapshot.runLabel, maxLength = 8)
         val openPendingIntent = buildOpenPendingIntent(context, snapshot, notificationId)
         val markReadPendingIntent = buildMarkReadPendingIntent(context, notificationId)
@@ -315,23 +315,15 @@ object GitHubActionsUpdateNotificationHelper {
     ): String =
         context.getString(
             R.string.github_actions_update_notification_content,
-            snapshot.appLabel.ifBlank { "${snapshot.owner}/${snapshot.repo}" },
-            snapshot.runLabel,
-            snapshot.workflowName.ifBlank { snapshot.workflowPath },
+            targetLabel(snapshot),
         )
 
-    private fun compactContent(snapshot: GitHubActionsRecommendedRunSnapshot): String {
-        val target = compactTargetLabel(snapshot)
-        val run = compactText(snapshot.runLabel, maxLength = 12)
-        return listOf(target, run)
-            .filter { it.isNotBlank() }
-            .joinToString(" · ")
-            .ifBlank { snapshot.owner + "/" + snapshot.repo }
-    }
+    private fun targetLabel(snapshot: GitHubActionsRecommendedRunSnapshot): String =
+        snapshot.appLabel.ifBlank { "${snapshot.owner}/${snapshot.repo}" }
 
     private fun compactTargetLabel(snapshot: GitHubActionsRecommendedRunSnapshot): String {
         return compactText(
-            raw = snapshot.appLabel.ifBlank { snapshot.repo.ifBlank { snapshot.owner } },
+            raw = targetLabel(snapshot),
             maxLength = 10,
         )
     }

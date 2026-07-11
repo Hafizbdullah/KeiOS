@@ -51,8 +51,8 @@
     <string name="github_refresh_mi_label_failed">失敗%1$d</string>
     <string name="github_refresh_badge_failed_tooltip">バッジは確認失敗 %1$d 件を表示 · 更新 %2$d 件（stable %3$d · pre-release %4$d）</string>
     <string name="github_refresh_badge_updates_tooltip">バッジは更新 %1$d 件を表示（stable %2$d · pre-release %3$d）</string>
-    <string name="github_actions_update_notification_title">GitHub Actions の新しいビルド</string>
-    <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
+    <string name="github_actions_update_notification_title">Actions の新しいビルド</string>
+    <string name="github_actions_update_notification_content">%1$s</string>
     <string name="github_actions_update_island_content">Actions</string>
     <string name="github_actions_update_debug_toast_sent">KeiOS Actions 更新テスト通知を送信しました</string>
     <string name="github_actions_update_debug_toast_failed">通知権限がオフのため、テスト通知を送信できませんでした</string>

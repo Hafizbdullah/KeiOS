@@ -51,8 +51,8 @@
     <string name="github_refresh_mi_label_failed">Fail %1$d</string>
     <string name="github_refresh_badge_failed_tooltip">Badge shows %1$d failed checks · %2$d updates available (stable %3$d · pre-release %4$d)</string>
     <string name="github_refresh_badge_updates_tooltip">Badge shows %1$d updates available (stable %2$d · pre-release %3$d)</string>
-    <string name="github_actions_update_notification_title">New GitHub Actions build</string>
-    <string name="github_actions_update_notification_content">%1$s %2$s · %3$s</string>
+    <string name="github_actions_update_notification_title">New Actions build</string>
+    <string name="github_actions_update_notification_content">%1$s</string>
     <string name="github_actions_update_island_content">Actions</string>
     <string name="github_actions_update_debug_toast_sent">KeiOS Actions update test notification sent</string>
     <string name="github_actions_update_debug_toast_failed">Notification permission is off, so the test notification was skipped</string>
