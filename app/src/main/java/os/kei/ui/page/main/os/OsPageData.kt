@@ -6,6 +6,8 @@ import android.content.pm.FeatureInfo
 import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import os.kei.core.shizuku.ShizukuApiUtils
 import kotlinx.serialization.json.buildJsonArray
@@ -13,7 +15,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import os.kei.core.json.KeiJson
 import os.kei.core.json.encodeCompact
-import os.kei.core.system.getAllJavaPropertiesSnapshot
 import os.kei.core.system.getAllJavaPropertiesSnapshotAsync
 import os.kei.core.system.getAllSystemPropertiesSnapshot
 import os.kei.core.system.getAllSystemPropertiesSnapshotAsync
@@ -201,64 +202,6 @@ internal fun capabilityRows(context: Context): List<InfoRow> {
     )
 }
 
-internal fun buildSectionRows(
-    section: SectionKind,
-    context: Context,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
-    forceRefresh: Boolean = false,
-    dataSnapshot: OsPageDataSnapshot? = null
-): List<InfoRow> {
-    return when (section) {
-        SectionKind.SYSTEM,
-        SectionKind.SECURE,
-        SectionKind.GLOBAL -> {
-            val snapshotRows = dataSnapshot?.settingsSections?.rowsFor(section)
-            cleanRows(snapshotRows ?: settingsRowsForSection(section, shizukuApiUtils))
-        }
-        SectionKind.ANDROID -> {
-            val systemProperties = dataSnapshot?.systemProperties
-                ?: getAllSystemPropertiesSnapshot(forceRefresh = forceRefresh)
-            cleanRows(
-                graphicsRows(context, systemProperties) +
-                    lowLevelInfoRows(context, systemProperties) +
-                    capabilityRows(context) +
-                    systemProperties.toSortedMap().map { InfoRow(it.key, it.value) }
-            )
-        }
-        SectionKind.JAVA -> cleanRows(
-            (dataSnapshot?.javaProperties ?: getAllJavaPropertiesSnapshot(forceRefresh = forceRefresh))
-                .toSortedMap()
-                .map { InfoRow(it.key, it.value) }
-        )
-        SectionKind.LINUX -> {
-            val linuxProbe = dataSnapshot?.linuxProbe ?: loadLinuxProbeSnapshot(shizukuApiUtils)
-            val envRows = System.getenv().toSortedMap().map { InfoRow("env.${it.key}", it.value) }
-            cleanRows(
-                listOf(
-                    InfoRow("Shizuku Status", shizukuStatus),
-                    InfoRow(
-                        "uname-a",
-                        linuxProbe.preferredValue { uname }
-                    ),
-                    InfoRow(
-                        "getenforce",
-                        linuxProbe.preferredValue { getenforce }
-                    ),
-                    InfoRow(
-                        "proc.version",
-                        linuxProbe.preferredValue { procVersion }
-                    ),
-                    InfoRow(
-                        "toybox --version",
-                        linuxProbe.preferredValue { toyboxVersion }
-                    )
-                ) + envRows
-            )
-        }
-    }
-}
-
 internal suspend fun buildSectionRowsAsync(
     section: SectionKind,
     context: Context,
@@ -358,31 +301,6 @@ internal data class ExportSections(
     val linux: List<InfoRow>
 )
 
-internal fun buildExportSections(
-    context: Context,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils
-): ExportSections {
-    val snapshot = OsPageDataSnapshot.loadForExport(shizukuApiUtils)
-    val system = buildSectionRows(SectionKind.SYSTEM, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val secure = buildSectionRows(SectionKind.SECURE, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val global = buildSectionRows(SectionKind.GLOBAL, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val android = buildSectionRows(SectionKind.ANDROID, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val java = buildSectionRows(SectionKind.JAVA, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val linux = buildSectionRows(SectionKind.LINUX, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-    val topInfo = buildTopInfoRows(system, secure, global, android, java, linux)
-
-    return ExportSections(
-        topInfo = topInfo,
-        system = removeTopInfoRows(SectionKind.SYSTEM, system),
-        secure = removeTopInfoRows(SectionKind.SECURE, secure),
-        global = removeTopInfoRows(SectionKind.GLOBAL, global),
-        android = removeTopInfoRows(SectionKind.ANDROID, android),
-        java = removeTopInfoRows(SectionKind.JAVA, java),
-        linux = removeTopInfoRows(SectionKind.LINUX, linux)
-    )
-}
-
 internal suspend fun buildExportSectionsAsync(
     context: Context,
     shizukuStatus: String,
@@ -393,13 +311,28 @@ internal suspend fun buildExportSectionsAsync(
         shizukuApiUtils = shizukuApiUtils,
         dispatcher = dispatcher
     )
+    val rowsBySection =
+        coroutineScope {
+            SectionKind.entries.associateWith { section ->
+                async {
+                    buildSectionRowsAsync(
+                        section = section,
+                        context = context,
+                        shizukuStatus = shizukuStatus,
+                        shizukuApiUtils = shizukuApiUtils,
+                        dataSnapshot = snapshot,
+                        dispatcher = dispatcher,
+                    )
+                }
+            }.mapValues { (_, deferred) -> deferred.await() }
+        }
     return withContext(dispatcher) {
-        val system = buildSectionRows(SectionKind.SYSTEM, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-        val secure = buildSectionRows(SectionKind.SECURE, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-        val global = buildSectionRows(SectionKind.GLOBAL, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-        val android = buildSectionRows(SectionKind.ANDROID, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-        val java = buildSectionRows(SectionKind.JAVA, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
-        val linux = buildSectionRows(SectionKind.LINUX, context, shizukuStatus, shizukuApiUtils, dataSnapshot = snapshot)
+        val system = rowsBySection.getValue(SectionKind.SYSTEM)
+        val secure = rowsBySection.getValue(SectionKind.SECURE)
+        val global = rowsBySection.getValue(SectionKind.GLOBAL)
+        val android = rowsBySection.getValue(SectionKind.ANDROID)
+        val java = rowsBySection.getValue(SectionKind.JAVA)
+        val linux = rowsBySection.getValue(SectionKind.LINUX)
         val topInfo = buildTopInfoRows(system, secure, global, android, java, linux)
 
         ExportSections(

@@ -4,12 +4,17 @@ import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import os.kei.core.shizuku.ShizukuApiUtils
 import kotlin.coroutines.coroutineContext
 
@@ -182,14 +187,25 @@ internal class OsPageSectionController(
                             persistentState.value.uiSnapshot.visibleCards,
                         )
                     val sectionCount = targets.size.coerceAtLeast(1)
-                    targets.forEachIndexed { index, section ->
-                        if (!loadGeneration.isCurrent(generation)) return@launch
-                        ensureLoad(section, true)
-                        if (loadGeneration.isCurrent(generation)) {
-                            runtimeMutableState.update { state ->
-                                state.copy(refreshProgress = (index + 1).toFloat() / sectionCount.toFloat())
+                    supervisorScope {
+                        val permits = Semaphore(OS_SECTION_LOAD_PARALLELISM)
+                        targets.map { section ->
+                            async {
+                                if (!loadGeneration.isCurrent(generation)) return@async
+                                permits.withPermit {
+                                    ensureLoad(section, true)
+                                }
+                                if (loadGeneration.isCurrent(generation)) {
+                                    runtimeMutableState.update { state ->
+                                        state.copy(
+                                            refreshProgress =
+                                                (state.refreshProgress + 1f / sectionCount.toFloat())
+                                                    .coerceAtMost(1f),
+                                        )
+                                    }
+                                }
                             }
-                        }
+                        }.awaitAll()
                     }
                     if (loadGeneration.isCurrent(generation)) {
                         events.emit(OsPageEvent.RefreshCompleted(refreshed = targets.isNotEmpty()))
@@ -248,12 +264,16 @@ internal class OsPageSectionController(
             scope.launch {
                 delay(OS_INITIAL_VISIBLE_REFRESH_DELAY_MS)
                 try {
-                    sectionsToLoad.forEachIndexed { index, section ->
-                        if (!loadGeneration.isCurrent(generation)) return@launch
-                        ensureLoad(section, false)
-                        if (loadGeneration.isCurrent(generation) && index < sectionsToLoad.lastIndex) {
-                            delay(OS_INITIAL_SECTION_LOAD_SPACING_MS)
-                        }
+                    supervisorScope {
+                        val permits = Semaphore(OS_SECTION_LOAD_PARALLELISM)
+                        sectionsToLoad.map { section ->
+                            async {
+                                if (!loadGeneration.isCurrent(generation)) return@async
+                                permits.withPermit {
+                                    ensureLoad(section, false)
+                                }
+                            }
+                        }.awaitAll()
                     }
                 } catch (error: Throwable) {
                     error.rethrowIfCancellation()
@@ -354,7 +374,7 @@ internal class OsPageSectionController(
 }
 
 private const val OS_INITIAL_VISIBLE_REFRESH_DELAY_MS = 360L
-private const val OS_INITIAL_SECTION_LOAD_SPACING_MS = 80L
+private const val OS_SECTION_LOAD_PARALLELISM = 2
 
 private fun hydratedSectionStates(
     visibleSections: Set<SectionKind>,

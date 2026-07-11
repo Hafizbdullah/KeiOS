@@ -4,14 +4,13 @@ import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.system.AppBuildEnv
 import os.kei.core.system.AppCommandExecutor
@@ -25,7 +24,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 class ShizukuApiUtils(
     private val requestCode: Int = DEFAULT_REQUEST_CODE,
-    private val commandDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val commandDispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
 ) {
     data class AppCommandOutputSnapshot(
         val stdout: String,
@@ -96,7 +95,11 @@ class ShizukuApiUtils(
 
 
     private var statusCallback: ((String) -> Unit)? = null
+    private val processApiLock = Any()
+    @Volatile
     private var cachedNewProcessMethod: Method? = null
+    @Volatile
+    private var processApiResolutionAttempted = false
     @Volatile
     private var cachedRuntimeState: CachedRuntimeState? = null
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -109,7 +112,10 @@ class ShizukuApiUtils(
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         invalidateRuntimeStateCache()
         publishStatus("Shizuku service disconnected")
-        cachedNewProcessMethod = null
+        synchronized(processApiLock) {
+            cachedNewProcessMethod = null
+            processApiResolutionAttempted = false
+        }
     }
 
     private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
@@ -174,32 +180,6 @@ class ShizukuApiUtils(
         return resolveRuntimeState().commandReady
     }
 
-    fun execCommandResult(command: String, timeoutMs: Long = 2000L): AppCommandResult {
-        return runCatching {
-            runBlocking(commandDispatcher) {
-                execCommandCancellableResult(command = command, timeoutMs = timeoutMs)
-            }
-        }.onFailure {
-            AppLogger.w(
-                TAG,
-                "execCommand failed: ${it.javaClass.simpleName}${it.message?.let { msg -> ": $msg" }.orEmpty()}"
-            )
-        }.getOrElse { error ->
-            AppCommandResult(
-                stdout = "",
-                stderr = error.userMessage(),
-                exitCode = null,
-                timedOut = false,
-                cancelled = error is CancellationException
-            )
-        }
-    }
-
-    fun execCommand(command: String, timeoutMs: Long = 2000L): String? {
-        val result = execCommandResult(command = command, timeoutMs = timeoutMs)
-        return shizukuCommandOutputOrNull(result)
-    }
-
     suspend fun execCommandCancellableResult(
         command: String,
         timeoutMs: Long = 2000L
@@ -214,7 +194,7 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val state = resolveRuntimeState()
+        val state = withContext(commandDispatcher) { resolveRuntimeState() }
         if (!state.commandReady) {
             return AppCommandResult(
                 stdout = "",
@@ -224,7 +204,7 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val process = createShellProcess(normalizedCommand)
+        val process = withContext(commandDispatcher) { createShellProcess(normalizedCommand) }
             ?: return AppCommandResult(
                 stdout = "",
                 stderr = "Shizuku process unavailable",
@@ -270,7 +250,7 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val state = resolveRuntimeState()
+        val state = withContext(commandDispatcher) { resolveRuntimeState() }
         if (!state.commandReady) {
             return AppCommandResult(
                 stdout = "",
@@ -280,7 +260,7 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val process = createShellProcess(normalizedCommand)
+        val process = withContext(commandDispatcher) { createShellProcess(normalizedCommand) }
             ?: return AppCommandResult(
                 stdout = "",
                 stderr = "Shizuku process unavailable",
@@ -344,69 +324,6 @@ class ShizukuApiUtils(
         return InteractiveCommandRewriteResult(
             command = "$trimmed -n 1",
             adaptedTopOnce = true
-        )
-    }
-
-    private fun executeProcess(process: Process, timeoutMs: Long): AppCommandResult {
-        val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
-        val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
-        closeProcessInput(process)
-        val stdoutReader = startStreamCollector(
-            name = "KeiOS-ShizukuStdout",
-            stream = process.inputStream,
-            sink = stdout
-        )
-        val stderrReader = startStreamCollector(
-            name = "KeiOS-ShizukuStderr",
-            stream = process.errorStream,
-            sink = stderr
-        )
-
-        var waitThrowable: Throwable? = null
-        val waiter = Thread(
-            {
-                runCatching { process.waitFor() }
-                    .onFailure { throwable -> waitThrowable = throwable }
-            },
-            "KeiOS-ShizukuWait"
-        ).apply {
-            isDaemon = true
-            start()
-        }
-
-        waiter.join(timeoutMs)
-        if (waiter.isAlive) {
-            runCatching { process.destroy() }
-            runCatching {
-                waiter.join(300)
-                if (waiter.isAlive) {
-                    process.destroyForcibly()
-                    waiter.join(300)
-                }
-            }
-            stdoutReader.join(300)
-            stderrReader.join(300)
-            return AppCommandResult(
-                stdout = stdout.text().trim(),
-                stderr = stderr.text().trim(),
-                exitCode = null,
-                timedOut = true,
-                cancelled = false,
-                stdoutTruncated = stdout.truncated,
-                stderrTruncated = stderr.truncated
-            )
-        }
-        waitThrowable?.let { throw it }
-        stdoutReader.join(600)
-        stderrReader.join(600)
-        return AppCommandResult(
-            stdout = stdout.text().trim(),
-            stderr = stderr.text().trim(),
-            exitCode = process.exitValue(),
-            timedOut = false,
-            cancelled = false,
-            stdoutTruncated = stdout.truncated,
-            stderrTruncated = stderr.truncated
         )
     }
 
@@ -582,24 +499,28 @@ class ShizukuApiUtils(
     }
 
     private fun resolveNewProcessMethod(): Method? {
-        cachedNewProcessMethod?.let { return it }
-        val resolved = runCatching {
-            val parameterTypes = arrayOf(
-                Array<String>::class.java,
-                Array<String>::class.java,
-                String::class.java
-            )
-            Shizuku::class.java.declaredMethods.firstOrNull { method ->
-                method.parameterTypes.contentEquals(parameterTypes) &&
-                    Process::class.java.isAssignableFrom(method.returnType)
-            }?.apply {
-                isAccessible = true
-            }
-        }.onFailure {
-            AppLogger.w(TAG, "resolveNewProcessMethod failed: ${it.javaClass.simpleName}")
-        }.getOrNull()
-        cachedNewProcessMethod = resolved
-        return resolved
+        if (processApiResolutionAttempted) return cachedNewProcessMethod
+        synchronized(processApiLock) {
+            if (processApiResolutionAttempted) return cachedNewProcessMethod
+            val resolved = runCatching {
+                val parameterTypes = arrayOf(
+                    Array<String>::class.java,
+                    Array<String>::class.java,
+                    String::class.java
+                )
+                Shizuku::class.java.declaredMethods.firstOrNull { method ->
+                    method.parameterTypes.contentEquals(parameterTypes) &&
+                        Process::class.java.isAssignableFrom(method.returnType)
+                }?.apply {
+                    isAccessible = true
+                }
+            }.onFailure {
+                AppLogger.w(TAG, "resolveNewProcessMethod failed: ${it.javaClass.simpleName}")
+            }.getOrNull()
+            cachedNewProcessMethod = resolved
+            processApiResolutionAttempted = true
+            return resolved
+        }
     }
 
     private fun rewriteUiAutomatorDumpCommand(command: String): UiDumpRewriteResult {
@@ -648,7 +569,7 @@ class ShizukuApiUtils(
         return withExt.ifBlank { "window_dump.xml" }.take(64)
     }
 
-    fun detailedRows(): List<Pair<String, String>> {
+    suspend fun detailedRows(): List<Pair<String, String>> {
         val rows = mutableListOf<Pair<String, String>>()
         val state = resolveRuntimeState()
 
@@ -656,6 +577,7 @@ class ShizukuApiUtils(
         rows += "Shizuku Permission Granted" to state.permissionGranted.toString()
         rows += "Shizuku Activated" to state.commandReady.toString()
         rows += "Shizuku Command Identity" to state.commandIdentity.label
+        rows += "Shizuku Command Backend" to "Process API compatibility"
         rows += "Shizuku Pre-v11" to state.preV11.toString()
         rows += "Shizuku Permission Rationale" to runCatching { Shizuku.shouldShowRequestPermissionRationale().toString() }.getOrDefault("unknown")
         state.serviceUid?.let { rows += "Shizuku Service UID" to it.toString() }
@@ -665,15 +587,18 @@ class ShizukuApiUtils(
         reflectAny("getSELinuxContext")?.let { rows += "Shizuku SELinux Context" to it.toString() }
         reflectAny("getLatestServiceVersion")?.let { rows += "Shizuku Latest Service Version" to it.toString() }
 
-        if (state.commandReady) {
-            execCommand("id")?.let { rows += "Shizuku id" to it.lineSequence().firstOrNull().orEmpty() }
-            execCommand("whoami")?.let { rows += "Shizuku whoami" to it.lineSequence().firstOrNull().orEmpty() }
-            execCommand("uname -a")?.let { rows += "Shizuku uname" to it.lineSequence().firstOrNull().orEmpty() }
-            execCommand("getenforce")?.let { rows += "Shizuku getenforce" to it.lineSequence().firstOrNull().orEmpty() }
-            execCommand("ps -A | wc -l")?.let { rows += "Shizuku process count" to it.lineSequence().firstOrNull().orEmpty() }
-        }
+        if (state.commandReady) rows += loadDetailedCommandRows()
 
         return rows.filter { it.first.isNotBlank() && it.second.isNotBlank() }
+    }
+
+    private suspend fun loadDetailedCommandRows(): List<Pair<String, String>> {
+        val output =
+            execCommandCancellable(
+                command = DETAILED_PROBE_COMMAND,
+                timeoutMs = DETAILED_PROBE_TIMEOUT_MS,
+            ).orEmpty()
+        return parseShizukuDetailedCommandRows(output)
     }
 
     private fun resolveRuntimeState(forceRefresh: Boolean = false): RuntimeState {
@@ -759,6 +684,16 @@ class ShizukuApiUtils(
     companion object {
         private const val TAG = "ShizukuApiUtils"
         private const val RUNTIME_STATE_CACHE_TTL_NANOS = 750_000_000L
+        private const val DETAILED_PROBE_PREFIX = "__keios_shizuku_"
+        private const val DETAILED_PROBE_TIMEOUT_MS = 5_000L
+        private val DETAILED_PROBE_COMMAND =
+            listOf(
+                "printf '${DETAILED_PROBE_PREFIX}id=%s\\n' \"\$(id 2>/dev/null | head -n 1)\"",
+                "printf '${DETAILED_PROBE_PREFIX}whoami=%s\\n' \"\$(whoami 2>/dev/null | head -n 1)\"",
+                "printf '${DETAILED_PROBE_PREFIX}uname=%s\\n' \"\$(uname -a 2>/dev/null | head -n 1)\"",
+                "printf '${DETAILED_PROBE_PREFIX}getenforce=%s\\n' \"\$(getenforce 2>/dev/null | head -n 1)\"",
+                "printf '${DETAILED_PROBE_PREFIX}process_count=%s\\n' \"\$(ps -A 2>/dev/null | wc -l)\"",
+            ).joinToString(separator = "; ")
         const val DEFAULT_REQUEST_CODE = 1001
         const val API_VERSION = "13.1.5"
 
@@ -767,7 +702,25 @@ class ShizukuApiUtils(
     }
 }
 
-private fun Throwable.userMessage(): String = message?.trim()?.ifBlank { null } ?: javaClass.simpleName
+internal fun parseShizukuDetailedCommandRows(output: String): List<Pair<String, String>> {
+    val values =
+        output.lineSequence().mapNotNull { line ->
+            val separator = line.indexOf('=')
+            if (separator <= 0) return@mapNotNull null
+            val key = line.substring(0, separator).trim()
+            val value = line.substring(separator + 1).trim()
+            key.takeIf { it.startsWith("__keios_shizuku_") && value.isNotBlank() }
+                ?.removePrefix("__keios_shizuku_")
+                ?.let { it to value }
+        }.toMap()
+    return buildList {
+        values["id"]?.let { add("Shizuku id" to it) }
+        values["whoami"]?.let { add("Shizuku whoami" to it) }
+        values["uname"]?.let { add("Shizuku uname" to it) }
+        values["getenforce"]?.let { add("Shizuku getenforce" to it) }
+        values["process_count"]?.let { add("Shizuku process count" to it) }
+    }
+}
 
 internal fun shizukuCommandOutputOrNull(result: AppCommandResult): String? =
     result.combinedOutput().ifBlank { null }

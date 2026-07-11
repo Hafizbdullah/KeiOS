@@ -74,4 +74,30 @@ class ShizukuApiUtilsTest {
             ShizukuApiUtils.isCommandReadyStatusText("Shizuku permission: denied"),
         )
     }
+
+    @Test
+    fun `detailed probe parses one batched command and keeps equals in values`() {
+        val rows =
+            parseShizukuDetailedCommandRows(
+                """
+                ignored=value
+                __keios_shizuku_id=uid=2000(shell) gid=2000(shell)
+                __keios_shizuku_whoami=shell
+                __keios_shizuku_uname=Linux localhost 6.6
+                __keios_shizuku_getenforce=Enforcing
+                __keios_shizuku_process_count=321
+                """.trimIndent(),
+            )
+
+        assertEquals(
+            listOf(
+                "Shizuku id" to "uid=2000(shell) gid=2000(shell)",
+                "Shizuku whoami" to "shell",
+                "Shizuku uname" to "Linux localhost 6.6",
+                "Shizuku getenforce" to "Enforcing",
+                "Shizuku process count" to "321",
+            ),
+            rows,
+        )
+    }
 }
