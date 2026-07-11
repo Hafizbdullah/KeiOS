@@ -19,6 +19,9 @@ object AppBuildEnv {
     val displayName: String
         get() = if (isDebugBuild) "Debug" else "Release"
 
+    val applicationId: String
+        get() = snapshot.applicationId
+
     fun configure(
         buildType: String,
         isDebugBuild: Boolean,

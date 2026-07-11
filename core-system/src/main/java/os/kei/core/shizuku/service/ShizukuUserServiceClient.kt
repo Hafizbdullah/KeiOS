@@ -1,0 +1,221 @@
+package os.kei.core.shizuku.service
+
+import android.content.ComponentName
+import android.content.ServiceConnection
+import android.os.IBinder
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.log.AppLogger
+import os.kei.core.system.AppBuildEnv
+import os.kei.core.system.AppCommandExecutor
+import os.kei.core.system.AppCommandResult
+import rikka.shizuku.Shizuku
+import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
+
+internal object ShizukuUserServiceClient {
+    data class OutputSnapshot(
+        val stdout: String,
+        val stderr: String,
+    )
+
+    private const val TAG = "ShizukuUserService"
+    private const val SERVICE_TAG = "keios_shell_command_service"
+    private const val SERVICE_VERSION = 1
+    private const val SERVICE_BIND_TIMEOUT_MS = 8_000L
+    private const val COMPLETION_GRACE_MS = 2_000L
+
+    private val lock = Any()
+    @Volatile private var service: IShizukuCommandService? = null
+    private var binding = false
+    private var connectionWaiter: CompletableDeferred<IShizukuCommandService>? = null
+
+    private val connection =
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+                val connected = IShizukuCommandService.Stub.asInterface(binder)
+                synchronized(lock) {
+                    service = connected
+                    binding = false
+                    connectionWaiter?.complete(connected)
+                    connectionWaiter = null
+                }
+                AppLogger.i(TAG, "UserService connected: ${name.className}")
+            }
+
+            override fun onServiceDisconnected(name: ComponentName) {
+                invalidate("disconnected:${name.className}")
+            }
+        }
+
+    suspend fun execute(
+        command: String,
+        timeoutMs: Long,
+        dispatcher: CoroutineDispatcher = AppDispatchers.osOperations,
+        onOutputSnapshot: (suspend (OutputSnapshot) -> Unit)? = null,
+    ): AppCommandResult = coroutineScope {
+        val commandId = UUID.randomUUID().toString()
+        val snapshotCallback = onOutputSnapshot
+        val snapshots = snapshotCallback?.let { Channel<OutputSnapshot>(Channel.CONFLATED) }
+        val snapshotJob =
+            snapshotCallback?.let { callback ->
+                launch {
+                    for (snapshot in requireNotNull(snapshots)) callback(snapshot)
+                }
+            }
+        val completion = CompletableDeferred<AppCommandResult>()
+        val callback =
+            object : IShizukuCommandCallback.Stub() {
+                override fun onSnapshot(
+                    stdout: String,
+                    stderr: String,
+                    stdoutTruncated: Boolean,
+                    stderrTruncated: Boolean,
+                ) {
+                    snapshots?.trySend(OutputSnapshot(stdout = stdout, stderr = stderr))
+                }
+
+                override fun onCompleted(
+                    stdout: String,
+                    stderr: String,
+                    exitCode: Int,
+                    hasExitCode: Boolean,
+                    timedOut: Boolean,
+                    cancelled: Boolean,
+                    stdoutTruncated: Boolean,
+                    stderrTruncated: Boolean,
+                ) {
+                    snapshots?.trySend(OutputSnapshot(stdout = stdout, stderr = stderr))
+                    completion.complete(
+                        AppCommandResult(
+                            stdout = stdout,
+                            stderr = stderr,
+                            exitCode = exitCode.takeIf { hasExitCode },
+                            timedOut = timedOut,
+                            cancelled = cancelled,
+                            stdoutTruncated = stdoutTruncated,
+                            stderrTruncated = stderrTruncated,
+                        ),
+                    )
+                }
+            }
+
+        var connectedService: IShizukuCommandService? = null
+        try {
+            connectedService = awaitService(dispatcher)
+            withContext(dispatcher) {
+                connectedService.execute(
+                    commandId,
+                    command,
+                    timeoutMs.coerceAtLeast(1L),
+                    AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES,
+                    callback,
+                )
+            }
+            withTimeoutOrNull(timeoutMs.coerceAtLeast(1L) + COMPLETION_GRACE_MS) {
+                completion.await()
+            } ?: AppCommandResult(
+                stdout = "",
+                stderr = "Shizuku UserService command timed out",
+                exitCode = null,
+                timedOut = true,
+                cancelled = false,
+            ).also {
+                connectedService.cancelQuietly(commandId, dispatcher)
+            }
+        } catch (error: CancellationException) {
+            connectedService?.cancelQuietly(commandId, dispatcher)
+            throw error
+        } catch (error: Throwable) {
+            connectedService?.cancelQuietly(commandId, dispatcher)
+            invalidate("execute:${error.javaClass.simpleName}")
+            AppCommandResult(
+                stdout = "",
+                stderr = error.message?.ifBlank { null } ?: error.javaClass.simpleName,
+                exitCode = null,
+                timedOut = false,
+                cancelled = false,
+            )
+        } finally {
+            snapshots?.close()
+            withContext(NonCancellable) { snapshotJob?.join() }
+        }
+    }
+
+    fun invalidate(reason: String) {
+        val waiter: CompletableDeferred<IShizukuCommandService>?
+        synchronized(lock) {
+            service = null
+            binding = false
+            waiter = connectionWaiter
+            connectionWaiter = null
+        }
+        waiter?.completeExceptionally(IllegalStateException("Shizuku UserService $reason"))
+        AppLogger.w(TAG, "UserService invalidated: $reason")
+    }
+
+    private suspend fun awaitService(dispatcher: CoroutineDispatcher): IShizukuCommandService {
+        service?.takeIf { it.asBinder().isBinderAlive }?.let { return it }
+        var shouldBind = false
+        val waiter =
+            synchronized(lock) {
+                service?.takeIf { it.asBinder().isBinderAlive }?.let { return it }
+                connectionWaiter ?: CompletableDeferred<IShizukuCommandService>().also {
+                    connectionWaiter = it
+                }.also {
+                    if (!binding) {
+                        binding = true
+                        shouldBind = true
+                    }
+                }
+            }
+        if (shouldBind) {
+            runCatching {
+                withContext(dispatcher) {
+                    Shizuku.bindUserService(userServiceArgs(), connection)
+                }
+            }.onFailure { error ->
+                synchronized(lock) {
+                    binding = false
+                    if (connectionWaiter === waiter) connectionWaiter = null
+                }
+                waiter.completeExceptionally(error)
+            }
+        }
+        return withTimeoutOrNull(SERVICE_BIND_TIMEOUT_MS) { waiter.await() }
+            ?: run {
+                synchronized(lock) {
+                    binding = false
+                    if (connectionWaiter === waiter) connectionWaiter = null
+                }
+                waiter.cancel(CancellationException("Shizuku UserService bind timed out"))
+                throw IllegalStateException("Shizuku UserService bind timed out")
+            }
+    }
+
+    private fun userServiceArgs(): Shizuku.UserServiceArgs =
+        Shizuku.UserServiceArgs(
+            ComponentName(
+                AppBuildEnv.applicationId,
+                KeiShizukuUserService::class.java.name,
+            ),
+        ).daemon(false)
+            .tag(SERVICE_TAG)
+            .version(SERVICE_VERSION)
+            .debuggable(AppBuildEnv.isDebugBuild)
+            .processNameSuffix("shizuku_shell")
+}
+
+private suspend fun IShizukuCommandService.cancelQuietly(
+    commandId: String,
+    dispatcher: CoroutineDispatcher,
+) {
+    runCatching { withContext(dispatcher) { cancel(commandId) } }
+}

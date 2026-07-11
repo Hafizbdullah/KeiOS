@@ -4,23 +4,14 @@ import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
+import os.kei.core.shizuku.service.ShizukuUserServiceClient
 import os.kei.core.system.AppBuildEnv
-import os.kei.core.system.AppCommandExecutor
 import os.kei.core.system.AppCommandResult
 import rikka.shizuku.Shizuku
-import java.io.ByteArrayOutputStream
-import java.io.InputStream
-import java.lang.reflect.Method
 import java.util.Locale
-import kotlin.coroutines.cancellation.CancellationException
 
 class ShizukuApiUtils(
     private val requestCode: Int = DEFAULT_REQUEST_CODE,
@@ -95,11 +86,6 @@ class ShizukuApiUtils(
 
 
     private var statusCallback: ((String) -> Unit)? = null
-    private val processApiLock = Any()
-    @Volatile
-    private var cachedNewProcessMethod: Method? = null
-    @Volatile
-    private var processApiResolutionAttempted = false
     @Volatile
     private var cachedRuntimeState: CachedRuntimeState? = null
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -112,10 +98,7 @@ class ShizukuApiUtils(
     private val binderDeadListener = Shizuku.OnBinderDeadListener {
         invalidateRuntimeStateCache()
         publishStatus("Shizuku service disconnected")
-        synchronized(processApiLock) {
-            cachedNewProcessMethod = null
-            processApiResolutionAttempted = false
-        }
+        ShizukuUserServiceClient.invalidate("binder-dead")
     }
 
     private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { code, grantResult ->
@@ -204,16 +187,11 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val process = withContext(commandDispatcher) { createShellProcess(normalizedCommand) }
-            ?: return AppCommandResult(
-                stdout = "",
-                stderr = "Shizuku process unavailable",
-                exitCode = null,
-                timedOut = false,
-                cancelled = false
-            )
-
-        return executeProcessCancellable(process = process, timeoutMs = timeoutMs)
+        return ShizukuUserServiceClient.execute(
+            command = prepareCommand(normalizedCommand),
+            timeoutMs = timeoutMs,
+            dispatcher = commandDispatcher,
+        )
     }
 
     suspend fun execCommandCancellableStreaming(
@@ -260,19 +238,18 @@ class ShizukuApiUtils(
                 cancelled = false
             )
         }
-        val process = withContext(commandDispatcher) { createShellProcess(normalizedCommand) }
-            ?: return AppCommandResult(
-                stdout = "",
-                stderr = "Shizuku process unavailable",
-                exitCode = null,
-                timedOut = false,
-                cancelled = false
-            )
-
-        return executeProcessCancellable(
-            process = process,
+        return ShizukuUserServiceClient.execute(
+            command = prepareCommand(normalizedCommand),
             timeoutMs = timeoutMs,
-            onOutputSnapshot = onOutputSnapshot,
+            dispatcher = commandDispatcher,
+            onOutputSnapshot = { snapshot ->
+                onOutputSnapshot(
+                    AppCommandOutputSnapshot(
+                        stdout = snapshot.stdout,
+                        stderr = snapshot.stderr,
+                    ),
+                )
+            },
         )
     }
 
@@ -281,7 +258,7 @@ class ShizukuApiUtils(
         return shizukuCommandOutputOrNull(result)
     }
 
-    private fun createShellProcess(command: String): Process? {
+    private fun prepareCommand(command: String): String {
         val interactiveRewrite = rewriteInteractiveShellCommand(command)
         if (interactiveRewrite.adaptedTopOnce) {
             publishStatus("top command adapted: run once with -n 1")
@@ -290,24 +267,7 @@ class ShizukuApiUtils(
         if (!resolved.redirectedPath.isNullOrBlank()) {
             publishStatus("UI dump redirected: ${resolved.redirectedPath}")
         }
-        val processMethod = resolveNewProcessMethod() ?: run {
-            publishStatus("Shizuku process API unavailable")
-            AppLogger.w(TAG, "createShellProcess skipped: Shizuku newProcess method unavailable")
-            return null
-        }
-        return runCatching {
-            processMethod.invoke(
-                null,
-                arrayOf("sh", "-c", resolved.command),
-                null,
-                null
-            ) as? Process ?: error("Shizuku newProcess did not return Process")
-        }.onFailure {
-            AppLogger.w(
-                TAG,
-                "createShellProcess failed: ${it.javaClass.simpleName}${it.message?.let { msg -> ": $msg" }.orEmpty()}"
-            )
-        }.getOrNull()
+        return resolved.command
     }
 
     private fun rewriteInteractiveShellCommand(command: String): InteractiveCommandRewriteResult {
@@ -325,202 +285,6 @@ class ShizukuApiUtils(
             command = "$trimmed -n 1",
             adaptedTopOnce = true
         )
-    }
-
-    private suspend fun executeProcessCancellable(
-        process: Process,
-        timeoutMs: Long,
-        onOutputSnapshot: (suspend (AppCommandOutputSnapshot) -> Unit)? = null,
-    ): AppCommandResult = withContext(commandDispatcher) {
-        val stdout = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
-        val stderr = BoundedCommandOutputSink(AppCommandExecutor.DEFAULT_MAX_OUTPUT_BYTES)
-        val snapshotCallback = onOutputSnapshot
-        closeProcessInput(process)
-        val outputSnapshots =
-            snapshotCallback?.let { Channel<AppCommandOutputSnapshot>(Channel.CONFLATED) }
-        val outputSnapshotJob: Job? =
-            if (snapshotCallback != null && outputSnapshots != null) {
-                launch {
-                    for (snapshot in outputSnapshots) {
-                        snapshotCallback(snapshot)
-                    }
-                }
-            } else {
-                null
-            }
-        fun publishOutputSnapshot() {
-            outputSnapshots?.trySend(
-                AppCommandOutputSnapshot(
-                    stdout = stdout.text(),
-                    stderr = stderr.text(),
-                ),
-            )
-        }
-        suspend fun closeOutputSnapshots() {
-            outputSnapshots?.close()
-            outputSnapshotJob?.join()
-        }
-        val stdoutReader = startStreamCollector(
-            name = "KeiOS-ShizukuStdout",
-            stream = process.inputStream,
-            sink = stdout,
-            onCollected = ::publishOutputSnapshot,
-        )
-        val stderrReader = startStreamCollector(
-            name = "KeiOS-ShizukuStderr",
-            stream = process.errorStream,
-            sink = stderr,
-            onCollected = ::publishOutputSnapshot,
-        )
-
-        try {
-            val exitCode = withTimeoutOrNull(timeoutMs.coerceAtLeast(1L)) {
-                runInterruptible { process.waitFor() }
-            }
-
-            if (exitCode == null) {
-                terminateProcess(process)
-                stdoutReader.join(300)
-                stderrReader.join(300)
-                publishOutputSnapshot()
-                closeOutputSnapshots()
-                return@withContext AppCommandResult(
-                    stdout = stdout.text().trim(),
-                    stderr = stderr.text().trim(),
-                    exitCode = null,
-                    timedOut = true,
-                    cancelled = false,
-                    stdoutTruncated = stdout.truncated,
-                    stderrTruncated = stderr.truncated
-                )
-            }
-
-            stdoutReader.join(600)
-            stderrReader.join(600)
-            publishOutputSnapshot()
-            closeOutputSnapshots()
-            AppCommandResult(
-                stdout = stdout.text().trim(),
-                stderr = stderr.text().trim(),
-                exitCode = exitCode,
-                timedOut = false,
-                cancelled = false,
-                stdoutTruncated = stdout.truncated,
-                stderrTruncated = stderr.truncated
-            )
-        } catch (error: CancellationException) {
-            terminateProcess(process)
-            stdoutReader.join(300)
-            stderrReader.join(300)
-            publishOutputSnapshot()
-            closeOutputSnapshots()
-            throw error
-        } catch (error: Throwable) {
-            terminateProcess(process)
-            stdoutReader.join(300)
-            stderrReader.join(300)
-            publishOutputSnapshot()
-            closeOutputSnapshots()
-            throw error
-        } finally {
-            outputSnapshots?.close()
-            closeProcessStreams(process)
-        }
-    }
-
-    private fun terminateProcess(process: Process) {
-        runCatching { process.destroy() }
-        runCatching { process.destroyForcibly() }
-    }
-
-    private fun closeProcessStreams(process: Process) {
-        closeProcessInput(process)
-        runCatching { process.inputStream.close() }
-        runCatching { process.errorStream.close() }
-    }
-
-    private fun closeProcessInput(process: Process) {
-        runCatching { process.outputStream.close() }
-    }
-
-    private fun startStreamCollector(
-        name: String,
-        stream: InputStream,
-        sink: BoundedCommandOutputSink,
-        onCollected: (() -> Unit)? = null,
-    ): Thread {
-        return Thread(
-            {
-                runCatching {
-                    stream.use { input ->
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            sink.append(buffer, read)
-                            onCollected?.invoke()
-                        }
-                    }
-                }
-            },
-            name
-        ).apply {
-            isDaemon = true
-            start()
-        }
-    }
-
-    private class BoundedCommandOutputSink(
-        private val maxBytes: Int
-    ) {
-        private val output = ByteArrayOutputStream()
-        private var capturedBytes = 0
-        @Volatile
-        var truncated: Boolean = false
-            private set
-
-        @Synchronized
-        fun append(buffer: ByteArray, length: Int) {
-            val remaining = maxBytes - capturedBytes
-            if (remaining > 0) {
-                val accepted = minOf(length, remaining)
-                output.write(buffer, 0, accepted)
-                capturedBytes += accepted
-            }
-            if (length > remaining) {
-                truncated = true
-            }
-        }
-
-        @Synchronized
-        fun text(): String {
-            return output.toByteArray().toString(Charsets.UTF_8)
-        }
-    }
-
-    private fun resolveNewProcessMethod(): Method? {
-        if (processApiResolutionAttempted) return cachedNewProcessMethod
-        synchronized(processApiLock) {
-            if (processApiResolutionAttempted) return cachedNewProcessMethod
-            val resolved = runCatching {
-                val parameterTypes = arrayOf(
-                    Array<String>::class.java,
-                    Array<String>::class.java,
-                    String::class.java
-                )
-                Shizuku::class.java.declaredMethods.firstOrNull { method ->
-                    method.parameterTypes.contentEquals(parameterTypes) &&
-                        Process::class.java.isAssignableFrom(method.returnType)
-                }?.apply {
-                    isAccessible = true
-                }
-            }.onFailure {
-                AppLogger.w(TAG, "resolveNewProcessMethod failed: ${it.javaClass.simpleName}")
-            }.getOrNull()
-            cachedNewProcessMethod = resolved
-            processApiResolutionAttempted = true
-            return resolved
-        }
     }
 
     private fun rewriteUiAutomatorDumpCommand(command: String): UiDumpRewriteResult {
@@ -577,7 +341,7 @@ class ShizukuApiUtils(
         rows += "Shizuku Permission Granted" to state.permissionGranted.toString()
         rows += "Shizuku Activated" to state.commandReady.toString()
         rows += "Shizuku Command Identity" to state.commandIdentity.label
-        rows += "Shizuku Command Backend" to "Process API compatibility"
+        rows += "Shizuku Command Backend" to "UserService"
         rows += "Shizuku Pre-v11" to state.preV11.toString()
         rows += "Shizuku Permission Rationale" to runCatching { Shizuku.shouldShowRequestPermissionRationale().toString() }.getOrDefault("unknown")
         state.serviceUid?.let { rows += "Shizuku Service UID" to it.toString() }

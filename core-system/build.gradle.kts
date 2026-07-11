@@ -6,6 +6,10 @@ android {
     namespace = "os.kei.core.system"
     compileSdk = 37
 
+    buildFeatures {
+        aidl = true
+    }
+
     defaultConfig {
         minSdk = 35
         consumerProguardFiles("src/main/keepRules/core-system-rules.keep")
