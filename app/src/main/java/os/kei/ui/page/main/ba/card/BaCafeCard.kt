@@ -80,10 +80,11 @@ internal fun BaCafeCard(
     val accentPink = Color(0xFFF472B6)
     val countdownBlue = Color(0xFF60A5FA)
     val nextHeadpatAt = calculateNextHeadpatAvailableMs(coffeeHeadpatMs, serverIndex)
+    val headpatReady = coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs
     val nextStudentRefreshAt = nextCafeStudentRefreshMs(uiNowMs, serverIndex)
     val nextArenaRefreshAt = nextArenaRefreshMs(uiNowMs, serverIndex)
     val nextHeadpatText =
-        if (coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs) {
+        if (headpatReady) {
             "0m"
         } else {
             formatBaRemainingTime(
@@ -106,7 +107,8 @@ internal fun BaCafeCard(
         formatBaDateTimeNoSeconds(if (invite1Ready) uiNowMs else invite1AvailableAt, notSyncedText)
     val invite2TimeText =
         formatBaDateTimeNoSeconds(if (invite2Ready) uiNowMs else invite2AvailableAt, notSyncedText)
-    val headpatTimeText = if (coffeeHeadpatMs > 0L) formatBaDateTimeNoSeconds(coffeeHeadpatMs, notSyncedText) else "-"
+    val headpatTimeText =
+        formatBaDateTimeNoSeconds(if (headpatReady) uiNowMs else nextHeadpatAt, notSyncedText)
     val cafeHourlyText = stringResource(R.string.ba_cafe_ap_hourly_gain_format, cafeHourlyGain(cafeLevel))
     val cafeCap = cafeDailyCapacity(cafeLevel)
     val cafeFullAt =
@@ -193,7 +195,7 @@ internal fun BaCafeCard(
             countdownText = nextHeadpatText,
             timeText = headpatTimeText,
             accentColor = accentPink,
-            enabled = coffeeHeadpatMs <= 0L || nextHeadpatAt <= uiNowMs,
+            enabled = headpatReady,
             onClick = onTouchHead,
             onLongClick = onEditHeadpatCooldown,
         )
