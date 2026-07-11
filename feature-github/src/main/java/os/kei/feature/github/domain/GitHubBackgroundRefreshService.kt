@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import android.content.Context
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -12,6 +13,7 @@ import os.kei.feature.github.data.local.GitHubTrackStore
 import os.kei.feature.github.data.local.GitHubTrackStoreSignals
 import os.kei.feature.github.data.remote.GitHubReleaseStrategyRegistry
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
+import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -91,9 +93,18 @@ class GitHubBackgroundRefreshService(
                         null
                     } else {
                         onRefreshStart(runtimeSession, trackedUpdateTargetItems.size, tracked.size)
-                        runCatching {
-                            GitHubTrackedRefreshBatchRunner
-                                .run(
+                        val checkpointWriter =
+                            GitHubBackgroundRefreshCheckpointWriter(
+                                persist = { entries ->
+                                    persistBackgroundCheckpoint(
+                                        entries = entries,
+                                        fallbackRefreshTimestamp = snapshot.lastRefreshMs,
+                                    )
+                                },
+                            )
+                        try {
+                            runCatching {
+                                GitHubTrackedRefreshBatchRunner.run(
                                     trackedItems = trackedUpdateTargetItems,
                                     refreshTimestampMs = nowMs,
                                     maxConcurrency = GitHubTrackedRefreshBatchScheduler
@@ -114,6 +125,23 @@ class GitHubBackgroundRefreshService(
                                         )
                                         onRefreshProgress(runtimeSession, progress)
                                     },
+                                    onItemResult = { item, check, _ ->
+                                        runCatching {
+                                            checkpointWriter.append(
+                                                trackId = item.id,
+                                                entry =
+                                                    GitHubReleaseCheckService
+                                                        .run { check.toCacheEntry() }
+                                                        .copy(checkedAtMillis = System.currentTimeMillis()),
+                                            )
+                                        }.onFailure { error ->
+                                            AppLogger.w(
+                                                GITHUB_BACKGROUND_REFRESH_TAG,
+                                                "failed to checkpoint refreshed item=${item.id}",
+                                                error,
+                                            )
+                                        }
+                                    },
                                 ) { item ->
                                     batchEvaluator.evaluateTrackedApp(
                                         context = context,
@@ -121,41 +149,53 @@ class GitHubBackgroundRefreshService(
                                         profilePurposeOverride = GitHubRepositoryProfilePurpose.VersionCheckFast,
                                     )
                                 }
-                        }.onFailure {
-                            cancelRuntimeSession(runtimeSession)
-                        }.getOrThrow()
-                            .also { result ->
-                                AppLogger.d(
-                                    GITHUB_BACKGROUND_REFRESH_TAG,
-                                    "tick refreshed target=${result.totalCount}/${tracked.size} " +
-                                        "elapsed=${result.performance.elapsedMs}ms " +
-                                        "p50=${result.performance.p50ItemMs}ms " +
-                                        "p95=${result.performance.p95ItemMs}ms " +
-                                        "updatable=${result.updatableCount} " +
-                                        "prerelease=${result.preReleaseUpdateCount} " +
-                                        "failed=${result.failedCount}",
-                                )
-                                logTrackedRefreshFailures(result.failures)
-                                persistRefreshResult(
-                                    snapshot = snapshot,
-                                    result = result,
-                                    replaceCache = trackedUpdateTargetItems.size == tracked.size,
-                                )
-                                refreshHistoryService.recordCompleted(
-                                    session = runtimeSession,
-                                    totalTrackedCount = tracked.size,
-                                    result = result,
-                                    startedAtMillis = nowMs,
-                                    schedulerDiagnostics = schedulerDiagnostics,
-                                )
-                                GitHubRefreshRuntimeStore.complete(
-                                    sessionId = runtimeSession.id,
-                                    completedCount = result.totalCount,
-                                    updatableCount = result.updatableCount,
-                                    preReleaseUpdateCount = result.preReleaseUpdateCount,
-                                    failedCount = result.failedCount,
-                                )
+                            }.onFailure {
+                                cancelRuntimeSession(runtimeSession)
+                            }.getOrThrow()
+                                .also { result ->
+                                    AppLogger.d(
+                                        GITHUB_BACKGROUND_REFRESH_TAG,
+                                        "tick refreshed target=${result.totalCount}/${tracked.size} " +
+                                            "elapsed=${result.performance.elapsedMs}ms " +
+                                            "p50=${result.performance.p50ItemMs}ms " +
+                                            "p95=${result.performance.p95ItemMs}ms " +
+                                            "updatable=${result.updatableCount} " +
+                                            "prerelease=${result.preReleaseUpdateCount} " +
+                                            "failed=${result.failedCount}",
+                                    )
+                                    logTrackedRefreshFailures(result.failures)
+                                    persistRefreshResult(
+                                        snapshot = snapshot,
+                                        result = result,
+                                        replaceCache = trackedUpdateTargetItems.size == tracked.size,
+                                    )
+                                    refreshHistoryService.recordCompleted(
+                                        session = runtimeSession,
+                                        totalTrackedCount = tracked.size,
+                                        result = result,
+                                        startedAtMillis = nowMs,
+                                        schedulerDiagnostics = schedulerDiagnostics,
+                                    )
+                                    GitHubRefreshRuntimeStore.complete(
+                                        sessionId = runtimeSession.id,
+                                        completedCount = result.totalCount,
+                                        updatableCount = result.updatableCount,
+                                        preReleaseUpdateCount = result.preReleaseUpdateCount,
+                                        failedCount = result.failedCount,
+                                    )
+                                }
+                        } finally {
+                            withContext(NonCancellable) {
+                                runCatching { checkpointWriter.flush() }
+                                    .onFailure { error ->
+                                        AppLogger.w(
+                                            GITHUB_BACKGROUND_REFRESH_TAG,
+                                            "failed to flush background refresh checkpoint",
+                                            error,
+                                        )
+                                    }
                             }
+                        }
                     }
                 } else {
                     null
@@ -304,6 +344,19 @@ class GitHubBackgroundRefreshService(
                 }
             GitHubTrackStoreSignals.notifyChanged(
                 resolvedRefreshTimestamp.takeIf { it > 0L } ?: result.refreshTimestampMs
+            )
+        }
+    }
+
+    private suspend fun persistBackgroundCheckpoint(
+        entries: Map<String, GitHubCheckCacheEntry>,
+        fallbackRefreshTimestamp: Long,
+    ) {
+        withContext(AppDispatchers.githubLocal) {
+            val resolvedRefreshTimestamp =
+                GitHubTrackStore.mergeCheckCache(entries, fallbackRefreshTimestamp)
+            GitHubTrackStoreSignals.notifyChanged(
+                resolvedRefreshTimestamp.takeIf { it > 0L } ?: System.currentTimeMillis()
             )
         }
     }
