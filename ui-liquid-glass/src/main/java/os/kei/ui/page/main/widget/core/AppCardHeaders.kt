@@ -52,6 +52,7 @@ fun AppCardHeader(
     supportingText: String? = null,
     supportingColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.76f),
     startAction: (@Composable () -> Unit)? = null,
+    titleContent: (@Composable RowScope.() -> Unit)? = null,
     titleAccessory: (@Composable RowScope.() -> Unit)? = null,
     endActions: (@Composable RowScope.() -> Unit)? = null,
     expandable: Boolean = false,
@@ -141,16 +142,20 @@ fun AppCardHeader(
                 horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = title,
-                    color = titleColor,
-                    fontSize = titleTypography.fontSize,
-                    lineHeight = titleTypography.lineHeight,
-                    fontWeight = titleTypography.fontWeight,
-                    modifier = Modifier.weight(1f, fill = false),
-                    maxLines = titleMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (titleContent != null) {
+                    titleContent()
+                } else {
+                    Text(
+                        text = title,
+                        color = titleColor,
+                        fontSize = titleTypography.fontSize,
+                        lineHeight = titleTypography.lineHeight,
+                        fontWeight = titleTypography.fontWeight,
+                        modifier = Modifier.weight(1f, fill = false),
+                        maxLines = titleMaxLines,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 titleAccessory?.invoke(this)
             }
             if (subtitle.isNotBlank()) {

@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -41,6 +42,8 @@ fun StatusPill(
     backgroundAlphaOverride: Float? = null,
     borderAlphaOverride: Float? = null,
     backdrop: Backdrop? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     StatusPill(
         label = label,
@@ -51,6 +54,8 @@ fun StatusPill(
         backgroundAlphaOverride = backgroundAlphaOverride,
         borderAlphaOverride = borderAlphaOverride,
         backdrop = backdrop,
+        maxLines = maxLines,
+        overflow = overflow,
     )
 }
 
@@ -64,6 +69,8 @@ fun StatusPill(
     backgroundAlphaOverride: Float? = null,
     borderAlphaOverride: Float? = null,
     backdrop: Backdrop? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val colorProvider = color
@@ -104,6 +111,8 @@ fun StatusPill(
                 lineHeight = metrics.typography.lineHeight,
                 fontWeight = metrics.typography.fontWeight,
                 textAlign = TextAlign.Center,
+                maxLines = maxLines,
+                overflow = overflow,
             )
         }
     }
