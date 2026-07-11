@@ -2,7 +2,6 @@ package os.kei.feature.webdav.client
 
 import at.bitfire.dav4jvm.ktor.DavCollection
 import at.bitfire.dav4jvm.ktor.DavResource
-import at.bitfire.dav4jvm.ktor.PreemptiveBasicDigestAuthProvider
 import at.bitfire.dav4jvm.ktor.Response
 import at.bitfire.dav4jvm.ktor.exception.ConflictException
 import at.bitfire.dav4jvm.ktor.exception.DavException
@@ -52,7 +51,11 @@ class WebDavSyncClient(
     private val config: WebDavConfig,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.webDavNetwork,
 ) {
-    private val httpClient = HttpClient(CIO) {
+    private val baseUrl: Url = parseBaseUrl(config.serverUrl)
+    private var httpClient = createHttpClient()
+    private var collectionKnown = false
+
+    private fun createHttpClient(): HttpClient = HttpClient(CIO) {
         followRedirects = false
 
         install(UserAgent) {
@@ -66,17 +69,9 @@ class WebDavSyncClient(
         }
 
         install(Auth) {
-            providers.add(
-                PreemptiveBasicDigestAuthProvider(
-                    config.username,
-                    config.appPassword,
-                ),
-            )
+            configureWebDavAuth(config, baseUrl.host)
         }
     }
-
-    private val baseUrl: Url by lazy { parseBaseUrl(config.serverUrl) }
-    private var collectionKnown = false
 
     fun close() {
         httpClient.close()
@@ -84,9 +79,11 @@ class WebDavSyncClient(
 
     suspend fun testConnection(): WebDavTestConnectionResult = withContext(ioDispatcher) {
         try {
-            collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
-            collectionKnown = true
-            WebDavTestConnectionResult.Success(dirCreated = false)
+            recoverInvalidRequest("test-connection") {
+                collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+                collectionKnown = true
+                WebDavTestConnectionResult.Success(dirCreated = false)
+            }
         } catch (e: NotFoundException) {
             AppLogger.i(TAG, "Remote dir not found, creating...")
             createDirectoryRecursive()
@@ -111,8 +108,10 @@ class WebDavSyncClient(
     suspend fun upload(fileName: String, content: String, etag: String? = null): WebDavUploadResult =
         withContext(ioDispatcher) {
             try {
-                ensureCollection()
-                putFile(fileName, content, ifMatchHeaders(etag))
+                recoverInvalidRequest("upload") {
+                    ensureCollection()
+                    putFile(fileName, content, ifMatchHeaders(etag))
+                }
             } catch (e: PreconditionFailedException) {
                 WebDavUploadResult.Conflict
             } catch (e: NotFoundException) {
@@ -127,8 +126,10 @@ class WebDavSyncClient(
     suspend fun uploadIfAbsent(fileName: String, content: String): WebDavUploadResult =
         withContext(ioDispatcher) {
             try {
-                ensureCollection()
-                putFile(fileName, content, headersOf(HttpHeaders.IfNoneMatch, "*"))
+                recoverInvalidRequest("upload-if-absent") {
+                    ensureCollection()
+                    putFile(fileName, content, headersOf(HttpHeaders.IfNoneMatch, "*"))
+                }
             } catch (e: PreconditionFailedException) {
                 WebDavUploadResult.Conflict
             } catch (e: NotFoundException) {
@@ -142,20 +143,22 @@ class WebDavSyncClient(
 
     suspend fun download(fileName: String): WebDavDownloadResult = withContext(ioDispatcher) {
         try {
-            val resource = DavResource(httpClient, fileUrl(fileName))
-            var content: String? = null
-            var etag: String? = null
+            recoverInvalidRequest("download") {
+                val resource = DavResource(httpClient, fileUrl(fileName))
+                var content: String? = null
+                var etag: String? = null
 
-            resource.get {
-                content = it.bodyAsText()
-                etag = GetETag.fromHttpResponse(it)?.rawETag
-            }
+                resource.get {
+                    content = it.bodyAsText()
+                    etag = GetETag.fromHttpResponse(it)?.rawETag
+                }
 
-            val text = content
-            if (text.isNullOrBlank()) {
-                WebDavDownloadResult.Empty
-            } else {
-                WebDavDownloadResult.Success(text, etag)
+                val text = content
+                if (text.isNullOrBlank()) {
+                    WebDavDownloadResult.Empty
+                } else {
+                    WebDavDownloadResult.Success(text, etag)
+                }
             }
         } catch (e: NotFoundException) {
             WebDavDownloadResult.Empty
@@ -168,28 +171,30 @@ class WebDavSyncClient(
 
     suspend fun listFiles(): List<WebDavRemoteFile> = withContext(ioDispatcher) {
         try {
-            ensureCollection()
-            val files = mutableListOf<WebDavRemoteFile>()
+            recoverInvalidRequest("list-files") {
+                ensureCollection()
+                val files = mutableListOf<WebDavRemoteFile>()
 
-            collection().propfind(
-                1,
-                WebDAV.GetETag,
-                WebDAV.GetLastModified,
-                WebDAV.GetContentLength,
-                WebDAV.ResourceType,
-            ) { response, relation ->
-                if (relation == Response.HrefRelation.MEMBER && !response.isCollection()) {
-                    files += WebDavRemoteFile(
-                        href = response.href.toString(),
-                        displayName = response.hrefName(),
-                        lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
-                        contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
-                        etag = response[GetETag::class.java]?.rawETag,
-                    )
+                collection().propfind(
+                    1,
+                    WebDAV.GetETag,
+                    WebDAV.GetLastModified,
+                    WebDAV.GetContentLength,
+                    WebDAV.ResourceType,
+                ) { response, relation ->
+                    if (relation == Response.HrefRelation.MEMBER && !response.isCollection()) {
+                        files += WebDavRemoteFile(
+                            href = response.href.toString(),
+                            displayName = response.hrefName(),
+                            lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
+                            contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
+                            etag = response[GetETag::class.java]?.rawETag,
+                        )
+                    }
                 }
-            }
 
-            files
+                files
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -204,9 +209,11 @@ class WebDavSyncClient(
         headers: Headers?,
     ): WebDavUploadResult =
         try {
-            collectionKnown = false
-            ensureCollection()
-            putFile(fileName, content, headers)
+            recoverInvalidRequest("upload-after-collection") {
+                collectionKnown = false
+                ensureCollection()
+                putFile(fileName, content, headers)
+            }
         } catch (e: PreconditionFailedException) {
             WebDavUploadResult.Conflict
         } catch (e: CancellationException) {
@@ -240,9 +247,11 @@ class WebDavSyncClient(
 
     private suspend fun createDirectoryRecursive(): WebDavTestConnectionResult =
         try {
-            createDirectorySync()
-            collectionKnown = true
-            WebDavTestConnectionResult.Success(dirCreated = true)
+            recoverInvalidRequest("create-directory") {
+                createDirectorySync()
+                collectionKnown = true
+                WebDavTestConnectionResult.Success(dirCreated = true)
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: UnauthorizedException) {
@@ -325,6 +334,24 @@ class WebDavSyncClient(
         return Url(trimmed.trimEnd('/') + "/")
     }
 
+    private suspend fun <T> recoverInvalidRequest(
+        stage: String,
+        operation: suspend () -> T,
+    ): T =
+        try {
+            operation()
+        } catch (error: IllegalArgumentException) {
+            AppLogger.w(
+                TAG,
+                "invalid request stage=$stage host=${baseUrl.host} type=${error.javaClass.simpleName}; rebuilding client",
+                error,
+            )
+            httpClient.close()
+            collectionKnown = false
+            httpClient = createHttpClient()
+            operation()
+        }
+
     private fun Response.isCollection(): Boolean =
         this[ResourceType::class.java]
             ?.types
@@ -353,7 +380,18 @@ class WebDavSyncClient(
         is SocketTimeoutException -> WebDavError.NetworkUnreachable
         is IOException -> WebDavError.NetworkUnreachable
         is DavException -> WebDavError.Unknown(e.statusCode ?: 0, toMessage(e))
-        is IllegalArgumentException -> WebDavError.Unknown(0, e.message ?: "Invalid WebDAV request")
+        is IllegalArgumentException -> {
+            AppLogger.w(
+                TAG,
+                "invalid request host=${baseUrl.host} type=${e.javaClass.simpleName}",
+                e,
+            )
+            WebDavError.Unknown(
+                0,
+                e.message?.takeIf { it.isNotBlank() }
+                    ?: "Invalid WebDAV request (${e.javaClass.simpleName})",
+            )
+        }
         else -> WebDavError.Unknown(0, e.message ?: "Unknown error")
     }
 

@@ -28,6 +28,10 @@ dependencies {
     implementation("io.ktor:ktor-client-cio")
     implementation("io.ktor:ktor-client-encoding")
 
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.ktor:ktor-client-mock")
+
     // WebDAV client (used by DAVx⁵, production-grade)
     // Exclude xpp3 — Android has built-in XmlPullParser
     implementation("com.github.bitfireAT:dav4jvm:main-SNAPSHOT") {
