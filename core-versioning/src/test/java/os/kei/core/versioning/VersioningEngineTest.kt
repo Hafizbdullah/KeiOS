@@ -128,6 +128,58 @@ class VersioningEngineTest {
     }
 
     @Test
+    fun `commit hash prefix is not treated as a revision token`() {
+        val olderPublication = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v0.3.0-master.26070916.c82c367"),
+            publishedAtMillis = 100L,
+            stableKey = "c82c367",
+        )
+        val newerPublication = ReleaseRankingEvidence(
+            versionCandidates = candidates(0 to "v0.3.0-master.26070916.f4f0677"),
+            publishedAtMillis = 200L,
+            stableKey = "f4f0677",
+        )
+
+        assertTrue(ReleaseCandidateRanker.compare(olderPublication, newerPublication) < 0)
+    }
+
+    @Test
+    fun `calendar build code rejects unrelated same width version code`() {
+        val comparison = VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+            localVersion = "0.3.0",
+            localVersionCode = 12_345_678L,
+            remoteCandidates = listOf(
+                VersionCandidate(
+                    value = "v0.3.0-master.26071104.7880c18",
+                    sourcePriority = 0,
+                    channelHint = VersionChannel.DEV,
+                ),
+            ),
+        )
+
+        assertEquals(VersionComparisonReason.SemanticVersion, comparison?.reason)
+        assertEquals(VersionOrder.Newer, comparison?.order)
+    }
+
+    @Test
+    fun `calendar build code compares within matching timestamp scheme`() {
+        val comparison = VersioningEngine.compareLocalVersionNameAndCodeToRemote(
+            localVersion = "0.3.0",
+            localVersionCode = 26_071_018L,
+            remoteCandidates = listOf(
+                VersionCandidate(
+                    value = "v0.3.0-master.26071104.7880c18",
+                    sourcePriority = 0,
+                    channelHint = VersionChannel.DEV,
+                ),
+            ),
+        )
+
+        assertEquals(VersionComparisonReason.VersionCode, comparison?.reason)
+        assertEquals(VersionOrder.Older, comparison?.order)
+    }
+
+    @Test
     fun `complete semantic candidate outranks a revision only tag alias`() {
         val alpha = candidates(
             0 to "Version.26.4.Alpha2_C384",

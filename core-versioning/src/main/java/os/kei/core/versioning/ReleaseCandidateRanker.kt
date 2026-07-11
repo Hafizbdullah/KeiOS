@@ -27,6 +27,6 @@ object ReleaseCandidateRanker {
             return versionComparison.order.legacyValue
         }
 
-        return left.stableKey.compareTo(right.stableKey)
+        return 0
     }
 }

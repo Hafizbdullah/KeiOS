@@ -29,7 +29,7 @@ object VersioningEngine {
         """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-?release)?)(?=$|[^a-z])(?:[^a-z0-9]*(\d+)(?=$|[^a-z0-9]))?""",
     )
     private val revisionTokenRegex = Regex(
-        """(?:^|[^a-z0-9])(?:fix|build|rev|revision|r|c)[._-]?(\d+)""",
+        """(?:^|[^a-z0-9])(?:fix|build|rev|revision|r|c)[._-]?(\d+)(?![a-z0-9])""",
     )
     private val buildMetadataNumberRegex = Regex("""\+(\d{3,10})(?=$|[^0-9])""")
 
@@ -149,6 +149,20 @@ object VersioningEngine {
         val right = releaseIdentityKeys(rightCandidates, maxSourcePriority)
         if (left.isEmpty() || right.isEmpty()) return false
         return left.any(right::contains)
+    }
+
+    fun releaseIdentityKey(
+        candidates: List<VersionCandidate>,
+        maxSourcePriority: Int = DEFAULT_LINK_SOURCE_PRIORITY,
+    ): String? {
+        val preferred = candidates.filter { candidate ->
+            candidate.sourcePriority <= maxSourcePriority
+        }
+        val selected = selectReleaseRankingCandidate(preferred.ifEmpty { candidates })
+            ?: return null
+        return selected.parts
+            .takeIf(::isMeaningfulReleaseIdentity)
+            ?.let(::versionPartsIdentityKey)
     }
 
     fun hasComparableCandidates(
@@ -396,7 +410,83 @@ object VersioningEngine {
         if (left < MIN_COMPARABLE_VERSION_CODE || right < MIN_COMPARABLE_VERSION_CODE) {
             return false
         }
+        val leftCalendarScheme = left.calendarVersionCodeScheme()
+        val rightCalendarScheme = right.calendarVersionCodeScheme()
+        if (leftCalendarScheme != null || rightCalendarScheme != null) {
+            return leftCalendarScheme == rightCalendarScheme
+        }
         return left.toString().length == right.toString().length
+    }
+
+    private fun Long.calendarVersionCodeScheme(): CalendarVersionCodeScheme? {
+        val digits = toString()
+        return when (digits.length) {
+            6 -> digits.parseCalendarCode(
+                yearRange = 0..1,
+                monthRange = 2..3,
+                dayRange = 4..5,
+                hourRange = null,
+                scheme = CalendarVersionCodeScheme.YYMMDD,
+            )
+            8 -> digits.parseCalendarCode(
+                yearRange = 0..3,
+                monthRange = 4..5,
+                dayRange = 6..7,
+                hourRange = null,
+                scheme = CalendarVersionCodeScheme.YYYYMMDD,
+            ) ?: digits.parseCalendarCode(
+                yearRange = 0..1,
+                monthRange = 2..3,
+                dayRange = 4..5,
+                hourRange = 6..7,
+                scheme = CalendarVersionCodeScheme.YYMMDDHH,
+            )
+            10 -> digits.parseCalendarCode(
+                yearRange = 0..3,
+                monthRange = 4..5,
+                dayRange = 6..7,
+                hourRange = 8..9,
+                scheme = CalendarVersionCodeScheme.YYYYMMDDHH,
+            )
+            else -> null
+        }
+    }
+
+    private fun String.parseCalendarCode(
+        yearRange: IntRange,
+        monthRange: IntRange,
+        dayRange: IntRange,
+        hourRange: IntRange?,
+        scheme: CalendarVersionCodeScheme,
+    ): CalendarVersionCodeScheme? {
+        val year = substring(yearRange).toIntOrNull() ?: return null
+        val fullYear = if (yearRange.last - yearRange.first == 1) {
+            if (year < MIN_SHORT_CALENDAR_YEAR) return null
+            2000 + year
+        } else {
+            year
+        }
+        if (fullYear !in MIN_FULL_CALENDAR_YEAR..MAX_FULL_CALENDAR_YEAR) return null
+        val month = substring(monthRange).toIntOrNull() ?: return null
+        val day = substring(dayRange).toIntOrNull() ?: return null
+        if (!isValidCalendarDate(fullYear, month, day)) return null
+        val hour = hourRange?.let { substring(it).toIntOrNull() ?: return null }
+        if (hour != null && hour !in 0..23) return null
+        return scheme
+    }
+
+    private fun isValidCalendarDate(year: Int, month: Int, day: Int): Boolean {
+        if (month !in 1..12 || day < 1) return false
+        val maxDay = when (month) {
+            2 -> if (year.isLeapYear()) 29 else 28
+            4, 6, 9, 11 -> 30
+            else -> 31
+        }
+        return day <= maxDay
+    }
+
+    private fun Int.isLeapYear(): Boolean {
+        return this % 400 == 0 || (this % 4 == 0 && this % 100 != 0)
     }
 
     private fun selectReleaseRankingCandidate(
@@ -654,7 +744,7 @@ object VersioningEngine {
                     val parts = parseVersionParts(normalized)
                         ?.withChannelHint(candidate.channelHint)
                         ?: return@forEach
-                    if (isMeaningfulReleaseIdentity(parts)) keys += releaseIdentityKey(parts)
+                    if (isMeaningfulReleaseIdentity(parts)) keys += versionPartsIdentityKey(parts)
                 }
             }
         }
@@ -666,7 +756,7 @@ object VersioningEngine {
             (parts.channel.isPreRelease && parts.channelNumber > 0L)
     }
 
-    private fun releaseIdentityKey(parts: VersionParts): String {
+    private fun versionPartsIdentityKey(parts: VersionParts): String {
         return buildString {
             append(parts.numbers.joinToString("."))
             append('|')
@@ -772,6 +862,13 @@ object VersioningEngine {
         val revisionNumbers: List<Long>,
     )
 
+    private enum class CalendarVersionCodeScheme {
+        YYMMDD,
+        YYMMDDHH,
+        YYYYMMDD,
+        YYYYMMDDHH,
+    }
+
     private class BoundedVersionCache<K, V>(
         private val maxSize: Int,
     ) {
@@ -801,4 +898,7 @@ object VersioningEngine {
     }
 
     private const val MIN_COMPARABLE_VERSION_CODE = 100L
+    private const val MIN_SHORT_CALENDAR_YEAR = 20
+    private const val MIN_FULL_CALENDAR_YEAR = 2000
+    private const val MAX_FULL_CALENDAR_YEAR = 2099
 }
