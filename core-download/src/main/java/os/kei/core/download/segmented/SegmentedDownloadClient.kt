@@ -925,13 +925,17 @@ private const val LOW_CONNECTION_BUDGET_THRESHOLD = 4
 
 internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTuning =
     when (this) {
-        SegmentedDownloadSpeedProfile.Balanced -> PartSchedulerTuning()
+        SegmentedDownloadSpeedProfile.Balanced ->
+            PartSchedulerTuning(
+                tailWindowInitialMultiplier = 16,
+            )
 
         SegmentedDownloadSpeedProfile.ForegroundBoost ->
             PartSchedulerTuning(
                 minDynamicPartSizeBytes = 256L * 1024L,
                 minTailPartSizeBytes = 64L * 1024L,
                 tailPartsPerConnection = 3,
+                tailWindowInitialMultiplier = 32,
                 partSizeTargetDurationMs = 16_000L,
                 startupActiveConnections = 8,
                 rateLimitedMinPartSizeBytes = 32L * 1024L * 1024L,

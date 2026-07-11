@@ -101,6 +101,78 @@ class PartSchedulerTest {
     }
 
     @Test
+    fun `foreground boost keeps medium downloads inside the distributed tail window`() = runBlocking {
+        val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
+        val partSizeBytes = 4L * 1024L * 1024L
+        val scheduler = PartScheduler(
+            totalBytes = 96L * 1024L * 1024L,
+            initialPartSizeBytes = partSizeBytes,
+            maxRetriesPerPart = 3,
+            concurrency = 6,
+            tuning = tuning,
+        )
+
+        val firstWave = (0 until 6).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+        firstWave.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+            scheduler.recordSuccess(
+                workerId = workerId,
+                part = active.part,
+                bytes = active.part.length,
+                elapsedMs = 2_000,
+            )
+        }
+
+        val secondWave = (0 until 6).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+
+        assertEquals(32, tuning.tailWindowInitialMultiplier)
+        assertTrue(secondWave.all { it.part.length <= partSizeBytes })
+        secondWave.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+        }
+    }
+
+    @Test
+    fun `balanced profile keeps common large APKs inside the distributed tail window`() = runBlocking {
+        val tuning = SegmentedDownloadSpeedProfile.Balanced.schedulerTuning()
+        val partSizeBytes = 8L * 1024L * 1024L
+        val scheduler = PartScheduler(
+            totalBytes = 120L * 1024L * 1024L,
+            initialPartSizeBytes = partSizeBytes,
+            maxRetriesPerPart = 3,
+            concurrency = 4,
+            tuning = tuning,
+        )
+
+        val firstWave = (0 until 4).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+        firstWave.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+            scheduler.recordSuccess(
+                workerId = workerId,
+                part = active.part,
+                bytes = active.part.length,
+                elapsedMs = 4_000,
+            )
+        }
+
+        val secondWave = (0 until 4).map { workerId ->
+            assertNotNull(scheduler.nextPart(workerId))
+        }
+
+        assertEquals(16, tuning.tailWindowInitialMultiplier)
+        assertTrue(secondWave.all { it.part.length <= partSizeBytes })
+        secondWave.forEachIndexed { workerId, active ->
+            scheduler.finish(workerId, active)
+        }
+    }
+
+    @Test
     fun `scheduler allocates head and tail parts on demand before tail window`() = runBlocking {
         val scheduler = PartScheduler(
             totalBytes = 200,
