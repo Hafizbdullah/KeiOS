@@ -7,6 +7,7 @@ import org.xmlpull.v1.XmlPullParserFactory
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.feature.github.engine.release.GitHubReleaseCandidateRanker
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
@@ -36,6 +37,7 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
 
     private const val CACHE_TTL_MS = 90_000L
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
+    private const val MAX_ATOM_RESPONSE_BYTES = 8L * 1024L * 1024L
 
     private val feedCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomFeed>>>()
     private val stableCache = ConcurrentHashMap<String, CachedValue<Result<GitHubAtomLatestStableLookup>>>()
@@ -286,7 +288,7 @@ object GitHubAtomReleaseStrategy : GitHubReleaseLookupStrategy {
             .build()
         requestClient.executeCancellable(request) { response ->
             if (!response.isSuccessful) error("HTTP ${response.code}")
-            response.body.string()
+            response.body.stringLimitedBlocking(MAX_ATOM_RESPONSE_BYTES)
         }
     }
 

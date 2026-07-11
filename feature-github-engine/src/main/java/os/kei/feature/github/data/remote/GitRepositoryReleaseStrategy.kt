@@ -9,6 +9,7 @@ import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optObject
@@ -422,7 +423,7 @@ class GitRepositoryReleaseStrategy(
             .header("User-Agent", GIT_USER_AGENT)
             .build()
         client.executeCancellable(request) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_GIT_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))
             }
@@ -545,6 +546,7 @@ class GitRepositoryReleaseStrategy(
     companion object {
         private const val CACHE_TTL_MS = 90_000L
         private const val GIT_USER_AGENT = "KeiOS-App/1.0 (Android Git Repository)"
+        private const val MAX_GIT_RESPONSE_BYTES = 16L * 1024L * 1024L
 
         private val gitTagRefRegex = Regex("""refs/tags/([^\u0000\s^]+(?:\^\{\})?)""")
         private val leadingVersionPrefixRegex = Regex("""^v(?=\d)""", RegexOption.IGNORE_CASE)

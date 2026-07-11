@@ -5,6 +5,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -14,6 +15,26 @@ class GitHubAtomReleaseStrategyTest {
     @After
     fun tearDown() {
         GitHubAtomReleaseStrategy.clearCaches()
+    }
+
+    @Test
+    fun `atom lookup rejects oversized chunked feed`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(9 * 1024 * 1024), 64 * 1024),
+            )
+
+            val error = GitHubAtomReleaseStrategy.loadSnapshotTrace(
+                owner = "demo",
+                repo = "app",
+                atomFeedUrl = server.url("/demo/app/releases.atom").toString(),
+                latestReleaseUrl = server.url("/demo/app/releases/latest").toString(),
+            ).result.exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
     }
 
     @Test

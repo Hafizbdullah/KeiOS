@@ -9,6 +9,7 @@ import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.optObject
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonArrayOrNull
@@ -166,7 +167,7 @@ class GitHubReleaseApiClient(
                 requestBuilder.header("Authorization", "Bearer $token")
             }
             client.executeCancellable(requestBuilder.build()) { response ->
-                val bodyText = response.body.string()
+                val bodyText = response.body.stringLimitedBlocking(MAX_RELEASE_API_RESPONSE_BYTES)
                 if (!response.isSuccessful) {
                     val apiMessage = runCatching {
                         bodyText.parseJsonObjectOrNull()?.optString("message")?.trim().orEmpty()
@@ -231,6 +232,7 @@ class GitHubReleaseApiClient(
     private companion object {
         const val GITHUB_API_VERSION = "2022-11-28"
         const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
+        const val MAX_RELEASE_API_RESPONSE_BYTES = 12L * 1024L * 1024L
         const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
     }
 }

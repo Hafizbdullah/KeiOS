@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -19,6 +20,27 @@ class GitHubApiTokenReleaseStrategyTest {
     @After
     fun tearDown() {
         GitHubApiTokenReleaseStrategy.clearSharedCaches()
+    }
+
+    @Test
+    fun `release api rejects oversized chunked response`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(13 * 1024 * 1024), 64 * 1024),
+            )
+            val boundedStrategy = GitHubApiTokenReleaseStrategy(
+                apiToken = "",
+                apiBaseUrl = server.url("/").toString(),
+            )
+
+            val error = boundedStrategy.loadSnapshotTrace("demo", "app")
+                .result
+                .exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
     }
 
     @Test

@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonObject
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optString
 import os.kei.feature.github.GitHubExecution
@@ -29,6 +30,7 @@ private data class HtmlReleaseMetadata(
 
 object GitHubReleaseAssetRepository {
     private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
+    private const val MAX_RELEASE_HTML_RESPONSE_BYTES = 4L * 1024L * 1024L
     private val htmlBlockOptions = setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
     private val htmlHrefRegex = Regex("""href="([^"]+)"""", RegexOption.IGNORE_CASE)
     private val releaseTitleRegex =
@@ -444,7 +446,7 @@ object GitHubReleaseAssetRepository {
                 requestBuilder.header("Authorization", "Bearer $token")
             }
             client.executeCancellable(requestBuilder.build()) { response ->
-                val bodyText = response.body.string()
+                val bodyText = response.body.stringLimitedBlocking(MAX_RELEASE_HTML_RESPONSE_BYTES)
                 if (!response.isSuccessful) {
                     error("GitHub release page request failed (HTTP ${response.code})")
                 }
