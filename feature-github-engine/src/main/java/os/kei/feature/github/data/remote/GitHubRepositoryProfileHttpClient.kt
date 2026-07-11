@@ -117,7 +117,7 @@ class GitHubRepositoryProfileHttpClient(
         return if (startsWith('/')) this else "/$this"
     }
 
-    internal companion object {
+    companion object {
         private const val DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com"
         private const val DEFAULT_GITHUB_HTML_BASE_URL = "https://github.com"
         private const val GITHUB_API_VERSION = "2022-11-28"

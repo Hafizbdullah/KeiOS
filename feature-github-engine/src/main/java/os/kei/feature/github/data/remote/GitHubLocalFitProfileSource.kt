@@ -1,15 +1,20 @@
 package os.kei.feature.github.data.remote
 
+import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryLocalFitProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 
 object GitHubLocalFitProfileSource {
     fun build(
-        request: GitHubRepositoryProfileRequest,
-        fetchedAtMillis: Long
+        localPackageName: String,
+        localVersionName: String,
+        localVersionCode: Long,
+        preciseStableApkVersion: GitHubRemoteApkVersionInfo?,
+        precisePreReleaseApkVersion: GitHubRemoteApkVersionInfo?,
+        fetchedAtMillis: Long,
     ): GitHubRepositoryLocalFitProfile {
-        val remoteApk = request.preciseStableApkVersion ?: request.precisePreReleaseApkVersion
-        val localPackage = request.localPackageName.trim()
+        val remoteApk = preciseStableApkVersion ?: precisePreReleaseApkVersion
+        val localPackage = localPackageName.trim()
         val remotePackage = remoteApk?.packageName.orEmpty().trim()
         val packageMatched = localPackage.isNotBlank() &&
                 remotePackage.isNotBlank() &&
@@ -43,7 +48,7 @@ object GitHubLocalFitProfileSource {
                 else -> null
             },
             localVersionName = stringField(
-                request.localVersionName,
+                localVersionName,
                 GitHubRepositoryProfileSource.LocalInstall,
                 fetchedAtMillis
             ),
@@ -53,7 +58,7 @@ object GitHubLocalFitProfileSource {
                 fetchedAtMillis
             ),
             localVersionCode = longField(
-                request.localVersionCode,
+                localVersionCode,
                 GitHubRepositoryProfileSource.LocalInstall,
                 fetchedAtMillis
             ),

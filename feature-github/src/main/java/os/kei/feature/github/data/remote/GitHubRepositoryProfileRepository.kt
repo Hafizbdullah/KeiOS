@@ -139,7 +139,9 @@ class GitHubRepositoryProfileRepository(
         )
         val deepProfile = if (policy.requiresDeep) {
             deepSource.fetch(
-                request = request,
+                owner = request.owner,
+                repo = request.repo,
+                apiToken = request.lookupConfig.apiToken,
                 identity = mergedIdentity,
                 lifecycle = mergedLifecycle,
                 fetchedAtMillis = fetchedAtMillis
@@ -173,7 +175,14 @@ class GitHubRepositoryProfileRepository(
             traffic = deepProfile.traffic,
             forkSync = deepProfile.forkSync,
             security = deepProfile.security,
-            localFit = GitHubLocalFitProfileSource.build(request, fetchedAtMillis),
+            localFit = GitHubLocalFitProfileSource.build(
+                localPackageName = request.localPackageName,
+                localVersionName = request.localVersionName,
+                localVersionCode = request.localVersionCode,
+                preciseStableApkVersion = request.preciseStableApkVersion,
+                precisePreReleaseApkVersion = request.precisePreReleaseApkVersion,
+                fetchedAtMillis = fetchedAtMillis,
+            ),
             sourceAvailability = availability.distinctBy { it.source }
         )
     }

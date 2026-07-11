@@ -28,17 +28,28 @@ class GitHubDeepRepositoryProfileSource(
     private val http: GitHubRepositoryProfileHttpClient
 ) {
     suspend fun fetch(
-        request: GitHubRepositoryProfileRequest,
+        owner: String,
+        repo: String,
+        apiToken: String,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,
         fetchedAtMillis: Long
     ): GitHubDeepRepositoryProfileResult {
         val tasks = listOf<suspend () -> GitHubDeepProfileChunk>(
-            { fetchTrafficViews(request, fetchedAtMillis) },
-            { fetchTrafficClones(request, fetchedAtMillis) },
-            { fetchForkCompareChunk(request, identity, lifecycle, fetchedAtMillis) },
-            { fetchDependabotAlerts(request, fetchedAtMillis) },
-            { fetchCodeScanningAlerts(request, fetchedAtMillis) }
+            { fetchTrafficViews(owner, repo, apiToken, fetchedAtMillis) },
+            { fetchTrafficClones(owner, repo, apiToken, fetchedAtMillis) },
+            {
+                fetchForkCompareChunk(
+                    owner = owner,
+                    repo = repo,
+                    apiToken = apiToken,
+                    identity = identity,
+                    lifecycle = lifecycle,
+                    fetchedAtMillis = fetchedAtMillis,
+                )
+            },
+            { fetchDependabotAlerts(owner, repo, apiToken, fetchedAtMillis) },
+            { fetchCodeScanningAlerts(owner, repo, apiToken, fetchedAtMillis) },
         )
         val chunks = GitHubExecution.mapOrderedBounded(
             items = tasks,
@@ -218,14 +229,16 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchTrafficViews(
-        request: GitHubRepositoryProfileRequest,
-        fetchedAtMillis: Long
+        owner: String,
+        repo: String,
+        apiToken: String,
+        fetchedAtMillis: Long,
     ): GitHubDeepProfileChunk {
         val source = GitHubRepositoryProfileSource.TrafficViewsApi
         val startNs = System.nanoTime()
         return http.fetchJson(
-            http.trafficViewsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
+            http.trafficViewsUrl(owner, repo),
+            apiToken,
         ).fold(
             onSuccess = { body ->
                 GitHubDeepProfileChunk(
@@ -257,14 +270,16 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchTrafficClones(
-        request: GitHubRepositoryProfileRequest,
-        fetchedAtMillis: Long
+        owner: String,
+        repo: String,
+        apiToken: String,
+        fetchedAtMillis: Long,
     ): GitHubDeepProfileChunk {
         val source = GitHubRepositoryProfileSource.TrafficClonesApi
         val startNs = System.nanoTime()
         return http.fetchJson(
-            http.trafficClonesUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
+            http.trafficClonesUrl(owner, repo),
+            apiToken,
         ).fold(
             onSuccess = { body ->
                 GitHubDeepProfileChunk(
@@ -296,15 +311,19 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchForkCompareChunk(
-        request: GitHubRepositoryProfileRequest,
+        owner: String,
+        repo: String,
+        apiToken: String,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,
-        fetchedAtMillis: Long
+        fetchedAtMillis: Long,
     ): GitHubDeepProfileChunk {
         val startNs = System.nanoTime()
         val localAvailability = mutableListOf<GitHubRepositoryProfileSourceState>()
         val forkSync = fetchForkCompare(
-            request = request,
+            owner = owner,
+            repo = repo,
+            apiToken = apiToken,
             identity = identity,
             lifecycle = lifecycle,
             fetchedAtMillis = fetchedAtMillis,
@@ -320,14 +339,16 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchDependabotAlerts(
-        request: GitHubRepositoryProfileRequest,
-        fetchedAtMillis: Long
+        owner: String,
+        repo: String,
+        apiToken: String,
+        fetchedAtMillis: Long,
     ): GitHubDeepProfileChunk {
         val source = GitHubRepositoryProfileSource.DependabotAlertsApi
         val startNs = System.nanoTime()
         return http.fetchJson(
-            http.dependabotAlertsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
+            http.dependabotAlertsUrl(owner, repo),
+            apiToken,
         ).fold(
             onSuccess = { body ->
                 GitHubDeepProfileChunk(
@@ -360,14 +381,16 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchCodeScanningAlerts(
-        request: GitHubRepositoryProfileRequest,
-        fetchedAtMillis: Long
+        owner: String,
+        repo: String,
+        apiToken: String,
+        fetchedAtMillis: Long,
     ): GitHubDeepProfileChunk {
         val source = GitHubRepositoryProfileSource.CodeScanningAlertsApi
         val startNs = System.nanoTime()
         return http.fetchJson(
-            http.codeScanningAlertsUrl(request.owner, request.repo),
-            request.lookupConfig.apiToken
+            http.codeScanningAlertsUrl(owner, repo),
+            apiToken,
         ).fold(
             onSuccess = { body ->
                 GitHubDeepProfileChunk(
@@ -400,11 +423,13 @@ class GitHubDeepRepositoryProfileSource(
     }
 
     private suspend fun fetchForkCompare(
-        request: GitHubRepositoryProfileRequest,
+        owner: String,
+        repo: String,
+        apiToken: String,
         identity: GitHubRepositoryIdentityProfile,
         lifecycle: GitHubRepositoryLifecycleProfile,
         fetchedAtMillis: Long,
-        availability: MutableList<GitHubRepositoryProfileSourceState>
+        availability: MutableList<GitHubRepositoryProfileSourceState>,
     ): GitHubRepositoryForkSyncProfile {
         if (lifecycle.fork?.value != true) {
             availability += skipped(
@@ -431,10 +456,10 @@ class GitHubDeepRepositoryProfileSource(
                 upstreamOwner = upstreamParts[0],
                 upstreamRepo = upstreamParts[1],
                 baseBranch = baseBranch,
-                headOwner = request.owner,
-                headBranch = headBranch
+                headOwner = owner,
+                headBranch = headBranch,
             ),
-            request.lookupConfig.apiToken
+            apiToken,
         ).fold(
             onSuccess = { body ->
                 availability += loaded(
@@ -443,10 +468,10 @@ class GitHubDeepRepositoryProfileSource(
                 )
                 parseForkCompare(
                     json = body,
-                    owner = request.owner,
-                    repo = request.repo,
+                    owner = owner,
+                    repo = repo,
                     upstreamFullName = upstreamFullName,
-                    fetchedAtMillis = fetchedAtMillis
+                    fetchedAtMillis = fetchedAtMillis,
                 )
             },
             onFailure = { error ->
