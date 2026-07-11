@@ -1,11 +1,17 @@
 package os.kei.feature.github.data.remote
 
+import kotlinx.coroutines.runBlocking
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileConfidence
+import os.kei.feature.github.model.GitHubRepositoryProfileAvailabilityStatus
+import os.kei.feature.github.model.GitHubRepositoryIdentityProfile
+import os.kei.feature.github.model.GitHubRepositoryLifecycleProfile
 import os.kei.feature.github.model.GitHubRepositoryProfileSource
 import os.kei.feature.github.model.GitHubRepositoryReleaseSnapshot
 import kotlin.test.assertEquals
@@ -226,6 +232,46 @@ class GitHubRepositoryProfileSourcesTest {
         assertEquals(2, dependabot.openDependabotAlertsCount?.value)
         assertEquals(1, codeScanning.openCodeScanningAlertsCount?.value)
         assertEquals(GitHubRepositoryProfileConfidence.Medium, compare.behindBy?.confidence)
+    }
+
+    @Test
+    fun `deep profile skips permission gated requests without token`() = runBlocking {
+        MockWebServer().use { server ->
+            repeat(5) {
+                server.enqueue(MockResponse().setResponseCode(403))
+            }
+            val source = GitHubDeepRepositoryProfileSource(
+                GitHubRepositoryProfileHttpClient(
+                    apiBaseUrl = server.url("/").toString(),
+                    htmlBaseUrl = server.url("/").toString(),
+                ),
+            )
+
+            val result = source.fetch(
+                owner = "demo",
+                repo = "app",
+                apiToken = "",
+                identity = GitHubRepositoryIdentityProfile(),
+                lifecycle = GitHubRepositoryLifecycleProfile(),
+                fetchedAtMillis = FETCHED_AT,
+            )
+
+            assertEquals(0, server.requestCount)
+            val gatedStates = result.availability.filter { state ->
+                state.source in setOf(
+                    GitHubRepositoryProfileSource.TrafficViewsApi,
+                    GitHubRepositoryProfileSource.TrafficClonesApi,
+                    GitHubRepositoryProfileSource.DependabotAlertsApi,
+                    GitHubRepositoryProfileSource.CodeScanningAlertsApi,
+                )
+            }
+            assertEquals(4, gatedStates.size)
+            assertTrue(gatedStates.all { state ->
+                state.status == GitHubRepositoryProfileAvailabilityStatus.Skipped
+            })
+            assertTrue(result.security.dependabotAlertsAvailable?.value == false)
+            assertTrue(result.security.codeScanningAvailable?.value == false)
+        }
     }
 
     @Test

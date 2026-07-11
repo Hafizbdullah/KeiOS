@@ -35,10 +35,13 @@ class GitHubDeepRepositoryProfileSource(
         lifecycle: GitHubRepositoryLifecycleProfile,
         fetchedAtMillis: Long
     ): GitHubDeepRepositoryProfileResult {
-        val tasks = listOf<suspend () -> GitHubDeepProfileChunk>(
-            { fetchTrafficViews(owner, repo, apiToken, fetchedAtMillis) },
-            { fetchTrafficClones(owner, repo, apiToken, fetchedAtMillis) },
-            {
+        val hasApiToken = apiToken.isNotBlank()
+        val tasks = buildList<suspend () -> GitHubDeepProfileChunk> {
+            if (hasApiToken) {
+                add { fetchTrafficViews(owner, repo, apiToken, fetchedAtMillis) }
+                add { fetchTrafficClones(owner, repo, apiToken, fetchedAtMillis) }
+            }
+            add {
                 fetchForkCompareChunk(
                     owner = owner,
                     repo = repo,
@@ -47,10 +50,12 @@ class GitHubDeepRepositoryProfileSource(
                     lifecycle = lifecycle,
                     fetchedAtMillis = fetchedAtMillis,
                 )
-            },
-            { fetchDependabotAlerts(owner, repo, apiToken, fetchedAtMillis) },
-            { fetchCodeScanningAlerts(owner, repo, apiToken, fetchedAtMillis) },
-        )
+            }
+            if (hasApiToken) {
+                add { fetchDependabotAlerts(owner, repo, apiToken, fetchedAtMillis) }
+                add { fetchCodeScanningAlerts(owner, repo, apiToken, fetchedAtMillis) }
+            }
+        }
         val chunks = GitHubExecution.mapOrderedBounded(
             items = tasks,
             maxConcurrency = DEEP_SOURCE_CONCURRENCY
@@ -59,8 +64,24 @@ class GitHubDeepRepositoryProfileSource(
         }
         var traffic = GitHubRepositoryTrafficProfile()
         var forkSync = GitHubRepositoryForkSyncProfile()
-        var security = GitHubRepositorySecurityProfile()
-        val availability = mutableListOf<GitHubRepositoryProfileSourceState>()
+        var security = if (hasApiToken) {
+            GitHubRepositorySecurityProfile()
+        } else {
+            unavailableDependabotAlerts(fetchedAtMillis)
+                .merge(unavailableCodeScanningAlerts(fetchedAtMillis))
+        }
+        val availability = if (hasApiToken) {
+            mutableListOf()
+        } else {
+            permissionGatedSources.mapTo(mutableListOf()) { source ->
+                skipped(
+                    source = source,
+                    fetchedAtMillis = fetchedAtMillis,
+                    message = "GitHub token required",
+                    required = true,
+                )
+            }
+        }
         chunks.forEach { chunk ->
             traffic = traffic.merge(chunk.traffic)
             forkSync = forkSync.merge(chunk.forkSync)
@@ -610,5 +631,11 @@ class GitHubDeepRepositoryProfileSource(
 
         private const val DEFAULT_COMPARE_BRANCH = "main"
         private const val DEEP_SOURCE_CONCURRENCY = 3
+        private val permissionGatedSources = listOf(
+            GitHubRepositoryProfileSource.TrafficViewsApi,
+            GitHubRepositoryProfileSource.TrafficClonesApi,
+            GitHubRepositoryProfileSource.DependabotAlertsApi,
+            GitHubRepositoryProfileSource.CodeScanningAlertsApi,
+        )
     }
 }

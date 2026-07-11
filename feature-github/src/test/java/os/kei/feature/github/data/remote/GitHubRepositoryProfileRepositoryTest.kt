@@ -176,7 +176,10 @@ class GitHubRepositoryProfileRepositoryTest {
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
-                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+                    lookupConfig = GitHubLookupConfig(
+                        profileDepth = GitHubProfileDepth.Deep,
+                        apiToken = "test-token",
+                    ),
                     purpose = GitHubRepositoryProfilePurpose.DetailFull
                 )
                 )
@@ -242,7 +245,10 @@ class GitHubRepositoryProfileRepositoryTest {
                 GitHubRepositoryProfileRequest(
                     owner = "demo",
                     repo = "app",
-                    lookupConfig = GitHubLookupConfig(profileDepth = GitHubProfileDepth.Deep),
+                    lookupConfig = GitHubLookupConfig(
+                        profileDepth = GitHubProfileDepth.Deep,
+                        apiToken = "test-token",
+                    ),
                     purpose = GitHubRepositoryProfilePurpose.ManualDeepRefresh
                 )
                 )
