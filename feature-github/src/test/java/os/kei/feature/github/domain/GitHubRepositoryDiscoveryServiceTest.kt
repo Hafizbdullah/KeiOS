@@ -24,8 +24,8 @@ class GitHubRepositoryDiscoveryServiceTest {
         val source = FakeDiscoverySource(
             publicStars = listOf(
                 candidate(owner = "alpha", repo = "one", stars = 9),
-                candidate(owner = "beta", repo = "two", stars = 81),
-                candidate(owner = "beta", repo = "two", stars = 1)
+                candidate(owner = "beta", repo = "two", stars = 1),
+                candidate(owner = "beta", repo = "two", stars = 81)
             )
         )
         val service = GitHubRepositoryDiscoveryService(source)
@@ -46,6 +46,7 @@ class GitHubRepositoryDiscoveryServiceTest {
             listOf("beta/two", "alpha/one"),
             preview.candidates.map { it.repository.fullName })
         assertFalse(preview.candidates.first().alreadyTracked)
+        assertEquals(81, preview.candidates.first().repository.starCount)
         assertEquals("", preview.candidates.first().trackedApp.packageName)
         assertEquals("beta/two", preview.candidates.first().trackedApp.appLabel)
     }

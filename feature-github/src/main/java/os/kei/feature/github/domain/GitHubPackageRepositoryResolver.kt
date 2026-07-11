@@ -258,7 +258,7 @@ class GitHubPackageRepositoryResolver(
     }
 
     private fun List<GitHubRepositoryCandidate>.dedupeByRepo(): List<GitHubRepositoryCandidate> {
-        return distinctBy { "${it.owner.lowercase()}/${it.repo.lowercase()}" }
+        return GitHubRepositoryCandidateMerger.dedupe(this)
     }
 
     private fun List<GitHubRepositoryCandidate>.rankedPackageCandidates(
@@ -268,9 +268,12 @@ class GitHubPackageRepositoryResolver(
     ): List<Pair<GitHubRepositoryCandidate, Int>> {
         return dedupeByRepo()
             .map { candidate ->
-                scoreCache.getOrPut(candidate.repoKey()) {
-                    candidate.withPackageSearchScore(searchContext)
-                }
+                val key = candidate.repoKey()
+                scoreCache[key]
+                    ?.takeIf { (cachedCandidate, _) -> cachedCandidate == candidate }
+                    ?: candidate.withPackageSearchScore(searchContext).also { scored ->
+                        scoreCache[key] = scored
+                    }
             }
             .sortedWith(
                 compareByDescending<Pair<GitHubRepositoryCandidate, Int>> { it.second }

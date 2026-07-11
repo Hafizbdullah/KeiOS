@@ -351,7 +351,7 @@ class GitHubRepositoryDiscoveryService(
     }
 
     private fun List<GitHubRepositoryCandidate>.dedupeByRepo(): List<GitHubRepositoryCandidate> {
-        return distinctBy { it.repoKey() }
+        return GitHubRepositoryCandidateMerger.dedupe(this)
     }
 
     private fun GitHubRepositoryCandidate.repoKey(): String {
