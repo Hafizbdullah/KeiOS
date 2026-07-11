@@ -133,9 +133,16 @@ class GitHubPreciseApkVersionResolver(
             inspected = inspectedCandidates,
             expectedPackageName = requestedPackageName,
         )
+        val selected = fallback?.takeIf { selection ->
+            requestedPackageName.isBlank() || selection.packageMatched
+        }
         return ApkInspectSelection(
-            selected = fallback?.candidate?.let { it.asset to it.manifest },
-            firstFailure = firstFailure,
+            selected = selected?.candidate?.let { it.asset to it.manifest },
+            firstFailure = firstFailure ?: if (requestedPackageName.isNotBlank()) {
+                IllegalStateException("No APK manifest matched package $requestedPackageName")
+            } else {
+                null
+            },
         )
     }
 

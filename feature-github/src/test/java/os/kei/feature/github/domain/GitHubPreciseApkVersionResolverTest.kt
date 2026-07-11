@@ -15,6 +15,7 @@ import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubVersionCandidateSource
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GitHubPreciseApkVersionResolverTest {
     @Test
@@ -150,6 +151,39 @@ class GitHubPreciseApkVersionResolverTest {
         }.getOrThrow()
 
         assertEquals(target.name, result.assetName)
+        assertEquals(4, source.inspectCount)
+    }
+
+    @Test
+    fun `resolver rejects version data from a different package`() {
+        val assets = (1..4).map { index -> asset("other-$index.apk") }
+        val source = FakePreciseSource(
+            assets = assets,
+            manifests = assets.associate { asset ->
+                asset.name to manifest(
+                    packageName = "other.app",
+                    versionName = "9.0.0",
+                    versionCode = 90L,
+                )
+            },
+        )
+
+        val result = runBlocking {
+            GitHubPreciseApkVersionResolver(source).resolve(
+                GitHubPreciseApkVersionRequest(
+                    owner = "demo",
+                    repo = "app",
+                    release = release("v2.0.0"),
+                    packageName = "demo.target",
+                    lookupConfig = GitHubLookupConfig(),
+                ),
+            )
+        }
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()?.message.orEmpty().contains("demo.target"),
+        )
         assertEquals(4, source.inspectCount)
     }
 
