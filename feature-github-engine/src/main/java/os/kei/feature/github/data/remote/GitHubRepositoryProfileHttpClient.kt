@@ -6,6 +6,7 @@ import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import kotlin.time.Duration.Companion.seconds
@@ -27,7 +28,7 @@ class GitHubRepositoryProfileHttpClient(
             requestBuilder.header("Authorization", "Bearer $token")
         }
         client.executeCancellable(requestBuilder.build()) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_API_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 error(response.buildErrorMessage(bodyText))
             }
@@ -43,7 +44,7 @@ class GitHubRepositoryProfileHttpClient(
             .header("User-Agent", GITHUB_USER_AGENT)
             .build()
         client.executeCancellable(request) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_HTML_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 error("GitHub repository page request failed (HTTP ${response.code})")
             }
@@ -122,6 +123,8 @@ class GitHubRepositoryProfileHttpClient(
         private const val DEFAULT_GITHUB_HTML_BASE_URL = "https://github.com"
         private const val GITHUB_API_VERSION = "2022-11-28"
         private const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
+        private const val MAX_API_RESPONSE_BYTES = 8L * 1024L * 1024L
+        private const val MAX_HTML_RESPONSE_BYTES = 4L * 1024L * 1024L
 
         val githubClient: OkHttpClient by lazy {
             SharedHttpClient.base.newBuilder()

@@ -5,6 +5,7 @@ import okhttp3.Request
 import okhttp3.Response
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.optString
 import os.kei.core.json.parseJsonObjectOrNull
 import os.kei.feature.github.model.GitHubApiAuthMode
@@ -42,7 +43,7 @@ class GitHubActionsApiClient(
             requestBuilder.header("Authorization", "Bearer $sanitizedToken")
         }
         client.executeCancellable(requestBuilder.build()) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_API_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))
             }
@@ -69,7 +70,12 @@ class GitHubActionsApiClient(
                 }
 
                 response.isSuccessful -> response.request.url.toString()
-                else -> error(buildErrorMessage(response, response.body.string()))
+                else -> error(
+                    buildErrorMessage(
+                        response,
+                        response.body.stringLimitedBlocking(MAX_API_RESPONSE_BYTES),
+                    ),
+                )
             }
         }
     }
@@ -153,6 +159,7 @@ class GitHubActionsApiClient(
         const val GITHUB_API_VERSION = "2022-11-28"
         const val GITHUB_USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val ACTIONS_CACHE_MAX_ENTRIES = 160
+        const val MAX_API_RESPONSE_BYTES = 8L * 1024L * 1024L
         val jsonResponseCache = ConcurrentHashMap<String, CachedValue<String>>()
     }
 }

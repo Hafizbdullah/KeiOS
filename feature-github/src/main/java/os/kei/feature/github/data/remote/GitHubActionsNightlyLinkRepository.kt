@@ -4,6 +4,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.feature.github.model.GitHubActionsArtifact
 import os.kei.feature.github.model.GitHubActionsArtifactDownloadResolution
 import os.kei.feature.github.model.GitHubActionsRepositoryInfo
@@ -538,7 +539,7 @@ class GitHubActionsNightlyLinkRepository(
             .header("User-Agent", USER_AGENT)
             .build()
         client.executeCancellable(request) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_PUBLIC_HTML_BYTES)
             if (!response.isSuccessful) {
                 error(buildPublicHtmlErrorMessage(url = url, httpCode = response.code))
             }
@@ -782,6 +783,7 @@ class GitHubActionsNightlyLinkRepository(
         const val DEFAULT_PUBLIC_BRANCH = "main"
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val PUBLIC_HTML_CACHE_TTL_MS = 30_000L
+        const val MAX_PUBLIC_HTML_BYTES = 4L * 1024L * 1024L
         const val PUBLIC_METADATA_CACHE_TTL_MS = 120_000L
         const val PUBLIC_METADATA_CACHE_MAX_ENTRIES = 64
 
