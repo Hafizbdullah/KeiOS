@@ -10,6 +10,7 @@ import os.kei.feature.github.model.GitHubActionsWorkflowSelectionOptions
 import os.kei.feature.github.model.GitHubActionsDownloadRecord
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class GitHubActionsWorkflowSelectorTest {
@@ -268,6 +269,27 @@ class GitHubActionsWorkflowSelectorTest {
         )
 
         assertEquals(listOf("Dev Branch Build & Artifact"), matches.map { it.workflow.name })
+    }
+
+    @Test
+    fun `latest release workflow is not misclassified as test quality`() {
+        val traits = GitHubActionsWorkflowSelector.inspectWorkflow(
+            workflow(31, "Latest Release", ".github/workflows/latest-release.yml"),
+        )
+
+        assertEquals(GitHubActionsWorkflowKind.Release, traits.kind)
+        assertTrue(traits.releaseLike)
+        assertFalse(traits.maintenanceLike)
+    }
+
+    @Test
+    fun `device apk build does not inherit dev channel from substring`() {
+        val traits = GitHubActionsWorkflowSelector.inspectWorkflow(
+            workflow(32, "Device APK Build", ".github/workflows/device-apk-build.yml"),
+        )
+
+        assertEquals(GitHubActionsWorkflowKind.AndroidBuild, traits.kind)
+        assertFalse(traits.nightlyLike)
     }
 
     @Test

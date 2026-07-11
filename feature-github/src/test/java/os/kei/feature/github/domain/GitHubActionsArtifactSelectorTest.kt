@@ -207,6 +207,24 @@ class GitHubActionsArtifactSelectorTest {
     }
 
     @Test
+    fun `app name containing source substring remains selectable`() {
+        val match = GitHubActionsArtifactSelector.selectDisplayArtifacts(
+            artifacts = listOf(artifact("Resourceful-app-release.apk")),
+        ).single()
+
+        assertFalse(match.traits.buildNoise)
+        assertEquals(GitHubActionsArtifactKind.AndroidPackage, match.traits.kind)
+    }
+
+    @Test
+    fun `explicit test results artifact remains build noise`() {
+        val traits = GitHubActionsArtifactSelector.inspectName("android-test-results.zip")
+
+        assertTrue(traits.buildNoise)
+        assertEquals(GitHubActionsArtifactKind.Report, traits.kind)
+    }
+
+    @Test
     fun `selector boosts and exposes last downloaded artifact`() {
         val downloaded = artifact("app-universal-release.apk", id = 20L)
         val fresh = artifact("app-arm64-v8a-release.apk", id = 21L)

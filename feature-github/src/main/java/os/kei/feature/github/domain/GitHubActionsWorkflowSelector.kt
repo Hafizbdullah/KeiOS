@@ -297,7 +297,25 @@ object GitHubActionsWorkflowSelector {
     }
 
     private fun containsAny(value: String, vararg needles: String): Boolean {
-        return needles.any { value.contains(it, ignoreCase = true) }
+        return needles.any { needle -> containsToken(value, needle) }
+    }
+
+    private fun containsToken(value: String, token: String): Boolean {
+        val needle = token.lowercase(Locale.ROOT)
+        if (needle.isBlank()) return false
+        var start = value.indexOf(needle)
+        while (start >= 0) {
+            val end = start + needle.length
+            val beforeBoundary = start == 0 || !value[start - 1].isAsciiLetterOrDigit()
+            val afterBoundary = end == value.length || !value[end].isAsciiLetterOrDigit()
+            if (beforeBoundary && afterBoundary) return true
+            start = value.indexOf(needle, startIndex = start + 1)
+        }
+        return false
+    }
+
+    private fun Char.isAsciiLetterOrDigit(): Boolean {
+        return this in 'a'..'z' || this in '0'..'9'
     }
 
     private fun actionDownloadRecommendedRun(match: os.kei.feature.github.model.GitHubActionsRunMatch): Boolean {

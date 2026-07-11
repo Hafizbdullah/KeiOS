@@ -349,8 +349,12 @@ object GitHubActionsArtifactSelector {
     }
 
     private fun isBuildNoise(normalizedName: String): Boolean {
-        return containsAny(
-            normalizedName,
+        return buildNoiseTokens.any { token ->
+            containsToken(normalizedName, token)
+        }
+    }
+
+    private val buildNoiseTokens = listOf(
             "mapping",
             "mappings",
             "symbols",
@@ -369,7 +373,6 @@ object GitHubActionsArtifactSelector {
             "dependency-graph",
             "metadata"
         )
-    }
 
     private fun containsAny(value: String, vararg needles: String): Boolean {
         return needles.any { value.contains(it) }
