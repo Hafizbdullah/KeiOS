@@ -130,7 +130,7 @@ Actions benchmark matrix:
 
 | Mode | URL resolution | Required comparison |
 | --- | --- | --- |
-| NightlyLink | Use the current `GitHubActionsLookupStrategyOption.NightlyLink` path backed by `nightly.build` public pages. | Single-stream nightly artifact ZIP vs segmented nightly artifact ZIP. |
+| NightlyLink | Use the current `GitHubActionsLookupStrategyOption.NightlyLink` path backed by `nightly.link` public pages. | Single-stream nightly artifact ZIP vs segmented nightly artifact ZIP. |
 | GitHubApiToken | Use the current `GitHubActionsLookupStrategyOption.GitHubApiToken` path backed by GitHub Actions artifact API URLs. | Single-stream API artifact ZIP vs segmented API artifact ZIP. |
 
 Actions benchmark selection rules:
@@ -683,6 +683,10 @@ Adaptive foreground profile revision from 2026-07-11:
 - A connection budget of 4 or fewer uses the Balanced scheduler tuning and an
   8 MiB effective initial part size. Small APKs therefore avoid the extra
   request churn of the aggressive large-file profile.
+- Balanced uses a `16 x 8 MiB = 128 MiB` distributed tail window. ForegroundBoost
+  uses a `32 x 4 MiB = 128 MiB` distributed tail window. Common 90-170 MiB
+  APK/ZIP downloads therefore keep work spread across active workers instead
+  of handing the remaining bytes to a few oversized dynamic parts.
 - Large downloads grow one connection only after a complete wave of distinct
   workers has succeeded. A 174.57 MiB Paseo run received an 11-worker budget,
   started at 8, peaked at 9, and completed before the remaining budget opened.
@@ -711,7 +715,7 @@ These candidates established 8 as the strong startup tier and 12 as a useful
 hard ceiling. Size budgeting and wave-gated growth let large APK/ZIP transfers
 approach the ceiling while common APKs stay at 2-8 workers.
 
-Android 17 AVD size matrix:
+Android 17 AVD maturity matrix:
 
 Current tuning and regression work targets `emulator-5556` on API 37. Direct
 and API-signed samples run through the same AVD so connection-budget changes,
@@ -720,27 +724,72 @@ be compared on a stable test target. The API 36 Xiaomi device keeps the current
 Debug build for the final foreground/background and OEM install-flow pass after
 the algorithm settles.
 
-| Sample | Actual size | Balanced/Boost budget | Direct mean MiB/s | Direct delta | API-signed mean MiB/s | API delta |
+The release-source table pairs adjacent Balanced/Boost runs and reverses their
+order in the next pass. The 20-60 MiB rows use four complete passes; their
+connection budgets are identical across profiles, so the observed delta mainly
+captures CDN and dispatcher variance. The 90-170 MiB rows use two final-code
+paired passes after both tail-window revisions.
+
+| Sample | Budget B/Boost | Runs/profile | Direct B/Boost MiB/s | Direct delta | API B/Boost MiB/s | API delta |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| KeiOS 1.11.0 | 19.27 MiB | 2 / 2 | 5.056 / 4.037 | `-20.14%` | 4.278 / 2.385 | `-44.25%` |
-| Keyguard r20260616 | 37.13 MiB | 3 / 3 | 4.010 / 5.869 | `+46.38%` | 4.604 / 9.663 | `+109.88%` |
-| Momogram 12.8.1-1 | 60.45 MiB | 4 / 4 | 8.811 / 8.282 | `-6.00%` | 7.361 / 12.396 | `+68.40%` |
-| ImageToolbox 4.1.0 | 94.77 MiB | 4 / 6 | 4.301 / 10.048* | `+133.65%` | 9.532 / 7.473 | `-21.60%` |
-| Termux 0.119 beta 3 | 113.74 MiB | 4 / 8 | 9.430 / 6.532 | `-30.72%` | 7.147 / 9.930 | `+38.95%` |
-| Paseo 0.1.105 | 174.57 MiB | 4 / 11 | 5.532 / 11.831 | `+113.86%` | 7.357 / 11.999 | `+63.11%` |
+| KeiOS 1.11.0, 19.27 MiB | 2 / 2 | 4 | 5.491 / 4.607 | `-16.10%` | 5.884 / 2.620 | `-55.48%` |
+| Keyguard r20260616, 37.13 MiB | 3 / 3 | 4 | 6.406 / 8.788 | `+37.19%` | 7.250 / 10.739 | `+48.12%` |
+| Momogram 12.8.1-1, 60.45 MiB | 4 / 4 | 4 | 9.923 / 9.643 | `-2.82%` | 7.911 / 10.764 | `+36.06%` |
+| ImageToolbox 4.1.0, 94.77 MiB | 4 / 6 | 2 | 16.505 / 17.044 | `+3.27%` | 17.990 / 16.387 | `-8.91%` |
+| Termux 0.119 beta 3, 113.74 MiB | 4 / 8 | 2 | 18.565 / 16.514 | `-11.05%` | 19.636 / 18.374 | `-6.42%` |
+| Paseo 0.1.105, 174.57 MiB | 4 / 11 | 2 | 12.878 / 11.691 | `-9.22%` | 11.732 / 12.047 | `+2.68%` |
 
-The matrix used two passes with reversed profile order. One ImageToolbox Direct
-Boost run hit the local 90-second harness timeout, so its Boost mean contains
-one completed sample. The other 47 transfers completed with Range support and
-matching per-asset SHA-256; five retries occurred across the four Paseo Boost
-or Direct runs. AVD throughput varied from roughly 1 to 14 MiB/s, so this matrix
-serves as correctness and regression screening. Final release-speed claims stay
-gated on the API 36 physical-device pass.
+The final paired GitHub runs completed 24/24 transfers with Range support,
+matching per-asset SHA-256, zero retries, and no peak above the calculated
+budget. The AVD GitHub path frequently saturates at roughly 17-20 MiB/s with
+four connections, so extra connections provide conditional gains there. Final
+release-speed claims remain gated on the API 36 physical-device pass.
 
-AVD background screening for Paseo API-signed produced 9.546 MiB/s for Balanced
-and 7.357 MiB/s for ForegroundBoost in one paired run. Process importance moved
-from 100 to 125. This sample confirms lifecycle completion and provides a
-follow-up signal for the final physical-device foreground/background matrix.
+Controlled AVD range server:
+
+The host-side test server is reached through `adb reverse`, limits every active
+range response to 2 MiB/s, and serves deterministic bytes. Two passes with
+reversed profile order isolate scheduler behavior from GitHub CDN variance.
+
+| Sample tier | Budget B/Boost | Balanced MiB/s | Boost MiB/s | Boost delta |
+| --- | ---: | ---: | ---: | ---: |
+| 20 MiB | 2 / 2 | 3.868 | 3.866 | `-0.05%` |
+| 40 MiB | 3 / 3 | 5.813 | 5.812 | `-0.03%` |
+| 60 MiB | 4 / 4 | 7.806 | 7.790 | `-0.20%` |
+| 90 MiB | 4 / 6 | 7.870 | 11.560 | `+46.88%` |
+| 110 MiB | 4 / 8 | 7.892 | 13.877 | `+75.85%` |
+| 170 MiB | 4 / 11 | 7.365 | 9.567 | `+29.89%` |
+
+The tail-window revision raised controlled 90 MiB Boost throughput from 5.204
+to 11.620 MiB/s and 110 MiB Boost throughput from 6.241 to 13.986 MiB/s. The
+Balanced 110 MiB result rose from 5.633 to 7.892 MiB/s after its tail window
+also reached 128 MiB. Small profiles stayed within 0.2% because budgets of four
+or fewer already share the same Balanced tuning.
+
+Final GitHub Actions artifact screening uses the same 103,029,926-byte ZIP from
+run `28693083452`. The `nightly.link` URL and Token API signed URL produced the
+same SHA-256 in every run.
+
+| Actions source | Balanced MiB/s | Boost MiB/s | Boost delta | Result |
+| --- | ---: | ---: | ---: | --- |
+| `nightly.link` | 10.530 | 11.141 | `+5.80%` | 4/4 success, 0 retries |
+| Token API signed | 12.193 | 12.655 | `+3.79%` | 4/4 success, 0 retries |
+
+Final foreground/background screening uses Paseo 0.1.105 with two runs per
+cell and a 10-second cooldown. Foreground finishes at process importance 100;
+background finishes at 125. All 16 transfers completed with Range, matching
+SHA-256, and zero retries.
+
+| Source | Profile | Foreground MiB/s | Background MiB/s |
+| --- | --- | ---: | ---: |
+| Direct | Balanced | 13.822 | 12.061 |
+| Direct | ForegroundBoost | 12.119 | 11.977 |
+| API signed | Balanced | 14.598 | 16.750 |
+| API signed | ForegroundBoost | 12.315 | 18.496 |
+
+The foreground/background throughput spread remains CDN-dominated on the AVD.
+Lifecycle completion and scheduler correctness are stable; the physical-device
+pass will determine the user-facing foreground-speed recommendation.
 
 Size-matrix fixtures:
 
@@ -778,13 +827,13 @@ Each Live run downloads three copies: `plain_get`, `segmented_shared`, and
 `segmented_isolated`. Repeat the same resolved asset with
 `-Dkeios.download.protocol=http1` for the forced HTTP/1.1 control. Run separate
 comparison sets for Paseo Atom/direct, Paseo API-resolved signed URL,
-NightlyLink/nightly.build, and GitHub Actions API-resolved signed URL.
+NightlyLink/nightly.link, and GitHub Actions API-resolved signed URL.
 
 Evidence to capture:
 
 - Average throughput for single-stream vs segmented on the same URL.
 - Paseo v0.1.105 Android APK benchmark rows for AtomFeed direct URL and GitHubApiToken API-resolved URL.
-- GitHub Actions artifact benchmark rows for NightlyLink/nightly.build and GitHubApiToken API modes.
+- GitHub Actions artifact benchmark rows for NightlyLink/nightly.link and GitHubApiToken API modes.
 - Tail duration after 90% complete.
 - 429 and 5xx frequency.
 - Cancellation cleanup success.
@@ -794,7 +843,7 @@ Evidence to capture:
 
 ## Verification Checklist
 
-- `:core-download:testDebugUnitTest --rerun-tasks` passes 66 tests with the two
+- `:core-download:testDebugUnitTest --rerun-tasks` passes 68 tests with the two
   opt-in benchmark tests skipped by default.
 - Existing `RemoteZipEntryReaderTest` stays green.
 - `:feature-github:testDebugUnitTest --offline` passes 534 tests with one skip.
@@ -822,9 +871,8 @@ Evidence to capture:
 
 ## Next Validation Recommendation
 
-Keep the active tuning loop on the Android 17 `emulator-5556` AVD. Run the four
-real-source comparison sets there: Paseo Atom/direct, Paseo API-resolved,
-Actions NightlyLink/nightly.build, and Actions API-resolved. Use the three-mode
-Live matrix for each source and repeat winning candidates three times. Once the
-parameters settle, run the compact foreground/background matrix and managed
-install smoke on the API 36 Xiaomi device before choosing the release default.
+Freeze the AVD parameters after the final maturity matrix. When the API 36
+Xiaomi device is connected, run the compact 90/110/170 MiB Direct/API paired
+matrix, Paseo foreground/background screening, `nightly.link` and Token API
+Actions rows, and one complete managed-install smoke. Use that physical-device
+evidence to choose the release recommendation for ForegroundBoost.
