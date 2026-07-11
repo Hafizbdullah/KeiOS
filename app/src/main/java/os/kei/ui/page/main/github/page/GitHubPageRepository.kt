@@ -359,12 +359,14 @@ internal class GitHubPageRepository(
         forceRefresh: Boolean,
         includeSystemApps: Boolean = true,
         pinnedSystemPackageNames: Set<String> = emptySet(),
+        requiredPackageNames: Set<String> = emptySet(),
     ): List<InstalledAppItem> =
         installedAppRepository.queryInstalledLaunchableApps(
             context = context,
             forceRefresh = forceRefresh,
             includeSystemApps = includeSystemApps,
             pinnedSystemPackageNames = pinnedSystemPackageNames,
+            requiredPackageNames = requiredPackageNames,
         )
 
     suspend fun preloadAppIcons(

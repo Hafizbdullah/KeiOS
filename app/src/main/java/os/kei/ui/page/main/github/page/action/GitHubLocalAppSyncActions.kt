@@ -29,6 +29,7 @@ internal class GitHubLocalAppSyncActions(
                         forceRefresh = forceRefresh,
                         includeSystemApps = includeSystemApps,
                         pinnedSystemPackageNames = trackedSystemPackageNames(),
+                        requiredPackageNames = trackedPackageNames().toSet(),
                     )
                 syncTrackedLocalAppTypesFromAppList()
                 val trackedPackages = trackedPackageNames()

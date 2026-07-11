@@ -3,6 +3,7 @@ package os.kei.feature.github.data.local
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import java.util.Locale
 import os.kei.core.system.HyperOsSettingsIntents
@@ -26,16 +27,19 @@ object GitHubInstalledAppRepository {
         ttlMs: Long = INSTALLED_APPS_CACHE_TTL_MS,
         includeSystemApps: Boolean = true,
         pinnedSystemPackageNames: Set<String> = emptySet(),
+        requiredPackageNames: Set<String> = emptySet(),
     ): List<InstalledAppItem> {
         val now = System.currentTimeMillis()
         val normalizedPinnedSystemPackages = pinnedSystemPackageNames.normalizedPackageNameSet()
+        val normalizedRequiredPackages = requiredPackageNames.normalizedPackageNameSet()
         if (!forceRefresh) {
             installedAppsCache?.takeIf { cache ->
                 (now - cache.updatedAtMs).coerceAtLeast(0L) < ttlMs.coerceAtLeast(0L) &&
                     cache.canServeScope(
                         includeSystemApps = includeSystemApps,
                         pinnedSystemPackageNames = normalizedPinnedSystemPackages,
-                    )
+                    ) &&
+                    cache.containsPackages(normalizedRequiredPackages)
             }?.let { cache ->
                 return filterByScanScope(
                     apps = cache.apps,
@@ -49,46 +53,44 @@ object GitHubInstalledAppRepository {
         val overlayFlagMask = installedAppResourceOverlayFlagMask()
         val installSourceLabelCache = mutableMapOf<String, String>()
         val labelSortLocale = Locale.getDefault()
-        val apps = packageManager.getInstalledPackageInfosSafely()
+        val scannedApps = packageManager.getInstalledPackageInfosSafely()
             .asSequence()
             .mapNotNull { packageInfo ->
-                val packageName = packageInfo.packageName.trim()
-                if (packageName.isBlank()) return@mapNotNull null
-                val appInfo = packageInfo.applicationInfo
-                    ?: packageManager.getApplicationInfoCompat(packageName)
-                    ?: return@mapNotNull null
-                if (shouldIgnoreInstalledApp(appInfo, overlayFlagMask)) return@mapNotNull null
-                val isSystemApp = appInfo.isSystemAppForPicker()
-                if (
-                    !includeSystemApps &&
-                    isSystemApp &&
-                    packageName.lowercase(Locale.ROOT) !in normalizedPinnedSystemPackages
-                ) {
-                    return@mapNotNull null
-                }
-
-                val label = runCatching {
-                    packageManager.getApplicationLabel(appInfo).toString()
-                }.getOrDefault(packageName).trim().ifBlank { packageName }
-                val installSource = packageManager.resolveInstallSource(
-                    packageName = packageName,
-                    labelCache = installSourceLabelCache,
-                )
-                InstalledAppSortEntry(
-                    item = InstalledAppItem(
-                        label = label,
-                        packageName = packageName,
-                        firstInstallTimeMs = packageInfo.firstInstallTime,
-                        lastUpdateTimeMs = packageInfo.lastUpdateTime,
-                        isSystemApp = isSystemApp,
-                        installSourcePackageName = installSource.packageName,
-                        installSourceLabel = installSource.label,
-                    ),
-                    labelSortKey = label.lowercase(labelSortLocale),
-                    packageSortKey = packageName.lowercase(Locale.ROOT),
+                packageManager.toInstalledAppItem(
+                    packageInfo = packageInfo,
+                    overlayFlagMask = overlayFlagMask,
+                    installSourceLabelCache = installSourceLabelCache,
                 )
             }
-            .distinctBy { entry -> entry.item.packageName }
+            .toMutableList()
+        val scannedPackages =
+            scannedApps.mapTo(HashSet()) { app -> app.packageName.lowercase(Locale.ROOT) }
+        normalizedRequiredPackages.forEach { packageName ->
+            if (packageName in scannedPackages) return@forEach
+            packageManager.installedAppItemOrNull(
+                packageName = packageName,
+                overlayFlagMask = overlayFlagMask,
+                installSourceLabelCache = installSourceLabelCache,
+            )?.let { app ->
+                scannedApps += app
+                scannedPackages += packageName
+            }
+        }
+        val apps = scannedApps
+            .asSequence()
+            .filter { app ->
+                includeSystemApps ||
+                    !app.isSystemApp ||
+                    app.packageName.lowercase(Locale.ROOT) in normalizedPinnedSystemPackages
+            }
+            .map { item ->
+                InstalledAppSortEntry(
+                    item = item,
+                    labelSortKey = item.label.lowercase(labelSortLocale),
+                    packageSortKey = item.packageName.lowercase(Locale.ROOT),
+                )
+            }
+            .distinctBy { entry -> entry.item.packageName.lowercase(Locale.ROOT) }
             .sortedWith(
                 compareBy<InstalledAppSortEntry> { entry -> entry.labelSortKey }
                     .thenBy { entry -> entry.packageSortKey },
@@ -100,6 +102,7 @@ object GitHubInstalledAppRepository {
             apps = apps,
             includesSystemApps = includeSystemApps,
             pinnedSystemPackageNames = normalizedPinnedSystemPackages,
+            reconciledPackageNames = normalizedRequiredPackages,
         )
         return apps
     }
@@ -157,6 +160,7 @@ object GitHubInstalledAppRepository {
         val apps: List<InstalledAppItem>,
         val includesSystemApps: Boolean,
         val pinnedSystemPackageNames: Set<String>,
+        val reconciledPackageNames: Set<String>,
     ) {
         fun canServeScope(
             includeSystemApps: Boolean,
@@ -168,6 +172,16 @@ object GitHubInstalledAppRepository {
                 packageName in this.pinnedSystemPackageNames
             }
         }
+
+        fun containsPackages(packageNames: Set<String>): Boolean {
+            if (packageNames.isEmpty()) return true
+            val cachedPackages = apps.mapTo(HashSet()) { app ->
+                app.packageName.lowercase(Locale.ROOT)
+            }
+            return packageNames.all { packageName ->
+                packageName in cachedPackages || packageName in reconciledPackageNames
+            }
+        }
     }
 
     private data class InstalledAppSortEntry(
@@ -175,6 +189,49 @@ object GitHubInstalledAppRepository {
         val labelSortKey: String,
         val packageSortKey: String,
     )
+
+    private fun PackageManager.installedAppItemOrNull(
+        packageName: String,
+        overlayFlagMask: Int,
+        installSourceLabelCache: MutableMap<String, String>,
+    ): InstalledAppItem? {
+        val packageInfo = runCatching {
+            getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+        }.getOrNull() ?: return null
+        return toInstalledAppItem(
+            packageInfo = packageInfo,
+            overlayFlagMask = overlayFlagMask,
+            installSourceLabelCache = installSourceLabelCache,
+        )
+    }
+
+    private fun PackageManager.toInstalledAppItem(
+        packageInfo: PackageInfo,
+        overlayFlagMask: Int,
+        installSourceLabelCache: MutableMap<String, String>,
+    ): InstalledAppItem? {
+        val packageName = packageInfo.packageName.trim()
+        if (packageName.isBlank()) return null
+        val appInfo =
+            packageInfo.applicationInfo ?: getApplicationInfoCompat(packageName) ?: return null
+        if (shouldIgnoreInstalledApp(appInfo, overlayFlagMask)) return null
+        val label = runCatching {
+            getApplicationLabel(appInfo).toString()
+        }.getOrDefault(packageName).trim().ifBlank { packageName }
+        val installSource = resolveInstallSource(
+            packageName = packageName,
+            labelCache = installSourceLabelCache,
+        )
+        return InstalledAppItem(
+            label = label,
+            packageName = packageName,
+            firstInstallTimeMs = packageInfo.firstInstallTime,
+            lastUpdateTimeMs = packageInfo.lastUpdateTime,
+            isSystemApp = appInfo.isSystemAppForPicker(),
+            installSourcePackageName = installSource.packageName,
+            installSourceLabel = installSource.label,
+        )
+    }
 }
 
 private fun PackageManager.getApplicationInfoCompat(packageName: String): ApplicationInfo? {

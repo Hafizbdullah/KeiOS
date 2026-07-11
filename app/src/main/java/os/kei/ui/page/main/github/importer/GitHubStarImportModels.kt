@@ -9,6 +9,8 @@ import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarredRepositoryImportSource
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
+import os.kei.feature.github.model.InstalledAppItem
 import java.net.URI
 import java.util.EnumMap
 import java.util.Locale
@@ -267,6 +269,27 @@ internal fun applyVerifiedPackageNamesToStarImportCandidates(
             )
         }
     }
+
+internal fun bindInstalledAppsToStarImportCandidates(
+    candidates: List<GitHubRepositoryImportCandidate>,
+    installedApps: List<InstalledAppItem>,
+): List<GitHubRepositoryImportCandidate> {
+    val installedByPackage =
+        installedApps.associateBy { app -> app.packageName.trim().lowercase(Locale.ROOT) }
+    return candidates.map { candidate ->
+        val packageName = candidate.trackedApp.packageName.trim()
+        val installedApp =
+            installedByPackage[packageName.lowercase(Locale.ROOT)] ?: return@map candidate
+        candidate.copy(
+            trackedApp =
+                candidate.trackedApp.copy(
+                    appLabel = installedApp.label.trim().ifBlank { candidate.trackedApp.appLabel },
+                    localAppType =
+                        GitHubTrackedLocalAppType.fromSystemFlag(installedApp.isSystemApp),
+                ),
+        )
+    }
+}
 
 private fun StarImportApkVerificationUiState?.needsStarImportApkVerification(): Boolean =
     this?.checking != true &&

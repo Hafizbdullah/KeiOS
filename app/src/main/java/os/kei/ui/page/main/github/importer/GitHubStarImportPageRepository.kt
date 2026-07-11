@@ -8,12 +8,14 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
 import os.kei.feature.github.domain.GitHubStarImportApkVerifier
 import os.kei.feature.github.domain.GitHubStarImportService
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
+import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubStarListSummary
 import os.kei.feature.github.model.GitHubStarredRepositoryImportPreview
@@ -202,7 +204,6 @@ internal class GitHubStarImportPageRepository(
     ): List<Pair<String, GitHubStarImportApkVerification>> {
         val uniqueTargets = targets
             .distinctBy { it.trackedApp.id }
-            .take(MAX_APK_VERIFICATION_BATCH)
         if (uniqueTargets.isEmpty()) return emptyList()
         return withContext(ioDispatcher) {
             val snapshot = starImportService.loadTrackSnapshot()
@@ -220,11 +221,45 @@ internal class GitHubStarImportPageRepository(
         candidates: List<GitHubRepositoryImportCandidate>,
         verificationStates: Map<String, StarImportApkVerificationUiState>
     ): StarImportApplyResult {
-        val selectedForImport = applyVerifiedPackageNamesToStarImportCandidates(
-            candidates = candidates,
-            verificationStates = verificationStates
-        )
         return withContext(ioDispatcher) {
+            val completedVerificationStates = verificationStates.toMutableMap()
+            val unresolved =
+                candidates.filter { candidate ->
+                    if (candidate.trackedApp.packageName.isNotBlank()) return@filter false
+                    val verification = completedVerificationStates[candidate.trackedApp.id]?.verification
+                    verification == null ||
+                        verification.status == GitHubStarImportApkVerificationStatus.Failed ||
+                        (
+                            verification.status == GitHubStarImportApkVerificationStatus.HasApk &&
+                                verification.packageName.isBlank()
+                        )
+                }
+            verifyApkAssets(unresolved).forEach { (id, verification) ->
+                completedVerificationStates[id] =
+                    StarImportApkVerificationUiState(verification = verification)
+            }
+            val packageResolved =
+                applyVerifiedPackageNamesToStarImportCandidates(
+                    candidates = candidates,
+                    verificationStates = completedVerificationStates,
+                )
+            val packageNames =
+                packageResolved
+                    .map { candidate -> candidate.trackedApp.packageName.trim() }
+                    .filter { packageName -> packageName.isNotBlank() }
+                    .toSet()
+            val installedApps =
+                GitHubInstalledAppRepository.queryInstalledLaunchableApps(
+                    context = context,
+                    forceRefresh = true,
+                    includeSystemApps = true,
+                    requiredPackageNames = packageNames,
+                )
+            val selectedForImport =
+                bindInstalledAppsToStarImportCandidates(
+                    candidates = packageResolved,
+                    installedApps = installedApps,
+                )
             starImportService.importCandidates(
                 candidates = selectedForImport,
                 onRefreshNeeded = { AppBackgroundScheduler.scheduleGitHubRefresh(context) },
@@ -234,7 +269,6 @@ internal class GitHubStarImportPageRepository(
 
     companion object {
         private const val STAR_IMPORT_PREVIEW_LIMIT = 1_000
-        private const val MAX_APK_VERIFICATION_BATCH = 30
         private const val MAX_PARALLEL_APK_VERIFICATIONS = 4
     }
 }

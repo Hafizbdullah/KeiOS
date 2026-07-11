@@ -384,7 +384,6 @@ internal class GitHubStarImportViewModel(
         if (state.loading || state.importing || targets.isEmpty()) return
         val uniqueTargets = targets
             .distinctBy { it.trackedApp.id }
-            .take(MAX_APK_VERIFICATION_BATCH)
         if (uniqueTargets.isEmpty()) return
         _uiState.update { current ->
             val updated = current.apkVerificationStates.toMutableMap()
@@ -512,6 +511,5 @@ internal class GitHubStarImportViewModel(
     private companion object {
         const val STAR_IMPORT_FILTER_DEBOUNCE_MS = 150L
         const val STAR_IMPORT_DRAFT_SAVE_DEBOUNCE_MS = 120L
-        const val MAX_APK_VERIFICATION_BATCH = 30
     }
 }

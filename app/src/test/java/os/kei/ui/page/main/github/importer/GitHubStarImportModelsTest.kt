@@ -7,6 +7,8 @@ import os.kei.feature.github.model.GitHubRepositoryDiscoverySourceType
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.GitHubStarImportApkVerification
 import os.kei.feature.github.model.GitHubStarImportApkVerificationStatus
+import os.kei.feature.github.model.GitHubTrackedLocalAppType
+import os.kei.feature.github.model.InstalledAppItem
 import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubTrackedApp
 import kotlin.test.assertEquals
@@ -187,6 +189,70 @@ class GitHubStarImportModelsTest {
 
         assertEquals("demo.verified", mapped.single().trackedApp.packageName)
         assertEquals("demo/verified-app|demo.verified", mapped.single().trackedApp.id)
+    }
+
+    @Test
+    fun `installed app binding fills label and local app type after package resolution`() {
+        val userCandidate =
+            starImportCandidate(
+                repo = "user-app",
+                description = "Android APK release",
+                language = "Kotlin",
+            ).let { candidate ->
+                candidate.copy(
+                    trackedApp = candidate.trackedApp.copy(packageName = "com.example.user"),
+                )
+            }
+        val systemCandidate =
+            starImportCandidate(
+                repo = "system-app",
+                description = "Android APK release",
+                language = "Kotlin",
+            ).let { candidate ->
+                candidate.copy(
+                    trackedApp = candidate.trackedApp.copy(packageName = "COM.EXAMPLE.SYSTEM"),
+                )
+            }
+
+        val mapped =
+            bindInstalledAppsToStarImportCandidates(
+                candidates = listOf(userCandidate, systemCandidate),
+                installedApps =
+                    listOf(
+                        InstalledAppItem(
+                            label = "User App",
+                            packageName = "com.example.user",
+                        ),
+                        InstalledAppItem(
+                            label = "System App",
+                            packageName = "com.example.system",
+                            isSystemApp = true,
+                        ),
+                    ),
+            )
+
+        assertEquals("User App", mapped[0].trackedApp.appLabel)
+        assertEquals(GitHubTrackedLocalAppType.User, mapped[0].trackedApp.localAppType)
+        assertEquals("System App", mapped[1].trackedApp.appLabel)
+        assertEquals(GitHubTrackedLocalAppType.System, mapped[1].trackedApp.localAppType)
+    }
+
+    @Test
+    fun `installed app binding preserves unmatched candidate metadata`() {
+        val candidate =
+            starImportCandidate(
+                repo = "missing-app",
+                description = "Android APK release",
+                language = "Kotlin",
+            ).let { value ->
+                value.copy(
+                    trackedApp = value.trackedApp.copy(packageName = "com.example.missing"),
+                )
+            }
+
+        val mapped = bindInstalledAppsToStarImportCandidates(listOf(candidate), emptyList())
+
+        assertEquals(candidate, mapped.single())
     }
 
 }

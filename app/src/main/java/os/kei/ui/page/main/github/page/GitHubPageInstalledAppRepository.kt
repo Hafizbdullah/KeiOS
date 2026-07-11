@@ -42,14 +42,16 @@ internal class GitHubPageInstalledAppRepository(
         context: Context,
         forceRefresh: Boolean,
         includeSystemApps: Boolean = true,
-        pinnedSystemPackageNames: Set<String> = emptySet()
+        pinnedSystemPackageNames: Set<String> = emptySet(),
+        requiredPackageNames: Set<String> = emptySet(),
     ): List<InstalledAppItem> {
         return withContext(ioDispatcher) {
             GitHubInstalledAppRepository.queryInstalledLaunchableApps(
                 context = context,
                 forceRefresh = forceRefresh,
                 includeSystemApps = includeSystemApps,
-                pinnedSystemPackageNames = pinnedSystemPackageNames
+                pinnedSystemPackageNames = pinnedSystemPackageNames,
+                requiredPackageNames = requiredPackageNames,
             )
         }
     }

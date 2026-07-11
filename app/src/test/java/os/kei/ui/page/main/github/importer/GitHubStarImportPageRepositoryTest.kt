@@ -128,6 +128,27 @@ class GitHubStarImportPageRepositoryTest {
         )
     }
 
+    @Test
+    fun `apk verification processes selections larger than the former batch limit`() = runBlocking {
+        val repository =
+            GitHubStarImportPageRepository(
+                ioDispatcher = Dispatchers.Unconfined,
+                snapshotLoader = { GitHubTrackSnapshot() },
+                apkVerifierFactory = {
+                    GitHubStarImportApkVerifier(
+                        source = FakeApkSource(),
+                        cache = FixedVerificationCache(),
+                    )
+                },
+            )
+        val targets = (1..35).map { index -> importCandidate("app-$index") }
+
+        val results = repository.verifyApkAssets(targets)
+
+        assertEquals(35, results.size)
+        assertEquals(targets.map { it.trackedApp.id }, results.map { it.first })
+    }
+
     private class FakeDiscoverySource(
         private val starred: List<GitHubRepositoryCandidate> = emptyList(),
         private val lists: List<GitHubStarListSummary> = emptyList()
