@@ -6,6 +6,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import os.kei.core.io.BoundedContentReadLimitStage
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.GitHubTrackedReleaseCheck
@@ -92,6 +94,34 @@ class GitHubTrackedRefreshBatchRunnerTest {
     }
 
     @Test
+    fun `run records structured oversized response diagnostics`() = runBlocking {
+        val item = tracked(1)
+
+        val result = GitHubTrackedRefreshBatchRunner.run(
+            trackedItems = listOf(item),
+            maxConcurrency = 1,
+            dispatcher = Dispatchers.Default,
+            refreshTimestampMs = NOW_MS,
+            retryPolicy = GitHubTrackedRefreshRetryPolicy.None,
+        ) {
+            throw BoundedContentTextReadTooLargeException(
+                maxBytes = 512L,
+                observedBytes = 640L,
+                declaredBytes = 640L,
+                stage = BoundedContentReadLimitStage.DeclaredLength,
+            )
+        }
+
+        val diagnostics = result.failures.single().diagnostics
+        assertEquals("response_too_large", diagnostics.category)
+        assertEquals(item.sourceMode.storageId, diagnostics.responseType)
+        assertEquals(512L, diagnostics.limitBytes)
+        assertEquals(640L, diagnostics.declaredBytes)
+        assertEquals(640L, diagnostics.observedBytes)
+        assertEquals("DeclaredLength", diagnostics.limitStage)
+    }
+
+    @Test
     fun `run emits progress as each item finishes`() = runBlocking {
         val items = (1..4).map { index -> tracked(index) }
         val progressEvents = Collections.synchronizedList(
@@ -155,6 +185,7 @@ class GitHubTrackedRefreshBatchRunnerTest {
         assertEquals(1, result.failedCount)
         assertEquals("demo/repo-1|demo.repo1", result.failures.single().trackId)
         assertTrue(result.failures.single().message.contains("Timed out"))
+        assertEquals("timeout", result.failures.single().diagnostics.category)
         assertEquals(listOf(1, 2, 3), progressEvents.map { it.current }.sorted())
     }
 

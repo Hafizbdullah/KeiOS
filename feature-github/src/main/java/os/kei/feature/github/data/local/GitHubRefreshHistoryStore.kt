@@ -423,6 +423,12 @@ object GitHubRefreshHistoryStore {
             put("sourceMode", failure.sourceMode)
             put("message", failure.message)
             put("elapsedMs", failure.elapsedMs)
+            put("failureCategory", failure.failureCategory)
+            put("responseType", failure.responseType)
+            put("limitBytes", failure.limitBytes)
+            put("declaredBytes", failure.declaredBytes)
+            put("observedBytes", failure.observedBytes)
+            put("limitStage", failure.limitStage)
         }
     }
 
@@ -436,6 +442,12 @@ object GitHubRefreshHistoryStore {
             sourceMode = obj.optString("sourceMode").trim(),
             message = obj.optString("message").trim(),
             elapsedMs = obj.optLong("elapsedMs", 0L).coerceAtLeast(0L),
+            failureCategory = obj.optString("failureCategory").trim(),
+            responseType = obj.optString("responseType").trim(),
+            limitBytes = obj.optLong("limitBytes", -1L),
+            declaredBytes = obj.optLong("declaredBytes", -1L),
+            observedBytes = obj.optLong("observedBytes", -1L),
+            limitStage = obj.optString("limitStage").trim(),
         )
 
     private inline fun <reified T : Enum<T>> enumValueOrDefault(

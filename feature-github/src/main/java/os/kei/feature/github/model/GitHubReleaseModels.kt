@@ -30,6 +30,15 @@ data class GitHubReleaseCheckDiagnostics(
                 fallbackStrategyId.isNotBlank()
 }
 
+data class GitHubRefreshFailureDiagnostics(
+    val category: String = "",
+    val responseType: String = "",
+    val limitBytes: Long = -1L,
+    val declaredBytes: Long = -1L,
+    val observedBytes: Long = -1L,
+    val limitStage: String = "",
+)
+
 data class GitHubTrackedReleaseCheck(
     val strategyId: String,
     val localVersion: String,
@@ -61,4 +70,5 @@ data class GitHubTrackedReleaseCheck(
     val status: GitHubTrackedReleaseStatus = GitHubTrackedReleaseStatus.ComparisonUncertain,
     val message: String = status.defaultMessage,
     val diagnostics: GitHubReleaseCheckDiagnostics = GitHubReleaseCheckDiagnostics(),
+    val failureDiagnostics: GitHubRefreshFailureDiagnostics = GitHubRefreshFailureDiagnostics(),
 )

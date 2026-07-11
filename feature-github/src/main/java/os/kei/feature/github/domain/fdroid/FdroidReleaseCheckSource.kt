@@ -14,11 +14,13 @@ import os.kei.feature.github.data.remote.fdroid.FdroidRepositorySnapshot
 import os.kei.feature.github.data.remote.fdroid.FdroidVersionSnapshot
 import os.kei.feature.github.model.FdroidTrustPolicy
 import os.kei.feature.github.domain.GitHubReleaseCheckService
+import os.kei.feature.github.domain.GitHubRefreshFailureClassifier
 import os.kei.feature.github.model.GITHUB_FDROID_STRATEGY_ID
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubReleaseChannel
+import os.kei.feature.github.model.GitHubRefreshFailureDiagnostics
 import os.kei.feature.github.model.GitHubReleaseSignalSource
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
@@ -105,7 +107,8 @@ class FdroidReleaseCheckSource(
                     localVersion = localVersion,
                     localVersionCode = localVersionCode,
                     sourceConfigSignature = sourceConfigSignature,
-                    detail = error.message.orEmpty().ifBlank { "F-Droid package lookup failed" }
+                    detail = error.message.orEmpty().ifBlank { "F-Droid package lookup failed" },
+                    error = error,
                 )
             }
         val repositorySnapshot = lookupSnapshot.repositorySnapshot
@@ -348,7 +351,8 @@ class FdroidReleaseCheckSource(
         localVersion: String,
         localVersionCode: Long,
         sourceConfigSignature: String,
-        detail: String
+        detail: String,
+        error: Throwable? = null,
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
             strategyId = GITHUB_FDROID_STRATEGY_ID,
@@ -356,7 +360,13 @@ class FdroidReleaseCheckSource(
             localVersionCode = localVersionCode,
             sourceConfigSignature = sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.Failed,
-            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail),
+            failureDiagnostics = error?.let { failure ->
+                GitHubRefreshFailureClassifier.from(
+                    error = failure,
+                    responseType = "fdroid_package_api",
+                )
+            } ?: GitHubRefreshFailureDiagnostics(),
         )
     }
 }

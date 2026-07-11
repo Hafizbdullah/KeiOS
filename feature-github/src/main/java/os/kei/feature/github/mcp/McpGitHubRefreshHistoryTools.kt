@@ -145,7 +145,7 @@ internal class McpGitHubRefreshHistoryTools(
             listOf(owner, repo)
                 .filter { it.isNotBlank() }
                 .joinToString("/")
-        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | message:${message.toMcpValue()}"
+        return "$prefix=trackId:${trackId.toMcpValue()} | repo:${repoLabel.toMcpValue()} | package:${packageName.toMcpValue()} | label:${appLabel.toMcpValue()} | sourceMode:${sourceMode.toMcpValue()} | elapsedMs:$elapsedMs | category:${failureCategory.toMcpValue()} | responseType:${responseType.toMcpValue()} | limitBytes:$limitBytes | declaredBytes:$declaredBytes | observedBytes:$observedBytes | limitStage:${limitStage.toMcpValue()} | message:${message.toMcpValue()}"
     }
 
     private fun buildRefreshHistoryQuery(

@@ -47,7 +47,7 @@ class GitHubRefreshHistoryExportServiceTest {
 
         requireNotNull(root)
         assertEquals("keios.github.refresh-history", root.optString("format"))
-        assertEquals(1, root.optInt("schemaVersion"))
+        assertEquals(2, root.optInt("schemaVersion"))
         assertEquals("local_only", root.optString("syncScope"))
         assertEquals(3_000L, root.optLong("exportedAtMillis"))
         assertEquals("updatable", root.optObject("filters")?.optString("outcome"))
@@ -96,6 +96,28 @@ class GitHubRefreshHistoryExportServiceTest {
                 ?.optObject(0)
                 ?.optLong("unclassifiedElapsedMs"),
         )
+    }
+
+    @Test
+    fun `export includes structured failure diagnostics`() {
+        val raw = GitHubRefreshHistoryExportService.buildExportJson(
+            allRecords = listOf(createRecord(id = "failed", sessionId = 1L, failedCount = 1)),
+            query = GitHubRefreshHistoryQuery(outcome = GitHubRefreshHistoryOutcomeFilter.Failed),
+            exportedAtMillis = 3_000L,
+        )
+        val failure = raw.parseJsonObjectOrNull()
+            ?.optArray("records")
+            ?.optObject(0)
+            ?.optArray("failureSummaries")
+            ?.optObject(0)
+
+        requireNotNull(failure)
+        assertEquals("response_too_large", failure.optString("failureCategory"))
+        assertEquals("releases_api", failure.optString("responseType"))
+        assertEquals(12L * 1024L * 1024L, failure.optLong("limitBytes"))
+        assertEquals(14L * 1024L * 1024L, failure.optLong("declaredBytes"))
+        assertEquals(14L * 1024L * 1024L, failure.optLong("observedBytes"))
+        assertEquals("DeclaredLength", failure.optString("limitStage"))
     }
 
     @Test
@@ -244,6 +266,12 @@ class GitHubRefreshHistoryExportServiceTest {
                             sourceMode = "github_repository",
                             message = "timeout",
                             elapsedMs = 30L,
+                            failureCategory = "response_too_large",
+                            responseType = "releases_api",
+                            limitBytes = 12L * 1024L * 1024L,
+                            declaredBytes = 14L * 1024L * 1024L,
+                            observedBytes = 14L * 1024L * 1024L,
+                            limitStage = "DeclaredLength",
                         ),
                     )
                 } else {

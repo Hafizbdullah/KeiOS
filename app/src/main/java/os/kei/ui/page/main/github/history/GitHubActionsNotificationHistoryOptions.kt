@@ -285,6 +285,9 @@ private fun GitHubRefreshHistoryUiRecord.matchesRefreshHistorySearch(query: Stri
                 failure.packageName,
                 failure.appLabel,
                 failure.sourceMode,
+                failure.failureCategory,
+                failure.responseType,
+                failure.limitStage,
                 failure.message,
             )
         }

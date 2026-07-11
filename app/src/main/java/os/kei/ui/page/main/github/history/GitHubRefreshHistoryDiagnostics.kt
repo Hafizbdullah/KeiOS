@@ -170,6 +170,15 @@ internal fun GitHubRefreshFailureSummaryBlock(
                 backgroundAlphaOverride = 0.14f,
                 borderAlphaOverride = 0.24f,
             )
+            if (failure.failureCategory.isNotBlank()) {
+                StatusPill(
+                    label = rememberFailureCategoryLabel(failure.failureCategory),
+                    color = MiuixTheme.colorScheme.error,
+                    size = AppStatusPillSize.Compact,
+                    backgroundAlphaOverride = 0.14f,
+                    borderAlphaOverride = 0.24f,
+                )
+            }
             if (failure.elapsedMs > 0L) {
                 StatusPill(
                     label = rememberDurationLabel(failure.elapsedMs),
@@ -196,6 +205,25 @@ internal fun GitHubRefreshFailureSummaryBlock(
                 value = repo,
                 rowVerticalPadding = 0.dp,
                 valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (failure.responseType.isNotBlank()) {
+            AppInfoRow(
+                label = stringResource(R.string.github_history_refresh_label_failure_response_type),
+                value = failure.responseType,
+                rowVerticalPadding = 0.dp,
+                valueMaxLines = 2,
+                valueOverflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (failure.limitBytes >= 0L) {
+            AppInfoRow(
+                label = stringResource(R.string.github_history_refresh_label_failure_size_limit),
+                value = rememberFailureLimitDetail(failure),
+                stacked = true,
+                rowVerticalPadding = 0.dp,
+                valueMaxLines = 3,
                 valueOverflow = TextOverflow.Ellipsis,
             )
         }
@@ -237,6 +265,59 @@ private fun buildFailureRepoIdentity(failure: GitHubRefreshHistoryFailureSummary
     listOf(failure.owner, failure.repo)
         .filter { it.isNotBlank() }
         .joinToString("/")
+
+@Composable
+private fun rememberFailureCategoryLabel(category: String): String =
+    stringResource(
+        when (category.trim().lowercase()) {
+            "response_too_large" -> R.string.github_history_refresh_failure_category_response_too_large
+            "timeout" -> R.string.github_history_refresh_failure_category_timeout
+            "rate_limited" -> R.string.github_history_refresh_failure_category_rate_limited
+            "http_error" -> R.string.github_history_refresh_failure_category_http
+            "network_error" -> R.string.github_history_refresh_failure_category_network
+            "parse_error" -> R.string.github_history_refresh_failure_category_parse
+            "cancelled" -> R.string.github_history_refresh_failure_category_cancelled
+            else -> R.string.github_history_refresh_failure_category_unknown
+        },
+    )
+
+@Composable
+private fun rememberFailureLimitDetail(failure: GitHubRefreshHistoryFailureSummary): String {
+    val stage =
+        when (failure.limitStage) {
+            "DeclaredLength" -> stringResource(R.string.github_history_refresh_failure_stage_declared)
+            "Streaming" -> stringResource(R.string.github_history_refresh_failure_stage_streaming)
+            else -> failure.limitStage
+        }
+    return buildList {
+        add(
+            stringResource(
+                R.string.github_history_refresh_failure_limit_value,
+                formatDiagnosticBytes(failure.limitBytes),
+            ),
+        )
+        failure.declaredBytes.takeIf { it >= 0L }?.let { bytes ->
+            add(stringResource(R.string.github_history_refresh_failure_declared_value, formatDiagnosticBytes(bytes)))
+        }
+        failure.observedBytes.takeIf { it >= 0L }?.let { bytes ->
+            add(stringResource(R.string.github_history_refresh_failure_observed_value, formatDiagnosticBytes(bytes)))
+        }
+        stage.takeIf { it.isNotBlank() }?.let { value ->
+            add(stringResource(R.string.github_history_refresh_failure_stage_value, value))
+        }
+    }.joinToString(" · ")
+}
+
+private fun formatDiagnosticBytes(bytes: Long): String {
+    val safeBytes = bytes.coerceAtLeast(0L)
+    val mib = 1024L * 1024L
+    val kib = 1024L
+    return when {
+        safeBytes >= mib -> "${safeBytes / mib} MiB"
+        safeBytes >= kib -> "${safeBytes / kib} KiB"
+        else -> "$safeBytes B"
+    }
+}
 
 private fun GitHubRefreshHistoryRecord.hasRefreshTraceDiagnostics(): Boolean =
     failedCount > 0 ||

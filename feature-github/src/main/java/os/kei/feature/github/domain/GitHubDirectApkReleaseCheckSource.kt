@@ -15,6 +15,7 @@ import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubAtomFeed
 import os.kei.feature.github.model.GitHubAtomReleaseEntry
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
+import os.kei.feature.github.model.GitHubRefreshFailureDiagnostics
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseChannel
@@ -175,6 +176,7 @@ class GitHubDirectApkReleaseCheckSource(
             localVersion = localVersion,
             localVersionCode = localVersionCode,
             detail = directError.message.orEmpty().ifBlank { "remote APK manifest read failed" },
+            error = directError,
             sourceConfigSignature = sourceConfigSignature
         ).withDirectApkDiagnostics(
             sourceElapsedMs = sourceElapsedMs,
@@ -354,6 +356,7 @@ class GitHubDirectApkReleaseCheckSource(
         localVersion: String,
         localVersionCode: Long,
         detail: String,
+        error: Throwable? = null,
         sourceConfigSignature: String = directApkSourceSignature(item)
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
@@ -365,7 +368,13 @@ class GitHubDirectApkReleaseCheckSource(
             directApkRemoteHealthMessage = detail,
             directApkRemoteCheckedAtMillis = System.currentTimeMillis(),
             status = GitHubTrackedReleaseStatus.Failed,
-            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail),
+            failureDiagnostics = error?.let { failure ->
+                GitHubRefreshFailureClassifier.from(
+                    error = failure,
+                    responseType = "direct_apk",
+                )
+            } ?: GitHubRefreshFailureDiagnostics(),
         )
     }
 

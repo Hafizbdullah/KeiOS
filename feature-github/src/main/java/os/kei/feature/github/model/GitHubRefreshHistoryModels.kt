@@ -20,6 +20,12 @@ data class GitHubRefreshHistoryFailureSummary(
     val sourceMode: String,
     val message: String,
     val elapsedMs: Long = 0L,
+    val failureCategory: String = "",
+    val responseType: String = "",
+    val limitBytes: Long = -1L,
+    val declaredBytes: Long = -1L,
+    val observedBytes: Long = -1L,
+    val limitStage: String = "",
 )
 
 data class GitHubRefreshHistorySlowItem(
@@ -99,6 +105,12 @@ fun GitHubTrackedRefreshFailure.toGitHubRefreshHistoryFailureSummary(): GitHubRe
         sourceMode = sourceMode.storageId,
         message = message,
         elapsedMs = elapsedMs,
+        failureCategory = diagnostics.category,
+        responseType = diagnostics.responseType,
+        limitBytes = diagnostics.limitBytes,
+        declaredBytes = diagnostics.declaredBytes,
+        observedBytes = diagnostics.observedBytes,
+        limitStage = diagnostics.limitStage,
     )
 
 fun GitHubTrackedRefreshSlowItem.toGitHubRefreshHistorySlowItem(): GitHubRefreshHistorySlowItem =

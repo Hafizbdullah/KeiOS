@@ -17,6 +17,7 @@ import os.kei.feature.github.engine.release.GitHubReleaseEvaluationEngine
 import os.kei.feature.github.engine.release.GitHubReleaseEvaluationPolicy
 import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubReleaseCheckDiagnostics
+import os.kei.feature.github.model.GitHubRefreshFailureDiagnostics
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubReleaseVersionSignals
@@ -153,7 +154,8 @@ object GitHubReleaseCheckService {
                     localVersion = localVersion,
                     localVersionCode = localVersionCode,
                     sourceConfigSignature = sourceConfigSignature,
-                    detail = error.message ?: "unknown"
+                    detail = error.message ?: "unknown",
+                    error = error,
                 ).copy(
                     diagnostics = error.snapshotDiagnostics()
                 ).withLocalVersionDiagnostics(localVersionElapsedMs)
@@ -222,6 +224,10 @@ object GitHubReleaseCheckService {
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
+                failureDiagnostics = GitHubRefreshFailureClassifier.from(
+                    error = error,
+                    responseType = "release_strategy",
+                ),
                 diagnostics = GitHubReleaseCheckDiagnostics(
                     localVersionElapsedMs = localVersionElapsedMs,
                     profileElapsedMs = profileResult.elapsedMs,
@@ -263,6 +269,10 @@ object GitHubReleaseCheckService {
                 sourceConfigSignature = sourceConfigSignature,
                 status = GitHubTrackedReleaseStatus.Failed,
                 message = GitHubTrackedReleaseStatus.Failed.failureMessage(error.message ?: "unknown"),
+                failureDiagnostics = GitHubRefreshFailureClassifier.from(
+                    error = error,
+                    responseType = effectiveStrategy.id,
+                ),
                 diagnostics = snapshotDiagnostics.copy(
                     localVersionElapsedMs = localVersionElapsedMs,
                     profileElapsedMs = profileResult.elapsedMs,
@@ -387,7 +397,8 @@ object GitHubReleaseCheckService {
         localVersion: String,
         localVersionCode: Long,
         sourceConfigSignature: String,
-        detail: String
+        detail: String,
+        error: Throwable? = null,
     ): GitHubTrackedReleaseCheck {
         return GitHubTrackedReleaseCheck(
             strategyId = "git_repository",
@@ -395,7 +406,13 @@ object GitHubReleaseCheckService {
             localVersionCode = localVersionCode,
             sourceConfigSignature = sourceConfigSignature,
             status = GitHubTrackedReleaseStatus.Failed,
-            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail),
+            failureDiagnostics = error?.let { failure ->
+                GitHubRefreshFailureClassifier.from(
+                    error = failure,
+                    responseType = "git_repository",
+                )
+            } ?: GitHubRefreshFailureDiagnostics(),
         )
     }
 

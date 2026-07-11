@@ -9,6 +9,7 @@ import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class GitHubRefreshHistoryStoreTest {
     @Test
@@ -20,6 +21,27 @@ class GitHubRefreshHistoryStoreTest {
         )
 
         assertEquals(record, decoded)
+    }
+
+    @Test
+    fun `legacy refresh history failure decodes with empty diagnostics`() {
+        val raw = GitHubRefreshHistoryStore.encodeRecord(createRecord()).toString()
+            .replace(Regex(",\"failureCategory\":\"[^\"]*\""), "")
+            .replace(Regex(",\"responseType\":\"[^\"]*\""), "")
+            .replace(Regex(",\"limitBytes\":-?\\d+"), "")
+            .replace(Regex(",\"declaredBytes\":-?\\d+"), "")
+            .replace(Regex(",\"observedBytes\":-?\\d+"), "")
+            .replace(Regex(",\"limitStage\":\"[^\"]*\""), "")
+
+        val decoded = requireNotNull(GitHubRefreshHistoryStore.decodeRecord(raw))
+        val failure = decoded.failureSummaries.single()
+
+        assertTrue(failure.failureCategory.isEmpty())
+        assertTrue(failure.responseType.isEmpty())
+        assertEquals(-1L, failure.limitBytes)
+        assertEquals(-1L, failure.declaredBytes)
+        assertEquals(-1L, failure.observedBytes)
+        assertTrue(failure.limitStage.isEmpty())
     }
 
     @Test
@@ -191,6 +213,12 @@ class GitHubRefreshHistoryStoreTest {
                         sourceMode = "github",
                         message = "rate limited",
                         elapsedMs = 5_000L,
+                        failureCategory = "response_too_large",
+                        responseType = "releases_api",
+                        limitBytes = 12L * 1024L * 1024L,
+                        declaredBytes = 14L * 1024L * 1024L,
+                        observedBytes = 14L * 1024L * 1024L,
+                        limitStage = "DeclaredLength",
                     ),
                 ),
             note = "manual refresh",

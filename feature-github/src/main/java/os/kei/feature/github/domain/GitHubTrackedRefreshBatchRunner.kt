@@ -314,6 +314,7 @@ object GitHubTrackedRefreshBatchRunner {
                         item = result.item,
                         message = check.message,
                         elapsedMs = result.elapsedMs,
+                        diagnostics = check.failureDiagnostics,
                     )
                 } else {
                     null
@@ -403,7 +404,8 @@ object GitHubTrackedRefreshBatchRunner {
             localVersion = "",
             localVersionCode = -1L,
             status = GitHubTrackedReleaseStatus.Failed,
-            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail)
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(detail),
+            failureDiagnostics = GitHubRefreshFailureClassifier.from(error),
         )
     }
 
@@ -454,7 +456,8 @@ object GitHubTrackedRefreshBatchRunner {
             status = GitHubTrackedReleaseStatus.Failed,
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(
                 "Timed out after ${seconds}s (${item.owner}/${item.repo})"
-            )
+            ),
+            failureDiagnostics = GitHubRefreshFailureClassifier.timeout(item.sourceMode.storageId),
         )
     }
 
@@ -471,6 +474,7 @@ object GitHubTrackedRefreshBatchRunner {
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(
                 "Batch timed out after ${seconds}s before ${item.owner}/${item.repo} could refresh"
             ),
+            failureDiagnostics = GitHubRefreshFailureClassifier.timeout(item.sourceMode.storageId),
         )
     }
 
@@ -483,10 +487,22 @@ object GitHubTrackedRefreshBatchRunner {
             message = GitHubTrackedReleaseStatus.Failed.failureMessage(
                 "Batch stopped before ${item.owner}/${item.repo} could refresh"
             ),
+            failureDiagnostics = GitHubRefreshFailureClassifier.cancelled(item.sourceMode.storageId),
         )
 
     private fun GitHubTrackedReleaseCheck.isRetryableRefreshFailure(): Boolean {
         if (status != GitHubTrackedReleaseStatus.Failed) return false
+        when (failureDiagnostics.category) {
+            GitHubRefreshFailureClassifier.CATEGORY_RESPONSE_TOO_LARGE,
+            GitHubRefreshFailureClassifier.CATEGORY_RATE_LIMITED,
+            GitHubRefreshFailureClassifier.CATEGORY_PARSE_ERROR,
+            GitHubRefreshFailureClassifier.CATEGORY_CANCELLED,
+            -> return false
+
+            GitHubRefreshFailureClassifier.CATEGORY_TIMEOUT,
+            GitHubRefreshFailureClassifier.CATEGORY_NETWORK_ERROR,
+            -> return true
+        }
         val lower = message.lowercase()
         if (
             "rate limited" in lower ||

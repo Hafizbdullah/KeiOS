@@ -1,6 +1,7 @@
 package os.kei.feature.github.domain
 
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubRefreshFailureDiagnostics
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 
 data class GitHubTrackedRefreshFailure(
@@ -12,10 +13,12 @@ data class GitHubTrackedRefreshFailure(
     val sourceMode: GitHubTrackedSourceMode,
     val message: String,
     val elapsedMs: Long = 0L,
+    val diagnostics: GitHubRefreshFailureDiagnostics = GitHubRefreshFailureDiagnostics(),
 ) {
     fun logSummary(): String =
         "trackId=$trackId owner=$owner repo=$repo package=$packageName " +
             "label=$appLabel source=${sourceMode.storageId} elapsed=${elapsedMs}ms " +
+            "category=${diagnostics.category.ifBlank { "unknown" }} " +
             "message=${compactMessage(message)}"
 
     companion object {
@@ -23,6 +26,7 @@ data class GitHubTrackedRefreshFailure(
             item: GitHubTrackedApp,
             message: String,
             elapsedMs: Long = 0L,
+            diagnostics: GitHubRefreshFailureDiagnostics = GitHubRefreshFailureDiagnostics(),
         ): GitHubTrackedRefreshFailure =
             GitHubTrackedRefreshFailure(
                 trackId = item.id,
@@ -33,6 +37,9 @@ data class GitHubTrackedRefreshFailure(
                 sourceMode = item.sourceMode,
                 message = message,
                 elapsedMs = elapsedMs,
+                diagnostics = diagnostics.copy(
+                    responseType = diagnostics.responseType.ifBlank { item.sourceMode.storageId },
+                ),
             )
     }
 }

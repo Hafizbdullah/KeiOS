@@ -13,7 +13,7 @@ import os.kei.feature.github.model.GitHubRefreshHistoryRecord
 import os.kei.feature.github.model.GitHubRefreshHistorySlowItem
 
 private const val REFRESH_HISTORY_EXPORT_FORMAT = "keios.github.refresh-history"
-private const val REFRESH_HISTORY_EXPORT_SCHEMA_VERSION = 1
+private const val REFRESH_HISTORY_EXPORT_SCHEMA_VERSION = 2
 
 data class GitHubRefreshHistoryQuery(
     val outcome: GitHubRefreshHistoryOutcomeFilter = GitHubRefreshHistoryOutcomeFilter.All,
@@ -337,6 +337,12 @@ private fun GitHubRefreshHistoryFailureSummary.toJson() =
         put("sourceMode", sourceMode)
         put("message", message)
         put("elapsedMs", elapsedMs)
+        put("failureCategory", failureCategory)
+        put("responseType", responseType)
+        put("limitBytes", limitBytes)
+        put("declaredBytes", declaredBytes)
+        put("observedBytes", observedBytes)
+        put("limitStage", limitStage)
     }
 
 private fun List<Long>.percentile95OrZero(): Long {
