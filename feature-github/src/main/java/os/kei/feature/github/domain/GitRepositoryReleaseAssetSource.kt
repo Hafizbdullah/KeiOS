@@ -8,6 +8,7 @@ import okhttp3.Response
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.optArray
 import os.kei.core.json.optBoolean
 import os.kei.core.json.optInt
@@ -443,7 +444,7 @@ internal class GitRepositoryReleaseAssetSource(
             .header("User-Agent", GIT_USER_AGENT)
             .build()
         client.executeCancellable(request) { response ->
-            val bodyText = response.body.string()
+            val bodyText = response.body.stringLimitedBlocking(MAX_RELEASE_ASSET_API_RESPONSE_BYTES)
             if (!response.isSuccessful) {
                 error(buildErrorMessage(response, bodyText))
             }
@@ -560,6 +561,7 @@ internal class GitRepositoryReleaseAssetSource(
         private const val TARGET_RELEASE_FETCH_LIMIT = 30
         private const val FALLBACK_RELEASE_FETCH_LIMIT = 100
         private const val GIT_USER_AGENT = "KeiOS-App/1.0 (Android Git Repository Assets)"
+        private const val MAX_RELEASE_ASSET_API_RESPONSE_BYTES = 12L * 1024L * 1024L
         private const val GITEE_FETCH_SOURCE = "gitee-api"
         private const val GITLAB_FETCH_SOURCE = "gitlab-api"
         private const val GITEA_FETCH_SOURCE = "gitea-api"

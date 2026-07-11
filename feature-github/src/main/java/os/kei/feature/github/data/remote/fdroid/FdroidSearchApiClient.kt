@@ -11,6 +11,7 @@ import okhttp3.Request
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.jsonObjectOrNull
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
@@ -53,7 +54,8 @@ open class FdroidSearchApiClient(
                 check(response.isSuccessful) {
                     "F-Droid search API failed (HTTP ${response.code})"
                 }
-                val root = response.body.string().parseJsonObjectOrNull()
+                val root = response.body.stringLimitedBlocking(MAX_SEARCH_RESPONSE_BYTES)
+                    .parseJsonObjectOrNull()
                     ?: error("F-Droid search API returned invalid JSON")
                 root.optArray("apps")
                     ?.mapNotNull { element -> element.jsonObjectOrNull()?.toSearchApiApp() }
@@ -88,6 +90,7 @@ open class FdroidSearchApiClient(
         const val DEFAULT_SEARCH_ENDPOINT = "https://search.f-droid.org/api/search_apps"
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
         const val DEFAULT_LIMIT = 12
+        const val MAX_SEARCH_RESPONSE_BYTES = 2L * 1024L * 1024L
         val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(8.seconds)
             .readTimeout(12.seconds)

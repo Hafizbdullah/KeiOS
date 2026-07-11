@@ -12,6 +12,7 @@ import okhttp3.Request
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.executeCancellable
+import os.kei.core.io.stringLimitedBlocking
 import os.kei.core.json.jsonArrayOrNull
 import os.kei.core.json.jsonObjectOrNull
 import os.kei.core.json.jsonPrimitiveOrNull
@@ -48,7 +49,8 @@ class FdroidPackageApiClient(
                 check(response.isSuccessful) {
                     "F-Droid package API failed (HTTP ${response.code})"
                 }
-                val root = response.body.string().parseJsonObjectOrNull()
+                val root = response.body.stringLimitedBlocking(MAX_PACKAGE_RESPONSE_BYTES)
+                    .parseJsonObjectOrNull()
                     ?: error("F-Droid package API returned invalid JSON")
                 root.toPackageSnapshot(
                     fallbackRepoUrl = normalizedRepoUrl,
@@ -221,6 +223,7 @@ class FdroidPackageApiClient(
 
     private companion object {
         const val USER_AGENT = "KeiOS-App/1.0 (Android)"
+        const val MAX_PACKAGE_RESPONSE_BYTES = 8L * 1024L * 1024L
         val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)

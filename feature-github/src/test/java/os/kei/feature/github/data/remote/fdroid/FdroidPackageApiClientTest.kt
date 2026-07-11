@@ -4,10 +4,31 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import os.kei.core.io.BoundedContentTextReadTooLargeException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class FdroidPackageApiClientTest {
+    @Test
+    fun `fetchPackage rejects oversized chunked response`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setChunkedBody("x".repeat(9 * 1024 * 1024), 32 * 1024),
+            )
+
+            val error = FdroidPackageApiClient()
+                .fetchPackage(
+                    repoBaseUrl = server.url("/repo").toString(),
+                    packageName = "org.fdroid.fdroid",
+                )
+                .exceptionOrNull()
+
+            assertTrue(error is BoundedContentTextReadTooLargeException)
+        }
+    }
+
     @Test
     fun `fetchPackage reads package API versions and suggested version`() = runBlocking {
         MockWebServer().use { server ->
