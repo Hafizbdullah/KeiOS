@@ -193,43 +193,20 @@ class GitHubDirectApkVersionedDirectoryResolver(
 
     private data class DirectApkDirectoryVersion(
         val raw: String,
-        val numbers: List<Int>,
-        val suffixRank: Int,
-        val suffixNumber: Int,
         val channel: GitHubReleaseChannel
     ) {
         companion object {
             fun parse(segment: String): DirectApkDirectoryVersion? {
                 val match = versionSegmentRegex.matchEntire(segment.trim()) ?: return null
-                val numbers = match.groupValues[1]
-                    .split('.')
-                    .mapNotNull { it.toIntOrNull() }
-                if (numbers.size < 2) return null
-                val suffix = match.groupValues.getOrNull(2).orEmpty().lowercase(Locale.ROOT)
-                val suffixRank = when {
-                    suffix.isBlank() -> 6
-                    suffix.startsWith("rc") -> 5
-                    suffix.startsWith("beta") -> 4
-                    suffix.startsWith("alpha") -> 3
-                    suffix.startsWith("preview") || suffix.startsWith("pre") -> 2
-                    suffix.startsWith("nightly") ||
-                            suffix.startsWith("canary") ||
-                            suffix.startsWith("snapshot") ||
-                            suffix.startsWith("unstable") ||
-                            suffix.startsWith("dev") -> 1
-                    else -> 0
-                }
-                val suffixNumber = suffixNumberRegex.find(suffix)
-                    ?.value
-                    ?.toIntOrNull()
-                    ?: 0
-                val channel = suffix.toVersionDirectoryReleaseChannel()
+                val suffix = match.groupValues.getOrNull(2).orEmpty()
+                val classifiedChannel = GitHubVersionUtils.classifyVersionChannel(match.value)
                 return DirectApkDirectoryVersion(
                     raw = segment,
-                    numbers = numbers,
-                    suffixRank = suffixRank,
-                    suffixNumber = suffixNumber,
-                    channel = channel
+                    channel = when {
+                        suffix.isBlank() -> GitHubReleaseChannel.STABLE
+                        classifiedChannel == GitHubReleaseChannel.STABLE -> GitHubReleaseChannel.UNKNOWN
+                        else -> classifiedChannel ?: GitHubReleaseChannel.UNKNOWN
+                    },
                 )
             }
         }
@@ -240,16 +217,10 @@ class GitHubDirectApkVersionedDirectoryResolver(
             left: VersionDirectoryCandidate,
             right: VersionDirectoryCandidate
         ): Int {
-            val maxSize = maxOf(left.version.numbers.size, right.version.numbers.size)
-            repeat(maxSize) { index ->
-                val leftNumber = left.version.numbers.getOrElse(index) { 0 }
-                val rightNumber = right.version.numbers.getOrElse(index) { 0 }
-                if (leftNumber != rightNumber) return leftNumber.compareTo(rightNumber)
-            }
-            if (left.version.suffixRank != right.version.suffixRank) {
-                return left.version.suffixRank.compareTo(right.version.suffixRank)
-            }
-            return left.version.suffixNumber.compareTo(right.version.suffixNumber)
+            return GitHubVersionUtils.compareReleaseCandidateValues(
+                left = left.version.raw,
+                right = right.version.raw,
+            ) ?: left.version.raw.compareTo(right.version.raw, ignoreCase = true)
         }
     }
 
@@ -267,29 +238,10 @@ class GitHubDirectApkVersionedDirectoryResolver(
         val hrefRegex = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
         val versionSegmentRegex =
             Regex("""^[vV]?(\d+(?:\.\d+){1,4})(?:[-_]?([A-Za-z][A-Za-z0-9._-]*))?/?$""")
-        val suffixNumberRegex = Regex("""\d+$""")
         val defaultClient: OkHttpClient = SharedHttpClient.base.newBuilder()
             .connectTimeout(12.seconds)
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
             .build()
-    }
-}
-
-private fun String.toVersionDirectoryReleaseChannel(): GitHubReleaseChannel {
-    return when {
-        isBlank() -> GitHubReleaseChannel.STABLE
-        startsWith("rc") -> GitHubReleaseChannel.RC
-        startsWith("beta") -> GitHubReleaseChannel.BETA
-        startsWith("alpha") -> GitHubReleaseChannel.ALPHA
-        startsWith("preview") || startsWith("pre") -> GitHubReleaseChannel.PREVIEW
-        startsWith("nightly") ||
-                startsWith("canary") ||
-                startsWith("snapshot") ||
-                startsWith("unstable") ||
-                startsWith("dev") ->
-            GitHubReleaseChannel.DEV
-
-        else -> GitHubReleaseChannel.UNKNOWN
     }
 }

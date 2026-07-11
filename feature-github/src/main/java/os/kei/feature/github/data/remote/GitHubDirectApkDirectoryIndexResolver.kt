@@ -275,9 +275,6 @@ class GitHubDirectApkDirectoryIndexResolver(
     private data class DirectApkFileVersion(
         val raw: String,
         val familyKey: String,
-        val numbers: List<Int>,
-        val suffixRank: Int,
-        val suffixNumber: Int,
         val channel: GitHubReleaseChannel
     ) {
         companion object {
@@ -287,39 +284,14 @@ class GitHubDirectApkDirectoryIndexResolver(
                     .replace('_', ' ')
                     .replace('-', ' ')
                 val match = versionInFileRegex.find(normalized) ?: return null
-                val numbers = match.groupValues[1]
-                    .split('.')
-                    .mapNotNull { it.toIntOrNull() }
-                if (numbers.size < 2) return null
-                val suffix = match.groupValues.getOrNull(2).orEmpty().lowercase(Locale.ROOT)
-                val suffixRank = when {
-                    suffix.isBlank() -> 6
-                    suffix.startsWith("rc") -> 5
-                    suffix.startsWith("beta") -> 4
-                    suffix.startsWith("alpha") -> 3
-                    suffix.startsWith("preview") || suffix == "pre" -> 2
-                    suffix.startsWith("nightly") ||
-                            suffix.startsWith("canary") ||
-                            suffix.startsWith("snapshot") ||
-                            suffix.startsWith("unstable") ||
-                            suffix.startsWith("dev") -> 1
-
-                    else -> 0
-                }
-                val channel = suffix.toReleaseChannel()
-                val suffixNumber = match.groupValues.getOrNull(3)
-                    ?.toIntOrNull()
-                    ?: 0
                 val familyKey = normalized
                     .substring(0, match.range.first)
                     .sanitizeFamilyKey()
                 return DirectApkFileVersion(
                     raw = match.value.trim(),
                     familyKey = familyKey,
-                    numbers = numbers,
-                    suffixRank = suffixRank,
-                    suffixNumber = suffixNumber,
-                    channel = channel
+                    channel = GitHubVersionUtils.classifyVersionChannel(match.value)
+                        ?: GitHubReleaseChannel.UNKNOWN,
                 )
             }
         }
@@ -375,18 +347,10 @@ class GitHubDirectApkDirectoryIndexResolver(
 
     private object ApkFileCandidateComparator : Comparator<ApkFileCandidate> {
         override fun compare(left: ApkFileCandidate, right: ApkFileCandidate): Int {
-            val maxSize = maxOf(left.version.numbers.size, right.version.numbers.size)
-            repeat(maxSize) { index ->
-                val leftNumber = left.version.numbers.getOrElse(index) { 0 }
-                val rightNumber = right.version.numbers.getOrElse(index) { 0 }
-                if (leftNumber != rightNumber) return leftNumber.compareTo(rightNumber)
-            }
-            if (left.version.suffixRank != right.version.suffixRank) {
-                return left.version.suffixRank.compareTo(right.version.suffixRank)
-            }
-            if (left.version.suffixNumber != right.version.suffixNumber) {
-                return left.version.suffixNumber.compareTo(right.version.suffixNumber)
-            }
+            GitHubVersionUtils.compareReleaseCandidateValues(
+                left = left.version.raw,
+                right = right.version.raw,
+            )?.takeIf { it != 0 }?.let { return it }
             return left.fileName.compareTo(right.fileName, ignoreCase = true)
         }
     }
@@ -412,24 +376,6 @@ class GitHubDirectApkDirectoryIndexResolver(
             .readTimeout(20.seconds)
             .callTimeout(28.seconds)
             .build()
-    }
-}
-
-private fun String.toReleaseChannel(): GitHubReleaseChannel {
-    return when {
-        isBlank() -> GitHubReleaseChannel.STABLE
-        startsWith("rc") -> GitHubReleaseChannel.RC
-        startsWith("beta") -> GitHubReleaseChannel.BETA
-        startsWith("alpha") -> GitHubReleaseChannel.ALPHA
-        startsWith("preview") || startsWith("pre") -> GitHubReleaseChannel.PREVIEW
-        startsWith("nightly") ||
-                startsWith("canary") ||
-                startsWith("snapshot") ||
-                startsWith("unstable") ||
-                startsWith("dev") ->
-            GitHubReleaseChannel.DEV
-
-        else -> GitHubReleaseChannel.UNKNOWN
     }
 }
 

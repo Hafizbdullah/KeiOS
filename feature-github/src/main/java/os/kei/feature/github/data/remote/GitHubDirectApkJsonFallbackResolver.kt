@@ -9,9 +9,6 @@ import okhttp3.Request
 import os.kei.core.io.SharedHttpClient
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.executeCancellable
-import os.kei.core.versioning.VersionCandidate
-import os.kei.core.versioning.VersionConfidence
-import os.kei.core.versioning.VersioningEngine
 import os.kei.core.json.jsonPrimitiveOrNull
 import os.kei.core.json.optArray
 import os.kei.core.json.optObject
@@ -160,26 +157,17 @@ class GitHubDirectApkJsonFallbackResolver(
         if (leftCode != null && rightCode != null && leftCode != rightCode) {
             return leftCode.compareTo(rightCode)
         }
-        val versionComparison = VersioningEngine.compareRemoteCandidateSets(
-            leftCandidates = left.versionName.toVersionCandidates(),
-            rightCandidates = right.versionName.toVersionCandidates(),
+        val versionComparison = GitHubVersionUtils.compareReleaseCandidateValues(
+            left = left.versionName,
+            right = right.versionName,
         )
-        if (
-            versionComparison != null &&
-            versionComparison.confidence != VersionConfidence.Low &&
-            versionComparison.order.legacyValue != 0
-        ) {
-            return versionComparison.order.legacyValue
+        if (versionComparison != null && versionComparison != 0) {
+            return versionComparison
         }
         return compareValues(
             left.publishedAtMillis ?: Long.MIN_VALUE,
             right.publishedAtMillis ?: Long.MIN_VALUE,
         )
-    }
-
-    private fun String.toVersionCandidates(): List<VersionCandidate> {
-        if (isBlank()) return emptyList()
-        return listOf(VersionCandidate(value = this, sourcePriority = 0))
     }
 
     private fun String.parseIsoInstantOrNull(): Long? {

@@ -53,6 +53,33 @@ class GitHubDirectApkDirectoryIndexResolverTest {
     }
 
     @Test
+    fun `resolve directory index ranks unstable build numbers with shared version engine`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "text/html")
+                    .setBody(
+                        """
+                        <a href="app_2.4.0-unstable2.apk">app_2.4.0-unstable2.apk</a>
+                        <a href="app_2.4.0-unstable10.apk">app_2.4.0-unstable10.apk</a>
+                        """.trimIndent(),
+                    ),
+            )
+
+            val result = GitHubDirectApkDirectoryIndexResolver()
+                .resolve(
+                    rawUrl = server.url("/builds/").toString(),
+                    preferPreRelease = true,
+                )
+                .getOrThrow()
+
+            assertEquals("2.4.0 unstable10", result?.version)
+            assertEquals(GitHubReleaseChannel.DEV, result?.channel)
+        }
+    }
+
+    @Test
     fun `resolve apk url keeps standard variant from reference file`() = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(sceneIndexResponse())

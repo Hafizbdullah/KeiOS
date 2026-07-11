@@ -111,6 +111,65 @@ class GitHubDirectApkVersionedDirectoryResolverTest {
     }
 
     @Test
+    fun `resolve version directories share unstable build ordering`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "text/html")
+                    .setBody(
+                        """
+                        <a href="/builds/2.4.0-unstable2/">2.4.0-unstable2</a>
+                        <a href="/builds/2.4.0-unstable10/">2.4.0-unstable10</a>
+                        """.trimIndent(),
+                    ),
+            )
+
+            val result = GitHubDirectApkVersionedDirectoryResolver()
+                .resolve(
+                    directApkUrl = server.url(
+                        "/builds/2.4.0-unstable2/android/app.apk",
+                    ).toString(),
+                    preferPreRelease = true,
+                )
+                .getOrThrow()
+
+            assertEquals("2.4.0-unstable10", result?.version)
+            assertEquals(GitHubReleaseChannel.DEV, result?.channel)
+            assertEquals(
+                server.url("/builds/2.4.0-unstable10/android/app.apk").toString(),
+                result?.downloadUrl,
+            )
+        }
+    }
+
+    @Test
+    fun `resolve keeps custom version directory suffix compatibility`() = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "text/html")
+                    .setBody(
+                        """
+                        <a href="/stable/1.22.2/">1.22.2</a>
+                        <a href="/stable/1.22.3-hotfix/">1.22.3-hotfix</a>
+                        """.trimIndent(),
+                    ),
+            )
+
+            val result = GitHubDirectApkVersionedDirectoryResolver()
+                .resolve(
+                    server.url("/stable/1.22.2/android/app.apk").toString(),
+                )
+                .getOrThrow()
+
+            assertEquals("1.22.3-hotfix", result?.version)
+            assertEquals(GitHubReleaseChannel.UNKNOWN, result?.channel)
+        }
+    }
+
+    @Test
     fun `resolve returns null when url has no version segment`() = runBlocking {
         MockWebServer().use { server ->
             val result = GitHubDirectApkVersionedDirectoryResolver()
