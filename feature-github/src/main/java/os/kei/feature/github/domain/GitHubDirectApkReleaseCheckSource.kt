@@ -310,7 +310,7 @@ class GitHubDirectApkReleaseCheckSource(
                 manifest.withDirectoryIndexResolution(resolution, target.asset)
             } ?: manifest.copy(
                 assetName = manifest.assetName.ifBlank { target.asset.name },
-                fetchSource = manifest.fetchSource.ifBlank { target.asset.downloadUrl }
+                fetchSource = target.asset.downloadUrl,
             )
         }
     }

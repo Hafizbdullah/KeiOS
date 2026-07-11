@@ -40,7 +40,12 @@ internal fun GitHubTrackedApp.directApkAssetPanelData(
         state.latestPreApkVersion != null -> state.latestPreApkVersion
         else -> fallbackDirectApkVersionInfo() ?: return null
     }
-    val targetUrl = target.releaseUrl.trim().ifBlank { repoUrl.trim() }
+    val targetUrl =
+        selectDirectApkDownloadUrl(
+            releaseUrl = target.releaseUrl,
+            fetchSource = target.fetchSource,
+            repoUrl = repoUrl,
+        )
     if (targetUrl.isBlank()) return null
     val assetName = target.assetName.trim()
         .ifBlank { assetNameFromUrl(targetUrl) }
@@ -89,6 +94,25 @@ internal fun GitHubTrackedApp.directApkAssetPanelData(
         }
     )
 }
+
+internal fun selectDirectApkDownloadUrl(
+    releaseUrl: String,
+    fetchSource: String,
+    repoUrl: String,
+): String =
+    sequenceOf(releaseUrl, fetchSource, repoUrl)
+        .map(String::trim)
+        .firstOrNull(::isHttpDownloadUrl)
+        .orEmpty()
+
+private fun isHttpDownloadUrl(value: String): Boolean =
+    runCatching {
+        val uri = URI(value)
+        val scheme = uri.scheme.orEmpty()
+        (scheme.equals("http", ignoreCase = true) ||
+            scheme.equals("https", ignoreCase = true)) &&
+            !uri.host.isNullOrBlank()
+    }.getOrDefault(false)
 
 private fun GitHubTrackedApp.fallbackDirectApkVersionInfo(): GitHubRemoteApkVersionInfo? {
     val url = repoUrl.trim()

@@ -644,6 +644,14 @@ class GitHubReleaseCheckServiceTest {
             )
 
             assertEquals(GitHubTrackedReleaseStatus.UpToDate, first.status)
+            assertEquals(
+                item.repoUrl,
+                first.preciseStableApkVersion?.releaseUrl,
+            )
+            assertEquals(
+                item.repoUrl,
+                first.preciseStableApkVersion?.fetchSource,
+            )
             assertEquals(GitHubTrackedReleaseStatus.UpdateAvailable, refreshed.status)
             assertEquals("12.1.0", refreshed.preciseStableApkVersion?.versionName)
             assertEquals(2, probeCount.get())
