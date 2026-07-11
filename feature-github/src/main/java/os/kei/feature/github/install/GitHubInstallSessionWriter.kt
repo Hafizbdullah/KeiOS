@@ -8,7 +8,9 @@ import kotlinx.coroutines.ensureActive
 import okhttp3.OkHttpClient
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.download.segmented.SegmentedDownloadClient
+import os.kei.core.download.segmented.DownloadSizeMismatchException
 import os.kei.core.download.segmented.SegmentedDownloadOptions
+import os.kei.core.download.segmented.SegmentedDownloadProgress
 import os.kei.core.download.segmented.SegmentedDownloadRequest
 import os.kei.core.download.segmented.SegmentedDownloadSpeedProfile
 import os.kei.core.log.AppLogger
@@ -275,41 +277,54 @@ class GitHubInstallSessionWriter(
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ) {
+        val downloadClient = segmentedDownloadClient(downloadSpeedProfile)
         val result =
-            segmentedDownloadClient(downloadSpeedProfile).downloadToFile(
-                request = SegmentedDownloadRequest(
-                    url = resolvedUrl,
-                    outputFile = outputFile,
-                    headers = mapOf(
-                        "User-Agent" to "KeiOS-App/1.0 (Android)",
-                        "Accept" to acceptHeader,
-                    ),
-                    fileNameHint = outputFile.name,
-                    expectedSizeBytes = declaredSizeBytes.takeIf { it > 0L } ?: -1L,
-                    expectedSha256 = expectedDigest,
-                ),
-                options = githubSegmentedDownloadOptions(downloadSpeedProfile),
-                onProgress = { progress ->
-                    val totalBytes =
-                        when {
-                            progress.totalBytes > 0L -> progress.totalBytes
-                            declaredSizeBytes > 0L -> declaredSizeBytes
-                            else -> -1L
-                        }
-                    onProgress(
-                        GitHubApkInstallProgress(
-                            stage = GitHubApkInstallStage.Downloading,
-                            progressPercent = downloadProgressPercent(
-                                downloadedBytes = progress.downloadedBytes,
-                                totalBytes = totalBytes,
-                            ),
-                            downloadedBytes = progress.downloadedBytes,
-                            totalBytes = totalBytes,
+            try {
+                downloadClient.downloadToFile(
+                    request =
+                        buildSegmentedDownloadRequest(
+                            resolvedUrl = resolvedUrl,
+                            expectedDigest = expectedDigest,
+                            expectedSizeBytes = declaredSizeBytes,
+                            outputFile = outputFile,
+                            acceptHeader = acceptHeader,
+                        ),
+                    options = githubSegmentedDownloadOptions(downloadSpeedProfile),
+                    onProgress = { progress ->
+                        emitDownloadProgress(
+                            progress = progress,
+                            declaredSizeBytes = declaredSizeBytes,
                             sessionId = sessionId,
+                            onProgress = onProgress,
                         )
-                    )
-                },
-            )
+                    },
+                )
+            } catch (error: DownloadSizeMismatchException) {
+                AppLogger.w(
+                    GITHUB_INSTALL_SESSION_WRITER_TAG,
+                    "asset size metadata mismatch expected=${error.expectedBytes} " +
+                        "actual=${error.actualBytes} file=${outputFile.name}; retrying with probed size",
+                )
+                downloadClient.downloadToFile(
+                    request =
+                        buildSegmentedDownloadRequest(
+                            resolvedUrl = resolvedUrl,
+                            expectedDigest = expectedDigest,
+                            expectedSizeBytes = -1L,
+                            outputFile = outputFile,
+                            acceptHeader = acceptHeader,
+                        ),
+                    options = githubSegmentedDownloadOptions(downloadSpeedProfile),
+                    onProgress = { progress ->
+                        emitDownloadProgress(
+                            progress = progress,
+                            declaredSizeBytes = error.actualBytes,
+                            sessionId = sessionId,
+                            onProgress = onProgress,
+                        )
+                    },
+                )
+            }
         AppLogger.i(GITHUB_INSTALL_SESSION_WRITER_TAG) {
             "asset downloaded profile=${downloadSpeedProfile.name} parallel=${result.parallel} " +
                 "range=${result.rangeSupported} " +
@@ -317,6 +332,51 @@ class GitHubInstallSessionWriter(
                 "peak=${result.peakActiveConnections} retry=${result.retryCount} steal=${result.stealCount} " +
                 "handoff=${result.handoffCount} fallback=${result.fallbackReason.orEmpty()}"
         }
+    }
+
+    private fun buildSegmentedDownloadRequest(
+        resolvedUrl: String,
+        expectedDigest: String,
+        expectedSizeBytes: Long,
+        outputFile: File,
+        acceptHeader: String,
+    ): SegmentedDownloadRequest =
+        SegmentedDownloadRequest(
+            url = resolvedUrl,
+            outputFile = outputFile,
+            headers = mapOf(
+                "User-Agent" to "KeiOS-App/1.0 (Android)",
+                "Accept" to acceptHeader,
+            ),
+            fileNameHint = outputFile.name,
+            expectedSizeBytes = expectedSizeBytes.takeIf { it > 0L } ?: -1L,
+            expectedSha256 = expectedDigest,
+        )
+
+    private suspend fun emitDownloadProgress(
+        progress: SegmentedDownloadProgress,
+        declaredSizeBytes: Long,
+        sessionId: Int,
+        onProgress: suspend (GitHubApkInstallProgress) -> Unit,
+    ) {
+        val totalBytes =
+            when {
+                progress.totalBytes > 0L -> progress.totalBytes
+                declaredSizeBytes > 0L -> declaredSizeBytes
+                else -> -1L
+            }
+        onProgress(
+            GitHubApkInstallProgress(
+                stage = GitHubApkInstallStage.Downloading,
+                progressPercent = downloadProgressPercent(
+                    downloadedBytes = progress.downloadedBytes,
+                    totalBytes = totalBytes,
+                ),
+                downloadedBytes = progress.downloadedBytes,
+                totalBytes = totalBytes,
+                sessionId = sessionId,
+            )
+        )
     }
 
     private fun segmentedDownloadClient(

@@ -8,10 +8,18 @@ internal fun validateExpectedDownloadSize(
     expectedBytes: Long,
 ) {
     if (expectedBytes < 0L || actualBytes < 0L || actualBytes == expectedBytes) return
-    throw SegmentedDownloadException(
-        message = "download size mismatch expected=$expectedBytes actual=$actualBytes",
+    throw DownloadSizeMismatchException(
+        expectedBytes = expectedBytes,
+        actualBytes = actualBytes,
     )
 }
+
+class DownloadSizeMismatchException(
+    val expectedBytes: Long,
+    val actualBytes: Long,
+) : SegmentedDownloadException(
+        message = "download size mismatch expected=$expectedBytes actual=$actualBytes",
+    )
 
 internal fun verifyDownloadedSha256(
     file: File,

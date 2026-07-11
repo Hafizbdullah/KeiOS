@@ -146,7 +146,7 @@ class SegmentedDownloadSecurityAndIdentityTest {
             val outputFile = temp.newFile("size-mismatch.bin").apply { writeBytes(previousBytes) }
             val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
 
-            assertFailsWith<SegmentedDownloadException> {
+            val error = assertFailsWith<DownloadSizeMismatchException> {
                 downloader().downloadToFile(
                     request = SegmentedDownloadRequest(
                         url = server.url("/asset.bin").toString(),
@@ -157,6 +157,8 @@ class SegmentedDownloadSecurityAndIdentityTest {
                 )
             }
 
+            assertEquals(bytes.size.toLong() - 1L, error.expectedBytes)
+            assertEquals(bytes.size.toLong(), error.actualBytes)
             assertEquals(1, server.requestCount)
             assertContentEquals(previousBytes, outputFile.readBytes())
             assertEquals(false, partFile.exists())

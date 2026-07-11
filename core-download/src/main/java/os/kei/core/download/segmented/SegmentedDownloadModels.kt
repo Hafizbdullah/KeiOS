@@ -78,7 +78,7 @@ data class SegmentedDownloadResult(
     val fallbackReason: String? = null,
 )
 
-class SegmentedDownloadException(
+open class SegmentedDownloadException(
     message: String,
     cause: Throwable? = null,
 ) : IOException(message, cause)
