@@ -8,6 +8,14 @@ import kotlin.test.assertTrue
 
 class VersioningEngineTest {
     @Test
+    fun `unstable suffix is classified as development channel`() {
+        assertEquals(
+            VersionChannel.DEV,
+            VersioningEngine.classifyChannel("v2.4.0-unstable7"),
+        )
+    }
+
+    @Test
     fun `stable release outranks same base release candidate`() {
         assertOrder(
             expected = VersionOrder.Older,

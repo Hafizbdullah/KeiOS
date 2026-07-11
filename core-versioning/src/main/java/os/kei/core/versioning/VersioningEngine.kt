@@ -12,7 +12,7 @@ object VersioningEngine {
     private val datePrefixedVersionRegex =
         Regex("""^(?:20\d{4}|\d{6,8})[._-]+([vV]?\d+(?:[._-]\d+)+.*)$""")
     private val versionCandidateRegex = Regex(
-        """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|master|main|develop(?:ment)?|trunk|edge|alpha|beta|rc|preview|pre(?:-?release)?)(?![A-Za-z])(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?""",
+        """[vV]?\d+(?:[._-]\d+)*(?:\s*[-._ ]?\s*(?:dev|nightly|canary|snapshot|unstable|master|main|develop(?:ment)?|trunk|edge|alpha|beta|rc|preview|pre(?:-?release)?)(?![A-Za-z])(?:\s*[-._ ]?\s*\d+)?)?(?:\+[0-9A-Za-z.-]+)?""",
     )
     private val preReleaseKeywordRegex = Regex("""pre[- ]?release""", RegexOption.IGNORE_CASE)
     private val snapshotKeywordRegex = Regex("""snapshot""", RegexOption.IGNORE_CASE)
@@ -26,7 +26,7 @@ object VersioningEngine {
     private val separatorCleanupRegex = Regex("""\.\-|\-\.|--""")
     private val coreVersionRegex = Regex("""\d+(?:[._-]\d+)*""")
     private val channelSuffixRegex = Regex(
-        """(?:^|[^a-z])(dev|nightly|canary|snapshot|alpha|beta|rc|preview|pre(?:-?release)?)(?=$|[^a-z])(?:[^a-z0-9]*(\d+)(?=$|[^a-z0-9]))?""",
+        """(?:^|[^a-z])(dev|nightly|canary|snapshot|unstable|alpha|beta|rc|preview|pre(?:-?release)?)(?=$|[^a-z])(?:[^a-z0-9]*(\d+)(?=$|[^a-z0-9]))?""",
     )
     private val revisionTokenRegex = Regex(
         """(?:^|[^a-z0-9])(?:fix|build|rev|revision|r|c)[._-]?(\d+)(?![a-z0-9])""",
@@ -782,7 +782,7 @@ object VersioningEngine {
             val suffix = normalized.substring(coreMatch.range.last + 1)
             val channelMatch = channelSuffixRegex.find(suffix.ifBlank { normalized })
             val channel = when (channelMatch?.groupValues?.getOrNull(1).orEmpty()) {
-                "dev", "nightly", "canary", "snapshot" -> VersionChannel.DEV
+                "dev", "nightly", "canary", "snapshot", "unstable" -> VersionChannel.DEV
                 "alpha" -> VersionChannel.ALPHA
                 "beta" -> VersionChannel.BETA
                 "rc" -> VersionChannel.RC

@@ -47,6 +47,24 @@ class GitHubVersionUtilsTest {
     }
 
     @Test
+    fun `release candidate values use symmetric shared ordering`() {
+        assertEquals(
+            -1,
+            GitHubVersionUtils.compareReleaseCandidateValues(
+                left = "2.4.0-unstable2",
+                right = "2.4.0-unstable10",
+            ),
+        )
+        assertEquals(
+            1,
+            GitHubVersionUtils.compareReleaseCandidateValues(
+                left = "2.4.0-unstable10",
+                right = "2.4.0-unstable2",
+            ),
+        )
+    }
+
+    @Test
     fun `keyguard style semantic title candidate beats raw date tag`() {
         val candidates = GitHubVersionUtils.buildVersionCandidates(
             GitHubVersionCandidateSource.Tag to "r20260410",

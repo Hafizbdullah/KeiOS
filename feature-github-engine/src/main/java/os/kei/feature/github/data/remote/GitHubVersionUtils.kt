@@ -3,6 +3,7 @@ package os.kei.feature.github.data.remote
 import java.net.URI
 import os.kei.core.versioning.VersionCandidate
 import os.kei.core.versioning.VersionChannel
+import os.kei.core.versioning.VersionConfidence
 import os.kei.core.versioning.VersioningEngine
 import os.kei.feature.github.model.GitHubReleaseChannel
 import os.kei.feature.github.model.GitHubVersionCandidate
@@ -194,6 +195,19 @@ object GitHubVersionUtils {
                 GitHubVersionCandidate(value, GitHubVersionCandidateSource.Content)
             },
         )
+    }
+
+    fun compareReleaseCandidateValues(
+        left: String,
+        right: String,
+        includeLowConfidence: Boolean = false,
+    ): Int? {
+        val comparison = VersioningEngine.compareRemoteCandidateSets(
+            leftCandidates = listOf(VersionCandidate(left, sourcePriority = 0)),
+            rightCandidates = listOf(VersionCandidate(right, sourcePriority = 0)),
+        ) ?: return null
+        if (!includeLowConfidence && comparison.confidence == VersionConfidence.Low) return null
+        return comparison.order.legacyValue
     }
 
     fun compareCandidateSetsWithSources(
