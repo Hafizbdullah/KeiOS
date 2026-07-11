@@ -87,6 +87,8 @@ class ShizukuApiUtils(
 
     private var statusCallback: ((String) -> Unit)? = null
     @Volatile
+    private var attached = false
+    @Volatile
     private var cachedRuntimeState: CachedRuntimeState? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -113,21 +115,27 @@ class ShizukuApiUtils(
 
     fun attach(onStatusChanged: (String) -> Unit) {
         statusCallback = onStatusChanged
-        runCatching {
-            Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
-            Shizuku.addBinderDeadListener(binderDeadListener)
-            Shizuku.addRequestPermissionResultListener(permissionResultListener)
-        }.onFailure {
-            publishStatus("Shizuku init failed: ${it.javaClass.simpleName}")
+        if (!attached) {
+            runCatching {
+                Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+                Shizuku.addBinderDeadListener(binderDeadListener)
+                Shizuku.addRequestPermissionResultListener(permissionResultListener)
+                attached = true
+            }.onFailure {
+                publishStatus("Shizuku init failed: ${it.javaClass.simpleName}")
+            }
         }
         publishStatus(currentStatus())
     }
 
     fun detach() {
-        runCatching {
-            Shizuku.removeBinderReceivedListener(binderReceivedListener)
-            Shizuku.removeBinderDeadListener(binderDeadListener)
-            Shizuku.removeRequestPermissionResultListener(permissionResultListener)
+        if (attached) {
+            runCatching {
+                Shizuku.removeBinderReceivedListener(binderReceivedListener)
+                Shizuku.removeBinderDeadListener(binderDeadListener)
+                Shizuku.removeRequestPermissionResultListener(permissionResultListener)
+            }
+            attached = false
         }
         statusCallback = null
     }
@@ -346,10 +354,19 @@ class ShizukuApiUtils(
         rows += "Shizuku Permission Rationale" to runCatching { Shizuku.shouldShowRequestPermissionRationale().toString() }.getOrDefault("unknown")
         state.serviceUid?.let { rows += "Shizuku Service UID" to it.toString() }
 
-        reflectAny("getVersion")?.let { rows += "Shizuku Service Version" to it.toString() }
-        reflectAny("getServerPatchVersion")?.let { rows += "Shizuku Server Patch Version" to it.toString() }
-        reflectAny("getSELinuxContext")?.let { rows += "Shizuku SELinux Context" to it.toString() }
-        reflectAny("getLatestServiceVersion")?.let { rows += "Shizuku Latest Service Version" to it.toString() }
+        runCatching { Shizuku.getVersion() }
+            .getOrNull()
+            ?.let { rows += "Shizuku Service Version" to it.toString() }
+        runCatching { Shizuku.getServerPatchVersion() }
+            .getOrNull()
+            ?.let { rows += "Shizuku Server Patch Version" to it.toString() }
+        runCatching { Shizuku.getSELinuxContext() }
+            .getOrNull()
+            ?.takeIf(String::isNotBlank)
+            ?.let { rows += "Shizuku SELinux Context" to it }
+        runCatching { Shizuku.getLatestServiceVersion() }
+            .getOrNull()
+            ?.let { rows += "Shizuku Latest Service Version" to it.toString() }
 
         if (state.commandReady) rows += loadDetailedCommandRows()
 
@@ -423,15 +440,6 @@ class ShizukuApiUtils(
 
     private fun invalidateRuntimeStateCache() {
         cachedRuntimeState = null
-    }
-
-    private fun reflectAny(methodName: String): Any? {
-        return runCatching {
-            val method = Shizuku::class.java.methods.firstOrNull {
-                it.name == methodName && it.parameterTypes.isEmpty()
-            } ?: return null
-            method.invoke(null)
-        }.getOrNull()
     }
 
     private fun publishStatus(message: String) {

@@ -10,13 +10,6 @@
     public <init>(android.os.IBinder);
     public android.os.IInterface queryLocalInterface(java.lang.String);
 }
--keepclassmembers class rikka.shizuku.Shizuku {
-    public static *** getUid(...);
-    public static *** getVersion(...);
-    public static *** getServerPatchVersion(...);
-    public static *** getSELinuxContext(...);
-    public static *** getLatestServiceVersion(...);
-}
 -keepclassmembers class os.kei.core.shizuku.service.KeiShizukuUserService {
     public <init>();
     public <init>(android.content.Context);
