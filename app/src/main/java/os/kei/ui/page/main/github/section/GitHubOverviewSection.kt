@@ -2,14 +2,10 @@ package os.kei.ui.page.main.github.section
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +25,8 @@ import os.kei.ui.page.main.github.indicatorBackground
 import os.kei.ui.page.main.github.overviewLookupPillLabel
 import os.kei.ui.page.main.github.surfaceColor
 import os.kei.ui.page.main.widget.core.AppOverviewCard
+import os.kei.ui.page.main.widget.core.AppOverviewPill
+import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
@@ -204,7 +202,7 @@ private fun GitHubOverviewExpandedContent(
         buildList {
             if (GitHubOverviewEntry.Tracked in entries) {
                 add(
-                    GitHubOverviewDisplayPill(
+                    AppOverviewPill(
                         label = metrics.trackedCount.toString(),
                         color = overviewMetricColor(
                             color = GitHubStatusPalette.Stable,
@@ -220,7 +218,7 @@ private fun GitHubOverviewExpandedContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
     ) {
-        GitHubOverviewExpandedPillFlow(
+        AppOverviewPillFlow(
             pills = pills,
             backdrop = backdrop,
         )
@@ -274,14 +272,6 @@ internal data class GitHubOverviewExpandedPillPlan(
     val kind: GitHubOverviewExpandedPillKind
 )
 
-private data class GitHubOverviewDisplayPill(
-    val label: String,
-    val color: Color
-)
-
-private val GitHubOverviewPillHeight = 28.dp
-private val GitHubOverviewPillPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
-
 internal fun buildGitHubOverviewExpandedPillPlan(
     visibleEntries: Set<GitHubOverviewEntry>
 ): List<GitHubOverviewExpandedPillPlan> {
@@ -319,7 +309,7 @@ internal fun buildGitHubOverviewExpandedPillPlan(
 private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
     isDark: Boolean,
     metrics: GitHubOverviewMetrics
-): GitHubOverviewDisplayPill {
+): AppOverviewPill {
     val stableTotal = metrics.stableUpdateCount + metrics.stableLatestCount
     val label = when (kind) {
         GitHubOverviewExpandedPillKind.Stable ->
@@ -386,28 +376,7 @@ private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
                 isDark = isDark
             )
     }
-    return GitHubOverviewDisplayPill(label = label, color = color)
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun GitHubOverviewExpandedPillFlow(
-    pills: List<GitHubOverviewDisplayPill>,
-    backdrop: Backdrop?
-) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        pills.forEach { pill ->
-            GitHubOverviewExpandedPill(
-                pill = pill,
-                backdrop = backdrop,
-                modifier = Modifier.align(Alignment.Bottom)
-            )
-        }
-    }
+    return AppOverviewPill(label = label, color = color)
 }
 
 @Composable
@@ -422,22 +391,6 @@ private fun GitHubOverviewLookupModePill(
         size = AppStatusPillSize.Compact,
         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 3.dp),
         backdrop = backdrop,
-    )
-}
-
-@Composable
-private fun GitHubOverviewExpandedPill(
-    pill: GitHubOverviewDisplayPill,
-    backdrop: Backdrop?,
-    modifier: Modifier = Modifier
-) {
-    StatusPill(
-        label = pill.label,
-        color = pill.color,
-        modifier = modifier.height(GitHubOverviewPillHeight),
-        size = AppStatusPillSize.Compact,
-        contentPadding = GitHubOverviewPillPadding,
-        backdrop = backdrop
     )
 }
 
