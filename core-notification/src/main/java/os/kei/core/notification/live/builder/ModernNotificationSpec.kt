@@ -42,7 +42,6 @@ object ModernNotificationSpecResolver {
     private const val PROGRESS_GITHUB_SHARE_IMPORT_COLOR = 0xFF2563EB.toInt()
     private const val PROGRESS_WEBDAV_COLOR = 0xFF2563EB.toInt()
     private val ICON_DEFAULT = R.drawable.ic_kei_notification_small
-    private val ICON_DEFAULT_OEM = R.drawable.ic_kei_logo_live_update
     private val ICON_BA_AP = R.drawable.ic_ba_ap_island_notification
     private val ICON_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
     private val ICON_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
@@ -54,9 +53,11 @@ object ModernNotificationSpecResolver {
     private val CONTENT_ICON_BA_CALENDAR_POOL = R.drawable.ic_ba_calendar_live_update
     private val CONTENT_ICON_GITHUB_SHARE_IMPORT = R.drawable.ic_github_invertocat_island_blue
 
+    @Suppress("UNUSED_PARAMETER")
     fun resolve(
         state: LiveNotificationPayload,
-        preferOemLiveIconLayout: Boolean = false
+        preferOemLiveIconLayout: Boolean = false,
+        @androidx.annotation.DrawableRes defaultAppIconResId: Int = ICON_DEFAULT,
     ): ModernNotificationSpec {
         val kind = resolveKind(state.serverName)
         val isRunning = state.running
@@ -74,7 +75,7 @@ object ModernNotificationSpecResolver {
         }
         return ModernNotificationSpec(
             kind = kind,
-            iconResId = resolveIcon(kind, preferOemLiveIconLayout),
+            iconResId = resolveIcon(kind, defaultAppIconResId),
             expandedIconResId = resolveExpandedIcon(kind),
             trackerIconResId = resolveTrackerIcon(kind),
             progressPercent = resolveProgressPercent(state = state, kind = kind),
@@ -124,14 +125,10 @@ object ModernNotificationSpecResolver {
 
     private fun resolveIcon(
         kind: ModernNotificationKind,
-        preferOemLiveIconLayout: Boolean
+        defaultAppIconResId: Int,
     ): Int {
         return when (kind) {
-            ModernNotificationKind.DEFAULT -> if (preferOemLiveIconLayout) {
-                ICON_DEFAULT_OEM
-            } else {
-                ICON_DEFAULT
-            }
+            ModernNotificationKind.DEFAULT -> defaultAppIconResId
 
             ModernNotificationKind.BA_AP,
             ModernNotificationKind.BA_CAFE_AP,
@@ -139,11 +136,15 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_ARENA_REFRESH,
             ModernNotificationKind.BA_CALENDAR_POOL,
             ModernNotificationKind.GITHUB_SHARE_IMPORT,
-            ModernNotificationKind.WEBDAV_SYNC -> resolveSemanticCompactIcon(kind)
+            ModernNotificationKind.WEBDAV_SYNC ->
+                resolveSemanticCompactIcon(kind, defaultAppIconResId)
         }
     }
 
-    private fun resolveSemanticCompactIcon(kind: ModernNotificationKind): Int {
+    private fun resolveSemanticCompactIcon(
+        kind: ModernNotificationKind,
+        defaultAppIconResId: Int = ICON_DEFAULT,
+    ): Int {
         return when (kind) {
             ModernNotificationKind.BA_AP -> ICON_BA_AP
             ModernNotificationKind.BA_CAFE_AP -> ICON_BA_AP
@@ -151,8 +152,8 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_ARENA_REFRESH -> ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> ICON_BA_CALENDAR_POOL
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> ICON_GITHUB_SHARE_IMPORT
-            ModernNotificationKind.WEBDAV_SYNC -> ICON_DEFAULT_OEM
-            ModernNotificationKind.DEFAULT -> ICON_DEFAULT_OEM
+            ModernNotificationKind.WEBDAV_SYNC -> defaultAppIconResId
+            ModernNotificationKind.DEFAULT -> defaultAppIconResId
         }
     }
 
@@ -173,7 +174,7 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_ARENA_REFRESH -> CONTENT_ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> CONTENT_ICON_BA_CALENDAR_POOL
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> CONTENT_ICON_GITHUB_SHARE_IMPORT
-            ModernNotificationKind.WEBDAV_SYNC -> ICON_DEFAULT_OEM
+            ModernNotificationKind.WEBDAV_SYNC -> null
         }
     }
 

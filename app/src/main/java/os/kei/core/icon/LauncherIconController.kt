@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.ComponentEnabledSetting
 import os.kei.BuildConfig
+import os.kei.core.notification.identity.NotificationAppIconResolver
 import os.kei.core.prefs.LauncherIconDesign
 
 object LauncherIconController {
@@ -34,6 +35,7 @@ object LauncherIconController {
                 )
             }
         }
+        NotificationAppIconResolver.applyDesign(design)
     }
 }
 

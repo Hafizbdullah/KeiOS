@@ -11,6 +11,7 @@ import os.kei.core.notification.focus.MiFocusProtocolActionInfo
 import os.kei.core.notification.focus.MiFocusProtocolNotification
 import os.kei.core.notification.focus.MiFocusProtocolTemplateV3
 import os.kei.core.notification.R
+import os.kei.core.notification.identity.NotificationAppIconResolver
 import os.kei.core.log.AppLogger
 import os.kei.core.notification.live.LiveNotificationPayload
 import kotlin.math.roundToInt
@@ -97,7 +98,6 @@ class MiIslandNotificationBuilder(
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR_DARK = "#334155"
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR = "#475569"
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK = "#CBD5E1"
-        private val ISLAND_ICON_RES_ID_DEFAULT = R.drawable.ic_kei_logo_island
         private val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
         private val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
         private val ISLAND_ICON_RES_ID_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
@@ -130,7 +130,7 @@ class MiIslandNotificationBuilder(
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
             isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
             isGitHubShareImport -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
-            else -> ISLAND_ICON_RES_ID_DEFAULT
+            else -> NotificationAppIconResolver.smallIconResId()
         }
         val shortCriticalText = resolveShortCriticalText(
             state = state,
@@ -274,10 +274,16 @@ class MiIslandNotificationBuilder(
             forFocusExtras = true,
             primaryActionColor = presentation.primaryActionColor
         )
-        val displayIcon = payload.semanticIconBitmap?.let { bitmap ->
-            Icon.createWithBitmap(bitmap)
-        }
-            ?: Icon.createWithResource(context, islandIconResId)
+        val displayIcon =
+            payload.semanticIconBitmap
+                ?.let(Icon::createWithBitmap)
+                ?: if (useSemanticIcon) {
+                    Icon.createWithResource(context, islandIconResId)
+                } else {
+                    NotificationAppIconResolver.largeIconBitmap(context)
+                        ?.let(Icon::createWithBitmap)
+                        ?: Icon.createWithResource(context, islandIconResId)
+                }
         val resolvedAllowFloat = resolveAllowFloat(
             state = state,
             presentation = presentation,

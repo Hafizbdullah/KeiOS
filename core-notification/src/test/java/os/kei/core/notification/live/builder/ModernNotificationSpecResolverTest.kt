@@ -9,6 +9,43 @@ import kotlin.test.assertEquals
 
 class ModernNotificationSpecResolverTest {
     @Test
+    fun `default notification accepts selected app identity icon`() {
+        val selectedIcon = R.drawable.ic_kei_notification_small
+        val spec =
+            ModernNotificationSpecResolver.resolve(
+                state =
+                    createState(
+                        serverName = "KeiOS MCP",
+                        running = true,
+                        port = 0,
+                        clients = 0,
+                        ongoing = true,
+                    ),
+                defaultAppIconResId = selectedIcon,
+            )
+
+        assertEquals(selectedIcon, spec.iconResId)
+    }
+
+    @Test
+    fun `webdav notification accepts selected app identity icon`() {
+        val selectedIcon = R.drawable.ic_kei_notification_small
+        val spec =
+            ModernNotificationSpecResolver.resolve(
+                state =
+                    createState(
+                        serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
+                        running = true,
+                        port = 0,
+                        clients = 0,
+                        ongoing = true,
+                    ),
+                defaultAppIconResId = selectedIcon,
+            )
+
+        assertEquals(selectedIcon, spec.iconResId)
+    }
+    @Test
     fun `default running session uses capped client progress`() {
         val spec = ModernNotificationSpecResolver.resolve(
             createState(
@@ -278,9 +315,9 @@ class ModernNotificationSpecResolverTest {
 
         assertEquals(ModernNotificationKind.WEBDAV_SYNC, spec.kind)
         assertEquals(45, spec.progressPercent)
-        assertEquals(R.drawable.ic_kei_logo_live_update, spec.iconResId)
-        assertEquals(R.drawable.ic_kei_logo_live_update, spec.expandedIconResId)
-        assertEquals(R.drawable.ic_kei_logo_live_update, spec.trackerIconResId)
+        assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)
+        assertEquals(null, spec.expandedIconResId)
+        assertEquals(null, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.showProgressStyle)
         assertEquals(0xFFF59E0B.toInt(), spec.progressColor)
@@ -328,7 +365,7 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
-    fun `default notification keeps oem app icon without expanded icon`() {
+    fun `default notification keeps selected app identity icon for oem layout`() {
         val spec = ModernNotificationSpecResolver.resolve(
             state = createState(
                 serverName = "KeiOS MCP",
@@ -340,7 +377,7 @@ class ModernNotificationSpecResolverTest {
             preferOemLiveIconLayout = true
         )
 
-        assertEquals(R.drawable.ic_kei_logo_live_update, spec.iconResId)
+        assertEquals(R.drawable.ic_kei_notification_small, spec.iconResId)
         assertEquals(null, spec.expandedIconResId)
         assertEquals(null, spec.trackerIconResId)
     }

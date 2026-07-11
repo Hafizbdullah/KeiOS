@@ -19,6 +19,7 @@ import os.kei.core.notification.live.SessionNotifier
 import os.kei.core.notification.live.NotificationHelper
 import os.kei.core.notification.live.LiveNotificationChannels
 import os.kei.core.notification.live.SessionNotifierImpl
+import os.kei.core.notification.identity.NotificationAppIconResolver
 import os.kei.mcp.service.McpKeepAliveService
 
 object McpNotificationHelper {
@@ -124,7 +125,8 @@ object McpNotificationHelper {
             stopPendingIntent = openPendingIntent
         )
         return NotificationCompat.Builder(context, FOREGROUND_SERVICE_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_kei_logo_live_update)
+            .setSmallIcon(NotificationAppIconResolver.smallIconResId())
+            .setLargeIcon(NotificationAppIconResolver.largeIconBitmap(context))
             .setContentTitle(payload.title(context))
             .setContentText(payload.content(context).ifBlank { " " })
             .setContentIntent(openPendingIntent)

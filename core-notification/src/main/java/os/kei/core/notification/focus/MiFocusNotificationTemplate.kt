@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.annotation.DrawableRes
+import os.kei.core.notification.R
+import os.kei.core.notification.identity.NotificationAppIconResolver
 
 /**
  * Xiaomi HyperOS Super Island/Focussed Notification JSON builder facade.
@@ -133,12 +135,18 @@ object MiFocusNotificationTemplate {
         context: Context,
         spec: MiFocusNotificationSpec
     ): MiFocusPictureRegistry {
+        val tickerIconResId =
+            if (spec.tickerIconResId == R.drawable.ic_notification_logo) {
+                NotificationAppIconResolver.smallIconResId()
+            } else {
+                spec.tickerIconResId
+            }
         val assets = buildList {
             add(
                 MiFocusPictureAsset(
                     ref = MiFocusPictureRef.TickerLight,
                     source = MiFocusPictureSource.Resource(
-                        resId = spec.tickerIconResId,
+                        resId = tickerIconResId,
                         tintColor = Color.BLACK
                     )
                 )
@@ -147,7 +155,7 @@ object MiFocusNotificationTemplate {
                 MiFocusPictureAsset(
                     ref = MiFocusPictureRef.TickerDark,
                     source = MiFocusPictureSource.Resource(
-                        resId = spec.tickerIconResId,
+                        resId = tickerIconResId,
                         tintColor = Color.WHITE
                     )
                 )

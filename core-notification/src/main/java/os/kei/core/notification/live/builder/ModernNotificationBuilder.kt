@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
 import os.kei.core.notification.R
+import os.kei.core.notification.identity.NotificationAppIconResolver
 import os.kei.core.notification.live.LiveNotificationPayload
 
 class ModernNotificationBuilder(
@@ -12,7 +13,7 @@ class ModernNotificationBuilder(
 ) : SessionNotificationBuilder {
     private fun baseNotificationBuilder(channelId: String): NotificationCompat.Builder {
         return NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_kei_logo_live_update)
+            .setSmallIcon(NotificationAppIconResolver.smallIconResId())
             .setSilent(true)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
@@ -23,7 +24,8 @@ class ModernNotificationBuilder(
         val state = payload.state
         val spec = ModernNotificationSpecResolver.resolve(
             state = state,
-            preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout
+            preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout,
+            defaultAppIconResId = NotificationAppIconResolver.smallIconResId(),
         )
         val isDismissibleCalendarPoolUpdate =
             spec.kind == ModernNotificationKind.BA_CALENDAR_POOL &&
@@ -40,6 +42,9 @@ class ModernNotificationBuilder(
             .setSmallIcon(spec.iconResId)
             .setLargeIcon(
                 payload.semanticIconBitmap
+                    ?: spec.kind.takeIf {
+                        it == ModernNotificationKind.DEFAULT || it == ModernNotificationKind.WEBDAV_SYNC
+                    }?.let { NotificationAppIconResolver.largeIconBitmap(context) }
                     ?: NotificationLargeIconFactory.create(context, spec.expandedIconResId)
             )
             .setContentTitle(state.title(context))

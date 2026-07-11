@@ -113,6 +113,7 @@ internal class MainScreenUiPrefsState(
             viewModel.updateLauncherIconDesign(value)
         }
         LauncherIconController.applyDesign(appContext, value)
+        McpNotificationHelper.refreshCurrentNotificationStyle(appContext)
     }
 
     fun updateNonHomeBackgroundEnabled(value: Boolean) {

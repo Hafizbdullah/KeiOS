@@ -3,6 +3,7 @@ package os.kei.core.notification.live.builder
 import android.content.Context
 import androidx.core.app.NotificationCompat
 import os.kei.core.notification.R
+import os.kei.core.notification.identity.NotificationAppIconResolver
 import os.kei.core.notification.live.LiveNotificationPayload
 import kotlin.math.roundToInt
 
@@ -19,7 +20,8 @@ class LegacyNotificationBuilder(
         val state = payload.state
         val spec = ModernNotificationSpecResolver.resolve(
             state = state,
-            preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout
+            preferOemLiveIconLayout = payload.environment.preferOemLiveIconLayout,
+            defaultAppIconResId = NotificationAppIconResolver.smallIconResId(),
         )
         val isBlueArchiveAp = spec.kind == ModernNotificationKind.BA_AP ||
                 spec.kind == ModernNotificationKind.BA_CAFE_AP
@@ -37,6 +39,9 @@ class LegacyNotificationBuilder(
             .setSmallIcon(spec.iconResId)
             .setLargeIcon(
                 payload.semanticIconBitmap
+                    ?: spec.kind.takeIf {
+                        it == ModernNotificationKind.DEFAULT || it == ModernNotificationKind.WEBDAV_SYNC
+                    }?.let { NotificationAppIconResolver.largeIconBitmap(context) }
                     ?: NotificationLargeIconFactory.create(context, spec.expandedIconResId)
             )
             .setContentTitle(state.title(context))
