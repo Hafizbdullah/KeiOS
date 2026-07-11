@@ -465,7 +465,7 @@ fun OsPage(
     val overviewBorderColor = derivedState.overviewUiState.overviewBorderColor
     val indicatorProgress = derivedState.overviewUiState.indicatorProgress
     val indicatorBg = derivedState.overviewUiState.indicatorBg
-    val overviewMetricRows = derivedState.overviewMetricRows
+    val overviewMetrics = derivedState.overviewMetrics
     val mainListActions =
         remember(
             context,
@@ -512,7 +512,7 @@ fun OsPage(
             statusLabel,
             overviewCardColor,
             overviewBorderColor,
-            overviewMetricRows,
+            overviewMetrics,
         ) {
             OsPageMainListOverviewState(
                 refreshing = runtimeState.refreshing,
@@ -523,7 +523,7 @@ fun OsPage(
                 statusLabel = statusLabel,
                 overviewCardColor = overviewCardColor,
                 overviewBorderColor = overviewBorderColor,
-                overviewMetricRows = overviewMetricRows,
+                overviewMetrics = overviewMetrics,
             )
         }
     val mainListContentState =

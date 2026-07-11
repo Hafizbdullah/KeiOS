@@ -6,7 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import os.kei.R
-import os.kei.ui.page.main.os.components.OsOverviewMetricRow
+import os.kei.ui.page.main.os.components.OsOverviewMetric
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 
@@ -29,7 +29,7 @@ internal data class OsPageDerivedState(
     val prunedJavaRows: List<InfoRow>,
     val prunedLinuxRows: List<InfoRow>,
     val overviewUiState: OsOverviewUiState,
-    val overviewMetricRows: List<OsOverviewMetricRow>,
+    val overviewMetrics: List<OsOverviewMetric>,
 )
 
 @Composable
@@ -142,14 +142,6 @@ internal fun rememberOsPageDerivedState(
                 metrics = overviewMetrics,
             )
         }
-    val overviewMetricRows =
-        remember(overviewUiState.metrics) {
-            overviewUiState.metrics.chunked(2).mapNotNull { pair ->
-                pair.firstOrNull()?.let { first ->
-                    OsOverviewMetricRow(first = first, second = pair.getOrNull(1))
-                }
-            }
-        }
     return OsPageDerivedState(
         query = rowsState.query,
         displayedTopInfoRows = rowsState.displayedTopInfoRows,
@@ -168,6 +160,6 @@ internal fun rememberOsPageDerivedState(
         prunedJavaRows = rowsState.prunedJavaRows,
         prunedLinuxRows = rowsState.prunedLinuxRows,
         overviewUiState = overviewUiState,
-        overviewMetricRows = overviewMetricRows,
+        overviewMetrics = overviewUiState.metrics,
     )
 }

@@ -4,11 +4,8 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,7 +27,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
-import os.kei.ui.page.main.github.GitHubOverviewMetricItem
 import os.kei.ui.page.main.os.OsPageCardListDerivedState
 import os.kei.ui.page.main.os.OsPageDerivedState
 import os.kei.ui.page.main.os.OsPageMainListActions
@@ -47,7 +43,8 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
-import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.core.AppOverviewPill
+import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
@@ -78,7 +75,7 @@ internal data class OsPageMainListOverviewState(
     val statusLabel: String,
     val overviewCardColor: Color,
     val overviewBorderColor: Color,
-    val overviewMetricRows: List<OsOverviewMetricRow>,
+    val overviewMetrics: List<OsOverviewMetric>,
 )
 
 @Immutable
@@ -151,7 +148,7 @@ internal fun OsPageMainList(
     val statusLabel = overviewState.statusLabel
     val overviewCardColor = overviewState.overviewCardColor
     val overviewBorderColor = overviewState.overviewBorderColor
-    val overviewMetricRows = overviewState.overviewMetricRows
+    val overviewMetrics = overviewState.overviewMetrics
     val noMatchedResultsText = contentState.noMatchedResultsText
     val derivedState = contentState.derivedState
     val query = derivedState.query
@@ -213,11 +210,6 @@ internal fun OsPageMainList(
     val onQueryInputChange = searchDockState.onQueryInputChange
     val onSearchExpandedChange = searchDockState.onSearchExpandedChange
     val onExpandFloatingDock = chromeState.onExpandFloatingDock
-    val topMetricLabel = stringResource(R.string.os_overview_metric_top_info)
-
-    fun metricLabelWeight(label: String): Float = if (label == topMetricLabel) 0.30f else 0.56f
-
-    fun metricValueWeight(label: String): Float = if (label == topMetricLabel) 0.70f else 0.44f
     val searchDockBottomTarget =
         appFloatingDockBottomTarget(
             contentBottomPadding = contentBottomPadding,
@@ -298,51 +290,19 @@ internal fun OsPageMainList(
                         )
                     },
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-                    ) {
-                        overviewMetricRows.forEach { pair ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.metricRowGap),
-                            ) {
-                                GitHubOverviewMetricItem(
-                                    label = pair.first.label,
-                                    value = pair.first.value,
-                                    titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                    valueColor =
-                                        pair.first.valueColor
-                                            ?: MiuixTheme.colorScheme.onBackground,
-                                    labelMaxLines = 1,
-                                    valueMaxLines = 1,
-                                    labelWeight = metricLabelWeight(pair.first.label),
-                                    valueWeight = metricValueWeight(pair.first.label),
-                                    backdrop = contentBackdrop,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                val second = pair.second
-                                if (second != null) {
-                                    GitHubOverviewMetricItem(
-                                        label = second.label,
-                                        value = second.value,
-                                        titleColor = if (isDark) Color.White else MiuixTheme.colorScheme.onBackgroundVariant,
-                                        valueColor =
-                                            second.valueColor
-                                                ?: MiuixTheme.colorScheme.onBackground,
-                                        labelMaxLines = 1,
-                                        valueMaxLines = 1,
-                                        labelWeight = metricLabelWeight(second.label),
-                                        valueWeight = metricValueWeight(second.label),
-                                        backdrop = contentBackdrop,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
-                            }
-                        }
-                    }
+                    AppOverviewPillFlow(
+                        pills = overviewMetrics.map { metric ->
+                            AppOverviewPill(
+                                label = stringResource(
+                                    R.string.os_overview_metric_pill,
+                                    metric.label,
+                                    metric.value,
+                                ),
+                                color = metric.valueColor ?: MiuixTheme.colorScheme.primary,
+                            )
+                        },
+                        backdrop = contentBackdrop,
+                    )
                 }
             }
 
