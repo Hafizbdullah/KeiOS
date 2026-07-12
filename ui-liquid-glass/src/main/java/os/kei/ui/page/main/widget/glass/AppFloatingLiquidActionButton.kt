@@ -1,10 +1,10 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,32 +31,45 @@ fun AppFloatingLiquidActionButton(
     badgeColor: Color? = null,
     badgeContentColor: Color? = null,
 ) {
-    Box(
-        modifier = modifier.size(size),
-        contentAlignment = Alignment.Center,
-    ) {
-        AppLiquidIconButton(
-            backdrop = backdrop,
-            icon = icon,
-            contentDescription = contentDescription,
-            onClick = onClick,
-            modifier = Modifier.size(size),
-            width = size,
-            height = size,
-            variant = GlassVariant.Bar,
-            iconTint = iconTint,
-            iconModifier = iconModifier.then(Modifier.size(iconSize)),
-            enabled = enabled,
-            tooltipText = tooltipText,
-        )
-        AppLiquidIconBadge(
-            label = badgeLabel,
-            color = badgeColor,
-            contentColor = badgeContentColor,
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-5).dp, y = 6.dp),
-        )
-    }
+    val metrics = resolveFloatingActionMetrics(size)
+    AppLiquidIconButton(
+        backdrop = backdrop,
+        icon = icon,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier =
+            Modifier
+                .defaultMinSize(
+                    minWidth = metrics.touchSize,
+                    minHeight = metrics.touchSize,
+                ).then(modifier),
+        width = metrics.visualSize,
+        height = metrics.visualSize,
+        variant = GlassVariant.Bar,
+        iconTint = iconTint,
+        iconModifier = iconModifier.then(Modifier.size(iconSize)),
+        enabled = enabled,
+        tooltipText = tooltipText,
+        badgeLabel = badgeLabel,
+        badgeColor = badgeColor,
+        badgeContentColor = badgeContentColor,
+    )
 }
+
+internal data class FloatingActionMetrics(
+    val visualSize: Dp,
+    val touchSize: Dp,
+)
+
+internal fun resolveFloatingActionMetrics(requestedSize: Dp): FloatingActionMetrics {
+    val visualSize =
+        requestedSize.takeIf { size ->
+            size != Dp.Unspecified && size.value.isFinite() && size > 0.dp
+        } ?: AppChromeTokens.floatingBottomBarOuterHeight
+    return FloatingActionMetrics(
+        visualSize = visualSize,
+        touchSize = maxOf(visualSize, AppFloatingActionMinimumTouchSize),
+    )
+}
+
+private val AppFloatingActionMinimumTouchSize = 48.dp

@@ -13,6 +13,9 @@ import androidx.compose.ui.graphics.colorspace.ColorModel
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,10 +47,11 @@ internal fun AppLiquidBadgedIcon(
 
     Box(
         modifier =
-            Modifier.defaultMinSize(
-                minWidth = AppLiquidBadgedIconAnchorSize,
-                minHeight = AppLiquidBadgedIconAnchorSize,
-            ),
+            Modifier
+                .defaultMinSize(
+                    minWidth = AppLiquidBadgedIconAnchorSize,
+                    minHeight = AppLiquidBadgedIconAnchorSize,
+                ).semantics { stateDescription = label },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -60,7 +64,10 @@ internal fun AppLiquidBadgedIcon(
             label = label,
             color = badgeColor,
             contentColor = badgeContentColor,
-            modifier = Modifier.align(Alignment.TopEnd),
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .clearAndSetSemantics {},
         )
     }
 }
