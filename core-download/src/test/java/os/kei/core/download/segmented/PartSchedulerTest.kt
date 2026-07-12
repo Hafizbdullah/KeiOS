@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 
 class PartSchedulerTest {
     @Test
-    fun `foreground boost starts with two probe workers`() = runBlocking {
+    fun `foreground boost starts with four probe workers`() = runBlocking {
         val tuning = SegmentedDownloadSpeedProfile.ForegroundBoost.schedulerTuning()
         val scheduler = PartScheduler(
             totalBytes = 256L * 1024L * 1024L,
@@ -20,12 +20,12 @@ class PartSchedulerTest {
             tuning = tuning,
         )
 
-        val admitted = (0 until 2).map { workerId ->
+        val admitted = (0 until 4).map { workerId ->
             assertNotNull(scheduler.nextPart(workerId))
         }
 
-        assertEquals(2, tuning.startupActiveConnections)
-        assertNull(scheduler.nextPart(workerId = 2))
+        assertEquals(4, tuning.startupActiveConnections)
+        assertNull(scheduler.nextPart(workerId = 4))
         admitted.forEachIndexed { workerId, active ->
             scheduler.finish(workerId, active)
         }
@@ -130,7 +130,6 @@ class PartSchedulerTest {
             tuning = tuning,
         )
 
-        confirmProbeWave(scheduler, expectedActive = 2)
         confirmProbeWave(scheduler, expectedActive = 4)
 
         val secondWave = (0 until 6).map { workerId ->

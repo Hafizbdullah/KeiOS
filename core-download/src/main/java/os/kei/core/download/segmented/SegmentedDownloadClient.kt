@@ -1016,7 +1016,7 @@ internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTunin
                 tailPartsPerConnection = 3,
                 tailWindowInitialMultiplier = 32,
                 partSizeTargetDurationMs = 16_000L,
-                startupActiveConnections = 2,
+                startupActiveConnections = 4,
                 rateLimitedMinPartSizeBytes = 32L * 1024L * 1024L,
                 idlePollMs = 20L,
             )
