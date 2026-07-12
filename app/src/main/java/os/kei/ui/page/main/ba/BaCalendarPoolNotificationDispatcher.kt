@@ -62,6 +62,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                     R.string.ba_calendar_notify_upcoming_title_with_server,
                     serverLabel,
                 ),
+            focusTitle = context.getString(R.string.ba_calendar_notify_upcoming_title),
             content =
                 context.getString(
                     R.string.ba_calendar_notify_upcoming_content,
@@ -107,6 +108,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                     R.string.ba_calendar_notify_ending_title_with_server,
                     serverLabel,
                 ),
+            focusTitle = context.getString(R.string.ba_calendar_notify_ending_title),
             content =
                 context.getString(
                     R.string.ba_calendar_notify_ending_content,
@@ -149,6 +151,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                     R.string.ba_pool_notify_upcoming_title_with_server,
                     serverLabel,
                 ),
+            focusTitle = context.getString(R.string.ba_pool_notify_upcoming_title),
             content =
                 context.getString(
                     R.string.ba_pool_notify_upcoming_content,
@@ -194,6 +197,7 @@ internal object BaCalendarPoolNotificationDispatcher {
                     R.string.ba_pool_notify_ending_title_with_server,
                     serverLabel,
                 ),
+            focusTitle = context.getString(R.string.ba_pool_notify_ending_title),
             content =
                 context.getString(
                     R.string.ba_pool_notify_ending_content,
@@ -228,6 +232,7 @@ internal object BaCalendarPoolNotificationDispatcher {
             destination = copy.destination,
             serverIndex = serverIndex,
             title = copy.title,
+            focusTitle = copy.focusTitle,
             content = copy.content,
             shortText = copy.shortText,
             onlineText = copy.onlineText,
@@ -247,6 +252,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         destination: BaCalendarPoolNotificationDestination,
         serverIndex: Int,
         title: String,
+        focusTitle: String,
         content: String,
         shortText: String,
         onlineText: String,
@@ -295,6 +301,9 @@ internal object BaCalendarPoolNotificationDispatcher {
                 overrideOnlineText = onlineText,
                 overrideShortText = shortText,
                 overrideProgressPercent = progressPercent.coerceIn(0, 100),
+                miFocusTitle = focusTitle,
+                miFocusSpecialTitle = context.getString(baServerLabelRes(serverIndex)),
+                miFocusContent = content,
                 deadlineAtMs = deadlineAtMs,
                 notificationId = notificationId,
                 miFocusOrderId = baCalendarPoolMiFocusOrderId(notificationId),
@@ -349,6 +358,8 @@ internal object BaCalendarPoolNotificationDispatcher {
                         serverLabel,
                     )
             }
+        val focusTitle =
+            context.getString(R.string.ba_calendar_pool_notify_change_title)
         val baseContent =
             when {
                 calendarCount > 0 && poolCount > 0 ->
@@ -390,6 +401,7 @@ internal object BaCalendarPoolNotificationDispatcher {
         return BaCalendarPoolNotificationCopy(
             destination = destination,
             title = title,
+            focusTitle = focusTitle,
             content = content,
             shortText = context.getString(R.string.ba_calendar_pool_notify_short_change),
             onlineText = onlineText,
@@ -519,6 +531,7 @@ internal object BaCalendarPoolNotificationDispatcher {
 internal data class BaCalendarPoolNotificationCopy(
     val destination: BaCalendarPoolNotificationDestination,
     val title: String,
+    val focusTitle: String,
     val content: String,
     val shortText: String,
     val onlineText: String,

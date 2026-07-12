@@ -153,16 +153,17 @@ internal object WebDavSyncNotificationDispatcher {
             } else {
                 status.shortLabel(context)
             }
+        val isRunning = status == WebDavSyncNotificationStatus.Running
         return runCatching {
             McpNotificationHelper.notifyStandaloneEvent(
                 context = context,
                 notificationId = McpNotificationHelper.WEBDAV_SYNC_NOTIFICATION_ID,
                 serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
-                running = status == WebDavSyncNotificationStatus.Running,
+                running = isRunning,
                 port = percent(safeCurrent, safeTotal),
                 path = operation.name.lowercase(),
                 clients = safeTotal,
-                ongoing = status == WebDavSyncNotificationStatus.Running,
+                ongoing = isRunning,
                 onlyAlertOnce = onlyAlertOnce,
                 primaryActionLabel = context.getString(R.string.webdav_sync_notification_action_open),
                 secondaryActionLabel = context.getString(R.string.common_mark_read),
@@ -177,6 +178,20 @@ internal object WebDavSyncNotificationDispatcher {
                 overrideShortText = shortText,
                 overrideProgressPercent = percent(safeCurrent, safeTotal),
                 overrideAccentColor = status.accentColor,
+                miFocusTitle = operationLabel,
+                miFocusSpecialTitle = status.shortLabel(context).takeUnless { isRunning },
+                miFocusContent =
+                    if (isRunning) {
+                        "$safeCurrent/$safeTotal"
+                    } else {
+                        buildTerminalFocusContent(
+                            context = context,
+                            succeeded = succeeded.coerceAtLeast(0),
+                            total = safeTotal,
+                            failed = failed.coerceAtLeast(0),
+                            skipped = skipped.coerceAtLeast(0),
+                        )
+                    },
                 targetRoute = McpAppIntentContract.TARGET_ROUTE_WEBDAV_SYNC,
                 miFocusOrderId = "webdav-sync",
             )
@@ -200,6 +215,25 @@ internal object WebDavSyncNotificationDispatcher {
     ): String {
         val parts = buildList {
             add("${status.shortLabel(context)} $succeeded/$total")
+            if (failed > 0) {
+                add(context.getString(R.string.webdav_sync_notification_failed_compact, failed))
+            }
+            if (skipped > 0) {
+                add(context.getString(R.string.webdav_sync_notification_skipped_compact, skipped))
+            }
+        }
+        return parts.joinToString(" · ")
+    }
+
+    private fun buildTerminalFocusContent(
+        context: Context,
+        succeeded: Int,
+        total: Int,
+        failed: Int,
+        skipped: Int,
+    ): String {
+        val parts = buildList {
+            add("$succeeded/$total")
             if (failed > 0) {
                 add(context.getString(R.string.webdav_sync_notification_failed_compact, failed))
             }
