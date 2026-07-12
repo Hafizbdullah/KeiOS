@@ -748,6 +748,33 @@ class GitHubShareImportNotificationHelperTest {
     }
 
     @Test
+    fun `long install version keeps full value in content and semantic core in badge`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val state = GitHubShareImportNotificationState(
+            phase = GitHubShareImportNotificationPhase.PageInstallCompleted,
+            owner = "owner",
+            repo = "repo",
+            appLabel = "PiliPlus",
+            packageName = "com.example.piliplus",
+            versionName = "2.1.0-c1a5e8d5b1d9f04",
+        )
+
+        val notification = buildMiIsland(context, state)
+        val focusJson = JSONObject(
+            notification.extras.getString("miui.focus.param").orEmpty(),
+        ).getJSONObject("param_v2")
+        val baseInfo = focusJson.getJSONObject("baseInfo")
+
+        assertEquals(
+            "Install complete",
+            notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString(),
+        )
+        assertEquals("PiliPlus", baseInfo.getString("title"))
+        assertEquals("2.1.0", baseInfo.getString("specialTitle"))
+        assertEquals("2.1.0-c1a5e8d5b1d9f04", baseInfo.getString("content"))
+    }
+
+    @Test
     fun `page managed install confirmation waits for manifest before confirm action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val state = GitHubShareImportNotificationState(

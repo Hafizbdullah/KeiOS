@@ -684,7 +684,8 @@ object GitHubShareImportNotificationHelper {
             overrideOnlineText = islandTitle.ifBlank { shortText },
             overrideShortText = islandSubtitle.ifBlank { shortText },
             overrideProgressPercent = overrideProgressPercent,
-            miFocusSpecialTitle = state.versionBadgeLabel.takeIf {
+            miFocusTitle = resolveMiFocusTitle(context, state),
+            miFocusSpecialTitle = state.compactVersionBadgeLabel.takeIf {
                 it.isNotBlank() && state.phase in versionBadgePhases
             },
             miFocusContent = resolveMiFocusContent(context, state),
@@ -842,8 +843,12 @@ object GitHubShareImportNotificationHelper {
     ): String? {
         if (state.phase !in conciseInstallPhases) return null
         val target = state.targetDisplayLabel
+        val version = state.versionBadgeLabel
         if (state.phase != GitHubShareImportNotificationPhase.InstallDownloading) {
-            return compactWithoutEllipsis(target, PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH)
+            return compactWithoutEllipsis(
+                version.takeIf { state.usesExpandedVersionLayout }.orEmpty().ifBlank { target },
+                PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
+            )
         }
         return compactWithoutEllipsis(
             context.getString(
@@ -852,6 +857,19 @@ object GitHubShareImportNotificationHelper {
                 formatDownloadProgress(context, state.downloadedBytes, state.totalBytes),
             ),
             PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
+        )
+    }
+
+    private fun resolveMiFocusTitle(
+        context: Context,
+        state: GitHubShareImportNotificationState,
+    ): String? {
+        if (state.phase !in conciseInstallPhases) return null
+        if (!state.usesExpandedVersionLayout) return null
+        val target = state.targetDisplayLabel
+        return compactWithoutEllipsis(
+            target.ifBlank { context.getString(state.phase.titleRes) },
+            PAGE_INSTALL_FOCUS_TITLE_MAX_LENGTH,
         )
     }
 
@@ -908,6 +926,10 @@ object GitHubShareImportNotificationHelper {
 }
 
 private const val PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH = 28
+private const val PAGE_INSTALL_FOCUS_TITLE_MAX_LENGTH = 18
+
+private val GitHubShareImportNotificationState.usesExpandedVersionLayout: Boolean
+    get() = versionBadgeLabel.length > compactVersionBadgeLabel.length
 
 private val conciseInstallPhases =
     setOf(

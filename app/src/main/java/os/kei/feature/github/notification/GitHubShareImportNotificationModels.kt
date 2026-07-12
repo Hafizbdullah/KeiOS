@@ -79,6 +79,14 @@ internal data class GitHubShareImportNotificationState(
                     .orEmpty()
             }
 
+    val compactVersionBadgeLabel: String
+        get() {
+            val version = versionBadgeLabel
+            if (version.length <= VERSION_BADGE_MAX_LENGTH) return version
+            val semanticCore = semanticVersionCoreRegex.find(version)?.value.orEmpty()
+            return semanticCore.takeIf { it.isNotBlank() } ?: version.take(VERSION_BADGE_MAX_LENGTH)
+        }
+
     val targetDisplayLabel: String
         get() = appLabel.trim()
             .ifBlank { targetDisplayName.trim().takeUnless(::looksLikePackageName).orEmpty() }
@@ -186,6 +194,8 @@ private fun cleanNotificationAssetName(assetName: String): String {
 private val packageNameDisplayRegex = Regex("""^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$""")
 private val apkFileSuffixRegex = Regex("""\.apk$""", RegexOption.IGNORE_CASE)
 private val notificationWhitespaceRegex = Regex("""\s+""")
+private val semanticVersionCoreRegex = Regex("""(?i)\bv?\d+(?:\.\d+){1,3}""")
+private const val VERSION_BADGE_MAX_LENGTH = 12
 private val pageInstallCancelablePhases =
     setOf(
         GitHubShareImportNotificationPhase.InstallDownloading,
