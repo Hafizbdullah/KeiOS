@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -41,7 +43,6 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.BackdropEffectScope
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -62,6 +63,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.tanh
@@ -83,7 +85,7 @@ private fun BackdropEffectScope.applyLiquidButtonEffects(
             pressProgress,
         ),
     )
-    lens(
+    safeLiquidLens(
         glass.lensStart.toPx() + 3.dp.toPx() * pressProgress,
         glass.lensEnd.toPx() + 5.dp.toPx() * pressProgress,
         chromaticAberration = variant != GlassVariant.Compact,
@@ -97,8 +99,8 @@ fun AppLiquidIconButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     width: Dp = Dp.Unspecified,
     height: Dp = Dp.Unspecified,
     shape: Shape = ContinuousCapsule,
@@ -140,7 +142,7 @@ fun AppLiquidIconButton(
             AppLiquidIconButtonIcon(
                 icon = icon,
                 contentDescription = contentDescription,
-                iconModifier = iconModifier,
+                modifier = iconModifier,
                 iconTint = iconTint,
                 badgeLabel = badgeLabel,
                 badgeColor = badgeColor,
@@ -156,8 +158,8 @@ fun AppLiquidIconButton(
     painter: Painter,
     contentDescription: String,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     width: Dp = Dp.Unspecified,
     height: Dp = Dp.Unspecified,
     shape: Shape = ContinuousCapsule,
@@ -207,7 +209,7 @@ fun AppLiquidIconButton(
 private fun AppLiquidIconButtonIcon(
     icon: ImageVector,
     contentDescription: String,
-    iconModifier: Modifier,
+    modifier: Modifier,
     iconTint: Color,
     badgeLabel: String?,
     badgeColor: Color?,
@@ -216,7 +218,7 @@ private fun AppLiquidIconButtonIcon(
     AppLiquidBadgedIcon(
         icon = icon,
         contentDescription = contentDescription,
-        modifier = iconModifier,
+        modifier = modifier,
         tint = iconTint,
         badgeLabel = badgeLabel,
         badgeColor = badgeColor,
@@ -339,19 +341,13 @@ private fun AppLiquidIconButtonContainer(
     Box(
         modifier =
             modifier
-                .width(width)
-                .height(height)
-                .graphicsLayer {
-                    val scale = animatedScaleProvider()
-                    scaleX = scale
-                    scaleY = scale
-                    clip = false
-                }.then(
+                .then(
                     if (onLongClick != null) {
                         Modifier.combinedClickable(
                             interactionSource = interactionSource,
                             indication = null,
                             enabled = enabled,
+                            role = Role.Button,
                             onClick = onClick,
                             onLongClick = onLongClick,
                         )
@@ -360,10 +356,19 @@ private fun AppLiquidIconButtonContainer(
                             interactionSource = interactionSource,
                             indication = null,
                             enabled = enabled,
+                            role = Role.Button,
                             onClick = onClick,
                         )
                     },
-                ).then(
+                ).minimumLiquidTouchTargetSize()
+                .width(width)
+                .height(height)
+                .graphicsLayer {
+                    val scale = animatedScaleProvider()
+                    scaleX = scale
+                    scaleY = scale
+                    clip = false
+                }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
@@ -596,19 +601,13 @@ fun AppLiquidTextButton(
     Box(
         modifier =
             modifier
-                .defaultMinSize(minHeight = minHeight)
-                .graphicsLayer {
-                    val scale = animatedScaleProvider()
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                    clip = false
-                }.then(
+                .then(
                     if (longClick != null) {
                         Modifier.combinedClickable(
                             interactionSource = interactionSource,
                             indication = null,
                             enabled = enabled,
+                            role = Role.Button,
                             onClick = { if (enabled) onClick() },
                             onLongClick = longClick,
                         )
@@ -617,10 +616,19 @@ fun AppLiquidTextButton(
                             enabled = enabled,
                             interactionSource = interactionSource,
                             indication = null,
+                            role = Role.Button,
                             onClick = onClick,
                         )
                     },
-                ).then(
+                ).minimumLiquidTouchTargetSize()
+                .defaultMinSize(minHeight = minHeight)
+                .graphicsLayer {
+                    val scale = animatedScaleProvider()
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                    clip = false
+                }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
@@ -734,7 +742,27 @@ fun AppLiquidTextButton(
     }
 }
 
-private fun glassContainerOverlayAlpha(
+private fun Modifier.minimumLiquidTouchTargetSize(): Modifier =
+    layout { measurable, constraints ->
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = 0,
+                    minHeight = 0,
+                ),
+            )
+        val minimumSizePx = 48.dp.roundToPx()
+        val width = max(placeable.width, minimumSizePx).coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height = max(placeable.height, minimumSizePx).coerceIn(constraints.minHeight, constraints.maxHeight)
+        layout(width, height) {
+            placeable.placeRelative(
+                x = (width - placeable.width) / 2,
+                y = (height - placeable.height) / 2,
+            )
+        }
+    }
+
+internal fun glassContainerOverlayAlpha(
     variant: GlassVariant,
     isDark: Boolean,
 ): Float =

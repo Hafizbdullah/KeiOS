@@ -31,6 +31,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
@@ -39,7 +43,6 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -52,6 +55,7 @@ import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -62,7 +66,7 @@ import kotlin.math.tanh
 
 @Composable
 fun LiquidSurface(
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     shape: Shape = ContinuousCapsule,
     enabled: Boolean = true,
@@ -78,6 +82,9 @@ fun LiquidSurface(
     shadowAlpha: Float = 0.10f,
     exportedBackdrop: LayerBackdrop? = null,
     interactionSource: MutableInteractionSource? = null,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
+    toggleableState: ToggleableState? = null,
     consumeDragChanges: Boolean = false,
     clipContent: Boolean = true,
     contentAlignment: Alignment = Alignment.TopStart,
@@ -99,9 +106,18 @@ fun LiquidSurface(
                 interactionSource = resolvedInteractionSource,
                 indication = if (isInteractive) null else LocalIndication.current,
                 enabled = enabled,
-                role = Role.Button,
+                role = role,
                 onClick = onClick,
             )
+        } else {
+            Modifier
+        }
+    val stateSemanticsModifier =
+        if (selected != null || toggleableState != null) {
+            Modifier.semantics {
+                selected?.let { this.selected = it }
+                toggleableState?.let { this.toggleableState = it }
+            }
         } else {
             Modifier
         }
@@ -139,7 +155,7 @@ fun LiquidSurface(
                 effects = {
                     vibrancy()
                     blur(effectiveBlurRadius.toPx())
-                    lens(
+                    safeLiquidLens(
                         effectiveLensRadius.toPx(),
                         effectiveLensRadius.toPx(),
                         chromaticAberration = chromaticAberration,
@@ -196,6 +212,7 @@ fun LiquidSurface(
                 modifier
                     .then(surfaceModifier)
                     .then(clickableModifier)
+                    .then(stateSemanticsModifier)
                     .then(interactionModifier)
                     .graphicsLayer {
                         alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
@@ -209,6 +226,7 @@ fun LiquidSurface(
             modifier =
                 modifier
                     .then(clickableModifier)
+                    .then(stateSemanticsModifier)
                     .then(interactionModifier)
                     .graphicsLayer {
                         alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
@@ -237,6 +255,7 @@ fun LiquidSurface(
 }
 
 private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(interactiveHighlight: InteractiveHighlight) {
+    if (size.width <= 0f || size.height <= 0f) return
     val progress = interactiveHighlight.pressProgress
     val scale = lerp(1f, 1f + 4.dp.toPx() / size.height, progress)
     val maxOffset = size.minDimension
@@ -336,7 +355,7 @@ fun AppLiquidFloatingSurface(
                                     vibrancy()
                                     blur(effectBlurRadius.toPx())
                                     val pressProgress = pressProgressProvider()
-                                    lens(
+                                    safeLiquidLens(
                                         (
                                             effectLensRadius *
                                                 (0.90f + 0.08f * pressProgress)
@@ -495,7 +514,7 @@ private fun Modifier.appLiquidOptimizedSurface(
     color: Color,
 ): Modifier =
     if (optimizedCornerRadius != null) {
-        appSquircleBackground(color = color, cornerRadius = optimizedCornerRadius)
+        appSquircleSurface(color = color, cornerRadius = optimizedCornerRadius)
     } else {
         clip(shape).background(color)
     }

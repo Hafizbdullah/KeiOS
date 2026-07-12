@@ -15,9 +15,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -41,55 +38,40 @@ fun LiquidInfoBlock(
     val cornerRadius = 16.dp
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
-    if (inheritedBackdrop != null) {
-        LiquidInfoBlockSurface(
-            backdrop = inheritedBackdrop,
-            captureBackdrop = null,
-            title = title,
-            subtitle = subtitle,
-            body = body,
-            accent = accent,
-            content = content,
-            cardSurface = cardSurface,
-            cornerRadius = cornerRadius,
-        )
-    } else {
-        val localBackdrop = rememberLayerBackdrop()
-        LiquidInfoBlockSurface(
-            backdrop = localBackdrop,
-            captureBackdrop = localBackdrop,
-            title = title,
-            subtitle = subtitle,
-            body = body,
-            accent = accent,
-            content = content,
-            cardSurface = cardSurface,
-            cornerRadius = cornerRadius,
-        )
-    }
+    LiquidInfoBlockSurface(
+        backdrop = inheritedBackdrop,
+        title = title,
+        subtitle = subtitle,
+        body = body,
+        accent = accent,
+        titleColor =
+            if (isDark) {
+                accent
+            } else {
+                resolveLightGlassContentColor(
+                    accent = accent,
+                    backgroundAlpha = 0.18f,
+                )
+            },
+        content = content,
+        cardSurface = cardSurface,
+        cornerRadius = cornerRadius,
+    )
 }
 
 @Composable
 private fun LiquidInfoBlockSurface(
-    backdrop: Backdrop,
-    captureBackdrop: LayerBackdrop?,
+    backdrop: Backdrop?,
     title: String,
     subtitle: String,
     body: String,
     accent: Color,
+    titleColor: Color,
     content: (@Composable () -> Unit)?,
     cardSurface: Color,
     cornerRadius: Dp,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
-        if (captureBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(captureBackdrop),
-            )
-        }
         LiquidSurface(
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),
@@ -125,7 +107,7 @@ private fun LiquidInfoBlockSurface(
                         ) {
                             Text(
                                 text = title,
-                                color = accent,
+                                color = titleColor,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             )
                         }

@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -21,26 +24,41 @@ fun AppLiquidDialogActionButton(
     buttonModifier: Modifier = Modifier.fillMaxWidth(),
     enabled: Boolean = true,
     containerColor: Color? = null,
-    textColor: Color = containerColor ?: MiuixTheme.colorScheme.primary,
+    textColor: Color? = null,
     leadingIcon: ImageVector? = null,
-    iconTint: Color = textColor,
-    variant: GlassVariant = if (containerColor != null) {
-        GlassVariant.SheetPrimaryAction
-    } else {
-        GlassVariant.SheetAction
-    }
+    iconTint: Color? = null,
+    variant: GlassVariant =
+        if (containerColor != null) {
+            GlassVariant.SheetPrimaryAction
+        } else {
+            GlassVariant.SheetAction
+        },
 ) {
+    val isDark = isSystemInDarkTheme()
+    val accent = containerColor ?: MiuixTheme.colorScheme.primary
+    val defaultContentColor =
+        if (isDark) {
+            accent
+        } else {
+            resolveLightGlassContentColor(
+                accent = accent,
+                backgroundAlpha = glassContainerOverlayAlpha(variant, false),
+            )
+        }
+    val resolvedTextColor = textColor ?: defaultContentColor
+    val resolvedIconTint = iconTint ?: resolvedTextColor
+    val interactiveModifier = modifier.then(buttonModifier)
     val dialogBackdrop = LocalLiquidDialogBackdrop.current
     if (dialogBackdrop != null) {
         AppLiquidTextButton(
             backdrop = dialogBackdrop,
             text = text,
             onClick = onClick,
-            modifier = modifier.then(buttonModifier),
-            textColor = textColor,
+            modifier = interactiveModifier,
+            textColor = resolvedTextColor,
             containerColor = containerColor,
             leadingIcon = leadingIcon,
-            iconTint = iconTint,
+            iconTint = resolvedIconTint,
             enabled = enabled,
             variant = variant,
             minHeight = 40.dp,
@@ -48,18 +66,18 @@ fun AppLiquidDialogActionButton(
             verticalPadding = 8.dp,
             textMaxLines = 1,
             textOverflow = TextOverflow.Ellipsis,
-            textSoftWrap = false
+            textSoftWrap = false,
         )
     } else {
         AppStandaloneLiquidTextButton(
             text = text,
             onClick = onClick,
-            modifier = modifier,
-            buttonModifier = buttonModifier,
-            textColor = textColor,
+            modifier = Modifier,
+            buttonModifier = interactiveModifier,
+            textColor = resolvedTextColor,
             containerColor = containerColor,
             leadingIcon = leadingIcon,
-            iconTint = iconTint,
+            iconTint = resolvedIconTint,
             enabled = enabled,
             variant = variant,
             minHeight = 40.dp,
@@ -67,7 +85,7 @@ fun AppLiquidDialogActionButton(
             verticalPadding = 8.dp,
             textMaxLines = 1,
             textOverflow = TextOverflow.Ellipsis,
-            textSoftWrap = false
+            textSoftWrap = false,
         )
     }
 }

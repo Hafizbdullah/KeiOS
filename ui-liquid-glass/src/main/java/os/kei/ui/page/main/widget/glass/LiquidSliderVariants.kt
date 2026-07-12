@@ -1,5 +1,8 @@
+@file:Suppress("FunctionName", "PropertyName")
+
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -31,7 +34,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
@@ -48,7 +53,6 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -65,7 +69,7 @@ import kotlin.math.abs
 data class LiquidSliderKeyPoint(
     val value: Float,
     val color: Color = Color.Unspecified,
-    val size: Dp = 5.dp
+    val size: Dp = 5.dp,
 )
 
 @Composable
@@ -80,15 +84,16 @@ fun LiquidMusicProgressSlider(
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
     onValueChangeFinished: ((Float) -> Unit)? = null,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val isLightTheme = !isSystemInDarkTheme()
     val defaultActiveColor = if (isLightTheme) Color(0xFF0088FF) else Color(0xFF5DAEFF)
-    val defaultInactiveColor = if (isLightTheme) {
-        Color(0xFF1D1D1F).copy(alpha = 0.16f)
-    } else {
-        Color.White.copy(alpha = 0.18f)
-    }
+    val defaultInactiveColor =
+        if (isLightTheme) {
+            Color(0xFF1D1D1F).copy(alpha = 0.16f)
+        } else {
+            Color.White.copy(alpha = 0.18f)
+        }
     LiquidTrackSlider(
         value = value,
         onValueChange = onValueChange,
@@ -99,18 +104,19 @@ fun LiquidMusicProgressSlider(
         modifier = modifier,
         enabled = enabled,
         onInteractionChanged = onInteractionChanged,
-        style = LiquidTrackSliderStyle(
-            activeColor = if (activeColor.isSpecified) activeColor else defaultActiveColor,
-            inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
-            trackHeight = 4.dp,
-            thumbWidth = 30.dp,
-            thumbHeight = 18.dp,
-            pressedWidthScale = 1.46f,
-            pressedHeightScale = 1.30f,
-            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
-            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
-            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
-        )
+        style =
+            LiquidTrackSliderStyle(
+                activeColor = if (activeColor.isSpecified) activeColor else defaultActiveColor,
+                inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
+                trackHeight = 4.dp,
+                thumbWidth = 30.dp,
+                thumbHeight = 18.dp,
+                pressedWidthScale = 1.46f,
+                pressedHeightScale = 1.30f,
+                thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+                thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
+                thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme),
+            ),
     )
 }
 
@@ -126,21 +132,23 @@ fun LiquidVolumeSlider(
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
     onValueChangeFinished: ((Float) -> Unit)? = null,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val isLightTheme = !isSystemInDarkTheme()
-    val accentColor = if (activeColor.isSpecified) {
-        activeColor
-    } else if (isLightTheme) {
-        Color(0xFF0088FF)
-    } else {
-        Color(0xFF5DAEFF)
-    }
-    val defaultInactiveColor = if (isLightTheme) {
-        Color(0xFF1D1D1F).copy(alpha = 0.15f)
-    } else {
-        Color.White.copy(alpha = 0.18f)
-    }
+    val accentColor =
+        if (activeColor.isSpecified) {
+            activeColor
+        } else if (isLightTheme) {
+            Color(0xFF0088FF)
+        } else {
+            Color(0xFF5DAEFF)
+        }
+    val defaultInactiveColor =
+        if (isLightTheme) {
+            Color(0xFF1D1D1F).copy(alpha = 0.15f)
+        } else {
+            Color.White.copy(alpha = 0.18f)
+        }
     LiquidTrackSlider(
         value = value,
         onValueChange = onValueChange,
@@ -151,18 +159,19 @@ fun LiquidVolumeSlider(
         modifier = modifier,
         enabled = enabled,
         onInteractionChanged = onInteractionChanged,
-        style = LiquidTrackSliderStyle(
-            activeColor = accentColor.copy(alpha = 0.92f),
-            inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
-            trackHeight = 6.dp,
-            thumbWidth = 40.dp,
-            thumbHeight = 26.dp,
-            pressedWidthScale = 1.35f,
-            pressedHeightScale = 1.22f,
-            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
-            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
-            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
-        )
+        style =
+            LiquidTrackSliderStyle(
+                activeColor = accentColor.copy(alpha = 0.92f),
+                inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
+                trackHeight = 6.dp,
+                thumbWidth = 40.dp,
+                thumbHeight = 26.dp,
+                pressedWidthScale = 1.35f,
+                pressedHeightScale = 1.22f,
+                thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+                thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
+                thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme),
+            ),
     )
 }
 
@@ -181,21 +190,23 @@ fun LiquidKeyPointSlider(
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
     onValueChangeFinished: ((Float) -> Unit)? = null,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val isLightTheme = !isSystemInDarkTheme()
-    val accentColor = if (activeColor.isSpecified) {
-        activeColor
-    } else if (isLightTheme) {
-        Color(0xFF0088FF)
-    } else {
-        Color(0xFF5DAEFF)
-    }
-    val defaultInactiveColor = if (isLightTheme) {
-        Color(0xFF1D1D1F).copy(alpha = 0.14f)
-    } else {
-        Color.White.copy(alpha = 0.18f)
-    }
+    val accentColor =
+        if (activeColor.isSpecified) {
+            activeColor
+        } else if (isLightTheme) {
+            Color(0xFF0088FF)
+        } else {
+            Color(0xFF5DAEFF)
+        }
+    val defaultInactiveColor =
+        if (isLightTheme) {
+            Color(0xFF1D1D1F).copy(alpha = 0.14f)
+        } else {
+            Color.White.copy(alpha = 0.18f)
+        }
     LiquidTrackSlider(
         value = value,
         onValueChange = onValueChange,
@@ -209,20 +220,21 @@ fun LiquidKeyPointSlider(
         keyPoints = keyPoints,
         snapToKeyPoints = snapToKeyPoints,
         snapThreshold = snapThreshold,
-        style = LiquidTrackSliderStyle(
-            activeColor = accentColor,
-            inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
-            keyPointColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.92f),
-            keyPointActiveColor = Color.White.copy(alpha = 0.90f),
-            trackHeight = 7.dp,
-            thumbWidth = 38.dp,
-            thumbHeight = 22.dp,
-            pressedWidthScale = 1.38f,
-            pressedHeightScale = 1.26f,
-            thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
-            thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
-            thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme)
-        )
+        style =
+            LiquidTrackSliderStyle(
+                activeColor = accentColor,
+                inactiveColor = if (inactiveColor.isSpecified) inactiveColor else defaultInactiveColor,
+                keyPointColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.92f),
+                keyPointActiveColor = Color.White.copy(alpha = 0.90f),
+                trackHeight = 7.dp,
+                thumbWidth = 38.dp,
+                thumbHeight = 22.dp,
+                pressedWidthScale = 1.38f,
+                pressedHeightScale = 1.26f,
+                thumbGlassSurfaceAlpha = thumbGlassSurfaceAlphaFor(isLightTheme),
+                thumbPressedSurfaceAlpha = thumbPressedSurfaceAlphaFor(isLightTheme),
+                thumbRestingHighlightAlpha = thumbRestingHighlightAlphaFor(isLightTheme),
+            ),
     )
 }
 
@@ -240,8 +252,23 @@ private fun LiquidTrackSlider(
     style: LiquidTrackSliderStyle,
     keyPoints: List<LiquidSliderKeyPoint> = emptyList(),
     snapToKeyPoints: Boolean = false,
-    snapThreshold: Float? = null
+    snapThreshold: Float? = null,
 ) {
+    require(visibilityThreshold.isFinite() && visibilityThreshold >= 0f) {
+        "visibilityThreshold must be a finite non-negative value"
+    }
+    require(snapThreshold == null || (snapThreshold.isFinite() && snapThreshold >= 0f)) {
+        "snapThreshold must be null or a finite non-negative value"
+    }
+    val safeValueRange =
+        remember(valueRange.start, valueRange.endInclusive) {
+            liquidFiniteRange(valueRange)
+        }
+    val safeKeyPoints =
+        remember(keyPoints, safeValueRange) {
+            sanitizeLiquidSliderKeyPoints(keyPoints, safeValueRange)
+        }
+    val valueResolver = remember { LiquidFiniteValueResolver() }
     val glassRuntime = glassEffectRuntime()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val trackBackdrop =
@@ -258,120 +285,141 @@ private fun LiquidTrackSlider(
             onInteractionChangedState.value(false)
         }
     }
-    val safeValueRange = valueRange
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .liquidSliderInteractionLock(
-                enabled = enabled,
-                onInteractionChanged = onInteractionChangedState.value
-            )
-            .graphicsLayer {
-                alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-            }
-            .semantics {
-                progressBarRangeInfo = ProgressBarRangeInfo(value(), safeValueRange, steps = 0)
-                if (enabled) {
-                    setProgress { target ->
-                        val next = target.coerceIn(safeValueRange)
-                        onValueChangeState.value(next)
-                        onValueChangeFinishedState.value?.invoke(next)
-                        true
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .liquidSliderInteractionLock(
+                    enabled = enabled,
+                    onInteractionChanged = onInteractionChangedState.value,
+                ).graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                }.semantics {
+                    val currentValue = valueResolver.resolve(value(), safeValueRange)
+                    progressBarRangeInfo = ProgressBarRangeInfo(currentValue, safeValueRange, steps = 0)
+                    if (enabled) {
+                        setProgress { target ->
+                            val next =
+                                resolveSliderProgressChange(
+                                    currentValue = valueResolver.resolve(value(), safeValueRange),
+                                    target = target,
+                                    valueRange = safeValueRange,
+                                    keyPoints = safeKeyPoints,
+                                    snapToKeyPoints = snapToKeyPoints,
+                                    snapThreshold = snapThreshold,
+                                ) ?: return@setProgress false
+                            onValueChangeState.value(next)
+                            onValueChangeFinishedState.value?.invoke(next)
+                            true
+                        }
+                    } else {
+                        disabled()
                     }
-                }
-            },
-        contentAlignment = Alignment.CenterStart
+                },
+        contentAlignment = Alignment.CenterStart,
     ) {
         val trackWidth = constraints.maxWidth.coerceAtLeast(1)
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+        val touchSlop = LocalViewConfiguration.current.touchSlop
         val hapticFeedback = LocalHapticFeedback.current
         val hapticState = remember { LiquidSliderHapticState() }
         val animationScope = rememberCoroutineScope()
         var didDrag by remember { mutableStateOf(false) }
         val rangeSpan = safeValueRange.endInclusive - safeValueRange.start
-        val dampedDragAnimation = remember(
-            animationScope,
-            safeValueRange,
-            visibilityThreshold,
-            enabled,
-            trackWidth,
-            isLtr,
-            style.pressedWidthScale,
-            keyPoints,
-            snapToKeyPoints,
-            snapThreshold
-        ) {
-            DampedDragAnimation(
-                animationScope = animationScope,
-                initialValue = value().coerceIn(safeValueRange),
-                valueRange = safeValueRange,
-                visibilityThreshold = visibilityThreshold,
-                initialScale = 1f,
-                pressedScale = style.pressedWidthScale,
-                consumeDragChanges = true,
-                onDragStarted = { position ->
-                    if (enabled) {
-                        val target = resolveSliderTarget(
-                            target = sliderValueAt(
-                                offset = position,
-                                widthPx = trackWidth.toFloat(),
+        val dampedDragAnimation =
+            remember(
+                animationScope,
+                safeValueRange,
+                visibilityThreshold,
+                enabled,
+                trackWidth,
+                isLtr,
+                touchSlop,
+                style.pressedWidthScale,
+                safeKeyPoints,
+                snapToKeyPoints,
+                snapThreshold,
+            ) {
+                DampedDragAnimation(
+                    animationScope = animationScope,
+                    initialValue = valueResolver.resolve(value(), safeValueRange),
+                    valueRange = safeValueRange,
+                    visibilityThreshold = visibilityThreshold,
+                    initialScale = 1f,
+                    pressedScale = style.pressedWidthScale,
+                    consumeDragChanges = true,
+                    dragOrientation = Orientation.Horizontal,
+                    dragTouchSlop = touchSlop,
+                    onDragStarted = { position ->
+                        if (enabled) {
+                            val target =
+                                resolveSliderTarget(
+                                    target =
+                                        sliderValueAt(
+                                            offset = position,
+                                            widthPx = trackWidth.toFloat(),
+                                            valueRange = safeValueRange,
+                                            isLtr = isLtr,
+                                        ),
+                                    valueRange = safeValueRange,
+                                    keyPoints = safeKeyPoints,
+                                    snapToKeyPoints = snapToKeyPoints,
+                                    snapThreshold = snapThreshold,
+                                )
+                            snapToValue(target)
+                            onValueChangeState.value(target)
+                            hapticState.reset(target)
+                            hapticState.handleHapticFeedback(
+                                currentValue = target,
                                 valueRange = safeValueRange,
-                                isLtr = isLtr
-                            ),
-                            valueRange = safeValueRange,
-                            keyPoints = keyPoints,
-                            snapToKeyPoints = snapToKeyPoints,
-                            snapThreshold = snapThreshold
-                        )
-                        snapToValue(target)
-                        onValueChangeState.value(target)
-                        hapticState.reset(target)
+                                hapticFeedback = hapticFeedback,
+                                keyPoints = safeKeyPoints,
+                            )
+                            onInteractionChangedState.value(true)
+                        }
+                    },
+                    onDragStopped = {
+                        onInteractionChangedState.value(false)
+                        if (enabled && didDrag) {
+                            val next =
+                                resolveSliderTarget(
+                                    target = targetValue,
+                                    valueRange = safeValueRange,
+                                    keyPoints = safeKeyPoints,
+                                    snapToKeyPoints = snapToKeyPoints,
+                                    snapThreshold = snapThreshold,
+                                )
+                            onValueChangeState.value(next)
+                            onValueChangeFinishedState.value?.invoke(next)
+                            if (snapToKeyPoints) {
+                                animateToValue(next)
+                            }
+                        }
+                        didDrag = false
+                    },
+                    onDragCancelled = {
+                        onInteractionChangedState.value(false)
+                        didDrag = false
+                    },
+                    onDrag = { _, dragAmount ->
+                        if (!enabled || rangeSpan == 0f) return@DampedDragAnimation
+                        if (!didDrag) {
+                            didDrag = dragAmount.x != 0f
+                        }
+                        val delta = rangeSpan * (dragAmount.x / trackWidth)
+                        val target = if (isLtr) targetValue + delta else targetValue - delta
+                        val boundedTarget = target.coerceIn(safeValueRange)
+                        snapToValue(boundedTarget)
+                        onValueChangeState.value(boundedTarget)
                         hapticState.handleHapticFeedback(
-                            currentValue = target,
+                            currentValue = boundedTarget,
                             valueRange = safeValueRange,
                             hapticFeedback = hapticFeedback,
-                            keyPoints = keyPoints,
+                            keyPoints = safeKeyPoints,
                         )
-                        onInteractionChangedState.value(true)
-                    }
-                },
-                onDragStopped = {
-                    onInteractionChangedState.value(false)
-                    if (enabled && didDrag) {
-                        val next = resolveSliderTarget(
-                            target = targetValue,
-                            valueRange = safeValueRange,
-                            keyPoints = keyPoints,
-                            snapToKeyPoints = snapToKeyPoints,
-                            snapThreshold = snapThreshold
-                        )
-                        onValueChangeState.value(next)
-                        onValueChangeFinishedState.value?.invoke(next)
-                        if (snapToKeyPoints) {
-                            animateToValue(next)
-                        }
-                    }
-                    didDrag = false
-                },
-                onDrag = { _, dragAmount ->
-                    if (!enabled || rangeSpan == 0f) return@DampedDragAnimation
-                    if (!didDrag) {
-                        didDrag = dragAmount.x != 0f
-                    }
-                    val delta = rangeSpan * (dragAmount.x / trackWidth)
-                    val target = if (isLtr) targetValue + delta else targetValue - delta
-                    val boundedTarget = target.coerceIn(safeValueRange)
-                    snapToValue(boundedTarget)
-                    onValueChangeState.value(boundedTarget)
-                    hapticState.handleHapticFeedback(
-                        currentValue = boundedTarget,
-                        valueRange = safeValueRange,
-                        hapticFeedback = hapticFeedback,
-                        keyPoints = keyPoints,
-                    )
-                }
-            )
-        }
+                    },
+                )
+            }
         // P1: read the deferred value() inside a snapshotFlow instead of at composition scope.
         // Reading value() here would recompose the whole slider on every external tick (e.g. the
         // music progress slider advancing during playback). All visual state is driven off the
@@ -383,10 +431,10 @@ private fun LiquidTrackSlider(
             dampedDragAnimation,
             snapshotFlowManager,
             safeValueRange,
-            visibilityThreshold
+            visibilityThreshold,
         ) {
             snapshotFlowManager
-                .snapshotFlow { valueState.value().coerceIn(safeValueRange) }
+                .snapshotFlow { valueResolver.resolve(valueState.value(), safeValueRange) }
                 .collectLatest { currentValue ->
                     if (abs(dampedDragAnimation.targetValue - currentValue) > visibilityThreshold) {
                         dampedDragAnimation.updateValue(currentValue)
@@ -397,7 +445,7 @@ private fun LiquidTrackSlider(
             derivedStateOf {
                 sliderVisualProgress(
                     progress = dampedDragAnimation.progress.fastCoerceIn(0f, 1f),
-                    isLtr = isLtr
+                    isLtr = isLtr,
                 )
             }
         }
@@ -413,7 +461,7 @@ private fun LiquidTrackSlider(
             }
 
         val trackLayerHeight =
-            keyPoints
+            safeKeyPoints
                 .maxOfOrNull { keyPoint -> keyPoint.size }
                 ?.let { keyPointSize -> maxOf(style.trackHeight, keyPointSize) }
                 ?: style.trackHeight
@@ -424,42 +472,41 @@ private fun LiquidTrackSlider(
                     Modifier.layerBackdrop(trackBackdrop)
                 } else {
                     Modifier
-                }
-                    .fillMaxWidth()
+                }.fillMaxWidth()
                     .height(trackLayerHeight),
-            contentAlignment = Alignment.CenterStart
+            contentAlignment = Alignment.CenterStart,
         ) {
             Box(
                 Modifier
                     .appSquircleBackground(style.inactiveColor, 999.dp)
                     .height(style.trackHeight)
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
             )
             Box(
                 Modifier
                     .appSquircleBackground(style.activeColor, 999.dp)
                     .height(style.trackHeight)
                     .layout { measurable, constraints ->
-                        val width = (constraints.maxWidth * dampedDragAnimation.progress.fastCoerceIn(0f, 1f))
-                            .fastRoundToInt()
-                            .coerceIn(0, constraints.maxWidth)
+                        val width =
+                            (constraints.maxWidth * dampedDragAnimation.progress.fastCoerceIn(0f, 1f))
+                                .fastRoundToInt()
+                                .coerceIn(0, constraints.maxWidth)
                         val placeable =
                             measurable.measure(
                                 constraints.copy(
                                     minWidth = width,
-                                    maxWidth = width
-                                )
+                                    maxWidth = width,
+                                ),
                             )
                         layout(width, placeable.height) {
                             placeable.place(0, 0)
                         }
-                    }
-                    .graphicsLayer {
+                    }.graphicsLayer {
                         translationX = if (isLtr) 0f else trackWidth - size.width
-                    }
+                    },
             )
 
-            keyPoints.forEach { keyPoint ->
+            safeKeyPoints.forEach { keyPoint ->
                 val progress = valueProgress(keyPoint.value, safeValueRange)
                 val visualKeyPointProgress = sliderVisualProgress(progress, isLtr)
                 // P1: derivedStateOf so a keypoint only recomposes when the thumb actually crosses it,
@@ -470,15 +517,15 @@ private fun LiquidTrackSlider(
                 Box(
                     Modifier
                         .graphicsLayer {
-                            translationX = (
-                                -size.width / 2f + trackWidth * visualKeyPointProgress
-                            ).fastCoerceIn(
-                                -size.width / 4f,
-                                trackWidth - size.width * 3f / 4f
-                            )
-                        }
-                        .appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
-                        .size(keyPoint.size)
+                            translationX =
+                                (
+                                    -size.width / 2f + trackWidth * visualKeyPointProgress
+                                ).fastCoerceIn(
+                                    -size.width / 4f,
+                                    trackWidth - size.width * 3f / 4f,
+                                )
+                        }.appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
+                        .size(keyPoint.size),
                 )
             }
         }
@@ -492,36 +539,38 @@ private fun LiquidTrackSlider(
                         safeValueRange,
                         isLtr,
                         trackWidth,
-                        keyPoints,
+                        safeKeyPoints,
                         snapToKeyPoints,
-                        snapThreshold
+                        snapThreshold,
                     ) {
                         detectTapGestures { position ->
-                            val rawTarget = sliderValueAt(
-                                offset = position,
-                                widthPx = trackWidth.toFloat(),
-                                valueRange = safeValueRange,
-                                isLtr = isLtr
-                            )
-                            val target = resolveSliderTarget(
-                                target = rawTarget,
-                                valueRange = safeValueRange,
-                                keyPoints = keyPoints,
-                                snapToKeyPoints = snapToKeyPoints,
-                                snapThreshold = snapThreshold
-                            )
+                            val rawTarget =
+                                sliderValueAt(
+                                    offset = position,
+                                    widthPx = trackWidth.toFloat(),
+                                    valueRange = safeValueRange,
+                                    isLtr = isLtr,
+                                )
+                            val target =
+                                resolveSliderTarget(
+                                    target = rawTarget,
+                                    valueRange = safeValueRange,
+                                    keyPoints = safeKeyPoints,
+                                    snapToKeyPoints = snapToKeyPoints,
+                                    snapThreshold = snapThreshold,
+                                )
                             dampedDragAnimation.animateToValue(target)
                             onValueChangeState.value(target)
-                            hapticState.reset(value().coerceIn(safeValueRange))
+                            hapticState.reset(valueResolver.resolve(value(), safeValueRange))
                             hapticState.handleHapticFeedback(
                                 currentValue = target,
                                 valueRange = safeValueRange,
                                 hapticFeedback = hapticFeedback,
-                                keyPoints = keyPoints,
+                                keyPoints = safeKeyPoints,
                             )
                             onValueChangeFinishedState.value?.invoke(target)
                         }
-                    }
+                    },
             )
         }
 
@@ -529,11 +578,11 @@ private fun LiquidTrackSlider(
             Modifier
                 .graphicsLayer { clip = false }
                 .graphicsLayer {
-                    translationX = (
+                    translationX =
+                        (
                             -size.width / 2f + trackWidth * visualProgress
-                            ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f)
-                }
-                .then(
+                        ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f)
+                }.then(
                     if (thumbBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = thumbBackdrop,
@@ -552,18 +601,18 @@ private fun LiquidTrackSlider(
                                         style.thumbRestingBlur.toPx() *
                                             glassRuntime.blurScaleFor(GlassVariant.Compact),
                                         0f,
-                                        progress
-                                    )
+                                        progress,
+                                    ),
                                 )
                                 // Lens stays visible at rest and gains strength while pressed or dragged.
-                                lens(
+                                safeLiquidLens(
                                     lerp(
                                         style.lensRefractionHeight.toPx() *
                                             glassRuntime.lensScaleFor(GlassVariant.Compact),
                                         style.lensRefractionHeight.toPx() *
                                             style.pressedLensHeightScale *
                                             glassRuntime.interactionLensScale,
-                                        progress
+                                        progress,
                                     ),
                                     lerp(
                                         style.lensRefractionAmount.toPx() *
@@ -571,16 +620,16 @@ private fun LiquidTrackSlider(
                                         style.lensRefractionAmount.toPx() *
                                             style.pressedLensAmountScale *
                                             glassRuntime.interactionLensScale,
-                                        progress
+                                        progress,
                                     ),
                                     chromaticAberration = true,
-                                    depthEffect = true
+                                    depthEffect = true,
                                 )
                             },
                             highlight = {
                                 val progress = dampedDragAnimation.pressProgress
                                 Highlight.Ambient.copy(
-                                    alpha = lerp(style.thumbRestingHighlightAlpha, 1f, progress)
+                                    alpha = lerp(style.thumbRestingHighlightAlpha, 1f, progress),
                                 )
                             },
                             shadow = {
@@ -588,7 +637,7 @@ private fun LiquidTrackSlider(
                                 Shadow(
                                     radius = lerp(3.5f, 7f, progress).dp,
                                     offset = DpOffset(0.dp, lerp(0.5f, 1.5f, progress).dp),
-                                    color = Color.Black.copy(alpha = lerp(0.10f, 0.16f, progress))
+                                    color = Color.Black.copy(alpha = lerp(0.10f, 0.16f, progress)),
                                 )
                             },
                             innerShadow = {
@@ -610,23 +659,23 @@ private fun LiquidTrackSlider(
                             // so the intensified refraction shows through clearly.
                             onDrawSurface = {
                                 val progress = dampedDragAnimation.pressProgress
-                                val alpha = lerp(
-                                    style.thumbGlassSurfaceAlpha,
-                                    style.thumbPressedSurfaceAlpha,
-                                    progress
-                                )
+                                val alpha =
+                                    lerp(
+                                        style.thumbGlassSurfaceAlpha,
+                                        style.thumbPressedSurfaceAlpha,
+                                        progress,
+                                    )
                                 drawRect(Color.White.copy(alpha = alpha))
-                            }
+                            },
                         )
                     } else {
                         Modifier.appSquircleBackground(
                             Color.White.copy(alpha = SliderThumbFallbackSurfaceAlpha),
-                            999.dp
+                            999.dp,
                         )
-                    }
-                )
-                .width(style.thumbWidth)
-                .height(style.thumbHeight)
+                    },
+                ).width(style.thumbWidth)
+                .height(style.thumbHeight),
         )
     }
 }
@@ -635,47 +684,95 @@ private fun sliderValueAt(
     offset: Offset,
     widthPx: Float,
     valueRange: ClosedFloatingPointRange<Float>,
-    isLtr: Boolean
+    isLtr: Boolean,
 ): Float {
-    val fraction = (offset.x / widthPx.coerceAtLeast(1f)).fastCoerceIn(0f, 1f)
+    val safeRange = liquidFiniteRange(valueRange)
+    val safeWidth = widthPx.takeIf { it.isFinite() && it > 0f } ?: 1f
+    val rawFraction = offset.x / safeWidth
+    val fraction = rawFraction.takeIf(Float::isFinite)?.fastCoerceIn(0f, 1f) ?: 0f
     val resolvedFraction = if (isLtr) fraction else 1f - fraction
-    return valueRange.start + (valueRange.endInclusive - valueRange.start) * resolvedFraction
+    return safeRange.start + (safeRange.endInclusive - safeRange.start) * resolvedFraction
 }
 
-private fun resolveSliderTarget(
+internal fun sanitizeLiquidSliderKeyPoints(
+    keyPoints: List<LiquidSliderKeyPoint>,
+    valueRange: ClosedFloatingPointRange<Float>,
+): List<LiquidSliderKeyPoint> {
+    val safeRange = liquidFiniteRange(valueRange)
+    return keyPoints.mapNotNull { keyPoint ->
+        if (
+            !keyPoint.value.isFinite() ||
+            !keyPoint.size.value.isFinite() ||
+            keyPoint.size.value < 0f
+        ) {
+            null
+        } else {
+            keyPoint.copy(value = keyPoint.value.coerceIn(safeRange))
+        }
+    }
+}
+
+internal fun resolveSliderTarget(
     target: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     keyPoints: List<LiquidSliderKeyPoint>,
     snapToKeyPoints: Boolean,
-    snapThreshold: Float?
+    snapThreshold: Float?,
 ): Float {
-    val bounded = target.coerceIn(valueRange)
-    if (!snapToKeyPoints || keyPoints.isEmpty()) {
+    val safeRange = liquidFiniteRange(valueRange)
+    val bounded = liquidFiniteValue(target, safeRange)
+    val safeKeyPoints = sanitizeLiquidSliderKeyPoints(keyPoints, safeRange)
+    if (!snapToKeyPoints || safeKeyPoints.isEmpty()) {
         return bounded
     }
-    val closest = keyPoints
-        .minByOrNull { keyPoint -> abs(keyPoint.value.coerceIn(valueRange) - bounded) }
-        ?.value
-        ?.coerceIn(valueRange)
-        ?: return bounded
+    val closest =
+        safeKeyPoints
+            .minByOrNull { keyPoint -> abs(keyPoint.value - bounded) }
+            ?.value
+            ?: return bounded
     if (snapThreshold != null && abs(closest - bounded) > snapThreshold) {
         return bounded
     }
     return closest
 }
 
-private fun valueProgress(
+internal fun resolveSliderProgressChange(
+    currentValue: Float,
+    target: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    keyPoints: List<LiquidSliderKeyPoint>,
+    snapToKeyPoints: Boolean,
+    snapThreshold: Float?,
+): Float? {
+    val safeRange = liquidFiniteRange(valueRange)
+    val safeCurrentValue = liquidFiniteValue(currentValue, safeRange)
+    val safeTarget = liquidFiniteValue(target, safeRange, fallback = safeCurrentValue)
+    val resolved =
+        resolveSliderTarget(
+            target = safeTarget,
+            valueRange = safeRange,
+            keyPoints = keyPoints,
+            snapToKeyPoints = snapToKeyPoints,
+            snapThreshold = snapThreshold,
+        )
+    return resolved.takeUnless { it == safeCurrentValue }
+}
+
+internal fun valueProgress(
     value: Float,
-    valueRange: ClosedFloatingPointRange<Float>
+    valueRange: ClosedFloatingPointRange<Float>,
 ): Float {
-    val span = valueRange.endInclusive - valueRange.start
-    if (span == 0f) return 0f
-    return ((value - valueRange.start) / span).fastCoerceIn(0f, 1f)
+    val safeRange = liquidFiniteRange(valueRange)
+    val span = safeRange.endInclusive - safeRange.start
+    if (!span.isFinite() || span <= 0f) return 0f
+    val safeValue = liquidFiniteValue(value, safeRange)
+    val progress = (safeValue - safeRange.start) / span
+    return progress.takeIf(Float::isFinite)?.fastCoerceIn(0f, 1f) ?: 0f
 }
 
 internal fun sliderVisualProgress(
     progress: Float,
-    isLtr: Boolean
+    isLtr: Boolean,
 ): Float = if (isLtr) progress else 1f - progress
 
 private class LiquidSliderHapticState {
@@ -732,7 +829,7 @@ private class LiquidSliderHapticState {
 private fun resolveKeyPointColor(
     keyPoint: LiquidSliderKeyPoint,
     style: LiquidTrackSliderStyle,
-    isActive: Boolean
+    isActive: Boolean,
 ): Color {
     if (keyPoint.color.isSpecified) {
         return keyPoint.color
@@ -764,7 +861,7 @@ private data class LiquidTrackSliderStyle(
     // clear thumb leans on the white surface + highlight; we lift both a touch to keep it crisp.
     val thumbGlassSurfaceAlpha: Float = SliderThumbGlassSurfaceAlpha,
     val thumbPressedSurfaceAlpha: Float = SliderThumbPressedSurfaceAlpha,
-    val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha
+    val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha,
 )
 
 // Glass thumb (Backdrop available): clear refractive capsule matching the Glass Slider tutorial.

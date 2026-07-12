@@ -36,7 +36,6 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -86,6 +85,11 @@ fun LiquidLinearProgressBar(
     val progressProvider = progress
     val activeColorProvider = activeColor
     val inactiveColorProvider = inactiveColor
+    val safeValueRange =
+        remember(valueRange.start, valueRange.endInclusive) {
+            liquidFiniteRange(valueRange)
+        }
+    val progressResolver = remember { LiquidFiniteValueResolver() }
     Box(
         modifier =
             modifier
@@ -95,8 +99,8 @@ fun LiquidLinearProgressBar(
                     contentDescriptionState?.let { this.contentDescription = it }
                     progressBarRangeInfo =
                         ProgressBarRangeInfo(
-                            progress().coerceIn(valueRange),
-                            valueRange,
+                            progressResolver.resolve(progressProvider(), safeValueRange),
+                            safeValueRange,
                             steps = 0,
                         )
                 },
@@ -110,10 +114,17 @@ fun LiquidLinearProgressBar(
             }
         val activeBackdrop =
             when {
-                parentBackdrop != null && trackBackdrop != null ->
+                parentBackdrop != null && trackBackdrop != null -> {
                     rememberCombinedBackdrop(parentBackdrop, trackBackdrop)
-                trackBackdrop != null -> trackBackdrop
-                else -> null
+                }
+
+                trackBackdrop != null -> {
+                    trackBackdrop
+                }
+
+                else -> {
+                    null
+                }
             }
         Box(
             modifier =
@@ -125,8 +136,7 @@ fun LiquidLinearProgressBar(
                         } else {
                             Modifier
                         },
-                    )
-                    .drawAppSquircleBackground(999.dp) {
+                    ).drawAppSquircleBackground(999.dp) {
                         inactiveColorProvider()
                     },
         )
@@ -137,8 +147,8 @@ fun LiquidLinearProgressBar(
                     .layout { measurable, constraints ->
                         val safeFraction =
                             liquidProgressFraction(
-                                value = progressProvider(),
-                                valueRange = valueRange,
+                                value = progressResolver.resolve(progressProvider(), safeValueRange),
+                                valueRange = safeValueRange,
                             )
                         val width =
                             (constraints.maxWidth * safeFraction)
@@ -164,7 +174,7 @@ fun LiquidLinearProgressBar(
                                     vibrancy()
                                     blur((4.dp * glassRuntime.blurScaleFor(GlassVariant.Compact)).toPx())
                                     val lensScale = glassRuntime.lensScaleFor(GlassVariant.Compact)
-                                    lens(
+                                    safeLiquidLens(
                                         12.dp.toPx() * lensScale,
                                         20.dp.toPx() * lensScale,
                                         depthEffect = true,
@@ -276,6 +286,11 @@ fun LiquidCircularProgressBar(
     val progressProvider = progress
     val activeColorProvider = activeColor
     val inactiveColorProvider = inactiveColor
+    val safeValueRange =
+        remember(valueRange.start, valueRange.endInclusive) {
+            liquidFiniteRange(valueRange)
+        }
+    val progressResolver = remember { LiquidFiniteValueResolver() }
     val indeterminateStates =
         rememberLiquidCircularIndeterminateStates(enabled = progressProvider == null)
     Canvas(
@@ -289,8 +304,8 @@ fun LiquidCircularProgressBar(
                     } else {
                         progressBarRangeInfo =
                             ProgressBarRangeInfo(
-                                progressProvider().coerceIn(valueRange),
-                                valueRange,
+                                progressResolver.resolve(progressProvider(), safeValueRange),
+                                safeValueRange,
                                 steps = 0,
                             )
                     }
@@ -302,7 +317,7 @@ fun LiquidCircularProgressBar(
             androidx.compose.ui.geometry.Size(
                 width = this.size.width - strokePx,
                 height = this.size.height - strokePx,
-        )
+            )
         drawArc(
             color = inactiveColorProvider(),
             startAngle = 0f,
@@ -316,7 +331,10 @@ fun LiquidCircularProgressBar(
         )
         val fraction =
             progressProvider?.let { provider ->
-                liquidProgressFraction(provider(), valueRange)
+                liquidProgressFraction(
+                    value = progressResolver.resolve(provider(), safeValueRange),
+                    valueRange = safeValueRange,
+                )
             }
         val startAngle =
             if (fraction == null) {
@@ -329,7 +347,7 @@ fun LiquidCircularProgressBar(
                 72f + 148f * (indeterminateStates?.pulse?.value ?: 0f)
             } else {
                 (fraction * 360f).coerceIn(0f, 360f)
-        }
+            }
         drawArc(
             color = activeColorProvider(),
             startAngle = startAngle,
@@ -403,11 +421,14 @@ private fun liquidProgressDefaultInactiveColor(): Color =
         Color(0xFF1D1D1F).copy(alpha = 0.15f)
     }
 
-private fun liquidProgressFraction(
+internal fun liquidProgressFraction(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
 ): Float {
-    val span = valueRange.endInclusive - valueRange.start
-    if (span <= 0f) return 0f
-    return ((value.coerceIn(valueRange) - valueRange.start) / span).fastCoerceIn(0f, 1f)
+    val safeRange = liquidFiniteRange(valueRange)
+    val span = safeRange.endInclusive - safeRange.start
+    if (!span.isFinite() || span <= 0f) return 0f
+    val safeValue = liquidFiniteValue(value, safeRange)
+    val fraction = (safeValue - safeRange.start) / span
+    return fraction.takeIf(Float::isFinite)?.fastCoerceIn(0f, 1f) ?: 0f
 }
