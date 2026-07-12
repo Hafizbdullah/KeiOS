@@ -107,7 +107,26 @@ class GitHubBackgroundRefreshJobService : JobService() {
         lateinit var execution: ActiveJob
         val worker =
             serviceScope.launch(start = CoroutineStart.LAZY) {
+                var retry = false
                 try {
+                    val networkGateResult =
+                        GitHubBackgroundNetworkGate
+                            .forJob(appContext, params.network)
+                            .awaitReady()
+                    if (!networkGateResult.ready) {
+                        retry = true
+                        AppLogger.i(
+                            TAG,
+                            "defer github background refresh because network is not ready " +
+                                "attempts=${networkGateResult.attempts} " +
+                                "present=${networkGateResult.state.present} " +
+                                "internet=${networkGateResult.state.internet} " +
+                                "validated=${networkGateResult.state.validated} " +
+                                "notSuspended=${networkGateResult.state.notSuspended} " +
+                                "failedHost=${networkGateResult.failedHost.ifBlank { "none" }}",
+                        )
+                        return@launch
+                    }
                     AppForegroundInfoHandler.handleGitHubTick(
                         context = appContext,
                         schedulerDiagnostics = schedulerDiagnostics,
@@ -139,11 +158,13 @@ class GitHubBackgroundRefreshJobService : JobService() {
                         jobRunning.set(false)
                     }
                     if (!execution.stopState.isStopped) {
-                        AppBackgroundScheduler.onTickHandled(
-                            context = appContext,
-                            action = AppBackgroundTickReceiver.ACTION_GITHUB_TICK,
-                        )
-                        jobFinished(params, false)
+                        if (!retry) {
+                            AppBackgroundScheduler.onTickHandled(
+                                context = appContext,
+                                action = AppBackgroundTickReceiver.ACTION_GITHUB_TICK,
+                            )
+                        }
+                        jobFinished(params, retry)
                     }
                 }
             }
