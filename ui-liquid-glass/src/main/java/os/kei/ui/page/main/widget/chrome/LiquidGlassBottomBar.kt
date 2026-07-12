@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -160,12 +161,13 @@ fun RowScope.LiquidGlassBottomBarItem(
                             onClick = { currentOnClick() },
                         )
                     } else {
-                        Modifier
+                        Modifier.clearAndSetSemantics {}
                     },
                 ).graphicsLayer {
                     val scale = scaleProvider()
                     scaleX = scale
                     scaleY = scale
+                    alpha = if (enabled) 1f else 0.38f
                 },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -196,6 +198,7 @@ fun LiquidGlassBottomBar(
     backdrop: Backdrop,
     tabsCount: Int,
     isTabEnabled: (Int) -> Boolean = { true },
+    interactionEnabled: Boolean = true,
     isLiquidEffectEnabled: Boolean = true,
     expandToMaxWidth: Boolean = false,
     content: @Composable RowScope.() -> Unit,
@@ -247,6 +250,7 @@ fun LiquidGlassBottomBar(
     var localDragSettledIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
     val currentOnSelected by rememberUpdatedState(onSelected)
     val currentIsTabEnabled = rememberUpdatedState(isTabEnabled)
+    val currentInteractionEnabled = rememberUpdatedState(interactionEnabled)
 
     class DampedDragAnimationHolder {
         var instance: DampedDragAnimation? = null
@@ -267,6 +271,7 @@ fun LiquidGlassBottomBar(
                 dragOrientation = Orientation.Horizontal,
                 dragTouchSlop = touchSlop,
                 canDrag = { offset ->
+                    if (!currentInteractionEnabled.value) return@DampedDragAnimation false
                     val animation = holder.instance ?: return@DampedDragAnimation true
                     if (tabWidthPx <= 0f || totalWidthPx <= 0f) return@DampedDragAnimation false
                     val paddingPx = with(density) { horizontalPadding.toPx() }
@@ -442,14 +447,33 @@ fun LiquidGlassBottomBar(
                 }
             }
     }
+    LaunchedEffect(interactionEnabled, dampedDragAnimation) {
+        if (!interactionEnabled) {
+            pressedTabIndex = -1
+            localDragSettledIndex = -1
+            dampedDragAnimation.snapToValue(currentIndex.toFloat())
+            offsetAnimation.snapTo(0f)
+        }
+    }
 
     val pressProgressProvider =
-        remember(dampedDragAnimation, effectiveLiquidEffectEnabled) {
-            { if (effectiveLiquidEffectEnabled) dampedDragAnimation.pressProgress else 0f }
+        remember(dampedDragAnimation, effectiveLiquidEffectEnabled, interactionEnabled) {
+            {
+                if (effectiveLiquidEffectEnabled && interactionEnabled) {
+                    dampedDragAnimation.pressProgress
+                } else {
+                    0f
+                }
+            }
         }
     val itemPressProgressState =
         appMotionFloatState(
-            targetValue = if (pressedTabIndex >= 0 && effectiveLiquidEffectEnabled) 1f else 0f,
+            targetValue =
+                if (interactionEnabled && pressedTabIndex >= 0 && effectiveLiquidEffectEnabled) {
+                    1f
+                } else {
+                    0f
+                },
             durationMillis = 120,
             label = "liquid_bottom_bar_item_press",
         )
@@ -512,11 +536,13 @@ fun LiquidGlassBottomBar(
         },
         LocalLiquidGlassBottomBarSelectionProgress provides selectionProgressProvider,
         LocalLiquidGlassBottomBarContentColor provides { palette.inactiveContentColor },
-        LocalLiquidGlassBottomBarItemInteractive provides true,
+        LocalLiquidGlassBottomBarItemInteractive provides interactionEnabled,
         LocalLiquidGlassBottomBarItemPressHandler provides { index, isPressed ->
-            when {
-                isPressed -> pressedTabIndex = index
-                pressedTabIndex == index -> pressedTabIndex = -1
+            if (interactionEnabled) {
+                when {
+                    isPressed -> pressedTabIndex = index
+                    pressedTabIndex == index -> pressedTabIndex = -1
+                }
             }
         },
     ) {
@@ -525,6 +551,12 @@ fun LiquidGlassBottomBar(
                 modifier
                     .then(
                         if (expandToMaxWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min),
+                    ).then(
+                        if (interactionEnabled) {
+                            Modifier.selectableGroup()
+                        } else {
+                            Modifier.clearAndSetSemantics {}
+                        },
                     ),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -663,8 +695,13 @@ fun LiquidGlassBottomBar(
                             translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                             scaleX = lerp(1f, 1.006f, combinedPressProgress)
                             scaleY = lerp(1f, 0.996f, combinedPressProgress)
-                        }.then(if (interactiveHighlight != null) interactiveHighlight.gestureModifier else Modifier)
-                        .then(dampedDragAnimation.modifier)
+                        }.then(
+                            if (interactionEnabled && interactiveHighlight != null) {
+                                interactiveHighlight.gestureModifier
+                            } else {
+                                Modifier
+                            },
+                        ).then(if (interactionEnabled) dampedDragAnimation.modifier else Modifier)
                         .then(
                             if (useLightweightBackdrop) {
                                 Modifier.appSquircleBackground(

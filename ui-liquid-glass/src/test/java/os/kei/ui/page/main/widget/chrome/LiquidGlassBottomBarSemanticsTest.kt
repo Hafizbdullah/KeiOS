@@ -23,6 +23,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -123,6 +124,100 @@ class LiquidGlassBottomBarSemanticsTest {
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
             .assertIsNotEnabled()
             .performTouchInput { click() }
+
+        assertEquals(0, clickCount)
+    }
+
+    @Test
+    fun barExposesSelectableGroupSemantics() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = 240.dp, height = 96.dp)
+                            .background(Color(0xFFF3F4F6))
+                            .layerBackdrop(backdrop),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LiquidGlassBottomBar(
+                        modifier = Modifier.testTag("tab-group"),
+                        selectedIndex = 0,
+                        onSelected = {},
+                        backdrop = backdrop,
+                        tabsCount = 2,
+                        isLiquidEffectEnabled = false,
+                    ) {
+                        repeat(2) { index ->
+                            LiquidGlassBottomBarItem(
+                                selected = index == 0,
+                                tabIndex = index,
+                                onClick = {},
+                                label = "Tab $index",
+                            ) {
+                                Text("Tab $index")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("tab-group")
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup))
+    }
+
+    @Test
+    fun disabledBarKeepsRenderingWhileRemovingInputAndSemantics() {
+        var clickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = 240.dp, height = 96.dp)
+                            .background(Color(0xFFF3F4F6))
+                            .layerBackdrop(backdrop),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LiquidGlassBottomBar(
+                        modifier = Modifier.testTag("disabled-bar"),
+                        selectedIndex = 0,
+                        onSelected = { clickCount++ },
+                        backdrop = backdrop,
+                        tabsCount = 2,
+                        interactionEnabled = false,
+                        isLiquidEffectEnabled = false,
+                    ) {
+                        repeat(2) { index ->
+                            LiquidGlassBottomBarItem(
+                                selected = index == 0,
+                                tabIndex = index,
+                                onClick = { clickCount++ },
+                                label = "Disabled tab $index",
+                            ) {
+                                Text("Disabled tab $index")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onAllNodes(hasClickAction()).assertCountEquals(0)
+        composeRule
+            .onAllNodesWithContentDescription("Disabled tab 0", useUnmergedTree = true)
+            .assertCountEquals(0)
+        composeRule.onNodeWithTag("disabled-bar").performTouchInput {
+            click(Offset(width * 0.25f, height / 2f))
+            down(Offset(width * 0.25f, height / 2f))
+            moveBy(Offset(width * 0.5f, 0f))
+            up()
+        }
+        composeRule.waitForIdle()
 
         assertEquals(0, clickCount)
     }
