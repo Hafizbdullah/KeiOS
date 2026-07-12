@@ -472,6 +472,27 @@ check(route?.primaryHelpers?.contains("MiFocusExpandedComponent.officialPictureC
 - 当前 `MiFocusNotificationTemplate.build(...)` 只负责公开 `miui.focus.*` 数据构建。
 - 私有 `RemoteViews` 后处理会放在宿主通知链路实现，避免把过期第三方库当成能力边界。
 
+## KeiOS 复杂通知映射
+
+当前业务链路优先使用以下公开模板语义：
+
+- APK 下载：大岛模板 5 + 小岛模板 2，展开态模板 6；版本号使用 `specialTitle`，仅真实字节进度写入 `progressInfo`。
+- APK 解析、准备、确认、安装和完成：摘要态终态短词 + 展开态基础图文；这些阶段不写模拟进度。
+- GitHub 刷新：摘要态进度图文 + 小岛进度环，展开态使用单一 `progressInfo`。
+- Actions 新构建：摘要态终态图文，构建编号使用 `specialTitle`，展开态使用双文字按钮。
+- WebDAV 同步：运行态使用单进度，终态状态使用 `specialTitle`，结果数量放入正文。
+- BA AP：当前 AP 使用进度摘要和单进度条；“打开/已读”使用双文字按钮。
+- BA 日程和卡池：摘要态使用系统倒计时；服务器名称使用 `specialTitle`，展开态不重复绘制伪阶段进度。
+- MCP 服务：大岛模板 7 的定宽数字展示客户端数，小岛模板 3 展示图标 + 短数字，运行状态使用 `specialTitle`。
+
+通用 Live payload 提供三层 Focus 专用文案：
+
+- `miFocusTitle`：短主标题。
+- `miFocusSpecialTitle`：版本、构建号、服务器或状态标签。
+- `miFocusContent`：去除标签重复后的正文。
+
+普通通知和 Android Live Updates 继续使用完整 `overrideTitle/overrideContent`。网络暴露模式必须由服务状态显式透传；不要根据端口、路径或地址字符串推断“本机/局域网”。
+
 ## 语义化图标 (Semantic Icon)
 
 通知构建器支持 `semanticIconBitmap`：
