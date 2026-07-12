@@ -94,6 +94,7 @@ internal class GitHubPageState(
     var preferPreReleaseInput by trackEditorState::preferPreReleaseInput
     var alwaysShowLatestReleaseDownloadButtonInput by trackEditorState::alwaysShowLatestReleaseDownloadButtonInput
     var checkActionsUpdatesInput by trackEditorState::checkActionsUpdatesInput
+    var externalBuildUntilReleaseInput by trackEditorState::externalBuildUntilReleaseInput
     var updateIntervalModeInput by trackEditorState::updateIntervalModeInput
     var actionsUpdateIntervalModeInput by trackEditorState::actionsUpdateIntervalModeInput
     var preciseApkVersionModeInput by trackEditorState::preciseApkVersionModeInput

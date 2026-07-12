@@ -1056,6 +1056,8 @@
     <string name="github_track_sheet_btn_collapse">收起列表</string>
     <string name="github_track_sheet_btn_select_app">选择 App</string>
     <string name="github_track_badge_current_app">本应用</string>
+    <string name="github_track_badge_external_build">外部构建</string>
+    <string name="github_track_badge_waiting_release">等待 Release</string>
     <string name="github_track_sheet_section_check_option">检查选项</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid 选项</string>
     <string name="github_track_sheet_summary_fdroid_probe">保存后刷新会读取 package API 或仓库 index，并按刷新间隔和远端校验信息复用缓存，记录包信息、版本、信任摘要和反特性摘要。</string>
@@ -1099,6 +1101,8 @@
     <string name="github_track_sheet_label_always_show_latest_release_download">始终显示最新发布下载</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">开启后下载入口始终可见，目标按发布日期比较稳定版与预发行后自动定位最新 release</string>
     <string name="github_track_sheet_label_check_actions_updates">检查 Actions 更新</string>
+    <string name="github_track_sheet_label_external_build_until_release">等待仓库首个 Release</string>
+    <string name="github_track_sheet_summary_external_build_until_release">将当前本机 APK 绑定到该仓库。仓库尚未发布 Release 时保持追踪；首次发布后自动接入标准版本比较和下载流程。</string>
     <string name="github_track_sheet_summary_check_actions_updates">按“更新间隔”自动检查此项目推荐的 Actions Run；发现新 Run 时发送实时通知/超级岛。</string>
     <string name="github_track_sheet_label_update_interval">检查更新</string>
     <string name="github_track_sheet_summary_update_interval_follow_global">跟随全局：当前为 %1$s</string>

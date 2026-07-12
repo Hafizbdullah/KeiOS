@@ -33,6 +33,7 @@ internal class GitHubTrackEditorPageStateHolder {
     var preferPreReleaseInput by mutableStateOf(false)
     var alwaysShowLatestReleaseDownloadButtonInput by mutableStateOf(false)
     var checkActionsUpdatesInput by mutableStateOf(false)
+    var externalBuildUntilReleaseInput by mutableStateOf(false)
     var updateIntervalModeInput by mutableStateOf(GitHubTrackedUpdateIntervalMode.FollowGlobal)
     var actionsUpdateIntervalModeInput by mutableStateOf(
         GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
@@ -90,6 +91,7 @@ internal class GitHubTrackEditorPageStateHolder {
         preferPreReleaseInput = false
         alwaysShowLatestReleaseDownloadButtonInput = false
         checkActionsUpdatesInput = false
+        externalBuildUntilReleaseInput = false
         updateIntervalModeInput = GitHubTrackedUpdateIntervalMode.FollowGlobal
         actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         preciseApkVersionModeInput = GitHubTrackedPreciseApkVersionMode.FollowGlobal

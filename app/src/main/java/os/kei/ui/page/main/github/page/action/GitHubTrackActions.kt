@@ -69,6 +69,7 @@ internal class GitHubTrackActions(
         state.preferPreReleaseInput = item.preferPreRelease
         state.alwaysShowLatestReleaseDownloadButtonInput = item.alwaysShowLatestReleaseDownloadButton
         state.checkActionsUpdatesInput = item.checkActionsUpdates
+        state.externalBuildUntilReleaseInput = item.externalBuildUntilRelease
         state.updateIntervalModeInput = item.updateIntervalMode.coerceForSource(item.sourceMode)
         state.actionsUpdateIntervalModeInput = item.actionsUpdateIntervalMode
         state.preciseApkVersionModeInput = item.preciseApkVersionMode
@@ -139,6 +140,7 @@ internal class GitHubTrackActions(
             state.fdroidRepoScopeIdInput = FdroidRepositoryPresets.COMMON_ID
         }
         if (value != GitHubTrackedSourceMode.GitHubRepository) {
+            state.externalBuildUntilReleaseInput = false
             state.alwaysShowLatestReleaseDownloadButtonInput = false
             state.checkActionsUpdatesInput = false
             state.actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
@@ -249,6 +251,10 @@ internal class GitHubTrackActions(
         if (!value) {
             state.actionsUpdateIntervalModeInput = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal
         }
+    }
+
+    fun setExternalBuildUntilReleaseInput(value: Boolean) {
+        state.externalBuildUntilReleaseInput = value
     }
 
     fun setUpdateIntervalModeInput(value: GitHubTrackedUpdateIntervalMode) {
@@ -604,6 +610,9 @@ internal class GitHubTrackActions(
                         GitHubTrackedSourceMode.DirectApk -> false
                         GitHubTrackedSourceMode.FdroidRepository -> false
                     },
+                externalBuildUntilRelease =
+                    state.trackSourceModeInput == GitHubTrackedSourceMode.GitHubRepository &&
+                        state.externalBuildUntilReleaseInput,
                 updateIntervalMode = state.updateIntervalModeInput,
                 actionsUpdateIntervalMode =
                     when {

@@ -56,6 +56,7 @@ internal fun GitHubTrackEditFormContent(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
+    externalBuildUntilReleaseInput: Boolean,
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
@@ -104,6 +105,7 @@ internal fun GitHubTrackEditFormContent(
     onPreferPreReleaseInputChange: (Boolean) -> Unit,
     onAlwaysShowLatestReleaseDownloadButtonInputChange: (Boolean) -> Unit,
     onCheckActionsUpdatesInputChange: (Boolean) -> Unit,
+    onExternalBuildUntilReleaseInputChange: (Boolean) -> Unit,
     onUpdateIntervalModeInputChange: (GitHubTrackedUpdateIntervalMode) -> Unit,
     onActionsUpdateIntervalModeInputChange: (GitHubTrackedActionsUpdateIntervalMode) -> Unit,
     onPreciseApkVersionModeInputChange: (GitHubTrackedPreciseApkVersionMode) -> Unit,
@@ -554,6 +556,15 @@ internal fun GitHubTrackEditFormContent(
                     )
                 }
                 if (githubRepositoryMode) {
+                    SheetControlRow(
+                        label = stringResource(R.string.github_track_sheet_label_external_build_until_release),
+                        summary = stringResource(R.string.github_track_sheet_summary_external_build_until_release),
+                    ) {
+                        AppSwitch(
+                            checked = externalBuildUntilReleaseInput,
+                            onCheckedChange = onExternalBuildUntilReleaseInputChange,
+                        )
+                    }
                     SheetControlRow(
                         label = stringResource(
                             R.string.github_track_sheet_label_always_show_latest_release_download,

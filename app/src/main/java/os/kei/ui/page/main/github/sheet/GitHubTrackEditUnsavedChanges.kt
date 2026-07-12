@@ -21,6 +21,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
     preferPreReleaseInput: Boolean,
     alwaysShowLatestReleaseDownloadButtonInput: Boolean,
     checkActionsUpdatesInput: Boolean,
+    externalBuildUntilReleaseInput: Boolean,
     updateIntervalModeInput: GitHubTrackedUpdateIntervalMode,
     actionsUpdateIntervalModeInput: GitHubTrackedActionsUpdateIntervalMode,
     preciseApkVersionModeInput: GitHubTrackedPreciseApkVersionMode,
@@ -38,6 +39,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                 preferPreReleaseInput != item.preferPreRelease ||
                 alwaysShowLatestReleaseDownloadButtonInput != item.alwaysShowLatestReleaseDownloadButton ||
                 checkActionsUpdatesInput != item.checkActionsUpdates ||
+                externalBuildUntilReleaseInput != item.externalBuildUntilRelease ||
                 updateIntervalModeInput != item.updateIntervalMode ||
                 actionsUpdateIntervalModeInput != item.actionsUpdateIntervalMode ||
                 preciseApkVersionModeInput != item.preciseApkVersionMode ||
@@ -56,6 +58,7 @@ internal fun hasGitHubTrackEditorUnsavedChanges(
                     preferPreReleaseInput ||
                     alwaysShowLatestReleaseDownloadButtonInput ||
                     checkActionsUpdatesInput ||
+                    externalBuildUntilReleaseInput ||
                     updateIntervalModeInput != GitHubTrackedUpdateIntervalMode.FollowGlobal ||
                     actionsUpdateIntervalModeInput !=
                     GitHubTrackedActionsUpdateIntervalMode.FollowGlobal ||

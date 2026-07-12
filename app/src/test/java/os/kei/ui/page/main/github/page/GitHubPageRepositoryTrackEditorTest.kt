@@ -310,6 +310,7 @@ class GitHubPageRepositoryTrackEditorTest {
         preferPreRelease: Boolean = false,
         alwaysShowLatestReleaseDownloadButton: Boolean = false,
         checkActionsUpdates: Boolean = false,
+        externalBuildUntilRelease: Boolean = false,
         updateIntervalMode: GitHubTrackedUpdateIntervalMode = GitHubTrackedUpdateIntervalMode.FollowGlobal,
         actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode =
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
@@ -329,6 +330,7 @@ class GitHubPageRepositoryTrackEditorTest {
             preferPreRelease = preferPreRelease,
             alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
             checkActionsUpdates = checkActionsUpdates,
+            externalBuildUntilRelease = externalBuildUntilRelease,
             updateIntervalMode = updateIntervalMode,
             actionsUpdateIntervalMode = actionsUpdateIntervalMode,
             preciseApkVersionMode = preciseApkVersionMode,
@@ -342,6 +344,7 @@ class GitHubPageRepositoryTrackEditorTest {
     private fun assertGithubOnlyOptionsClosed(item: GitHubTrackedApp) {
         assertEquals(false, item.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, item.checkActionsUpdates)
+        assertEquals(false, item.externalBuildUntilRelease)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,
             item.actionsUpdateIntervalMode,

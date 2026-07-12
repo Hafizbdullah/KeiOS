@@ -300,6 +300,7 @@ internal fun GitHubPageSheetHost(
         preferPreReleaseInput = state.preferPreReleaseInput,
         alwaysShowLatestReleaseDownloadButtonInput = state.alwaysShowLatestReleaseDownloadButtonInput,
         checkActionsUpdatesInput = state.checkActionsUpdatesInput,
+        externalBuildUntilReleaseInput = state.externalBuildUntilReleaseInput,
         updateIntervalModeInput = state.updateIntervalModeInput,
         actionsUpdateIntervalModeInput = state.actionsUpdateIntervalModeInput,
         preciseApkVersionModeInput = state.preciseApkVersionModeInput,
@@ -361,6 +362,7 @@ internal fun GitHubPageSheetHost(
         onAlwaysShowLatestReleaseDownloadButtonInputChange =
             actions::setTrackAlwaysShowLatestReleaseDownloadButtonInput,
         onCheckActionsUpdatesInputChange = actions::setTrackCheckActionsUpdatesInput,
+        onExternalBuildUntilReleaseInputChange = actions::setTrackExternalBuildUntilReleaseInput,
         onUpdateIntervalModeInputChange = actions::setTrackUpdateIntervalModeInput,
         onActionsUpdateIntervalModeInputChange = actions::setTrackActionsUpdateIntervalModeInput,
         onPreciseApkVersionModeInputChange = actions::setTrackPreciseApkVersionModeInput,

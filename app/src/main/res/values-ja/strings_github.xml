@@ -1050,6 +1050,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_btn_collapse">リストを折りたたむ</string>
     <string name="github_track_sheet_btn_select_app">アプリを選択</string>
     <string name="github_track_badge_current_app">このアプリ</string>
+    <string name="github_track_badge_external_build">外部ビルド</string>
+    <string name="github_track_badge_waiting_release">Release 待ち</string>
     <string name="github_track_sheet_section_check_option">確認オプション</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid オプション</string>
     <string name="github_track_sheet_summary_fdroid_probe">保存後の更新で package API またはリポジトリ index を読み取り、更新間隔とリモート検証情報に基づいてキャッシュを再利用し、パッケージ、バージョン、信頼、Anti-Feature の要約を記録します。</string>
@@ -1093,6 +1095,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_label_always_show_latest_release_download">常に最新 release のダウンロードを表示</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">有効時はダウンロード項目を常に表示します。ターゲットは stable と pre-release の公開日時比較で選択されます。</string>
     <string name="github_track_sheet_label_check_actions_updates">Actions 更新を確認</string>
+    <string name="github_track_sheet_label_external_build_until_release">最初の Release を待つ</string>
+    <string name="github_track_sheet_summary_external_build_until_release">インストール済み APK をこのリポジトリに関連付けます。最初の Release が公開されると、通常のバージョン比較とダウンロードへ自動的に移行します。</string>
     <string name="github_track_sheet_summary_check_actions_updates">更新間隔ごとにこのプロジェクトの推奨 Actions Run を確認し、新しい Run が見つかったらライブ通知 / アイランドを送信します。</string>
     <string name="github_track_sheet_label_update_interval">更新を確認</string>
     <string name="github_track_sheet_summary_update_interval_follow_global">グローバルに従う: 現在 %1$s</string>

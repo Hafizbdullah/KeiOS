@@ -161,6 +161,9 @@ internal class GitHubPageDiscoveryRepository(
                         GitHubTrackedSourceMode.DirectApk -> false
                         GitHubTrackedSourceMode.FdroidRepository -> false
                     },
+                    externalBuildUntilRelease =
+                        draft.sourceMode == GitHubTrackedSourceMode.GitHubRepository &&
+                            draft.externalBuildUntilRelease,
                     actionsUpdateIntervalMode = when (draft.sourceMode) {
                         GitHubTrackedSourceMode.GitHubRepository -> draft.actionsUpdateIntervalMode
                         GitHubTrackedSourceMode.GitRepository ->

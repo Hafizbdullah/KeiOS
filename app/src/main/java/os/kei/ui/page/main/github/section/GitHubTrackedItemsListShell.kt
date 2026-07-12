@@ -98,6 +98,18 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                             color = GitHubStatusPalette.Active,
                             size = AppStatusPillSize.Compact,
                         )
+                    } else if (item.externalBuildUntilRelease) {
+                        StatusPill(
+                            label = stringResource(
+                                if (!state.loading && !state.hasStableRelease && state.latestPreRawTag.isBlank()) {
+                                    R.string.github_track_badge_waiting_release
+                                } else {
+                                    R.string.github_track_badge_external_build
+                                },
+                            ),
+                            color = GitHubStatusPalette.Cache,
+                            size = AppStatusPillSize.Compact,
+                        )
                     }
                 },
                 onHeaderLongClick = { actions.onOpenTrackSheetForEdit(item) },

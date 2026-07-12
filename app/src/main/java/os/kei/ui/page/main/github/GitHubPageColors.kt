@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import os.kei.R
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
+import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
@@ -131,6 +132,8 @@ internal fun VersionCheckUi.statusMessage(context: Context): String {
     val rawMessage = message.trim()
     val status = GitHubTrackedReleaseStatus.fromMessage(rawMessage)
     return when {
+        rawMessage == GitHubReleaseCheckService.EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE ->
+            context.getString(R.string.github_track_badge_waiting_release)
         status == GitHubTrackedReleaseStatus.UpdateAvailable ->
             context.getString(R.string.github_status_update_available)
         status == GitHubTrackedReleaseStatus.PreReleaseUpdateAvailable ->

@@ -92,6 +92,7 @@ internal data class GitHubTrackEditorDraft(
     val preferPreRelease: Boolean,
     val alwaysShowLatestReleaseDownloadButton: Boolean,
     val checkActionsUpdates: Boolean,
+    val externalBuildUntilRelease: Boolean,
     val updateIntervalMode: GitHubTrackedUpdateIntervalMode,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode,
     val preciseApkVersionMode: GitHubTrackedPreciseApkVersionMode,

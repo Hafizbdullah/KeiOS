@@ -663,6 +663,9 @@ internal class GitHubPageActions(
 
     fun setTrackCheckActionsUpdatesInput(value: Boolean) = trackActions.setCheckActionsUpdatesInput(value)
 
+    fun setTrackExternalBuildUntilReleaseInput(value: Boolean) =
+        trackActions.setExternalBuildUntilReleaseInput(value)
+
     fun setTrackUpdateIntervalModeInput(value: GitHubTrackedUpdateIntervalMode) =
         trackActions.setUpdateIntervalModeInput(value)
 

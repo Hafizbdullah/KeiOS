@@ -1070,6 +1070,8 @@
     <string name="github_track_sheet_btn_collapse">Collapse list</string>
     <string name="github_track_sheet_btn_select_app">Select app</string>
     <string name="github_track_badge_current_app">This app</string>
+    <string name="github_track_badge_external_build">External build</string>
+    <string name="github_track_badge_waiting_release">Awaiting Release</string>
     <string name="github_track_sheet_section_check_option">Check options</string>
     <string name="github_track_sheet_section_fdroid_options">F-Droid options</string>
     <string name="github_track_sheet_summary_fdroid_probe">After save, refresh reads the package API or repository index, reuses cache by refresh interval and remote validators, and records package, version, trust, and Anti-Feature summaries.</string>
@@ -1113,6 +1115,8 @@
     <string name="github_track_sheet_label_always_show_latest_release_download">Always show latest release download</string>
     <string name="github_track_sheet_summary_always_show_latest_release_download">When enabled, the download entry always shows. The target is selected by comparing stable and pre-release publish dates.</string>
     <string name="github_track_sheet_label_check_actions_updates">Check Actions updates</string>
+    <string name="github_track_sheet_label_external_build_until_release">Await first repository Release</string>
+    <string name="github_track_sheet_summary_external_build_until_release">Binds the installed APK to this repository while it has no Release. The first published Release automatically enables normal version comparison and downloads.</string>
     <string name="github_track_sheet_summary_check_actions_updates">Checks this project’s recommended Actions Run on the refresh interval and sends a live notification / island when a newer run appears.</string>
     <string name="github_track_sheet_label_update_interval">Check updates</string>
     <string name="github_track_sheet_summary_update_interval_follow_global">Following global: currently %1$s</string>
