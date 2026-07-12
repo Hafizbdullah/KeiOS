@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.debug
 
 import androidx.compose.foundation.background
@@ -23,9 +25,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugLiquidCatalogPage(
-    onClose: () -> Unit
-) {
+internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val accent = MiuixTheme.colorScheme.primary
@@ -42,33 +42,35 @@ internal fun DebugLiquidCatalogPage(
                 icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onClose,
-                backdrop = pageBackdrop
+                backdrop = pageBackdrop,
             )
-        }
+        },
     ) { innerPadding ->
         Box(Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MiuixTheme.colorScheme.background,
-                                accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
-                                MiuixTheme.colorScheme.background
-                            )
-                        )
-                    )
-                    .layerBackdrop(pageBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.background,
+                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
+                                        MiuixTheme.colorScheme.background,
+                                    ),
+                            ),
+                        ).layerBackdrop(pageBackdrop),
             )
             AppPageLazyColumn(
                 innerPadding = innerPadding,
                 state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
                 bottomExtra = 40.dp,
-                sectionSpacing = 14.dp
+                sectionSpacing = 14.dp,
             ) {
                 item {
                     DebugLiquidCatalogIntroCard(accent = accent)
@@ -76,14 +78,41 @@ internal fun DebugLiquidCatalogPage(
                 item {
                     DebugLiquidButtonsCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
                 item {
                     DebugLiquidGlassDropdownCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
+                }
+                item {
+                    DebugLiquidSearchFormCard(
+                        accent = accent,
+                        backdrop = pageBackdrop,
+                    )
+                }
+                item {
+                    DebugLiquidChromeCard(
+                        accent = accent,
+                        backdrop = pageBackdrop,
+                    )
+                }
+                item {
+                    DebugLiquidActionMenuCard(
+                        accent = accent,
+                        backdrop = pageBackdrop,
+                    )
+                }
+                item {
+                    DebugLiquidFeedbackCard(
+                        accent = accent,
+                        backdrop = pageBackdrop,
+                    )
+                }
+                item {
+                    DebugLiquidSheetCard(accent = accent)
                 }
                 item {
                     DebugLiquidBackdropCard(accent = accent)
@@ -91,31 +120,31 @@ internal fun DebugLiquidCatalogPage(
                 item {
                     DebugLiquidTransparentButtonsCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
                 item {
                     DebugLiquidSurfaceCardsCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
                 item {
                     DebugLiquidParentBackdropCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
                 item {
                     DebugLiquidParameterCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
                 item {
                     DebugLiquidControlsCard(
                         accent = accent,
-                        backdrop = pageBackdrop
+                        backdrop = pageBackdrop,
                     )
                 }
             }
