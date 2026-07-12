@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
 import androidx.compose.foundation.layout.Box
@@ -10,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
@@ -20,7 +23,6 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
-import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
@@ -40,52 +42,51 @@ internal fun GuideGalleryVideoGroupHeaderActions(
     backdrop: Backdrop?,
     onToggleInlinePlay: () -> Unit,
     onOpenFullscreen: () -> Unit,
-    onSaveMedia: () -> Unit
+    onSaveMedia: () -> Unit,
 ) {
     val fullscreenIcon = appLucideFullscreenIcon()
+    var showPicker by remember(itemsSize, optionLabels) { mutableStateOf(false) }
+    var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     if (itemsSize > 1) {
-        var showPicker by remember(itemsSize, optionLabels) { mutableStateOf(false) }
-        var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
         Box(
-            modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it }
+            modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
         ) {
             AppDropdownAnchorButton(
                 backdrop = backdrop,
-                text = optionLabels.getOrElse(selectedIndex) {
-                    stringResource(R.string.guide_gallery_video_format, 1)
-                },
+                text =
+                    optionLabels.getOrElse(selectedIndex) {
+                        stringResource(R.string.guide_gallery_video_format, 1)
+                    },
                 textColor = Color(0xFF3B82F6),
                 variant = GlassVariant.Compact,
-                onClick = { showPicker = !showPicker }
+                onClick = { showPicker = !showPicker },
             )
-            if (showPicker) {
-                SnapshotWindowListPopup(
-                    show = showPicker,
-                    alignment = PopupPositionProvider.Align.BottomEnd,
-                    anchorBounds = pickerPopupAnchorBounds,
-                    placement = SnapshotPopupPlacement.ButtonEnd,
-                    onDismissRequest = { showPicker = false },
-                    enableWindowDim = false
-                ) {
-                    AppLiquidGlassDropdownColumn(
-                        accentColor = Color(0xFF3B82F6),
-                        initialScrollItemIndex = selectedIndex,
-                        backdrop = backdrop
-                    ) {
-                        optionLabels.forEachIndexed { idx, option ->
-                            LiquidGlassDropdownSingleChoiceItem(
-                                text = option,
-                                optionSize = optionLabels.size,
-                                isSelected = selectedIndex == idx,
-                                index = idx,
-                                onSelectedIndexChange = { selected ->
-                                    onSelectedIndexChange(selected)
-                                    showPicker = false
-                                }
-                            )
-                        }
-                    }
-                }
+        }
+    }
+    SnapshotWindowListPopup(
+        show = showPicker && itemsSize > 1 && optionLabels.isNotEmpty(),
+        alignment = PopupPositionProvider.Align.BottomEnd,
+        anchorBounds = pickerPopupAnchorBounds,
+        placement = SnapshotPopupPlacement.ButtonEnd,
+        onDismissRequest = { showPicker = false },
+    ) {
+        AppLiquidGlassDropdownColumn(
+            accentColor = Color(0xFF3B82F6),
+            initialScrollItemIndex =
+                selectedIndex.coerceIn(0, optionLabels.lastIndex.coerceAtLeast(0)),
+            backdrop = backdrop,
+        ) {
+            optionLabels.forEachIndexed { idx, option ->
+                LiquidGlassDropdownSingleChoiceItem(
+                    text = option,
+                    optionSize = optionLabels.size,
+                    isSelected = selectedIndex == idx,
+                    index = idx,
+                    onSelectedIndexChange = { selected ->
+                        onSelectedIndexChange(selected)
+                        showPicker = false
+                    },
+                )
             }
         }
     }
@@ -94,14 +95,15 @@ internal fun GuideGalleryVideoGroupHeaderActions(
         AppLiquidTextButton(
             backdrop = backdrop,
             text = "",
-            leadingIcon = if (videoInlineExpanded && videoInlinePlaying) {
-                MiuixIcons.Regular.Pause
-            } else {
-                MiuixIcons.Regular.Play
-            },
+            leadingIcon =
+                if (videoInlineExpanded && videoInlinePlaying) {
+                    MiuixIcons.Regular.Pause
+                } else {
+                    MiuixIcons.Regular.Play
+                },
             textColor = Color(0xFF3B82F6),
             variant = GlassVariant.Compact,
-            onClick = onToggleInlinePlay
+            onClick = onToggleInlinePlay,
         )
         AppLiquidTextButton(
             backdrop = backdrop,
@@ -109,7 +111,7 @@ internal fun GuideGalleryVideoGroupHeaderActions(
             leadingIcon = fullscreenIcon,
             textColor = Color(0xFF3B82F6),
             variant = GlassVariant.Compact,
-            onClick = onOpenFullscreen
+            onClick = onOpenFullscreen,
         )
     }
 
@@ -120,7 +122,7 @@ internal fun GuideGalleryVideoGroupHeaderActions(
             leadingIcon = MiuixIcons.Regular.Download,
             textColor = Color(0xFF3B82F6),
             variant = GlassVariant.Compact,
-            onClick = onSaveMedia
+            onClick = onSaveMedia,
         )
     }
 }

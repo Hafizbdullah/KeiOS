@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -304,19 +305,19 @@ fun GuideGalleryExpressionCardItem(
                         variant = GlassVariant.Compact,
                         onClick = { showPicker = !showPicker },
                     )
-                    if (showPicker) {
+                    key("guide-gallery-expression-picker-popup") {
                         SnapshotWindowListPopup(
                             show = showPicker,
                             alignment = PopupPositionProvider.Align.BottomEnd,
                             anchorBounds = pickerPopupAnchorBounds,
                             placement = SnapshotPopupPlacement.ButtonEnd,
                             onDismissRequest = { showPicker = false },
-                            enableWindowDim = false,
                         ) {
                             AppLiquidGlassDropdownColumn(
                                 modifier = Modifier.heightIn(max = pickerMaxHeight),
                                 accentColor = Color(0xFF3B82F6),
-                                initialScrollItemIndex = selectedIndex,
+                                initialScrollItemIndex =
+                                    selectedIndex.coerceIn(0, optionLabels.lastIndex.coerceAtLeast(0)),
                                 backdrop = backdrop,
                             ) {
                                 optionLabels.forEachIndexed { idx, option ->

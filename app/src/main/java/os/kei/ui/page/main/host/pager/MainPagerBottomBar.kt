@@ -57,6 +57,7 @@ internal fun MainPagerBottomBar(
                         LiquidGlassBottomBarItem(
                             selected = selected,
                             tabIndex = index,
+                            label = page.label,
                             onClick = { onPageSelected(index) },
                             modifier = Modifier.testTag(page.bottomTabTestTag()),
                         ) {
@@ -70,7 +71,7 @@ internal fun MainPagerBottomBar(
                             if (page.iconRes != null) {
                                 Icon(
                                     painter = painterResource(id = page.iconRes),
-                                    contentDescription = page.label,
+                                    contentDescription = null,
                                     tint = if (page.keepOriginalColors) Color.Unspecified else tabColor,
                                     modifier = tabIconModifier,
                                 )
@@ -78,7 +79,7 @@ internal fun MainPagerBottomBar(
                                 page.icon?.let { icon ->
                                     Icon(
                                         imageVector = icon,
-                                        contentDescription = page.label,
+                                        contentDescription = null,
                                         tint = tabColor,
                                         modifier = tabIconModifier,
                                     )

@@ -18,6 +18,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
 import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownItem
+import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownItemType
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownMaterial
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
@@ -37,14 +38,12 @@ internal fun BaGuideCatalogFilterActionPopup(
     onToggleOption: (filterId: Int, optionId: Int) -> Unit,
     onClearFilters: () -> Unit,
 ) {
-    if (!show || definitions.isEmpty()) return
     SnapshotWindowListPopup(
-        show = show,
+        show = show && definitions.isNotEmpty(),
         alignment = PopupPositionProvider.Align.BottomEnd,
         anchorBounds = anchorBounds,
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
-        enableWindowDim = false,
     ) {
         var focusedFilterId by remember(definitions) {
             mutableStateOf<Int?>(null)
@@ -126,6 +125,7 @@ internal fun BaGuideCatalogFilterActionPopup(
                         textMaxLines = 1,
                         index = index + 1,
                         optionSize = focusedDefinition.options.size + 1,
+                        itemType = LiquidGlassDropdownItemType.MultipleChoice,
                     )
                 }
             }

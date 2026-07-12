@@ -104,41 +104,55 @@ internal fun GitHubActionsNotificationHistoryActionBar(
     val cleanupAgeLabels = cleanupAges.map { age -> stringResource(age.labelRes) }
     val selectedFilterLabel =
         when (historyMode) {
-            GitHubHistoryMode.Refresh ->
+            GitHubHistoryMode.Refresh -> {
                 refreshFilterLabels.getOrElse(refreshFilterModes.indexOf(refreshFilterMode)) {
                     stringResource(refreshFilterMode.labelRes)
                 }
-            GitHubHistoryMode.Actions ->
+            }
+
+            GitHubHistoryMode.Actions -> {
                 filterLabels.getOrElse(filterModes.indexOf(filterMode)) {
                     stringResource(filterMode.labelRes)
                 }
-            GitHubHistoryMode.Tracking ->
+            }
+
+            GitHubHistoryMode.Tracking -> {
                 trackChangeFilterLabels.getOrElse(trackChangeFilterModes.indexOf(trackChangeFilterMode)) {
                     stringResource(trackChangeFilterMode.labelRes)
                 }
-            GitHubHistoryMode.Apps ->
+            }
+
+            GitHubHistoryMode.Apps -> {
                 appInstallFilterLabels.getOrElse(appInstallFilterModes.indexOf(appInstallFilterMode)) {
                     stringResource(appInstallFilterMode.labelRes)
                 }
+            }
         }
     val selectedSortLabel =
         when (historyMode) {
-            GitHubHistoryMode.Refresh ->
+            GitHubHistoryMode.Refresh -> {
                 refreshSortLabels.getOrElse(refreshSortModes.indexOf(refreshSortMode)) {
                     stringResource(refreshSortMode.labelRes)
                 }
-            GitHubHistoryMode.Actions ->
+            }
+
+            GitHubHistoryMode.Actions -> {
                 sortLabels.getOrElse(sortModes.indexOf(sortMode)) {
                     stringResource(sortMode.labelRes)
                 }
-            GitHubHistoryMode.Tracking ->
+            }
+
+            GitHubHistoryMode.Tracking -> {
                 trackChangeSortLabels.getOrElse(trackChangeSortModes.indexOf(trackChangeSortMode)) {
                     stringResource(trackChangeSortMode.labelRes)
                 }
-            GitHubHistoryMode.Apps ->
+            }
+
+            GitHubHistoryMode.Apps -> {
                 appInstallSortLabels.getOrElse(appInstallSortModes.indexOf(appInstallSortMode)) {
                     stringResource(appInstallSortMode.labelRes)
                 }
+            }
         }
     val selectedDirectionLabel =
         sortDirectionLabels.getOrElse(sortDirections.indexOf(sortDirection)) {
@@ -190,14 +204,13 @@ internal fun GitHubActionsNotificationHistoryActionBar(
         )
 
         LiquidActionBarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->
-            if (slotIndex == 1 && showActionMenuPopup) {
+            if (slotIndex == 1) {
                 SnapshotWindowListPopup(
                     show = showActionMenuPopup,
                     alignment = PopupPositionProvider.Align.BottomEnd,
                     anchorBounds = popupAnchorBounds,
                     placement = SnapshotPopupPlacement.ButtonEnd,
                     onDismissRequest = { onShowActionMenuPopupChange(false) },
-                    enableWindowDim = false,
                     maxWidth = actionMenuMaxWidth,
                 ) {
                     LiquidGlassActionMenu(
@@ -216,7 +229,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                     enabled = hasRecords,
                                     submenuItems =
                                         when (historyMode) {
-                                            GitHubHistoryMode.Refresh ->
+                                            GitHubHistoryMode.Refresh -> {
                                                 refreshFilterModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -226,7 +239,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onRefreshFilterModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Actions ->
+                                            }
+
+                                            GitHubHistoryMode.Actions -> {
                                                 filterModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -236,7 +251,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onFilterModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Tracking ->
+                                            }
+
+                                            GitHubHistoryMode.Tracking -> {
                                                 trackChangeFilterModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -246,7 +263,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onTrackChangeFilterModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Apps ->
+                                            }
+
+                                            GitHubHistoryMode.Apps -> {
                                                 appInstallFilterModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -256,6 +275,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onAppInstallFilterModeChange(mode) },
                                                     )
                                                 }
+                                            }
                                         },
                                 ),
                                 LiquidGlassActionMenuSubmenuRow(
@@ -267,7 +287,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                     enabled = hasRecords,
                                     submenuItems =
                                         when (historyMode) {
-                                            GitHubHistoryMode.Refresh ->
+                                            GitHubHistoryMode.Refresh -> {
                                                 refreshSortModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -277,7 +297,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onRefreshSortModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Actions ->
+                                            }
+
+                                            GitHubHistoryMode.Actions -> {
                                                 sortModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -287,7 +309,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onSortModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Tracking ->
+                                            }
+
+                                            GitHubHistoryMode.Tracking -> {
                                                 trackChangeSortModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -297,7 +321,9 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onTrackChangeSortModeChange(mode) },
                                                     )
                                                 }
-                                            GitHubHistoryMode.Apps ->
+                                            }
+
+                                            GitHubHistoryMode.Apps -> {
                                                 appInstallSortModes.mapIndexed { index, mode ->
                                                     LiquidGlassActionMenuSingleChoiceRow(
                                                         id = mode.name,
@@ -307,6 +333,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                                                         onClick = { onAppInstallSortModeChange(mode) },
                                                     )
                                                 }
+                                            }
                                         },
                                 ),
                                 LiquidGlassActionMenuSubmenuRow(

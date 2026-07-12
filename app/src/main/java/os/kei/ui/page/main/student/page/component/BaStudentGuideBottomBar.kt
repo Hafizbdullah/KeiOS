@@ -75,14 +75,14 @@ internal fun BaStudentGuideBottomBar(
                                         tab == GuideBottomTab.Simulate
                                 Icon(
                                     painter = painterResource(id = tab.localLogoRes),
-                                    contentDescription = tabLabel,
+                                    contentDescription = null,
                                     tint = if (useThemeTintForLocalLogo) tabColor else Color.Unspecified,
                                     modifier = tabIconModifier,
                                 )
                             } else {
                                 Icon(
                                     imageVector = tab.icon,
-                                    contentDescription = tabLabel,
+                                    contentDescription = null,
                                     tint = tabColor,
                                     modifier = tabIconModifier,
                                 )
@@ -100,6 +100,7 @@ internal fun BaStudentGuideBottomBar(
                         LiquidGlassBottomBarItem(
                             selected = selected,
                             tabIndex = index,
+                            label = tabLabel,
                             onClick = { onSelectTab(index) },
                             modifier = Modifier,
                             content = tabContent,

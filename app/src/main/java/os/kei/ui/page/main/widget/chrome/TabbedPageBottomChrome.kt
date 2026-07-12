@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal interface TabbedPageCategory {
     /** Drawable resource ID for the category tab icon. */
     val iconRes: Int
+
     /** String resource ID for the category tab label. */
     val labelRes: Int
 }
@@ -171,14 +172,12 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 .fillMaxWidth()
                 .offset {
                     IntOffset(x = 0, y = -keyboardLiftProvider().roundToPx())
-                }
-                .padding(
+                }.padding(
                     start = outerPadding,
                     end = outerPadding,
                     top = 12.dp,
                     bottom = 12.dp + navigationBarBottom,
-                )
-                .height(size),
+                ).height(size),
     ) {
         val expandedSearchWidth =
             tabbedPageExpandedSearchWidth(
@@ -285,8 +284,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         .zIndex(3f)
                         .graphicsLayer {
                             alpha = searchDockAlphaProvider()
-                        }
-                        .offset {
+                        }.offset {
                             IntOffset(x = searchXProvider().roundToPx(), y = 0)
                         },
                 expandedWidth = expandedSearchWidth,
@@ -313,6 +311,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     val bottomBarTabs: @Composable RowScope.() -> Unit = {
         categories.forEachIndexed { index, category ->
             val tabColor = liquidGlassBottomBarItemContentColor(index)
+            val tabLabel = stringResource(category.labelRes)
             val tabContent: @Composable ColumnScope.() -> Unit = {
                 Icon(
                     imageVector = ImageVector.vectorResource(category.iconRes),
@@ -327,7 +326,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
                             },
                 )
                 Text(
-                    text = stringResource(category.labelRes),
+                    text = tabLabel,
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
                     color = tabColor,
@@ -339,6 +338,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
             LiquidGlassBottomBarItem(
                 selected = safeSelectedPage == index,
                 tabIndex = index,
+                label = tabLabel,
                 onClick = { onSelectCategory(index) },
                 modifier = Modifier.defaultMinSize(minWidth = 62.dp),
                 content = tabContent,

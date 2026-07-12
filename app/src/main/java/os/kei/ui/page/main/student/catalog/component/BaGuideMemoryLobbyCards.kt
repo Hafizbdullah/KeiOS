@@ -1,4 +1,4 @@
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "PropertyName")
 
 package os.kei.ui.page.main.student.catalog.component
 
@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -52,11 +52,11 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.student.BaGuideGalleryItem
-import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
+import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
-import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.isRenderableGalleryImageUrl
+import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -65,10 +65,11 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
+import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
-import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -498,7 +499,6 @@ private fun BaGuideMemoryLobbyMoreActions(
     val favoriteIcon = appLucideHeartIcon()
     val fullscreenIcon = appLucideFullscreenIcon()
     val openGuideIcon = appLucideExternalLinkIcon()
-    val optionSize = 2 + if (firstFullscreenImageUrl.isNotBlank()) 1 else 0
     Box(
         modifier = Modifier.capturePopupAnchor { bounds -> menuAnchorBounds = bounds },
         contentAlignment = Alignment.Center,
@@ -511,82 +511,68 @@ private fun BaGuideMemoryLobbyMoreActions(
             tint = iconTint,
             minSize = 38.dp,
         )
-        if (menuExpanded) {
+        key("ba-guide-memory-lobby-action-popup") {
             SnapshotWindowListPopup(
-                show = true,
+                show = menuExpanded,
                 alignment = PopupPositionProvider.Align.BottomEnd,
                 anchorBounds = menuAnchorBounds,
                 placement = SnapshotPopupPlacement.ButtonEnd,
-                enableWindowDim = false,
                 onDismissRequest = { menuExpanded = false },
             ) {
-                LiquidGlassDropdownColumn(
+                LiquidGlassActionMenu(
                     minWidth = MemoryLobbyMoreMenuMinWidth,
                     maxWidth = MemoryLobbyMoreMenuMaxWidth,
                     maxHeight = MemoryLobbyMoreMenuMaxHeight,
-                ) {
-                    var index = 0
-                    BaGuideMemoryLobbyMenuAction(
-                        text =
-                            stringResource(
-                                if (favorite) {
-                                    R.string.ba_catalog_memory_lobby_menu_unfavorite
-                                } else {
-                                    R.string.ba_catalog_memory_lobby_menu_favorite
-                                },
-                            ),
-                        leadingIcon = favoriteIcon,
-                        index = index++,
-                        optionSize = optionSize,
-                        onClick = {
-                            menuExpanded = false
-                            onToggleFavorite()
+                    items =
+                        buildList {
+                            add(
+                                LiquidGlassActionMenuActionRow(
+                                    id = "toggle_favorite",
+                                    text =
+                                        stringResource(
+                                            if (favorite) {
+                                                R.string.ba_catalog_memory_lobby_menu_unfavorite
+                                            } else {
+                                                R.string.ba_catalog_memory_lobby_menu_favorite
+                                            },
+                                        ),
+                                    leadingIcon = favoriteIcon,
+                                    onClick = {
+                                        menuExpanded = false
+                                        onToggleFavorite()
+                                    },
+                                ),
+                            )
+                            if (firstFullscreenImageUrl.isNotBlank()) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "open_fullscreen",
+                                        text = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
+                                        leadingIcon = fullscreenIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenFullscreen()
+                                        },
+                                    ),
+                                )
+                            }
+                            add(
+                                LiquidGlassActionMenuActionRow(
+                                    id = "open_guide",
+                                    text = stringResource(R.string.ba_catalog_memory_lobby_action_open_guide),
+                                    leadingIcon = openGuideIcon,
+                                    onClick = {
+                                        menuExpanded = false
+                                        onOpenGuide()
+                                    },
+                                ),
+                            )
                         },
-                    )
-                    if (firstFullscreenImageUrl.isNotBlank()) {
-                        BaGuideMemoryLobbyMenuAction(
-                            text = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
-                            leadingIcon = fullscreenIcon,
-                            index = index++,
-                            optionSize = optionSize,
-                            onClick = {
-                                menuExpanded = false
-                                onOpenFullscreen()
-                            },
-                        )
-                    }
-                    BaGuideMemoryLobbyMenuAction(
-                        text = stringResource(R.string.ba_catalog_memory_lobby_action_open_guide),
-                        leadingIcon = openGuideIcon,
-                        index = index,
-                        optionSize = optionSize,
-                        onClick = {
-                            menuExpanded = false
-                            onOpenGuide()
-                        },
-                    )
-                }
+                    onDismissRequest = { menuExpanded = false },
+                )
             }
         }
     }
-}
-
-@Composable
-private fun BaGuideMemoryLobbyMenuAction(
-    text: String,
-    leadingIcon: ImageVector,
-    index: Int,
-    optionSize: Int,
-    onClick: () -> Unit,
-) {
-    LiquidGlassDropdownActionItem(
-        text = text,
-        leadingIcon = leadingIcon,
-        index = index,
-        optionSize = optionSize,
-        variant = GlassVariant.SheetAction,
-        onClick = onClick,
-    )
 }
 
 @Composable
@@ -598,11 +584,12 @@ private fun BaGuideMemoryLobbyVideoGroup(
 ) {
     if (items.isEmpty()) return
     val context = LocalContext.current
-    val itemKey = remember(items) {
-        items.joinToString(separator = "|") { item ->
-            item.mediaUrl.ifBlank { item.imageUrl }
+    val itemKey =
+        remember(items) {
+            items.joinToString(separator = "|") { item ->
+                item.mediaUrl.ifBlank { item.imageUrl }
+            }
         }
-    }
     var selectedIndex by rememberSaveable(itemKey) { mutableStateOf(0) }
     LaunchedEffect(items.size) {
         if (selectedIndex !in items.indices) selectedIndex = 0
@@ -729,32 +716,33 @@ private fun BaGuideMemoryLobbyVariantSelector(
     selectedIndex: Int,
     onSelectedIndexChange: (Int) -> Unit,
 ) {
-    if (optionLabels.size <= 1) return
     var showPicker by remember(optionLabels) { mutableStateOf(false) }
     var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     Box(
         modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
         contentAlignment = Alignment.Center,
     ) {
-        AppDropdownAnchorButton(
-            text = optionLabels.getOrElse(selectedIndex) {
-                stringResource(R.string.guide_gallery_video_format, 1)
-            },
-            onClick = { showPicker = !showPicker },
-            modifier = Modifier.widthIn(min = 54.dp, max = 96.dp),
-            textColor = Color(0xFF3B82F6),
-            variant = GlassVariant.Compact,
-            horizontalPadding = 8.dp,
-            textSize = AppTypographyTokens.Supporting.fontSize,
-            textLineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
-        if (showPicker) {
+        if (optionLabels.size > 1) {
+            AppDropdownAnchorButton(
+                text =
+                    optionLabels.getOrElse(selectedIndex) {
+                        stringResource(R.string.guide_gallery_video_format, 1)
+                    },
+                onClick = { showPicker = !showPicker },
+                modifier = Modifier.widthIn(min = 54.dp, max = 96.dp),
+                textColor = Color(0xFF3B82F6),
+                variant = GlassVariant.Compact,
+                horizontalPadding = 8.dp,
+                textSize = AppTypographyTokens.Supporting.fontSize,
+                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
+            )
+        }
+        key("ba-guide-memory-lobby-variant-popup") {
             SnapshotWindowListPopup(
-                show = true,
+                show = showPicker && optionLabels.size > 1,
                 alignment = PopupPositionProvider.Align.BottomEnd,
                 anchorBounds = pickerPopupAnchorBounds,
                 placement = SnapshotPopupPlacement.ButtonEnd,
-                enableWindowDim = false,
                 onDismissRequest = { showPicker = false },
             ) {
                 LiquidGlassDropdownColumn(
@@ -862,8 +850,7 @@ private fun BaGuideMemoryLobbyVideoPreview(
                             bounds.bottom.roundToInt(),
                         )
                     onBoundsChanged(rect.takeUnless { it.isEmpty })
-                }
-                .clickable(onClick = onClick),
+                }.clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         val density = LocalDensity.current
@@ -898,8 +885,7 @@ private fun String.memoryLobbyUnlockLevelPillLabel(): String {
     return Regex("""\d+""").find(trimmed)?.value ?: trimmed
 }
 
-private fun BaGuideGalleryItem.isMemoryLobbyVideo(): Boolean =
-    mediaType.equals("video", ignoreCase = true)
+private fun BaGuideGalleryItem.isMemoryLobbyVideo(): Boolean = mediaType.equals("video", ignoreCase = true)
 
 private fun List<BaGuideGalleryItem>.toMemoryLobbyMediaGroups(): BaGuideMemoryLobbyMediaGroups {
     val imageItems = filterNot(BaGuideGalleryItem::isMemoryLobbyVideo)

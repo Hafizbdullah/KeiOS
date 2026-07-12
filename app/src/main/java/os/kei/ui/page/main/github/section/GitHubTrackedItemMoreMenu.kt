@@ -1,16 +1,15 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -24,34 +23,33 @@ import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.os.appLucideBranchIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
-import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
-import os.kei.ui.page.main.widget.glass.liquidGlassDropdownItemAccent
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val GitHubTrackedItemMoreMenuMinWidth = 156.dp
 private val GitHubTrackedItemMoreMenuMaxWidth = 196.dp
 private val GitHubTrackedItemMoreMenuMaxHeight = 276.dp
 private const val GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION = 0.50f
-private val releaseNotesSupportedGitPlatforms = setOf(
-    GitRepositoryPlatform.GitHub,
-    GitRepositoryPlatform.Gitee,
-    GitRepositoryPlatform.GitLab,
-    GitRepositoryPlatform.Gitea,
-)
+private val releaseNotesSupportedGitPlatforms =
+    setOf(
+        GitRepositoryPlatform.GitHub,
+        GitRepositoryPlatform.Gitee,
+        GitRepositoryPlatform.GitLab,
+        GitRepositoryPlatform.Gitea,
+    )
 
 @Suppress("FunctionName")
 @Composable
@@ -110,24 +108,12 @@ internal fun GitHubTrackedItemMoreActions(
         state.recommendsPreRelease ||
             state.hasUpdate == true ||
             state.hasPreReleaseUpdate
-    val optionSize =
-        2 +
-            (if (showActionsAction) 1 else 0) +
-            (if (showFdroidDetailAction) 1 else 0) +
-            (if (normalizedShowReleaseNotesAction) 1 else 0) +
-            (if (showIgnoreCurrentVersionAction) 1 else 0)
     val refreshIcon = appLucideRefreshIcon()
     val actionsIcon = appLucideBranchIcon()
     val detailIcon = appLucideInfoIcon()
     val releaseNotesIcon = appLucideNotesIcon()
     val ignoreIcon = appLucidePauseIcon()
     val deleteIcon = appLucideTrashIcon()
-    val dangerTint =
-        liquidGlassDropdownItemAccent(
-            isDark = isSystemInDarkTheme(),
-            accentColor = MiuixTheme.colorScheme.error,
-            variant = GlassVariant.SheetDangerAction,
-        )
     val menuMaxWidth =
         (appWindowWidthDp() * GITHUB_TRACKED_ITEM_MORE_MENU_WIDTH_FRACTION)
             .coerceIn(GitHubTrackedItemMoreMenuMinWidth, GitHubTrackedItemMoreMenuMaxWidth)
@@ -142,115 +128,99 @@ internal fun GitHubTrackedItemMoreActions(
             enabled = true,
             onClick = { menuExpanded = !menuExpanded },
         )
-        if (menuExpanded) {
+        key("github-tracked-item-more-popup") {
             SnapshotWindowListPopup(
-                show = true,
+                show = menuExpanded,
                 alignment = PopupPositionProvider.Align.BottomEnd,
                 anchorBounds = menuAnchorBounds,
                 placement = SnapshotPopupPlacement.ButtonEnd,
-                enableWindowDim = false,
                 onDismissRequest = { menuExpanded = false },
             ) {
-                LiquidGlassDropdownColumn(
+                LiquidGlassActionMenu(
                     minWidth = GitHubTrackedItemMoreMenuMinWidth,
                     maxWidth = menuMaxWidth,
                     maxHeight = GitHubTrackedItemMoreMenuMaxHeight,
-                ) {
-                    var optionIndex = 0
-                    GitHubTrackedItemMenuAction(
-                        text = stringResource(R.string.common_refresh),
-                        leadingIcon = refreshIcon,
-                        index = optionIndex++,
-                        optionSize = optionSize,
-                        onClick = {
-                            menuExpanded = false
-                            onRefreshTrackedItem(item)
+                    items =
+                        buildList {
+                            add(
+                                LiquidGlassActionMenuActionRow(
+                                    id = "refresh",
+                                    text = stringResource(R.string.common_refresh),
+                                    leadingIcon = refreshIcon,
+                                    onClick = {
+                                        menuExpanded = false
+                                        onRefreshTrackedItem(item)
+                                    },
+                                ),
+                            )
+                            if (showActionsAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "actions",
+                                        text = stringResource(R.string.github_actions_menu),
+                                        leadingIcon = actionsIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenActionsSheet(item)
+                                        },
+                                    ),
+                                )
+                            }
+                            if (showFdroidDetailAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "fdroid_detail",
+                                        text = stringResource(R.string.github_fdroid_detail_title),
+                                        leadingIcon = detailIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenFdroidDetail(item)
+                                        },
+                                    ),
+                                )
+                            }
+                            if (normalizedShowReleaseNotesAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "release_notes",
+                                        text = stringResource(R.string.github_release_notes_title),
+                                        leadingIcon = releaseNotesIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onOpenReleaseNotes()
+                                        },
+                                    ),
+                                )
+                            }
+                            if (showIgnoreCurrentVersionAction) {
+                                add(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "ignore_current_version",
+                                        text = stringResource(R.string.github_item_menu_ignore_current_version),
+                                        leadingIcon = ignoreIcon,
+                                        onClick = {
+                                            menuExpanded = false
+                                            onIgnoreCurrentVersion(item, state)
+                                        },
+                                    ),
+                                )
+                            }
+                            add(
+                                LiquidGlassActionMenuActionRow(
+                                    id = "delete",
+                                    text = stringResource(R.string.github_track_sheet_btn_delete),
+                                    leadingIcon = deleteIcon,
+                                    variant = GlassVariant.SheetDangerAction,
+                                    onClick = {
+                                        menuExpanded = false
+                                        onRequestDeleteTrackedItem(item)
+                                    },
+                                ),
+                            )
                         },
-                    )
-                    if (showActionsAction) {
-                        GitHubTrackedItemMenuAction(
-                            text = stringResource(R.string.github_actions_menu),
-                            leadingIcon = actionsIcon,
-                            index = optionIndex++,
-                            optionSize = optionSize,
-                            onClick = {
-                                menuExpanded = false
-                                onOpenActionsSheet(item)
-                            },
-                        )
-                    }
-                    if (showFdroidDetailAction) {
-                        GitHubTrackedItemMenuAction(
-                            text = stringResource(R.string.github_fdroid_detail_title),
-                            leadingIcon = detailIcon,
-                            index = optionIndex++,
-                            optionSize = optionSize,
-                            onClick = {
-                                menuExpanded = false
-                                onOpenFdroidDetail(item)
-                            },
-                        )
-                    }
-                    if (normalizedShowReleaseNotesAction) {
-                        GitHubTrackedItemMenuAction(
-                            text = stringResource(R.string.github_release_notes_title),
-                            leadingIcon = releaseNotesIcon,
-                            index = optionIndex++,
-                            optionSize = optionSize,
-                            onClick = {
-                                menuExpanded = false
-                                onOpenReleaseNotes()
-                            },
-                        )
-                    }
-                    if (showIgnoreCurrentVersionAction) {
-                        GitHubTrackedItemMenuAction(
-                            text = stringResource(R.string.github_item_menu_ignore_current_version),
-                            leadingIcon = ignoreIcon,
-                            index = optionIndex++,
-                            optionSize = optionSize,
-                            onClick = {
-                                menuExpanded = false
-                                onIgnoreCurrentVersion(item, state)
-                            },
-                        )
-                    }
-                    GitHubTrackedItemMenuAction(
-                        text = stringResource(R.string.github_track_sheet_btn_delete),
-                        leadingIcon = deleteIcon,
-                        index = optionSize - 1,
-                        optionSize = optionSize,
-                        variant = GlassVariant.SheetDangerAction,
-                        contentTint = dangerTint,
-                        onClick = {
-                            menuExpanded = false
-                            onRequestDeleteTrackedItem(item)
-                        },
-                    )
-                }
+                    onDismissRequest = { menuExpanded = false },
+                )
             }
         }
     }
-}
-
-@Suppress("FunctionName")
-@Composable
-private fun GitHubTrackedItemMenuAction(
-    text: String,
-    leadingIcon: ImageVector,
-    index: Int,
-    optionSize: Int,
-    onClick: () -> Unit,
-    contentTint: Color? = null,
-    variant: GlassVariant = GlassVariant.SheetAction,
-) {
-    LiquidGlassDropdownActionItem(
-        text = text,
-        leadingIcon = leadingIcon,
-        onClick = onClick,
-        index = index,
-        optionSize = optionSize,
-        contentTint = contentTint,
-        variant = variant,
-    )
 }

@@ -48,14 +48,12 @@ internal fun BaGuideCatalogMoreActionPopup(
     onSelectStudentCatalogTab: (BaGuideCatalogTab) -> Unit,
     onSelectIncrementalRefreshIntervalHours: (Int) -> Unit,
 ) {
-    if (!show) return
     SnapshotWindowListPopup(
         show = show,
         alignment = PopupPositionProvider.Align.BottomEnd,
         anchorBounds = anchorBounds,
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
-        enableWindowDim = false,
     ) {
         val sortModes = BaGuideCatalogSortMode.entries
         val sortLabels = sortModes.map { mode -> stringResource(mode.labelRes) }
@@ -73,10 +71,13 @@ internal fun BaGuideCatalogMoreActionPopup(
         val refreshOptionLabels =
             refreshOptions.map { hours ->
                 when (hours) {
-                    BA_GUIDE_CATALOG_INCREMENTAL_REFRESH_MIN_HOURS ->
+                    BA_GUIDE_CATALOG_INCREMENTAL_REFRESH_MIN_HOURS -> {
                         stringResource(R.string.ba_catalog_more_incremental_refresh_12h)
+                    }
 
-                    else -> stringResource(R.string.ba_catalog_more_incremental_refresh_24h)
+                    else -> {
+                        stringResource(R.string.ba_catalog_more_incremental_refresh_24h)
+                    }
                 }
             }
         val selectedRefreshLabel =

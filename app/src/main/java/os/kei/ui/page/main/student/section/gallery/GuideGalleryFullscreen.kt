@@ -51,6 +51,7 @@ import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.rememberDeviceRotationDegrees
 import os.kei.ui.page.main.student.rememberSystemAutoRotateEnabled
 import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogPresentation
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Text
@@ -132,20 +133,19 @@ internal fun GuideImageFullscreenDialog(
             lastTransformActiveAtMs = SystemClock.elapsedRealtime()
         }
     }
-    val backGestureState = rememberGuideFullscreenBackGestureState(onDismiss = onDismiss)
-
     AppWindowDialogHost(
         show = true,
         onDismissRequest = onDismiss,
+        presentation = AppWindowDialogPresentation.Fullscreen,
     ) {
+        val backGestureState = rememberGuideFullscreenBackGestureState(onDismiss = onDismiss)
         Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .onSizeChanged {
                         backGestureState.onDialogSizeChanged(it.width, it.height)
-                    }
-                    .graphicsLayer {
+                    }.graphicsLayer {
                         val backMotion = backGestureState.motionValues()
                         transformOrigin = TransformOrigin(backMotion.pivotX, backMotion.pivotY)
                         translationX = backMotion.translationX
@@ -304,6 +304,7 @@ internal fun GuideVideoFullscreenDialog(
     AppWindowDialogHost(
         show = true,
         onDismissRequest = onDismiss,
+        presentation = AppWindowDialogPresentation.Fullscreen,
     ) {
         Box(
             modifier =

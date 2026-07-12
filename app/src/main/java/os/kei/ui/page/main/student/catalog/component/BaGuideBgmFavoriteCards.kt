@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.combinedClickable
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,8 +31,10 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
+import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.os.appLucideUndoIcon
 import os.kei.ui.page.main.os.appLucideVolume2Icon
 import os.kei.ui.page.main.os.appLucideVolumeOffIcon
@@ -41,8 +46,8 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -53,6 +58,10 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val BgmFavoriteActionMenuMinWidth = 168.dp
+private val BgmFavoriteActionMenuMaxWidth = 280.dp
+private val BgmFavoriteActionMenuMaxHeight = 336.dp
+
 @Composable
 internal fun BaGuideBgmPlaybackSeekBar(
     progress: Float,
@@ -61,19 +70,21 @@ internal fun BaGuideBgmPlaybackSeekBar(
     contentDescription: String,
     onSeekChanged: (Float) -> Unit,
     onSeekFinished: () -> Unit,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val sliderBackdrop = rememberLayerBackdrop()
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .semantics { this.contentDescription = contentDescription }
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .semantics { this.contentDescription = contentDescription },
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(sliderBackdrop)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(sliderBackdrop),
         )
         LiquidMusicProgressSlider(
             value = { progress.coerceIn(0f, 1f) },
@@ -86,9 +97,10 @@ internal fun BaGuideBgmPlaybackSeekBar(
             enabled = enabled,
             activeColor = accent,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.36f),
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 4.dp, vertical = 8.dp)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
         )
     }
 }
@@ -99,37 +111,38 @@ internal fun BaGuideBgmVolumeRow(
     contentDescription: String,
     valueText: String,
     onVolumeChanged: (Float) -> Unit,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = if (volume <= 0.01f) {
-                appLucideVolumeOffIcon()
-            } else {
-                appLucideVolume2Icon()
-            },
+            imageVector =
+                if (volume <= 0.01f) {
+                    appLucideVolumeOffIcon()
+                } else {
+                    appLucideVolume2Icon()
+                },
             contentDescription = null,
             tint = neutralTint,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(18.dp),
         )
         BaGuideBgmVolumeSlider(
             volume = volume,
             contentDescription = contentDescription,
             onVolumeChanged = onVolumeChanged,
             onInteractionChanged = onInteractionChanged,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
         Text(
             text = valueText,
             color = neutralTint,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 1
+            maxLines = 1,
         )
     }
 }
@@ -140,19 +153,21 @@ private fun BaGuideBgmVolumeSlider(
     contentDescription: String,
     onVolumeChanged: (Float) -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sliderBackdrop = rememberLayerBackdrop()
     val activeColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
     Box(
-        modifier = modifier
-            .height(44.dp)
-            .semantics { this.contentDescription = contentDescription }
+        modifier =
+            modifier
+                .height(44.dp)
+                .semantics { this.contentDescription = contentDescription },
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(sliderBackdrop)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(sliderBackdrop),
         )
         LiquidVolumeSlider(
             value = { volume.coerceIn(0f, 1f) },
@@ -163,9 +178,10 @@ private fun BaGuideBgmVolumeSlider(
             backdrop = sliderBackdrop,
             activeColor = activeColor,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 3.dp, vertical = 8.dp)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 3.dp, vertical = 8.dp),
         )
     }
 }
@@ -181,68 +197,72 @@ internal fun BaGuideBgmFavoriteCard(
     onSelect: () -> Unit,
     onPlay: () -> Unit,
     onCache: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
 ) {
     val unknownStudent = stringResource(R.string.ba_catalog_bgm_student_unknown)
     val studentTitle = favorite.studentTitle.ifBlank { unknownStudent }
     val cacheReadyLabel = stringResource(R.string.ba_catalog_bgm_cache_ready)
-    val cacheContentDescription = stringResource(
-        if (caching) R.string.ba_catalog_bgm_action_cache_busy else R.string.ba_catalog_bgm_action_cache
-    )
+    val cacheContentDescription =
+        stringResource(
+            if (caching) R.string.ba_catalog_bgm_action_cache_busy else R.string.ba_catalog_bgm_action_cache,
+        )
     val deleteContentDescription = stringResource(R.string.ba_catalog_bgm_action_delete)
     val playContentDescription = stringResource(R.string.ba_catalog_bgm_action_play)
     val openGalleryContentDescription = stringResource(R.string.ba_catalog_bgm_action_open_gallery)
     val moreContentDescription = stringResource(R.string.ba_catalog_bgm_action_more)
     val currentLabel = stringResource(R.string.ba_catalog_bgm_status_current)
     val detailTitle = favorite.title.takeIf { isMeaningfulBgmFavoriteDetail(it, studentTitle) }
-    val detailNote = favorite.note.takeIf { note ->
-        isMeaningfulBgmFavoriteDetail(note, studentTitle) &&
-            (detailTitle?.let { !sameBgmFavoriteDetail(note, it) } ?: true)
-    }
+    val detailNote =
+        favorite.note.takeIf { note ->
+            isMeaningfulBgmFavoriteDetail(note, studentTitle) &&
+                (detailTitle?.let { !sameBgmFavoriteDetail(note, it) } ?: true)
+        }
     val trackSubtitle = (detailTitle ?: detailNote)?.let { guideLocalizedLabel(it) }
     val listActionTint = MiuixTheme.colorScheme.onBackgroundVariant
     val listActionContainer = MiuixTheme.colorScheme.surfaceContainer
     var actionExpanded by remember { mutableStateOf(false) }
     var actionAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     GuideLiquidCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onSelect,
-                onLongClick = onRemove
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onSelect,
+                    onLongClick = onRemove,
+                ),
         cornerRadius = 14.dp,
         surfaceColor = if (selected) accent.copy(alpha = 0.14f) else MiuixTheme.colorScheme.surface.copy(alpha = 0.58f),
         tint = accent.copy(alpha = if (selected) 0.10f else 0.03f),
-        isInteractive = false
+        isInteractive = false,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier.size(48.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 BaGuideCatalogEntryAvatar(
                     imageUrl = favorite.studentImageUrl.ifBlank { favorite.imageUrl },
                     fallbackRes = R.drawable.ba_tab_bgm,
-                    size = 48.dp
+                    size = 48.dp,
                 )
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = studentTitle,
@@ -252,7 +272,7 @@ internal fun BaGuideBgmFavoriteCard(
                         lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                         fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (selected) {
                         BaGuideCatalogStatusIconPill(
@@ -276,7 +296,7 @@ internal fun BaGuideBgmFavoriteCard(
                         fontSize = AppTypographyTokens.Supporting.fontSize,
                         lineHeight = AppTypographyTokens.Supporting.lineHeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
@@ -288,11 +308,11 @@ internal fun BaGuideBgmFavoriteCard(
                 height = 38.dp,
                 variant = GlassVariant.Compact,
                 iconTint = listActionTint,
-                containerColor = listActionContainer
+                containerColor = listActionContainer,
             )
             Box(
                 modifier = Modifier.capturePopupAnchor { actionAnchorBounds = it },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 AppStandaloneLiquidIconButton(
                     icon = appLucideMoreIcon(),
@@ -302,47 +322,54 @@ internal fun BaGuideBgmFavoriteCard(
                     height = 32.dp,
                     variant = GlassVariant.Compact,
                     iconTint = listActionTint,
-                    containerColor = listActionContainer
+                    containerColor = listActionContainer,
                 )
-                if (actionExpanded) {
+                key("ba-guide-bgm-favorite-action-popup") {
                     SnapshotWindowListPopup(
-                        show = true,
+                        show = actionExpanded,
                         alignment = PopupPositionProvider.Align.BottomEnd,
                         anchorBounds = actionAnchorBounds,
                         placement = SnapshotPopupPlacement.ButtonEnd,
-                        enableWindowDim = false,
-                        onDismissRequest = { actionExpanded = false }
+                        onDismissRequest = { actionExpanded = false },
                     ) {
-                        LiquidGlassDropdownColumn {
-                            BaGuideBgmFavoriteActionItem(
-                                text = openGalleryContentDescription,
-                                index = 0,
-                                optionSize = 3,
-                                onClick = {
-                                    actionExpanded = false
-                                    onOpenGuide()
-                                }
-                            )
-                            BaGuideBgmFavoriteActionItem(
-                                text = cacheContentDescription,
-                                index = 1,
-                                optionSize = 3,
-                                onClick = {
-                                    actionExpanded = false
-                                    onCache()
-                                }
-                            )
-                            BaGuideBgmFavoriteActionItem(
-                                text = deleteContentDescription,
-                                index = 2,
-                                optionSize = 3,
-                                variant = GlassVariant.SheetDangerAction,
-                                onClick = {
-                                    actionExpanded = false
-                                    onRemove()
-                                }
-                            )
-                        }
+                        LiquidGlassActionMenu(
+                            minWidth = BgmFavoriteActionMenuMinWidth,
+                            maxWidth = BgmFavoriteActionMenuMaxWidth,
+                            maxHeight = BgmFavoriteActionMenuMaxHeight,
+                            items =
+                                listOf(
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "open_gallery",
+                                        text = openGalleryContentDescription,
+                                        leadingIcon = appLucideExternalLinkIcon(),
+                                        onClick = {
+                                            actionExpanded = false
+                                            onOpenGuide()
+                                        },
+                                    ),
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "cache",
+                                        text = cacheContentDescription,
+                                        leadingIcon = appLucideDatabaseIcon(),
+                                        enabled = !caching,
+                                        onClick = {
+                                            actionExpanded = false
+                                            onCache()
+                                        },
+                                    ),
+                                    LiquidGlassActionMenuActionRow(
+                                        id = "delete",
+                                        text = deleteContentDescription,
+                                        leadingIcon = appLucideTrashIcon(),
+                                        variant = GlassVariant.SheetDangerAction,
+                                        onClick = {
+                                            actionExpanded = false
+                                            onRemove()
+                                        },
+                                    ),
+                                ),
+                            onDismissRequest = { actionExpanded = false },
+                        )
                     }
                 }
             }
@@ -351,53 +378,40 @@ internal fun BaGuideBgmFavoriteCard(
 }
 
 @Composable
-private fun BaGuideBgmFavoriteActionItem(
-    text: String,
-    index: Int,
-    optionSize: Int,
-    onClick: () -> Unit,
-    variant: GlassVariant = GlassVariant.SheetAction
-) {
-    LiquidGlassDropdownActionItem(
-        text = text,
-        onClick = onClick,
-        index = index,
-        optionSize = optionSize,
-        variant = variant
-    )
-}
-
-@Composable
 internal fun BaGuideBgmUndoBlock(
     removedFavorite: GuideBgmFavoriteItem,
     accent: Color,
-    onUndo: () -> Unit
+    onUndo: () -> Unit,
 ) {
-    val studentName = removedFavorite.studentTitle.ifBlank {
-        stringResource(R.string.ba_catalog_bgm_student_unknown)
-    }
-    val bgmTitle = guideLocalizedLabel(
-        removedFavorite.title.ifBlank { removedFavorite.note },
-        R.string.ba_catalog_bgm_track_fallback
-    )
-    val message = stringResource(
-        R.string.ba_catalog_bgm_removed_message,
-        studentName,
-        bgmTitle
-    )
+    val studentName =
+        removedFavorite.studentTitle.ifBlank {
+            stringResource(R.string.ba_catalog_bgm_student_unknown)
+        }
+    val bgmTitle =
+        guideLocalizedLabel(
+            removedFavorite.title.ifBlank { removedFavorite.note },
+            R.string.ba_catalog_bgm_track_fallback,
+        )
+    val message =
+        stringResource(
+            R.string.ba_catalog_bgm_removed_message,
+            studentName,
+            bgmTitle,
+        )
     val undoText = stringResource(R.string.ba_catalog_bgm_action_undo)
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
+        onClick = {},
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(CardLayoutRhythm.cardContentPadding),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(CardLayoutRhythm.cardContentPadding),
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = message,
@@ -406,7 +420,7 @@ internal fun BaGuideBgmUndoBlock(
                 fontSize = AppTypographyTokens.Body.fontSize,
                 lineHeight = AppTypographyTokens.Body.lineHeight,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             AppStandaloneLiquidTextButton(
                 text = undoText,
@@ -414,7 +428,7 @@ internal fun BaGuideBgmUndoBlock(
                 onClick = onUndo,
                 textColor = accent,
                 variant = GlassVariant.Compact,
-                textMaxLines = 1
+                textMaxLines = 1,
             )
         }
     }
@@ -422,7 +436,7 @@ internal fun BaGuideBgmUndoBlock(
 
 private fun isMeaningfulBgmFavoriteDetail(
     raw: String,
-    studentTitle: String
+    studentTitle: String,
 ): Boolean {
     if (raw.isBlank()) return false
     if (sameBgmFavoriteDetail(raw, studentTitle)) return false
@@ -434,13 +448,10 @@ private fun isMeaningfulBgmFavoriteDetail(
 
 private fun sameBgmFavoriteDetail(
     first: String,
-    second: String
-): Boolean {
-    return first.bgmFavoriteDetailKey() == second.bgmFavoriteDetailKey()
-}
+    second: String,
+): Boolean = first.bgmFavoriteDetailKey() == second.bgmFavoriteDetailKey()
 
-private fun String.bgmFavoriteDetailKey(): String {
-    return replace(Regex("\\s+"), "")
+private fun String.bgmFavoriteDetailKey(): String =
+    replace(Regex("\\s+"), "")
         .trim()
         .lowercase()
-}

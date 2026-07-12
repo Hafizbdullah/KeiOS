@@ -28,7 +28,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -44,8 +43,8 @@ import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
@@ -172,86 +171,62 @@ private fun BaGuideBgmTrackMorePopup(
     onOfflineClick: () -> Unit,
     onOpenGuideClick: () -> Unit,
 ) {
-    if (!show) return
     SnapshotWindowListPopup(
-        show = true,
+        show = show,
         alignment = PopupPositionProvider.Align.BottomEnd,
-        anchorBounds = anchorBounds?.asTrackMenuAnchor(),
+        anchorBounds = anchorBounds,
         placement = SnapshotPopupPlacement.ButtonEnd,
-        enableWindowDim = false,
         onDismissRequest = onDismissRequest,
     ) {
-        LiquidGlassDropdownColumn {
-            BaGuideBgmTrackMenuItem(
-                text = stringResource(R.string.ba_catalog_bgm_action_play),
-                leadingIcon = appLucidePlayIcon(),
-                index = 0,
-                optionSize = BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT,
-                onClick = onPlayClick,
-            )
-            BaGuideBgmTrackMenuItem(
-                text =
-                    stringResource(
-                        if (favorite) {
-                            R.string.ba_catalog_bgm_action_unfavorite
-                        } else {
-                            R.string.ba_catalog_bgm_action_favorite
-                        },
+        LiquidGlassActionMenu(
+            minWidth = BA_GUIDE_BGM_TRACK_MENU_MIN_WIDTH,
+            maxWidth = BA_GUIDE_BGM_TRACK_MENU_MAX_WIDTH,
+            maxHeight = BA_GUIDE_BGM_TRACK_MENU_MAX_HEIGHT,
+            items =
+                listOf(
+                    LiquidGlassActionMenuActionRow(
+                        id = "play",
+                        text = stringResource(R.string.ba_catalog_bgm_action_play),
+                        leadingIcon = appLucidePlayIcon(),
+                        onClick = onPlayClick,
                     ),
-                leadingIcon = appLucideHeartIcon(),
-                index = 1,
-                optionSize = BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT,
-                onClick = onFavoriteClick,
-            )
-            BaGuideBgmTrackMenuItem(
-                text =
-                    stringResource(
-                        if (offlineSaved) {
-                            R.string.ba_catalog_bgm_action_remove_offline
-                        } else {
-                            R.string.ba_catalog_bgm_action_save_offline
-                        },
+                    LiquidGlassActionMenuActionRow(
+                        id = "favorite",
+                        text =
+                            stringResource(
+                                if (favorite) {
+                                    R.string.ba_catalog_bgm_action_unfavorite
+                                } else {
+                                    R.string.ba_catalog_bgm_action_favorite
+                                },
+                            ),
+                        leadingIcon = appLucideHeartIcon(),
+                        onClick = onFavoriteClick,
                     ),
-                leadingIcon = appLucideDownloadIcon(),
-                index = 2,
-                optionSize = BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT,
-                onClick = onOfflineClick,
-            )
-            BaGuideBgmTrackMenuItem(
-                text = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
-                leadingIcon = appLucideExternalLinkIcon(),
-                index = 3,
-                optionSize = BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT,
-                onClick = onOpenGuideClick,
-            )
-        }
+                    LiquidGlassActionMenuActionRow(
+                        id = "offline",
+                        text =
+                            stringResource(
+                                if (offlineSaved) {
+                                    R.string.ba_catalog_bgm_action_remove_offline
+                                } else {
+                                    R.string.ba_catalog_bgm_action_save_offline
+                                },
+                            ),
+                        leadingIcon = appLucideDownloadIcon(),
+                        onClick = onOfflineClick,
+                    ),
+                    LiquidGlassActionMenuActionRow(
+                        id = "open_gallery",
+                        text = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
+                        leadingIcon = appLucideExternalLinkIcon(),
+                        onClick = onOpenGuideClick,
+                    ),
+                ),
+            onDismissRequest = onDismissRequest,
+        )
     }
 }
-
-@Composable
-private fun BaGuideBgmTrackMenuItem(
-    text: String,
-    index: Int,
-    optionSize: Int,
-    leadingIcon: ImageVector? = null,
-    onClick: () -> Unit,
-) {
-    LiquidGlassDropdownActionItem(
-        text = text,
-        onClick = onClick,
-        leadingIcon = leadingIcon,
-        index = index,
-        optionSize = optionSize,
-    )
-}
-
-private fun IntRect.asTrackMenuAnchor(): IntRect =
-    IntRect(
-        left = left,
-        top = top,
-        right = right,
-        bottom = Int.MAX_VALUE / 4,
-    )
 
 @Composable
 private fun BaGuideBgmTrackIndex(
@@ -380,4 +355,6 @@ private data class BaGuideBgmPlayingBarHeightProviders(
 private const val BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT = 0.56f
 private const val BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT = 0.32f
 private const val BA_GUIDE_BGM_PLAYING_BAR_COUNT = 3
-private const val BA_GUIDE_BGM_TRACK_MENU_ITEM_COUNT = 4
+private val BA_GUIDE_BGM_TRACK_MENU_MIN_WIDTH = 168.dp
+private val BA_GUIDE_BGM_TRACK_MENU_MAX_WIDTH = 280.dp
+private val BA_GUIDE_BGM_TRACK_MENU_MAX_HEIGHT = 336.dp

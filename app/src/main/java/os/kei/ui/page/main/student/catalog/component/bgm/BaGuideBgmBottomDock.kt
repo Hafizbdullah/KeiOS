@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
@@ -88,6 +90,7 @@ internal fun BaGuideBgmDockGroupContent(
     val currentSelectedDockKey by rememberUpdatedState(selectedDockKey)
     val currentTabs by rememberUpdatedState(tabs)
     val currentOnSelectedDockKeyChange by rememberUpdatedState(onSelectedDockKeyChange)
+    val touchSlop = LocalViewConfiguration.current.touchSlop
     val animationScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
@@ -143,7 +146,7 @@ internal fun BaGuideBgmDockGroupContent(
 
         val holder = remember { DampedDragAnimationHolder() }
         val dampedDragAnimation =
-            remember(animationScope, safeTabCount, density, isLtr) {
+            remember(animationScope, safeTabCount, density, isLtr, touchSlop) {
                 DampedDragAnimation(
                     animationScope = animationScope,
                     initialValue = currentIndex.toFloat(),
@@ -152,6 +155,8 @@ internal fun BaGuideBgmDockGroupContent(
                     initialScale = 1f,
                     pressedScale = BaGuideBgmDockPressedScale,
                     gestureKey = safeTabCount to isLtr,
+                    dragOrientation = Orientation.Horizontal,
+                    dragTouchSlop = touchSlop,
                     canDrag = { offset ->
                         if (!currentExpandedEnabled) return@DampedDragAnimation false
                         val animation = holder.instance ?: return@DampedDragAnimation true
@@ -178,6 +183,21 @@ internal fun BaGuideBgmDockGroupContent(
                             animateToValue(targetIndex.toFloat())
                         } else {
                             snapToValue(targetIndex.toFloat())
+                        }
+                        animationScope.launch {
+                            if (currentAnimationsEnabled) {
+                                offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            } else {
+                                offsetAnimation.snapTo(0f)
+                            }
+                        }
+                    },
+                    onDragCancelled = {
+                        pressedTabIndex = -1
+                        if (currentAnimationsEnabled) {
+                            animateToValue(currentIndex.toFloat())
+                        } else {
+                            snapToValue(currentIndex.toFloat())
                         }
                         animationScope.launch {
                             if (currentAnimationsEnabled) {

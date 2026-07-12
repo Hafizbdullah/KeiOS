@@ -1,7 +1,10 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.section
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -188,14 +191,13 @@ internal fun GitHubTopBarActions(
         LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
             when (slotIndex) {
                 2 -> {
-                    if (showActionMenuPopup) {
+                    key("github-top-bar-action-popup") {
                         SnapshotWindowListPopup(
                             show = showActionMenuPopup,
                             alignment = PopupPositionProvider.Align.BottomEnd,
                             anchorBounds = popupAnchorBounds,
                             placement = SnapshotPopupPlacement.ButtonEnd,
                             onDismissRequest = { onShowActionMenuPopupChange(false) },
-                            enableWindowDim = false,
                             maxWidth = actionMenuMaxWidth,
                         ) {
                             val modes = GitHubSortMode.entries
