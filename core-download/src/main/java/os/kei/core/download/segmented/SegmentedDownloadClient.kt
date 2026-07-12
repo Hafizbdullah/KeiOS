@@ -306,6 +306,7 @@ class SegmentedDownloadClient(
                     dataUrl = dataUrl,
                     resourceValidator = resourceValidator,
                     options = options,
+                    scheduler = scheduler,
                     active = active,
                     writer = writer,
                     totalBytes = totalBytes,
@@ -377,6 +378,7 @@ class SegmentedDownloadClient(
         dataUrl: String,
         resourceValidator: RangeResourceValidator?,
         options: SegmentedDownloadOptions,
+        scheduler: PartScheduler,
         active: ActiveDownloadPart,
         writer: BoundedAsyncFileWriter,
         totalBytes: Long,
@@ -475,6 +477,7 @@ class SegmentedDownloadClient(
                     var lastCheckNs = startedNs
                     var lastCheckOffset = requestStart
                     var slowStrikes = 0
+                    var concurrencyProbeConfirmed = active.concurrencyProbeGeneration <= 0
                     response.body.byteStream().use { input ->
                         try {
                             while (true) {
@@ -496,6 +499,17 @@ class SegmentedDownloadClient(
                                     )
                                     active.advanceTo(offset + written)
                                     val currentOffset = active.currentOffset()
+                                    if (
+                                        !concurrencyProbeConfirmed &&
+                                        currentOffset - requestStart >= scheduler.concurrencyProbeConfirmBytes
+                                    ) {
+                                        scheduler.confirmConcurrencyProbe(
+                                            workerId = active.workerId,
+                                            generation = active.concurrencyProbeGeneration,
+                                            transferredBytes = currentOffset - requestStart,
+                                        )
+                                        concurrencyProbeConfirmed = true
+                                    }
                                     leaseTracker.recordProgress(
                                         remainingBytes = (end - currentOffset + 1L).coerceAtLeast(0L),
                                     )
@@ -965,7 +979,7 @@ internal fun SegmentedDownloadSpeedProfile.schedulerTuning(): PartSchedulerTunin
                 tailPartsPerConnection = 3,
                 tailWindowInitialMultiplier = 32,
                 partSizeTargetDurationMs = 16_000L,
-                startupActiveConnections = 8,
+                startupActiveConnections = 2,
                 rateLimitedMinPartSizeBytes = 32L * 1024L * 1024L,
                 idlePollMs = 20L,
             )

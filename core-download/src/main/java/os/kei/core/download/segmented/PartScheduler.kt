@@ -101,7 +101,10 @@ internal data class PartSchedulerTuning(
     val tailWindowMinDynamicMultiplier: Int = 2,
     val speedSmoothFactor: Double = 0.35,
     val partSizeTargetDurationMs: Long = 16_000L,
-    val startupActiveConnections: Int = 4,
+    val startupActiveConnections: Int = 2,
+    val concurrencyProbeConfirmBytes: Long = 64L * 1024L,
+    val concurrencyProbeLowWindowMs: Long = 1_000L,
+    val concurrencyProbeHighWindowMs: Long = 2_000L,
     val rateLimitMinActiveConnections: Int = 2,
     val rateLimitStrikeThreshold: Int = 2,
     val rateLimitWindowMs: Long = 30_000L,
@@ -121,6 +124,9 @@ internal data class PartSchedulerTuning(
         require(speedSmoothFactor in 0.0..1.0) { "speedSmoothFactor must be between 0 and 1" }
         require(partSizeTargetDurationMs > 0L) { "partSizeTargetDurationMs must be positive" }
         require(startupActiveConnections > 0) { "startupActiveConnections must be positive" }
+        require(concurrencyProbeConfirmBytes > 0L) { "concurrencyProbeConfirmBytes must be positive" }
+        require(concurrencyProbeLowWindowMs > 0L) { "concurrencyProbeLowWindowMs must be positive" }
+        require(concurrencyProbeHighWindowMs > 0L) { "concurrencyProbeHighWindowMs must be positive" }
         require(rateLimitMinActiveConnections > 0) { "rateLimitMinActiveConnections must be positive" }
         require(rateLimitStrikeThreshold > 0) { "rateLimitStrikeThreshold must be positive" }
         require(rateLimitWindowMs > 0L) { "rateLimitWindowMs must be positive" }
@@ -135,6 +141,7 @@ internal class ActiveDownloadPart internal constructor(
     val workerId: Int,
     val part: DownloadPart,
     val startedMs: Long,
+    val concurrencyProbeGeneration: Int = 0,
 ) {
     private val lock = Any()
     private var nextOffset: Long = part.start
@@ -184,6 +191,7 @@ internal data class PartSchedulerStats(
     val stealCount: Int,
     val handoffCount: Int,
     val peakActiveConnections: Int,
+    val currentActiveLimit: Int,
 )
 
 internal class PartScheduler(
@@ -202,7 +210,7 @@ internal class PartScheduler(
     private val workerDone = IntArray(concurrency)
     private val workerSpeedBytesPerMs = DoubleArray(concurrency)
     private val workerPartSizeBytes = LongArray(concurrency) { initialPartSizeBytes }
-    private val growthWaveWorkers = BooleanArray(concurrency)
+    private val concurrencyProbeSeen = BooleanArray(concurrency)
     private val maxDynamicPartSizeBytes: Long
     private var partSizeHint = initialPartSizeBytes
     private var tailPartSizeHint = 0L
@@ -210,7 +218,11 @@ internal class PartScheduler(
     private var activeCount = 0
     private var maxActive = min(concurrency, tuning.startupActiveConnections)
     private var peakActiveConnections = maxActive
-    private var growthWaveSamples = 0
+    private var concurrencyProbeGeneration = 1
+    private var concurrencyProbeSamples = 0
+    private var concurrencyProbeActive = maxActive < concurrency
+    private var concurrencyProbeDeadlineMs =
+        if (concurrencyProbeActive) nowMs().saturatingAdd(concurrencyProbeWindowMs(maxActive)) else Long.MAX_VALUE
     private var front = 0L
     private var back = totalBytes - 1L
     private var sequence = 0
@@ -236,11 +248,22 @@ internal class PartScheduler(
     val idlePollMs: Long
         get() = tuning.idlePollMs
 
+    val concurrencyProbeConfirmBytes: Long
+        get() = tuning.concurrencyProbeConfirmBytes
+
     suspend fun nextPart(workerId: Int = 0): ActiveDownloadPart? =
         mutex.withLock {
             if (workerId !in activeParts.indices) return@withLock null
-            recoverRateLimitLocked(nowMs())
-            if (activeParts[workerId] != null || activeCount >= maxActive) return@withLock null
+            val now = nowMs()
+            settleExpiredConcurrencyProbeLocked(now)
+            recoverRateLimitLocked(now)
+            if (
+                activeParts[workerId] != null ||
+                activeCount >= maxActive ||
+                !concurrencyProbeAllowsWorkerLocked(workerId)
+            ) {
+                return@withLock null
+            }
             moveReadyDelayedLocked()
             val queuedPart =
                 when {
@@ -254,6 +277,12 @@ internal class PartScheduler(
                 workerId = workerId,
                 part = part,
                 startedMs = nowMs(),
+                concurrencyProbeGeneration =
+                    if (isPendingConcurrencyProbeWorkerLocked(workerId)) {
+                        concurrencyProbeGeneration
+                    } else {
+                        0
+                    },
             )
             activeParts[workerId] = active
             activeCount += 1
@@ -336,7 +365,36 @@ internal class PartScheduler(
                     rateLimited = false
                 }
             }
-            recordProgressiveGrowthLocked(workerId)
+        }
+    }
+
+    suspend fun confirmConcurrencyProbe(
+        workerId: Int,
+        generation: Int,
+        transferredBytes: Long,
+    ) {
+        if (generation <= 0 || transferredBytes < tuning.concurrencyProbeConfirmBytes) return
+        mutex.withLock {
+            settleExpiredConcurrencyProbeLocked(nowMs())
+            if (
+                !concurrencyProbeActive ||
+                rateLimited ||
+                generation != concurrencyProbeGeneration ||
+                workerId !in concurrencyProbeSeen.indices ||
+                concurrencyProbeSeen[workerId]
+            ) {
+                return@withLock
+            }
+            concurrencyProbeSeen[workerId] = true
+            concurrencyProbeSamples += 1
+            if (concurrencyProbeSamples < maxActive) return@withLock
+            if (maxActive >= concurrency) {
+                stopConcurrencyProbeLocked()
+                return@withLock
+            }
+            maxActive = min(concurrency, max(maxActive + 1, maxActive * 2))
+            peakActiveConnections = max(peakActiveConnections, maxActive)
+            startConcurrencyProbeGenerationLocked(nowMs())
         }
     }
 
@@ -347,7 +405,7 @@ internal class PartScheduler(
         mutex.withLock {
             val now = nowMs()
             normalizeMaxActiveLocked()
-            resetProgressiveGrowthLocked()
+            stopConcurrencyProbeLocked()
             val rejectedProbe = part.rateProbe && probeLimit == maxActive
             if (rejectedProbe) {
                 if (maxActive > rateLimitFloor) {
@@ -390,6 +448,7 @@ internal class PartScheduler(
                 stealCount = 0,
                 handoffCount = 0,
                 peakActiveConnections = peakActiveConnections,
+                currentActiveLimit = maxActive,
             )
         }
 
@@ -475,7 +534,6 @@ internal class PartScheduler(
         if (!rateLimited || maxActive >= concurrency || now < recoverAtMs) return
         maxActive += 1
         peakActiveConnections = max(peakActiveConnections, maxActive)
-        resetProgressiveGrowthLocked()
         probeLimit = maxActive
         recoverAtMs = now + tuning.rateLimitRecoveryMs
     }
@@ -489,21 +547,52 @@ internal class PartScheduler(
         maxActive = maxActive.coerceIn(1, concurrency)
     }
 
-    private fun recordProgressiveGrowthLocked(workerId: Int) {
-        if (rateLimited || maxActive >= concurrency || workerId !in growthWaveWorkers.indices) return
-        if (growthWaveWorkers[workerId]) return
-        growthWaveWorkers[workerId] = true
-        growthWaveSamples += 1
-        if (growthWaveSamples < maxActive) return
-        maxActive += 1
-        peakActiveConnections = max(peakActiveConnections, maxActive)
-        resetProgressiveGrowthLocked()
+    private fun concurrencyProbeAllowsWorkerLocked(workerId: Int): Boolean {
+        if (!concurrencyProbeActive) return true
+        if (workerId !in 0 until maxActive) return false
+        if (isPendingConcurrencyProbeWorkerLocked(workerId)) return true
+        return (0 until maxActive).none { pendingWorkerId ->
+            isPendingConcurrencyProbeWorkerLocked(pendingWorkerId) && activeParts[pendingWorkerId] == null
+        }
     }
 
-    private fun resetProgressiveGrowthLocked() {
-        growthWaveWorkers.fill(false)
-        growthWaveSamples = 0
+    private fun isPendingConcurrencyProbeWorkerLocked(workerId: Int): Boolean =
+        concurrencyProbeActive &&
+            workerId in 0 until maxActive &&
+            !concurrencyProbeSeen[workerId]
+
+    private fun startConcurrencyProbeGenerationLocked(now: Long) {
+        concurrencyProbeGeneration += 1
+        concurrencyProbeSamples = 0
+        concurrencyProbeSeen.fill(false)
+        concurrencyProbeActive = true
+        concurrencyProbeDeadlineMs = now.saturatingAdd(concurrencyProbeWindowMs(maxActive))
     }
+
+    private fun settleExpiredConcurrencyProbeLocked(now: Long) {
+        if (!concurrencyProbeActive || now < concurrencyProbeDeadlineMs) return
+        val minimum = min(concurrency, tuning.startupActiveConnections)
+        maxActive = max(minimum, min(maxActive, concurrencyProbeSamples.coerceAtLeast(minimum)))
+        stopConcurrencyProbeLocked()
+        if (maxActive < concurrency) {
+            rateLimited = true
+            extendRecoveryLocked(now, tuning.rateLimitRecoveryMs)
+        }
+    }
+
+    private fun stopConcurrencyProbeLocked() {
+        concurrencyProbeActive = false
+        concurrencyProbeDeadlineMs = Long.MAX_VALUE
+        concurrencyProbeSamples = 0
+        concurrencyProbeSeen.fill(false)
+    }
+
+    private fun concurrencyProbeWindowMs(candidate: Int): Long =
+        if (candidate > tuning.startupActiveConnections * 2) {
+            tuning.concurrencyProbeHighWindowMs
+        } else {
+            tuning.concurrencyProbeLowWindowMs
+        }
 
     private fun extendRecoveryLocked(
         now: Long,
