@@ -1,4 +1,5 @@
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@file:Suppress("FunctionName")
 
 package os.kei.ui.page.main.student.section.gallery
 
@@ -21,20 +22,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.Player
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.kyant.backdrop.Backdrop
+import os.kei.R
 import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.Replace
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Replace
 import kotlin.math.roundToInt
 
 @Composable
@@ -42,16 +45,16 @@ internal fun GuideInlineVideoPreview(
     previewImageUrl: String,
     onOpenFullscreen: () -> Unit,
     previewProgressState: GuideMediaProgressState?,
-    onPreviewLoadingChanged: ((Boolean) -> Unit)?
+    onPreviewLoadingChanged: ((Boolean) -> Unit)?,
 ) {
     if (previewImageUrl.isNotBlank()) {
         Box(
-            modifier = Modifier.clickable { onOpenFullscreen() }
+            modifier = Modifier.clickable { onOpenFullscreen() },
         ) {
             GuideRemoteImageAdaptive(
                 imageUrl = previewImageUrl,
                 progressState = previewProgressState,
-                onLoadingChanged = onPreviewLoadingChanged
+                onLoadingChanged = onPreviewLoadingChanged,
             )
         }
     } else {
@@ -70,35 +73,37 @@ internal fun GuideInlineVideoPlayerBody(
     onToggleLoop: () -> Unit,
     onCollapse: () -> Unit,
     onVideoBoundsChanged: (Rect?) -> Unit = {},
-    backdrop: Backdrop?
+    backdrop: Backdrop?,
 ) {
     AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(videoRatio)
-            .onGloballyPositioned { coordinates ->
-                val bounds = coordinates.boundsInWindow()
-                val rect =
-                    Rect(
-                        bounds.left.roundToInt(),
-                        bounds.top.roundToInt(),
-                        bounds.right.roundToInt(),
-                        bounds.bottom.roundToInt(),
-                    )
-                onVideoBoundsChanged(rect.takeUnless { it.isEmpty })
-            }
-            // NOTE: must stay a plain clip, NOT appSquircleClip. PlayerView renders through a
-            // SurfaceView on its own system-composited layer, which draws nothing into Compose's
-            // offscreen buffer. The squircle helper forces CompositingStrategy.Offscreen + a DstIn
-            // mask, so that empty buffer masks the video to a white screen (audio still plays).
-            // A regular clip avoids offscreen compositing, matching the working 1.8.0 behavior.
-            .clip(RoundedCornerShape(14.dp)),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(videoRatio)
+                .onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInWindow()
+                    val rect =
+                        Rect(
+                            bounds.left.roundToInt(),
+                            bounds.top.roundToInt(),
+                            bounds.right.roundToInt(),
+                            bounds.bottom.roundToInt(),
+                        )
+                    onVideoBoundsChanged(rect.takeUnless { it.isEmpty })
+                }
+                // NOTE: must stay a plain clip, NOT appSquircleClip. PlayerView renders through a
+                // SurfaceView on its own system-composited layer, which draws nothing into Compose's
+                // offscreen buffer. The squircle helper forces CompositingStrategy.Offscreen + a DstIn
+                // mask, so that empty buffer masks the video to a white screen (audio still plays).
+                // A regular clip avoids offscreen compositing, matching the working 1.8.0 behavior.
+                .clip(RoundedCornerShape(14.dp)),
         factory = { ctx ->
             PlayerView(ctx).apply {
-                layoutParams = android.view.ViewGroup.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                )
+                layoutParams =
+                    android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
                 useController = true
                 resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                 this.player = player
@@ -107,29 +112,36 @@ internal fun GuideInlineVideoPlayerBody(
         update = { view ->
             view.player = player
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }
+        },
     )
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = "",
-            leadingIcon = MiuixIcons.Regular.Replace,
-            textColor = if (loopEnabled) Color(0xFF34C759) else Color(0xFF3B82F6),
+            icon = MiuixIcons.Regular.Replace,
+            contentDescription =
+                stringResource(
+                    if (loopEnabled) R.string.guide_action_loop_disable else R.string.guide_action_loop_enable,
+                ),
+            width = 36.dp,
+            height = 36.dp,
             variant = GlassVariant.Compact,
-            onClick = onToggleLoop
+            iconTint = if (loopEnabled) Color(0xFF34C759) else Color(0xFF3B82F6),
+            onClick = onToggleLoop,
         )
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = "",
-            leadingIcon = MiuixIcons.Regular.ExpandLess,
-            textColor = Color(0xFF3B82F6),
+            icon = MiuixIcons.Regular.ExpandLess,
+            contentDescription = stringResource(R.string.common_collapse),
+            width = 36.dp,
+            height = 36.dp,
             variant = GlassVariant.Compact,
-            onClick = onCollapse
+            iconTint = Color(0xFF3B82F6),
+            onClick = onCollapse,
         )
     }
 }
@@ -173,20 +185,24 @@ internal fun GuideInlineVideoFailureBody(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppLiquidTextButton(
+            AppLiquidIconButton(
                 backdrop = backdrop,
-                text = "",
-                leadingIcon = MiuixIcons.Regular.Refresh,
-                textColor = Color(0xFF3B82F6),
+                icon = MiuixIcons.Regular.Refresh,
+                contentDescription = stringResource(R.string.common_refresh),
+                width = 36.dp,
+                height = 36.dp,
                 variant = GlassVariant.Compact,
+                iconTint = Color(0xFF3B82F6),
                 onClick = onRetry,
             )
-            AppLiquidTextButton(
+            AppLiquidIconButton(
                 backdrop = backdrop,
-                text = "",
-                leadingIcon = MiuixIcons.Regular.ExpandLess,
-                textColor = Color(0xFF3B82F6),
+                icon = MiuixIcons.Regular.ExpandLess,
+                contentDescription = stringResource(R.string.common_collapse),
+                width = 36.dp,
+                height = 36.dp,
                 variant = GlassVariant.Compact,
+                iconTint = Color(0xFF3B82F6),
                 onClick = onCollapse,
             )
         }

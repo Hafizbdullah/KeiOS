@@ -12,12 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
 import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
 import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -92,36 +93,49 @@ internal fun GuideGalleryVideoGroupHeaderActions(
     }
 
     if (displayMediaUrl.isNotBlank()) {
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = "",
-            leadingIcon =
+            icon =
                 if (videoInlineExpanded && videoInlinePlaying) {
                     MiuixIcons.Regular.Pause
                 } else {
                     MiuixIcons.Regular.Play
                 },
-            textColor = Color(0xFF3B82F6),
+            contentDescription =
+                stringResource(
+                    if (videoInlineExpanded && videoInlinePlaying) {
+                        R.string.guide_action_pause
+                    } else {
+                        R.string.guide_action_play
+                    },
+                ),
+            width = 36.dp,
+            height = 36.dp,
             variant = GlassVariant.Compact,
+            iconTint = Color(0xFF3B82F6),
             onClick = onToggleInlinePlay,
         )
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = "",
-            leadingIcon = fullscreenIcon,
-            textColor = Color(0xFF3B82F6),
+            icon = fullscreenIcon,
+            contentDescription = stringResource(R.string.guide_action_fullscreen),
+            width = 36.dp,
+            height = 36.dp,
             variant = GlassVariant.Compact,
+            iconTint = Color(0xFF3B82F6),
             onClick = onOpenFullscreen,
         )
     }
 
     if (saveTargetUrl.isNotBlank()) {
-        AppLiquidTextButton(
+        AppLiquidIconButton(
             backdrop = backdrop,
-            text = "",
-            leadingIcon = MiuixIcons.Regular.Download,
-            textColor = Color(0xFF3B82F6),
+            icon = MiuixIcons.Regular.Download,
+            contentDescription = stringResource(R.string.common_download),
+            width = 36.dp,
+            height = 36.dp,
             variant = GlassVariant.Compact,
+            iconTint = Color(0xFF3B82F6),
             onClick = onSaveMedia,
         )
     }

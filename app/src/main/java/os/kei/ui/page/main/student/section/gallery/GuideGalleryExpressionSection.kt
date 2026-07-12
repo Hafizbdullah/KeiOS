@@ -60,6 +60,7 @@ import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.GuidePressableMediaSurface
 import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
 import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
@@ -338,17 +339,26 @@ fun GuideGalleryExpressionCardItem(
                     }
                 }
                 if (isVideoType && displayMediaUrl.isNotBlank()) {
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
-                        text = "",
-                        leadingIcon =
+                        icon =
                             if (videoInlineExpanded && videoInlinePlaying) {
                                 MiuixIcons.Regular.Pause
                             } else {
                                 MiuixIcons.Regular.Play
                             },
-                        textColor = Color(0xFF3B82F6),
+                        contentDescription =
+                            stringResource(
+                                if (videoInlineExpanded && videoInlinePlaying) {
+                                    R.string.guide_action_pause
+                                } else {
+                                    R.string.guide_action_play
+                                },
+                            ),
+                        width = 36.dp,
+                        height = 36.dp,
                         variant = GlassVariant.Compact,
+                        iconTint = Color(0xFF3B82F6),
                         onClick = {
                             if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
                                 context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
@@ -359,12 +369,14 @@ fun GuideGalleryExpressionCardItem(
                             }
                         },
                     )
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
-                        text = "",
-                        leadingIcon = fullscreenIcon,
-                        textColor = Color(0xFF3B82F6),
+                        icon = fullscreenIcon,
+                        contentDescription = stringResource(R.string.guide_action_fullscreen),
+                        width = 36.dp,
+                        height = 36.dp,
                         variant = GlassVariant.Compact,
+                        iconTint = Color(0xFF3B82F6),
                         onClick = {
                             val normalized = normalizeGuideMediaSource(displayMediaUrl)
                             if (normalized.isBlank()) {
@@ -379,12 +391,14 @@ fun GuideGalleryExpressionCardItem(
                     )
                 }
                 if (saveTargetUrl.isNotBlank()) {
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
-                        text = "",
-                        leadingIcon = MiuixIcons.Regular.Download,
-                        textColor = Color(0xFF3B82F6),
+                        icon = MiuixIcons.Regular.Download,
+                        contentDescription = stringResource(R.string.common_download),
+                        width = 36.dp,
+                        height = 36.dp,
                         variant = GlassVariant.Compact,
+                        iconTint = Color(0xFF3B82F6),
                         onClick = {
                             onSaveMedia(
                                 saveTargetUrl,
@@ -394,12 +408,14 @@ fun GuideGalleryExpressionCardItem(
                     )
                 }
                 if (expressionPackTargets.size > 1) {
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
-                        text = "",
-                        leadingIcon = packDownloadIcon,
-                        textColor = Color(0xFF3B82F6),
+                        icon = packDownloadIcon,
+                        contentDescription = stringResource(R.string.guide_action_download_pack),
+                        width = 36.dp,
+                        height = 36.dp,
                         variant = GlassVariant.Compact,
+                        iconTint = Color(0xFF3B82F6),
                         onClick = {
                             onSaveMediaPack(expressionPackTargets, title)
                         },

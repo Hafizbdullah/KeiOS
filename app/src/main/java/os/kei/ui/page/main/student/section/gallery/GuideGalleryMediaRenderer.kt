@@ -1,6 +1,7 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.section.gallery
 
-import os.kei.core.ext.showToast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,9 +19,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
-import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
+import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.student.GuideVideoControlAction
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
@@ -68,25 +70,25 @@ internal fun GuideGalleryCardContent(
     onToggleAudioLoop: () -> Unit,
     audioState: GuideGalleryAudioPlayerState,
     gestureState: GuideGalleryGestureState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val fullscreenIcon = appLucideFullscreenIcon()
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = displayTitle,
                 color = MiuixTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (showMediaTypeLabel && mediaTypeLabel.isNotBlank()) {
                 AppLiquidTextButton(
@@ -95,20 +97,30 @@ internal fun GuideGalleryCardContent(
                     enabled = false,
                     textColor = Color(0xFF3B82F6),
                     variant = GlassVariant.Compact,
-                    onClick = {}
+                    onClick = {},
                 )
             }
             if (normalizedMediaType == "video" && displayMediaUrl.isNotBlank()) {
-                AppLiquidTextButton(
+                AppLiquidIconButton(
                     backdrop = backdrop,
-                    text = "",
-                    leadingIcon = if (gestureState.videoInlineExpanded && gestureState.videoInlinePlaying) {
-                        MiuixIcons.Regular.Pause
-                    } else {
-                        MiuixIcons.Regular.Play
-                    },
-                    textColor = Color(0xFF3B82F6),
+                    icon =
+                        if (gestureState.videoInlineExpanded && gestureState.videoInlinePlaying) {
+                            MiuixIcons.Regular.Pause
+                        } else {
+                            MiuixIcons.Regular.Play
+                        },
+                    contentDescription =
+                        stringResource(
+                            if (gestureState.videoInlineExpanded && gestureState.videoInlinePlaying) {
+                                R.string.guide_action_pause
+                            } else {
+                                R.string.guide_action_play
+                            },
+                        ),
+                    width = 36.dp,
+                    height = 36.dp,
                     variant = GlassVariant.Compact,
+                    iconTint = Color(0xFF3B82F6),
                     onClick = {
                         if (normalizeGuideMediaSource(displayMediaUrl).isBlank()) {
                             context.showToast(context.resolveString(R.string.guide_media_video_url_invalid))
@@ -117,14 +129,16 @@ internal fun GuideGalleryCardContent(
                         } else {
                             gestureState.requestToggleVideoPlayback()
                         }
-                    }
+                    },
                 )
-                AppLiquidTextButton(
+                AppLiquidIconButton(
                     backdrop = backdrop,
-                    text = "",
-                    leadingIcon = fullscreenIcon,
-                    textColor = Color(0xFF3B82F6),
+                    icon = fullscreenIcon,
+                    contentDescription = stringResource(R.string.guide_action_fullscreen),
+                    width = 36.dp,
+                    height = 36.dp,
                     variant = GlassVariant.Compact,
+                    iconTint = Color(0xFF3B82F6),
                     onClick = {
                         val normalized = normalizeGuideMediaSource(displayMediaUrl)
                         if (normalized.isBlank()) {
@@ -132,20 +146,22 @@ internal fun GuideGalleryCardContent(
                         } else {
                             GuideVideoFullscreenActivity.launch(
                                 context = context,
-                                mediaUrl = normalized
+                                mediaUrl = normalized,
                             )
                         }
-                    }
+                    },
                 )
             }
             if (canSaveMedia) {
-                AppLiquidTextButton(
+                AppLiquidIconButton(
                     backdrop = backdrop,
-                    text = "",
-                    leadingIcon = MiuixIcons.Regular.Download,
-                    textColor = Color(0xFF3B82F6),
+                    icon = MiuixIcons.Regular.Download,
+                    contentDescription = stringResource(R.string.common_download),
+                    width = 36.dp,
+                    height = 36.dp,
                     variant = GlassVariant.Compact,
-                    onClick = { onSaveMedia(saveTargetUrl, displayTitle) }
+                    iconTint = Color(0xFF3B82F6),
+                    onClick = { onSaveMedia(saveTargetUrl, displayTitle) },
                 )
             }
             if (isImageType && displayImageUrl.isNotBlank()) {
@@ -166,26 +182,40 @@ internal fun GuideGalleryCardContent(
                         height = 34.dp,
                         variant = GlassVariant.Compact,
                         iconTint = favoriteColor,
-                        containerColor = favoriteColor
+                        containerColor = favoriteColor,
                     )
                 }
                 if (showAudioLoopAction) {
-                    AppLiquidTextButton(
+                    AppLiquidIconButton(
                         backdrop = backdrop,
-                        text = "",
-                        leadingIcon = MiuixIcons.Regular.Replace,
-                        textColor = if (audioState.loopEnabled) Color(0xFF34C759) else Color(0xFF3B82F6),
+                        icon = MiuixIcons.Regular.Replace,
+                        contentDescription =
+                            stringResource(
+                                if (audioState.loopEnabled) {
+                                    R.string.guide_action_loop_disable
+                                } else {
+                                    R.string.guide_action_loop_enable
+                                },
+                            ),
+                        width = 36.dp,
+                        height = 36.dp,
                         variant = GlassVariant.Compact,
-                        onClick = onToggleAudioLoop
+                        iconTint = if (audioState.loopEnabled) Color(0xFF34C759) else Color(0xFF3B82F6),
+                        onClick = onToggleAudioLoop,
                     )
                 }
-                AppLiquidTextButton(
+                AppLiquidIconButton(
                     backdrop = backdrop,
-                    text = "",
-                    leadingIcon = if (audioState.isPlaying) MiuixIcons.Regular.Pause else MiuixIcons.Regular.Play,
-                    textColor = Color(0xFF3B82F6),
+                    icon = if (audioState.isPlaying) MiuixIcons.Regular.Pause else MiuixIcons.Regular.Play,
+                    contentDescription =
+                        stringResource(
+                            if (audioState.isPlaying) R.string.guide_action_pause else R.string.guide_action_play,
+                        ),
+                    width = 36.dp,
+                    height = 36.dp,
                     variant = GlassVariant.Compact,
-                    onClick = { audioState.togglePlay(context) }
+                    iconTint = Color(0xFF3B82F6),
+                    onClick = { audioState.togglePlay(context) },
                 )
             }
         }
@@ -195,7 +225,7 @@ internal fun GuideGalleryCardContent(
                 text = notePlainText,
                 color = MiuixTheme.colorScheme.onBackgroundVariant,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
         if (normalizedMediaType == "audio" && audioTargetUrl.isNotBlank()) {
@@ -204,22 +234,22 @@ internal fun GuideGalleryCardContent(
                 enabled = audioState.resolvedDurationMs > 0L && audioState.player != null,
                 onSeekStarted = { audioState.startSeekPreview() },
                 onSeekChanged = { fraction -> audioState.updateSeekPreview(fraction) },
-                onSeekFinished = { fraction -> audioState.finishSeek(fraction) }
+                onSeekFinished = { fraction -> audioState.finishSeek(fraction) },
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = formatAudioDuration(audioState.displayPositionMs),
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
                 )
                 Text(
                     text = formatAudioDuration(audioState.resolvedDurationMs),
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = 12.sp
+                    fontSize = 12.sp,
                 )
             }
         }
@@ -227,7 +257,7 @@ internal fun GuideGalleryCardContent(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.End,
             ) {
                 noteLinks.forEach { link ->
                     Text(
@@ -236,9 +266,10 @@ internal fun GuideGalleryCardContent(
                         textAlign = TextAlign.End,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clickable {
-                            onOpenMedia(link)
-                        }
+                        modifier =
+                            Modifier.clickable {
+                                onOpenMedia(link)
+                            },
                     )
                 }
             }
@@ -246,16 +277,17 @@ internal fun GuideGalleryCardContent(
 
         if (displayImageUrl.isNotBlank() && normalizedMediaType != "video" && normalizedMediaType != "audio") {
             GuidePressableMediaSurface(
-                onClick = { gestureState.showImageFullscreen = true }
+                onClick = { gestureState.showImageFullscreen = true },
             ) {
                 GuideRemoteImageAdaptive(
                     imageUrl = displayImageUrl,
                     progressState = if (isImageType) imageProgressState else null,
-                    onLoadingChanged = if (isImageType) {
-                        { loading -> onImageLoadingChanged(loading) }
-                    } else {
-                        null
-                    }
+                    onLoadingChanged =
+                        if (isImageType) {
+                            { loading -> onImageLoadingChanged(loading) }
+                        } else {
+                            null
+                        },
                 )
             }
         }
@@ -271,7 +303,7 @@ internal fun GuideGalleryCardContent(
                         onExpandedChange = { expanded -> gestureState.videoInlineExpanded = expanded },
                         controlAction = GuideVideoControlAction.TogglePlayPause,
                         controlActionToken = gestureState.videoControlRequestId,
-                        onIsPlayingChange = { playing -> gestureState.videoInlinePlaying = playing }
+                        onIsPlayingChange = { playing -> gestureState.videoInlinePlaying = playing },
                     )
                 }
 
@@ -282,7 +314,7 @@ internal fun GuideGalleryCardContent(
                         leadingIcon = MiuixIcons.Regular.Play,
                         textColor = Color(0xFF3B82F6),
                         variant = GlassVariant.Compact,
-                        onClick = { onOpenMedia(itemMediaUrl) }
+                        onClick = { onOpenMedia(itemMediaUrl) },
                     )
                 }
             }
@@ -290,13 +322,14 @@ internal fun GuideGalleryCardContent(
 
         audioState.loadError?.takeIf { it.isNotBlank() }?.let { err ->
             Text(
-                text = context.resolveString(
-                    R.string.guide_media_audio_play_failed_with_reason,
-                    err
-                ),
+                text =
+                    context.resolveString(
+                        R.string.guide_media_audio_play_failed_with_reason,
+                        err,
+                    ),
                 color = MiuixTheme.colorScheme.error,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

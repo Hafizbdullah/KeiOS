@@ -685,6 +685,12 @@
     <string name="guide_gallery_memorial_lobby">回忆大厅</string>
     <string name="guide_gallery_memorial_lobby_video">回忆大厅视频</string>
     <string name="guide_gallery_memorial_lobby_video_format">回忆大厅视频%1$s</string>
+    <string name="guide_action_play">播放</string>
+    <string name="guide_action_pause">暂停</string>
+    <string name="guide_action_loop_enable">开启循环播放</string>
+    <string name="guide_action_loop_disable">关闭循环播放</string>
+    <string name="guide_action_download_pack">下载整包</string>
+    <string name="guide_action_fullscreen">全屏播放</string>
     <string name="guide_gallery_memorial_lobby_pip_play">播放回忆大厅视频</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">播放</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">暂停</string>

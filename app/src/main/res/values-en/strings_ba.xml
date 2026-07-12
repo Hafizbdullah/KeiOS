@@ -664,6 +664,12 @@
     <string name="guide_gallery_memorial_lobby">Memorial Lobby</string>
     <string name="guide_gallery_memorial_lobby_video">Memorial Lobby Video</string>
     <string name="guide_gallery_memorial_lobby_video_format">Memorial Lobby Video %1$s</string>
+    <string name="guide_action_play">Play</string>
+    <string name="guide_action_pause">Pause</string>
+    <string name="guide_action_loop_enable">Enable loop</string>
+    <string name="guide_action_loop_disable">Disable loop</string>
+    <string name="guide_action_download_pack">Download pack</string>
+    <string name="guide_action_fullscreen">Open fullscreen</string>
     <string name="guide_gallery_memorial_lobby_pip_play">Play Memorial Lobby video</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">Play</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">Pause</string>

@@ -666,6 +666,12 @@
     <string name="guide_gallery_memorial_lobby">メモリアルロビー</string>
     <string name="guide_gallery_memorial_lobby_video">メモリアルロビー動画</string>
     <string name="guide_gallery_memorial_lobby_video_format">メモリアルロビー動画 %1$s</string>
+    <string name="guide_action_play">再生</string>
+    <string name="guide_action_pause">一時停止</string>
+    <string name="guide_action_loop_enable">ループ再生を有効にする</string>
+    <string name="guide_action_loop_disable">ループ再生を無効にする</string>
+    <string name="guide_action_download_pack">まとめてダウンロード</string>
+    <string name="guide_action_fullscreen">全画面表示</string>
     <string name="guide_gallery_memorial_lobby_pip_play">メモリアルロビー動画を再生</string>
     <string name="guide_gallery_memorial_lobby_pip_resume">再生</string>
     <string name="guide_gallery_memorial_lobby_pip_pause">一時停止</string>
