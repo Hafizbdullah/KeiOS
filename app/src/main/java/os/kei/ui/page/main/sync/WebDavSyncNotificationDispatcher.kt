@@ -129,6 +129,7 @@ internal object WebDavSyncNotificationDispatcher {
         val safeTotal = total.coerceAtLeast(1)
         val safeCurrent = current.coerceIn(0, safeTotal)
         val operationLabel = operation.label(context)
+        val notificationTitle = operation.notificationTitle(context)
         val content =
             if (status == WebDavSyncNotificationStatus.Running) {
                 context.getString(
@@ -168,7 +169,7 @@ internal object WebDavSyncNotificationDispatcher {
                 primaryActionLabel = context.getString(R.string.webdav_sync_notification_action_open),
                 secondaryActionLabel = context.getString(R.string.common_mark_read),
                 showSecondaryActionWhenStopped = true,
-                overrideTitle = context.getString(R.string.webdav_sync_notification_title, operationLabel),
+                overrideTitle = notificationTitle,
                 overrideContent = content,
                 overrideOnlineText = if (status == WebDavSyncNotificationStatus.Running) {
                     operationLabel
@@ -178,7 +179,7 @@ internal object WebDavSyncNotificationDispatcher {
                 overrideShortText = shortText,
                 overrideProgressPercent = percent(safeCurrent, safeTotal),
                 overrideAccentColor = status.accentColor,
-                miFocusTitle = operationLabel,
+                miFocusTitle = notificationTitle,
                 miFocusSpecialTitle = status.shortLabel(context).takeUnless { isRunning },
                 miFocusContent =
                     if (isRunning) {
@@ -265,6 +266,9 @@ internal object WebDavSyncNotificationDispatcher {
                 WebDavSyncNotificationOperation.Download -> R.string.webdav_sync_notification_operation_download
             }
         )
+
+    internal fun WebDavSyncNotificationOperation.notificationTitle(context: Context): String =
+        context.getString(R.string.webdav_sync_notification_title, label(context))
 
     private fun WebDavSyncNotificationStatus.shortLabel(context: Context): String =
         context.getString(
