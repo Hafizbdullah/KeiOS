@@ -48,6 +48,14 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
     val playbackRuntimeState by remember(playbackCoordinator) {
         playbackCoordinator.runtimeStateFlow
     }.collectAsStateWithLifecycle(initialValue = playbackCoordinator.runtimeState)
+    val selectedDockPositionProvider =
+        remember(pagerState, dockTabs) {
+            {
+                pagerState.pagePosition
+                    .takeIf(Float::isFinite)
+                    ?.coerceIn(0f, dockTabs.lastIndex.coerceAtLeast(0).toFloat())
+            }
+        }
 
     BaGuideBgmFloatingBottomChrome(
         accent = accent,
@@ -89,6 +97,7 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
         },
         onSearchInputActiveChange = pageState::updateSearchInputActive,
         selectedDockKey = activeTab.name,
+        selectedDockPositionProvider = selectedDockPositionProvider,
         onSelectedDockKeyChange = { keyName ->
             pageState.closeSearch()
             tabs

@@ -31,6 +31,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -248,6 +249,7 @@ fun LiquidGlassBottomBar(
     }
     var pressedTabIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
     var localDragSettledIndex by remember(safeTabsCount) { mutableIntStateOf(-1) }
+    var selectionGestureDragged by remember(safeTabsCount) { mutableStateOf(false) }
     val currentOnSelected by rememberUpdatedState(onSelected)
     val currentIsTabEnabled = rememberUpdatedState(isTabEnabled)
     val currentInteractionEnabled = rememberUpdatedState(interactionEnabled)
@@ -284,8 +286,12 @@ fun LiquidGlassBottomBar(
                         }
                     globalTouchX in 0f..totalWidthPx
                 },
-                onDragStarted = {},
+                onDragStarted = {
+                    selectionGestureDragged = false
+                },
                 onDragStopped = {
+                    val gestureWasDragged = selectionGestureDragged
+                    selectionGestureDragged = false
                     val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, safeTabsCount - 1)
                     val resolvedIndex =
                         liquidBottomBarResolvedEnabledIndex(
@@ -302,7 +308,7 @@ fun LiquidGlassBottomBar(
                     } else {
                         snapToValue(resolvedIndex.toFloat())
                     }
-                    if (resolvedIndex != previousIndex) {
+                    if (resolvedIndex != previousIndex || !gestureWasDragged) {
                         currentOnSelected(resolvedIndex)
                     }
                     animationScope.launch {
@@ -314,6 +320,7 @@ fun LiquidGlassBottomBar(
                     }
                 },
                 onDragCancelled = {
+                    selectionGestureDragged = false
                     localDragSettledIndex = -1
                     if (transitionAnimationsEnabled) {
                         animateToValue(currentIndex.toFloat())
@@ -330,6 +337,9 @@ fun LiquidGlassBottomBar(
                 },
                 onDrag = { _, dragAmount ->
                     if (safeTabsCount > 1 && tabWidthPx > 0f) {
+                        if (dragAmount != Offset.Zero) {
+                            selectionGestureDragged = true
+                        }
                         val progressDelta = dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f
                         snapToValue(
                             (value + progressDelta).fastCoerceIn(0f, (safeTabsCount - 1).toFloat()),
@@ -451,6 +461,7 @@ fun LiquidGlassBottomBar(
         if (!interactionEnabled) {
             pressedTabIndex = -1
             localDragSettledIndex = -1
+            selectionGestureDragged = false
             dampedDragAnimation.snapToValue(currentIndex.toFloat())
             offsetAnimation.snapTo(0f)
         }

@@ -1,4 +1,4 @@
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "PropertyName")
 
 package os.kei.ui.page.main.widget.chrome
 
@@ -16,9 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
 import com.kyant.backdrop.Backdrop
+import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
@@ -29,14 +31,19 @@ private const val CompactBottomBarMotionMs = 240
 internal fun CompactBottomBarDock(
     backdrop: Backdrop?,
     onClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     AppLiquidFloatingSurface(
-        modifier = modifier.size(AppChromeTokens.floatingBottomBarOuterHeight),
+        modifier =
+            modifier
+                .then(if (enabled) Modifier else Modifier.clearAndSetSemantics {})
+                .size(AppChromeTokens.floatingBottomBarOuterHeight),
         shape = CircleShape,
         backdrop = backdrop,
-        onClick = onClick,
+        onClick = onClick.takeIf { enabled },
+        pressSafePadding = AppInteractiveTokens.denseLiquidPressSafePadding,
         pressDurationMillis = 120,
         pressLabel = "compact_bottom_bar_dock_press",
         content = content,

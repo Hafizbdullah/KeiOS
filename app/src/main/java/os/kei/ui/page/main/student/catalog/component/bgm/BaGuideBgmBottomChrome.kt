@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
@@ -52,7 +53,9 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideSearchIcon
+import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.appLiquidSearchPlaceholderColor
@@ -81,6 +84,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     onSearchQueryChange: (String) -> Unit,
     onSearchInputActiveChange: (Boolean) -> Unit,
     selectedDockKey: String,
+    selectedDockPositionProvider: (() -> Float?)? = null,
     onSelectedDockKeyChange: (String) -> Unit,
     onCompactDockClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -92,7 +96,6 @@ internal fun BaGuideBgmFloatingBottomChrome(
     val tabs = dockTabs ?: defaultTabs
     val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val miniPlayerInteractionSource = remember { MutableInteractionSource() }
-    val dockSurfaceInteractionSource = remember { MutableInteractionSource() }
     val searchFocusRequester = remember { FocusRequester() }
     LaunchedEffect(searchInputActive) {
         if (searchInputActive) {
@@ -166,26 +169,6 @@ internal fun BaGuideBgmFloatingBottomChrome(
                 BaGuideBgmBottomChromeMode.Compact -> BaGuideBgmCompactControlInset
             }
         }
-    val dockExpandedAlphaState =
-        transition.animateFloat(
-            transitionSpec = { floatAnimationSpec },
-            label = "ba_catalog_bgm_expanded_alpha",
-        ) { mode ->
-            when (mode) {
-                BaGuideBgmBottomChromeMode.Expanded -> 1f
-                else -> 0f
-            }
-        }
-    val dockCompactAlphaState =
-        transition.animateFloat(
-            transitionSpec = { floatAnimationSpec },
-            label = "ba_catalog_bgm_compact_alpha",
-        ) { mode ->
-            when (mode) {
-                BaGuideBgmBottomChromeMode.Expanded -> 0f
-                else -> 1f
-            }
-        }
     val dockExpanded = presentation.mode == BaGuideBgmBottomChromeMode.Expanded
     val miniExpandedAlphaState =
         transition.animateFloat(
@@ -214,14 +197,6 @@ internal fun BaGuideBgmFloatingBottomChrome(
         ) { mode ->
             if (mode == BaGuideBgmBottomChromeMode.SearchInput) 0.96f else 1f
         }
-    val dockExpandedProgressProvider =
-        remember(dockExpandedAlphaState) {
-            { dockExpandedAlphaState.value }
-        }
-    val dockCompactProgressProvider =
-        remember(dockCompactAlphaState) {
-            { dockCompactAlphaState.value }
-        }
     val miniExpandedProgressProvider =
         remember(miniExpandedAlphaState) {
             { miniExpandedAlphaState.value }
@@ -240,7 +215,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
     ) {
         val tabGroupExpandedWidth =
             (maxWidth - BaGuideBgmExpandedSearchSpacing - BaGuideBgmExpandedDockHeight)
-                .coerceAtLeast(260.dp)
+                .coerceAtLeast(0.dp)
         val compactMiniWidth =
             boundedDp(
                 value = maxWidth - (BaGuideBgmCompactControlSize * 2f) - (BaGuideBgmCompactMiniGap * 2f),
@@ -274,20 +249,6 @@ internal fun BaGuideBgmFloatingBottomChrome(
                     (maxWidth - compactMiniWidth) / 2f
                 } else {
                     0.dp
-                }
-            }
-        val tabGroupWidthState =
-            transition.animateDp(
-                transitionSpec = { animationSpec },
-                label = "ba_catalog_bgm_tab_width",
-            ) { mode ->
-                when (mode) {
-                    BaGuideBgmBottomChromeMode.Expanded -> tabGroupExpandedWidth
-
-                    BaGuideBgmBottomChromeMode.Compact,
-                    BaGuideBgmBottomChromeMode.SearchExpanded,
-                    BaGuideBgmBottomChromeMode.SearchInput,
-                    -> BaGuideBgmCompactControlSize
                 }
             }
         val searchWidthState =
@@ -349,37 +310,53 @@ internal fun BaGuideBgmFloatingBottomChrome(
             )
         }
 
-        AppLiquidFloatingSurface(
+        AnimatedCompactBottomBar(
+            expanded = dockExpanded,
             modifier =
                 Modifier
-                    .baGuideBgmAnimatedBounds(
-                        x = { 0.dp },
-                        y = { tabGroupYState.value },
-                        width = { tabGroupWidthState.value },
-                        height = { tabGroupHeight },
-                    ),
-            shape = ContinuousCapsule,
-            backdrop = backdrop,
-            interactionSource = dockSurfaceInteractionSource,
-            clipContent = false,
-            pressDurationMillis = BaGuideBgmBottomPressMotionMs,
-            pressLabel = "ba_catalog_bgm_bottom_surface_press",
-        ) {
-            BaGuideBgmDockGroupContent(
-                tabs = tabs,
-                selectedDockKey = selectedDockKey,
-                accent = accent,
-                expandedProgress = dockExpandedProgressProvider,
-                compactProgress = dockCompactProgressProvider,
-                expandedEnabled = dockExpanded,
-                compactEnabled = !dockExpanded,
-                expandedOnTop = dockExpanded,
-                backdrop = backdrop,
-                compactInteractionSource = dockSurfaceInteractionSource,
-                onSelectedDockKeyChange = onSelectedDockKeyChange,
-                onCompactDockClick = onCompactDockClick,
-            )
-        }
+                    .offset {
+                        IntOffset(
+                            x = 0,
+                            y = tabGroupYState.value.roundToPx(),
+                        )
+                    }.height(tabGroupHeight),
+            expandedContent = { motionModifier ->
+                Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                    BaGuideBgmExpandedDock(
+                        tabs = tabs,
+                        selectedDockKey = selectedDockKey,
+                        selectedPositionProvider = selectedDockPositionProvider,
+                        interactionEnabled = dockExpanded,
+                        backdrop = backdrop,
+                        onSelectedDockKeyChange = onSelectedDockKeyChange,
+                        modifier =
+                            Modifier
+                                .width(tabGroupExpandedWidth)
+                                .height(tabGroupHeight),
+                    )
+                }
+            },
+            compactContent = { motionModifier ->
+                val compactTab = tabs.firstOrNull { it.key == selectedDockKey } ?: tabs.firstOrNull()
+                if (compactTab != null) {
+                    Box(modifier = motionModifier.align(Alignment.BottomStart)) {
+                        CompactBottomBarDock(
+                            backdrop = backdrop,
+                            onClick = onCompactDockClick,
+                            enabled = !dockExpanded,
+                        ) {
+                            BaGuideBgmDockTabIcon(
+                                icon = compactTab.icon,
+                                label = compactTab.label,
+                                selected = true,
+                                accent = accent,
+                                iconSize = 27.dp,
+                            )
+                        }
+                    }
+                }
+            },
+        )
 
         AppLiquidFloatingSurface(
             modifier =
