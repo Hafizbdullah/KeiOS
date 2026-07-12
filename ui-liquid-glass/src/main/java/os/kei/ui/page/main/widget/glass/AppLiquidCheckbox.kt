@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -61,11 +60,8 @@ fun AppLiquidCheckbox(
             Color.White.copy(alpha = 0.78f)
         }
     val checkedSurface =
-        if (isDark) {
-            accent.copy(alpha = 0.46f)
-        } else {
-            accent.copy(alpha = 0.34f)
-        }
+        liquidCheckboxCheckedSurfaceColor(isDark)
+    val checkmarkColor = liquidCheckboxCheckmarkColor(isDark)
     val borderColor =
         if (checked) {
             accent.copy(alpha = if (isDark) 0.72f else 0.58f)
@@ -94,7 +90,7 @@ fun AppLiquidCheckbox(
     Box(
         modifier =
             modifier
-                .requiredSize(34.dp)
+                .requiredSize(48.dp)
                 .graphicsLayer {
                     val pressProgress = pressProgressProvider()
                     val scale = 1f - pressProgress * 0.035f
@@ -134,7 +130,7 @@ fun AppLiquidCheckbox(
                                 effects = {
                                     vibrancy()
                                     blur(4.dp.toPx())
-                                    lens(
+                                    safeLiquidLens(
                                         16.dp.toPx(),
                                         24.dp.toPx(),
                                         chromaticAberration = true,
@@ -208,7 +204,7 @@ fun AppLiquidCheckbox(
                     y = corner.y + (end.y - corner.y) * secondEndProgress,
                 )
             drawLine(
-                color = Color.White.copy(alpha = checkProgress),
+                color = checkmarkColor.copy(alpha = checkProgress),
                 start = start,
                 end = firstEnd,
                 strokeWidth = stroke.width,
@@ -216,7 +212,7 @@ fun AppLiquidCheckbox(
             )
             if (checkProgress > 0.34f) {
                 drawLine(
-                    color = Color.White.copy(alpha = checkProgress),
+                    color = checkmarkColor.copy(alpha = checkProgress),
                     start = corner,
                     end = secondEnd,
                     strokeWidth = stroke.width,
@@ -226,3 +222,17 @@ fun AppLiquidCheckbox(
         }
     }
 }
+
+internal fun liquidCheckboxCheckedSurfaceColor(isDark: Boolean): Color =
+    if (isDark) {
+        Color(0xFF7AB8FF).copy(alpha = 0.88f)
+    } else {
+        Color(0xFF3B82F6).copy(alpha = 0.92f)
+    }
+
+internal fun liquidCheckboxCheckmarkColor(isDark: Boolean): Color =
+    if (isDark) {
+        Color(0xFF071526)
+    } else {
+        Color.White
+    }

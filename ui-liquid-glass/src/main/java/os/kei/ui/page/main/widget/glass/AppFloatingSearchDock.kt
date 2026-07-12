@@ -28,11 +28,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -41,6 +43,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -139,6 +142,12 @@ fun AppFloatingSearchDock(
     val fieldWidthProvider = remember(fieldWidthState) { { fieldWidthState.value } }
     val totalWidthProvider = remember(totalWidthState) { { totalWidthState.value } }
     val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
+    val fieldInteractive by
+        remember(expanded, fieldWidthProvider) {
+            derivedStateOf {
+                expanded && fieldWidthProvider() > AppFloatingSearchFieldMinimumInteractiveWidth
+            }
+        }
 
     LaunchedEffect(expanded) {
         if (!expanded) focusManager.clearFocus()
@@ -149,7 +158,8 @@ fun AppFloatingSearchDock(
             query = query,
             onQueryChange = onQueryChange,
             focusRequester = focusRequester,
-            autoFocus = expanded && searchAutoFocusEnabled,
+            interactive = fieldInteractive,
+            autoFocus = fieldInteractive && searchAutoFocusEnabled,
             onFocusActiveChange = { active ->
                 if (active) onExpandedChange(true)
             },
@@ -190,9 +200,9 @@ fun AppFloatingSearchDock(
     ) {
         if (dockSide == AppFloatingDockSide.Start) {
             buttonContent()
-            fieldContent()
+            if (expanded && fieldInteractive) fieldContent()
         } else {
-            fieldContent()
+            if (expanded && fieldInteractive) fieldContent()
             buttonContent()
         }
     }
@@ -278,9 +288,15 @@ fun AppFloatingVerticalSearchActionDock(
             size = size,
             gap = gap,
         )
+    val fieldInteractive by
+        remember(expanded, motion.fieldWidth) {
+            derivedStateOf {
+                expanded && motion.fieldWidth() > AppFloatingSearchFieldMinimumInteractiveWidth
+            }
+        }
 
-    LaunchedEffect(compact, expanded) {
-        if (!expanded || compact) {
+    LaunchedEffect(expanded) {
+        if (!expanded) {
             focusManager.clearFocus()
             keyboardController?.hide()
         }
@@ -291,7 +307,8 @@ fun AppFloatingVerticalSearchActionDock(
             query = query,
             onQueryChange = onQueryChange,
             focusRequester = focusRequester,
-            autoFocus = expanded && searchAutoFocusEnabled,
+            interactive = fieldInteractive,
+            autoFocus = fieldInteractive && searchAutoFocusEnabled,
             onFocusActiveChange = { active ->
                 if (active) onExpandedChange(true)
             },
@@ -414,7 +431,7 @@ fun AppFloatingVerticalSearchActionDock(
                 .appFloatingDockAnimatedWidth(motion.width)
                 .appFloatingDockAnimatedHeight(motion.height),
     ) {
-        if (motion.showFieldContent) {
+        if (expanded && fieldInteractive) {
             Box(
                 modifier =
                     Modifier
@@ -685,8 +702,7 @@ private fun AppFloatingVerticalDockAction(
                         } else {
                             Modifier.testTag(testTag)
                         },
-                    )
-                    .graphicsLayer {
+                    ).graphicsLayer {
                         alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
                     }.clickable(
                         interactionSource = interactionSource,
@@ -782,6 +798,7 @@ private fun rememberFloatingDockActionRotationProvider(rotating: Boolean): () ->
 
 private const val AppFloatingSearchDockWidthMotionMs = 220
 private const val AppFloatingSearchDockFadeMotionMs = 120
+private val AppFloatingSearchFieldMinimumInteractiveWidth = 1.dp
 
 @Composable
 private fun rememberAppFloatingKeyboardLiftProvider(
@@ -821,6 +838,7 @@ private fun AppFloatingSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     focusRequester: FocusRequester,
+    interactive: Boolean,
     autoFocus: Boolean,
     onFocusActiveChange: (Boolean) -> Unit,
     placeholder: String,
@@ -830,18 +848,32 @@ private fun AppFloatingSearchField(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    LaunchedEffect(autoFocus) {
-        if (autoFocus) {
+    LaunchedEffect(interactive, autoFocus) {
+        if (!interactive) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+        } else if (autoFocus) {
             focusRequester.requestFocus()
             keyboardController?.show()
         }
     }
     AppLiquidInputField(
         value = query,
-        onValueChange = onQueryChange,
+        onValueChange = { value ->
+            if (interactive) onQueryChange(value)
+        },
         label = placeholder,
         backdrop = backdrop,
-        modifier = modifier,
+        modifier =
+            modifier.then(
+                if (interactive) {
+                    Modifier
+                } else {
+                    Modifier
+                        .focusProperties { canFocus = false }
+                        .clearAndSetSemantics {}
+                },
+            ),
         singleLine = true,
         fontSize = AppTypographyTokens.CardHeader.fontSize,
         textColor = MiuixTheme.colorScheme.onBackground,
@@ -853,12 +885,12 @@ private fun AppFloatingSearchField(
         keyboardActions =
             KeyboardActions(
                 onSearch = {
-                    onFocusActiveChange(false)
+                    if (interactive) onFocusActiveChange(false)
                     focusManager.clearFocus()
                     keyboardController?.hide()
                 },
             ),
-        focusRequester = focusRequester,
-        onFocusActiveChange = onFocusActiveChange,
+        focusRequester = focusRequester.takeIf { interactive },
+        onFocusActiveChange = { active -> onFocusActiveChange(active && interactive) },
     )
 }

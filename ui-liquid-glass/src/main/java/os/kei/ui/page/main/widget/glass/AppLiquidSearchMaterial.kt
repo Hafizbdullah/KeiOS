@@ -73,81 +73,80 @@ fun appLiquidSearchPlaceholderColor(
         variantColor.copy(alpha = 0.78f)
     }
 
-fun appLiquidSearchMaterialOverlayModifier(
+fun Modifier.appLiquidSearchMaterialOverlay(
     cornerRadius: Dp,
     colors: AppLiquidSearchMaterialColors,
     focusProgress: Float,
     pressProgress: Float,
 ): Modifier =
-    appLiquidSearchMaterialOverlayModifier(
+    appLiquidSearchMaterialOverlay(
         cornerRadius = cornerRadius,
         colors = colors,
         focusProgress = { focusProgress },
         pressProgress = { pressProgress },
     )
 
-fun appLiquidSearchMaterialOverlayModifier(
+fun Modifier.appLiquidSearchMaterialOverlay(
     cornerRadius: Dp,
     colors: AppLiquidSearchMaterialColors,
     focusProgress: () -> Float,
     pressProgress: () -> Float,
 ): Modifier =
-    Modifier
-        .drawWithCache {
-            val overlayBrush = Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom))
-            val sideBrush =
-                Brush.horizontalGradient(
+    drawWithCache {
+        val overlayBrush = Brush.verticalGradient(colors = listOf(colors.overlayTop, colors.overlayBottom))
+        val sideBrush =
+            Brush.horizontalGradient(
+                colors =
+                    listOf(
+                        colors.sideRim,
+                        Color.Transparent,
+                        Color.Transparent,
+                        colors.sideRim,
+                    ),
+            )
+        onDrawBehind {
+            val materialProgress = maxOf(focusProgress(), pressProgress())
+            drawRect(overlayBrush)
+            drawRect(sideBrush)
+            drawRect(
+                Brush.radialGradient(
                     colors =
                         listOf(
-                            colors.sideRim,
+                            colors.centerGlow.copy(
+                                alpha = (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(1f),
+                            ),
                             Color.Transparent,
-                            Color.Transparent,
-                            colors.sideRim,
                         ),
-                )
-            onDrawBehind {
-                val materialProgress = maxOf(focusProgress(), pressProgress())
-                drawRect(overlayBrush)
-                drawRect(sideBrush)
-                drawRect(
-                    Brush.radialGradient(
-                        colors =
-                            listOf(
-                                colors.centerGlow.copy(
-                                    alpha = (colors.centerGlow.alpha + 0.055f * materialProgress).coerceAtMost(1f),
-                                ),
-                                Color.Transparent,
-                            ),
-                    ),
-                )
-                drawRect(
-                    Brush.verticalGradient(
-                        colorStops =
-                            arrayOf(
-                                0.00f to Color.Transparent,
-                                0.62f to Color.Transparent,
-                                1.00f to
-                                    colors.bottomGlow.copy(
-                                        alpha = (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(1f),
-                                    ),
-                            ),
-                    ),
-                )
-            }
-        }.drawAppSquircleBorder(
-            width = 1.1.dp,
-            cornerRadius = cornerRadius,
-        ) {
-            val materialProgress = maxOf(focusProgress(), pressProgress())
-            colors.edge.copy(
-                alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f),
+                ),
             )
-        }.drawAppSquircleBorder(
-            width = 1.dp,
-            cornerRadius = cornerRadius,
-        ) {
-            val materialProgress = maxOf(focusProgress(), pressProgress())
-            colors.innerRim.copy(
-                alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f),
+            drawRect(
+                Brush.verticalGradient(
+                    colorStops =
+                        arrayOf(
+                            0.00f to Color.Transparent,
+                            0.62f to Color.Transparent,
+                            1.00f to
+                                colors.bottomGlow.copy(
+                                    alpha = (colors.bottomGlow.alpha + 0.035f * materialProgress).coerceAtMost(1f),
+                                ),
+                        ),
+                ),
             )
         }
+    }.drawAppSquircleBorder(
+        width = 1.1.dp,
+        cornerRadius = cornerRadius,
+    ) {
+        val materialProgress = maxOf(focusProgress(), pressProgress())
+        colors.edge.copy(
+            alpha = (colors.edge.alpha + 0.05f * materialProgress).coerceAtMost(1f),
+        )
+    }.drawAppSquircleBorder(
+        width = 1.dp,
+        cornerRadius = cornerRadius,
+    ) {
+        val materialProgress = maxOf(focusProgress(), pressProgress())
+        colors.innerRim.copy(
+            alpha = (colors.innerRim.alpha + 0.08f * materialProgress).coerceAtMost(1f),
+        )
+    }

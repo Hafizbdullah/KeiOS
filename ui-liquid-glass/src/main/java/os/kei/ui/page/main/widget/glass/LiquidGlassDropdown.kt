@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -46,7 +45,7 @@ private val LiquidGlassDropdownMaxHeight = 336.dp
 private val LiquidGlassDropdownContentPadding = 8.dp
 internal val LiquidGlassDropdownItemPressSafePadding =
     AppInteractiveTokens.compactLiquidPressSafePadding
-internal val LiquidGlassDropdownRowMinHeight = 44.dp
+internal val LiquidGlassDropdownRowMinHeight = 48.dp
 internal val LiquidGlassDropdownIconSize = 18.dp
 internal val LiquidGlassDropdownCheckSize = 18.dp
 internal val LocalLiquidGlassDropdownSizingPass = staticCompositionLocalOf { false }
@@ -210,7 +209,7 @@ fun LiquidGlassDropdownColumn(
                                     vibrancy()
                                 }
                                 blur(effectBlurRadius.toPx())
-                                lens(
+                                safeLiquidLens(
                                     effectLensStart.toPx(),
                                     effectLensEnd.toPx(),
                                     chromaticAberration = metrics.chromaticAberration,
@@ -470,9 +469,9 @@ private fun buildLiquidGlassDropdownContainerColors(
         LiquidGlassDropdownMaterial.Default -> {
             if (isDark) {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = surfaceContainer.copy(alpha = 0.64f),
-                    topSheen = Color.White.copy(alpha = 0.16f),
-                    borderColor = Color.White.copy(alpha = 0.24f),
+                    surfaceColor = surfaceContainer.copy(alpha = 0.78f),
+                    topSheen = Color.White.copy(alpha = 0.10f),
+                    borderColor = Color.White.copy(alpha = 0.28f),
                     fallbackBaseColor = surfaceContainer.copy(alpha = 0.94f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
@@ -499,8 +498,8 @@ private fun buildLiquidGlassDropdownContainerColors(
                 )
             } else {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color.White.copy(alpha = 0.68f),
-                    topSheen = Color.White.copy(alpha = 0.28f),
+                    surfaceColor = Color.White.copy(alpha = 0.80f),
+                    topSheen = Color.White.copy(alpha = 0.20f),
                     borderColor = Color.White.copy(alpha = 0.90f),
                     fallbackBaseColor = Color.White.copy(alpha = 0.94f),
                     fallbackMiddleBrush =

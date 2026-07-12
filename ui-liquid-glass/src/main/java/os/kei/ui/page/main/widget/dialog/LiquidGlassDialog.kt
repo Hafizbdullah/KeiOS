@@ -6,8 +6,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,29 +31,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
+import os.kei.ui.page.main.widget.glass.safeLiquidLens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleSurface
+import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
@@ -80,6 +85,7 @@ private const val LiquidDialogExitDurationMillis = 220
 @Composable
 fun LiquidGlassDialog(
     show: Boolean,
+    modifier: Modifier = Modifier,
     title: String? = null,
     summary: String? = null,
     onDismissRequest: (() -> Unit)? = null,
@@ -91,8 +97,26 @@ fun LiquidGlassDialog(
     val scale = remember { Animatable(0.85f) }
     val alpha = remember { Animatable(0f) }
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
+    val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
 
-    LaunchedEffect(show) {
+    SideEffect {
+        if (!transitionAnimationsEnabled) {
+            when {
+                show && !renderDialog -> {
+                    renderDialog = true
+                }
+
+                !show && renderDialog -> {
+                    renderDialog = false
+                    currentOnDismissFinished?.invoke()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(show, transitionAnimationsEnabled) {
+        if (!transitionAnimationsEnabled) return@LaunchedEffect
         if (show) {
             renderDialog = true
             launch {
@@ -128,12 +152,16 @@ fun LiquidGlassDialog(
         }
     }
 
-    if (!renderDialog) return
+    val shouldRenderDialog = if (transitionAnimationsEnabled) renderDialog else show
+    if (!shouldRenderDialog) return
+
+    val renderedScale = if (transitionAnimationsEnabled) scale.value else 1f
+    val renderedAlpha = if (transitionAnimationsEnabled) alpha.value else 1f
 
     Dialog(
         onDismissRequest = {
             if (dismissible) {
-                onDismissRequest?.invoke()
+                currentOnDismissRequest?.invoke()
             }
         },
         properties =
@@ -165,7 +193,7 @@ fun LiquidGlassDialog(
                     effects = {
                         vibrancy()
                         blur(blurRadius.toPx())
-                        lens(
+                        safeLiquidLens(
                             lensRadius.toPx(),
                             (lensRadius * 1.6f).toPx(),
                             chromaticAberration = true,
@@ -194,39 +222,48 @@ fun LiquidGlassDialog(
                 )
             }
 
-        // Scrim
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = LiquidDialogScrimAlpha))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = dismissible,
-                    ) {
-                        onDismissRequest?.invoke()
-                    },
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
+            // Keep the outside-dismiss target out of TalkBack traversal. The dialog content keeps
+            // its own semantics and actions as a separate sibling above this scrim.
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { this.alpha = renderedAlpha }
+                        .background(Color.Black.copy(alpha = LiquidDialogScrimAlpha))
+                        .then(
+                            if (dismissible) {
+                                Modifier.pointerInput(Unit) {
+                                    detectTapGestures {
+                                        currentOnDismissRequest?.invoke()
+                                    }
+                                }
+                            } else {
+                                Modifier
+                            },
+                        ),
+            )
+
             // Dialog card
             Column(
                 modifier =
-                    Modifier
+                    modifier
                         .widthIn(max = LiquidDialogMaxWidth)
                         .fillMaxWidth(0.88f)
                         .graphicsLayer {
-                            scaleX = scale.value
-                            scaleY = scale.value
-                            this.alpha = alpha.value
+                            scaleX = renderedScale
+                            scaleY = renderedScale
+                            this.alpha = renderedAlpha
                             transformOrigin = TransformOrigin.Center
                         }.then(surfaceModifier)
-                        // Block clicks from passing through to scrim
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {}
-                        .padding(24.dp),
+                        .pointerInput(Unit) { detectTapGestures(onTap = {}) }
+                        .semantics {
+                            isTraversalGroup = true
+                            title?.takeIf { it.isNotBlank() }?.let { paneTitle = it }
+                        }.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CompositionLocalProvider(LocalLiquidDialogBackdrop provides if (liquidControlsEnabled) dialogBackdrop else null) {
@@ -235,10 +272,11 @@ fun LiquidGlassDialog(
                         Text(
                             text = title,
                             color = titleColor,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.SemiBold,
+                            fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().semantics { heading() },
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -248,8 +286,9 @@ fun LiquidGlassDialog(
                         Text(
                             text = summary,
                             color = summaryColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
+                            fontSize = AppTypographyTokens.Body.fontSize,
+                            lineHeight = AppTypographyTokens.Body.lineHeight,
+                            fontWeight = AppTypographyTokens.Body.fontWeight,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )

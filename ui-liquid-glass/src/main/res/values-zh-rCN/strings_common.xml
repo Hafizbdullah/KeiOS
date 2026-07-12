@@ -9,4 +9,6 @@
     <string name="common_unsaved_changes_summary">当前内容还没有保存，关闭后需要重新填写或重新选择。</string>
     <string name="common_keep_editing">继续编辑</string>
     <string name="common_discard_changes">放弃更改</string>
+    <string name="liquid_toast_pane_title">提示消息</string>
+    <string name="liquid_toast_dismiss">关闭提示消息</string>
 </resources>

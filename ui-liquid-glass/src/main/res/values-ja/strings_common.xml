@@ -9,4 +9,6 @@
     <string name="common_unsaved_changes_summary">現在の変更は保存されていません。閉じると再入力または再選択が必要です。</string>
     <string name="common_keep_editing">編集を続ける</string>
     <string name="common_discard_changes">破棄</string>
+    <string name="liquid_toast_pane_title">ステータスメッセージ</string>
+    <string name="liquid_toast_dismiss">メッセージを閉じる</string>
 </resources>

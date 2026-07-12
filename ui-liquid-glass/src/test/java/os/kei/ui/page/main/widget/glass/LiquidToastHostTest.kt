@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -51,10 +51,11 @@ class LiquidToastHostTest {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White)
-                        .layerBackdrop(backdrop),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .layerBackdrop(backdrop),
                 ) {
                     LiquidToastHost(state = state, backdrop = backdrop)
                 }
@@ -62,11 +63,13 @@ class LiquidToastHostTest {
         }
     }
 
-    private fun nodeCount(text: String): Int =
-        composeRule.onAllNodesWithText(text).fetchSemanticsNodes().size
+    private fun nodeCount(text: String): Int = composeRule.onAllNodesWithContentDescription(text).fetchSemanticsNodes().size
 
     /** Step the clock in small slices so every delay tick + animation frame + recompose processes. */
-    private fun stepClock(totalMs: Long, sliceMs: Long = 100) {
+    private fun stepClock(
+        totalMs: Long,
+        sliceMs: Long = 100,
+    ) {
         var advanced = 0L
         while (advanced < totalMs) {
             composeRule.mainClock.advanceTimeBy(sliceMs)

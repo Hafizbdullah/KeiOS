@@ -45,7 +45,6 @@ import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -186,7 +185,7 @@ fun AppLiquidInputField(
                                 val focusProgress = focusProgressProvider()
                                 vibrancy()
                                 blur((if (usesSearchMaterial) glass.blur + 1.dp * focusProgress else glass.blur).toPx())
-                                lens(
+                                safeLiquidLens(
                                     glass.lensStart.toPx() +
                                         if (usesSearchMaterial) 2.dp.toPx() * focusProgress else 4.dp.toPx() * focusProgress,
                                     glass.lensEnd.toPx() +
@@ -248,7 +247,7 @@ fun AppLiquidInputField(
                     },
                 ).then(
                     if (usesSearchMaterial) {
-                        appLiquidSearchMaterialOverlayModifier(
+                        Modifier.appLiquidSearchMaterialOverlay(
                             cornerRadius = 999.dp,
                             colors = searchColors,
                             focusProgress = focusProgressProvider,
@@ -432,8 +431,7 @@ fun AppLiquidSearchSurface(
                     translationY = -with(density) { 1.dp.toPx() } * pressProgress
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)
-                }
-                .then(
+                }.then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
@@ -442,7 +440,7 @@ fun AppLiquidSearchSurface(
                                 val materialProgress = materialProgressProvider()
                                 vibrancy()
                                 blur((glass.blur + 1.dp * materialProgress).toPx())
-                                lens(
+                                safeLiquidLens(
                                     glass.lensStart.toPx() + 2.dp.toPx() * materialProgress,
                                     glass.lensEnd.toPx() + 5.dp.toPx() * materialProgress,
                                     chromaticAberration = true,
@@ -486,7 +484,7 @@ fun AppLiquidSearchSurface(
                         Modifier.appSquircleBackground(fallbackSurface.copy(alpha = fallbackAlpha), 999.dp)
                     },
                 ).then(
-                    appLiquidSearchMaterialOverlayModifier(
+                    Modifier.appLiquidSearchMaterialOverlay(
                         cornerRadius = 999.dp,
                         colors = searchColors,
                         focusProgress = focusProgressProvider,

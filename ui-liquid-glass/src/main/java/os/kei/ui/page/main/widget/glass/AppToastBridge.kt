@@ -3,6 +3,8 @@
 package os.kei.ui.page.main.widget.glass
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
@@ -47,6 +49,7 @@ object AppToastBridge {
     private var activeStateRef = java.lang.ref.WeakReference<LiquidToastState?>(null)
     private var liquidToastEnabledProvider: () -> Boolean = { true }
     private var reduceToastInterruptionEnabledProvider: () -> Boolean = { false }
+    private val mainHandler by lazy(LazyThreadSafetyMode.PUBLICATION) { Handler(Looper.getMainLooper()) }
 
     /**
      * Register the active [LiquidToastState]. Called by [BindLiquidToastBridge].
@@ -82,6 +85,25 @@ object AppToastBridge {
         iconTint: Color = Color.Unspecified,
         duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
+        val appContext = context.applicationContext
+        runOnMainThread {
+            showOnMainThread(
+                context = appContext,
+                message = message,
+                icon = icon,
+                iconTint = iconTint,
+                duration = duration,
+            )
+        }
+    }
+
+    private fun showOnMainThread(
+        context: Context,
+        message: String,
+        icon: ImageVector?,
+        iconTint: Color,
+        duration: LiquidToastDuration,
+    ) {
         val state = activeStateRef.get()
         if (state != null && liquidToastEnabledProvider()) {
             state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
@@ -106,9 +128,11 @@ object AppToastBridge {
         iconTint: Color = Color.Unspecified,
         duration: LiquidToastDuration = LiquidToastDuration.Short,
     ) {
-        val state = activeStateRef.get() ?: return
-        if (liquidToastEnabledProvider() && !reduceToastInterruptionEnabledProvider()) {
-            state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
+        runOnMainThread {
+            val state = activeStateRef.get() ?: return@runOnMainThread
+            if (liquidToastEnabledProvider() && !reduceToastInterruptionEnabledProvider()) {
+                state.show(message = message, icon = icon, iconTint = iconTint, duration = duration)
+            }
         }
     }
 
@@ -149,6 +173,14 @@ object AppToastBridge {
             iconTint = iconTint,
             duration = duration,
         )
+    }
+
+    private inline fun runOnMainThread(crossinline action: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            action()
+        } else {
+            mainHandler.post { action() }
+        }
     }
 }
 

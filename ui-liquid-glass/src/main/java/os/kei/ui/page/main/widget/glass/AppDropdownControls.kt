@@ -1,8 +1,11 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,8 +21,8 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -33,9 +36,9 @@ private val DropdownSelectorHorizontalChrome = 78.dp
 
 private fun dropdownAnchorTint(
     textColor: Color,
-    variant: GlassVariant
-): Color {
-    return if (textColor.alpha <= 0f) {
+    variant: GlassVariant,
+): Color =
+    if (textColor.alpha <= 0f) {
         when (variant) {
             GlassVariant.SheetDangerAction -> Color(0xFFE25B6A)
             else -> DropdownNeutralTint
@@ -43,7 +46,6 @@ private fun dropdownAnchorTint(
     } else {
         textColor
     }
-}
 
 @Composable
 fun AppDropdownAnchorButton(
@@ -62,7 +64,7 @@ fun AppDropdownAnchorButton(
     textSoftWrap: Boolean = false,
     textSize: TextUnit = AppTypographyTokens.Body.fontSize,
     textLineHeight: TextUnit = AppTypographyTokens.Body.lineHeight,
-    textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight
+    textFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
 ) {
     val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
     if (backdrop != null) {
@@ -83,7 +85,7 @@ fun AppDropdownAnchorButton(
             textSoftWrap = textSoftWrap,
             textSize = textSize,
             textLineHeight = textLineHeight,
-            textFontWeight = textFontWeight
+            textFontWeight = textFontWeight,
         )
     } else {
         AppStandaloneLiquidTextButton(
@@ -102,7 +104,7 @@ fun AppDropdownAnchorButton(
             textSoftWrap = textSoftWrap,
             textSize = textSize,
             textLineHeight = textLineHeight,
-            textFontWeight = textFontWeight
+            textFontWeight = textFontWeight,
         )
     }
 }
@@ -137,64 +139,81 @@ fun AppDropdownSelector(
     anchorAlignment: Alignment = Alignment.CenterStart,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.BottomEnd,
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
     val maxScreenWidth =
         (appWindowWidthDp() - DropdownSelectorScreenHorizontalMargin * 2)
             .coerceAtLeast(DropdownSelectorMinWidth)
-    val resolvedMaxWidth = (popupMaxWidth ?: maxScreenWidth)
-        .coerceAtMost(maxScreenWidth)
-        .coerceAtLeast(DropdownSelectorMinWidth)
-    val anchorWidth = remember(anchorBounds, density) {
-        anchorBounds?.let { bounds ->
-            with(density) { bounds.width.toDp() }
-        } ?: 0.dp
-    }
-    val optionTextStyle = TextStyle(
-        fontSize = if (dropdownItemTextMaxLines == 1) {
-            AppTypographyTokens.Body.fontSize
-        } else {
-            AppTypographyTokens.Supporting.fontSize
-        },
-        lineHeight = if (dropdownItemTextMaxLines == 1) {
-            AppTypographyTokens.Body.lineHeight
-        } else {
-            AppTypographyTokens.Supporting.lineHeight
-        },
-        fontWeight = FontWeight.Medium
-    )
-    val measuredOptionWidth = remember(
-        options,
-        dropdownItemTextMaxLines,
-        optionTextStyle,
-        density,
-        textMeasurer
-    ) {
-        val textWidthPx = options.maxOfOrNull { option ->
-            textMeasurer.measure(
-                text = AnnotatedString(option),
-                style = optionTextStyle,
-                maxLines = dropdownItemTextMaxLines,
-                overflow = if (dropdownItemTextMaxLines == 1) {
-                    TextOverflow.Ellipsis
+    val resolvedMaxWidth =
+        (popupMaxWidth ?: maxScreenWidth)
+            .coerceAtMost(maxScreenWidth)
+            .coerceAtLeast(DropdownSelectorMinWidth)
+    val anchorWidth =
+        remember(anchorBounds, density) {
+            anchorBounds?.let { bounds ->
+                with(density) { bounds.width.toDp() }
+            } ?: 0.dp
+        }
+    val optionTextStyle =
+        TextStyle(
+            fontSize =
+                if (dropdownItemTextMaxLines == 1) {
+                    AppTypographyTokens.Body.fontSize
                 } else {
-                    TextOverflow.Clip
-                }
-            ).size.width
-        } ?: 0
-        with(density) { textWidthPx.toDp() } + DropdownSelectorHorizontalChrome
+                    AppTypographyTokens.Supporting.fontSize
+                },
+            lineHeight =
+                if (dropdownItemTextMaxLines == 1) {
+                    AppTypographyTokens.Body.lineHeight
+                } else {
+                    AppTypographyTokens.Supporting.lineHeight
+                },
+            fontWeight = FontWeight.Medium,
+        )
+    val measuredOptionWidth =
+        remember(
+            options,
+            dropdownItemTextMaxLines,
+            optionTextStyle,
+            density,
+            textMeasurer,
+        ) {
+            val textWidthPx =
+                options.maxOfOrNull { option ->
+                    textMeasurer
+                        .measure(
+                            text = AnnotatedString(option),
+                            style = optionTextStyle,
+                            maxLines = dropdownItemTextMaxLines,
+                            overflow =
+                                if (dropdownItemTextMaxLines == 1) {
+                                    TextOverflow.Ellipsis
+                                } else {
+                                    TextOverflow.Clip
+                                },
+                        ).size.width
+                } ?: 0
+            with(density) { textWidthPx.toDp() } + DropdownSelectorHorizontalChrome
+        }
+    val resolvedPopupWidth =
+        maxOf(
+            DropdownSelectorMinWidth,
+            measuredOptionWidth,
+            if (popupMatchAnchorWidth) anchorWidth else 0.dp,
+        ).coerceAtMost(resolvedMaxWidth)
+    val popupShow = expanded && enabled && options.isNotEmpty()
+
+    LaunchedEffect(expanded, enabled, options.isEmpty()) {
+        if (expanded && !popupShow) {
+            onExpandedChange(false)
+        }
     }
-    val resolvedPopupWidth = maxOf(
-        DropdownSelectorMinWidth,
-        measuredOptionWidth,
-        if (popupMatchAnchorWidth) anchorWidth else 0.dp
-    ).coerceAtMost(resolvedMaxWidth)
 
     Box(
         modifier = modifier.capturePopupAnchor { onAnchorBoundsChange(it) },
-        contentAlignment = anchorAlignment
+        contentAlignment = anchorAlignment,
     ) {
         AppDropdownAnchorButton(
             text = selectedText,
@@ -212,39 +231,36 @@ fun AppDropdownSelector(
             textSoftWrap = anchorTextSoftWrap,
             textSize = anchorTextSize,
             textLineHeight = anchorTextLineHeight,
-            textFontWeight = anchorTextFontWeight
+            textFontWeight = anchorTextFontWeight,
         )
-        if (expanded && enabled && options.isNotEmpty()) {
-            SnapshotWindowListPopup(
-                show = true,
-                alignment = alignment,
-                anchorBounds = anchorBounds,
-                placement = placement,
-                onDismissRequest = { onExpandedChange(false) },
-                enableWindowDim = false,
+        SnapshotWindowListPopup(
+            show = popupShow,
+            alignment = alignment,
+            anchorBounds = anchorBounds,
+            placement = placement,
+            onDismissRequest = { onExpandedChange(false) },
+            minWidth = resolvedPopupWidth,
+            maxWidth = resolvedPopupWidth,
+            matchAnchorWidth = false,
+        ) {
+            val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
+            AppLiquidGlassDropdownColumn(
+                modifier = Modifier.fillMaxWidth(),
                 minWidth = resolvedPopupWidth,
                 maxWidth = resolvedPopupWidth,
-                matchAnchorWidth = false
+                accentColor = accentColor,
+                initialScrollItemIndex = selectedIndex,
+                backdrop = backdrop,
             ) {
-                val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
-                AppLiquidGlassDropdownColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    minWidth = resolvedPopupWidth,
-                    maxWidth = resolvedPopupWidth,
+                DropdownSelectorChoiceList(
+                    options = options,
+                    selectedIndex = selectedIndex,
+                    onSelectedIndexChange = onSelectedIndexChange,
+                    onExpandedChange = onExpandedChange,
                     accentColor = accentColor,
-                    initialScrollItemIndex = selectedIndex,
-                    backdrop = backdrop
-                ) {
-                    DropdownSelectorChoiceList(
-                        options = options,
-                        selectedIndex = selectedIndex,
-                        onSelectedIndexChange = onSelectedIndexChange,
-                        onExpandedChange = onExpandedChange,
-                        accentColor = accentColor,
-                        variant = variant,
-                        textMaxLines = dropdownItemTextMaxLines
-                    )
-                }
+                    variant = variant,
+                    textMaxLines = dropdownItemTextMaxLines,
+                )
             }
         }
     }
@@ -258,7 +274,7 @@ private fun DropdownSelectorChoiceList(
     onExpandedChange: (Boolean) -> Unit,
     accentColor: Color,
     variant: GlassVariant,
-    textMaxLines: Int
+    textMaxLines: Int,
 ) {
     LiquidGlassDropdownSingleChoiceList(
         options = options,
@@ -270,6 +286,6 @@ private fun DropdownSelectorChoiceList(
         accentColor = accentColor,
         variant = variant,
         modifier = Modifier.fillMaxWidth(),
-        textMaxLines = textMaxLines
+        textMaxLines = textMaxLines,
     )
 }

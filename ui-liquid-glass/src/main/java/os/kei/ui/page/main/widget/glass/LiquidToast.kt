@@ -10,10 +10,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,6 +36,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,13 +52,14 @@ import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.delay
+import os.kei.ui.liquidglass.R
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
+/*
  * v2 Liquid Glass Toast — iOS-style HUD toast positioned at the upper-third of the screen.
  *
  * Design principles:
@@ -300,7 +312,7 @@ private fun LiquidToastStackItem(
                     originalTimeoutMillis = original.inWholeMilliseconds,
                     containsIcons = slot.data.icon != null,
                     containsText = true,
-                    containsControls = false,
+                    containsControls = true,
                 )
             recommendedMs?.milliseconds ?: original
         }
@@ -325,10 +337,11 @@ private fun LiquidToastStackItem(
     LaunchedEffect(slot.token) {
         var elapsed = Duration.ZERO
         while (true) {
-            val limit = resolveToastDisplayLimit(
-                base = baseDisplay,
-                expedited = accelerationAllowed && hasBacklog(),
-            )
+            val limit =
+                resolveToastDisplayLimit(
+                    base = baseDisplay,
+                    expedited = accelerationAllowed && hasBacklog(),
+                )
             val remaining = limit - elapsed
             if (remaining <= Duration.ZERO) break
             val tick = minOf(remaining, TOAST_TIMER_TICK)
@@ -352,21 +365,22 @@ private fun LiquidToastStackItem(
                 animationSpec = spring(dampingRatio = 0.65f, stiffness = 400f),
                 initialScale = 0.70f,
             ) +
-                    fadeIn(
-                        animationSpec = tween(TOAST_ENTER_DURATION_MS),
-                    ),
+                fadeIn(
+                    animationSpec = tween(TOAST_ENTER_DURATION_MS),
+                ),
         exit =
             scaleOut(
                 animationSpec = tween(TOAST_EXIT_DURATION_MS),
                 targetScale = 0.85f,
             ) +
-                    fadeOut(
-                        animationSpec = tween(TOAST_EXIT_DURATION_MS),
-                    ),
+                fadeOut(
+                    animationSpec = tween(TOAST_EXIT_DURATION_MS),
+                ),
     ) {
         LiquidToastContent(
             backdrop = backdrop,
             data = slot.data,
+            onDismissRequest = { visibleState.targetState = false },
         )
     }
 }
@@ -403,7 +417,12 @@ internal fun resolveToastDisplayLimit(
 private fun LiquidToastContent(
     backdrop: Backdrop,
     data: LiquidToastData,
+    onDismissRequest: () -> Unit,
 ) {
+    val paneTitle = stringResource(R.string.liquid_toast_pane_title)
+    val dismissLabel = stringResource(R.string.liquid_toast_dismiss)
+    val interactionSource = remember { MutableInteractionSource() }
+
     // Official Backdrop recommendation: simple semi-transparent white surface overlay.
     // The liquid glass effect comes from lens refraction, not from complex color layering.
     LiquidSurface(
@@ -411,7 +430,19 @@ private fun LiquidToastContent(
         modifier =
             Modifier
                 .widthIn(min = 140.dp, max = 300.dp)
-                .padding(horizontal = 16.dp),
+                .defaultMinSize(minHeight = 48.dp)
+                .padding(horizontal = 16.dp)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClickLabel = dismissLabel,
+                    onClick = onDismissRequest,
+                ).semantics {
+                    contentDescription = data.message
+                    liveRegion = LiveRegionMode.Polite
+                    this.paneTitle = paneTitle
+                },
         shape = ContinuousCapsule,
         isInteractive = false,
         surfaceColor = Color.White.copy(alpha = 0.5f),
@@ -426,6 +457,7 @@ private fun LiquidToastContent(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .clearAndSetSemantics {}
                     .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,

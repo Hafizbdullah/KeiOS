@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.glass
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.MutableTransitionState
@@ -38,6 +39,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +48,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -126,14 +133,20 @@ fun LiquidGlassActionMenu(
     initialExpandedSubmenuId: String? = null,
     onDismissRequest: () -> Unit = {},
 ) {
-    var expandedSubmenuId by remember(items, initialExpandedSubmenuId) {
+    val availableSubmenuIds =
+        items
+            .asSequence()
+            .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
+            .filter { item -> item.enabled && item.submenuItems.isNotEmpty() }
+            .mapTo(linkedSetOf()) { item -> item.id }
+    var expandedSubmenuId by remember(initialExpandedSubmenuId) {
         mutableStateOf(initialExpandedSubmenuId)
     }
-    var renderedSubmenuId by remember(items, initialExpandedSubmenuId) {
+    var renderedSubmenuId by remember(initialExpandedSubmenuId) {
         mutableStateOf(initialExpandedSubmenuId)
     }
     val submenuVisibilityState =
-        remember(items, initialExpandedSubmenuId) {
+        remember(initialExpandedSubmenuId) {
             MutableTransitionState(initialExpandedSubmenuId != null).apply {
                 targetState = initialExpandedSubmenuId != null
             }
@@ -155,6 +168,15 @@ fun LiquidGlassActionMenu(
                     item.enabled &&
                     item.submenuItems.isNotEmpty()
             }
+    LaunchedEffect(availableSubmenuIds, expandedSubmenuId, renderedSubmenuId) {
+        if (expandedSubmenuId != null && expandedSubmenuId !in availableSubmenuIds) {
+            expandedSubmenuId = null
+            submenuVisibilityState.targetState = false
+        }
+        if (renderedSubmenuId != null && renderedSubmenuId !in availableSubmenuIds) {
+            renderedSubmenuId = null
+        }
+    }
     LaunchedEffect(expandedSubmenu?.id) {
         if (expandedSubmenu != null) {
             renderedSubmenuId = expandedSubmenu.id
@@ -188,6 +210,10 @@ fun LiquidGlassActionMenu(
             expandedSubmenuId = id
         }
     }
+    LiquidGlassActionMenuSubmenuBackHandler(
+        enabled = expandedSubmenu != null,
+        onBack = collapseSubmenu,
+    )
     // Cache the two spring specs once. Without `remember`, every recomposition allocates
     // a fresh `spring(...)` instance and Compose's animateContentSize cannot reuse its
     // internal interpolator state — defeating spec caching.
@@ -252,6 +278,24 @@ fun LiquidGlassActionMenu(
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun LiquidGlassActionMenuSubmenuBackHandler(
+    enabled: Boolean,
+    onBack: () -> Unit,
+) {
+    if (LocalNavigationEventDispatcherOwner.current != null) {
+        val navigationEventState =
+            rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+        NavigationBackHandler(
+            state = navigationEventState,
+            isBackEnabled = enabled,
+            onBackCompleted = onBack,
+        )
+    } else {
+        BackHandler(enabled = enabled, onBack = onBack)
     }
 }
 
@@ -487,6 +531,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
             action.variant == GlassVariant.SheetPrimaryAction -> accentColor.copy(alpha = if (isDark) 0.18f else 0.12f)
             else -> Color.Transparent
         }
+    val accessibilityLabel = action.contentDescription.ifBlank { action.label }
     Column(
         modifier =
             modifier
@@ -497,7 +542,9 @@ private fun LiquidGlassActionMenuQuickActionButton(
                     scaleX = scale
                     scaleY = scale
                 }.appSquircleBackground(surfaceColor, 18.dp)
-                .clickable(
+                .semantics(mergeDescendants = true) {
+                    contentDescription = accessibilityLabel
+                }.clickable(
                     interactionSource = interactionSource,
                     indication = null,
                     enabled = action.enabled,
@@ -509,7 +556,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
     ) {
         Icon(
             imageVector = action.icon,
-            contentDescription = action.contentDescription,
+            contentDescription = null,
             tint = contentColor,
             modifier = Modifier.size(21.dp),
         )
@@ -521,6 +568,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
             fontWeight = FontWeight.Medium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }

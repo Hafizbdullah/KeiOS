@@ -36,6 +36,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +53,12 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+enum class LiquidGlassDropdownItemType {
+    Action,
+    SingleChoice,
+    MultipleChoice,
+}
 
 @Composable
 fun LiquidGlassDropdownItem(
@@ -71,6 +81,7 @@ fun LiquidGlassDropdownItem(
     highlightContent: Boolean = selected && showCheck,
     reserveCheckSlot: Boolean = false,
     textMaxLines: Int = 1,
+    itemType: LiquidGlassDropdownItemType = LiquidGlassDropdownItemType.Action,
 ) {
     if (LocalLiquidGlassDropdownSizingPass.current) {
         LiquidGlassDropdownMeasureItem(
@@ -105,9 +116,11 @@ fun LiquidGlassDropdownItem(
             variant = variant,
         )
     val contentHighlighted = highlighted && highlightContent
+    val resolvedContentTint =
+        contentTint ?: itemAccent.takeIf { variant == GlassVariant.SheetDangerAction }
     val targetTextColor =
         (
-            contentTint ?: if (contentHighlighted) {
+            resolvedContentTint ?: if (contentHighlighted) {
                 itemAccent
             } else {
                 MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.96f else 0.92f)
@@ -115,7 +128,7 @@ fun LiquidGlassDropdownItem(
         ).let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
     val targetIconColor =
         (
-            contentTint ?: if (contentHighlighted) {
+            resolvedContentTint ?: if (contentHighlighted) {
                 itemAccent
             } else {
                 MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.88f else 0.78f)
@@ -144,6 +157,26 @@ fun LiquidGlassDropdownItem(
             material = material,
         )
     val currentOnClick by rememberUpdatedState(onClick)
+    val itemRole =
+        when (itemType) {
+            LiquidGlassDropdownItemType.Action -> Role.Button
+            LiquidGlassDropdownItemType.SingleChoice -> Role.RadioButton
+            LiquidGlassDropdownItemType.MultipleChoice -> Role.Checkbox
+        }
+    val selectionSemantics =
+        when (itemType) {
+            LiquidGlassDropdownItemType.Action -> {
+                Modifier
+            }
+
+            LiquidGlassDropdownItemType.SingleChoice -> {
+                Modifier.semantics { this.selected = selected }
+            }
+
+            LiquidGlassDropdownItemType.MultipleChoice -> {
+                Modifier.semantics { toggleableState = ToggleableState(selected) }
+            }
+        }
     val rowShape = RoundedRectangle(LiquidGlassDropdownItemRadius)
     val outerTopPadding =
         if (index == 0) {
@@ -175,6 +208,12 @@ fun LiquidGlassDropdownItem(
             chromaticAberration = highlighted,
             depthEffect = true,
             shadow = true,
+            role = itemRole,
+            selected = selected.takeIf { itemType == LiquidGlassDropdownItemType.SingleChoice },
+            toggleableState =
+                ToggleableState(selected).takeIf {
+                    itemType == LiquidGlassDropdownItemType.MultipleChoice
+                },
             onClick = { currentOnClick() },
         ) {
             LiquidGlassDropdownRowContent(
@@ -188,7 +227,7 @@ fun LiquidGlassDropdownItem(
                 trailingIcon = trailingIcon,
                 subtitle = subtitle,
                 trailingContent = trailingContent,
-                modifier = liquidGlassDropdownRowContentModifier(),
+                modifier = Modifier.liquidGlassDropdownRowContent(),
                 textMaxLines = textMaxLines,
                 enabled = enabled,
             )
@@ -282,9 +321,10 @@ fun LiquidGlassDropdownItem(
                         interactionSource = interactionSource,
                         indication = null,
                         enabled = enabled,
-                        role = Role.Button,
+                        role = itemRole,
                         onClick = { currentOnClick() },
-                    ).defaultMinSize(minHeight = LiquidGlassDropdownRowMinHeight),
+                    ).then(selectionSemantics)
+                    .defaultMinSize(minHeight = LiquidGlassDropdownRowMinHeight),
         ) {
             LiquidGlassDropdownRowContent(
                 text = text,
@@ -297,7 +337,7 @@ fun LiquidGlassDropdownItem(
                 trailingIcon = trailingIcon,
                 subtitle = subtitle,
                 trailingContent = trailingContent,
-                modifier = liquidGlassDropdownRowContentModifier(),
+                modifier = Modifier.liquidGlassDropdownRowContent(),
                 textMaxLines = textMaxLines,
                 enabled = enabled,
             )
@@ -376,7 +416,7 @@ private fun LiquidGlassDropdownMeasureItem(
             trailingIcon = trailingIcon,
             subtitle = subtitle,
             trailingContent = trailingContent,
-            modifier = liquidGlassDropdownRowContentModifier(),
+            modifier = Modifier.liquidGlassDropdownRowContent(),
             textMaxLines = textMaxLines,
             enabled = enabled,
         )
@@ -384,14 +424,13 @@ private fun LiquidGlassDropdownMeasureItem(
 }
 
 @Composable
-private fun liquidGlassDropdownRowContentModifier(): Modifier {
+private fun Modifier.liquidGlassDropdownRowContent(): Modifier {
     val minHeight =
         when (LocalLiquidGlassDropdownMaterial.current) {
             LiquidGlassDropdownMaterial.ActionMenu -> 42.dp
             LiquidGlassDropdownMaterial.Default -> LiquidGlassDropdownRowMinHeight
         }
-    return Modifier
-        .fillMaxWidth()
+    return fillMaxWidth()
         .defaultMinSize(minHeight = minHeight)
 }
 
@@ -611,6 +650,7 @@ fun LiquidGlassDropdownSingleChoiceItem(
         highlightContent = isSelected,
         reserveCheckSlot = true,
         textMaxLines = textMaxLines,
+        itemType = LiquidGlassDropdownItemType.SingleChoice,
     )
 }
 

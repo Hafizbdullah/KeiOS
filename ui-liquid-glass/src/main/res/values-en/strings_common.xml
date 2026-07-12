@@ -9,4 +9,6 @@
     <string name="common_unsaved_changes_summary">Current changes have not been saved. Closing will require entering or selecting them again.</string>
     <string name="common_keep_editing">Keep editing</string>
     <string name="common_discard_changes">Discard</string>
+    <string name="liquid_toast_pane_title">Status message</string>
+    <string name="liquid_toast_dismiss">Dismiss message</string>
 </resources>
