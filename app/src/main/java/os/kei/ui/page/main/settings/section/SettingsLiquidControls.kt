@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -27,21 +25,20 @@ internal fun SettingsLiquidKeyPointSlider(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     activeColor: Color = MiuixTheme.colorScheme.primary,
-    onInteractionChanged: (Boolean) -> Unit = {}
+    onInteractionChanged: (Boolean) -> Unit = {},
 ) {
     val sliderBackdrop = rememberLayerBackdrop()
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .semantics {
-                contentDescription?.let { this.contentDescription = it }
-            }
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(48.dp),
     ) {
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(sliderBackdrop)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(sliderBackdrop),
         )
         LiquidKeyPointSlider(
             value = { value.coerceIn(valueRange) },
@@ -51,14 +48,16 @@ internal fun SettingsLiquidKeyPointSlider(
             backdrop = sliderBackdrop,
             keyPoints = keyPoints.map { point -> LiquidSliderKeyPoint(point) },
             enabled = enabled,
+            contentDescription = contentDescription,
             snapToKeyPoints = true,
             snapThreshold = magnetThreshold,
             activeColor = activeColor,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
             onInteractionChanged = onInteractionChanged,
-            modifier = Modifier
-                .matchParentSize()
-                .padding(horizontal = 4.dp, vertical = 7.dp)
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(horizontal = 4.dp),
         )
     }
 }

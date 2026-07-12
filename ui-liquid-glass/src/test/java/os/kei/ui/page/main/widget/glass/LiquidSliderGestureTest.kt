@@ -7,14 +7,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.backdrops.emptyBackdrop
@@ -39,6 +49,134 @@ import kotlin.test.assertTrue
 class LiquidSliderGestureTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun compactVisualInputsKeepFortyEightDpSemanticRoots() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                Column {
+                    LiquidMusicProgressSlider(
+                        value = { 0.25f },
+                        onValueChange = {},
+                        valueRange = 0f..1f,
+                        visibilityThreshold = 0.001f,
+                        backdrop = emptyBackdrop(),
+                        contentDescription = "Playback position",
+                        modifier = Modifier.height(18.dp).testTag("music-slider"),
+                    )
+                    LiquidKeyPointSlider(
+                        value = { 0.50f },
+                        onValueChange = {},
+                        valueRange = 0f..1f,
+                        visibilityThreshold = 0.001f,
+                        backdrop = emptyBackdrop(),
+                        keyPoints = listOf(LiquidSliderKeyPoint(0.5f)),
+                        contentDescription = "Key point",
+                        modifier = Modifier.height(28.dp).testTag("key-point-slider"),
+                    )
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("music-slider")
+            .assertHeightIsAtLeast(LiquidSliderMinimumInteractiveHeight)
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ContentDescription,
+                    listOf("Playback position"),
+                ),
+            ).assert(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+        composeRule
+            .onNodeWithTag("key-point-slider")
+            .assertHeightIsAtLeast(LiquidSliderMinimumInteractiveHeight)
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ContentDescription,
+                    listOf("Key point"),
+                ),
+            )
+    }
+
+    @Test
+    fun disabledCompactSliderHasNoSetProgressAction() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidVolumeSlider(
+                    value = { 0.5f },
+                    onValueChange = {},
+                    valueRange = 0f..1f,
+                    visibilityThreshold = 0.001f,
+                    backdrop = emptyBackdrop(),
+                    enabled = false,
+                    contentDescription = "Unavailable volume",
+                    modifier = Modifier.height(18.dp).testTag("disabled-slider"),
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("disabled-slider")
+            .assertHeightIsAtLeast(LiquidSliderMinimumInteractiveHeight)
+            .assertIsNotEnabled()
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+    }
+
+    @Test
+    fun tapsAtTheExpandedVerticalEdgesChangeTheValue() {
+        var sliderValue = 0.1f
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidMusicProgressSlider(
+                    value = { sliderValue },
+                    onValueChange = { sliderValue = it },
+                    valueRange = 0f..1f,
+                    visibilityThreshold = 0.001f,
+                    backdrop = emptyBackdrop(),
+                    modifier = Modifier.height(18.dp).testTag("edge-slider"),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("edge-slider").performTouchInput {
+            click(Offset(x = width * 0.80f, y = 2f))
+        }
+        assertTrue(sliderValue > 0.70f)
+
+        composeRule.onNodeWithTag("edge-slider").performTouchInput {
+            click(Offset(x = width * 0.20f, y = height - 2f))
+        }
+        assertTrue(sliderValue < 0.30f)
+    }
+
+    @Test
+    fun rtlTapsMapTheLeftEdgeToTheHighValue() {
+        var sliderValue = 0.5f
+        composeRule.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    LiquidMusicProgressSlider(
+                        value = { sliderValue },
+                        onValueChange = { sliderValue = it },
+                        valueRange = 0f..1f,
+                        visibilityThreshold = 0.001f,
+                        backdrop = emptyBackdrop(),
+                        modifier = Modifier.height(18.dp).testTag("rtl-slider"),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("rtl-slider").performTouchInput {
+            click(Offset(x = width * 0.20f, y = centerY))
+        }
+        assertTrue(sliderValue > 0.70f)
+
+        composeRule.onNodeWithTag("rtl-slider").performTouchInput {
+            click(Offset(x = width * 0.80f, y = centerY))
+        }
+        assertTrue(sliderValue < 0.30f)
+    }
 
     @Test
     fun verticalGestureOnSliderScrollsParentWithoutChangingValue() {

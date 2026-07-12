@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -81,6 +83,7 @@ fun LiquidMusicProgressSlider(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentDescription: String? = null,
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
     onValueChangeFinished: ((Float) -> Unit)? = null,
@@ -103,6 +106,7 @@ fun LiquidMusicProgressSlider(
         backdrop = backdrop,
         modifier = modifier,
         enabled = enabled,
+        contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
         style =
             LiquidTrackSliderStyle(
@@ -129,6 +133,7 @@ fun LiquidVolumeSlider(
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentDescription: String? = null,
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
     onValueChangeFinished: ((Float) -> Unit)? = null,
@@ -158,6 +163,7 @@ fun LiquidVolumeSlider(
         backdrop = backdrop,
         modifier = modifier,
         enabled = enabled,
+        contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
         style =
             LiquidTrackSliderStyle(
@@ -185,6 +191,7 @@ fun LiquidKeyPointSlider(
     keyPoints: List<LiquidSliderKeyPoint>,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    contentDescription: String? = null,
     snapToKeyPoints: Boolean = false,
     snapThreshold: Float? = null,
     activeColor: Color = Color.Unspecified,
@@ -216,6 +223,7 @@ fun LiquidKeyPointSlider(
         backdrop = backdrop,
         modifier = modifier,
         enabled = enabled,
+        contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
         keyPoints = keyPoints,
         snapToKeyPoints = snapToKeyPoints,
@@ -248,6 +256,7 @@ private fun LiquidTrackSlider(
     backdrop: Backdrop,
     modifier: Modifier,
     enabled: Boolean,
+    contentDescription: String?,
     onInteractionChanged: (Boolean) -> Unit,
     style: LiquidTrackSliderStyle,
     keyPoints: List<LiquidSliderKeyPoint> = emptyList(),
@@ -287,15 +296,20 @@ private fun LiquidTrackSlider(
     }
     BoxWithConstraints(
         modifier =
-            modifier
+            Modifier
+                .defaultMinSize(minHeight = LiquidSliderMinimumInteractiveHeight)
+                .then(modifier)
                 .fillMaxWidth()
                 .liquidSliderInteractionLock(
                     enabled = enabled,
                     onInteractionChanged = onInteractionChangedState.value,
                 ).graphicsLayer {
                     alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }.semantics {
+                }.semantics(mergeDescendants = true) {
                     val currentValue = valueResolver.resolve(value(), safeValueRange)
+                    contentDescription
+                        ?.takeIf(String::isNotBlank)
+                        ?.let { description -> this.contentDescription = description }
                     progressBarRangeInfo = ProgressBarRangeInfo(currentValue, safeValueRange, steps = 0)
                     if (enabled) {
                         setProgress { target ->
@@ -744,18 +758,37 @@ internal fun resolveSliderProgressChange(
     snapToKeyPoints: Boolean,
     snapThreshold: Float?,
 ): Float? {
+    if (!target.isFinite()) return null
     val safeRange = liquidFiniteRange(valueRange)
     val safeCurrentValue = liquidFiniteValue(currentValue, safeRange)
     val safeTarget = liquidFiniteValue(target, safeRange, fallback = safeCurrentValue)
+    if (safeTarget == safeCurrentValue) return null
+    val targetDirection = safeTarget.compareTo(safeCurrentValue)
+    val safeKeyPoints = sanitizeLiquidSliderKeyPoints(keyPoints, safeRange)
     val resolved =
         resolveSliderTarget(
             target = safeTarget,
             valueRange = safeRange,
-            keyPoints = keyPoints,
+            keyPoints = safeKeyPoints,
             snapToKeyPoints = snapToKeyPoints,
             snapThreshold = snapThreshold,
         )
-    return resolved.takeUnless { it == safeCurrentValue }
+    val resolvedDirection = resolved.compareTo(safeCurrentValue)
+    if (resolvedDirection == targetDirection) return resolved
+    if (!snapToKeyPoints || safeKeyPoints.isEmpty() || snapThreshold != null) {
+        return safeTarget
+    }
+    return if (targetDirection > 0) {
+        safeKeyPoints
+            .minOfOrNull { keyPoint ->
+                keyPoint.value.takeIf { value -> value > safeCurrentValue } ?: Float.POSITIVE_INFINITY
+            }?.takeIf(Float::isFinite)
+    } else {
+        safeKeyPoints
+            .maxOfOrNull { keyPoint ->
+                keyPoint.value.takeIf { value -> value < safeCurrentValue } ?: Float.NEGATIVE_INFINITY
+            }?.takeIf(Float::isFinite)
+    }
 }
 
 internal fun valueProgress(
@@ -774,6 +807,8 @@ internal fun sliderVisualProgress(
     progress: Float,
     isLtr: Boolean,
 ): Float = if (isLtr) progress else 1f - progress
+
+internal val LiquidSliderMinimumInteractiveHeight = 48.dp
 
 private class LiquidSliderHapticState {
     private var edgeFeedbackTriggered = false

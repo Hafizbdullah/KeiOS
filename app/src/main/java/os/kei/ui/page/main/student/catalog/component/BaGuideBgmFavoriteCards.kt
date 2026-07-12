@@ -22,8 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -77,8 +75,7 @@ internal fun BaGuideBgmPlaybackSeekBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(44.dp)
-                .semantics { this.contentDescription = contentDescription },
+                .height(48.dp),
     ) {
         Box(
             modifier =
@@ -95,12 +92,13 @@ internal fun BaGuideBgmPlaybackSeekBar(
             visibilityThreshold = 0.001f,
             backdrop = sliderBackdrop,
             enabled = enabled,
+            contentDescription = contentDescription,
             activeColor = accent,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.36f),
             modifier =
                 Modifier
                     .matchParentSize()
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                    .padding(horizontal = 4.dp),
         )
     }
 }
@@ -160,8 +158,7 @@ private fun BaGuideBgmVolumeSlider(
     Box(
         modifier =
             modifier
-                .height(44.dp)
-                .semantics { this.contentDescription = contentDescription },
+                .height(48.dp),
     ) {
         Box(
             modifier =
@@ -176,12 +173,13 @@ private fun BaGuideBgmVolumeSlider(
             valueRange = 0f..1f,
             visibilityThreshold = 0.001f,
             backdrop = sliderBackdrop,
+            contentDescription = contentDescription,
             activeColor = activeColor,
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
             modifier =
                 Modifier
                     .matchParentSize()
-                    .padding(horizontal = 3.dp, vertical = 8.dp),
+                    .padding(horizontal = 3.dp),
         )
     }
 }

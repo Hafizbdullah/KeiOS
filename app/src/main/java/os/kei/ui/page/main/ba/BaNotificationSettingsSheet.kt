@@ -13,8 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
@@ -370,8 +368,7 @@ private fun BaApThresholdQuickSlider(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(46.dp)
-                .semantics { this.contentDescription = contentDescription },
+                .height(48.dp),
     ) {
         Box(
             modifier =
@@ -395,6 +392,7 @@ private fun BaApThresholdQuickSlider(
             backdrop = sliderBackdrop,
             keyPoints = keyPointValues.map { point -> LiquidSliderKeyPoint(point) },
             enabled = maxValue > 0,
+            contentDescription = contentDescription,
             snapToKeyPoints = true,
             snapThreshold = 0.12f,
             activeColor = activeColor,
@@ -402,7 +400,7 @@ private fun BaApThresholdQuickSlider(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .padding(horizontal = 4.dp, vertical = 7.dp),
+                    .padding(horizontal = 4.dp),
         )
     }
 }

@@ -43,8 +43,9 @@ class LiquidSliderValueResolverTest {
     }
 
     @Test
-    fun accessibilityProgressReportsNoChangeForTheCurrentValue() {
-        assertNull(
+    fun accessibilityProgressKeepsMovingOutsideTheMagnetThreshold() {
+        assertEquals(
+            0.51f,
             resolveSliderProgressChange(
                 currentValue = 0.50f,
                 target = 0.51f,
@@ -52,6 +53,86 @@ class LiquidSliderValueResolverTest {
                 keyPoints = keyPoints,
                 snapToKeyPoints = true,
                 snapThreshold = 0.05f,
+            ),
+        )
+    }
+
+    @Test
+    fun fullyDiscreteAccessibilityProgressMovesToTheNextKeyPoint() {
+        assertEquals(
+            0.50f,
+            resolveSliderProgressChange(
+                currentValue = 0.25f,
+                target = 0.26f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
+            ),
+        )
+    }
+
+    @Test
+    fun fullyDiscreteAccessibilityProgressMovesToThePreviousKeyPoint() {
+        assertEquals(
+            0.25f,
+            resolveSliderProgressChange(
+                currentValue = 0.50f,
+                target = 0.49f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
+            ),
+        )
+    }
+
+    @Test
+    fun fullyDiscreteAccessibilityProgressStopsAtTheFirstAndLastKeyPoints() {
+        assertNull(
+            resolveSliderProgressChange(
+                currentValue = 0.25f,
+                target = 0.24f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
+            ),
+        )
+        assertNull(
+            resolveSliderProgressChange(
+                currentValue = 0.75f,
+                target = 0.76f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
+            ),
+        )
+    }
+
+    @Test
+    fun fullyDiscreteAccessibilityProgressKeepsDirectionBetweenKeyPoints() {
+        assertEquals(
+            0.25f,
+            resolveSliderProgressChange(
+                currentValue = 0.40f,
+                target = 0.39f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
+            ),
+        )
+        assertEquals(
+            0.50f,
+            resolveSliderProgressChange(
+                currentValue = 0.40f,
+                target = 0.41f,
+                valueRange = 0f..1f,
+                keyPoints = keyPoints,
+                snapToKeyPoints = true,
+                snapThreshold = null,
             ),
         )
     }

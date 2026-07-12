@@ -83,7 +83,7 @@ internal fun GuideAudioSeekBar(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(44.dp),
+                .height(48.dp),
     ) {
         Box(
             modifier =
@@ -108,12 +108,13 @@ internal fun GuideAudioSeekBar(
             visibilityThreshold = 0.001f,
             backdrop = sliderBackdrop,
             enabled = enabled,
+            contentDescription = stringResource(R.string.ba_catalog_bgm_seekbar),
             activeColor = Color(0xFF3B82F6),
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.34f),
             modifier =
                 Modifier
                     .matchParentSize()
-                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                    .padding(horizontal = 4.dp),
         )
     }
 }

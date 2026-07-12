@@ -584,10 +584,8 @@ internal fun DebugLiquidControlsCard(
             valueRange = 0f..1f,
             visibilityThreshold = 0.001f,
             backdrop = backdrop,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(32.dp),
+            contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
+            modifier = Modifier.fillMaxWidth(),
         )
 
         DebugLiquidSliderSamples(
@@ -645,10 +643,8 @@ private fun DebugLiquidSliderSamples(
         valueRange = 0f..1f,
         visibilityThreshold = 0.001f,
         backdrop = backdrop,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(32.dp),
+        contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
+        modifier = Modifier.fillMaxWidth(),
     )
 
     Row(
@@ -678,10 +674,8 @@ private fun DebugLiquidSliderSamples(
         valueRange = 0f..1f,
         visibilityThreshold = 0.001f,
         backdrop = backdrop,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(28.dp),
+        contentDescription = stringResource(R.string.debug_component_lab_liquid_music_slider_label),
+        modifier = Modifier.fillMaxWidth(),
     )
 
     Row(
@@ -713,9 +707,7 @@ private fun DebugLiquidSliderSamples(
         backdrop = backdrop,
         keyPoints = keyPoints,
         snapToKeyPoints = true,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(32.dp),
+        contentDescription = stringResource(R.string.debug_component_lab_liquid_key_points_slider_label),
+        modifier = Modifier.fillMaxWidth(),
     )
 }

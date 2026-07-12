@@ -798,9 +798,8 @@ private fun DebugLiquidParameterSlider(
             valueRange = 0f..1f,
             visibilityThreshold = 0.001f,
             backdrop = backdrop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(28.dp)
+            contentDescription = label,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
