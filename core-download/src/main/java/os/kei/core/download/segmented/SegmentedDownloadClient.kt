@@ -399,8 +399,10 @@ class SegmentedDownloadClient(
         )
         val leaseExpired = AtomicBoolean(false)
         val rateProbeIdleExpired = AtomicBoolean(false)
+        val tailIdleExpired = AtomicBoolean(false)
         val rateProbeIdleTracker =
             if (active.part.rateProbe) RateProbeIdleTracker() else null
+        val tailIdleTracker = if (rateProbeIdleTracker == null) TailIdleTracker() else null
         val leaseJob =
             if (leaseTracker.millisUntilExpiration() != Long.MAX_VALUE) {
                 CoroutineScope(currentCoroutineContext()).launch {
@@ -429,6 +431,25 @@ class SegmentedDownloadClient(
                         continue
                     }
                     if (rateProbeIdleExpired.compareAndSet(false, true)) {
+                        active.cancelAttempt()
+                    }
+                    return@launch
+                }
+            }
+        }
+        val tailIdleJob = tailIdleTracker?.let { tracker ->
+            CoroutineScope(currentCoroutineContext()).launch {
+                while (true) {
+                    val remainingMs = tracker.millisUntilExpiration()
+                    if (remainingMs == Long.MAX_VALUE) {
+                        delay(TAIL_IDLE_POLL_MS)
+                        continue
+                    }
+                    if (remainingMs > 0L) {
+                        delay(min(remainingMs, TAIL_IDLE_POLL_MS))
+                        continue
+                    }
+                    if (tailIdleExpired.compareAndSet(false, true)) {
                         active.cancelAttempt()
                     }
                     return@launch
@@ -486,10 +507,14 @@ class SegmentedDownloadClient(
                                 val end = active.currentEndInclusive()
                                 if (offset > end) return@executeStreaming
                                 val remaining = end - offset + 1L
+                                if (remaining <= TAIL_IDLE_WINDOW_BYTES) {
+                                    tailIdleTracker?.activate()
+                                }
                                 val read = input.read(buffer, 0, min(buffer.size.toLong(), remaining).toInt())
                                 if (read < 0) break
                                 if (read == 0) continue
                                 rateProbeIdleTracker?.recordProgress()
+                                tailIdleTracker?.recordProgress()
                                 val written = min(read.toLong(), remaining).toInt()
                                 if (written > 0) {
                                     writer.enqueue(
@@ -557,11 +582,15 @@ class SegmentedDownloadClient(
                 if (leaseExpired.get()) {
                     throw RangeLeaseExpiredException(error)
                 }
+                if (tailIdleExpired.get()) {
+                    throw TailIdleTimeoutException(error)
+                }
                 throw error
             }
         } finally {
             withContext(NonCancellable) {
                 rateProbeIdleJob?.cancelAndJoin()
+                tailIdleJob?.cancelAndJoin()
                 leaseJob?.cancelAndJoin()
             }
         }
@@ -869,6 +898,10 @@ internal class RateProbeIdleTimeoutException(
     cause: Throwable,
 ) : IOException("rate probe idle timeout", cause)
 
+internal class TailIdleTimeoutException(
+    cause: Throwable,
+) : IOException("tail idle timeout", cause)
+
 private class RangeResourceChangedException : IOException("remote resource changed during segmented download")
 
 private class RangeProtocolException(
@@ -889,13 +922,14 @@ internal fun Throwable?.rangeFailureKindOrNull(): RangeFailureKind? =
         is PartialPartDownloadException -> RangeFailureKind.PartialEof
         is RateProbeIdleTimeoutException -> RangeFailureKind.RateLimited
         is RangeLeaseExpiredException,
+        is TailIdleTimeoutException,
         is SlowConnectionDownloadException,
         is SocketTimeoutException -> RangeFailureKind.Timeout
 
         is SocketException -> RangeFailureKind.ConnectionReset
         is SegmentedDownloadHttpException ->
             when {
-                code == 429 -> RangeFailureKind.RateLimited
+                isServerRateLimitedStatus(code) -> RangeFailureKind.RateLimited
                 retryable -> RangeFailureKind.Transient
                 else -> null
             }
@@ -904,14 +938,14 @@ internal fun Throwable?.rangeFailureKindOrNull(): RangeFailureKind? =
         else -> null
     }
 
-private fun Throwable?.singleStreamFailureKindOrNull(): RangeFailureKind? =
+internal fun Throwable?.singleStreamFailureKindOrNull(): RangeFailureKind? =
     when (this) {
         is SegmentedDownloadStorageException,
         is SegmentedDownloadProgressException -> null
 
         is SegmentedDownloadHttpException ->
             when {
-                code == 429 -> RangeFailureKind.RateLimited
+                isServerRateLimitedStatus(code) -> RangeFailureKind.RateLimited
                 retryable -> RangeFailureKind.Transient
                 else -> null
             }
@@ -922,6 +956,9 @@ private fun Throwable?.singleStreamFailureKindOrNull(): RangeFailureKind? =
 
         else -> null
     }
+
+internal fun isServerRateLimitedStatus(code: Int): Boolean =
+    code == 429 || code == 503 || code == 509
 
 private const val MAX_RESOURCE_SNAPSHOT_RESTARTS = 1
 

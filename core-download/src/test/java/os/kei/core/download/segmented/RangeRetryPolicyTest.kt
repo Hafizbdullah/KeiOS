@@ -4,6 +4,7 @@ import java.io.IOException
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class RangeRetryPolicyTest {
     @Test
@@ -26,6 +27,21 @@ class RangeRetryPolicyTest {
                 value = "Thu, 01 Jan 1970 00:00:10 GMT",
                 nowEpochMs = 5_000L,
             ),
+        )
+    }
+
+    @Test
+    fun `bandwidth related server responses use rate limit recovery`() {
+        assertTrue(isServerRateLimitedStatus(429))
+        assertTrue(isServerRateLimitedStatus(503))
+        assertTrue(isServerRateLimitedStatus(509))
+        assertEquals(
+            RangeFailureKind.RateLimited,
+            SegmentedDownloadHttpException(code = 503, retryable = true).rangeFailureKindOrNull(),
+        )
+        assertEquals(
+            RangeFailureKind.RateLimited,
+            SegmentedDownloadHttpException(code = 509, retryable = true).singleStreamFailureKindOrNull(),
         )
     }
 }
