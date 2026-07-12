@@ -37,10 +37,24 @@ data class GitHubTrackedRefreshBatchResult(
     val preReleaseUpdateCount: Int,
     val failedCount: Int,
     val failures: List<GitHubTrackedRefreshFailure> = emptyList(),
-    val performance: GitHubTrackedRefreshBatchPerformance = GitHubTrackedRefreshBatchPerformance()
+    val performance: GitHubTrackedRefreshBatchPerformance = GitHubTrackedRefreshBatchPerformance(),
+    val transientNetworkAbort: Boolean = false,
 ) {
     val hasNotifiableOutcome: Boolean
         get() = updatableCount > 0 || preReleaseUpdateCount > 0 || failedCount > 0
+
+    val isSharedTransientNetworkFailure: Boolean
+        get() =
+            totalCount > 0 &&
+                failedCount == totalCount &&
+                failures.size == totalCount &&
+                failures.all { failure ->
+                    failure.diagnostics.category == GitHubRefreshFailureClassifier.CATEGORY_NETWORK_ERROR ||
+                        failure.diagnostics.category == GitHubRefreshFailureClassifier.CATEGORY_TIMEOUT
+                }
+
+    val requiresInfrastructureRetry: Boolean
+        get() = transientNetworkAbort || isSharedTransientNetworkFailure
 }
 
 data class GitHubTrackedRefreshBatchPerformance(
@@ -115,6 +129,7 @@ object GitHubTrackedRefreshBatchRunner {
         itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
         batchTimeoutMs: Long = 0L,
         retryPolicy: GitHubTrackedRefreshRetryPolicy = GitHubTrackedRefreshRetryPolicy(),
+        transientNetworkFailureAbortThreshold: Int = 0,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: (suspend (Context, GitHubTrackedApp) -> GitHubTrackedReleaseCheck)? = null
@@ -128,6 +143,7 @@ object GitHubTrackedRefreshBatchRunner {
             itemTimeoutMs = itemTimeoutMs,
             batchTimeoutMs = batchTimeoutMs,
             retryPolicy = retryPolicy,
+            transientNetworkFailureAbortThreshold = transientNetworkFailureAbortThreshold,
             onProgress = onProgress,
             onItemResult = onItemResult,
             evaluator = { item ->
@@ -145,6 +161,7 @@ object GitHubTrackedRefreshBatchRunner {
         itemTimeoutMs: (GitHubTrackedApp) -> Long = ::defaultItemTimeoutMs,
         batchTimeoutMs: Long = 0L,
         retryPolicy: GitHubTrackedRefreshRetryPolicy = GitHubTrackedRefreshRetryPolicy(),
+        transientNetworkFailureAbortThreshold: Int = 0,
         onProgress: suspend (GitHubTrackedRefreshBatchProgress) -> Unit = {},
         onItemResult: suspend (GitHubTrackedApp, GitHubTrackedReleaseCheck, Long) -> Unit = { _, _, _ -> },
         evaluator: suspend (GitHubTrackedApp) -> GitHubTrackedReleaseCheck
@@ -169,6 +186,8 @@ object GitHubTrackedRefreshBatchRunner {
             batchTimeoutMs = batchTimeoutMs,
         )
         val batchTimedOut = AtomicBoolean(false)
+        val transientNetworkAbort = AtomicBoolean(false)
+        val consecutiveTransientNetworkFailures = AtomicInteger(0)
         val workItems = GitHubTrackedRefreshBatchScheduler.buildFairRefreshOrder(trackedItems)
         val directApkPermits = Semaphore(
             permits = GitHubTrackedRefreshBatchScheduler.directApkConcurrency(concurrency)
@@ -207,6 +226,7 @@ object GitHubTrackedRefreshBatchRunner {
                     List(concurrency) {
                         async(dispatcher) {
                             while (true) {
+                                if (transientNetworkAbort.get()) break
                                 if (isBatchDeadlineReached(batchDeadlineNs)) {
                                     batchTimedOut.set(true)
                                     break
@@ -253,6 +273,17 @@ object GitHubTrackedRefreshBatchRunner {
                                     check = check,
                                     elapsedMs = itemElapsedMs
                                 )
+                                if (check.isTransientNetworkFailure()) {
+                                    val failureCount = consecutiveTransientNetworkFailures.incrementAndGet()
+                                    if (
+                                        transientNetworkFailureAbortThreshold > 0 &&
+                                        failureCount >= transientNetworkFailureAbortThreshold
+                                    ) {
+                                        transientNetworkAbort.set(true)
+                                    }
+                                } else {
+                                    consecutiveTransientNetworkFailures.set(0)
+                                }
                                 results[workItem.originalIndex] = result
                                 publishResult(result)
                                 yield()
@@ -271,7 +302,9 @@ object GitHubTrackedRefreshBatchRunner {
                     GitHubTrackedRefreshItemResult(
                         item = item,
                         check =
-                            if (batchTimedOut.get() && batchTimeoutMs > 0L) {
+                            if (transientNetworkAbort.get()) {
+                                networkDeferredCheck(item)
+                            } else if (batchTimedOut.get() && batchTimeoutMs > 0L) {
                                 batchTimedOutCheck(
                                     item = item,
                                     timeoutMs = batchTimeoutMs,
@@ -329,6 +362,7 @@ object GitHubTrackedRefreshBatchRunner {
             preReleaseUpdateCount = finalPreReleaseUpdateCount,
             failedCount = finalFailedCount,
             failures = failures,
+            transientNetworkAbort = transientNetworkAbort.get(),
             performance = buildPerformance(
                 batchStartNs = batchStartNs,
                 itemResults = checks,
@@ -489,6 +523,23 @@ object GitHubTrackedRefreshBatchRunner {
             ),
             failureDiagnostics = GitHubRefreshFailureClassifier.cancelled(item.sourceMode.storageId),
         )
+
+    private fun networkDeferredCheck(item: GitHubTrackedApp): GitHubTrackedReleaseCheck =
+        GitHubTrackedReleaseCheck(
+            strategyId = "",
+            localVersion = "",
+            localVersionCode = -1L,
+            status = GitHubTrackedReleaseStatus.Failed,
+            message = GitHubTrackedReleaseStatus.Failed.failureMessage(
+                "Background batch deferred until network recovery (${item.owner}/${item.repo})",
+            ),
+            failureDiagnostics = GitHubRefreshFailureClassifier.network(item.sourceMode.storageId),
+        )
+
+    private fun GitHubTrackedReleaseCheck.isTransientNetworkFailure(): Boolean =
+        status == GitHubTrackedReleaseStatus.Failed &&
+            (failureDiagnostics.category == GitHubRefreshFailureClassifier.CATEGORY_NETWORK_ERROR ||
+                failureDiagnostics.category == GitHubRefreshFailureClassifier.CATEGORY_TIMEOUT)
 
     private fun GitHubTrackedReleaseCheck.isRetryableRefreshFailure(): Boolean {
         if (status != GitHubTrackedReleaseStatus.Failed) return false

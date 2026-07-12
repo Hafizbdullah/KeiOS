@@ -57,7 +57,7 @@ object AppForegroundInfoHandler {
         suppressQuietBackgroundCompletion: Boolean = false,
         cleanupCancellationLocally: Boolean = true,
         onRefreshSessionStarted: (GitHubRefreshRuntimeSession) -> Unit = {},
-    ) {
+    ): Boolean {
         val progressNotifier = GitHubRefreshProgressNotifier(
             context = context,
             minTotalForInitialProgress = GITHUB_BACKGROUND_PROGRESS_NOTIFY_MIN_TOTAL,
@@ -100,10 +100,23 @@ object AppForegroundInfoHandler {
                     schedulerDiagnostics = schedulerDiagnostics,
                 )
                 AppLogger.w("AppForegroundInfoHandler", "github tick failed", error)
-                return
+                return false
             }
         val refreshResult = result.refreshResult
-        if (refreshResult != null) {
+        if (result.retryRecommended) {
+            runCatching {
+                GitHubRefreshNotificationHelper.cancel(
+                    context = context,
+                    sessionId = progressNotifier.session?.id ?: 0L,
+                )
+            }.onFailure { error ->
+                AppLogger.w(
+                    "AppForegroundInfoHandler",
+                    "github retryable background notification cancel failed",
+                    error,
+                )
+            }
+        } else if (refreshResult != null) {
             if (
                 suppressQuietBackgroundCompletion &&
                 progressNotifier.session?.source == GitHubRefreshSource.BackgroundTick &&
@@ -148,6 +161,7 @@ object AppForegroundInfoHandler {
                     )
                 }
         }
+        return result.retryRecommended
     }
 
     suspend fun handleGitHubTickStopped(

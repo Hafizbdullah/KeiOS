@@ -14,12 +14,75 @@ import os.kei.feature.github.model.GitHubTrackedReleaseCheck
 import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.isFdroidRepositoryTrack
+import java.net.UnknownHostException
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GitHubTrackedRefreshBatchRunnerTest {
+    @Test
+    fun `all DNS failures are classified as a shared transient network failure`() = runBlocking {
+        val items = (1..4).map(::tracked)
+
+        val result =
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = items,
+                maxConcurrency = 2,
+                dispatcher = Dispatchers.Default,
+                retryPolicy = GitHubTrackedRefreshRetryPolicy.None,
+            ) {
+                throw UnknownHostException("api.github.com")
+            }
+
+        assertEquals(items.size, result.failedCount)
+        assertTrue(result.isSharedTransientNetworkFailure)
+    }
+
+    @Test
+    fun `background network breaker stops assigning remaining items`() = runBlocking {
+        val evaluated = AtomicInteger(0)
+        val items = (1..12).map(::tracked)
+
+        val result =
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = items,
+                maxConcurrency = 1,
+                dispatcher = Dispatchers.Default,
+                retryPolicy = GitHubTrackedRefreshRetryPolicy.None,
+                transientNetworkFailureAbortThreshold = 3,
+            ) {
+                evaluated.incrementAndGet()
+                throw UnknownHostException("github.com")
+            }
+
+        assertEquals(3, evaluated.get())
+        assertEquals(items.size, result.failedCount)
+        assertTrue(result.transientNetworkAbort)
+        assertTrue(result.requiresInfrastructureRetry)
+    }
+
+    @Test
+    fun `background persistence excludes failed cache entries`() = runBlocking {
+        val items = (1..3).map(::tracked)
+        val result =
+            GitHubTrackedRefreshBatchRunner.run(
+                trackedItems = items,
+                maxConcurrency = 1,
+                dispatcher = Dispatchers.Default,
+                retryPolicy = GitHubTrackedRefreshRetryPolicy.None,
+            ) { item ->
+                if (item == items[1]) {
+                    throw UnknownHostException("api.github.com")
+                }
+                check(status = GitHubTrackedReleaseStatus.UpToDate, hasUpdate = false)
+            }
+
+        val persistable = result.backgroundPersistableCacheEntries()
+
+        assertEquals(setOf(items[0].id, items[2].id), persistable.keys)
+    }
+
     @Test
     fun `run checks tracked items with bounded concurrency and aggregates counts`() = runBlocking {
         val active = AtomicInteger(0)

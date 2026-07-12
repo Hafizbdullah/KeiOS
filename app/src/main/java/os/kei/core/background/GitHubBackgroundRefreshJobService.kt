@@ -127,7 +127,7 @@ class GitHubBackgroundRefreshJobService : JobService() {
                         )
                         return@launch
                     }
-                    AppForegroundInfoHandler.handleGitHubTick(
+                    retry = AppForegroundInfoHandler.handleGitHubTick(
                         context = appContext,
                         schedulerDiagnostics = schedulerDiagnostics,
                         suppressQuietBackgroundCompletion = true,

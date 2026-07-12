@@ -17,15 +17,22 @@ import os.kei.feature.github.model.GitHubCheckCacheEntry
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.GitHubRefreshSchedulerDiagnostics
 import os.kei.feature.github.model.GitHubTrackedApp
+import os.kei.feature.github.model.GitHubTrackedReleaseStatus
 
 private const val GITHUB_BACKGROUND_REFRESH_TAG = "GitHubBackgroundRefresh"
 private const val GITHUB_BACKGROUND_ITEM_TIMEOUT_MS = 15_000L
 private const val GITHUB_BACKGROUND_BATCH_TIMEOUT_MS = 3L * 60L * 1000L
 private const val GITHUB_SHORTCUT_BATCH_TIMEOUT_MS = 4L * 60L * 1000L
 
+internal fun GitHubTrackedRefreshBatchResult.backgroundPersistableCacheEntries(): Map<String, GitHubCheckCacheEntry> {
+    val failedTrackIds = failures.mapTo(HashSet()) { it.trackId }
+    return cacheEntries.filterKeys { trackId -> trackId !in failedTrackIds }
+}
+
 data class GitHubBackgroundTickResult(
     val refreshResult: GitHubTrackedRefreshBatchResult? = null,
     val actionsNotificationCount: Int = 0,
+    val retryRecommended: Boolean = false,
 )
 
 sealed interface GitHubShortcutRefreshExecution {
@@ -115,6 +122,7 @@ class GitHubBackgroundRefreshService(
                                         maxAttempts = 2,
                                         retryDelayMs = 350L,
                                     ),
+                                    transientNetworkFailureAbortThreshold = 3,
                                     onProgress = { progress ->
                                         GitHubRefreshRuntimeStore.progress(
                                             sessionId = runtimeSession.id,
@@ -126,20 +134,22 @@ class GitHubBackgroundRefreshService(
                                         onRefreshProgress(runtimeSession, progress)
                                     },
                                     onItemResult = { item, check, _ ->
-                                        runCatching {
-                                            checkpointWriter.append(
-                                                trackId = item.id,
-                                                entry =
-                                                    GitHubReleaseCheckService
-                                                        .run { check.toCacheEntry() }
-                                                        .copy(checkedAtMillis = System.currentTimeMillis()),
-                                            )
-                                        }.onFailure { error ->
-                                            AppLogger.w(
-                                                GITHUB_BACKGROUND_REFRESH_TAG,
-                                                "failed to checkpoint refreshed item=${item.id}",
-                                                error,
-                                            )
+                                        if (check.status != GitHubTrackedReleaseStatus.Failed) {
+                                            runCatching {
+                                                checkpointWriter.append(
+                                                    trackId = item.id,
+                                                    entry =
+                                                        GitHubReleaseCheckService
+                                                            .run { check.toCacheEntry() }
+                                                            .copy(checkedAtMillis = System.currentTimeMillis()),
+                                                )
+                                            }.onFailure { error ->
+                                                AppLogger.w(
+                                                    GITHUB_BACKGROUND_REFRESH_TAG,
+                                                    "failed to checkpoint refreshed item=${item.id}",
+                                                    error,
+                                                )
+                                            }
                                         }
                                     },
                                 ) { item ->
@@ -164,17 +174,34 @@ class GitHubBackgroundRefreshService(
                                             "failed=${result.failedCount}",
                                     )
                                     logTrackedRefreshFailures(result.failures)
-                                    persistRefreshResult(
-                                        snapshot = snapshot,
-                                        result = result,
-                                        replaceCache = trackedUpdateTargetItems.size == tracked.size,
-                                    )
+                                    val sharedNetworkFailure = result.requiresInfrastructureRetry
+                                    if (sharedNetworkFailure) {
+                                        AppLogger.i(
+                                            GITHUB_BACKGROUND_REFRESH_TAG,
+                                            "defer background batch target=${result.totalCount} because the " +
+                                                "transient network failure breaker opened",
+                                        )
+                                    } else {
+                                        persistBackgroundRefreshResult(
+                                            snapshot = snapshot,
+                                            result = result,
+                                            allTrackedItemsTargeted = trackedUpdateTargetItems.size == tracked.size,
+                                        )
+                                    }
                                     refreshHistoryService.recordCompleted(
                                         session = runtimeSession,
                                         totalTrackedCount = tracked.size,
                                         result = result,
                                         startedAtMillis = nowMs,
-                                        schedulerDiagnostics = schedulerDiagnostics,
+                                        schedulerDiagnostics =
+                                            if (sharedNetworkFailure) {
+                                                schedulerDiagnostics.copy(
+                                                    stopReason = "shared_network_unavailable",
+                                                    rescheduled = true,
+                                                )
+                                            } else {
+                                                schedulerDiagnostics
+                                            },
                                     )
                                     GitHubRefreshRuntimeStore.complete(
                                         sessionId = runtimeSession.id,
@@ -201,15 +228,20 @@ class GitHubBackgroundRefreshService(
                     null
                 }
             val actionsNotificationCount =
-                handleActionsUpdates(
-                    snapshot = snapshot,
-                    nowMs = nowMs,
-                    targetItems = actionsTargetItems,
-                    onActionsUpdateAvailable = onActionsUpdateAvailable,
-                )
+                if (refreshResult?.requiresInfrastructureRetry == true) {
+                    0
+                } else {
+                    handleActionsUpdates(
+                        snapshot = snapshot,
+                        nowMs = nowMs,
+                        targetItems = actionsTargetItems,
+                        onActionsUpdateAvailable = onActionsUpdateAvailable,
+                    )
+                }
             GitHubBackgroundTickResult(
                 refreshResult = refreshResult,
                 actionsNotificationCount = actionsNotificationCount,
+                retryRecommended = refreshResult?.requiresInfrastructureRetry == true,
             )
         }
 
@@ -346,6 +378,21 @@ class GitHubBackgroundRefreshService(
                 resolvedRefreshTimestamp.takeIf { it > 0L } ?: result.refreshTimestampMs
             )
         }
+    }
+
+    private suspend fun persistBackgroundRefreshResult(
+        snapshot: GitHubTrackSnapshot,
+        result: GitHubTrackedRefreshBatchResult,
+        allTrackedItemsTargeted: Boolean,
+    ) {
+        val successfulEntries = result.backgroundPersistableCacheEntries()
+        if (successfulEntries.isEmpty()) return
+        val successfulResult = result.copy(cacheEntries = successfulEntries)
+        persistRefreshResult(
+            snapshot = snapshot,
+            result = successfulResult,
+            replaceCache = allTrackedItemsTargeted && successfulEntries.size == result.cacheEntries.size,
+        )
     }
 
     private suspend fun persistBackgroundCheckpoint(

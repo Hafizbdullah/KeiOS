@@ -58,6 +58,12 @@ internal object GitHubRefreshFailureClassifier {
             responseType = responseType,
         )
 
+    fun network(responseType: String = ""): GitHubRefreshFailureDiagnostics =
+        GitHubRefreshFailureDiagnostics(
+            category = CATEGORY_NETWORK_ERROR,
+            responseType = responseType,
+        )
+
     private fun Throwable.causes(): List<Throwable> =
         buildList {
             val visited = java.util.Collections.newSetFromMap(
