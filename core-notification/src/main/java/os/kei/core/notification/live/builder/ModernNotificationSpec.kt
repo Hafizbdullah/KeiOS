@@ -63,13 +63,16 @@ object ModernNotificationSpecResolver {
         val isRunning = state.running
         val isCalendarPoolTerminal =
             kind == ModernNotificationKind.BA_CALENDAR_POOL && state.deadlineAtMs == null
-        val ongoing = if (isCalendarPoolTerminal) {
+        val isOneShotBaEvent =
+            kind == ModernNotificationKind.BA_CAFE_VISIT ||
+                kind == ModernNotificationKind.BA_ARENA_REFRESH
+        val ongoing = if (isCalendarPoolTerminal || isOneShotBaEvent) {
             state.ongoing
         } else {
             isRunning || state.ongoing
         }
         val showProgressStyle = when {
-            isCalendarPoolTerminal -> false
+            isCalendarPoolTerminal || isOneShotBaEvent -> false
             kind == ModernNotificationKind.WEBDAV_SYNC -> isRunning
             kind == ModernNotificationKind.GITHUB_SHARE_IMPORT ->
                 isRunning && state.clients > 0 && state.overrideProgressPercent != null
@@ -86,7 +89,7 @@ object ModernNotificationSpecResolver {
                 kind = kind,
                 isRunning = isRunning,
             ),
-            category = if (isRunning && !isCalendarPoolTerminal) {
+            category = if (isRunning && !isCalendarPoolTerminal && !isOneShotBaEvent) {
                 NotificationCompat.CATEGORY_PROGRESS
             } else {
                 NotificationCompat.CATEGORY_STATUS

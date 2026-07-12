@@ -46,6 +46,7 @@ internal object BaArenaRefreshNotificationDispatcher {
                 port = 0,
                 path = detailLine,
                 clients = 0,
+                ongoing = false,
                 overrideContent = baAccountNotificationContent(
                     context = context,
                     accountDisplayName = accountDisplayName,

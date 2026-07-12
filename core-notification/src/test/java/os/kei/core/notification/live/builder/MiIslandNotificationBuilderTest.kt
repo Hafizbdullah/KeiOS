@@ -378,6 +378,55 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
+    fun `ba arena refresh registers vector semantic icon and floatable event`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 631,
+            action = "os.kei.test.OPEN_BA_ARENA_REFRESH"
+        )
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            context,
+            632,
+            Intent("os.kei.test.MARK_BA_ARENA_REFRESH_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.BA_ARENA_REFRESH_SERVER_NAME,
+                running = true,
+                port = 0,
+                path = "日服 14:00 竞技场已刷新",
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = false,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = markReadPendingIntent,
+                focusOpenPendingIntent = openPendingIntent,
+                notificationId = 38891,
+                miFocusOrderId = "bluearchive_arena_refresh-38891",
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val displayIcon = notification.focusPicture("key_logo_display")
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertEquals(Icon.TYPE_RESOURCE, displayIcon.type)
+        assertEquals(R.drawable.ic_ba_arena_coin_island, displayIcon.resId)
+        assertTrue(focusParam.contains("\"enableFloat\":true"))
+        assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
+        assertTrue(focusParam.contains("bluearchive_arena_refresh"))
+        assertTrue(focusParam.contains("imageTextInfoRight"))
+        assertTrue(focusParam.contains("\"highlightColor\":\"#4DA3FF\""))
+    }
+
+    @Test
     fun `calendar pool island uses countdown digit template and acknowledge action`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(

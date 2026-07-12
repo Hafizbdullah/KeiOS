@@ -1,6 +1,7 @@
 package os.kei.core.notification.live.builder
 
 import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
 import org.junit.Test
 import os.kei.core.notification.R
 import os.kei.core.notification.live.LiveNotificationPayload
@@ -62,6 +63,8 @@ class ModernNotificationSpecResolverTest {
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.ongoing)
         assertEquals(true, spec.requestPromotedOngoing)
+        assertEquals(true, spec.showProgressStyle)
+        assertEquals(NotificationCompat.CATEGORY_PROGRESS, spec.category)
     }
 
     @Test
@@ -83,7 +86,7 @@ class ModernNotificationSpecResolverTest {
     }
 
     @Test
-    fun `cafe visit keeps full progress and online text`() {
+    fun `cafe visit is a one shot status event`() {
         val spec = ModernNotificationSpecResolver.resolve(
             createState(
                 serverName = LiveNotificationPayload.BA_CAFE_VISIT_SERVER_NAME,
@@ -97,7 +100,10 @@ class ModernNotificationSpecResolverTest {
         assertEquals(ModernNotificationKind.BA_CAFE_VISIT, spec.kind)
         assertEquals(100, spec.progressPercent)
         assertEquals(ModernShortCriticalMode.ONLINE_TEXT, spec.shortCriticalMode)
-        assertEquals(true, spec.requestPromotedOngoing)
+        assertEquals(false, spec.ongoing)
+        assertEquals(false, spec.requestPromotedOngoing)
+        assertEquals(false, spec.showProgressStyle)
+        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
     }
 
     @Test
@@ -126,7 +132,7 @@ class ModernNotificationSpecResolverTest {
                 running = true,
                 port = 0,
                 clients = 0,
-                ongoing = true
+                ongoing = false
             ),
             preferOemLiveIconLayout = true
         )
@@ -134,6 +140,10 @@ class ModernNotificationSpecResolverTest {
         assertEquals(R.drawable.ic_ba_arena_coin_island, spec.iconResId)
         assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.expandedIconResId)
         assertEquals(R.drawable.ic_ba_arena_coin_live_update, spec.trackerIconResId)
+        assertEquals(false, spec.ongoing)
+        assertEquals(false, spec.requestPromotedOngoing)
+        assertEquals(false, spec.showProgressStyle)
+        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
     }
 
     @Test
