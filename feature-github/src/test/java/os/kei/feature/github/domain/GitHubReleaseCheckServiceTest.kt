@@ -45,6 +45,28 @@ import kotlin.test.assertTrue
 
 class GitHubReleaseCheckServiceTest {
     @Test
+    fun `external build track waits cleanly until repository publishes first release`() {
+        val item = trackedApp(preferPreRelease = false).copy(externalBuildUntilRelease = true)
+        val snapshot = snapshot(
+            stable = signal(""),
+            entries = emptyList(),
+            hasStableRelease = false,
+        )
+
+        val result = GitHubReleaseCheckService.evaluateSnapshot(
+            item = item,
+            localVersion = "0.1.0",
+            localVersionCode = 1L,
+            snapshot = snapshot,
+        )
+
+        assertEquals(GitHubTrackedReleaseStatus.UpToDate, result.status)
+        assertEquals(GitHubReleaseCheckService.EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE, result.message)
+        assertFalse(result.hasStableRelease)
+        assertEquals(null, result.preRelease)
+    }
+
+    @Test
     fun `preferred prerelease recommends newer prerelease for BatteryRecorder style repo`() {
         val item = trackedApp(preferPreRelease = true)
         val snapshot = snapshot(

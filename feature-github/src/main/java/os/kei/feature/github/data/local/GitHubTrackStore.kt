@@ -362,6 +362,7 @@ object GitHubTrackStore {
             put("fdroidRepositorySource", true)
             put("fdroidDefaultUpdateIntervalHours", GITHUB_FDROID_DEFAULT_REFRESH_INTERVAL_HOURS)
             put("fdroidCustomUpdateIntervalMaxHours", 24)
+            put("externalBuildUntilRelease", true)
             put("webDavMergeCompatible", true)
         }
 

@@ -128,6 +128,14 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         obj.hasNonNull("checkActionsUpdates") -> obj.optBoolean("checkActionsUpdates", false)
         else -> false
     }
+    val externalBuildUntilRelease = when {
+        sourceMode != GitHubTrackedSourceMode.GitHubRepository -> false
+        settings?.hasNonNull("externalBuildUntilRelease") == true ->
+            settings.optBoolean("externalBuildUntilRelease", false)
+        obj.hasNonNull("externalBuildUntilRelease") ->
+            obj.optBoolean("externalBuildUntilRelease", false)
+        else -> false
+    }
     val parsedItem = GitHubTrackedApp(
         repoUrl = normalizedRepoUrl,
         owner = owner,
@@ -138,6 +146,7 @@ fun parseTrackedItem(obj: JsonObject): GitHubTrackedApp? {
         preferPreRelease = preferPreRelease,
         alwaysShowLatestReleaseDownloadButton = alwaysShowLatestReleaseDownloadButton,
         checkActionsUpdates = checkActionsUpdates,
+        externalBuildUntilRelease = externalBuildUntilRelease,
         updateIntervalMode = parseUpdateIntervalMode(obj),
         actionsUpdateIntervalMode = parseActionsUpdateIntervalMode(obj),
         preciseApkVersionMode = parsePreciseApkVersionMode(obj),
@@ -370,6 +379,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
             normalizedItem.alwaysShowLatestReleaseDownloadButton
         )
         put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+        put("externalBuildUntilRelease", normalizedItem.externalBuildUntilRelease)
         put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)
@@ -415,6 +425,7 @@ fun trackedItemToJson(item: GitHubTrackedApp): JsonObject {
             normalizedItem.alwaysShowLatestReleaseDownloadButton
         )
         put("checkActionsUpdates", normalizedItem.checkActionsUpdates)
+        put("externalBuildUntilRelease", normalizedItem.externalBuildUntilRelease)
         put("updateIntervalMode", normalizedItem.updateIntervalMode.storageId)
         put("actionsUpdateIntervalMode", normalizedItem.actionsUpdateIntervalMode.storageId)
         put("preciseApkVersionMode", normalizedItem.preciseApkVersionMode.storageId)

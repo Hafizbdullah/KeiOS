@@ -363,6 +363,10 @@ object GitHubReleaseCheckService {
             preciseStableApkVersion = preciseStableApkVersion,
             precisePreReleaseApkVersion = precisePreReleaseApkVersion,
         )
+        val waitingForFirstRelease =
+            item.externalBuildUntilRelease &&
+                !evaluation.hasStableRelease &&
+                evaluation.preRelease == null
         return GitHubTrackedReleaseCheck(
             strategyId = snapshot.strategyId,
             localVersion = localVersion,
@@ -388,10 +392,21 @@ object GitHubReleaseCheckService {
             upstreamPushedAtMillis = snapshot.upstreamPushedAtMillis,
             repositoryProfile = repositoryProfile,
             sourceConfigSignature = sourceConfigSignature,
-            status = evaluation.status,
-            message = evaluation.status.defaultMessage,
+            status = if (waitingForFirstRelease) {
+                GitHubTrackedReleaseStatus.UpToDate
+            } else {
+                evaluation.status
+            },
+            message = if (waitingForFirstRelease) {
+                EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE
+            } else {
+                evaluation.status.defaultMessage
+            },
         )
     }
+
+    const val EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE =
+        "github.status.external_build_waiting_release"
 
     private fun failedGitRepositoryCheck(
         localVersion: String,

@@ -20,6 +20,7 @@ data class GitHubTrackedApp(
     val preferPreRelease: Boolean = false,
     val alwaysShowLatestReleaseDownloadButton: Boolean = false,
     val checkActionsUpdates: Boolean = false,
+    val externalBuildUntilRelease: Boolean = false,
     val updateIntervalMode: GitHubTrackedUpdateIntervalMode =
         GitHubTrackedUpdateIntervalMode.FollowGlobal,
     val actionsUpdateIntervalMode: GitHubTrackedActionsUpdateIntervalMode =
@@ -116,6 +117,7 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
         }
 
         GitHubTrackedSourceMode.GitRepository -> copy(
+            externalBuildUntilRelease = false,
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
             updateIntervalMode = updateIntervalMode.coerceForSource(sourceMode),
@@ -123,6 +125,7 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
         )
 
         GitHubTrackedSourceMode.DirectApk -> copy(
+            externalBuildUntilRelease = false,
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
             updateIntervalMode = updateIntervalMode.coerceForSource(sourceMode),
@@ -130,6 +133,7 @@ fun GitHubTrackedApp.withSourceModeConstraints(): GitHubTrackedApp {
         )
 
         GitHubTrackedSourceMode.FdroidRepository -> copy(
+            externalBuildUntilRelease = false,
             alwaysShowLatestReleaseDownloadButton = false,
             checkActionsUpdates = false,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.FollowGlobal

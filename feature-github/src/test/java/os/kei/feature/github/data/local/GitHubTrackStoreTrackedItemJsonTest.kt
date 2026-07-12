@@ -33,6 +33,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
             preferPreRelease = true,
             alwaysShowLatestReleaseDownloadButton = true,
             checkActionsUpdates = true,
+            externalBuildUntilRelease = true,
             updateIntervalMode = GitHubTrackedUpdateIntervalMode.Hours6,
             actionsUpdateIntervalMode = GitHubTrackedActionsUpdateIntervalMode.Minutes30,
             preciseApkVersionMode = GitHubTrackedPreciseApkVersionMode.Disabled,
@@ -55,6 +56,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(true, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(true, imported.checkActionsUpdates)
+        assertEquals(true, imported.externalBuildUntilRelease)
         assertEquals(GitHubTrackedUpdateIntervalMode.Hours6, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.Minutes30,
@@ -157,6 +159,7 @@ class GitHubTrackStoreTrackedItemJsonTest {
         assertEquals(true, imported.preferPreRelease)
         assertEquals(false, imported.alwaysShowLatestReleaseDownloadButton)
         assertEquals(false, imported.checkActionsUpdates)
+        assertEquals(false, imported.externalBuildUntilRelease)
         assertEquals(GitHubTrackedUpdateIntervalMode.Hour1, imported.updateIntervalMode)
         assertEquals(
             GitHubTrackedActionsUpdateIntervalMode.FollowGlobal,

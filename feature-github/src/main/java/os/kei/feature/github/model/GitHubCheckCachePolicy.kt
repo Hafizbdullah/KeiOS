@@ -13,7 +13,10 @@ fun GitHubTrackedApp.checkSourceSignature(
             directApkCheckSourceSignature(lookupConfig.checkAllTrackedPreReleases)
         GitHubTrackedSourceMode.GitRepository -> gitRepositoryCheckSourceSignature(lookupConfig)
         GitHubTrackedSourceMode.FdroidRepository -> fdroidRepositoryCheckSourceSignature()
-        GitHubTrackedSourceMode.GitHubRepository -> lookupConfig.githubCheckSourceSignature()
+        GitHubTrackedSourceMode.GitHubRepository -> {
+            val base = lookupConfig.githubCheckSourceSignature()
+            if (externalBuildUntilRelease) "$base|external-build" else base
+        }
     }
 }
 
