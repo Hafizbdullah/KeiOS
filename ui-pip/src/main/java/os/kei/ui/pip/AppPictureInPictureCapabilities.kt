@@ -40,11 +40,9 @@ tailrec fun Context.findHostActivity(): Activity? {
     }
 }
 
-fun View.appPictureInPictureSourceRect(locationBuffer: IntArray = IntArray(2)): Rect? {
+fun View.appPictureInPictureSourceRect(): Rect? {
     if (width <= 0 || height <= 0) return null
-    getLocationInWindow(locationBuffer)
-    val left = locationBuffer[0]
-    val top = locationBuffer[1]
-    return Rect(left, top, left + width, top + height)
-        .takeUnless { rect -> rect.isEmpty }
+    return Rect()
+        .takeIf(::getGlobalVisibleRect)
+        ?.takeUnless { rect -> rect.isEmpty }
 }

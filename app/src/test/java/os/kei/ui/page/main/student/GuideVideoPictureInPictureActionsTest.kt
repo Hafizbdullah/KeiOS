@@ -193,6 +193,25 @@ class GuideVideoPictureInPictureActionsTest {
         assertNull(params.expandedAspectRatio)
         assertTrue(params.isSeamlessResizeEnabled)
     }
+
+    @Test
+    fun `auto enter follows the requested playback policy`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+
+        val playingParams =
+            buildGuidePictureInPictureParams(
+                context = context,
+                autoEnterEnabled = true,
+            )
+        val pausedParams =
+            buildGuidePictureInPictureParams(
+                context = context,
+                autoEnterEnabled = false,
+            )
+
+        assertTrue(playingParams.isAutoEnterEnabled)
+        assertFalse(pausedParams.isAutoEnterEnabled)
+    }
 }
 
 private fun os.kei.ui.pip.AppPictureInPictureActionSet.savedActionNames(): List<String> {

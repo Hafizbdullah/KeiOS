@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -106,7 +107,20 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
     private var guideVideoPlayer: ExoPlayer? = null
     private var boundVideoPlayer: ExoPlayer? = null
     private var boundPlayerView: PlayerView? = null
-    private val pictureInPictureSourceRectLocation = IntArray(2)
+    private val pictureInPictureLayoutChangeListener =
+        View.OnLayoutChangeListener { view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            if (left == oldLeft && top == oldTop && right == oldRight && bottom == oldBottom) {
+                return@OnLayoutChangeListener
+            }
+            if (!isInPictureInPictureMode && !pictureInPictureRequestPending && !launchedIntoPictureInPicture) {
+                return@OnLayoutChangeListener
+            }
+            val sourceRectHint = view.appPictureInPictureSourceRect() ?: return@OnLayoutChangeListener
+            commitGuidePictureInPictureParams(
+                forceRuntime = isInPictureInPictureMode,
+                sourceRectHintOverride = sourceRectHint,
+            )
+        }
     private lateinit var pictureInPictureActionReceiver: AppPictureInPictureActionReceiver
     private lateinit var pictureInPictureCloseController: AppPictureInPictureCloseController
     private val enablePictureInPictureRuntimeParamsRunnable =
@@ -390,6 +404,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
         if (::pictureInPictureCloseController.isInitialized) {
             pictureInPictureCloseController.cancelStoppedFallback()
         }
+        boundPlayerView?.removeOnLayoutChangeListener(pictureInPictureLayoutChangeListener)
         stopGuideVideoPlayback(release = true)
         boundPlayerView = null
         if (::pictureInPictureActionReceiver.isInitialized) {
@@ -449,7 +464,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
             context = this,
             actionSet = buildGuidePictureInPictureActionSet(),
             sourceRectHint = runtimeGuidePictureInPictureSourceRectHint(),
-            autoEnterEnabled = launchedIntoPictureInPicture,
+            autoEnterEnabled = shouldEnableGuidePictureInPictureAutoEnter(),
         )
         runCatching {
             setPictureInPictureParams(params)
@@ -467,18 +482,26 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
         window.decorView.postDelayed(enablePictureInPictureRuntimeParamsRunnable, 180L)
     }
 
-    private fun commitGuidePictureInPictureParams(forceRuntime: Boolean = false) {
+    private fun commitGuidePictureInPictureParams(
+        forceRuntime: Boolean = false,
+        sourceRectHintOverride: Rect? = null,
+    ) {
         if (finishRequested || isFinishing || isDestroyed) return
         if (isInPictureInPictureMode && !forceRuntime && !pictureInPictureRuntimeParamsReady) return
         val actionSet = buildGuidePictureInPictureActionSet()
-        val autoEnterEnabled = launchedIntoPictureInPicture || pictureInPictureRequestPending
         val params = buildGuidePictureInPictureParams(
             context = this,
             actionSet = actionSet,
-            sourceRectHint = runtimeGuidePictureInPictureSourceRectHint(),
-            autoEnterEnabled = autoEnterEnabled,
+            sourceRectHint = sourceRectHintOverride ?: runtimeGuidePictureInPictureSourceRectHint(),
+            autoEnterEnabled = shouldEnableGuidePictureInPictureAutoEnter(),
         )
         runCatching { setPictureInPictureParams(params) }
+    }
+
+    private fun shouldEnableGuidePictureInPictureAutoEnter(): Boolean {
+        return pictureInPicturePlayWhenReadyState.value &&
+            (boundVideoPlayer ?: guideVideoPlayer) != null &&
+            !finishRequested
     }
 
     private fun runtimeGuidePictureInPictureSourceRectHint(): Rect? {
@@ -500,7 +523,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
                     decorView.width > 0 && decorView.height > 0
                 }
                 ?: return null
-        return view.appPictureInPictureSourceRect(pictureInPictureSourceRectLocation)
+        return view.appPictureInPictureSourceRect()
     }
 
     private fun buildGuidePictureInPictureActionSet() =
@@ -615,9 +638,7 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
     private fun onGuideVideoPlayerPlayWhenReadyChanged(playWhenReady: Boolean) {
         if (pictureInPicturePlayWhenReadyState.value == playWhenReady) return
         pictureInPicturePlayWhenReadyState.value = playWhenReady
-        if (isInPictureInPictureMode || pictureInPictureRequestPending || launchedIntoPictureInPicture) {
-            commitGuidePictureInPictureParams(forceRuntime = isInPictureInPictureMode)
-        }
+        commitGuidePictureInPictureParams(forceRuntime = isInPictureInPictureMode)
     }
 
     private fun onGuideVideoPlayerRepeatModeChanged(repeatEnabled: Boolean) {
@@ -630,10 +651,20 @@ open class GuideVideoFullscreenActivity : ComponentActivity() {
 
     private fun onGuideVideoPlayerViewBound(view: PlayerView) {
         if (boundPlayerView === view) return
+        boundPlayerView?.removeOnLayoutChangeListener(pictureInPictureLayoutChangeListener)
         boundPlayerView = view
+        view.addOnLayoutChangeListener(pictureInPictureLayoutChangeListener)
+        view.post {
+            if (boundPlayerView === view && !finishRequested) {
+                commitGuidePictureInPictureParams(
+                    sourceRectHintOverride = view.appPictureInPictureSourceRect(),
+                )
+            }
+        }
     }
 
     private fun onGuideVideoPlayerViewReleased(view: PlayerView) {
+        view.removeOnLayoutChangeListener(pictureInPictureLayoutChangeListener)
         if (boundPlayerView === view) {
             boundPlayerView = null
         }
