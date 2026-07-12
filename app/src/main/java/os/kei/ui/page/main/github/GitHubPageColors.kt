@@ -10,6 +10,7 @@ import os.kei.feature.github.domain.GitHubReleaseCheckService
 import os.kei.ui.page.main.os.appLucideAlertIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
+import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
@@ -98,6 +99,8 @@ internal fun OverviewRefreshState.indicatorBackground(neutralSurface: Color): Co
 internal fun VersionCheckUi.statusIcon(): ImageVector {
     return when {
         loading -> appLucideRefreshIcon()
+        message == GitHubReleaseCheckService.EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE ->
+            appLucideHistoryIcon()
         isLocalAppUninstalled() -> appLucidePackageIcon()
         isFailed() -> appLucideWarningIcon()
         recommendsPreRelease -> appLucideDownloadIcon()
@@ -114,6 +117,8 @@ internal fun VersionCheckUi.statusIcon(): ImageVector {
 internal fun VersionCheckUi.statusColor(neutralColor: Color): Color {
     return when {
         loading -> GitHubStatusPalette.Active
+        message == GitHubReleaseCheckService.EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE ->
+            GitHubStatusPalette.Cache
         isFailed() -> GitHubStatusPalette.Error
         recommendsPreRelease -> GitHubStatusPalette.PreRelease
         hasPreReleaseUpdate -> GitHubStatusPalette.PreRelease

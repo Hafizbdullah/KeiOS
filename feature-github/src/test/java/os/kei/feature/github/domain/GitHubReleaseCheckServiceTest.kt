@@ -67,6 +67,33 @@ class GitHubReleaseCheckServiceTest {
     }
 
     @Test
+    fun `external build treats only empty release list as waiting`() {
+        val external = trackedApp(preferPreRelease = false).copy(externalBuildUntilRelease = true)
+        val regular = trackedApp(preferPreRelease = false)
+
+        assertTrue(
+            GitHubReleaseCheckService.run {
+                external.shouldWaitForFirstRelease(IllegalStateException("no release entries"))
+            },
+        )
+        assertFalse(
+            GitHubReleaseCheckService.run {
+                regular.shouldWaitForFirstRelease(IllegalStateException("no release entries"))
+            },
+        )
+        assertFalse(
+            GitHubReleaseCheckService.run {
+                external.shouldWaitForFirstRelease(IllegalStateException("HTTP 404"))
+            },
+        )
+        assertFalse(
+            GitHubReleaseCheckService.run {
+                external.shouldWaitForFirstRelease(IllegalStateException("network timeout"))
+            },
+        )
+    }
+
+    @Test
     fun `preferred prerelease recommends newer prerelease for BatteryRecorder style repo`() {
         val item = trackedApp(preferPreRelease = true)
         val snapshot = snapshot(

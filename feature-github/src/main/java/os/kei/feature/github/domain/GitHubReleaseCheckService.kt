@@ -245,6 +245,21 @@ object GitHubReleaseCheckService {
             forceRefresh = forceRefresh
         ).getOrElse { error ->
             val snapshotDiagnostics = error.snapshotDiagnostics()
+            if (item.shouldWaitForFirstRelease(error)) {
+                return GitHubTrackedReleaseCheck(
+                    strategyId = effectiveStrategy.id,
+                    localVersion = localVersion,
+                    localVersionCode = localVersionCode,
+                    hasStableRelease = false,
+                    hasUpdate = false,
+                    sourceConfigSignature = sourceConfigSignature,
+                    status = GitHubTrackedReleaseStatus.UpToDate,
+                    message = EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE,
+                    diagnostics = snapshotDiagnostics.copy(
+                        localVersionElapsedMs = localVersionElapsedMs,
+                    ),
+                )
+            }
             val profileResult = loadRepositoryProfile(
                 profileRepository = profileRepository,
                 item = repositoryItem,
@@ -407,6 +422,13 @@ object GitHubReleaseCheckService {
 
     const val EXTERNAL_BUILD_WAITING_RELEASE_MESSAGE =
         "github.status.external_build_waiting_release"
+
+    internal fun GitHubTrackedApp.shouldWaitForFirstRelease(error: Throwable): Boolean {
+        return externalBuildUntilRelease &&
+            error.message.orEmpty().trim().equals(NO_RELEASE_ENTRIES_ERROR, ignoreCase = true)
+    }
+
+    private const val NO_RELEASE_ENTRIES_ERROR = "no release entries"
 
     private fun failedGitRepositoryCheck(
         localVersion: String,
