@@ -1,17 +1,17 @@
 package os.kei.ui.page.main.settings.page
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.LauncherIconDesign
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
 import os.kei.ui.page.main.settings.state.SettingsPageUiState
+import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.state.SettingsSectionContractBundle
 import os.kei.ui.page.main.settings.state.rememberSettingsSectionContractBundle
-import os.kei.ui.page.main.settings.section.SettingsAccessibilityGuardUiState
-import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.SettingsAppLanguageController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
@@ -213,10 +213,5 @@ private fun showSettingsToastIfClosed(
     messageRes: Int,
 ) {
     if (opened) return
-    Toast
-        .makeText(
-            context,
-            context.getString(messageRes),
-            Toast.LENGTH_SHORT,
-        ).show()
+    context.showToast(messageRes)
 }
