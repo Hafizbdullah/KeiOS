@@ -2,16 +2,14 @@ package os.kei.feature.github.data.apk
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import os.kei.core.download.range.RemoteByteRangeClient
 import os.kei.core.io.cancellableResult
-import os.kei.core.io.executeCancellable
 import os.kei.core.io.SharedHttpClient
 import kotlin.coroutines.cancellation.CancellationException
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.util.zip.Inflater
 import kotlin.time.Duration.Companion.seconds
-
-private val contentRangeRegex = Regex("""bytes\s+(\d+)-(\d+)/(\d+|\*)""")
 
 data class RemoteZipSelectedEntries(
     val entryNames: List<String>,
@@ -45,6 +43,8 @@ data class RemoteZipSelectedEntries(
 class RemoteZipEntryReader(
     private val client: OkHttpClient = defaultClient
 ) {
+    private val rangeClient = RemoteByteRangeClient(client)
+
     suspend fun listEntryNames(
         url: String,
         apiToken: String = ""
@@ -478,20 +478,11 @@ class RemoteZipEntryReader(
         url: String,
         apiToken: String
     ): RangeProbe {
-        val request = requestBuilder(url, apiToken)
-            .header("Range", "bytes=0-0")
-            .build()
-        return client.executeCancellable(request) { response ->
-            val contentRange = response.header("Content-Range").parseContentRange()
-            check(response.code == 206 && contentRange != null) {
-                "APK byte-range probe failed (HTTP ${response.code})"
-            }
-            check(contentRange.totalSize > 0L) { "APK size is invalid" }
-            RangeProbe(
-                totalSize = contentRange.totalSize,
-                resolvedUrl = response.request.url.toString()
-            )
-        }
+        val probe = rangeClient.probe(requestBuilder(url, apiToken).build())
+        return RangeProbe(
+            totalSize = probe.totalSize,
+            resolvedUrl = probe.finalUrl,
+        )
     }
 
     private suspend fun fetchRange(
@@ -501,27 +492,18 @@ class RemoteZipEntryReader(
         apiToken: String
     ): RangeBytes {
         check(start >= 0L && endInclusive >= start) { "Invalid APK byte range" }
-        val request = requestBuilder(url, apiToken)
-            .header("Range", "bytes=$start-$endInclusive")
-            .build()
-        return client.executeCancellable(request) { response ->
-            val contentRange = response.header("Content-Range").parseContentRange()
-            check(response.code == 206 && contentRange != null) {
-                "APK byte-range request failed (HTTP ${response.code})"
-            }
-            check(contentRange.start == start && contentRange.endInclusive == endInclusive) {
-                "APK byte-range response is invalid"
-            }
-            val body = response.body.bytes()
-            val expectedSize = endInclusive - start + 1L
-            check(body.size.toLong() == expectedSize) {
-                "APK byte-range response size is invalid"
-            }
-            RangeBytes(
-                bytes = body,
-                start = contentRange.start
+        val expectedSize = endInclusive - start + 1L
+        val result =
+            rangeClient.read(
+                request = requestBuilder(url, apiToken).build(),
+                start = start,
+                endInclusive = endInclusive,
+                maxBytes = expectedSize,
             )
-        }
+        return RangeBytes(
+            bytes = result.bytes,
+            start = result.start,
+        )
     }
 
     private fun requestBuilder(
@@ -609,17 +591,6 @@ class RemoteZipEntryReader(
         }
     }
 
-    private fun String?.parseContentRange(): ContentRange? {
-        val value = this?.trim().orEmpty()
-        val match = contentRangeRegex.matchEntire(value) ?: return null
-        val total = match.groupValues[3].takeUnless { it == "*" }?.toLongOrNull() ?: return null
-        return ContentRange(
-            start = match.groupValues[1].toLong(),
-            endInclusive = match.groupValues[2].toLong(),
-            totalSize = total
-        )
-    }
-
     private fun String.shouldAttachGitHubToken(): Boolean {
         val host = runCatching { URI(this).host.orEmpty().lowercase() }.getOrDefault("")
         return host == "github.com" || host == "api.github.com" || host.endsWith(".github.com")
@@ -699,12 +670,6 @@ class RemoteZipEntryReader(
 
     private data class LocalEntry(
         val dataOffset: Long
-    )
-
-    private data class ContentRange(
-        val start: Long,
-        val endInclusive: Long,
-        val totalSize: Long
     )
 
     private data class CentralDirectoryEntry(
