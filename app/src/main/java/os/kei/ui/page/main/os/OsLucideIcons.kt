@@ -145,6 +145,9 @@ internal fun appLucideInfoIcon(): ImageVector = osLucideVector(LucideR.drawable.
 internal fun appLucidePackageIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_package)
 
 @Composable
+internal fun appLucideArchiveIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_archive)
+
+@Composable
 internal fun appLucideMailIcon(): ImageVector = osLucideVector(LucideR.drawable.lucide_ic_mail)
 
 @Composable

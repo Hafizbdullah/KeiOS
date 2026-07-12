@@ -52,6 +52,23 @@ class GitHubRefreshActionsTest {
     }
 
     @Test
+    fun `tracked update selector keeps archived repositories refreshable`() {
+        val archived = tracked("archived").copy(repositoryArchived = true)
+        val nowMs = 12L * 60L * 60L * 1000L + 1L
+
+        val selected =
+            selectDueTrackedUpdateItems(
+                trackedItems = listOf(archived),
+                checkedAtMillisById = mapOf(archived.id to 1L),
+                lastRefreshMs = 0L,
+                refreshIntervalHours = 12,
+                nowMs = nowMs,
+            )
+
+        assertEquals(listOf(archived), selected)
+    }
+
+    @Test
     fun `tracked update selector skips automatic refresh for ignored version tracks`() {
         val active = tracked("active")
         val temporaryIgnored = tracked("temporary").copy(

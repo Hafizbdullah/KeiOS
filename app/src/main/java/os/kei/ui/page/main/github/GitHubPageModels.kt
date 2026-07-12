@@ -11,6 +11,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubLookupStrategyOption
 import os.kei.feature.github.model.GitHubRemoteApkVersionInfo
 import os.kei.feature.github.model.GitHubRepositoryProfileSnapshot
+import os.kei.feature.github.model.GitHubTrackedApp
 import kotlin.math.max
 
 @Immutable
@@ -55,6 +56,13 @@ internal data class VersionCheckUi(
     val directApkRemoteCheckedAtMillis: Long = -1L,
     val checkedAtMillis: Long = -1L
 )
+
+internal fun GitHubTrackedApp.isRepositoryArchived(state: VersionCheckUi?): Boolean {
+    return state
+        ?.takeIf { it.checkedAtMillis > 0L }
+        ?.repositoryArchived
+        ?: repositoryArchived
+}
 
 @Immutable
 internal data class GitHubStrategyGuide(

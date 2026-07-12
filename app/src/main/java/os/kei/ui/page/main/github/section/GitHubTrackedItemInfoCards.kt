@@ -33,11 +33,16 @@ import os.kei.feature.github.model.isGitRepositoryTrack
 import os.kei.feature.github.model.isGitHubRepositoryTrack
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
+import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.github.VersionCheckUi
+import os.kei.ui.page.main.github.isRepositoryArchived
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -46,6 +51,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubRepositoryLinkCard(
     item: GitHubTrackedApp,
+    state: VersionCheckUi,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     val directIdentity = item.takeIf { it.isDirectApkDisplaySource() }
@@ -75,6 +81,10 @@ internal fun GitHubRepositoryLinkCard(
                 ?: directIdentity?.displayName
                 ?: "${item.owner}/${item.repo}",
         valueColor = MiuixTheme.colorScheme.onBackground,
+        statusLabel =
+            stringResource(R.string.github_track_badge_archived)
+                .takeIf { item.isRepositoryArchived(state) },
+        statusColor = GitHubStatusPalette.Error,
         onClick = { onOpenExternalUrl(repoUrl) },
     )
 }
@@ -118,6 +128,8 @@ internal fun GitHubLinkedInfoCard(
     valueMaxLines: Int = 1,
     trailingIcon: ImageVector? = null,
     trailingIconColor: Color = labelColor,
+    statusLabel: String? = null,
+    statusColor: Color = labelColor,
     onClick: () -> Unit,
 ) {
     val localBackdrop = rememberLayerBackdrop()
@@ -170,6 +182,13 @@ internal fun GitHubLinkedInfoCard(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.End,
             )
+            statusLabel?.let { label ->
+                StatusPill(
+                    label = label,
+                    color = statusColor,
+                    size = AppStatusPillSize.Compact,
+                )
+            }
             trailingIcon?.let { icon ->
                 Icon(
                     imageVector = icon,

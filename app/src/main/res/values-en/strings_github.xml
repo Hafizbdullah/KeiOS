@@ -1070,6 +1070,8 @@
     <string name="github_track_sheet_btn_collapse">Collapse list</string>
     <string name="github_track_sheet_btn_select_app">Select app</string>
     <string name="github_track_badge_current_app">This app</string>
+    <string name="github_track_badge_archived">Archived</string>
+    <string name="github_cd_repository_archived">The repository for %1$s is archived</string>
     <string name="github_track_badge_external_build">External build</string>
     <string name="github_track_badge_waiting_release">Awaiting Release</string>
     <string name="github_track_sheet_section_check_option">Check options</string>

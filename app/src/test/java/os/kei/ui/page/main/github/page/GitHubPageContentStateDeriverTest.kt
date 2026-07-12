@@ -272,6 +272,98 @@ class GitHubPageContentStateDeriverTest {
     }
 
     @Test
+    fun `archived repositories stay after active repositories for every sort option`() = runBlocking {
+        val active = sampleTrackedItems()
+        val archivedFromTrack =
+            GitHubTrackedApp(
+                repoUrl = "https://github.com/archive/track",
+                owner = "archive",
+                repo = "track",
+                packageName = "demo.archived.track",
+                appLabel = "A Archived Track",
+                repositoryArchived = true,
+            )
+        val archivedFromRefresh =
+            GitHubTrackedApp(
+                repoUrl = "https://github.com/archive/refresh",
+                owner = "archive",
+                repo = "refresh",
+                packageName = "demo.archived.refresh",
+                appLabel = "B Archived Refresh",
+            )
+        val items = listOf(archivedFromTrack, archivedFromRefresh) + active
+        val states =
+            mapOf(
+                archivedFromRefresh.id to
+                    VersionCheckUi(
+                        repositoryArchived = true,
+                        checkedAtMillis = 1_000L,
+                    ),
+            )
+
+        GitHubSortMode.entries.forEach { sortMode ->
+            GitHubSortDirection.entries.forEach { sortDirection ->
+                val derived =
+                    GitHubPageContentStateDeriver().build(
+                        baseInput(
+                            trackedItems = items,
+                            sortMode = sortMode,
+                            sortDirection = sortDirection,
+                            checkStates = states,
+                        ),
+                    )
+
+                assertEquals(
+                    setOf("demo.archived.track", "demo.archived.refresh"),
+                    derived.trackedUi.sortedTracked.takeLast(2).map { it.packageName }.toSet(),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `fresh unarchived refresh restores normal sorting`() = runBlocking {
+        val formerlyArchived =
+            GitHubTrackedApp(
+                repoUrl = "https://github.com/owner/alpha",
+                owner = "owner",
+                repo = "alpha",
+                packageName = "demo.alpha",
+                appLabel = "Alpha",
+                repositoryArchived = true,
+            )
+        val active =
+            GitHubTrackedApp(
+                repoUrl = "https://github.com/owner/zulu",
+                owner = "owner",
+                repo = "zulu",
+                packageName = "demo.zulu",
+                appLabel = "Zulu",
+            )
+        val derived =
+            GitHubPageContentStateDeriver().build(
+                baseInput(
+                    trackedItems = listOf(active, formerlyArchived),
+                    sortMode = GitHubSortMode.Name,
+                    sortDirection = GitHubSortDirection.Forward,
+                    checkStates =
+                        mapOf(
+                            formerlyArchived.id to
+                                VersionCheckUi(
+                                    repositoryArchived = false,
+                                    checkedAtMillis = 2_000L,
+                                ),
+                        ),
+                ),
+            )
+
+        assertEquals(
+            listOf("demo.alpha", "demo.zulu"),
+            derived.trackedUi.sortedTracked.map { it.packageName },
+        )
+    }
+
+    @Test
     fun `content derivation exposes stable page keys and self track flag`() = runBlocking {
         val items = sampleTrackedItems() + GitHubTrackedApp(
             repoUrl = "https://github.com/MuntashirAkon/AppManager",

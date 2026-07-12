@@ -154,6 +154,7 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                     }
                     GitHubRepositoryLinkCard(
                         item = item,
+                        state = state,
                         onOpenExternalUrl = actions.onOpenExternalUrl,
                     )
                     val appUpdatedAtLabel =

@@ -23,12 +23,14 @@ import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.apkAssetTarget
 import os.kei.ui.page.main.github.asset.directApkAssetPanelData
 import os.kei.ui.page.main.github.isLocalAppUninstalled
+import os.kei.ui.page.main.github.isRepositoryArchived
 import os.kei.ui.page.main.github.page.GitHubDecisionAssistDetailType
 import os.kei.ui.page.main.github.statusActionUrl
 import os.kei.ui.page.main.github.statusColor
 import os.kei.ui.page.main.github.statusIcon
 import os.kei.ui.page.main.github.statusMessage
 import os.kei.ui.page.main.os.appLucideCloseIcon
+import os.kei.ui.page.main.os.appLucideArchiveIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -180,16 +182,19 @@ private fun gitHubTrackedItemHeaderActionState(
     val canLoadApkAssets = canLoadRepositoryApkAssets || canLoadFdroidApkAssets || canToggleDirectApkAssets
     val assetPanelExpanded = assetState.apkAssetExpanded[item.id] == true
     val assetPanelLoading = assetState.apkAssetLoading[item.id] == true
+    val repositoryArchived = item.isRepositoryArchived(state)
     val icon =
         when {
             assetPanelLoading -> appLucideRefreshIcon()
             canLoadApkAssets && assetPanelExpanded -> appLucideCloseIcon()
+            repositoryArchived -> appLucideArchiveIcon()
             localAppUninstalled && canLoadApkAssets -> appLucidePackageIcon()
             alwaysLatestReleaseDownload -> appLucideDownloadIcon()
             else -> state.statusIcon()
         }
     val iconTint =
         when {
+            repositoryArchived -> GitHubStatusPalette.Error
             localAppUninstalled && canLoadApkAssets -> GitHubStatusPalette.Install
             alwaysLatestReleaseDownload -> latestReleaseAccent
             else -> statusColor
@@ -205,7 +210,9 @@ private fun gitHubTrackedItemHeaderActionState(
         icon = icon,
         iconTint = iconTint,
         contentDescription =
-            if (localAppUninstalled && canLoadApkAssets) {
+            if (repositoryArchived) {
+                stringResource(R.string.github_cd_repository_archived, displayTitle)
+            } else if (localAppUninstalled && canLoadApkAssets) {
                 stringResource(R.string.github_cd_install_tracked_item, displayTitle)
             } else {
                 state

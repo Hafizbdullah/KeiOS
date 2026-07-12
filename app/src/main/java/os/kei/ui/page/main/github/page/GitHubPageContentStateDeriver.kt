@@ -16,6 +16,7 @@ import os.kei.ui.page.main.github.GitHubSortMode
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
+import os.kei.ui.page.main.github.isRepositoryArchived
 import os.kei.ui.page.main.github.section.GitHubOverviewMetrics
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportTrack
 import os.kei.ui.page.main.github.share.shareImportTrackMaxAgeMs
@@ -116,7 +117,7 @@ internal class GitHubPageContentStateDeriver(
             val titleForSort: (GitHubTrackedApp) -> String = { item ->
                 displayTitleById[item.id].orEmpty().lowercase(Locale.ROOT)
             }
-            val sortedTracked = when (input.sortMode) {
+            val sortedBySelectedMode = when (input.sortMode) {
                 GitHubSortMode.Update -> when (input.sortDirection) {
                     GitHubSortDirection.Forward -> filteredTracked.sortedWith(
                         compareByDescending<GitHubTrackedApp> { isSortUpdatable(it) }
@@ -185,6 +186,10 @@ internal class GitHubPageContentStateDeriver(
                     )
                 }
             }
+            val (activeTracked, archivedTracked) = sortedBySelectedMode.partition { item ->
+                !item.isRepositoryArchived(input.checkStates[item.id])
+            }
+            val sortedTracked = activeTracked + archivedTracked
             val pendingShareImportRepoOverlapCount = input.pendingShareImportTrack?.let { pending ->
                 input.trackedItems.count { item ->
                     item.owner.equals(pending.owner, ignoreCase = true) &&

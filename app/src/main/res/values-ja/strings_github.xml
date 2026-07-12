@@ -1050,6 +1050,8 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_btn_collapse">リストを折りたたむ</string>
     <string name="github_track_sheet_btn_select_app">アプリを選択</string>
     <string name="github_track_badge_current_app">このアプリ</string>
+    <string name="github_track_badge_archived">アーカイブ</string>
+    <string name="github_cd_repository_archived">%1$s のリポジトリはアーカイブ済みです</string>
     <string name="github_track_badge_external_build">外部ビルド</string>
     <string name="github_track_badge_waiting_release">Release 待ち</string>
     <string name="github_track_sheet_section_check_option">確認オプション</string>

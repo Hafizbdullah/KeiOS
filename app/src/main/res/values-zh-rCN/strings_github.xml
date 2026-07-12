@@ -1056,6 +1056,8 @@
     <string name="github_track_sheet_btn_collapse">收起列表</string>
     <string name="github_track_sheet_btn_select_app">选择 App</string>
     <string name="github_track_badge_current_app">本应用</string>
+    <string name="github_track_badge_archived">归档</string>
+    <string name="github_cd_repository_archived">%1$s 的仓库已归档</string>
     <string name="github_track_badge_external_build">外部构建</string>
     <string name="github_track_badge_waiting_release">等待 Release</string>
     <string name="github_track_sheet_section_check_option">检查选项</string>
