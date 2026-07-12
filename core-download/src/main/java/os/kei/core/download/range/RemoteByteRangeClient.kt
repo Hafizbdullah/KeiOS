@@ -1,5 +1,6 @@
 package os.kei.core.download.range
 
+import java.io.EOFException
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -87,13 +88,20 @@ class RemoteByteRangeClient(
                 }
                 val body = response.body
                 val declaredLength = body.contentLength()
-                if (declaredLength > expectedLength) {
+                if (declaredLength >= 0L && declaredLength != expectedLength) {
                     throw RemoteByteRangeProtocolException(
-                        "range body exceeds expected length expected=$expectedLength declared=$declaredLength",
+                        "range body length is invalid expected=$expectedLength declared=$declaredLength",
                     )
                 }
                 val source = body.source()
-                val bytes = source.readByteArray(expectedLength)
+                val bytes =
+                    try {
+                        source.readByteArray(expectedLength)
+                    } catch (error: EOFException) {
+                        throw RemoteByteRangeProtocolException(
+                            "range body ended early expected=$expectedLength",
+                        )
+                    }
                 if (!source.exhausted()) {
                     throw RemoteByteRangeProtocolException(
                         "range body exceeds expected length expected=$expectedLength",
