@@ -31,6 +31,7 @@
     <string name="mcp_notification_title_stopped">%1$s は停止中</string>
     <string name="mcp_online_text_ap_limit">上限 %1$d</string>
     <string name="mcp_online_text_clients">オンライン %1$d</string>
+    <string name="mcp_clients_label">オンライン</string>
     <string name="mcp_status_running">実行中</string>
     <string name="mcp_status_stopped">停止中</string>
 </resources>

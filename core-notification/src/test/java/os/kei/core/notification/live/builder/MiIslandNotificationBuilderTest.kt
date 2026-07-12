@@ -30,6 +30,68 @@ import kotlin.test.assertTrue
 )
 class MiIslandNotificationBuilderTest {
     @Test
+    fun `running mcp service uses fixed client count summary`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 491,
+            action = "os.kei.test.OPEN_RUNNING_MCP"
+        )
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            context,
+            492,
+            Intent("os.kei.test.STOP_RUNNING_MCP").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = "My MCP",
+                running = true,
+                port = 8080,
+                path = "/mcp",
+                clients = 3,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = stopPendingIntent,
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusJson = JSONObject(
+            notification.extras.getString("miui.focus.param").orEmpty()
+        ).getJSONObject("param_v2")
+        val bigIsland =
+            focusJson.getJSONObject("param_island").getJSONObject("bigIslandArea")
+        val smallIsland =
+            focusJson.getJSONObject("param_island").getJSONObject("smallIslandArea")
+        val baseInfo = focusJson.getJSONObject("baseInfo")
+
+        assertEquals("3", bigIsland.getJSONObject("fixedWidthDigitInfo").getString("digit"))
+        assertEquals(
+            context.getString(R.string.mcp_clients_label),
+            bigIsland.getJSONObject("fixedWidthDigitInfo").getString("content"),
+        )
+        assertEquals(6, smallIsland.getJSONObject("imageTextInfoRight").getInt("type"))
+        assertEquals(
+            "3",
+            smallIsland.getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
+                .getString("title"),
+        )
+        assertEquals("My MCP", baseInfo.getString("title"))
+        assertEquals(context.getString(R.string.mcp_status_running), baseInfo.getString("specialTitle"))
+        assertTrue(baseInfo.getString("content").contains("8080"))
+        assertTrue(baseInfo.getString("content").contains("/mcp"))
+        assertFalse(focusJson.toString().contains("progressInfo"))
+    }
+
+    @Test
     fun `focus open action keeps plain activity pending intent`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val notificationOpenPendingIntent = buildOpenPendingIntent(

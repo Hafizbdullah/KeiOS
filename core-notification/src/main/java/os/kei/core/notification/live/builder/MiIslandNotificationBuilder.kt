@@ -41,12 +41,14 @@ class MiIslandNotificationBuilder(
     private enum class IslandBigTemplateKind {
         TEXT,
         PROGRESS_TEXT,
-        COUNTDOWN_DIGIT
+        COUNTDOWN_DIGIT,
+        FIXED_DIGIT
     }
 
     private enum class IslandSmallTemplateKind {
         ICON,
-        PROGRESS_ICON
+        PROGRESS_ICON,
+        ICON_TEXT
     }
 
     private enum class IslandExpandedProgressKind {
@@ -358,6 +360,15 @@ class MiIslandNotificationBuilder(
                             }
                         }
 
+                        IslandBigTemplateKind.FIXED_DIGIT -> {
+                            fixedWidthDigitInfo {
+                                content = context.getString(R.string.mcp_clients_label)
+                                digit = presentation.compactTitle
+                                showHighlightColor = true
+                                turnAnim = true
+                            }
+                        }
+
                         IslandBigTemplateKind.TEXT -> {
                             imageTextInfoRight {
                                 type = 3
@@ -393,6 +404,21 @@ class MiIslandNotificationBuilder(
                                 pic = displayIconKey
                             }
                         }
+
+                        IslandSmallTemplateKind.ICON_TEXT -> {
+                            imageTextInfoRight {
+                                type = 6
+                                picInfo {
+                                    type = 4
+                                    pic = displayIconKey
+                                }
+                                textInfo {
+                                    title = presentation.compactTitle
+                                    showHighlightColor = true
+                                    narrowFont = true
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -400,7 +426,19 @@ class MiIslandNotificationBuilder(
             baseInfo {
                 type = 2
                 title = resolveFocusTitle(state)
-                state.miFocusSpecialTitle
+                val resolvedSpecialTitle =
+                    state.miFocusSpecialTitle
+                        ?: if (
+                            state.running &&
+                            !isBlueArchiveNotification &&
+                            !isGitHubShareImport &&
+                            !isWebDavSync
+                        ) {
+                            state.statusText(context)
+                        } else {
+                            null
+                        }
+                resolvedSpecialTitle
                     ?.let { compactFocusText(it, maxLength = 12) }
                     ?.takeIf { it.isNotBlank() }
                     ?.let { versionLabel ->
@@ -654,10 +692,9 @@ class MiIslandNotificationBuilder(
             return IslandPresentation(
                 allowFloat = false,
                 showTextButtons = false,
-                compactTitle = resolveCompactTitle(
-                    raw = state.onlineText(context),
-                    fallback = context.getString(R.string.common_status_running)
-                ),
+                bigTemplateKind = IslandBigTemplateKind.FIXED_DIGIT,
+                smallTemplateKind = IslandSmallTemplateKind.ICON_TEXT,
+                compactTitle = state.clients.coerceAtLeast(0).toString(),
                 notificationOngoing = state.ongoing,
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,

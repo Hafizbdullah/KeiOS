@@ -31,6 +31,7 @@
     <string name="mcp_notification_title_stopped">%1$s stopped</string>
     <string name="mcp_online_text_ap_limit">Limit %1$d</string>
     <string name="mcp_online_text_clients">Online %1$d</string>
+    <string name="mcp_clients_label">Online</string>
     <string name="mcp_status_running">Running</string>
     <string name="mcp_status_stopped">Stopped</string>
 </resources>
