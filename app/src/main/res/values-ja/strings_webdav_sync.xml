@@ -2,7 +2,7 @@
 <resources>
     <string name="webdav_sync_title">WebDAV 同期</string>
     <string name="webdav_sync_notification_title">WebDAV %1$s</string>
-    <string name="webdav_sync_notification_operation_refresh">更新</string>
+    <string name="webdav_sync_notification_operation_refresh">リモート更新</string>
     <string name="webdav_sync_notification_operation_sync">同期</string>
     <string name="webdav_sync_notification_operation_upload">アップロード</string>
     <string name="webdav_sync_notification_operation_download">ダウンロード</string>

@@ -2,7 +2,7 @@
 <resources>
     <string name="webdav_sync_title">WebDAV Sync</string>
     <string name="webdav_sync_notification_title">WebDAV %1$s</string>
-    <string name="webdav_sync_notification_operation_refresh">Refresh</string>
+    <string name="webdav_sync_notification_operation_refresh">Remote refresh</string>
     <string name="webdav_sync_notification_operation_sync">Sync</string>
     <string name="webdav_sync_notification_operation_upload">Upload</string>
     <string name="webdav_sync_notification_operation_download">Download</string>
