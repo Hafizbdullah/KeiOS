@@ -7,12 +7,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +26,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,15 +76,14 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val contentPadding =
         PaddingValues(
             horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded),
-            vertical = debugBgmLerpDp(8.dp, 7.dp, expanded),
+            vertical = 5.dp,
         )
     val titleFontSize = debugBgmLerpSp(12f, AppTypographyTokens.Supporting.fontSize.value, expanded)
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
-    val progressTopPadding = debugBgmLerpDp(0.dp, 5.dp, expanded)
-    val progressHostHeight = debugBgmLerpDp(0.dp, 20.dp, expanded)
-    val sideControlSlotWidth = debugBgmLerpDp(0.dp, 32.dp, expanded)
+    val titleVerticalOffset = debugBgmLerpDp(16.dp, 2.dp, expanded)
+    val sideControlSlotWidth = debugBgmLerpDp(0.dp, 48.dp, expanded)
     val playButtonScale = 1f - compact * 0.02f
     val playPauseTint =
         if (isPlaying) {
@@ -132,9 +134,11 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 )
             }
         }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center,
+        Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
         ) {
             Text(
                 text = currentTrackTitle,
@@ -144,17 +148,12 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-            )
-            Box(
                 modifier =
-                    Modifier
-                        .padding(top = progressTopPadding)
-                        .fillMaxWidth()
-                        .height(progressHostHeight)
-                        .clipToBounds()
-                        .graphicsLayer { alpha = expanded },
-                contentAlignment = Alignment.CenterStart,
-            ) {
+                    Modifier.graphicsLayer {
+                        translationY = titleVerticalOffset.toPx()
+                    },
+            )
+            if (expanded > MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD) {
                 LiquidMusicProgressSlider(
                     value = { playbackProgress().coerceIn(0f, 1f) },
                     onValueChange = onPlaybackProgressChange,
@@ -163,11 +162,12 @@ internal fun BaGuideBgmChromeMiniPlayer(
                     valueRange = 0f..1f,
                     visibilityThreshold = 0.001f,
                     backdrop = backdrop,
+                    contentDescription = stringResource(R.string.ba_catalog_bgm_seekbar),
                     modifier =
                         Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .padding(horizontal = 8.dp)
-                            .height(18.dp),
+                            .graphicsLayer { alpha = expanded },
                 )
             }
         }
@@ -186,26 +186,32 @@ internal fun BaGuideBgmChromeMiniPlayer(
             )
         }
         val playInteractionSource = controlInteractionSource ?: remember { MutableInteractionSource() }
+        val playContentDescription =
+            stringResource(
+                if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play,
+            )
         Box(
             modifier =
                 Modifier
-                    .size(36.dp)
+                    .defaultMinSize(
+                        minWidth = MINI_PLAYER_MINIMUM_TOUCH_SIZE,
+                        minHeight = MINI_PLAYER_MINIMUM_TOUCH_SIZE,
+                    ).size(36.dp)
+                    .semantics { contentDescription = playContentDescription }
                     .graphicsLayer {
                         scaleX = playButtonScale
                         scaleY = playButtonScale
                     }.clickable(
                         interactionSource = playInteractionSource,
                         indication = null,
+                        role = Role.Button,
                         onClick = onPlayPauseClick,
                     ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
-                contentDescription =
-                    stringResource(
-                        if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play,
-                    ),
+                contentDescription = null,
                 tint = playPauseTint,
                 modifier = Modifier.size(playIconSize),
             )
@@ -233,17 +239,20 @@ private fun BaGuideBgmChromeMiniPlayerSideControl(
     progress: () -> Float,
     content: @Composable () -> Unit,
 ) {
+    val resolvedProgress = progress().coerceIn(0f, 1f)
     Box(
         modifier =
             Modifier
                 .width(width)
                 .clipToBounds()
                 .graphicsLayer {
-                    alpha = progress().coerceIn(0f, 1f)
+                    alpha = resolvedProgress
                 },
         contentAlignment = Alignment.Center,
     ) {
-        content()
+        if (resolvedProgress > MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD) {
+            content()
+        }
     }
 }
 
@@ -263,3 +272,7 @@ private fun defaultMiniArtworkBrush(accent: Color): Brush =
     Brush.linearGradient(
         colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D)),
     )
+
+private val MINI_PLAYER_MINIMUM_TOUCH_SIZE = 48.dp
+
+private const val MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD = 0.001f
