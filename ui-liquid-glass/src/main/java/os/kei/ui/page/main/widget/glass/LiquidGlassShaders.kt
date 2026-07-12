@@ -2,11 +2,13 @@
 
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.ui.geometry.Size
 import com.kyant.backdrop.BackdropEffectScope
 import com.kyant.backdrop.effects.runtimeShaderEffect
 import org.intellij.lang.annotations.Language
+import kotlin.math.hypot
 
-/**
+/*
  * Custom AGSL shader effects for liquid glass components.
  *
  * These shaders extend the built-in backdrop effects (blur, lens, vibrancy)
@@ -39,29 +41,80 @@ fun BackdropEffectScope.radialRefraction(
     radius: Float,
     strength: Float = 12f,
 ) {
-    if (radius <= 0f || strength <= 0f) return
-
-    // Capture the accumulated padding from the scope (set by prior blur/lens).
-    // -padding shifts the padded layer coord back into component space.
-    val offset = -padding
+    val uniforms =
+        resolveRadialRefractionUniforms(
+            size = size,
+            padding = padding,
+            centerX = centerX,
+            centerY = centerY,
+            radius = radius,
+            strength = strength,
+        ) ?: return
 
     runtimeShaderEffect(
         key = "RadialRefraction",
         shaderString = RadialRefractionShaderString,
         uniformShaderName = "content",
     ) {
-        setFloatUniform("offset", offset, offset)
-        setFloatUniform("center", centerX, centerY)
-        setFloatUniform("radius", radius)
-        setFloatUniform("strength", strength)
+        setFloatUniform("offset", uniforms.offset, uniforms.offset)
+        setFloatUniform("center", uniforms.centerX, uniforms.centerY)
+        setFloatUniform("radius", uniforms.radius)
+        setFloatUniform("strength", uniforms.strength)
     }
 }
 
+internal data class RadialRefractionUniforms(
+    val offset: Float,
+    val centerX: Float,
+    val centerY: Float,
+    val radius: Float,
+    val strength: Float,
+)
+
+private const val MIN_RADIAL_REFRACTION_UNIFORM = 0.001f
+
+internal fun resolveRadialRefractionUniforms(
+    size: Size,
+    padding: Float,
+    centerX: Float,
+    centerY: Float,
+    radius: Float,
+    strength: Float,
+): RadialRefractionUniforms? {
+    val width = size.width
+    val height = size.height
+    if (!width.isFinite() || !height.isFinite() || width <= 0f || height <= 0f) return null
+    if (!padding.isFinite() || !centerX.isFinite() || !centerY.isFinite()) return null
+    if (
+        !radius.isFinite() ||
+        !strength.isFinite() ||
+        radius < MIN_RADIAL_REFRACTION_UNIFORM ||
+        strength < MIN_RADIAL_REFRACTION_UNIFORM
+    ) {
+        return null
+    }
+
+    val diagonal =
+        hypot(width.toDouble(), height.toDouble())
+            .coerceAtMost(Float.MAX_VALUE.toDouble())
+            .toFloat()
+    if (!diagonal.isFinite() || diagonal < MIN_RADIAL_REFRACTION_UNIFORM || padding !in 0f..diagonal) return null
+
+    val resolvedRadius = radius.coerceAtMost(diagonal)
+    return RadialRefractionUniforms(
+        offset = -padding,
+        centerX = centerX.coerceIn(0f, width),
+        centerY = centerY.coerceIn(0f, height),
+        radius = resolvedRadius,
+        strength = strength.coerceAtMost(resolvedRadius),
+    )
+}
 
 // ── AGSL Shader Strings ─────────────────────────────────────────────
 
 @Language("AGSL")
-private val RadialRefractionShaderString = """
+private val RadialRefractionShaderString =
+    """
 uniform shader content;
 
 uniform float2 offset;
@@ -92,4 +145,4 @@ half4 main(float2 coord) {
 
     return content.eval(displaced);
 }
-""".trimIndent()
+    """.trimIndent()
