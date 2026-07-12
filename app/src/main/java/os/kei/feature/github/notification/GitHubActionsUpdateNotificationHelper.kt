@@ -224,7 +224,6 @@ object GitHubActionsUpdateNotificationHelper {
                                             text =
                                                 MiFocusIslandText(
                                                     title = compactRunLabel,
-                                                    content = compactTargetLabel(snapshot),
                                                     showHighlightColor = true,
                                                 ),
                                         ),
@@ -320,13 +319,6 @@ object GitHubActionsUpdateNotificationHelper {
 
     private fun targetLabel(snapshot: GitHubActionsRecommendedRunSnapshot): String =
         snapshot.appLabel.ifBlank { "${snapshot.owner}/${snapshot.repo}" }
-
-    private fun compactTargetLabel(snapshot: GitHubActionsRecommendedRunSnapshot): String {
-        return compactText(
-            raw = targetLabel(snapshot),
-            maxLength = 10,
-        )
-    }
 
     private fun compactText(raw: String, maxLength: Int): String {
         val trimmed = raw.trim()

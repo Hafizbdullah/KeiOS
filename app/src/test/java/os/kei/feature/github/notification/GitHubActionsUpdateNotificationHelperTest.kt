@@ -68,6 +68,12 @@ class GitHubActionsUpdateNotificationHelperTest {
         val markReadIntent = Shadows.shadowOf(markReadAction.actionIntent).savedIntent
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
         val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
+        val summaryText =
+            focusJson
+                .getJSONObject("param_island")
+                .getJSONObject("bigIslandArea")
+                .getJSONObject("imageTextInfoRight")
+                .getJSONObject("textInfo")
 
         assertEquals(NotificationCompat.PRIORITY_MAX, notification.priority)
         assertNotNull(notification.getLargeIcon())
@@ -76,12 +82,13 @@ class GitHubActionsUpdateNotificationHelperTest {
         assertEquals(context.getString(R.string.common_open), openAction.title.toString())
         assertEquals(context.getString(R.string.common_mark_read), markReadAction.title.toString())
         assertTrue(focusParam.contains("imageTextInfoRight"))
-        assertTrue(focusParam.contains("\"title\":\"#44\""))
+        assertEquals("#44", summaryText.getString("title"))
+        assertFalse(summaryText.has("content"))
         assertFalse(focusParam.contains("\"content\":\"Actions\""))
         assertTrue(focusParam.contains("\"highlightColor\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
         assertTrue(focusParam.contains("\"specialTitle\":\"#44\""))
-        assertTrue(focusParam.contains("\"content\":\"Animeko\""))
+        assertEquals("Animeko", focusJson.getJSONObject("baseInfo").getString("content"))
         assertFalse(focusParam.contains("Animeko · #44"))
         assertTrue(focusParam.contains("\"colorTitle\":\"#3B82F6\""))
         assertTrue(focusParam.contains("\"colorSpecialBg\":\"#3B82F6\""))
