@@ -64,7 +64,10 @@ internal object WebDavAutoSync {
         scope.launch { runLaunchSync(appContext) }
     }
 
-    suspend fun handleScheduledTick(context: Context): WebDavAutoSyncSummary? {
+    suspend fun handleScheduledTick(
+        context: Context,
+        runtimeDiagnostics: WebDavSyncRuntimeDiagnostics? = null,
+    ): WebDavAutoSyncSummary? {
         val appContext = context.applicationContext
         val config = WebDavSyncStore.loadConfig() ?: return null
         if (!WebDavSyncStore.isAutoSyncEnabled()) return null
@@ -82,7 +85,12 @@ internal object WebDavAutoSync {
         ) {
             return null
         }
-        return runAutoSync(appContext, config, reason = "job")
+        return runAutoSync(
+            context = appContext,
+            config = config,
+            reason = "job",
+            runtimeDiagnostics = runtimeDiagnostics ?: WebDavSyncRuntimeDiagnostics.capture(appContext),
+        )
     }
 
     fun handleScheduledTickTimeout(context: Context) {
@@ -169,6 +177,7 @@ internal object WebDavAutoSync {
         context: Context,
         config: WebDavConfig,
         reason: String,
+        runtimeDiagnostics: WebDavSyncRuntimeDiagnostics? = null,
     ): WebDavAutoSyncSummary = mutex.withLock {
         val startedAtMs = System.currentTimeMillis()
         WebDavSyncStore.setLastAutoSyncAttemptTime(startedAtMs)
@@ -261,8 +270,12 @@ internal object WebDavAutoSync {
                     outcomes = itemOutcomes,
                     skippedCount = skippedCount,
                     skippedOutcomes = skippedOutcomes,
+                    runtimeDiagnostics = runtimeDiagnostics,
                 ),
             )
+            if (runtimeDiagnostics?.previousStopReason != null) {
+                WebDavSyncStore.clearLastJobStopReason()
+            }
             if (summary.status == WebDavAutoSyncStatus.Success) {
                 WebDavSyncStore.setLastFullSyncTime(summary.finishedAtMs)
             }
@@ -291,8 +304,12 @@ internal object WebDavAutoSync {
                 summary.toHistoryEntry(
                     source = WebDavSyncHistorySource.Auto,
                     startedAtMs = startedAtMs,
+                    runtimeDiagnostics = runtimeDiagnostics,
                 ),
             )
+            if (runtimeDiagnostics?.previousStopReason != null) {
+                WebDavSyncStore.clearLastJobStopReason()
+            }
             WebDavSyncNotificationDispatcher.notifyFailed(
                 context = context,
                 operation = WebDavSyncNotificationOperation.Sync,

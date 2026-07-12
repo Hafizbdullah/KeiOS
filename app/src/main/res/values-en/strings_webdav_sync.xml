@@ -58,6 +58,26 @@
     <string name="webdav_sync_upload">Upload</string>
     <string name="webdav_sync_download">Download</string>
     <string name="webdav_sync_last_sync">Last sync: %1$s</string>
+    <string name="webdav_sync_history_label_power">Power</string>
+    <string name="webdav_sync_history_label_network">Network</string>
+    <string name="webdav_sync_history_label_scheduler">Scheduler</string>
+    <string name="webdav_sync_history_diag_interactive">Interactive</string>
+    <string name="webdav_sync_history_diag_screen_off">Screen off</string>
+    <string name="webdav_sync_history_diag_deep_doze">Deep Doze</string>
+    <string name="webdav_sync_history_diag_light_doze">Light Doze</string>
+    <string name="webdav_sync_history_diag_battery_saver">Battery saver</string>
+    <string name="webdav_sync_history_diag_low_power_standby">Low Power Standby</string>
+    <string name="webdav_sync_history_diag_low_power_standby_exempt">Standby exempt</string>
+    <string name="webdav_sync_history_diag_battery_optimization_exempt">Battery optimization exempt</string>
+    <string name="webdav_sync_history_diag_network_present">Network present</string>
+    <string name="webdav_sync_history_diag_no_network">No network</string>
+    <string name="webdav_sync_history_diag_network_validated">Validated</string>
+    <string name="webdav_sync_history_diag_network_unvalidated">Unvalidated</string>
+    <string name="webdav_sync_history_diag_network_suspended">Suspended</string>
+    <string name="webdav_sync_history_diag_background_data_restricted">Background data restricted</string>
+    <string name="webdav_sync_history_diag_bucket_format">Bucket %1$s</string>
+    <string name="webdav_sync_history_diag_queued_format">Queued %1$s</string>
+    <string name="webdav_sync_history_diag_previous_stop_format">Previous stop %1$s</string>
 
     <string name="webdav_sync_item_github_tracked">GitHub Tracked</string>
     <string name="webdav_sync_item_github_tracked_desc">Tracked repositories and settings</string>

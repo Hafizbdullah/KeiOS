@@ -281,7 +281,7 @@
     <string name="about_value_broadcast_handler">AlarmManager broadcast trigger for GitHub / BA Tick, prioritizing OEM compatibility</string>
     <string name="about_value_foreground_info_handler">Serial coroutine handling for GitHub / AP tasks with status writeback</string>
     <string name="about_row_background_jobs">Background jobs</string>
-    <string name="about_value_background_jobs">Scheduled GitHub refresh / BA AP threshold checks (Broadcast Tick)</string>
+    <string name="about_value_background_jobs">GitHub refresh / WebDAV sync / BA AP threshold checks</string>
     <string name="about_permission_access_local_network_title">Local network</string>
     <string name="about_permission_access_local_network_purpose">Allows MCP LAN mode to accept client connections from the same network</string>
     <string name="about_permission_access_local_network_used_in">MCP page LAN mode and exported connection config</string>
@@ -439,6 +439,9 @@
     <string name="about_component_github_background_refresh_job_title">GitHub background refresh job</string>
     <string name="about_component_github_background_refresh_job_purpose">Runs GitHub auto refresh batches inside the system JobScheduler lifecycle</string>
     <string name="about_component_github_background_refresh_job_used_in">GitHub due tracking, Actions recommended runs, and refresh history records</string>
+    <string name="about_component_webdav_auto_sync_job_title">WebDAV auto-sync job</string>
+    <string name="about_component_webdav_auto_sync_job_purpose">Waits for network constraints, runs WebDAV auto sync, and lets the system manage retries and backoff</string>
+    <string name="about_component_webdav_auto_sync_job_used_in">Scheduled WebDAV sync, night-time network recovery, and sync history diagnostics</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Connects Shizuku permission bridge capabilities</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku status checks and capability calls</string>

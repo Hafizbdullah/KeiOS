@@ -285,7 +285,7 @@
     <string name="about_value_broadcast_handler">GitHub/BA Tick 的 AlarmManager 广播触发（OEM 兼容优先）</string>
     <string name="about_value_foreground_info_handler">协程串行处理 GitHub/AP 任务并回写状态</string>
     <string name="about_row_background_jobs">后台任务</string>
-    <string name="about_value_background_jobs">GitHub 定时刷新 / BA AP 阈值检查（Broadcast Tick）</string>
+    <string name="about_value_background_jobs">GitHub 刷新 / WebDAV 同步 / BA AP 阈值检查</string>
     <string name="about_permission_access_local_network_title">本地网络</string>
     <string name="about_permission_access_local_network_purpose">允许 MCP 局域网模式接受同一网络中的客户端连接</string>
     <string name="about_permission_access_local_network_used_in">MCP 页面局域网模式与导出连接配置</string>
@@ -448,6 +448,9 @@
     <string name="about_component_github_background_refresh_job_title">GitHub 后台刷新任务</string>
     <string name="about_component_github_background_refresh_job_purpose">承接 GitHub 自动刷新并在系统 JobScheduler 生命周期内完成批量检查</string>
     <string name="about_component_github_background_refresh_job_used_in">GitHub 到期追踪、Actions 推荐运行与刷新历史记录</string>
+    <string name="about_component_webdav_auto_sync_job_title">WebDAV 自动同步任务</string>
+    <string name="about_component_webdav_auto_sync_job_purpose">等待网络条件满足后执行 WebDAV 自动同步，并由系统管理重试和退避</string>
+    <string name="about_component_webdav_auto_sync_job_used_in">WebDAV 定时同步、夜间网络恢复与同步历史诊断</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">接入 Shizuku 权限桥接能力</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状态检查与能力调用</string>

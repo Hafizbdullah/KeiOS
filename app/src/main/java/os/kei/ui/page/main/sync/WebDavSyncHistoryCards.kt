@@ -165,6 +165,26 @@ internal fun WebDavSyncHistoryEntryCard(
                 valueMaxLines = 1,
                 valueOverflow = TextOverflow.Ellipsis,
             )
+            entry.runtimeDiagnostics?.let { diagnostics ->
+                AppInfoRow(
+                    label = stringResource(R.string.webdav_sync_history_label_power),
+                    value = historyPowerDiagnostics(diagnostics),
+                    valueMaxLines = 2,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+                AppInfoRow(
+                    label = stringResource(R.string.webdav_sync_history_label_network),
+                    value = historyNetworkDiagnostics(diagnostics),
+                    valueMaxLines = 2,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+                AppInfoRow(
+                    label = stringResource(R.string.webdav_sync_history_label_scheduler),
+                    value = historySchedulerDiagnostics(diagnostics),
+                    valueMaxLines = 3,
+                    valueOverflow = TextOverflow.Ellipsis,
+                )
+            }
             if (entry.items.isEmpty()) {
                 Text(
                     text = stringResource(R.string.webdav_sync_history_items_empty),
@@ -186,6 +206,82 @@ internal fun WebDavSyncHistoryEntryCard(
         }
     }
 }
+
+@Composable
+private fun historyPowerDiagnostics(diagnostics: WebDavSyncRuntimeDiagnostics): String =
+    buildList {
+        add(
+            stringResource(
+                if (diagnostics.interactive) {
+                    R.string.webdav_sync_history_diag_interactive
+                } else {
+                    R.string.webdav_sync_history_diag_screen_off
+                },
+            ),
+        )
+        if (diagnostics.deviceIdle) add(stringResource(R.string.webdav_sync_history_diag_deep_doze))
+        if (diagnostics.lightDeviceIdle) add(stringResource(R.string.webdav_sync_history_diag_light_doze))
+        if (diagnostics.powerSave) add(stringResource(R.string.webdav_sync_history_diag_battery_saver))
+        if (diagnostics.lowPowerStandbyEnabled) {
+            add(
+                stringResource(
+                    if (diagnostics.lowPowerStandbyExempt) {
+                        R.string.webdav_sync_history_diag_low_power_standby_exempt
+                    } else {
+                        R.string.webdav_sync_history_diag_low_power_standby
+                    },
+                ),
+            )
+        }
+        if (diagnostics.batteryOptimizationExempt) {
+            add(stringResource(R.string.webdav_sync_history_diag_battery_optimization_exempt))
+        }
+    }.joinToString(" · ")
+
+@Composable
+private fun historyNetworkDiagnostics(diagnostics: WebDavSyncRuntimeDiagnostics): String =
+    buildList {
+        add(
+            stringResource(
+                if (diagnostics.networkPresent) {
+                    R.string.webdav_sync_history_diag_network_present
+                } else {
+                    R.string.webdav_sync_history_diag_no_network
+                },
+            ),
+        )
+        add(
+            stringResource(
+                if (diagnostics.networkValidated) {
+                    R.string.webdav_sync_history_diag_network_validated
+                } else {
+                    R.string.webdav_sync_history_diag_network_unvalidated
+                },
+            ),
+        )
+        if (!diagnostics.networkNotSuspended) add(stringResource(R.string.webdav_sync_history_diag_network_suspended))
+        if (diagnostics.backgroundDataRestricted) {
+            add(stringResource(R.string.webdav_sync_history_diag_background_data_restricted))
+        }
+    }.joinToString(" · ")
+
+@Composable
+private fun historySchedulerDiagnostics(diagnostics: WebDavSyncRuntimeDiagnostics): String =
+    buildList {
+        add(stringResource(R.string.webdav_sync_history_diag_bucket_format, diagnostics.appStandbyBucket))
+        if (diagnostics.queuedDurationMs > 0L) {
+            add(
+                stringResource(
+                    R.string.webdav_sync_history_diag_queued_format,
+                    formatHistoryDuration(diagnostics.queuedDurationMs),
+                ),
+            )
+        }
+        if (diagnostics.pendingReasons.isNotEmpty()) add(diagnostics.pendingReasons.joinToString("/"))
+        diagnostics.previousStopReason?.let {
+            add(stringResource(R.string.webdav_sync_history_diag_previous_stop_format, it))
+        }
+    }.joinToString(" · ")
 
 @Composable
 private fun WebDavSyncHistoryPill(

@@ -39,6 +39,7 @@ internal object WebDavSyncStore {
     private const val KEY_LAST_AUTO_SYNC_FAILED = "last_auto_sync_failed"
     private const val KEY_LAST_AUTO_SYNC_SKIPPED = "last_auto_sync_skipped"
     private const val KEY_SYNC_HISTORY = "sync_history_v1"
+    private const val KEY_LAST_JOB_STOP_REASON = "last_job_stop_reason"
     private const val DEFAULT_FINGERPRINT_REVISION = 1
 
     const val DEFAULT_REMOTE_DIR = "KeiOS/"
@@ -304,6 +305,21 @@ internal object WebDavSyncStore {
         if (hadHistory) {
             WebDavSyncStoreSignals.notifyChanged()
         }
+    }
+
+    fun setLastJobStopReason(reason: String) {
+        if (reason.isBlank()) {
+            mmkv.removeValueForKey(KEY_LAST_JOB_STOP_REASON)
+        } else {
+            mmkv.encode(KEY_LAST_JOB_STOP_REASON, reason.take(120))
+        }
+    }
+
+    fun getLastJobStopReason(): String? =
+        mmkv.decodeString(KEY_LAST_JOB_STOP_REASON, null)?.takeIf { it.isNotBlank() }
+
+    fun clearLastJobStopReason() {
+        mmkv.removeValueForKey(KEY_LAST_JOB_STOP_REASON)
     }
 
     // ── Remote summary (read-only probe results) ───────────────────────

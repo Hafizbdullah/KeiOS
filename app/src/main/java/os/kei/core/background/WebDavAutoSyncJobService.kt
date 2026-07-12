@@ -18,6 +18,7 @@ import os.kei.core.log.AppLogger
 import os.kei.ui.page.main.sync.WebDavAutoSync
 import os.kei.ui.page.main.sync.WebDavAutoSyncStatus
 import os.kei.ui.page.main.sync.WebDavSyncStore
+import os.kei.ui.page.main.sync.WebDavSyncRuntimeDiagnostics
 
 internal const val WEBDAV_AUTO_SYNC_JOB_ID = 42102
 
@@ -37,7 +38,10 @@ class WebDavAutoSyncJobService : JobService() {
         val worker = serviceScope.launch {
             var shouldRetry = false
             try {
-                val summary = WebDavAutoSync.handleScheduledTick(appContext)
+                val summary = WebDavAutoSync.handleScheduledTick(
+                    context = appContext,
+                    runtimeDiagnostics = WebDavSyncRuntimeDiagnostics.capture(appContext, params),
+                )
                 shouldRetry = summary?.status == WebDavAutoSyncStatus.Failed
             } catch (error: CancellationException) {
                 throw error
@@ -72,6 +76,7 @@ class WebDavAutoSyncJobService : JobService() {
         )
         activeJob = null
         val reschedule = WebDavSyncStore.loadConfig() != null && WebDavSyncStore.isAutoSyncEnabled()
+        WebDavSyncStore.setLastJobStopReason(jobStopReasonLabel(params.stopReason))
         AppLogger.i(
             TAG,
             "stop WebDAV auto-sync job reason=${jobStopReasonLabel(params.stopReason)} " +

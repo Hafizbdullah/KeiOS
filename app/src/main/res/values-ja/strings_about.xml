@@ -277,7 +277,7 @@
     <string name="about_value_broadcast_handler">GitHub / BA Tick 用 AlarmManager ブロードキャストトリガー。OEM 互換性を優先</string>
     <string name="about_value_foreground_info_handler">GitHub / AP タスクをシリアルな coroutine で処理し、状態を書き戻します</string>
     <string name="about_row_background_jobs">バックグラウンドジョブ</string>
-    <string name="about_value_background_jobs">GitHub 定期更新 / BA AP しきい値確認（Broadcast Tick）</string>
+    <string name="about_value_background_jobs">GitHub 更新 / WebDAV 同期 / BA AP しきい値確認</string>
     <string name="about_permission_access_local_network_title">ローカルネットワーク</string>
     <string name="about_permission_access_local_network_purpose">MCP LAN モードで同一ネットワーク内のクライアント接続を受け付けます</string>
     <string name="about_permission_access_local_network_used_in">MCP ページの LAN モードとエクスポート接続設定</string>
@@ -430,6 +430,9 @@
     <string name="about_component_github_background_refresh_job_title">GitHub バックグラウンド更新ジョブ</string>
     <string name="about_component_github_background_refresh_job_purpose">GitHub 自動更新バッチをシステム JobScheduler のライフサイクル内で実行します</string>
     <string name="about_component_github_background_refresh_job_used_in">GitHub 期限到来トラッキング、Actions 推奨実行、更新履歴記録</string>
+    <string name="about_component_webdav_auto_sync_job_title">WebDAV 自動同期ジョブ</string>
+    <string name="about_component_webdav_auto_sync_job_purpose">ネットワーク条件を待って WebDAV 自動同期を実行し、再試行とバックオフをシステムに委ねます</string>
+    <string name="about_component_webdav_auto_sync_job_used_in">WebDAV 定期同期、夜間ネットワーク復帰、同期履歴診断</string>
     <string name="about_component_shizuku_provider_title">Shizuku Provider</string>
     <string name="about_component_shizuku_provider_purpose">Shizuku 権限ブリッジ機能へ接続します</string>
     <string name="about_component_shizuku_provider_used_in">Shizuku 状態確認と機能呼び出し</string>

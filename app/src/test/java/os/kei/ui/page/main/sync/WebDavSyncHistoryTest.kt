@@ -1,7 +1,10 @@
 package os.kei.ui.page.main.sync
 
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WebDavSyncHistoryTest {
@@ -78,7 +81,56 @@ class WebDavSyncHistoryTest {
             },
         )
     }
+
+    @Test
+    fun `history payload without runtime diagnostics remains readable`() {
+        val payload =
+            Json.decodeFromString<WebDavSyncHistoryPayload>(
+                """{"version":1,"entries":[{"id":"legacy","source":"Auto","reason":"job","status":"Success","startedAtMs":1000,"finishedAtMs":2000,"targetCount":1,"succeededCount":1,"failedCount":0,"skippedCount":0}]}""",
+            )
+
+        assertEquals("legacy", payload.entries.single().id)
+        assertNull(payload.entries.single().runtimeDiagnostics)
+    }
+
+    @Test
+    fun `history builder preserves runtime diagnostics`() {
+        val diagnostics = webDavRuntimeDiagnostics(previousStopReason = "timeout")
+        val entry =
+            buildWebDavSyncHistoryEntry(
+                source = WebDavSyncHistorySource.Auto,
+                kind = null,
+                reason = "job",
+                startedAtMs = 1_000L,
+                finishedAtMs = 2_000L,
+                targetCount = 1,
+                outcomes = listOf(WebDavSyncItem.GitHubTracked to WebDavItemOutcome(WebDavItemStatus.UpToDate)),
+                skippedCount = 0,
+                runtimeDiagnostics = diagnostics,
+            )
+
+        assertEquals(diagnostics, entry.runtimeDiagnostics)
+    }
 }
+
+private fun webDavRuntimeDiagnostics(previousStopReason: String? = null) =
+    WebDavSyncRuntimeDiagnostics(
+        interactive = false,
+        deviceIdle = true,
+        lightDeviceIdle = false,
+        powerSave = false,
+        lowPowerStandbyEnabled = true,
+        lowPowerStandbyExempt = false,
+        batteryOptimizationExempt = false,
+        backgroundDataRestricted = false,
+        networkPresent = true,
+        networkValidated = true,
+        networkNotSuspended = true,
+        appStandbyBucket = "rare",
+        queuedDurationMs = 5_000L,
+        pendingReasons = listOf("connectivity"),
+        previousStopReason = previousStopReason,
+    )
 
 private fun webDavSyncHistoryEntry(
     id: String,

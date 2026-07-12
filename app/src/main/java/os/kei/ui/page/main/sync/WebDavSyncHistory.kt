@@ -24,6 +24,7 @@ internal data class WebDavSyncHistoryEntry(
     val failedCount: Int,
     val skippedCount: Int,
     val items: List<WebDavSyncHistoryItem> = emptyList(),
+    val runtimeDiagnostics: WebDavSyncRuntimeDiagnostics? = null,
 ) {
     val durationMs: Long
         get() = (finishedAtMs - startedAtMs).coerceAtLeast(0L)
@@ -78,6 +79,7 @@ internal fun buildWebDavSyncHistoryEntry(
     outcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>>,
     skippedCount: Int,
     skippedOutcomes: List<Pair<WebDavSyncItem, WebDavItemOutcome>> = emptyList(),
+    runtimeDiagnostics: WebDavSyncRuntimeDiagnostics? = null,
 ): WebDavSyncHistoryEntry {
     val succeededCount = outcomes.count { (_, outcome) -> outcome.isSuccess }
     val reviewCount = outcomes.count { (_, outcome) ->
@@ -109,6 +111,7 @@ internal fun buildWebDavSyncHistoryEntry(
         succeededCount = succeededCount.coerceAtLeast(0),
         failedCount = failedCount.coerceAtLeast(0),
         skippedCount = skippedCount.coerceAtLeast(0),
+        runtimeDiagnostics = runtimeDiagnostics,
         items =
             (outcomes + skippedOutcomes).map { (item, outcome) ->
                 WebDavSyncHistoryItem(
@@ -124,6 +127,7 @@ internal fun WebDavAutoSyncSummary.toHistoryEntry(
     source: WebDavSyncHistorySource,
     startedAtMs: Long,
     items: List<WebDavSyncHistoryItem> = emptyList(),
+    runtimeDiagnostics: WebDavSyncRuntimeDiagnostics? = null,
 ): WebDavSyncHistoryEntry =
     WebDavSyncHistoryEntry(
         id = buildWebDavSyncHistoryId(source, kind = null, reason, startedAtMs, finishedAtMs),
@@ -138,6 +142,7 @@ internal fun WebDavAutoSyncSummary.toHistoryEntry(
         failedCount = failedCount.coerceAtLeast(0),
         skippedCount = skippedCount.coerceAtLeast(0),
         items = items.map(::normalizeWebDavSyncHistoryItem),
+        runtimeDiagnostics = runtimeDiagnostics,
     )
 
 internal fun WebDavBatchKind.toHistoryKind(): WebDavSyncHistoryKind =
