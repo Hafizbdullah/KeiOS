@@ -446,6 +446,8 @@
     <string name="ba_catalog_bgm_action_play">Play BGM</string>
     <string name="ba_catalog_bgm_action_play_short">Play</string>
     <string name="ba_catalog_bgm_action_pause">Pause BGM</string>
+    <string name="ba_catalog_bgm_action_mute">Mute</string>
+    <string name="ba_catalog_bgm_action_restore_volume">Restore volume</string>
     <string name="ba_catalog_bgm_action_repeat">Repeat</string>
     <string name="ba_catalog_bgm_action_favorite">Favorite</string>
     <string name="ba_catalog_bgm_action_unfavorite">Unfavorite</string>

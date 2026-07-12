@@ -208,7 +208,14 @@ internal fun BaGuideBgmAlbumVolumeControl(
         ) {
             BaGuideBgmInlineIcon(
                 icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
-                contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
+                contentDescription =
+                    stringResource(
+                        if (muted) {
+                            R.string.ba_catalog_bgm_action_restore_volume
+                        } else {
+                            R.string.ba_catalog_bgm_action_mute
+                        },
+                    ),
                 tint = sliderTint,
                 size = 32.dp,
                 iconSize = 22.dp,
@@ -225,12 +232,10 @@ internal fun BaGuideBgmAlbumVolumeControl(
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
                 backdrop = sliderBackdrop,
+                contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
                 activeColor = sliderTint,
                 inactiveColor = sliderInactiveTint,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .height(30.dp),
+                modifier = Modifier.weight(1f),
             )
             Text(
                 text = stringResource(R.string.ba_catalog_bgm_volume_value, (volume * 100).toInt()),
@@ -343,4 +348,4 @@ private fun defaultAlbumArtworkBrush(accent: Color): Brush =
             ),
     )
 
-internal val BaGuideBgmVolumeControlHeight = 34.dp
+internal val BaGuideBgmVolumeControlHeight = 48.dp

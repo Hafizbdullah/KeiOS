@@ -467,6 +467,8 @@
     <string name="ba_catalog_bgm_action_play">播放 BGM</string>
     <string name="ba_catalog_bgm_action_play_short">播放</string>
     <string name="ba_catalog_bgm_action_pause">暂停 BGM</string>
+    <string name="ba_catalog_bgm_action_mute">静音</string>
+    <string name="ba_catalog_bgm_action_restore_volume">恢复音量</string>
     <string name="ba_catalog_bgm_action_repeat">循环</string>
     <string name="ba_catalog_bgm_action_favorite">收藏</string>
     <string name="ba_catalog_bgm_action_unfavorite">取消收藏</string>

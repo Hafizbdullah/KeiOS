@@ -449,6 +449,8 @@
     <string name="ba_catalog_bgm_action_play">BGM を再生</string>
     <string name="ba_catalog_bgm_action_play_short">再生</string>
     <string name="ba_catalog_bgm_action_pause">BGM を一時停止</string>
+    <string name="ba_catalog_bgm_action_mute">ミュート</string>
+    <string name="ba_catalog_bgm_action_restore_volume">音量を戻す</string>
     <string name="ba_catalog_bgm_action_repeat">リピート</string>
     <string name="ba_catalog_bgm_action_favorite">お気に入り</string>
     <string name="ba_catalog_bgm_action_unfavorite">お気に入り解除</string>
