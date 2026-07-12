@@ -4,6 +4,7 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -135,6 +136,7 @@ fun AppDropdownSelector(
     anchorTextFontWeight: FontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
     dropdownItemTextMaxLines: Int = 1,
     popupMaxWidth: Dp? = 280.dp,
+    popupMaxHeight: Dp? = null,
     popupMatchAnchorWidth: Boolean = false,
     anchorAlignment: Alignment = Alignment.CenterStart,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.BottomEnd,
@@ -204,6 +206,16 @@ fun AppDropdownSelector(
             if (popupMatchAnchorWidth) anchorWidth else 0.dp,
         ).coerceAtMost(resolvedMaxWidth)
     val popupShow = expanded && enabled && options.isNotEmpty()
+    val initialScrollItemIndex =
+        if (options.isEmpty()) {
+            null
+        } else {
+            selectedIndex.coerceIn(options.indices)
+        }
+    val resolvedPopupMaxHeight =
+        popupMaxHeight?.takeIf { maxHeight ->
+            maxHeight != Dp.Unspecified && maxHeight.value.isFinite() && maxHeight > 0.dp
+        }
 
     LaunchedEffect(expanded, enabled, options.isEmpty()) {
         if (expanded && !popupShow) {
@@ -245,11 +257,20 @@ fun AppDropdownSelector(
         ) {
             val accentColor = dropdownAnchorTint(textColor = textColor, variant = variant)
             AppLiquidGlassDropdownColumn(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (resolvedPopupMaxHeight != null) {
+                                Modifier.heightIn(max = resolvedPopupMaxHeight)
+                            } else {
+                                Modifier
+                            },
+                        ),
                 minWidth = resolvedPopupWidth,
                 maxWidth = resolvedPopupWidth,
                 accentColor = accentColor,
-                initialScrollItemIndex = selectedIndex,
+                initialScrollItemIndex = initialScrollItemIndex,
                 backdrop = backdrop,
             ) {
                 DropdownSelectorChoiceList(

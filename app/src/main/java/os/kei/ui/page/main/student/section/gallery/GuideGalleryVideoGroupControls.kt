@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.student.section.gallery
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,15 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideFullscreenIcon
-import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
-import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
-import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
-import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
-import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Pause
@@ -49,47 +42,22 @@ internal fun GuideGalleryVideoGroupHeaderActions(
     var showPicker by remember(itemsSize, optionLabels) { mutableStateOf(false) }
     var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     if (itemsSize > 1) {
-        Box(
-            modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
-        ) {
-            AppDropdownAnchorButton(
-                backdrop = backdrop,
-                text =
-                    optionLabels.getOrElse(selectedIndex) {
-                        stringResource(R.string.guide_gallery_video_format, 1)
-                    },
-                textColor = Color(0xFF3B82F6),
-                variant = GlassVariant.Compact,
-                onClick = { showPicker = !showPicker },
-            )
-        }
-    }
-    SnapshotWindowListPopup(
-        show = showPicker && itemsSize > 1 && optionLabels.isNotEmpty(),
-        alignment = PopupPositionProvider.Align.BottomEnd,
-        anchorBounds = pickerPopupAnchorBounds,
-        placement = SnapshotPopupPlacement.ButtonEnd,
-        onDismissRequest = { showPicker = false },
-    ) {
-        AppLiquidGlassDropdownColumn(
-            accentColor = Color(0xFF3B82F6),
-            initialScrollItemIndex =
-                selectedIndex.coerceIn(0, optionLabels.lastIndex.coerceAtLeast(0)),
+        AppDropdownSelector(
+            selectedText =
+                optionLabels.getOrElse(selectedIndex) {
+                    stringResource(R.string.guide_gallery_video_format, 1)
+                },
+            options = optionLabels,
+            selectedIndex = selectedIndex,
+            expanded = showPicker,
+            anchorBounds = pickerPopupAnchorBounds,
+            onExpandedChange = { showPicker = it },
+            onSelectedIndexChange = onSelectedIndexChange,
+            onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
             backdrop = backdrop,
-        ) {
-            optionLabels.forEachIndexed { idx, option ->
-                LiquidGlassDropdownSingleChoiceItem(
-                    text = option,
-                    optionSize = optionLabels.size,
-                    isSelected = selectedIndex == idx,
-                    index = idx,
-                    onSelectedIndexChange = { selected ->
-                        onSelectedIndexChange(selected)
-                        showPicker = false
-                    },
-                )
-            }
-        }
+            textColor = Color(0xFF3B82F6),
+            variant = GlassVariant.Compact,
+        )
     }
 
     if (displayMediaUrl.isNotBlank()) {

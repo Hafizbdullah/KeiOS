@@ -20,12 +20,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,18 +56,12 @@ import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.normalizeGalleryTitle
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.GuidePressableMediaSurface
-import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
-import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
-import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
-import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
@@ -293,51 +285,26 @@ fun GuideGalleryExpressionCardItem(
                     overflow = TextOverflow.Ellipsis,
                 )
                 var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-                Box(
-                    modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
-                ) {
-                    AppDropdownAnchorButton(
-                        backdrop = backdrop,
-                        text =
-                            optionLabels.getOrElse(selectedIndex) {
-                                stringResource(R.string.guide_gallery_expression_fallback_format, 1)
-                            },
-                        textColor = Color(0xFF3B82F6),
-                        variant = GlassVariant.Compact,
-                        onClick = { showPicker = !showPicker },
-                    )
-                    key("guide-gallery-expression-picker-popup") {
-                        SnapshotWindowListPopup(
-                            show = showPicker,
-                            alignment = PopupPositionProvider.Align.BottomEnd,
-                            anchorBounds = pickerPopupAnchorBounds,
-                            placement = SnapshotPopupPlacement.ButtonEnd,
-                            onDismissRequest = { showPicker = false },
-                        ) {
-                            AppLiquidGlassDropdownColumn(
-                                modifier = Modifier.heightIn(max = pickerMaxHeight),
-                                accentColor = Color(0xFF3B82F6),
-                                initialScrollItemIndex =
-                                    selectedIndex.coerceIn(0, optionLabels.lastIndex.coerceAtLeast(0)),
-                                backdrop = backdrop,
-                            ) {
-                                optionLabels.forEachIndexed { idx, option ->
-                                    LiquidGlassDropdownSingleChoiceItem(
-                                        text = option,
-                                        optionSize = optionLabels.size,
-                                        isSelected = selectedIndex == idx,
-                                        index = idx,
-                                        onSelectedIndexChange = { selected ->
-                                            showSwipeHint = false
-                                            selectedIndex = selected
-                                            showPicker = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                AppDropdownSelector(
+                    selectedText =
+                        optionLabels.getOrElse(selectedIndex) {
+                            stringResource(R.string.guide_gallery_expression_fallback_format, 1)
+                        },
+                    options = optionLabels,
+                    selectedIndex = selectedIndex,
+                    expanded = showPicker,
+                    anchorBounds = pickerPopupAnchorBounds,
+                    onExpandedChange = { showPicker = it },
+                    onSelectedIndexChange = { selected ->
+                        showSwipeHint = false
+                        selectedIndex = selected
+                    },
+                    onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
+                    backdrop = backdrop,
+                    textColor = Color(0xFF3B82F6),
+                    variant = GlassVariant.Compact,
+                    popupMaxHeight = pickerMaxHeight,
+                )
                 if (isVideoType && displayMediaUrl.isNotBlank()) {
                     AppLiquidIconButton(
                         backdrop = backdrop,
