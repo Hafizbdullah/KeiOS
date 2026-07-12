@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
@@ -29,11 +32,12 @@ fun SheetContentColumn(
     verticalSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     content: @Composable () -> Unit,
 ) {
+    val visualMode = LocalSheetVisualMode.current
     val scrollState = rememberScrollState()
     val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
     val scrollStateReporter by rememberUpdatedState(LocalLiquidSheetContentScrollStateReporter.current)
     val managedScrollableContentReporter by rememberUpdatedState(
-        LocalLiquidSheetManagedScrollableContentReporter.current
+        LocalLiquidSheetManagedScrollableContentReporter.current,
     )
     val scrollModifier =
         if (scrollable) {
@@ -54,13 +58,27 @@ fun SheetContentColumn(
                 scrollStateReporter(canScrollUp)
             }
     }
+    DisposableEffect(
+        scrollable,
+        overflowReporter,
+        scrollStateReporter,
+        managedScrollableContentReporter,
+    ) {
+        onDispose {
+            overflowReporter(false)
+            scrollStateReporter(false)
+            managedScrollableContentReporter(false)
+        }
+    }
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
                 .then(scrollModifier)
                 .navigationBarsPadding()
-                .imePadding()
+                // LiquidDetentWindowBottomSheet owns IME avoidance for the whole surface. The
+                // Miuix window still relies on the content column to consume the IME inset.
+                .then(if (visualMode == SheetVisualMode.Miuix) Modifier.imePadding() else Modifier)
                 .padding(
                     top = SheetContentShadowEdgePadding,
                     bottom = SheetContentBottomPadding + SheetContentShadowEdgePadding,

@@ -3,6 +3,7 @@ package os.kei.ui.animation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -10,13 +11,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
-import os.kei.core.ui.gesture.inspectDragGestures
-import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import os.kei.core.ui.gesture.inspectDragGestures
 import kotlin.math.abs
 
 class DampedDragAnimation(
@@ -29,9 +30,12 @@ class DampedDragAnimation(
     val gestureKey: Any? = Unit,
     val canDrag: (Offset) -> Boolean = { true },
     val consumeDragChanges: Boolean = false,
-    val excludeFromSystemGestures: Boolean = true,
+    val excludeFromSystemGestures: Boolean = false,
+    val dragOrientation: Orientation? = null,
+    val dragTouchSlop: Float = 0f,
     val onDragStarted: DampedDragAnimation.(position: Offset) -> Unit,
     val onDragStopped: DampedDragAnimation.() -> Unit,
+    val onDragCancelled: DampedDragAnimation.() -> Unit = {},
     val onDrag: DampedDragAnimation.(size: IntSize, dragAmount: Offset) -> Unit,
 ) {
     private val valueAnimationSpec = spring(1f, 1000f, visibilityThreshold)
@@ -65,25 +69,72 @@ class DampedDragAnimation(
         Modifier
             .then(if (excludeFromSystemGestures) Modifier.systemGestureExclusion() else Modifier)
             .pointerInput(gestureKey) {
+                var accumulatedDrag = Offset.Zero
+                var axisAccepted = dragOrientation == null
+                var axisRejected = false
+                var initialDownPosition = Offset.Zero
+                var dragStartedDispatched = false
                 inspectDragGestures(
                     onDragStart = { down ->
-                        onDragStarted(down.position)
+                        accumulatedDrag = Offset.Zero
+                        axisAccepted = dragOrientation == null
+                        axisRejected = false
+                        initialDownPosition = down.position
+                        dragStartedDispatched = false
+                        if (axisAccepted) {
+                            onDragStarted(initialDownPosition)
+                            dragStartedDispatched = true
+                        }
                         press()
                     },
                     onDragEnd = {
-                        onDragStopped()
+                        if (axisRejected) {
+                            onDragCancelled()
+                        } else {
+                            if (!dragStartedDispatched) {
+                                onDragStarted(initialDownPosition)
+                                dragStartedDispatched = true
+                            }
+                            onDragStopped()
+                        }
                         release()
                     },
                     onDragCancel = {
-                        onDragStopped()
+                        onDragCancelled()
                         release()
-                    }
+                    },
                 ) { change, dragAmount ->
+                    if (!axisAccepted && !axisRejected && dragOrientation != null) {
+                        accumulatedDrag += dragAmount
+                        val resolvedTouchSlop =
+                            dragTouchSlop.takeIf { it.isFinite() && it >= 0f } ?: 0f
+                        if (
+                            accumulatedDrag != Offset.Zero &&
+                            accumulatedDrag.getDistance() >= resolvedTouchSlop
+                        ) {
+                            axisAccepted =
+                                when (dragOrientation) {
+                                    Orientation.Horizontal -> {
+                                        abs(accumulatedDrag.x) >= abs(accumulatedDrag.y)
+                                    }
+
+                                    Orientation.Vertical -> {
+                                        abs(accumulatedDrag.y) >= abs(accumulatedDrag.x)
+                                    }
+                                }
+                            axisRejected = !axisAccepted
+                        }
+                    }
+                    if (axisRejected || !axisAccepted) return@inspectDragGestures
+                    if (!dragStartedDispatched) {
+                        onDragStarted(initialDownPosition)
+                        dragStartedDispatched = true
+                    }
                     val position = change.position
                     val previousPosition = change.previousPosition
                     if (canDrag(position) && canDrag(previousPosition)) {
                         onDrag(size, dragAmount)
-                        if (consumeDragChanges) {
+                        if (consumeDragChanges && dragAmount != Offset.Zero) {
                             change.consume()
                         }
                     }
@@ -121,7 +172,10 @@ class DampedDragAnimation(
         }
     }
 
-    fun snapToValue(value: Float, updateVelocity: Boolean = true) {
+    fun snapToValue(
+        value: Float,
+        updateVelocity: Boolean = true,
+    ) {
         val targetValue = value.coerceIn(valueRange)
         animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
             mutatorMutex.mutate {
@@ -148,11 +202,17 @@ class DampedDragAnimation(
     }
 
     private fun updateVelocity() {
+        val rangeSpan = valueRange.endInclusive - valueRange.start
+        if (!rangeSpan.isFinite() || abs(rangeSpan) <= 1e-6f) {
+            animationScope.launch { velocityAnimation.snapTo(0f) }
+            return
+        }
         velocityTracker.addPosition(
             System.currentTimeMillis(),
-            Offset(value, 0f)
+            Offset(value, 0f),
         )
-        val targetVelocity = velocityTracker.calculateVelocity().x / (valueRange.endInclusive - valueRange.start)
+        val rawVelocity = velocityTracker.calculateVelocity().x / rangeSpan
+        val targetVelocity = rawVelocity.takeIf(Float::isFinite) ?: 0f
         animationScope.launch { velocityAnimation.animateTo(targetVelocity, velocityAnimationSpec) }
     }
 }

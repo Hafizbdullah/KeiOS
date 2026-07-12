@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -29,6 +30,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
@@ -45,7 +48,6 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
@@ -89,9 +91,12 @@ fun AppSwitch(
         modifier = touchModifier,
         contentAlignment = Alignment.Center,
     ) {
-        Box(modifier = Modifier
-            .matchParentSize()
-            .layerBackdrop(switchBackdrop))
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(switchBackdrop),
+        )
         LiquidSwitchToggle(
             selected = { checked },
             onSelect = onCheckedChange,
@@ -145,13 +150,8 @@ private fun AppFallbackSwitchToggle(
                     interactionSource = interactionSource,
                     indication = null,
                     onValueChange = onCheckedChange,
-                )
-                .graphicsLayer {
+                ).graphicsLayer {
                     alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }
-                .semantics {
-                    role = Role.Switch
-                    toggleableState = ToggleableState(checked)
                 },
         contentAlignment = Alignment.Center,
     ) {
@@ -160,8 +160,7 @@ private fun AppFallbackSwitchToggle(
                 Modifier
                     .drawAppSquircleBackground(999.dp) {
                         lerpColor(trackColor, accentColor, progressProvider())
-                    }
-                    .size(52.dp, 28.dp),
+                    }.size(52.dp, 28.dp),
         )
         Box(
             modifier =
@@ -176,11 +175,9 @@ private fun AppFallbackSwitchToggle(
                             } else {
                                 lerp(travel / 2f - padding, -travel / 2f + padding, progress)
                             }
-                    }
-                    .drawAppSquircleBackground(999.dp) {
+                    }.drawAppSquircleBackground(999.dp) {
                         thumbColor
-                    }
-                    .size(24.dp),
+                    }.size(24.dp),
         )
     }
 }
@@ -222,9 +219,7 @@ private fun LiquidSwitchToggle(
     val dragWidth = with(density) { 20.dp.toPx() }
     val animationScope = rememberCoroutineScope()
     var didDrag by remember { mutableStateOf(false) }
-    var dragDistancePx by remember { mutableFloatStateOf(0f) }
     var fraction by remember { mutableFloatStateOf(if (selected()) 1f else 0f) }
-    val toggleInteractionSource = remember { MutableInteractionSource() }
     val dampedDragAnimation =
         remember(animationScope, dragWidth, isLtr, touchSlop) {
             DampedDragAnimation(
@@ -235,13 +230,15 @@ private fun LiquidSwitchToggle(
                 initialScale = 1f,
                 pressedScale = 1.5f,
                 consumeDragChanges = true,
+                dragOrientation = Orientation.Horizontal,
+                dragTouchSlop = touchSlop,
                 onDragStarted = {
-                    dragDistancePx = 0f
+                    didDrag = false
                 },
                 onDragStopped = {
                     if (!currentEnabled) return@DampedDragAnimation
                     if (didDrag) {
-                        fraction = if (targetValue >= 0.5f) 1f else 0f
+                        fraction = if (fraction >= 0.5f) 1f else 0f
                         val nextSelected = fraction == 1f
                         if (nextSelected != currentSelected()) {
                             hapticFeedback.performHapticFeedback(
@@ -250,20 +247,24 @@ private fun LiquidSwitchToggle(
                         }
                         currentOnSelect(nextSelected)
                     } else {
-                        fraction = if (currentSelected()) 1f else 0f
+                        val nextSelected = !currentSelected()
+                        fraction = if (nextSelected) 1f else 0f
+                        hapticFeedback.performHapticFeedback(
+                            if (nextSelected) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                        )
+                        currentOnSelect(nextSelected)
                     }
                     didDrag = false
-                    dragDistancePx = 0f
+                },
+                onDragCancelled = {
+                    didDrag = false
+                    fraction = if (currentSelected()) 1f else 0f
+                    animateToValue(fraction)
                 },
                 onDrag = { _, dragAmount ->
                     if (!currentEnabled) return@DampedDragAnimation
-                    dragDistancePx += dragAmount.getDistance()
-                    if (!didDrag) {
-                        didDrag = dragDistancePx > touchSlop
-                    }
-                    if (!didDrag) {
-                        return@DampedDragAnimation
-                    }
+                    if (dragAmount.x == 0f) return@DampedDragAnimation
+                    didDrag = true
                     val delta = dragAmount.x / dragWidth
                     fraction =
                         if (isLtr) {
@@ -271,6 +272,7 @@ private fun LiquidSwitchToggle(
                         } else {
                             (fraction - delta).fastCoerceIn(0f, 1f)
                         }
+                    snapToValue(fraction)
                 },
             )
         }
@@ -305,28 +307,24 @@ private fun LiquidSwitchToggle(
     Box(
         modifier =
             modifier
-                .then(if (enabled) dampedDragAnimation.modifier else Modifier)
-                .toggleable(
-                    value = externalSelected,
-                    enabled = enabled,
-                    role = Role.Switch,
-                    interactionSource = toggleInteractionSource,
-                    indication = null,
-                    onValueChange = { nextSelected ->
-                        if (nextSelected != externalSelected) {
-                            hapticFeedback.performHapticFeedback(
-                                if (nextSelected) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
-                            )
-                        }
-                        onSelect(nextSelected)
-                    },
-                )
-                .graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }
                 .semantics {
                     role = Role.Switch
                     toggleableState = ToggleableState(externalSelected)
+                    if (enabled) {
+                        onClick {
+                            val nextSelected = !currentSelected()
+                            hapticFeedback.performHapticFeedback(
+                                if (nextSelected) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff,
+                            )
+                            currentOnSelect(nextSelected)
+                            true
+                        }
+                    } else {
+                        disabled()
+                    }
+                }.then(if (enabled) dampedDragAnimation.modifier else Modifier)
+                .graphicsLayer {
+                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
                 },
         contentAlignment = Alignment.CenterStart,
     ) {
@@ -335,8 +333,7 @@ private fun LiquidSwitchToggle(
                 .layerBackdrop(trackBackdrop)
                 .drawAppSquircleBackground(999.dp) {
                     lerpColor(trackColor, accentColor, dampedDragAnimation.value)
-                }
-                .size(64.dp, 28.dp),
+                }.size(64.dp, 28.dp),
         )
 
         Box(
@@ -349,9 +346,7 @@ private fun LiquidSwitchToggle(
                         } else {
                             lerp(-padding, -(padding + dragWidth), dampedDragAnimation.value)
                         }
-                }
-                .semantics { role = Role.Switch }
-                .drawBackdrop(
+                }.drawBackdrop(
                     backdrop = combinedBackdrop,
                     shape = { Capsule() },
                     effects = {
@@ -365,7 +360,7 @@ private fun LiquidSwitchToggle(
                             ),
                         )
                         val lensScale = glassRuntime.lensScaleFor(GlassVariant.Compact)
-                        lens(
+                        safeLiquidLens(
                             lerp(5.dp.toPx(), 12.dp.toPx(), progress) * lensScale,
                             lerp(10.dp.toPx(), 22.dp.toPx(), progress) * lensScale,
                             chromaticAberration = true,
@@ -408,8 +403,7 @@ private fun LiquidSwitchToggle(
                     onDrawSurface = {
                         drawRect(Color.White.copy(alpha = 1f - dampedDragAnimation.pressProgress))
                     },
-                )
-                .size(40.dp, 24.dp),
+                ).size(40.dp, 24.dp),
         )
     }
 }

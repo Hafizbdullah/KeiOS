@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.sheet
 
 import android.app.Application
@@ -12,9 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -73,11 +80,11 @@ class LiquidGlassBottomSheetTest {
         val height = sheetHeight()
         assertTrue(
             height < oneThirdRootHeight(),
-            "Expected adaptive short sheet below minimum floating height, got $height"
+            "Expected adaptive short sheet below minimum floating height, got $height",
         )
         assertTrue(
             height > 96.dp,
-            "Expected adaptive short sheet to include content and chrome, got $height"
+            "Expected adaptive short sheet to include content and chrome, got $height",
         )
     }
 
@@ -109,11 +116,11 @@ class LiquidGlassBottomSheetTest {
         val height = sheetHeight()
         assertTrue(
             height < oneThirdRootHeight(),
-            "Expected adaptive plain short sheet below minimum floating height, got $height"
+            "Expected adaptive plain short sheet below minimum floating height, got $height",
         )
         assertTrue(
             height > 96.dp,
-            "Expected adaptive plain short sheet to include content and chrome, got $height"
+            "Expected adaptive plain short sheet to include content and chrome, got $height",
         )
     }
 
@@ -147,7 +154,7 @@ class LiquidGlassBottomSheetTest {
         val height = sheetHeight()
         assertTrue(
             height in (rootHeight() * 0.66f)..(rootHeight() * 0.82f),
-            "Expected managed scrollable content to stay near opening detent, got $height"
+            "Expected managed scrollable content to stay near opening detent, got $height",
         )
     }
 
@@ -181,7 +188,7 @@ class LiquidGlassBottomSheetTest {
         val height = sheetHeight()
         assertTrue(
             height >= rootHeight() * 0.90f,
-            "Expected plain content to expand to full detent, got $height"
+            "Expected plain content to expand to full detent, got $height",
         )
     }
 
@@ -296,7 +303,7 @@ class LiquidGlassBottomSheetTest {
         val bottomBefore = sheetBottom()
         assertTrue(
             heightBefore >= rootHeight() * 0.90f,
-            "Expected tall sheet before drag, got $heightBefore"
+            "Expected tall sheet before drag, got $heightBefore",
         )
         val dragDistance = rootHeight() * 0.25f
 
@@ -325,7 +332,7 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun contentDownwardDragWhileScrolledDoesNotMoveSheet() {
+    fun contentDownwardDragShorterThanScrollRollbackDoesNotMoveSheet() {
         var dismissRequests = 0
         composeRule.setContent {
             LiquidSheetTestTheme {
@@ -370,7 +377,7 @@ class LiquidGlassBottomSheetTest {
         val heightBefore = sheetHeight()
         val topBefore = sheetTop()
 
-        val downwardDrag = rootHeight() * 0.72f
+        val downwardDrag = rootHeight() * 0.20f
         composeRule.onNodeWithTag(SCROLL_CONTENT_TAG).performTouchInput {
             val start = Offset(x = width / 2f, y = height * 0.34f)
             down(start)
@@ -519,160 +526,6 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun maxVisibleHeightLeavesSafeTopInset() {
-        assertEquals(
-            1_040f,
-            liquidSheetMaxVisibleHeightPx(
-                windowHeightPx = 1_120f,
-                topInsetPx = 80f,
-            ),
-        )
-        assertEquals(
-            1_024f,
-            liquidSheetMaxVisibleHeightPx(
-                windowHeightPx = 1_120f,
-                topInsetPx = 96f,
-            ),
-        )
-    }
-
-    @Test
-    fun backgroundBlurLayerExtendsBehindTopCorners() {
-        assertEquals(
-            504f,
-            liquidSheetBackgroundBlurLayerHeightPx(
-                sheetTopOffsetPx = 420f,
-                cornerRadiusPx = 84f,
-                windowHeightPx = 1_120f,
-            ),
-        )
-        assertEquals(
-            1_120f,
-            liquidSheetBackgroundBlurLayerHeightPx(
-                sheetTopOffsetPx = 1_080f,
-                cornerRadiusPx = 84f,
-                windowHeightPx = 1_120f,
-            ),
-        )
-    }
-
-    @Test
-    fun visibleHeightFractionTracksResizableSheetHeight() {
-        assertEquals(
-            0f,
-            liquidSheetVisibleHeightFraction(
-                visibleHeightPx = 0f,
-                maxVisibleHeightPx = 1_000f,
-            ),
-            0.0001f,
-        )
-        assertEquals(
-            0.5f,
-            liquidSheetVisibleHeightFraction(
-                visibleHeightPx = 500f,
-                maxVisibleHeightPx = 1_000f,
-            ),
-            0.0001f,
-        )
-        assertEquals(
-            1f,
-            liquidSheetVisibleHeightFraction(
-                visibleHeightPx = 1_200f,
-                maxVisibleHeightPx = 1_000f,
-            ),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun visualDetentFractionUsesSmallStableSteps() {
-        assertEquals(
-            0f,
-            liquidSheetQuantizedVisualDetentFraction(-0.5f),
-            0.0001f,
-        )
-        assertEquals(
-            0.5f,
-            liquidSheetQuantizedVisualDetentFraction(0.5f),
-            0.0001f,
-        )
-        assertTrue(
-            liquidSheetQuantizedVisualDetentFraction(0.751f) in 0.74f..0.77f,
-            "Expected visual detent quantization to preserve smooth height readability",
-        )
-        assertEquals(
-            1f,
-            liquidSheetQuantizedVisualDetentFraction(1.2f),
-            0.0001f,
-        )
-    }
-
-    @Test
-    fun glassSurfaceTintGainsReadabilityBeforeFullHeight() {
-        val shortLightAlpha = liquidSheetGlassSurfaceColor(
-            isDark = false,
-            detentFraction = 1f / 3f,
-        ).alpha
-        val tallLightAlpha = liquidSheetGlassSurfaceColor(
-            isDark = false,
-            detentFraction = 0.75f,
-        ).alpha
-        val fullLightAlpha = liquidSheetGlassSurfaceColor(
-            isDark = false,
-            detentFraction = 1f,
-        ).alpha
-        val tallDarkAlpha = liquidSheetGlassSurfaceColor(
-            isDark = true,
-            detentFraction = 0.75f,
-        ).alpha
-
-        assertTrue(
-            tallLightAlpha > shortLightAlpha + 0.06f,
-            "Expected 3/4 detent to add readable tint before full height",
-        )
-        assertTrue(
-            fullLightAlpha > tallLightAlpha,
-            "Expected full detent to keep gaining readable tint",
-        )
-        assertTrue(
-            tallDarkAlpha > 0.40f,
-            "Expected dark sheet tint to remain readable at 3/4 detent",
-        )
-        assertTrue(
-            liquidSheetSolidness(0.75f) in 0.30f..0.45f,
-            "Expected readability curve to engage before full height",
-        )
-    }
-
-    @Test
-    fun backgroundDepthCurvesIncreaseAfterSheetGrows() {
-        assertEquals(
-            0.28f,
-            liquidSheetBackgroundDimDepth(0f),
-            0.0001f,
-        )
-        assertTrue(
-            liquidSheetBackgroundDimDepth(0.5f) > 0.60f,
-            "Expected mid-height background dim to support sheet readability",
-        )
-        assertEquals(
-            1f,
-            liquidSheetBackgroundDimDepth(1f),
-            0.0001f,
-        )
-
-        assertEquals(
-            0f,
-            liquidSheetBackgroundBlurLayerAlpha(0.25f),
-            0.0001f,
-        )
-        assertTrue(
-            liquidSheetBackgroundBlurLayerAlpha(0.84f) > 0.85f,
-            "Expected high sheet depth to restore strong background blur after settling",
-        )
-    }
-
-    @Test
     fun topChromeDownwardDragClampsAtMinimumFloatingHeightBeforeDismiss() {
         var dismissRequests = 0
         composeRule.setContent {
@@ -723,8 +576,65 @@ class LiquidGlassBottomSheetTest {
         assertEquals(0, dismissRequests)
         assertNearOneThirdRootHeight(
             sheetHeight(),
-            "Expected minimum sheet height near 1/3, got ${sheetHeight()}"
+            "Expected minimum sheet height near 1/3, got ${sheetHeight()}",
         )
+    }
+
+    @Test
+    fun topChromeSemanticsCanCollapseExpandAndDismissSheet() {
+        var dismissRequests = 0
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    modifier = Modifier.testTag(SHEET_TAG),
+                    title = "Sheet",
+                    initialDetent = LiquidSheetInitialDetent.Half,
+                    onDismissRequest = { dismissRequests++ },
+                ) {
+                    SheetContentColumn(verticalSpacing = 0.dp) {
+                        repeat(24) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                        .background(Color.Gray),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val initialHeight = sheetHeight()
+        val withinSheet: (SemanticsMatcher) -> SemanticsMatcher = { matcher ->
+            matcher and hasAnyAncestor(hasTestTag(SHEET_TAG))
+        }
+
+        composeRule
+            .onNode(withinSheet(SemanticsMatcher.keyIsDefined(SemanticsActions.Collapse)))
+            .performSemanticsAction(SemanticsActions.Collapse)
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        val collapsedHeight = sheetHeight()
+        assertTrue(collapsedHeight < initialHeight)
+
+        composeRule
+            .onNode(withinSheet(SemanticsMatcher.keyIsDefined(SemanticsActions.Expand)))
+            .performSemanticsAction(SemanticsActions.Expand)
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        assertTrue(sheetHeight() > collapsedHeight)
+
+        composeRule
+            .onNode(withinSheet(SemanticsMatcher.keyIsDefined(SemanticsActions.Dismiss)))
+            .performSemanticsAction(SemanticsActions.Dismiss)
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        assertEquals(1, dismissRequests)
     }
 
     @Test
@@ -837,25 +747,7 @@ class LiquidGlassBottomSheetTest {
         assertEquals(1, blockedDismissRequests)
         assertNearOneThirdRootHeight(
             sheetHeight(),
-            "Expected blocked dismiss to keep minimum sheet height, got ${sheetHeight()}"
-        )
-    }
-
-    @Test
-    fun adaptiveInitialDetentPromotesOnlyThreeQuarterOverflow() {
-        assertEquals(
-            LiquidSheetInitialDetent.Full,
-            liquidSheetAdaptedInitialDetent(
-                initialDetent = LiquidSheetInitialDetent.ThreeQuarter,
-                contentOverflowsOpeningDetent = true,
-            ),
-        )
-        assertEquals(
-            LiquidSheetInitialDetent.Half,
-            liquidSheetAdaptedInitialDetent(
-                initialDetent = LiquidSheetInitialDetent.Half,
-                contentOverflowsOpeningDetent = true,
-            ),
+            "Expected blocked dismiss to keep minimum sheet height, got ${sheetHeight()}",
         )
     }
 

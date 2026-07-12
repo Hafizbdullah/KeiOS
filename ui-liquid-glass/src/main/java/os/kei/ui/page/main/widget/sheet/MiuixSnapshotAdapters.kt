@@ -13,8 +13,13 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -51,14 +56,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import os.kei.ui.page.main.widget.chrome.appWindowHeightPx
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
@@ -75,6 +79,20 @@ enum class SnapshotPopupPlacement {
     ButtonEnd,
     ActionBarCenter,
 }
+
+internal data class SnapshotPopupLayoutInfo(
+    val offset: IntOffset,
+    val showBelow: Boolean,
+    val showAbove: Boolean,
+    val transformOrigin: TransformOrigin,
+)
+
+internal data class SnapshotPopupSafeInsets(
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+)
 
 /**
  * Liquid glass popup expansion animation.
@@ -121,12 +139,11 @@ private const val SnapshotPopupTranslationDp = 8f
 @Composable
 fun SnapshotWindowListPopup(
     show: Boolean,
-    popupModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
     popupPositionProvider: PopupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.Start,
     anchorBounds: IntRect? = null,
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.Dropdown,
-    enableWindowDim: Boolean = false,
     onDismissRequest: (() -> Unit)? = null,
     onDismissFinished: (() -> Unit)? = null,
     maxHeight: Dp? = null,
@@ -139,7 +156,39 @@ fun SnapshotWindowListPopup(
     val density = LocalDensity.current
     val explicitAnchorBounds = anchorBounds
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val screenHeightPx = appWindowHeightPx()
+    val displayCutout = WindowInsets.displayCutout
+    val statusBars = WindowInsets.statusBars
+    val navigationBars = WindowInsets.navigationBars
+    val captionBar = WindowInsets.captionBar
+    val safeInsets =
+        with(density) {
+            SnapshotPopupSafeInsets(
+                left =
+                    maxOf(
+                        displayCutout.getLeft(this, layoutDirection),
+                        navigationBars.getLeft(this, layoutDirection),
+                        captionBar.getLeft(this, layoutDirection),
+                    ),
+                top =
+                    maxOf(
+                        displayCutout.getTop(this),
+                        statusBars.getTop(this),
+                        captionBar.getTop(this),
+                    ),
+                right =
+                    maxOf(
+                        displayCutout.getRight(this, layoutDirection),
+                        navigationBars.getRight(this, layoutDirection),
+                        captionBar.getRight(this, layoutDirection),
+                    ),
+                bottom =
+                    maxOf(
+                        displayCutout.getBottom(this),
+                        navigationBars.getBottom(this),
+                        captionBar.getBottom(this),
+                    ),
+            )
+        }
     val anchorWidthDp =
         remember(explicitAnchorBounds, density) {
             explicitAnchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
@@ -151,47 +200,17 @@ fun SnapshotWindowListPopup(
             minWidth
         }
     val popupMinWidth = maxWidth?.let { resolvedMinWidth.coerceAtMost(it) } ?: resolvedMinWidth
-    val opensDownward =
-        remember(explicitAnchorBounds, screenHeightPx) {
-            explicitAnchorBounds?.let {
-                val availableBelow = screenHeightPx - it.bottom
-                val availableAbove = it.top
-                availableBelow >= availableAbove
-            } ?: true
-        }
-    val normalizedAlignment =
-        remember(alignment, layoutDirection) {
-            alignment.normalizeForDropdown(layoutDirection)
-        }
-    val popupTransformOrigin =
-        remember(normalizedAlignment, placement, opensDownward) {
-            val pivotX =
-                when (placement) {
-                    SnapshotPopupPlacement.Dropdown -> {
-                        if (normalizedAlignment == PopupPositionProvider.Align.End) 1f else 0f
-                    }
-
-                    SnapshotPopupPlacement.ButtonEnd -> {
-                        1f
-                    }
-
-                    SnapshotPopupPlacement.ActionBarCenter -> {
-                        0.5f
-                    }
-                }
-            val pivotY = if (opensDownward) 0f else 1f
-            TransformOrigin(pivotFractionX = pivotX, pivotFractionY = pivotY)
-        }
-    val popupShowBelow = opensDownward
-    val popupShowAbove = !opensDownward
-    val initialPopupProgress = if (show) 1f else 0f
-    val fractionProgress = remember { Animatable(initialPopupProgress) }
-    val alphaProgress = remember { Animatable(initialPopupProgress) }
+    var popupLayoutInfo by remember { mutableStateOf<SnapshotPopupLayoutInfo?>(null) }
+    val popupPlacementReady = popupLayoutInfo != null
+    val fractionProgress = remember { Animatable(0f) }
+    val alphaProgress = remember { Animatable(0f) }
     val fractionProgressProvider = remember(fractionProgress) { { fractionProgress.value.coerceIn(0f, 1f) } }
     val alphaProgressProvider = remember(alphaProgress) { { alphaProgress.value.coerceIn(0f, 1f) } }
     val coroutineScope = rememberCoroutineScope()
     var wasVisible by remember { mutableStateOf(show) }
     var popupRender by remember { mutableStateOf(show) }
+    val currentOnDismissRequest = rememberUpdatedState(onDismissRequest)
+    val currentOnDismissFinished = rememberUpdatedState(onDismissFinished)
     val navigationEventDispatcherOwner = LocalNavigationEventDispatcherOwner.current
     val composePopupPositionProvider =
         remember(
@@ -200,6 +219,7 @@ fun SnapshotWindowListPopup(
             alignment,
             placement,
             explicitAnchorBounds,
+            safeInsets,
         ) {
             object : ComposePopupPositionProvider {
                 override fun calculatePosition(
@@ -209,47 +229,45 @@ fun SnapshotWindowListPopup(
                     popupContentSize: IntSize,
                 ): IntOffset {
                     val effectiveAnchorBounds = explicitAnchorBounds ?: anchorBounds
-                    val normalizedAlignment = alignment.normalizeForDropdown(layoutDirection)
                     val popupMargin = popupPositionProvider.getMargins().toIntRect(density, layoutDirection)
-                    val windowBounds = IntRect(0, 0, windowSize.width, windowSize.height)
-                    val offsetY =
-                        calculateDropdownVerticalOffset(
+                    val windowBounds = calculateSnapshotPopupWindowBounds(windowSize, safeInsets)
+                    val providerOffset =
+                        popupPositionProvider.calculatePosition(
                             anchorBounds = effectiveAnchorBounds,
                             windowBounds = windowBounds,
+                            layoutDirection = layoutDirection,
                             popupContentSize = popupContentSize,
                             popupMargin = popupMargin,
+                            alignment = alignment,
                         )
-                    val minX = windowBounds.left + popupMargin.left
-                    val maxX =
-                        (windowBounds.right - popupContentSize.width - popupMargin.right)
-                            .coerceAtLeast(minX)
-                    val rawX =
-                        when (placement) {
-                            SnapshotPopupPlacement.Dropdown -> {
-                                if (normalizedAlignment == PopupPositionProvider.Align.End) {
-                                    effectiveAnchorBounds.right - popupContentSize.width - popupMargin.right
-                                } else {
-                                    effectiveAnchorBounds.left + popupMargin.left
-                                }
-                            }
-
-                            SnapshotPopupPlacement.ButtonEnd -> {
-                                effectiveAnchorBounds.right - popupContentSize.width - popupMargin.right
-                            }
-
-                            SnapshotPopupPlacement.ActionBarCenter -> {
-                                effectiveAnchorBounds.left + (effectiveAnchorBounds.width - popupContentSize.width) / 2
-                            }
-                        }
-                    return IntOffset(rawX.coerceIn(minX, maxX), offsetY)
+                    val resolvedLayout =
+                        calculateSnapshotPopupLayout(
+                            anchorBounds = effectiveAnchorBounds,
+                            windowBounds = windowBounds,
+                            layoutDirection = layoutDirection,
+                            popupContentSize = popupContentSize,
+                            popupMargin = popupMargin,
+                            alignment = alignment,
+                            placement = placement,
+                            providerOffset = providerOffset,
+                        )
+                    if (
+                        popupContentSize.width > 0 &&
+                        popupContentSize.height > 0 &&
+                        popupLayoutInfo != resolvedLayout
+                    ) {
+                        popupLayoutInfo = resolvedLayout
+                    }
+                    return resolvedLayout.offset
                 }
             }
         }
 
-    LaunchedEffect(show, transitionAnimationsEnabled, onDismissFinished) {
+    LaunchedEffect(show, popupPlacementReady, transitionAnimationsEnabled) {
         if (show) {
             wasVisible = true
             popupRender = true
+            if (!popupPlacementReady) return@LaunchedEffect
             if (transitionAnimationsEnabled) {
                 launch {
                     fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec)
@@ -281,9 +299,10 @@ fun SnapshotWindowListPopup(
                 alphaProgress.snapTo(0f)
             }
             popupRender = false
+            popupLayoutInfo = null
             if (wasVisible) {
                 wasVisible = false
-                onDismissFinished?.invoke()
+                currentOnDismissFinished.value?.invoke()
             }
         }
     }
@@ -291,7 +310,7 @@ fun SnapshotWindowListPopup(
     if (popupRender) {
         Popup(
             popupPositionProvider = composePopupPositionProvider,
-            onDismissRequest = onDismissRequest,
+            onDismissRequest = { currentOnDismissRequest.value?.invoke() },
             properties =
                 PopupProperties(
                     focusable = true,
@@ -303,23 +322,27 @@ fun SnapshotWindowListPopup(
             val popupContent: @Composable () -> Unit = {
                 SnapshotPopupBackHandler(
                     show = show,
+                    popupRender = popupRender,
                     fractionProgress = fractionProgress,
                     alphaProgress = alphaProgress,
-                    onDismissRequest = onDismissRequest,
+                    onDismissRequest = { currentOnDismissRequest.value?.invoke() },
                 )
                 val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
+                val resolvedLayout = popupLayoutInfo
                 Box(
                     modifier =
-                        popupModifier
+                        modifier
                             .defaultMinSize(minWidth = popupMinWidth)
                             .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
                             .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
                             .snapshotPopupReveal(
                                 fractionProgress = fractionProgressProvider,
                                 alphaProgress = alphaProgressProvider,
-                                transformOrigin = popupTransformOrigin,
-                                showBelow = popupShowBelow,
-                                showAbove = popupShowAbove,
+                                transformOrigin =
+                                    resolvedLayout?.transformOrigin
+                                        ?: TransformOrigin(0.5f, 0.5f),
+                                showBelow = resolvedLayout?.showBelow == true,
+                                showAbove = resolvedLayout?.showAbove == true,
                                 translationOffsetPx = translationOffsetPx,
                             ),
                 ) {
@@ -340,30 +363,38 @@ fun SnapshotWindowListPopup(
 @Composable
 private fun SnapshotPopupBackHandler(
     show: Boolean,
+    popupRender: Boolean,
     fractionProgress: Animatable<Float, AnimationVector1D>,
     alphaProgress: Animatable<Float, AnimationVector1D>,
     onDismissRequest: (() -> Unit)?,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    var dismissRequestDispatched by remember(show) { mutableStateOf(false) }
     if (LocalNavigationEventDispatcherOwner.current != null) {
         val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
         NavigationBackHandler(
             state = navigationEventState,
-            isBackEnabled = show,
+            isBackEnabled = popupRender,
             onBackCancelled = {
-                coroutineScope.launch {
-                    launch { fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec) }
-                    alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
+                if (show) {
+                    coroutineScope.launch {
+                        launch { fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec) }
+                        alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
+                    }
                 }
             },
             onBackCompleted = {
-                onDismissRequest?.invoke()
+                if (show && !dismissRequestDispatched) {
+                    dismissRequestDispatched = true
+                    onDismissRequest?.invoke()
+                }
             },
         )
         LaunchedEffect(navigationEventState) {
             snapshotFlow { navigationEventState.transitionState }
                 .collect { transitionState ->
                     if (
+                        show &&
                         transitionState is NavigationEventTransitionState.InProgress &&
                         transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
                     ) {
@@ -374,8 +405,11 @@ private fun SnapshotPopupBackHandler(
                 }
         }
     } else {
-        BackHandler(enabled = show) {
-            onDismissRequest?.invoke()
+        BackHandler(enabled = popupRender) {
+            if (show && !dismissRequestDispatched) {
+                dismissRequestDispatched = true
+                onDismissRequest?.invoke()
+            }
         }
     }
 }
@@ -467,27 +501,43 @@ fun SnapshotWindowBottomSheet(
         }
     }
 
-    val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
-    var blockedDismissPromptToken by remember { mutableIntStateOf(0) }
-    LaunchedEffect(blockedDismissPromptToken) {
-        if (blockedDismissPromptToken <= 0) return@LaunchedEffect
-        delay(BlockedSheetDismissPromptDelayMillis)
-        currentOnBlockedDismissRequest?.invoke()
-    }
-    val sheetModifier =
-        modifier.blockedSheetDismissGesturePrompt(
-            enabled = show && !allowDismiss && onBlockedDismissRequest != null,
-            onBlockedDismissRequest = { blockedDismissPromptToken++ },
-        )
-
     val sheetVisualMode =
         if (useLiquidGlassSheet) {
             SheetVisualMode.Liquid
         } else {
             SheetVisualMode.Miuix
         }
+
+    val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
+    val blockedDismissRequestGate = remember(show) { BlockedDismissRequestGate() }
+    val requestBlockedDismiss: () -> Unit = {
+        blockedDismissRequestGate.dispatch {
+            currentOnBlockedDismissRequest?.invoke()
+        }
+    }
+    var blockedDismissPromptToken by remember { mutableIntStateOf(0) }
+    LaunchedEffect(blockedDismissPromptToken) {
+        if (blockedDismissPromptToken <= 0) return@LaunchedEffect
+        delay(BlockedSheetDismissPromptDelayMillis)
+        requestBlockedDismiss()
+    }
+    val sheetModifier =
+        modifier.blockedSheetDismissGesturePrompt(
+            enabled =
+                sheetVisualMode == SheetVisualMode.Miuix &&
+                    show &&
+                    !allowDismiss &&
+                    onBlockedDismissRequest != null,
+            onBlockedDismissRequest = { blockedDismissPromptToken++ },
+        )
     val sheetContent: @Composable () -> Unit = {
         CompositionLocalProvider(LocalSheetVisualMode provides sheetVisualMode) {
+            if (sheetVisualMode == SheetVisualMode.Miuix) {
+                BackHandler(
+                    enabled = show && !allowDismiss && onBlockedDismissRequest != null,
+                    onBack = requestBlockedDismiss,
+                )
+            }
             content()
         }
     }
@@ -514,7 +564,10 @@ fun SnapshotWindowBottomSheet(
             defaultWindowInsetsPadding = defaultWindowInsetsPadding,
             dragHandleColor = dragHandleColor,
             allowDismiss = allowDismiss,
-            onBlockedDismissRequest = onBlockedDismissRequest,
+            onBlockedDismissRequest =
+                requestBlockedDismiss.takeIf {
+                    onBlockedDismissRequest != null
+                },
             enableNestedScroll = enableNestedScroll,
             initialDetent = initialDetent,
             surfaceTone = surfaceTone,
@@ -542,14 +595,27 @@ fun SnapshotWindowBottomSheet(
             content = sheetContent,
         )
     }
-
-    BackHandler(
-        enabled = show && !allowDismiss && onBlockedDismissRequest != null,
-        onBack = { currentOnBlockedDismissRequest?.invoke() },
-    )
 }
 
 private const val BlockedSheetDismissPromptDelayMillis = 140L
+private const val BlockedSheetDismissDeduplicationWindowNanos = 200_000_000L
+
+internal class BlockedDismissRequestGate(
+    private val deduplicationWindowNanos: Long = BlockedSheetDismissDeduplicationWindowNanos,
+) {
+    private var lastDispatchNanos: Long? = null
+
+    fun dispatch(
+        nowNanos: Long = System.nanoTime(),
+        onDispatch: () -> Unit,
+    ): Boolean {
+        val previous = lastDispatchNanos
+        if (previous != null && nowNanos - previous < deduplicationWindowNanos) return false
+        lastDispatchNanos = nowNanos
+        onDispatch()
+        return true
+    }
+}
 
 private fun Modifier.blockedSheetDismissGesturePrompt(
     enabled: Boolean,
@@ -634,26 +700,101 @@ private fun PopupPositionProvider.Align.normalizeForDropdown(layoutDirection: La
         }
     }
 
-private fun calculateDropdownVerticalOffset(
+internal fun calculateSnapshotPopupWindowBounds(
+    windowSize: IntSize,
+    safeInsets: SnapshotPopupSafeInsets,
+): IntRect {
+    val width = windowSize.width.coerceAtLeast(0)
+    val height = windowSize.height.coerceAtLeast(0)
+    val left = safeInsets.left.coerceIn(0, width)
+    val top = safeInsets.top.coerceIn(0, height)
+    val right = (width - safeInsets.right.coerceAtLeast(0)).coerceIn(left, width)
+    val bottom = (height - safeInsets.bottom.coerceAtLeast(0)).coerceIn(top, height)
+    return IntRect(left = left, top = top, right = right, bottom = bottom)
+}
+
+internal fun calculateSnapshotPopupLayout(
     anchorBounds: IntRect,
     windowBounds: IntRect,
+    layoutDirection: LayoutDirection,
     popupContentSize: IntSize,
     popupMargin: IntRect,
-): Int {
-    val availableBelow = windowBounds.bottom - anchorBounds.bottom - popupMargin.bottom
-    val availableAbove = anchorBounds.top - windowBounds.top - popupMargin.top
-    val preferBelow = availableBelow >= popupContentSize.height || availableBelow >= availableAbove
-    val rawY =
-        if (preferBelow) {
-            anchorBounds.bottom + popupMargin.bottom
-        } else {
-            anchorBounds.top - popupContentSize.height - popupMargin.top
+    alignment: PopupPositionProvider.Align,
+    placement: SnapshotPopupPlacement,
+    providerOffset: IntOffset,
+): SnapshotPopupLayoutInfo {
+    val popupWidth = popupContentSize.width.coerceAtLeast(0)
+    val popupHeight = popupContentSize.height.coerceAtLeast(0)
+    val normalizedAlignment = alignment.normalizeForDropdown(layoutDirection)
+    val rawX =
+        when (placement) {
+            SnapshotPopupPlacement.Dropdown -> {
+                providerOffset.x
+            }
+
+            SnapshotPopupPlacement.ButtonEnd -> {
+                anchorBounds.right - popupWidth - popupMargin.right
+            }
+
+            SnapshotPopupPlacement.ActionBarCenter -> {
+                anchorBounds.left + (anchorBounds.width - popupWidth) / 2
+            }
         }
-    val minY =
-        (windowBounds.top + popupMargin.top)
-            .coerceAtMost(windowBounds.bottom - popupContentSize.height - popupMargin.bottom)
-    val maxY = windowBounds.bottom - popupContentSize.height - popupMargin.bottom
-    return rawY.coerceIn(minY, maxY)
+    val minX = windowBounds.left + popupMargin.left
+    val maxX =
+        (windowBounds.right - popupWidth - popupMargin.right)
+            .coerceAtLeast(minX)
+    val minY = windowBounds.top + popupMargin.top
+    val maxY =
+        (windowBounds.bottom - popupHeight - popupMargin.bottom)
+            .coerceAtLeast(minY)
+    val offset =
+        IntOffset(
+            x = rawX.coerceIn(minX, maxX),
+            y = providerOffset.y.coerceIn(minY, maxY),
+        )
+
+    val popupCenterY = offset.y + popupHeight / 2f
+    val anchorCenterY = anchorBounds.top + anchorBounds.height / 2f
+    val showBelow = popupCenterY > anchorCenterY
+    val showAbove = popupCenterY < anchorCenterY
+    val pivotX =
+        when (placement) {
+            SnapshotPopupPlacement.ActionBarCenter -> {
+                0.5f
+            }
+
+            SnapshotPopupPlacement.Dropdown,
+            SnapshotPopupPlacement.ButtonEnd,
+            -> {
+                val attachToEnd =
+                    placement == SnapshotPopupPlacement.ButtonEnd ||
+                        normalizedAlignment == PopupPositionProvider.Align.End
+                val attachmentX =
+                    if (attachToEnd) {
+                        anchorBounds.right - popupMargin.right
+                    } else {
+                        anchorBounds.left + popupMargin.left
+                    }
+                if (popupWidth > 0) {
+                    ((attachmentX - offset.x) / popupWidth.toFloat()).coerceIn(0f, 1f)
+                } else {
+                    if (attachToEnd) 1f else 0f
+                }
+            }
+        }
+    val pivotY =
+        when {
+            showBelow -> 0f
+            showAbove -> 1f
+            else -> 0.5f
+        }
+    return SnapshotPopupLayoutInfo(
+        offset = offset,
+        showBelow = showBelow,
+        showAbove = showAbove,
+        transformOrigin = TransformOrigin(pivotX, pivotY),
+    )
 }
 
 fun Modifier.capturePopupAnchor(onBoundsChange: (IntRect) -> Unit): Modifier {

@@ -24,15 +24,15 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.glass.safeLiquidLens
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 
 @Composable
 internal fun LiquidActionBarLayeredVisualOverlay(
@@ -103,7 +103,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                             val progress = dampedDragAnimation.pressProgress
                             vibrancy()
                             blur(effectBlurDp.toPx())
-                            lens(
+                            safeLiquidLens(
                                 effectLensDp.toPx() * progress,
                                 effectLensDp.toPx() * progress,
                             )
@@ -152,7 +152,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                                 effects = {
                                     val progress = dampedDragAnimation.pressProgress
                                     if (progress > 0f) {
-                                        lens(
+                                        safeLiquidLens(
                                             9f.dp.toPx() * progress * interactionLensScale,
                                             12f.dp.toPx() * progress * interactionLensScale,
                                             true,
@@ -176,19 +176,19 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                                     scaleX /= 1f - (velocity * 0.75f).fastCoerceIn(-0.2f, 0.2f)
                                     scaleY *= 1f - (velocity * 0.25f).fastCoerceIn(-0.2f, 0.2f)
                                 },
-                        onDrawSurface = {
-                            val progress = dampedDragAnimation.pressProgress
-                            drawRect(
-                                color =
-                                    if (isInLightTheme) {
-                                        Color.Black.copy(0.1f)
-                                    } else {
-                                        Color.White.copy(0.1f)
-                                    },
-                                alpha = progress * (1f - progress),
-                            )
-                            drawRect(Color.Black.copy(alpha = 0.03f * progress))
-                        },
+                                onDrawSurface = {
+                                    val progress = dampedDragAnimation.pressProgress
+                                    drawRect(
+                                        color =
+                                            if (isInLightTheme) {
+                                                Color.Black.copy(0.1f)
+                                            } else {
+                                                Color.White.copy(0.1f)
+                                            },
+                                        alpha = progress * (1f - progress),
+                                    )
+                                    drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                },
                             )
                         } else {
                             Modifier.appSquircleBackground(

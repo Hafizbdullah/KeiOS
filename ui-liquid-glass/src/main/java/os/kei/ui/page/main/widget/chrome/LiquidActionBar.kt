@@ -7,6 +7,7 @@ import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.LayoutDirection
@@ -48,7 +50,6 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.launch
@@ -58,6 +59,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
+import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -155,10 +157,12 @@ internal fun RowScope.LiquidActionItemSlot(
     onClick: (() -> Unit)? = null,
 ) {
     val clickModifier =
-        if (onClick != null && item.enabled) {
+        if (onClick != null) {
             Modifier.clickable(
                 interactionSource = null,
                 indication = null,
+                enabled = item.enabled,
+                role = Role.Button,
                 onClick = onClick,
             )
         } else {
@@ -303,7 +307,7 @@ fun LiquidActionBar(
 
     var gestureActive by remember { mutableStateOf(false) }
     var dragMoved by remember { mutableStateOf(false) }
-    var dragTravelPx by remember { mutableFloatStateOf(0f) }
+    var horizontalDragActive by remember { mutableStateOf(false) }
     val dragActivationThresholdPx = rememberLiquidActionBarDragActivationThresholdPx()
 
     val dampedDragAnimation =
@@ -317,10 +321,12 @@ fun LiquidActionBar(
                 pressedScale = pressedScale,
                 gestureKey = items.size to isLtr,
                 canDrag = { true },
+                dragOrientation = Orientation.Horizontal,
+                dragTouchSlop = dragActivationThresholdPx,
                 onDragStarted = {
                     gestureActive = true
                     dragMoved = false
-                    dragTravelPx = 0f
+                    horizontalDragActive = false
                     onInteractionChangedState.value(true)
                 },
                 onDragStopped = {
@@ -347,6 +353,14 @@ fun LiquidActionBar(
                         }
                         return@DampedDragAnimation
                     }
+                    if (!horizontalDragActive) {
+                        settledIndex = fallbackIndex.toFloat()
+                        animateToValue(settledIndex)
+                        animationScope.launch {
+                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                        }
+                        return@DampedDragAnimation
+                    }
                     val targetIndex = targetValue.fastRoundToInt().fastCoerceIn(0, currentItems.lastIndex)
                     val resolvedIndex =
                         if (currentItems.getOrNull(targetIndex)?.enabled == true) {
@@ -365,12 +379,23 @@ fun LiquidActionBar(
                         offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
                     }
                 },
+                onDragCancelled = {
+                    gestureActive = false
+                    dragMoved = false
+                    horizontalDragActive = false
+                    onInteractionChangedState.value(false)
+                    animateToValue(settledIndex)
+                    animationScope.launch {
+                        offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                    }
+                },
                 onDrag = { _, dragAmount ->
                     if (tabWidthPx > 0) {
-                        dragTravelPx += abs(dragAmount.x)
-                        if (!dragMoved && dragTravelPx >= dragActivationThresholdPx) {
+                        if (dragAmount != Offset.Zero) {
                             dragMoved = true
+                            horizontalDragActive = true
                         }
+                        if (!horizontalDragActive) return@DampedDragAnimation
                         val raw =
                             (targetValue + dragAmount.x / tabWidthPx * if (isLtr) 1f else -1f)
                                 .fastCoerceIn(0f, items.lastIndex.toFloat())
@@ -506,7 +531,7 @@ fun LiquidActionBar(
         }
     val canvasWidth = barWidth + singleBreakoutPadding * 2
     val interactionLockModifier =
-        rememberLiquidActionBarInteractionLockModifier(
+        Modifier.liquidActionBarInteractionLock(
             onInteractionChanged = onInteractionChangedState.value,
         )
 
@@ -542,7 +567,7 @@ fun LiquidActionBar(
                         if (effectiveBlurEnabled) {
                             vibrancy()
                             blur(effectBlurDp.toPx())
-                            lens(effectLensDp.toPx(), effectLensDp.toPx())
+                            safeLiquidLens(effectLensDp.toPx(), effectLensDp.toPx())
                         }
                     },
                     highlight = {
@@ -592,7 +617,7 @@ fun LiquidActionBar(
                     },
                 ).then(if (!layeredStyleEnabled) dampedDragAnimation.modifier else Modifier)
                 .height(AppChromeTokens.liquidActionBarOuterHeight)
-                .padding(AppChromeTokens.liquidActionBarHorizontalPadding)
+                .padding(horizontal = AppChromeTokens.liquidActionBarHorizontalPadding)
 
         Row(
             primaryRowModifier,

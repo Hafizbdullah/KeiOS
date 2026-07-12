@@ -13,9 +13,7 @@ import os.kei.ui.animation.DampedDragAnimation
 import kotlin.math.abs
 
 @Composable
-internal fun rememberLiquidActionBarPressedScale(): Float {
-    return remember { 62f / 44f }
-}
+internal fun rememberLiquidActionBarPressedScale(): Float = remember { 62f / 44f }
 
 @Composable
 internal fun rememberLiquidActionBarDragActivationThresholdPx(): Float {
@@ -28,20 +26,17 @@ internal fun rememberLiquidActionBarDragActivationThresholdPx(): Float {
 @Composable
 internal fun rememberLiquidActionBarSelectionProgressProvider(
     animation: DampedDragAnimation,
-    itemCount: Int
-): (Int) -> Float {
-    return remember(animation, itemCount) {
+    itemCount: Int,
+): (Int) -> Float =
+    remember(animation, itemCount) {
         { index ->
             (1f - abs(animation.value - index)).fastCoerceIn(0f, 1f)
         }
     }
-}
 
 @Composable
-internal fun rememberLiquidActionBarInteractionLockModifier(
-    onInteractionChanged: (Boolean) -> Unit
-): Modifier {
-    return Modifier.pointerInput(onInteractionChanged) {
+internal fun Modifier.liquidActionBarInteractionLock(onInteractionChanged: (Boolean) -> Unit): Modifier =
+    pointerInput(onInteractionChanged) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
             onInteractionChanged(true)
@@ -54,4 +49,3 @@ internal fun rememberLiquidActionBarInteractionLockModifier(
             }
         }
     }
-}
