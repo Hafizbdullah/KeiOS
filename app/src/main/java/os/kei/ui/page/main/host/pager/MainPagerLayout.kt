@@ -22,6 +22,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
@@ -41,7 +42,6 @@ import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundImage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundOverlay
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.AppScaffold
-import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -86,14 +86,10 @@ internal fun MainPagerLayout(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val backNavigationRuntime = LocalBackNavigationRuntimeState.current
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
     val insets = rememberMainPagerInsets()
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
-    val floatingDockSide =
-        if (gripAwareFloatingDockEnabled) {
-            floatingDockState.side
-        } else {
-            AppFloatingDockSide.End
-        }
+    val floatingDockSide = floatingDockState.layoutSide(layoutDirection)
     val onOpenSettings =
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.Settings) }
@@ -180,9 +176,8 @@ internal fun MainPagerLayout(
                 .semantics { testTagsAsResourceId = true }
                 .appGripAwareDockTouchObserver(
                     enabled = gripAwareFloatingDockEnabled,
-                    onDockSideTouch = floatingDockState::recordTouchSide,
-                )
-                .background(MiuixTheme.colorScheme.background)
+                    state = floatingDockState,
+                ).background(MiuixTheme.colorScheme.background)
                 .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
             val safeSelectedPageIndex =
@@ -267,16 +262,14 @@ internal fun MainPagerLayout(
                     .fillMaxSize()
                     .onSizeChanged { size ->
                         mainPagerBackGestureState.onContainerSizeChanged(size.width, size.height)
-                    }
-                    .graphicsLayer {
+                    }.graphicsLayer {
                         val backMotion = mainPagerBackGestureState.motionValues
                         transformOrigin = TransformOrigin(backMotion.pivotX, backMotion.pivotY)
                         translationX = backMotion.translationX
                         scaleX = backMotion.scale
                         scaleY = backMotion.scale
                         alpha = coordinator.farJumpAlpha * backMotion.contentAlpha
-                    }
-                    .layerBackdrop(coordinator.backdrop)
+                    }.layerBackdrop(coordinator.backdrop)
             val activationState =
                 rememberMainPageActivationState(
                     tabs = coordinator.tabs,

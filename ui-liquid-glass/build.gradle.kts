@@ -22,6 +22,7 @@ val miuixVersion =
         ?: "0.9.2"
 val composeVersion = "1.11.4"
 val activityComposeVersion = "1.13.0"
+val lifecycleRuntimeComposeVersion = "2.11.0"
 val backdropVersion = "2.0.0"
 val capsuleVersion = "2.1.3"
 val shapesVersion = "1.2.0"
@@ -81,6 +82,7 @@ configurations.configureEach {
 
 dependencies {
     api("androidx.activity:activity-compose:$activityComposeVersion")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleRuntimeComposeVersion")
     api("androidx.compose.ui:ui:$composeVersion")
     api("androidx.compose.foundation:foundation:$composeVersion")
     api("androidx.compose.ui:ui-tooling-preview:$composeVersion")
