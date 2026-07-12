@@ -22,6 +22,7 @@ import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.dialog.AppDialogDimensions
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -59,7 +60,8 @@ internal fun GitHubStarImportConfirmDialog(
             summary.hasApkCount,
             summary.unverifiedCount
         ),
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
+        maxWidth = AppDialogDimensions.ContentRichMaxWidth,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.height(16.dp))

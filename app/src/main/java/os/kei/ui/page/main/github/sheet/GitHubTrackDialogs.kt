@@ -16,6 +16,7 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
+import os.kei.ui.page.main.widget.dialog.AppDialogDimensions
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -90,7 +91,8 @@ internal fun GitHubTrackImportDialog(
                 }
             )
         },
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
+        maxWidth = AppDialogDimensions.ContentRichMaxWidth,
     ) {
         if (preview == null) return@WindowDialog
         Column(

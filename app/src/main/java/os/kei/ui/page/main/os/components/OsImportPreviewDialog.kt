@@ -17,6 +17,7 @@ import os.kei.ui.page.main.os.state.OsCardImportTarget
 import os.kei.ui.page.main.os.transfer.OsCardImportFileKind
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
+import os.kei.ui.page.main.widget.dialog.AppDialogDimensions
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -38,7 +39,8 @@ internal fun OsImportPreviewDialog(
         show = preview != null,
         title = stringResource(R.string.os_import_dialog_title),
         summary = if (preview != null) importPreviewSummary(preview) else null,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
+        maxWidth = AppDialogDimensions.ContentRichMaxWidth,
     ) {
         if (preview == null) return@WindowDialog
         Column(
