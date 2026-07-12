@@ -1,9 +1,11 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,13 +40,17 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal sealed interface BaGuideStudentBgmLookupState {
     data object Idle : BaGuideStudentBgmLookupState
+
     data object Loading : BaGuideStudentBgmLookupState
+
     data object Missing : BaGuideStudentBgmLookupState
-    data class Ready(val item: BaGuideStudentBgmResolvedItem) : BaGuideStudentBgmLookupState
+
+    data class Ready(
+        val item: BaGuideStudentBgmResolvedItem,
+    ) : BaGuideStudentBgmLookupState
 }
 
-internal fun BaGuideStudentBgmLookupState.readyFavoriteOrNull() =
-    (this as? BaGuideStudentBgmLookupState.Ready)?.item?.favorite
+internal fun BaGuideStudentBgmLookupState.readyFavoriteOrNull() = (this as? BaGuideStudentBgmLookupState.Ready)?.item?.favorite
 
 @Composable
 internal fun BaGuideStudentBgmHeader(
@@ -153,56 +159,59 @@ internal fun BaGuideStudentBgmCard(
     accent: Color,
     onOpenGuide: () -> Unit,
     onPlay: () -> Unit,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: () -> Unit,
 ) {
     val isLoading = lookupState == BaGuideStudentBgmLookupState.Loading
     val isMissing = lookupState == BaGuideStudentBgmLookupState.Missing
     val ready = lookupState as? BaGuideStudentBgmLookupState.Ready
     val cached = ready?.item?.fromCache == true
-    val borderColor = when {
-        favorite -> Color(0xFFEC4899).copy(alpha = 0.34f)
-        selected -> accent.copy(alpha = 0.38f)
-        cached -> accent.copy(alpha = 0.22f)
-        else -> MiuixTheme.colorScheme.outline.copy(alpha = 0.16f)
-    }
-    val containerColor = when {
-        favorite -> Color(0xFFEC4899).copy(alpha = 0.08f)
-        cached -> accent.copy(alpha = 0.11f)
-        else -> MiuixTheme.colorScheme.surface.copy(alpha = 0.58f)
-    }
+    val borderColor =
+        when {
+            favorite -> Color(0xFFEC4899).copy(alpha = 0.34f)
+            selected -> accent.copy(alpha = 0.38f)
+            cached -> accent.copy(alpha = 0.22f)
+            else -> MiuixTheme.colorScheme.outline.copy(alpha = 0.16f)
+        }
+    val containerColor =
+        when {
+            favorite -> Color(0xFFEC4899).copy(alpha = 0.08f)
+            cached -> accent.copy(alpha = 0.11f)
+            else -> MiuixTheme.colorScheme.surface.copy(alpha = 0.58f)
+        }
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
     val subtitle = entry.aliasDisplay.takeIf { it.isNotBlank() }
     AppSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
         onClick = onPlay,
-        onLongClick = onOpenGuide
+        onLongClick = onOpenGuide,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier.size(48.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 BaGuideCatalogEntryAvatar(
                     imageUrl = entry.iconUrl,
                     fallbackRes = R.drawable.ba_tab_student_bgm,
-                    size = 48.dp
+                    size = 48.dp,
                 )
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = entry.name,
@@ -212,20 +221,22 @@ internal fun BaGuideStudentBgmCard(
                         lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                         fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     if (isLoading || isMissing) {
                         BaGuideCatalogStatusIconPill(
-                            label = when {
-                                isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
-                                isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
-                                else -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
-                            },
-                            color = when {
-                                isMissing -> AppStatusColors.Failed
-                                isLoading -> AppStatusColors.Refreshing
-                                else -> AppStatusColors.Fresh
-                            },
+                            label =
+                                when {
+                                    isLoading -> stringResource(R.string.ba_catalog_student_bgm_status_resolving)
+                                    isMissing -> stringResource(R.string.ba_catalog_student_bgm_status_missing)
+                                    else -> stringResource(R.string.ba_catalog_student_bgm_status_ready)
+                                },
+                            color =
+                                when {
+                                    isMissing -> AppStatusColors.Failed
+                                    isLoading -> AppStatusColors.Refreshing
+                                    else -> AppStatusColors.Fresh
+                                },
                             icon = if (isMissing) appLucideWarningIcon() else appLucideRefreshIcon(),
                         )
                     }
@@ -237,52 +248,51 @@ internal fun BaGuideStudentBgmCard(
                         fontSize = AppTypographyTokens.Supporting.fontSize,
                         lineHeight = AppTypographyTokens.Supporting.lineHeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
             Row(
-                modifier = Modifier.width(118.dp),
+                modifier = Modifier.width(150.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppCompactIconAction(
                     icon = if (playing) appLucidePauseIcon() else appLucidePlayIcon(),
-                    contentDescription = stringResource(
-                        if (playing) {
-                            R.string.ba_catalog_bgm_action_pause
-                        } else {
-                            R.string.ba_catalog_student_bgm_action_resolve_play
-                        }
-                    ),
+                    contentDescription =
+                        stringResource(
+                            if (playing) {
+                                R.string.ba_catalog_bgm_action_pause
+                            } else {
+                                R.string.ba_catalog_student_bgm_action_resolve_play
+                            },
+                        ),
                     onClick = onPlay,
-                    modifier = Modifier.size(38.dp),
                     tint = if (playing || selected) accent else neutralTint,
-                    minSize = 38.dp,
-                    enabled = !isLoading
+                    visualSize = 38.dp,
+                    enabled = !isLoading,
                 )
                 AppCompactIconAction(
                     icon = appLucideHeartIcon(),
-                    contentDescription = stringResource(
-                        if (favorite) {
-                            R.string.guide_bgm_cd_unfavorite
-                        } else {
-                            R.string.guide_bgm_cd_favorite
-                        }
-                    ),
+                    contentDescription =
+                        stringResource(
+                            if (favorite) {
+                                R.string.guide_bgm_cd_unfavorite
+                            } else {
+                                R.string.guide_bgm_cd_favorite
+                            },
+                        ),
                     onClick = onToggleFavorite,
-                    modifier = Modifier.size(38.dp),
                     tint = if (favorite) Color(0xFFEC4899) else neutralTint,
-                    minSize = 38.dp,
-                    enabled = !isLoading
+                    visualSize = 38.dp,
+                    enabled = !isLoading,
                 )
                 AppCompactIconAction(
                     icon = appLucideExternalLinkIcon(),
                     contentDescription = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
                     onClick = onOpenGuide,
-                    modifier = Modifier.size(38.dp),
                     tint = neutralTint,
-                    minSize = 38.dp
+                    visualSize = 38.dp,
                 )
             }
         }

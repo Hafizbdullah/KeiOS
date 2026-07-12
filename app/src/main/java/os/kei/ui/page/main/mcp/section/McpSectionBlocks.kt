@@ -25,12 +25,12 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.mcp.server.McpLogEntry
 import os.kei.mcp.server.McpServerUiState
-import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -45,6 +45,7 @@ import java.util.Date
 import java.util.Locale
 
 private const val MCP_LOG_INLINE_LIMIT = 12
+
 @Composable
 internal fun McpOnboardingGuideSection(
     backdrop: LayerBackdrop,
@@ -136,7 +137,7 @@ private fun McpOnboardingActionRow(
             icon = osLucideCopyIcon(),
             contentDescription = copyContentDescription,
             tint = MiuixTheme.colorScheme.primary,
-            minSize = 40.dp,
+            visualSize = 40.dp,
             onClick = onCopy,
         )
     }

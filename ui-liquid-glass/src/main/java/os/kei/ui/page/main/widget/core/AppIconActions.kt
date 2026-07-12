@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -15,6 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
@@ -30,8 +34,9 @@ fun AppCompactIconAction(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     tint: Color = MiuixTheme.colorScheme.primary,
-    minSize: Dp = 30.dp,
+    visualSize: Dp = AppCompactIconActionDefaultVisualSize,
 ) {
+    val resolvedVisualSize = resolveCompactIconActionVisualSize(visualSize)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scaleState =
@@ -43,25 +48,59 @@ fun AppCompactIconAction(
     val scaleProvider = remember(scaleState) { { scaleState.value } }
     Box(
         modifier =
-            modifier
-                .defaultMinSize(minWidth = minSize, minHeight = minSize)
-                .graphicsLayer {
-                    val scale = scaleProvider()
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+            Modifier
+                .defaultMinSize(
+                    minWidth = AppCompactIconActionMinimumTouchSize,
+                    minHeight = AppCompactIconActionMinimumTouchSize,
+                ).then(modifier)
+                .semantics {
+                    this.contentDescription = contentDescription
                 }.clickable(
                     enabled = enabled,
                     interactionSource = interactionSource,
                     indication = null,
+                    role = Role.Button,
                     onClick = onClick,
                 ),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = tint,
-        )
+        Box(
+            modifier =
+                Modifier
+                    .size(resolvedVisualSize)
+                    .graphicsLayer {
+                        val scale = scaleProvider()
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
+                    },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+            )
+        }
     }
 }
+
+internal fun resolveCompactIconActionVisualSize(requestedSize: Dp): Dp {
+    if (
+        requestedSize == Dp.Unspecified ||
+        !requestedSize.value.isFinite() ||
+        requestedSize <= 0.dp
+    ) {
+        return AppCompactIconActionDefaultVisualSize
+    }
+    return requestedSize.coerceIn(
+        minimumValue = AppCompactIconActionMinimumVisualSize,
+        maximumValue = AppCompactIconActionMaximumVisualSize,
+    )
+}
+
+internal val AppCompactIconActionDefaultVisualSize = 30.dp
+
+private val AppCompactIconActionMinimumVisualSize = 30.dp
+private val AppCompactIconActionMaximumVisualSize = 42.dp
+private val AppCompactIconActionMinimumTouchSize = 48.dp

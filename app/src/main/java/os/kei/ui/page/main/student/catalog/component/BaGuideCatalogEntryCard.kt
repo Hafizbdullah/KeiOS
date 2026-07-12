@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +31,7 @@ internal fun BaGuideCatalogEntryCard(
     entry: BaGuideCatalogEntry,
     isFavorite: Boolean,
     onOpenGuide: (String) -> Unit,
-    onToggleFavorite: (Long) -> Unit
+    onToggleFavorite: (Long) -> Unit,
 ) {
     val uiState = rememberBaGuideCatalogEntryCardUiState(entry = entry, isFavorite = isFavorite)
     val copyAction = rememberBaGuideCatalogEntryCopyAction(copyPayload = uiState.copyPayload)
@@ -38,37 +40,38 @@ internal fun BaGuideCatalogEntryCard(
         containerColor = uiState.containerColor,
         borderColor = uiState.borderColor,
         onClick = { onOpenGuide(entry.detailUrl) },
-        onLongClick = copyAction
+        onLongClick = copyAction,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = CardLayoutRhythm.cardHorizontalPadding,
-                    vertical = CardLayoutRhythm.cardVerticalPadding
-                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = CardLayoutRhythm.cardHorizontalPadding,
+                        vertical = CardLayoutRhythm.cardVerticalPadding,
+                    ),
             horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier.size(56.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 BaGuideCatalogEntryAvatar(
                     imageUrl = entry.iconUrl,
                     fallbackRes = entry.tab.iconRes,
-                    loadEnabled = true
+                    loadEnabled = true,
                 )
             }
 
             Box(modifier = Modifier.weight(1f)) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap)
+                    verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
                     ) {
                         Text(
                             text = entry.name,
@@ -78,12 +81,12 @@ internal fun BaGuideCatalogEntryCard(
                             lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
                             fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                         StatusPill(
                             label = "ID ${entry.contentId}",
                             color = MiuixTheme.colorScheme.primary,
-                            size = AppStatusPillSize.Compact
+                            size = AppStatusPillSize.Compact,
                         )
                     }
                     if (entry.aliasDisplay.isNotBlank()) {
@@ -93,7 +96,7 @@ internal fun BaGuideCatalogEntryCard(
                             fontSize = AppTypographyTokens.Supporting.fontSize,
                             lineHeight = AppTypographyTokens.Supporting.lineHeight,
                             maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -102,9 +105,8 @@ internal fun BaGuideCatalogEntryCard(
                 icon = MiuixIcons.Regular.FavoritesFill,
                 contentDescription = uiState.favoriteContentDescription,
                 onClick = { onToggleFavorite(entry.contentId) },
-                modifier = Modifier.size(40.dp),
                 tint = uiState.favoriteActionColor,
-                minSize = 40.dp
+                visualSize = 40.dp,
             )
         }
     }

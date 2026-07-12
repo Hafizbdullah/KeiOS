@@ -168,7 +168,7 @@ internal fun GitHubTrackedItemAssetRow(
                         ),
                     tint = actionButtonColor,
                     onClick = onOpenApkInfo,
-                    minSize = 34.dp,
+                    visualSize = 34.dp,
                 )
             }
             if (managedInstallEnabled && isInstallableAsset) {
@@ -186,7 +186,7 @@ internal fun GitHubTrackedItemAssetRow(
                     tint = installActionColor,
                     enabled = !managedInstallRunning,
                     onClick = onInstallApk,
-                    minSize = 34.dp,
+                    visualSize = 34.dp,
                 )
             }
             AppCompactIconAction(
@@ -198,7 +198,7 @@ internal fun GitHubTrackedItemAssetRow(
                     ),
                 tint = actionButtonColor,
                 onClick = onOpenApkInDownloader,
-                minSize = 34.dp,
+                visualSize = 34.dp,
             )
             AppCompactIconAction(
                 icon = appLucideShareIcon(),
@@ -209,7 +209,7 @@ internal fun GitHubTrackedItemAssetRow(
                     ),
                 tint = actionButtonColor,
                 onClick = { onShareApkLink(asset) },
-                minSize = 34.dp,
+                visualSize = 34.dp,
             )
         },
         supportingContent = {

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.actions
 
 import androidx.compose.foundation.layout.Arrangement
@@ -29,14 +31,14 @@ internal fun GitHubActionsWorkflowCard(
     selected: Boolean,
     recommended: Boolean,
     isDark: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val accent = MiuixTheme.colorScheme.primary
     val kindColor = workflowKindColor(match.traits.kind)
     GitHubActionsSelectableCard(
         selected = selected,
         isDark = isDark,
-        onClick = onClick
+        onClick = onClick,
     ) {
         GitHubActionsTitleRow(
             title = match.workflow.displayName,
@@ -46,9 +48,9 @@ internal fun GitHubActionsWorkflowCard(
                     label = workflowKindLabel(match.traits.kind),
                     color = kindColor,
                     emphasized = selected,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
-            }
+            },
         )
         Text(
             text = match.workflow.path.ifBlank { match.workflow.id.toString() },
@@ -56,7 +58,7 @@ internal fun GitHubActionsWorkflowCard(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         GitHubActionsPillRow {
             if (recommended) {
@@ -64,7 +66,7 @@ internal fun GitHubActionsWorkflowCard(
                     label = stringResource(R.string.github_actions_badge_recommended),
                     color = GitHubStatusPalette.Update,
                     emphasized = true,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
             }
             if (match.lastDownload != null) {
@@ -72,22 +74,23 @@ internal fun GitHubActionsWorkflowCard(
                     label = stringResource(R.string.github_actions_badge_last_downloaded),
                     color = GitHubStatusPalette.Active,
                     emphasized = true,
-                    minWidth = GitHubActionsStatePillMinWidth
+                    minWidth = GitHubActionsStatePillMinWidth,
                 )
             }
             match.signal?.let { signal ->
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_label_runs_with_count, signal.recentRunCount),
                     color = GitHubStatusPalette.Active,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
                 GitHubActionsInfoPill(
-                    label = stringResource(
-                        R.string.github_actions_label_artifacts_with_count,
-                        signal.androidArtifactCount
-                    ),
+                    label =
+                        stringResource(
+                            R.string.github_actions_label_artifacts_with_count,
+                            signal.androidArtifactCount,
+                        ),
                     color = GitHubStatusPalette.PreRelease,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
             }
         }
@@ -104,7 +107,7 @@ internal fun GitHubActionsRunCard(
     isDark: Boolean,
     onClick: () -> Unit,
     onRefresh: () -> Unit,
-    onOpenRun: (() -> Unit)?
+    onOpenRun: (() -> Unit)?,
 ) {
     val run = match.runArtifacts.run
     val actionAccent = MiuixTheme.colorScheme.primary
@@ -113,7 +116,7 @@ internal fun GitHubActionsRunCard(
     GitHubActionsSelectableCard(
         selected = selected,
         isDark = isDark,
-        onClick = onClick
+        onClick = onClick,
     ) {
         GitHubActionsTitleRow(
             title = run.displayName,
@@ -123,9 +126,9 @@ internal fun GitHubActionsRunCard(
                     label = runStatusLabel(match, trackingPlan),
                     color = stateAccent,
                     emphasized = selected,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
-            }
+            },
         )
         Text(
             text = buildRunSubtitle(match, context = LocalContext.current),
@@ -133,7 +136,7 @@ internal fun GitHubActionsRunCard(
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
         GitHubActionsPillRow {
             if (recommended) {
@@ -141,7 +144,7 @@ internal fun GitHubActionsRunCard(
                     label = stringResource(R.string.github_actions_badge_recommended),
                     color = GitHubStatusPalette.Update,
                     emphasized = true,
-                    minWidth = GitHubActionsShortPillMinWidth
+                    minWidth = GitHubActionsShortPillMinWidth,
                 )
             }
             if (match.lastDownload != null) {
@@ -149,7 +152,7 @@ internal fun GitHubActionsRunCard(
                     label = stringResource(R.string.github_actions_badge_last_downloaded),
                     color = GitHubStatusPalette.Active,
                     emphasized = true,
-                    minWidth = GitHubActionsStatePillMinWidth
+                    minWidth = GitHubActionsStatePillMinWidth,
                 )
             }
             RunBranchTrustPill(match)
@@ -157,18 +160,18 @@ internal fun GitHubActionsRunCard(
                 GitHubActionsInfoPill(
                     label = stringResource(R.string.github_actions_badge_pr),
                     color = GitHubStatusPalette.Error,
-                    emphasized = true
+                    emphasized = true,
                 )
             }
             GitHubActionsInfoPill(
                 label = stringResource(R.string.github_actions_value_count, match.artifactMatches.size),
-                color = metadataColor
+                color = metadataColor,
             )
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(modifier = Modifier.weight(1f))
             if (selected && onOpenRun != null && run.htmlUrl.isNotBlank()) {
@@ -176,7 +179,7 @@ internal fun GitHubActionsRunCard(
                     icon = appLucideExternalLinkIcon(),
                     contentDescription = stringResource(R.string.github_actions_action_open_run),
                     tint = actionAccent,
-                    minSize = 42.dp,
+                    visualSize = 42.dp,
                     onClick = onOpenRun,
                 )
             }
@@ -185,7 +188,7 @@ internal fun GitHubActionsRunCard(
                 contentDescription = stringResource(R.string.github_actions_action_refresh_run),
                 enabled = !refreshing,
                 tint = actionAccent,
-                minSize = 42.dp,
+                visualSize = 42.dp,
                 onClick = onRefresh,
             )
         }

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.actions
 
 import androidx.compose.animation.AnimatedVisibility
@@ -44,34 +46,59 @@ internal val GitHubActionsStatePillMinWidth = 66.dp
 internal fun GitHubActionsSummaryCard(
     state: GitHubPageState,
     canResolveArtifacts: Boolean,
-    isDark: Boolean
+    isDark: Boolean,
 ) {
     val target = state.actionsTargetItem
-    val badgeLabel = when {
-        state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink ->
-            stringResource(R.string.github_actions_badge_nightly_link)
-        state.lookupConfig.apiToken.isNotBlank() -> stringResource(R.string.github_actions_badge_token_ready)
-        state.actionsAuthMode == GitHubApiAuthMode.Guest -> stringResource(R.string.common_guest)
-        else -> stringResource(R.string.github_actions_badge_token_required)
-    }
-    val badgeColor = when {
-        state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink ->
-            GitHubStatusPalette.Active
-        state.lookupConfig.apiToken.isNotBlank() -> GitHubStatusPalette.Update
-        state.actionsAuthMode == GitHubApiAuthMode.Guest -> GitHubStatusPalette.PreRelease
-        canResolveArtifacts -> GitHubStatusPalette.Update
-        else -> GitHubStatusPalette.PreRelease
-    }
+    val badgeLabel =
+        when {
+            state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink -> {
+                stringResource(R.string.github_actions_badge_nightly_link)
+            }
+
+            state.lookupConfig.apiToken.isNotBlank() -> {
+                stringResource(R.string.github_actions_badge_token_ready)
+            }
+
+            state.actionsAuthMode == GitHubApiAuthMode.Guest -> {
+                stringResource(R.string.common_guest)
+            }
+
+            else -> {
+                stringResource(R.string.github_actions_badge_token_required)
+            }
+        }
+    val badgeColor =
+        when {
+            state.lookupConfig.actionsStrategy == GitHubActionsLookupStrategyOption.NightlyLink -> {
+                GitHubStatusPalette.Active
+            }
+
+            state.lookupConfig.apiToken.isNotBlank() -> {
+                GitHubStatusPalette.Update
+            }
+
+            state.actionsAuthMode == GitHubApiAuthMode.Guest -> {
+                GitHubStatusPalette.PreRelease
+            }
+
+            canResolveArtifacts -> {
+                GitHubStatusPalette.Update
+            }
+
+            else -> {
+                GitHubStatusPalette.PreRelease
+            }
+        }
     SheetSurfaceCard(
         containerColor = githubActionsNeutralCardColor(isDark, prominent = true),
         borderColor = githubActionsNeutralBorderColor(isDark, prominent = true),
         verticalSpacing = 8.dp,
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = target?.appLabel ?: stringResource(R.string.github_actions_sheet_title),
@@ -81,19 +108,19 @@ internal fun GitHubActionsSummaryCard(
                 lineHeight = AppTypographyTokens.CardHeader.lineHeight,
                 fontWeight = AppTypographyTokens.CardHeader.fontWeight,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             GitHubActionsInfoPill(
                 label = badgeLabel,
                 color = badgeColor,
-                emphasized = true
+                emphasized = true,
             )
         }
         if (target != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "${target.owner}/${target.repo}",
@@ -102,13 +129,13 @@ internal fun GitHubActionsSummaryCard(
                     fontSize = AppTypographyTokens.Supporting.fontSize,
                     lineHeight = AppTypographyTokens.Supporting.lineHeight,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 state.actionsDefaultBranch.takeIf { it.isNotBlank() }?.let { branch ->
                     GitHubActionsInfoPill(
                         label = stringResource(R.string.github_actions_summary_default_branch, branch),
                         color = GitHubStatusPalette.Update,
-                        emphasized = true
+                        emphasized = true,
                     )
                 }
             }
@@ -119,14 +146,15 @@ internal fun GitHubActionsSummaryCard(
 @Composable
 internal fun workflowSectionSummary(
     state: GitHubPageState,
-    selectedWorkflowId: Long?
+    selectedWorkflowId: Long?,
 ): String {
     if (state.actionsLoading && state.actionsWorkflows.isEmpty()) {
         return stringResource(R.string.github_actions_loading_workflows)
     }
-    val selected = selectedWorkflowId?.let { id ->
-        state.actionsWorkflows.firstOrNull { it.workflow.id == id }
-    }
+    val selected =
+        selectedWorkflowId?.let { id ->
+            state.actionsWorkflows.firstOrNull { it.workflow.id == id }
+        }
     return selected?.workflow?.displayName
         ?: stringResource(R.string.github_actions_empty_workflows)
 }
@@ -134,34 +162,36 @@ internal fun workflowSectionSummary(
 @Composable
 internal fun runSectionSummary(
     state: GitHubPageState,
-    selectedRun: GitHubActionsRunMatch?
+    selectedRun: GitHubActionsRunMatch?,
 ): String {
     if (state.actionsRunsLoading && state.actionsRuns.isEmpty()) {
         return stringResource(R.string.github_actions_loading_runs)
     }
     val match = selectedRun ?: return stringResource(R.string.github_actions_empty_runs)
     val run = match.runArtifacts.run
-    val number = run.runNumber.takeIf { it > 0L }?.let {
-        stringResource(R.string.github_actions_value_run_number, it)
-    }
+    val number =
+        run.runNumber.takeIf { it > 0L }?.let {
+            stringResource(R.string.github_actions_value_run_number, it)
+        }
     return listOfNotNull(
         number,
         run.headBranch.ifBlank { null },
-        run.displayName.takeIf { it.isNotBlank() }
+        run.displayName.takeIf { it.isNotBlank() },
     ).joinToString(" · ")
 }
 
 @Composable
-internal fun artifactSectionSummary(
-    selectedRun: GitHubActionsRunMatch?
-): String {
+internal fun artifactSectionSummary(selectedRun: GitHubActionsRunMatch?): String {
     if (selectedRun == null) {
         return stringResource(R.string.github_actions_empty_artifacts)
     }
     if (selectedRun.traits.inProgress) {
         return stringResource(R.string.github_actions_hint_run_in_progress)
     }
-    return selectedRun.artifactMatches.firstOrNull()?.artifact?.name
+    return selectedRun.artifactMatches
+        .firstOrNull()
+        ?.artifact
+        ?.name
         ?: stringResource(R.string.github_actions_empty_artifacts)
 }
 
@@ -173,27 +203,27 @@ internal fun GitHubActionsCollapsibleSection(
     expanded: Boolean,
     isDark: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         SheetSurfaceCard(
             containerColor = githubActionsNeutralCardColor(isDark, prominent = expanded),
             borderColor = githubActionsNeutralBorderColor(isDark, prominent = expanded),
             verticalSpacing = 0.dp,
             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-            onClick = { onExpandedChange(!expanded) }
+            onClick = { onExpandedChange(!expanded) },
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Text(
                         text = title,
@@ -202,7 +232,7 @@ internal fun GitHubActionsCollapsibleSection(
                         lineHeight = AppTypographyTokens.CardHeader.lineHeight,
                         fontWeight = AppTypographyTokens.CardHeader.fontWeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = summary,
@@ -210,34 +240,35 @@ internal fun GitHubActionsCollapsibleSection(
                         fontSize = AppTypographyTokens.Supporting.fontSize,
                         lineHeight = AppTypographyTokens.Supporting.lineHeight,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 GitHubActionsInfoPill(
                     label = countLabel,
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    minWidth = GitHubActionsCountPillMinWidth
+                    minWidth = GitHubActionsCountPillMinWidth,
                 )
                 AppCompactIconAction(
                     icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                    contentDescription = stringResource(
-                        if (expanded) R.string.common_collapse else R.string.common_expand
-                    ),
+                    contentDescription =
+                        stringResource(
+                            if (expanded) R.string.common_collapse else R.string.common_expand,
+                        ),
                     tint = MiuixTheme.colorScheme.onBackgroundVariant,
-                    minSize = 40.dp,
-                    onClick = { onExpandedChange(!expanded) }
+                    visualSize = 40.dp,
+                    onClick = { onExpandedChange(!expanded) },
                 )
             }
         }
         AnimatedVisibility(
             visible = expanded,
             enter = appExpandIn(),
-            exit = appExpandOut()
+            exit = appExpandOut(),
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                content = content
+                content = content,
             )
         }
     }
@@ -249,29 +280,32 @@ internal fun GitHubActionsInfoPill(
     color: Color,
     modifier: Modifier = Modifier,
     emphasized: Boolean = false,
-    minWidth: Dp = GitHubActionsShortPillMinWidth
+    minWidth: Dp = GitHubActionsShortPillMinWidth,
 ) {
     val isDark = isSystemInDarkTheme()
     StatusPill(
         label = label,
         color = color,
-        modifier = modifier.defaultMinSize(
-            minWidth = minWidth,
-            minHeight = GitHubActionsPillMinHeight
-        ),
+        modifier =
+            modifier.defaultMinSize(
+                minWidth = minWidth,
+                minHeight = GitHubActionsPillMinHeight,
+            ),
         size = AppStatusPillSize.Compact,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-        backgroundAlphaOverride = when {
-            emphasized && isDark -> 0.24f
-            emphasized -> 0.18f
-            isDark -> 0.16f
-            else -> 0.12f
-        },
-        borderAlphaOverride = when {
-            emphasized && isDark -> 0.34f
-            emphasized -> 0.28f
-            isDark -> 0.22f
-            else -> 0.18f
-        }
+        backgroundAlphaOverride =
+            when {
+                emphasized && isDark -> 0.24f
+                emphasized -> 0.18f
+                isDark -> 0.16f
+                else -> 0.12f
+            },
+        borderAlphaOverride =
+            when {
+                emphasized && isDark -> 0.34f
+                emphasized -> 0.28f
+                isDark -> 0.22f
+                else -> 0.18f
+            },
     )
 }

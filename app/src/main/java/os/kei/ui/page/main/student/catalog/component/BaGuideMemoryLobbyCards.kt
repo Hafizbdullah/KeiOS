@@ -334,9 +334,8 @@ internal fun BaGuideMemoryLobbyCard(
                         onClick = {
                             onToggleExpanded()
                         },
-                        modifier = Modifier.size(38.dp),
                         tint = if (expanded) accent else neutralTint,
-                        minSize = 38.dp,
+                        visualSize = 38.dp,
                     )
                 }
             }
@@ -507,9 +506,8 @@ private fun BaGuideMemoryLobbyMoreActions(
             icon = moreIcon,
             contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_more),
             onClick = { menuExpanded = !menuExpanded },
-            modifier = Modifier.size(38.dp),
             tint = iconTint,
-            minSize = 38.dp,
+            visualSize = 38.dp,
         )
         key("ba-guide-memory-lobby-action-popup") {
             SnapshotWindowListPopup(
@@ -675,17 +673,15 @@ private fun BaGuideMemoryLobbyVideoGroup(
                     icon = appLucidePlayIcon(),
                     contentDescription = stringResource(R.string.guide_gallery_memorial_lobby_pip_play),
                     onClick = openPictureInPicture,
-                    modifier = Modifier.size(38.dp),
                     tint = Color(0xFF3B82F6),
-                    minSize = 38.dp,
+                    visualSize = 38.dp,
                 )
                 AppCompactIconAction(
                     icon = appLucideFullscreenIcon(),
                     contentDescription = stringResource(R.string.guide_gallery_memorial_lobby_pip_fullscreen),
                     onClick = openFullscreen,
-                    modifier = Modifier.size(38.dp),
                     tint = Color(0xFF3B82F6),
-                    minSize = 38.dp,
+                    visualSize = 38.dp,
                 )
             }
         }
@@ -802,9 +798,8 @@ private fun BaGuideMemoryLobbyImagePreviewGroup(
                 icon = appLucideFullscreenIcon(),
                 contentDescription = stringResource(R.string.ba_catalog_memory_lobby_action_fullscreen),
                 onClick = onOpenFullscreen,
-                modifier = Modifier.size(38.dp),
                 tint = Color(0xFF3B82F6),
-                minSize = 38.dp,
+                visualSize = 38.dp,
             )
         }
         BaGuideMemoryLobbyVideoPreview(
