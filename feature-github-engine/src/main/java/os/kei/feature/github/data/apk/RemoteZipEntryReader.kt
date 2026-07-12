@@ -3,6 +3,7 @@ package os.kei.feature.github.data.apk
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import os.kei.core.download.range.RemoteByteRangeClient
+import os.kei.core.download.range.RemoteResourceIdentity
 import os.kei.core.io.cancellableResult
 import os.kei.core.io.SharedHttpClient
 import kotlin.coroutines.cancellation.CancellationException
@@ -185,13 +186,13 @@ class RemoteZipEntryReader(
         }
 
         val outerEntryDataStart = fetchEntryDataStart(
-            url = outerDirectory.resolvedUrl,
+            source = outerDirectory.source,
             entry = outerEntry,
             baseOffset = 0L,
             apiToken = apiToken
         )
         val nestedDirectory = fetchCentralDirectoryAtBase(
-            url = outerDirectory.resolvedUrl,
+            source = outerDirectory.source,
             baseOffset = outerEntryDataStart,
             zipSize = outerEntry.uncompressedSize,
             apiToken = apiToken
@@ -199,7 +200,7 @@ class RemoteZipEntryReader(
         val innerEntry = findCentralDirectoryEntry(nestedDirectory.bytes, innerEntryName)
             ?: error("$innerEntryName was not found in nested APK")
         val compressedBytes = fetchEntryCompressedBytes(
-            url = nestedDirectory.resolvedUrl,
+            source = nestedDirectory.source,
             entry = innerEntry,
             centralDirectoryOffset = nestedDirectory.offset,
             apiToken = apiToken,
@@ -229,13 +230,13 @@ class RemoteZipEntryReader(
         }
 
         val outerEntryDataStart = fetchEntryDataStart(
-            url = outerDirectory.resolvedUrl,
+            source = outerDirectory.source,
             entry = outerEntry,
             baseOffset = 0L,
             apiToken = apiToken
         )
         val nestedDirectory = fetchCentralDirectoryAtBase(
-            url = outerDirectory.resolvedUrl,
+            source = outerDirectory.source,
             baseOffset = outerEntryDataStart,
             zipSize = outerEntry.uncompressedSize,
             apiToken = apiToken
@@ -286,7 +287,7 @@ class RemoteZipEntryReader(
         baseOffset: Long
     ): ByteArray {
         val compressedBytes = fetchEntryCompressedBytes(
-            url = directory.resolvedUrl,
+            source = directory.source,
             entry = entry,
             centralDirectoryOffset = directory.offset,
             apiToken = apiToken,
@@ -304,11 +305,15 @@ class RemoteZipEntryReader(
         apiToken: String
     ): CentralDirectoryBytes {
         val probe = fetchRangeProbe(url = url, apiToken = apiToken)
-        val totalSize = probe.totalSize
-        val rangeUrl = probe.resolvedUrl
+        val source = RemoteZipSource(
+            url = probe.resolvedUrl,
+            totalSize = probe.totalSize,
+            identity = probe.identity,
+        )
+        val totalSize = source.totalSize
         val tailStart = (totalSize - EOCD_SEARCH_WINDOW).coerceAtLeast(0L)
         val tail = fetchRange(
-            url = rangeUrl,
+            source = source,
             start = tailStart,
             endInclusive = totalSize - 1L,
             apiToken = apiToken
@@ -332,7 +337,7 @@ class RemoteZipEntryReader(
             centralDirectoryOffset = centralDirectoryOffset,
             centralDirectorySize = centralDirectorySize
         ) ?: fetchRange(
-            url = rangeUrl,
+            source = source,
             start = centralDirectoryOffset,
             endInclusive = centralDirectoryOffset + centralDirectorySize - 1L,
             apiToken = apiToken
@@ -340,19 +345,19 @@ class RemoteZipEntryReader(
         return CentralDirectoryBytes(
             bytes = centralDirectoryBytes,
             offset = centralDirectoryOffset,
-            resolvedUrl = rangeUrl
+            source = source,
         )
     }
 
     private suspend fun fetchCentralDirectoryAtBase(
-        url: String,
+        source: RemoteZipSource,
         baseOffset: Long,
         zipSize: Long,
         apiToken: String
     ): CentralDirectoryBytes {
         val tailStartRelative = (zipSize - EOCD_SEARCH_WINDOW).coerceAtLeast(0L)
         val tail = fetchRange(
-            url = url,
+            source = source,
             start = baseOffset + tailStartRelative,
             endInclusive = baseOffset + zipSize - 1L,
             apiToken = apiToken
@@ -377,7 +382,7 @@ class RemoteZipEntryReader(
             centralDirectoryOffset = centralDirectoryAbsoluteOffset,
             centralDirectorySize = centralDirectorySize
         ) ?: fetchRange(
-            url = url,
+            source = source,
             start = centralDirectoryAbsoluteOffset,
             endInclusive = centralDirectoryAbsoluteOffset + centralDirectorySize - 1L,
             apiToken = apiToken
@@ -385,7 +390,7 @@ class RemoteZipEntryReader(
         return CentralDirectoryBytes(
             bytes = centralDirectoryBytes,
             offset = centralDirectoryAbsoluteOffset,
-            resolvedUrl = url
+            source = source,
         )
     }
 
@@ -401,7 +406,7 @@ class RemoteZipEntryReader(
     }
 
     private suspend fun fetchEntryCompressedBytes(
-        url: String,
+        source: RemoteZipSource,
         entry: CentralDirectoryEntry,
         centralDirectoryOffset: Long,
         apiToken: String,
@@ -420,7 +425,7 @@ class RemoteZipEntryReader(
                 (localHeaderOffset + LOCAL_ENTRY_PREFETCH_PREFIX_LIMIT + entry.compressedSize - 1L)
                     .coerceAtMost(centralDirectoryOffset - 1L)
             val prefetchBytes = fetchRange(
-                url = url,
+                source = source,
                 start = localHeaderOffset,
                 endInclusive = prefetchEnd,
                 apiToken = apiToken
@@ -433,7 +438,7 @@ class RemoteZipEntryReader(
         }
 
         val localHeader = fetchRange(
-            url = url,
+            source = source,
             start = baseOffset + entry.localHeaderOffset,
             endInclusive = baseOffset + entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE - 1L,
             apiToken = apiToken
@@ -441,7 +446,7 @@ class RemoteZipEntryReader(
         val localEntry = parseLocalEntry(localHeader)
         val dataStart = baseOffset + entry.localHeaderOffset + localEntry.dataOffset
         return fetchRange(
-            url = url,
+            source = source,
             start = dataStart,
             endInclusive = dataStart + entry.compressedSize - 1L,
             apiToken = apiToken
@@ -449,13 +454,13 @@ class RemoteZipEntryReader(
     }
 
     private suspend fun fetchEntryDataStart(
-        url: String,
+        source: RemoteZipSource,
         entry: CentralDirectoryEntry,
         baseOffset: Long,
         apiToken: String
     ): Long {
         val localHeader = fetchRange(
-            url = url,
+            source = source,
             start = baseOffset + entry.localHeaderOffset,
             endInclusive = baseOffset + entry.localHeaderOffset + LOCAL_FILE_HEADER_SIZE - 1L,
             apiToken = apiToken
@@ -482,11 +487,12 @@ class RemoteZipEntryReader(
         return RangeProbe(
             totalSize = probe.totalSize,
             resolvedUrl = probe.finalUrl,
+            identity = probe.identity,
         )
     }
 
     private suspend fun fetchRange(
-        url: String,
+        source: RemoteZipSource,
         start: Long,
         endInclusive: Long,
         apiToken: String
@@ -495,10 +501,12 @@ class RemoteZipEntryReader(
         val expectedSize = endInclusive - start + 1L
         val result =
             rangeClient.read(
-                request = requestBuilder(url, apiToken).build(),
+                request = requestBuilder(source.url, apiToken).build(),
                 start = start,
                 endInclusive = endInclusive,
                 maxBytes = expectedSize,
+                expectedTotalSize = source.totalSize,
+                expectedIdentity = source.identity,
             )
         return RangeBytes(
             bytes = result.bytes,
@@ -639,13 +647,20 @@ class RemoteZipEntryReader(
 
     private data class RangeProbe(
         val totalSize: Long,
-        val resolvedUrl: String
+        val resolvedUrl: String,
+        val identity: RemoteResourceIdentity?,
+    )
+
+    private data class RemoteZipSource(
+        val url: String,
+        val totalSize: Long,
+        val identity: RemoteResourceIdentity?,
     )
 
     private data class CentralDirectoryBytes(
         val bytes: ByteArray,
         val offset: Long,
-        val resolvedUrl: String
+        val source: RemoteZipSource,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -655,7 +670,7 @@ class RemoteZipEntryReader(
 
             if (offset != other.offset) return false
             if (!bytes.contentEquals(other.bytes)) return false
-            if (resolvedUrl != other.resolvedUrl) return false
+            if (source != other.source) return false
 
             return true
         }
@@ -663,7 +678,7 @@ class RemoteZipEntryReader(
         override fun hashCode(): Int {
             var result = offset.hashCode()
             result = 31 * result + bytes.contentHashCode()
-            result = 31 * result + resolvedUrl.hashCode()
+            result = 31 * result + source.hashCode()
             return result
         }
     }
