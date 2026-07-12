@@ -1,9 +1,12 @@
 package os.kei.feature.github.data.apk
 
 import java.io.ByteArrayOutputStream
+import java.net.InetAddress
+import java.net.Proxy
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.runBlocking
+import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -15,6 +18,7 @@ import org.junit.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RemoteZipEntryReaderTest {
@@ -59,6 +63,41 @@ class RemoteZipEntryReaderTest {
             assertIs<RemoteByteRangeResourceChangedException>(failure)
             assertEquals(null, server.takeRequest().getHeader("If-Range"))
             assertEquals("\"v1\"", server.takeRequest().getHeader("If-Range"))
+        }
+    }
+
+    @Test
+    fun `reader strips github token after a cross host redirect`() = runBlocking {
+        val zipBytes = zipBytes("AndroidManifest.xml" to "manifest-content".encodeToByteArray())
+        MockWebServer().use { origin ->
+            MockWebServer().use { asset ->
+                asset.dispatcher = zipRangeDispatcher(zipBytes)
+                origin.enqueue(
+                    MockResponse()
+                        .setResponseCode(302)
+                        .addHeader("Location", asset.url("/release.apk")),
+                )
+                val localhost = InetAddress.getByName("127.0.0.1")
+                val client =
+                    OkHttpClient.Builder()
+                        .proxy(Proxy.NO_PROXY)
+                        .dns(
+                            Dns { hostname ->
+                                if (hostname == "github.com") listOf(localhost) else Dns.SYSTEM.lookup(hostname)
+                            },
+                        )
+                        .build()
+                val reader = RemoteZipEntryReader(client)
+                val url = "http://github.com:${origin.port}/release.apk"
+
+                val names = reader.listEntryNames(url, apiToken = "secret-token").getOrThrow()
+
+                assertEquals(listOf("AndroidManifest.xml"), names)
+                assertEquals("Bearer secret-token", origin.takeRequest().getHeader("Authorization"))
+                repeat(asset.requestCount) {
+                    assertNull(asset.takeRequest().getHeader("Authorization"))
+                }
+            }
         }
     }
 }
