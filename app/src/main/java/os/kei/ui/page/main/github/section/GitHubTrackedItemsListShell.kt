@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.BuildConfig
@@ -18,6 +19,7 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.LocalGitHubAppIconBitmaps
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtCompact
+import os.kei.ui.page.main.github.asset.formatReleaseUpdatedAtNoYear
 import os.kei.ui.page.main.github.githubReleaseHintMessage
 import os.kei.ui.page.main.github.githubTrackedDisplaySubtitle
 import os.kei.ui.page.main.github.githubTrackedDisplayTitle
@@ -121,14 +123,14 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                     modifier = Modifier.fillMaxWidth(),
                     verticalSpacing = CardLayoutRhythm.denseSectionGap,
                 ) {
-                    GitHubRepositoryLinkCard(
-                        item = item,
-                        onOpenExternalUrl = actions.onOpenExternalUrl,
-                    )
                     if (item.externalBuildUntilRelease) {
+                        val checkedAt = formatReleaseUpdatedAtNoYear(
+                            state.checkedAtMillis.takeIf { it > 0L },
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             StatusPill(
                                 label = stringResource(
@@ -141,8 +143,19 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                                 color = GitHubStatusPalette.Cache,
                                 size = AppStatusPillSize.Compact,
                             )
+                            checkedAt?.let { timestamp ->
+                                StatusPill(
+                                    label = timestamp,
+                                    color = GitHubStatusPalette.Active,
+                                    size = AppStatusPillSize.Compact,
+                                )
+                            }
                         }
                     }
+                    GitHubRepositoryLinkCard(
+                        item = item,
+                        onOpenExternalUrl = actions.onOpenExternalUrl,
+                    )
                     val appUpdatedAtLabel =
                         formatReleaseUpdatedAtCompact(
                             content.appLastUpdatedAtByTrackId[item.id]?.takeIf { it > 0L },
