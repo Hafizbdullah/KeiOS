@@ -660,15 +660,14 @@ object GitHubShareImportNotificationHelper {
         val islandTitle = state.compactIslandTitle(shortText)
         val islandSubtitle = state.compactIslandSubtitle(shortText, islandTitle)
         val progressPercent = state.resolvedProgressPercent
-        val overrideProgressPercent = progressPercent.takeIf {
-            state.phase.progressTemplateEnabled
-        }
+        val useDeterminateProgress = state.hasDeterminateDownloadProgress
+        val overrideProgressPercent = progressPercent.takeIf { useDeterminateProgress }
         return LiveNotificationPayload(
             serverName = LiveNotificationPayload.GITHUB_SHARE_IMPORT_SERVER_NAME,
             running = liveUpdateActive,
             port = progressPercent,
             path = content,
-            clients = if (state.phase.ongoing && state.phase.progressTemplateEnabled) 1 else 0,
+            clients = if (useDeterminateProgress) 1 else 0,
             ongoing = state.phase.ongoing,
             onlyAlertOnce = true,
             openPendingIntent = openPendingIntent,
@@ -685,6 +684,10 @@ object GitHubShareImportNotificationHelper {
             overrideOnlineText = islandTitle.ifBlank { shortText },
             overrideShortText = islandSubtitle.ifBlank { shortText },
             overrideProgressPercent = overrideProgressPercent,
+            miFocusSpecialTitle = state.versionBadgeLabel.takeIf {
+                it.isNotBlank() && state.phase in versionBadgePhases
+            },
+            miFocusContent = resolveMiFocusContent(context, state),
             notificationId = NOTIFICATION_ID,
             miFocusOrderId = state.focusOrderId
         )
@@ -733,18 +736,18 @@ object GitHubShareImportNotificationHelper {
             )
 
             GitHubShareImportNotificationPhase.Installing -> context.getString(
-                R.string.github_share_import_notify_content_installing,
-                targetLabel
+                R.string.github_share_import_notify_target_only,
+                targetLabel,
             )
 
             GitHubShareImportNotificationPhase.InstallReady -> context.getString(
-                R.string.github_share_import_notify_content_install_ready,
-                targetLabel
+                R.string.github_share_import_notify_target_only,
+                targetLabel,
             )
 
             GitHubShareImportNotificationPhase.InstallCommitting -> context.getString(
-                R.string.github_share_import_notify_content_install_committing,
-                targetLabel
+                R.string.github_share_import_notify_target_only,
+                targetLabel,
             )
 
             GitHubShareImportNotificationPhase.WaitingInstall -> context.getString(
@@ -820,19 +823,35 @@ object GitHubShareImportNotificationHelper {
         context: Context,
         state: GitHubShareImportNotificationState,
     ): String {
-        val status =
-            if (
-                state.phase == GitHubShareImportNotificationPhase.InstallDownloading &&
-                state.totalBytes > 0L
-            ) {
-                "${state.resolvedProgressPercent}%"
-            } else {
-                context.getString(state.phase.shortTextRes)
-            }
+        if (!state.hasDeterminateDownloadProgress) {
+            return compactWithoutEllipsis(
+                state.targetWithVersionLabel,
+                PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
+            )
+        }
         return compactStatusAndTarget(
-            status = status,
+            status = "${state.resolvedProgressPercent}%",
             target = state.targetWithVersionLabel,
             maxLength = PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
+        )
+    }
+
+    private fun resolveMiFocusContent(
+        context: Context,
+        state: GitHubShareImportNotificationState,
+    ): String? {
+        if (state.phase !in conciseInstallPhases) return null
+        val target = state.targetDisplayLabel
+        if (state.phase != GitHubShareImportNotificationPhase.InstallDownloading) {
+            return compactWithoutEllipsis(target, PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH)
+        }
+        return compactWithoutEllipsis(
+            context.getString(
+                R.string.github_share_import_notify_content_install_downloading,
+                target,
+                formatDownloadProgress(context, state.downloadedBytes, state.totalBytes),
+            ),
+            PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH,
         )
     }
 
@@ -889,6 +908,23 @@ object GitHubShareImportNotificationHelper {
 }
 
 private const val PAGE_INSTALL_FOCUS_CONTENT_MAX_LENGTH = 28
+
+private val conciseInstallPhases =
+    setOf(
+        GitHubShareImportNotificationPhase.InstallDownloading,
+        GitHubShareImportNotificationPhase.Installing,
+        GitHubShareImportNotificationPhase.InstallReady,
+        GitHubShareImportNotificationPhase.InstallCommitting,
+        GitHubShareImportNotificationPhase.PageInstallConfirm,
+        GitHubShareImportNotificationPhase.PageInstallCompleted,
+    )
+
+private val versionBadgePhases =
+    conciseInstallPhases +
+        setOf(
+            GitHubShareImportNotificationPhase.WaitingInstall,
+            GitHubShareImportNotificationPhase.InstallDetected,
+        )
 
 private data class ShareImportNotificationBuildResult(
     val notification: Notification,

@@ -1235,15 +1235,15 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_title_resolving">共有インポートを準備中</string>
     <string name="github_share_import_notify_title_asset_ready">インストール可能な APK を検出</string>
     <string name="github_share_import_notify_title_delivering">インストーラーへ送信中</string>
-    <string name="github_share_import_notify_title_install_downloading">APK をダウンロード中</string>
-    <string name="github_share_import_notify_title_installing">インストール準備中</string>
-    <string name="github_share_import_notify_title_install_committing">インストールを送信中</string>
+    <string name="github_share_import_notify_title_install_downloading">APK ダウンロード</string>
+    <string name="github_share_import_notify_title_installing">インストール準備</string>
+    <string name="github_share_import_notify_title_install_committing">インストール中</string>
     <string name="github_share_import_notify_title_waiting_install">インストール完了待ち</string>
     <string name="github_share_import_notify_title_install_detected">インストールを検出</string>
     <string name="github_share_import_notify_title_adding_track">GitHub 追跡を追加中</string>
     <string name="github_share_import_notify_title_added">GitHub 追跡を追加しました</string>
     <string name="github_share_import_notify_title_already_tracked">GitHub 追跡は登録済みです</string>
-    <string name="github_page_install_notify_title_confirm">インストール確認待ち</string>
+    <string name="github_page_install_notify_title_confirm">インストール確認</string>
     <string name="github_page_install_notify_title_completed">インストール完了</string>
     <string name="github_page_install_notify_title_failed">インストール失敗</string>
     <string name="github_page_install_notify_title_cancelled">インストールをキャンセルしました</string>
@@ -1253,6 +1253,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_notify_content_asset_ready">%1$s · APK %3$d 件 · %2$s</string>
     <string name="github_share_import_notify_content_delivering">%1$s · %2$s</string>
     <string name="github_share_import_notify_content_install_downloading">%1$s · %2$s</string>
+    <string name="github_share_import_notify_target_only">%1$s</string>
     <string name="github_share_import_notify_content_installing">%1$s · 準備中</string>
     <string name="github_share_import_notify_content_install_committing">%1$s · 送信中</string>
     <string name="github_share_import_notify_content_waiting_install">%1$s · %2$d 分</string>
@@ -1479,7 +1480,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_share_import_pending_remaining_minutes">残り %1$d 分</string>
     <string name="github_share_import_notify_action_open_flow">処理を見る</string>
     <string name="github_share_import_notify_action_continue_install">インストールを続行</string>
-    <string name="github_share_import_notify_title_install_ready">インストール確認待ち</string>
+    <string name="github_share_import_notify_title_install_ready">インストール確認</string>
     <string name="github_share_import_notify_content_install_ready">%1$s · 確認待ち</string>
     <string name="github_share_import_notify_short_install_ready">インストール待ち</string>
     <string name="github_health_level_good">健康</string>

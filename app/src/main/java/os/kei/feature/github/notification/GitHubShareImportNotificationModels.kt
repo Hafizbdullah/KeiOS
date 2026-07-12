@@ -70,7 +70,7 @@ internal data class GitHubShareImportNotificationState(
             }
         }
 
-    private val versionDisplayLabel: String
+    val versionBadgeLabel: String
         get() = versionName.trim()
             .ifBlank {
                 releaseTag
@@ -79,7 +79,7 @@ internal data class GitHubShareImportNotificationState(
                     .orEmpty()
             }
 
-    private val readableTargetLabel: String
+    val targetDisplayLabel: String
         get() = appLabel.trim()
             .ifBlank { targetDisplayName.trim().takeUnless(::looksLikePackageName).orEmpty() }
             .ifBlank { projectDisplayLabel }
@@ -89,8 +89,8 @@ internal data class GitHubShareImportNotificationState(
 
     val targetWithVersionLabel: String
         get() {
-            val target = readableTargetLabel
-            val version = versionDisplayLabel
+            val target = targetDisplayLabel
+            val version = versionBadgeLabel
             return when {
                 version.isBlank() -> target
                 target.equals(version, ignoreCase = true) -> target
@@ -99,24 +99,24 @@ internal data class GitHubShareImportNotificationState(
         }
 
     fun compactIslandTitle(shortText: String): String {
-        if (phase == GitHubShareImportNotificationPhase.InstallDownloading &&
-            totalBytes > 0L &&
-            resolvedProgressPercent in 1..99
-        ) {
+        if (hasDeterminateDownloadProgress) {
             return "${resolvedProgressPercent}%"
         }
-        return shortText.ifBlank { readableTargetLabel }
+        return shortText.ifBlank { targetDisplayLabel }
     }
 
     fun compactIslandSubtitle(shortText: String, islandTitle: String): String {
-        if (phase == GitHubShareImportNotificationPhase.InstallDownloading &&
-            totalBytes > 0L &&
-            resolvedProgressPercent in 1..99
-        ) {
+        if (hasDeterminateDownloadProgress) {
             return shortText.takeIf { it.isNotBlank() && it != islandTitle }.orEmpty()
         }
         return ""
     }
+
+    val hasDeterminateDownloadProgress: Boolean
+        get() =
+            phase == GitHubShareImportNotificationPhase.InstallDownloading &&
+                totalBytes > 0L &&
+                resolvedProgressPercent in 1..99
 
     val resolvedProgressPercent: Int
         get() = progressPercentOverride?.coerceIn(0, 100) ?: phase.progressPercent
@@ -204,8 +204,7 @@ internal enum class GitHubShareImportNotificationPhase(
     val refreshActionEnabled: Boolean = false,
     val confirmActionEnabled: Boolean = false,
     val promotedLiveUpdate: Boolean = false,
-    val miIslandProgressColor: String? = null,
-    val progressTemplateEnabled: Boolean = true
+    val miIslandProgressColor: String? = null
 ) {
     Resolving(
         titleRes = R.string.github_share_import_notify_title_resolving,
@@ -303,8 +302,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
     ),
     AlreadyTracked(
         titleRes = R.string.github_share_import_notify_title_already_tracked,
@@ -314,8 +312,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
     ),
     PageInstallConfirm(
         titleRes = R.string.github_page_install_notify_title_confirm,
@@ -323,8 +320,7 @@ internal enum class GitHubShareImportNotificationPhase(
         primaryActionRes = R.string.github_share_import_notify_action_view_github,
         progressPercent = 18,
         ongoing = true,
-        openGitHubPage = true,
-        progressTemplateEnabled = false
+        openGitHubPage = true
     ),
     PageInstallCompleted(
         titleRes = R.string.github_page_install_notify_title_completed,
@@ -334,8 +330,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_SUCCESS_COLOR
     ),
     Failed(
         titleRes = R.string.github_share_import_notify_title_failed,
@@ -345,8 +340,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR
     ),
     PageInstallFailed(
         titleRes = R.string.github_page_install_notify_title_failed,
@@ -356,8 +350,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_DANGER_COLOR
     ),
     PageInstallCancelled(
         titleRes = R.string.github_page_install_notify_title_cancelled,
@@ -367,8 +360,7 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR
     ),
     Cancelled(
         titleRes = R.string.github_share_import_notify_title_cancelled,
@@ -378,7 +370,6 @@ internal enum class GitHubShareImportNotificationPhase(
         ongoing = false,
         openGitHubPage = true,
         promotedLiveUpdate = true,
-        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR,
-        progressTemplateEnabled = false
+        miIslandProgressColor = GITHUB_SHARE_IMPORT_MI_ISLAND_NEUTRAL_COLOR
     )
 }

@@ -13,6 +13,7 @@ import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.notification.focus.MI_FOCUS_DEFAULT_BUSINESS
 import os.kei.core.notification.focus.MiFocusExpandedComponent
+import os.kei.core.notification.focus.MiFocusExpandedProgress
 import os.kei.core.notification.focus.MiFocusExpandedSpec
 import os.kei.core.notification.focus.MiFocusExpandedText
 import os.kei.core.notification.focus.MiFocusIslandBigTemplate
@@ -895,15 +896,13 @@ object GitHubRefreshNotificationHelper {
             )
             if (state.running) {
                 add(
-                    MiFocusExpandedComponent.MultiProgress(
-                        progressPercent = progressPercent,
-                        color = refreshStyle.progressColor,
-                        text = MiFocusExpandedText(
-                            title = progressText,
-                            content = fractionText,
-                            colorTitle = refreshStyle.progressColor,
-                            colorTitleDark = refreshStyle.progressColor,
-                        ),
+                    MiFocusExpandedComponent.Progress(
+                        progress =
+                            MiFocusExpandedProgress(
+                                progressPercent = progressPercent,
+                                colorReach = refreshStyle.progressColor,
+                                colorEnd = refreshStyle.progressColor,
+                            ),
                     )
                 )
             }
