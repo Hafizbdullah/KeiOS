@@ -26,6 +26,9 @@ data class LiveNotificationPayload(
     val overrideShortText: String? = null,
     val overrideProgressPercent: Int? = null,
     val overrideAccentColor: String? = null,
+    val miFocusTitle: String? = null,
+    val miFocusSpecialTitle: String? = null,
+    val miFocusContent: String? = null,
     val deadlineAtMs: Long? = null,
     val notificationId: Int = 0,
     val miFocusOrderId: String? = null

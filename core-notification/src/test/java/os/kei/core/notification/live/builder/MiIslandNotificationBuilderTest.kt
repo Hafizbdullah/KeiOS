@@ -225,6 +225,8 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"progress\":53"))
+        assertTrue(focusParam.contains("\"colorProgress\":\"#4DA3FF\""))
+        assertFalse(focusParam.contains("multiProgressInfo"))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#4DA3FF\""))
         assertTrue(focusParam.contains("\"enableFloat\":false"))
         assertFalse(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
@@ -345,6 +347,9 @@ class MiIslandNotificationBuilderTest {
                 overrideOnlineText = "开始",
                 overrideShortText = "活动",
                 overrideProgressPercent = 72,
+                miFocusTitle = "活动即将开始",
+                miFocusSpecialTitle = "日服",
+                miFocusContent = "测试活动 · 05-06 04:00",
                 deadlineAtMs = 1778007600000L
             ),
             settings = UserSettings(miIslandOuterGlow = true),
@@ -365,6 +370,12 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("\"timerType\":-1"))
         assertTrue(focusParam.contains("\"timerWhen\":1778007600000"))
         assertTrue(focusParam.contains("\"timerSystemCurrent\""))
+        assertTrue(focusParam.contains("\"title\":\"活动即将开始\""))
+        assertTrue(focusParam.contains("\"specialTitle\":\"日服\""))
+        assertTrue(focusParam.contains("测试活动 · 05-06 04:00"))
+        assertEquals("活动即将开始", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertFalse(focusParam.contains("multiProgressInfo"))
+        assertFalse(focusParam.contains("\"colorProgress\""))
         assertTrue(focusParam.contains("mcp_action_stop"))
         assertTrue(focusParam.contains("\"enableFloat\":true"))
     }
@@ -457,6 +468,9 @@ class MiIslandNotificationBuilderTest {
                 overrideOnlineText = "Complete",
                 overrideShortText = "1/1",
                 overrideProgressPercent = 100,
+                miFocusTitle = "Sync",
+                miFocusSpecialTitle = "Done",
+                miFocusContent = "1/1",
                 notificationId = 38891,
                 miFocusOrderId = "webdav-sync"
             ),
@@ -475,6 +489,61 @@ class MiIslandNotificationBuilderTest {
         assertFalse(notification.flags and Notification.FLAG_ONGOING_EVENT != 0)
         assertFalse(notification.extras.getBoolean("android.requestPromotedOngoing"))
         assertTrue(focusJson.getBoolean("enableFloat"))
+        assertEquals("Sync", focusJson.getJSONObject("baseInfo").getString("title"))
+        assertEquals("Done", focusJson.getJSONObject("baseInfo").getString("specialTitle"))
+        assertEquals("1/1", focusJson.getJSONObject("baseInfo").getString("content"))
+        assertEquals(
+            "WebDAV sync complete",
+            notification.extras.getString(Notification.EXTRA_TITLE),
+        )
+    }
+
+    @Test
+    fun `running webdav sync uses one continuous progress bar`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 731,
+            action = "os.kei.test.OPEN_WEBDAV_RUNNING"
+        )
+        val markReadPendingIntent = PendingIntent.getBroadcast(
+            context,
+            732,
+            Intent("os.kei.test.MARK_WEBDAV_RUNNING_READ").setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.WEBDAV_SYNC_SERVER_NAME,
+                running = true,
+                port = 40,
+                path = "upload",
+                clients = 5,
+                ongoing = true,
+                onlyAlertOnce = true,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = markReadPendingIntent,
+                overrideTitle = "WebDAV sync",
+                overrideContent = "Uploading 2/5",
+                overrideOnlineText = "Upload",
+                overrideShortText = "2/5",
+                overrideProgressPercent = 40
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+
+        assertTrue(focusParam.contains("progressTextInfo"))
+        assertTrue(focusParam.contains("combinePicInfo"))
+        assertTrue(focusParam.contains("\"colorProgress\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"progress\":40"))
+        assertFalse(focusParam.contains("multiProgressInfo"))
     }
 
     @Test
@@ -537,16 +606,16 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("progressTextInfo"))
         assertTrue(focusParam.contains("combinePicInfo"))
         assertTrue(focusParam.contains("\"colorReach\":\"#2563EB\""))
+        assertTrue(focusParam.contains("\"colorProgress\":\"#2563EB\""))
+        assertFalse(focusParam.contains("multiProgressInfo"))
         assertTrue(focusParam.contains("\"highlightColor\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"showHighlightColor\":true"))
-        assertTrue(focusParam.contains("\"colorTitle\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"colorContent\":\"#475569\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#2563EB\""))
         assertTrue(focusParam.contains("\"actionBgColor\":\"#E25B6A\""))
         assertTrue(focusParam.contains("\"actionBgColorDark\":\"#FF6B7C\""))
         assertTrue(focusParam.contains("\"title\":\"Install\""))
         assertTrue(focusParam.contains("demo.app"))
-        assertFalse(focusParam.contains("\"content\":\"demo.app\""))
         assertTrue(focusParam.contains("\"progress\":72"))
         assertTrue(focusParam.contains("\"picDark\":\"key_logo_display\""))
         val renderedBitmap = Shadows.shadowOf(focusDisplayIcon).bitmap

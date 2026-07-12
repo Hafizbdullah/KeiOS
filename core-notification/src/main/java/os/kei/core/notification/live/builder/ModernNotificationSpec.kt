@@ -71,6 +71,8 @@ object ModernNotificationSpecResolver {
         val showProgressStyle = when {
             isCalendarPoolTerminal -> false
             kind == ModernNotificationKind.WEBDAV_SYNC -> isRunning
+            kind == ModernNotificationKind.GITHUB_SHARE_IMPORT ->
+                isRunning && state.clients > 0 && state.overrideProgressPercent != null
             else -> true
         }
         return ModernNotificationSpec(

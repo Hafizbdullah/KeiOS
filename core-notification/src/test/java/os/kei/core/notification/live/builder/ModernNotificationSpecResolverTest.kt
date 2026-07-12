@@ -277,6 +277,7 @@ class ModernNotificationSpecResolverTest {
         assertEquals(R.drawable.ic_github_invertocat_island_blue, spec.trackerIconResId)
         assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
         assertEquals(true, spec.requestPromotedOngoing)
+        assertEquals(true, spec.showProgressStyle)
         assertEquals(0xFF2563EB.toInt(), spec.progressColor)
     }
 
@@ -295,6 +296,7 @@ class ModernNotificationSpecResolverTest {
 
         assertEquals(ModernNotificationKind.GITHUB_SHARE_IMPORT, spec.kind)
         assertEquals(88, spec.progressPercent)
+        assertEquals(false, spec.showProgressStyle)
         assertEquals(0xFF2563EB.toInt(), spec.progressColor)
     }
 

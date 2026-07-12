@@ -49,6 +49,11 @@ class MiIslandNotificationBuilder(
         PROGRESS_ICON
     }
 
+    private enum class IslandExpandedProgressKind {
+        NONE,
+        BAR
+    }
+
     private data class IslandPresentation(
         val allowFloat: Boolean,
         val showTextButtons: Boolean,
@@ -61,7 +66,7 @@ class MiIslandNotificationBuilder(
         val requestPromotedOngoing: Boolean,
         val focusUpdatable: Boolean,
         val focusShowNotification: Boolean? = null,
-        val showExpandedProgress: Boolean = false,
+        val expandedProgressKind: IslandExpandedProgressKind = IslandExpandedProgressKind.NONE,
         val progressPercent: Int = 0,
         val progressColor: String = BA_AP_PROGRESS_COLOR,
         val progressTrackColor: String = BA_AP_PROGRESS_TRACK_COLOR,
@@ -223,7 +228,7 @@ class MiIslandNotificationBuilder(
                 builder.addAction(0, action.title, pendingIntent)
             }
         }
-        if (presentation.showExpandedProgress) {
+        if (presentation.expandedProgressKind != IslandExpandedProgressKind.NONE) {
             builder.setProgress(100, presentation.progressPercent.coerceIn(0, 100), false)
         }
         buildFocusExtras(payload, islandIconResId)?.let(builder::addExtras)
@@ -395,6 +400,15 @@ class MiIslandNotificationBuilder(
             baseInfo {
                 type = 2
                 title = resolveFocusTitle(state)
+                state.miFocusSpecialTitle
+                    ?.let { compactFocusText(it, maxLength = 12) }
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { versionLabel ->
+                        specialTitle = versionLabel
+                        colorSpecialTitle = HIGHLIGHT_TITLE_COLOR
+                        colorSpecialTitleDark = HIGHLIGHT_TITLE_COLOR
+                        colorSpecialBg = presentation.notificationAccentColor
+                    }
                 content = resolveFocusContent(
                     state = state,
                     presentation = presentation,
@@ -406,23 +420,18 @@ class MiIslandNotificationBuilder(
                 colorContentDark = resolveFocusContentColor(isGitHubShareImport)
             }
 
-            if (presentation.showExpandedProgress) {
-                multiProgressInfo {
-                    progress = presentation.progressPercent.coerceIn(0, 100)
-                    color = presentation.progressColor
-                    title = presentation.compactTitle
-                    content = resolveExpandedProgressContent(
-                        state = state,
-                        presentation = presentation,
-                        isGitHubShareImport = isGitHubShareImport
-                    )
-                    if (isGitHubShareImport) {
-                        colorTitle = presentation.progressColor
-                        colorTitleDark = presentation.progressColor
-                        colorContent = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR
-                        colorContentDark = GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK
+            when (presentation.expandedProgressKind) {
+                IslandExpandedProgressKind.NONE -> Unit
+
+                IslandExpandedProgressKind.BAR -> {
+                    progressInfo {
+                        progress = presentation.progressPercent.coerceIn(0, 100)
+                        isCCW = true
+                        colorProgress = presentation.progressColor
+                        colorProgressEnd = presentation.progressColor
                     }
                 }
+
             }
 
             picInfo {
@@ -479,7 +488,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = true,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = true,
+                expandedProgressKind = IslandExpandedProgressKind.BAR,
                 progressPercent = resolveApProgressPercent(state),
                 notificationAccentColor = BA_AP_PROGRESS_COLOR,
                 primaryActionColor = BA_AP_PROGRESS_COLOR
@@ -540,7 +549,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = hasCountdown,
+                expandedProgressKind = IslandExpandedProgressKind.NONE,
                 progressPercent = progressPercent,
                 progressColor = BA_EVENT_ACCENT_COLOR,
                 notificationAccentColor = BA_EVENT_ACCENT_COLOR,
@@ -581,7 +590,11 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = useProgressTemplate,
+                expandedProgressKind = if (useProgressTemplate) {
+                    IslandExpandedProgressKind.BAR
+                } else {
+                    IslandExpandedProgressKind.NONE
+                },
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor,
@@ -610,7 +623,7 @@ class MiIslandNotificationBuilder(
                 requestPromotedOngoing = state.ongoing,
                 focusUpdatable = true,
                 focusShowNotification = true,
-                showExpandedProgress = true,
+                expandedProgressKind = IslandExpandedProgressKind.BAR,
                 progressPercent = progressPercent,
                 progressColor = progressColor,
                 notificationAccentColor = progressColor,
@@ -826,20 +839,9 @@ class MiIslandNotificationBuilder(
         }
     }
 
-    private fun resolveExpandedProgressContent(
-        state: LiveNotificationPayload,
-        presentation: IslandPresentation,
-        isGitHubShareImport: Boolean
-    ): String {
-        val fullContent = state.content(context).trim()
-        if (isGitHubShareImport && presentation.showExpandedProgress && fullContent.isNotBlank()) {
-            return compactFocusText(fullContent, maxLength = 32)
-        }
-        return presentation.compactContent ?: state.shortText
-    }
-
     private fun resolveFocusTitle(state: LiveNotificationPayload): String {
-        return compactFocusText(state.title(context), maxLength = 18)
+        val raw = state.miFocusTitle?.takeIf { it.isNotBlank() } ?: state.title(context)
+        return compactFocusText(raw, maxLength = 18)
     }
 
     private fun resolveFocusContent(
@@ -847,7 +849,7 @@ class MiIslandNotificationBuilder(
         presentation: IslandPresentation,
         isGitHubShareImport: Boolean
     ): String {
-        val raw = state.content(context)
+        val raw = state.miFocusContent?.takeIf { it.isNotBlank() } ?: state.content(context)
         val fallback = listOfNotNull(
             presentation.compactTitle.takeIf { it.isNotBlank() },
             presentation.compactContent?.takeIf { it.isNotBlank() }
