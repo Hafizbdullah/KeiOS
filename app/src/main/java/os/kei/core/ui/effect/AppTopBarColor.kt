@@ -11,12 +11,8 @@ fun rememberAppTopBarColor(enableBackdropEffects: Boolean): Color =
         enableBackdropEffects = enableBackdropEffects,
     )
 
+@Suppress("UNUSED_PARAMETER")
 internal fun appTopBarColor(
     surfaceColor: Color,
     enableBackdropEffects: Boolean,
-): Color =
-    if (enableBackdropEffects) {
-        surfaceColor.copy(alpha = 0.96f)
-    } else {
-        surfaceColor
-    }
+): Color = Color.Transparent
