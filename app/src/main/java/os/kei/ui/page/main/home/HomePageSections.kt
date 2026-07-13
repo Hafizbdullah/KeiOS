@@ -162,7 +162,7 @@ internal fun HomeInfoCard(
     val lensRadius = resolvedGlassLensDp(24.dp, GlassVariant.Content)
     val containerColor =
         if (blurEnabled) {
-            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
+            MiuixTheme.colorScheme.surfaceContainer.copy(alpha = HOME_INFO_CARD_SURFACE_ALPHA)
         } else {
             MiuixTheme.colorScheme.surfaceContainer
         }
@@ -192,7 +192,7 @@ internal fun HomeInfoCard(
     val cardModifier =
         Modifier
             .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
-            .padding(bottom = 6.dp)
+            .padding(bottom = HOME_INFO_CARD_GAP)
             .graphicsLayer {
                 val scale = pressedScaleProvider()
                 scaleX = scale
@@ -234,12 +234,20 @@ private fun HomeInfoCardContent(content: @Composable () -> Unit) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(
+                    horizontal = HOME_INFO_CARD_HORIZONTAL_CONTENT_PADDING,
+                    vertical = HOME_INFO_CARD_VERTICAL_CONTENT_PADDING,
+                ),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         content()
     }
 }
+
+internal const val HOME_INFO_CARD_SURFACE_ALPHA = 0.30f
+internal val HOME_INFO_CARD_GAP = 4.dp
+internal val HOME_INFO_CARD_HORIZONTAL_CONTENT_PADDING = 8.dp
+internal val HOME_INFO_CARD_VERTICAL_CONTENT_PADDING = 4.dp
 
 @Composable
 internal fun HomeBottomPageLabel(
@@ -288,18 +296,20 @@ internal fun HomeInfoPillCard(
     naText: String,
 ) {
     AppOverviewPillFlow(
-        pills = pills.map { pill ->
-            val value = pill.value.ifBlank { naText }
-            AppOverviewPill(
-                label = pill.label
-                    ?.takeIf(String::isNotBlank)
-                    ?.let { label ->
-                        stringResource(R.string.home_overview_pill_metric, label, value)
-                    }
-                    ?: value,
-                color = pill.color,
-            )
-        },
+        pills =
+            pills.map { pill ->
+                val value = pill.value.ifBlank { naText }
+                AppOverviewPill(
+                    label =
+                        pill.label
+                            ?.takeIf(String::isNotBlank)
+                            ?.let { label ->
+                                stringResource(R.string.home_overview_pill_metric, label, value)
+                            }
+                            ?: value,
+                    color = pill.color,
+                )
+            },
     )
 }
 
