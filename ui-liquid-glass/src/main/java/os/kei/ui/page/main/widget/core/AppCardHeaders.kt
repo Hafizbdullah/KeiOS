@@ -28,7 +28,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import com.composables.icons.lucide.R as LucideR
 import os.kei.ui.liquidglass.R
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -39,6 +38,7 @@ import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import com.composables.icons.lucide.R as LucideR
 
 @Composable
 fun AppCardHeader(
@@ -62,6 +62,8 @@ fun AppCardHeader(
     subtitleMaxLines: Int = 2,
     minHeight: androidx.compose.ui.unit.Dp = AppInteractiveTokens.controlRowMinHeight,
     contentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
+    horizontalSpacing: androidx.compose.ui.unit.Dp = CardLayoutRhythm.controlRowGap,
+    endActionSpacing: androidx.compose.ui.unit.Dp = CardLayoutRhythm.infoRowGap,
     titleTypography: AppTypographyToken = AppTypographyTokens.SectionTitle,
     subtitleTypography: AppTypographyToken = AppTypographyTokens.Supporting,
     onClick: (() -> Unit)? = null,
@@ -113,7 +115,7 @@ fun AppCardHeader(
                 .then(clickModifier)
                 .then(stateModifier)
                 .padding(contentPadding),
-        horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowGap),
+        horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         startAction?.let { action ->
@@ -178,7 +180,7 @@ fun AppCardHeader(
             }
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
+            horizontalArrangement = Arrangement.spacedBy(endActionSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             endActions?.invoke(this)

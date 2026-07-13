@@ -15,4 +15,10 @@ class GitHubTrackedCardLayoutTest {
             githubTrackedCardHeaderPadding.calculateLeftPadding(LayoutDirection.Ltr),
         )
     }
+
+    @Test
+    fun trailingActionsDoNotSpendWidthOnDecorativeGaps() {
+        assertEquals(4.dp, githubTrackedCardHeaderHorizontalSpacing)
+        assertEquals(0.dp, githubTrackedCardHeaderActionSpacing)
+    }
 }

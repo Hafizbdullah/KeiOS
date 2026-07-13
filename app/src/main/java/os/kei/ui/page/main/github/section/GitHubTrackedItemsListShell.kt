@@ -108,6 +108,8 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                 onHeaderLongClick = { actions.onOpenTrackSheetForEdit(item) },
                 clipContent = false,
                 headerContentPadding = githubTrackedCardHeaderPadding,
+                headerHorizontalSpacing = githubTrackedCardHeaderHorizontalSpacing,
+                headerActionSpacing = githubTrackedCardHeaderActionSpacing,
                 headerActions = {
                     GitHubTrackedItemHeaderActions(
                         item = item,
@@ -202,3 +204,6 @@ internal val githubTrackedCardHeaderPadding =
         horizontal = CardLayoutRhythm.cardHorizontalPadding,
         vertical = 4.dp,
     )
+
+internal val githubTrackedCardHeaderHorizontalSpacing = 4.dp
+internal val githubTrackedCardHeaderActionSpacing = 0.dp
