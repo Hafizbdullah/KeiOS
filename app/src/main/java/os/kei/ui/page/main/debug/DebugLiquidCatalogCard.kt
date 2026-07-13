@@ -56,6 +56,7 @@ import os.kei.ui.page.main.widget.glass.LiquidKeyPointSlider
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.glass.LiquidSliderKeyPoint
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -518,13 +519,16 @@ internal fun DebugLiquidParentBackdropCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_parent_backdrop_body),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidParentBackdropSample(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             accent = accent,
             contentColor = contentColor,
             secondaryColor = secondaryColor,

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ fun AppSurfaceCard(
     highlightAlpha: Float? = null,
     showIndication: Boolean = true,
     captureLocalBackdrop: Boolean = true,
+    exportBackdropToContent: Boolean = false,
     clipContent: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
@@ -99,6 +101,12 @@ fun AppSurfaceCard(
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
+    val exportedContentBackdrop =
+        if (exportBackdropToContent) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
             if (showIndication && clickable) {
@@ -114,6 +122,7 @@ fun AppSurfaceCard(
             modifier = modifier,
             backdrop = inheritedBackdrop,
             captureBackdrop = null,
+            exportedBackdrop = exportedContentBackdrop,
             clickModifier = clickModifier,
             stateModifier = stateModifier,
             interactionSource = interactionSource,
@@ -139,6 +148,7 @@ fun AppSurfaceCard(
             modifier = modifier,
             backdrop = localBackdrop,
             captureBackdrop = if (captureLocalBackdrop) localBackdrop else null,
+            exportedBackdrop = exportedContentBackdrop,
             clickModifier = clickModifier,
             stateModifier = stateModifier,
             interactionSource = interactionSource,
@@ -166,6 +176,7 @@ private fun AppSurfaceCardFrame(
     modifier: Modifier,
     backdrop: Backdrop,
     captureBackdrop: LayerBackdrop?,
+    exportedBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
     stateModifier: Modifier,
     interactionSource: MutableInteractionSource,
@@ -223,12 +234,24 @@ private fun AppSurfaceCardFrame(
             borderWidth = borderWidth,
             interactionSource = interactionSource,
             clipContent = clipContent,
+            exportedBackdrop = exportedBackdrop,
             onClick = if (useLiquidClick) onClick else null,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                content = content,
-            )
+            if (exportedBackdrop != null) {
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides exportedBackdrop,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        content = content,
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    content = content,
+                )
+            }
         }
     }
 }
@@ -239,6 +262,7 @@ fun AppFeatureCard(
     subtitle: String,
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
+    exportBackdropToContent: Boolean = false,
     eyebrow: String? = null,
     eyebrowColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
     containerColor: Color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
@@ -273,6 +297,7 @@ fun AppFeatureCard(
     AppSurfaceCard(
         modifier = modifier,
         backdrop = backdrop,
+        exportBackdropToContent = exportBackdropToContent,
         containerColor = containerColor,
         borderColor = borderColor,
         contentColor = contentColor,
