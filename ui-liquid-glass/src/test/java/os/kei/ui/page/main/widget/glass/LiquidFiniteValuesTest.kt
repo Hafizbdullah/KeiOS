@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.dp
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -53,6 +54,41 @@ class LiquidFiniteValuesTest {
             assertTrue(fraction.isFinite())
             assertTrue(fraction in 0f..1f)
         }
+    }
+
+    @Test
+    fun progressDimensionsRejectNonFiniteZeroAndNegativeValues() {
+        assertEquals(4.dp, liquidSafeProgressDimension(4.dp))
+        assertEquals(0.dp, liquidSafeProgressDimension(0.dp))
+        assertEquals(0.dp, liquidSafeProgressDimension((-4).dp))
+        assertEquals(0.dp, liquidSafeProgressDimension(Float.NaN.dp))
+        assertEquals(0.dp, liquidSafeProgressDimension(Float.POSITIVE_INFINITY.dp))
+    }
+
+    @Test
+    fun circularProgressGeometryClampsStrokeAndKeepsArcSizeNonNegative() {
+        assertEquals(
+            LiquidCircularProgressGeometry(
+                strokeWidth = 9f,
+                arcSize = Size(width = 9f, height = 21f),
+            ),
+            liquidCircularProgressGeometry(
+                width = 18f,
+                height = 30f,
+                requestedStrokeWidth = 40f,
+            ),
+        )
+        assertEquals(
+            LiquidCircularProgressGeometry(
+                strokeWidth = 0f,
+                arcSize = Size.Zero,
+            ),
+            liquidCircularProgressGeometry(
+                width = Float.NaN,
+                height = -10f,
+                requestedStrokeWidth = Float.POSITIVE_INFINITY,
+            ),
+        )
     }
 
     @Test

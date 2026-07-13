@@ -9,7 +9,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertRangeInfoEquals
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
@@ -96,6 +98,37 @@ class LiquidFiniteSemanticsTest {
         composeRule
             .onNodeWithTag("invalid-progress")
             .assertRangeInfoEquals(ProgressBarRangeInfo(0f, 0f..0f))
+    }
+
+    @Test
+    fun malformedProgressDimensionsCollapseSafely() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
+                Box(Modifier.size(80.dp)) {
+                    LiquidLinearProgressBar(
+                        progress = { 0.5f },
+                        modifier = Modifier.testTag("invalid-linear-size"),
+                        height = (-4).dp,
+                    )
+                    LiquidCircularProgressBar(
+                        progress = { 0.5f },
+                        modifier = Modifier.testTag("invalid-circular-size"),
+                        size = Float.NaN.dp,
+                        strokeWidth = Float.POSITIVE_INFINITY.dp,
+                    )
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("invalid-linear-size")
+            .assertHeightIsEqualTo(0.dp)
+            .assertRangeInfoEquals(ProgressBarRangeInfo(0.5f, 0f..1f))
+        composeRule
+            .onNodeWithTag("invalid-circular-size")
+            .assertWidthIsEqualTo(0.dp)
+            .assertHeightIsEqualTo(0.dp)
+            .assertRangeInfoEquals(ProgressBarRangeInfo(0.5f, 0f..1f))
     }
 
     @Test

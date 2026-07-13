@@ -18,6 +18,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -41,6 +43,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 
@@ -90,11 +93,12 @@ fun LiquidLinearProgressBar(
             liquidFiniteRange(valueRange)
         }
     val progressResolver = remember { LiquidFiniteValueResolver() }
+    val safeHeight = liquidSafeProgressDimension(height)
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(height)
+                .height(safeHeight)
                 .semantics {
                     contentDescriptionState?.let { this.contentDescription = it }
                     progressBarRangeInfo =
@@ -143,7 +147,7 @@ fun LiquidLinearProgressBar(
         Box(
             modifier =
                 Modifier
-                    .height(height)
+                    .height(safeHeight)
                     .layout { measurable, constraints ->
                         val safeFraction =
                             liquidProgressFraction(
@@ -291,12 +295,16 @@ fun LiquidCircularProgressBar(
             liquidFiniteRange(valueRange)
         }
     val progressResolver = remember { LiquidFiniteValueResolver() }
+    val animationsEnabled = LocalTransitionAnimationsEnabled.current
+    val safeSize = liquidSafeProgressDimension(size)
     val indeterminateStates =
-        rememberLiquidCircularIndeterminateStates(enabled = progressProvider == null)
+        rememberLiquidCircularIndeterminateStates(
+            enabled = progressProvider == null && animationsEnabled,
+        )
     Canvas(
         modifier =
             modifier
-                .size(size)
+                .size(safeSize)
                 .semantics {
                     contentDescriptionState?.let { this.contentDescription = it }
                     if (progressProvider == null) {
@@ -311,21 +319,22 @@ fun LiquidCircularProgressBar(
                     }
                 },
     ) {
-        val strokePx = strokeWidth.toPx()
-        val arcInset = strokePx / 2f
-        val arcSize =
-            androidx.compose.ui.geometry.Size(
-                width = this.size.width - strokePx,
-                height = this.size.height - strokePx,
+        val geometry =
+            liquidCircularProgressGeometry(
+                width = this.size.width,
+                height = this.size.height,
+                requestedStrokeWidth = strokeWidth.toPx(),
             )
+        if (geometry.strokeWidth <= 0f || geometry.arcSize.minDimension <= 0f) return@Canvas
+        val strokePx = geometry.strokeWidth
+        val arcInset = strokePx / 2f
+        val arcSize = geometry.arcSize
         drawArc(
             color = inactiveColorProvider(),
             startAngle = 0f,
             sweepAngle = 360f,
             useCenter = false,
-            topLeft =
-                androidx.compose.ui.geometry
-                    .Offset(arcInset, arcInset),
+            topLeft = Offset(arcInset, arcInset),
             size = arcSize,
             style = Stroke(width = strokePx, cap = StrokeCap.Round),
         )
@@ -353,9 +362,7 @@ fun LiquidCircularProgressBar(
             startAngle = startAngle,
             sweepAngle = sweepAngle,
             useCenter = false,
-            topLeft =
-                androidx.compose.ui.geometry
-                    .Offset(arcInset, arcInset),
+            topLeft = Offset(arcInset, arcInset),
             size = arcSize,
             style = Stroke(width = strokePx, cap = StrokeCap.Round),
         )
@@ -364,11 +371,13 @@ fun LiquidCircularProgressBar(
             startAngle = startAngle,
             sweepAngle = sweepAngle.coerceAtMost(120f),
             useCenter = false,
-            topLeft =
-                androidx.compose.ui.geometry
-                    .Offset(arcInset, arcInset),
+            topLeft = Offset(arcInset, arcInset),
             size = arcSize,
-            style = Stroke(width = (strokePx * 0.46f).coerceAtLeast(1f), cap = StrokeCap.Round),
+            style =
+                Stroke(
+                    width = (strokePx * 0.46f).coerceIn(0f, strokePx),
+                    cap = StrokeCap.Round,
+                ),
         )
     }
 }
@@ -432,3 +441,37 @@ internal fun liquidProgressFraction(
     val fraction = (safeValue - safeRange.start) / span
     return fraction.takeIf(Float::isFinite)?.fastCoerceIn(0f, 1f) ?: 0f
 }
+
+internal fun liquidSafeProgressDimension(value: Dp): Dp =
+    value.value
+        .takeIf { it.isFinite() && it > 0f }
+        ?.dp
+        ?: 0.dp
+
+internal fun liquidCircularProgressGeometry(
+    width: Float,
+    height: Float,
+    requestedStrokeWidth: Float,
+): LiquidCircularProgressGeometry {
+    val safeWidth = width.takeIf { it.isFinite() && it > 0f } ?: 0f
+    val safeHeight = height.takeIf { it.isFinite() && it > 0f } ?: 0f
+    val maxStrokeWidth = minOf(safeWidth, safeHeight) / 2f
+    val strokeWidth =
+        requestedStrokeWidth
+            .takeIf { it.isFinite() && it > 0f }
+            ?.coerceAtMost(maxStrokeWidth)
+            ?: 0f
+    return LiquidCircularProgressGeometry(
+        strokeWidth = strokeWidth,
+        arcSize =
+            Size(
+                width = (safeWidth - strokeWidth).coerceAtLeast(0f),
+                height = (safeHeight - strokeWidth).coerceAtLeast(0f),
+            ),
+    )
+}
+
+internal data class LiquidCircularProgressGeometry(
+    val strokeWidth: Float,
+    val arcSize: Size,
+)
