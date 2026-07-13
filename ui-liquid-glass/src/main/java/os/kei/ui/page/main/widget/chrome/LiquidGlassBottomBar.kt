@@ -545,11 +545,7 @@ fun LiquidGlassBottomBar(
     val material = liquidBottomBarMaterial(isInLightTheme)
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val useLightweightBackdrop = !effectiveLiquidEffectEnabled
-    val selectionIndicatorColor =
-        liquidChromeSelectionIndicatorColor(
-            isLight = isInLightTheme,
-            accentColor = accentColor,
-        )
+    val selectionIndicatorColor = liquidBottomBarSelectionIndicatorColor(isLight = isInLightTheme)
 
     val selectionProgressValue =
         if (selectedPositionProvider != null || externalSelectionPosition != null) {
@@ -870,7 +866,7 @@ fun LiquidGlassBottomBar(
                                             color = selectionIndicatorColor,
                                             alpha = 1f - progress,
                                         )
-                                        drawRect(accentColor.copy(alpha = 0.03f * progress))
+                                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
                                     },
                                 )
                             },
@@ -971,10 +967,10 @@ private fun rememberLiquidBottomBarPalette(
 internal fun liquidBottomBarMaterial(isLight: Boolean): LiquidBottomBarMaterial =
     if (isLight) {
         LiquidBottomBarMaterial(
-            surfaceAlpha = 0.28f,
-            highlightAlpha = 0.66f,
-            lensHeight = 16.dp,
-            lensAmount = 32.dp,
+            surfaceAlpha = 0.40f,
+            highlightAlpha = 1f,
+            lensHeight = 24.dp,
+            lensAmount = 24.dp,
         )
     } else {
         LiquidBottomBarMaterial(
@@ -983,6 +979,13 @@ internal fun liquidBottomBarMaterial(isLight: Boolean): LiquidBottomBarMaterial 
             lensHeight = 16.dp,
             lensAmount = 28.dp,
         )
+    }
+
+internal fun liquidBottomBarSelectionIndicatorColor(isLight: Boolean): Color =
+    if (isLight) {
+        Color.Black.copy(alpha = 0.10f)
+    } else {
+        Color.White.copy(alpha = 0.10f)
     }
 
 internal data class LiquidBottomBarMaterial(
