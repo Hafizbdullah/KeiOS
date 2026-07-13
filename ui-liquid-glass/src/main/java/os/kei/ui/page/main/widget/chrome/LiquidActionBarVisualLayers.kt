@@ -46,8 +46,7 @@ internal fun LiquidActionBarLayeredVisualOverlay(
     accentColor: Color,
     barWidth: Dp,
     dampedDragAnimation: DampedDragAnimation,
-    effectBlurDp: Dp,
-    effectLensDp: Dp,
+    material: LiquidActionBarMaterial,
     tabWidthPx: Float,
     totalWidthPx: Float,
     singleBreakoutPadding: Dp,
@@ -102,10 +101,10 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                         if (isBlurEnabled) {
                             val progress = dampedDragAnimation.pressProgress
                             vibrancy()
-                            blur(effectBlurDp.toPx())
+                            blur(material.blur.toPx())
                             safeLiquidLens(
-                                effectLensDp.toPx() * progress,
-                                effectLensDp.toPx() * progress,
+                                material.lensHeight.toPx() * progress,
+                                material.lensAmount.toPx() * progress,
                             )
                         }
                     },
@@ -180,19 +179,22 @@ internal fun LiquidActionBarLayeredVisualOverlay(
                                     val progress = dampedDragAnimation.pressProgress
                                     drawRect(
                                         color =
-                                            if (isInLightTheme) {
-                                                Color.Black.copy(0.1f)
-                                            } else {
-                                                Color.White.copy(0.1f)
-                                            },
+                                            liquidChromeSelectionIndicatorColor(
+                                                isLight = isInLightTheme,
+                                                accentColor = accentColor,
+                                            ),
                                         alpha = progress * (1f - progress),
                                     )
-                                    drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                    drawRect(accentColor.copy(alpha = 0.03f * progress))
                                 },
                             )
                         } else {
                             Modifier.appSquircleBackground(
-                                color = if (isInLightTheme) Color.Black.copy(0.10f) else Color.White.copy(0.10f),
+                                color =
+                                    liquidChromeSelectionIndicatorColor(
+                                        isLight = isInLightTheme,
+                                        accentColor = accentColor,
+                                    ),
                                 cornerRadius = 999.dp,
                             )
                         },

@@ -211,6 +211,7 @@ fun LiquidGlassBottomBar(
     val animationScope = rememberCoroutineScope()
     val touchSlop = LocalViewConfiguration.current.touchSlop
     val effectiveLiquidEffectEnabled = isLiquidEffectEnabled && appGlassRuntimeEffectsEnabled()
+    val accentColor = MiuixTheme.colorScheme.primary
 
     val safeTabsCount = tabsCount.coerceAtLeast(1)
     val horizontalPadding = AppChromeTokens.floatingBottomBarHorizontalPadding
@@ -222,7 +223,7 @@ fun LiquidGlassBottomBar(
         rememberLiquidBottomBarPalette(
             isLiquidEffectEnabled = effectiveLiquidEffectEnabled,
             isInLightTheme = isInLightTheme,
-            primary = MiuixTheme.colorScheme.primary,
+            primary = accentColor,
             onSurface = MiuixTheme.colorScheme.onSurface,
             surfaceContainer = MiuixTheme.colorScheme.surfaceContainer,
         )
@@ -544,6 +545,11 @@ fun LiquidGlassBottomBar(
     val material = liquidBottomBarMaterial(isInLightTheme)
     val effectBlurDp = UiPerformanceBudget.backdropBlur
     val useLightweightBackdrop = !effectiveLiquidEffectEnabled
+    val selectionIndicatorColor =
+        liquidChromeSelectionIndicatorColor(
+            isLight = isInLightTheme,
+            accentColor = accentColor,
+        )
 
     val selectionProgressValue =
         if (selectedPositionProvider != null || externalSelectionPosition != null) {
@@ -790,12 +796,7 @@ fun LiquidGlassBottomBar(
                         .then(
                             if (useLightweightBackdrop) {
                                 Modifier.appSquircleBackground(
-                                    color =
-                                        if (isInLightTheme) {
-                                            Color.Black.copy(0.10f)
-                                        } else {
-                                            Color.White.copy(0.10f)
-                                        },
+                                    color = selectionIndicatorColor,
                                     cornerRadius = 999.dp,
                                 )
                             } else {
@@ -866,17 +867,10 @@ fun LiquidGlassBottomBar(
                                         val progress =
                                             if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f
                                         drawRect(
-                                            color =
-                                                if (isInLightTheme) {
-                                                    Color.Black.copy(0.10f)
-                                                } else {
-                                                    Color.White.copy(
-                                                        0.10f,
-                                                    )
-                                                },
+                                            color = selectionIndicatorColor,
                                             alpha = 1f - progress,
                                         )
-                                        drawRect(Color.Black.copy(alpha = 0.03f * progress))
+                                        drawRect(accentColor.copy(alpha = 0.03f * progress))
                                     },
                                 )
                             },

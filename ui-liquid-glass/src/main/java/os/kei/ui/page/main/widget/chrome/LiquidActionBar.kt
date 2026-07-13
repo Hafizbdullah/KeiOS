@@ -56,7 +56,6 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
@@ -262,8 +261,10 @@ fun LiquidActionBar(
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val effectiveBlurEnabled = isBlurEnabled && appGlassRuntimeEffectsEnabled()
     val accentColor = MiuixTheme.colorScheme.primary
+    val material = liquidActionBarMaterial(isInLightTheme)
     val palette =
         rememberLiquidActionBarPalette(
+            material = material,
             layeredStyleEnabled = layeredStyleEnabled,
             isBlurEnabled = effectiveBlurEnabled,
             isInLightTheme = isInLightTheme,
@@ -498,8 +499,6 @@ fun LiquidActionBar(
             }
         }
     val interactionLensScale = glassEffectRuntime().interactionLensScale
-    val effectBlurDp = UiPerformanceBudget.backdropBlur
-    val effectLensDp = UiPerformanceBudget.backdropLens
     val interactiveHighlightEnabled = effectiveBlurEnabled && (layeredStyleEnabled || isInLightTheme)
     val interactiveHighlight =
         if (interactiveHighlightEnabled) {
@@ -594,12 +593,16 @@ fun LiquidActionBar(
                     effects = {
                         if (effectiveBlurEnabled) {
                             vibrancy()
-                            blur(effectBlurDp.toPx())
-                            safeLiquidLens(effectLensDp.toPx(), effectLensDp.toPx())
+                            blur(material.blur.toPx())
+                            safeLiquidLens(
+                                material.lensHeight.toPx(),
+                                material.lensAmount.toPx(),
+                            )
                         }
                     },
                     highlight = {
                         liquidActionBarBaseHighlight(
+                            material = material,
                             layeredStyleEnabled = layeredStyleEnabled,
                             isBlurEnabled = effectiveBlurEnabled,
                             isInLightTheme = isInLightTheme,
@@ -683,8 +686,7 @@ fun LiquidActionBar(
             accentColor = accentColor,
             barWidth = barWidth,
             dampedDragAnimation = dampedDragAnimation,
-            effectBlurDp = effectBlurDp,
-            effectLensDp = effectLensDp,
+            material = material,
             tabWidthPx = tabWidthPx,
             totalWidthPx = totalWidthPx,
             singleBreakoutPadding = singleBreakoutPadding,
@@ -716,7 +718,13 @@ private fun liquidActionBarMinimumWidth(
     else -> AppChromeTokens.liquidActionBarMinWidth
 }
 
-private fun liquidActionBarWidth(
+internal fun liquidActionBarWidth(
     itemCount: Int,
     minimumWidth: Dp,
-) = maxOf(minimumWidth, (itemCount * AppChromeTokens.liquidActionBarItemStep.value).dp)
+): Dp {
+    val safeItemCount = itemCount.coerceAtLeast(1)
+    val touchTargetWidth =
+        AppChromeTokens.liquidActionBarMinimumTouchTarget * safeItemCount +
+            AppChromeTokens.liquidActionBarHorizontalPadding * 2
+    return maxOf(minimumWidth, touchTargetWidth)
+}
