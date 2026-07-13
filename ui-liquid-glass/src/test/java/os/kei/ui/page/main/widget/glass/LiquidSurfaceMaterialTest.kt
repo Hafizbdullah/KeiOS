@@ -69,4 +69,62 @@ class LiquidSurfaceMaterialTest {
             ),
         )
     }
+
+    @Test
+    fun explicitHighlightOverrideIsThemeIndependentAndClamped() {
+        assertEquals(
+            0.82f,
+            liquidSurfaceHighlightAlpha(
+                isDark = true,
+                interactive = false,
+                enabled = true,
+                pressProgress = 0f,
+                overrideAlpha = 0.82f,
+            ),
+        )
+        assertEquals(
+            1f,
+            liquidSurfaceHighlightAlpha(
+                isDark = false,
+                interactive = true,
+                enabled = true,
+                pressProgress = 1f,
+                overrideAlpha = 1.2f,
+            ),
+        )
+        assertEquals(
+            0f,
+            liquidSurfaceHighlightAlpha(
+                isDark = false,
+                interactive = true,
+                enabled = true,
+                pressProgress = 1f,
+                overrideAlpha = -0.2f,
+            ),
+        )
+    }
+
+    @Test
+    fun malformedHighlightOverrideFallsBackToDefaultCurve() {
+        assertEquals(
+            0.62f,
+            liquidSurfaceHighlightAlpha(
+                isDark = false,
+                interactive = true,
+                enabled = true,
+                pressProgress = 0f,
+                overrideAlpha = Float.NaN,
+            ),
+        )
+        assertEquals(
+            0.42f,
+            liquidSurfaceHighlightAlpha(
+                isDark = true,
+                interactive = false,
+                enabled = true,
+                pressProgress = 0f,
+                overrideAlpha = Float.POSITIVE_INFINITY,
+            ),
+        )
+    }
 }

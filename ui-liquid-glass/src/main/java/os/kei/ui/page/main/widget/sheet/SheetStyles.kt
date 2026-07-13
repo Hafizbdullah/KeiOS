@@ -145,11 +145,19 @@ fun SheetSurfaceCard(
             SheetVisualMode.Liquid -> rawContainerColor
             SheetVisualMode.Miuix -> rawContainerColor.opaqueCompositeOver(sheetBaseColor)
         }
+    val optics =
+        sheetCardOptics(
+            visualMode = visualMode,
+            interactive = onClick != null,
+        )
     AppSurfaceCard(
         modifier = modifier,
         containerColor = resolvedContainerColor,
         borderColor = borderColor ?: sheetCardBorderColor(surfaceTone),
+        borderWidth = optics.borderWidth,
         contentColor = contentColor,
+        depthEffect = optics.depthEffect,
+        highlightAlpha = optics.highlightAlpha,
         captureLocalBackdrop = false,
         pressSafePadding = pressSafePadding,
         onClick = onClick

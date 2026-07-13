@@ -79,6 +79,9 @@ fun LiquidSurface(
     effectVariant: GlassVariant? = null,
     chromaticAberration: Boolean = false,
     depthEffect: Boolean = false,
+    highlightAlpha: Float? = null,
+    borderColor: Color = Color.Unspecified,
+    borderWidth: Dp = 0.dp,
     shadow: Boolean = true,
     shadowAlpha: Float = 0.10f,
     exportedBackdrop: LayerBackdrop? = null,
@@ -151,6 +154,17 @@ fun LiquidSurface(
         } else {
             Modifier
         }
+    val borderModifier =
+        if (borderWidth > 0.dp && borderColor.isSpecified && borderColor.alpha > 0f) {
+            Modifier.appLiquidOptimizedBorder(
+                shape = shape,
+                optimizedCornerRadius = optimizedCornerRadius,
+                color = borderColor,
+                width = borderWidth,
+            )
+        } else {
+            Modifier
+        }
     val surfaceModifier =
         if (activeBackdrop != null) {
             Modifier.drawBackdrop(
@@ -183,6 +197,7 @@ fun LiquidSurface(
                                 interactive = isInteractive,
                                 enabled = enabled,
                                 pressProgress = interactiveHighlight.pressProgress,
+                                overrideAlpha = highlightAlpha,
                             ),
                     )
                 },
@@ -223,6 +238,7 @@ fun LiquidSurface(
             modifier =
                 modifier
                     .then(surfaceModifier)
+                    .then(borderModifier)
                     .then(clickableModifier)
                     .then(stateSemanticsModifier)
                     .then(interactionModifier)
@@ -251,6 +267,7 @@ fun LiquidSurface(
                     Modifier
                         .matchParentSize()
                         .then(surfaceModifier)
+                        .then(borderModifier)
                         .graphicsLayer { clip = false },
             )
             Box(
@@ -271,7 +288,12 @@ internal fun liquidSurfaceHighlightAlpha(
     interactive: Boolean,
     enabled: Boolean,
     pressProgress: Float,
+    overrideAlpha: Float? = null,
 ): Float {
+    overrideAlpha
+        ?.takeIf(Float::isFinite)
+        ?.let { return it.coerceIn(0f, 1f) }
+
     val baseAlpha = if (isDark) 0.42f else 0.62f
     val interactionBoost =
         if (interactive && enabled) {
@@ -564,11 +586,12 @@ private fun Modifier.appLiquidOptimizedBorder(
     shape: Shape,
     optimizedCornerRadius: Dp?,
     color: Color,
+    width: Dp = 1.dp,
 ): Modifier =
     if (optimizedCornerRadius != null) {
-        appSquircleBorder(width = 1.dp, color = color, cornerRadius = optimizedCornerRadius)
+        appSquircleBorder(width = width, color = color, cornerRadius = optimizedCornerRadius)
     } else {
-        border(1.dp, color, shape)
+        border(width, color, shape)
     }
 
 @Composable
@@ -576,11 +599,17 @@ private fun Modifier.appLiquidOptimizedBorder(
     shape: Shape,
     optimizedCornerRadius: Dp?,
     color: () -> Color,
+    width: Dp = 1.dp,
 ): Modifier =
     if (optimizedCornerRadius != null) {
-        drawAppSquircleBorder(width = 1.dp, cornerRadius = optimizedCornerRadius, color = color)
+        drawAppSquircleBorder(width = width, cornerRadius = optimizedCornerRadius, color = color)
     } else {
-        appLiquidOptimizedBorder(shape = shape, optimizedCornerRadius = optimizedCornerRadius, color = color())
+        appLiquidOptimizedBorder(
+            shape = shape,
+            optimizedCornerRadius = optimizedCornerRadius,
+            color = color(),
+            width = width,
+        )
     }
 
 @Composable
