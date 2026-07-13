@@ -24,6 +24,7 @@ fun rememberMainPageBackdropSet(
     keyPrefix: String,
     refreshOnCompositionEnter: Boolean = false,
     distinctLayers: Boolean = true,
+    keepTopBarDistinct: Boolean = false,
 ): MainPageBackdropSet {
     val surfaceColor = MiuixTheme.colorScheme.surface
     val instanceKeySuffix = if (refreshOnCompositionEnter) {
@@ -45,12 +46,29 @@ fun rememberMainPageBackdropSet(
         }
     }
 
+    if (keepTopBarDistinct) {
+        // Keep these calls in one composition branch so scrolling only collapses the sheet layer.
+        val topBarBackdrop = rememberPageBackdrop("topbar")
+        val contentBackdrop = rememberPageBackdrop("content")
+        val sheetBackdrop =
+            if (distinctLayers) {
+                rememberPageBackdrop("sheet")
+            } else {
+                contentBackdrop
+            }
+        return MainPageBackdropSet(
+            topBar = topBarBackdrop,
+            content = contentBackdrop,
+            sheet = sheetBackdrop,
+        )
+    }
+
     if (!distinctLayers) {
         val sharedBackdrop = rememberPageBackdrop("shared")
         return MainPageBackdropSet(
             topBar = sharedBackdrop,
             content = sharedBackdrop,
-            sheet = sharedBackdrop
+            sheet = sharedBackdrop,
         )
     }
 
@@ -60,6 +78,6 @@ fun rememberMainPageBackdropSet(
     return MainPageBackdropSet(
         topBar = topBarBackdrop,
         content = contentBackdrop,
-        sheet = sheetBackdrop
+        sheet = sheetBackdrop,
     )
 }

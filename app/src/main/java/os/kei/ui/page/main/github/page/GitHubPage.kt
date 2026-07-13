@@ -80,6 +80,7 @@ fun GitHubPage(
         rememberMainPageBackdropSet(
             keyPrefix = "github",
             distinctLayers = fullBackdropEffectsEnabled,
+            keepTopBarDistinct = true,
         )
     val topBarColor =
         rememberAppTopBarColor(

@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -195,6 +196,7 @@ internal fun GitHubMainContent(
                     modifier =
                         Modifier
                             .fillMaxSize()
+                            .layerBackdrop(surfaces.topBarBackdrop)
                             .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
                     state = layout.listState,
                     innerPadding = innerPadding,
