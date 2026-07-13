@@ -50,6 +50,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
+import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -64,14 +65,17 @@ fun AppLiquidInputField(
     label: String,
     backdrop: Backdrop?,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     singleLine: Boolean = true,
     textAlign: TextAlign = TextAlign.Start,
     fontSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    lineHeight: TextUnit? = null,
     textColor: Color = MiuixTheme.colorScheme.onBackground,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     blurRadius: Dp? = null,
     variant: GlassVariant = GlassVariant.Content,
     minHeight: Dp = AppInteractiveTokens.appLiquidSearchFieldMinHeight,
+    cornerRadius: Dp = 999.dp,
     horizontalPadding: Dp = AppInteractiveTokens.appLiquidSearchFieldHorizontalPadding,
     verticalPadding: Dp = AppInteractiveTokens.appLiquidSearchFieldVerticalPadding,
     keyboardOptions: KeyboardOptions? = null,
@@ -79,6 +83,7 @@ fun AppLiquidInputField(
     focusRequester: FocusRequester? = null,
     onFocusActiveChange: ((Boolean) -> Unit)? = null,
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
+    placeholderMaxLines: Int = if (singleLine) 1 else 2,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -106,7 +111,7 @@ fun AppLiquidInputField(
             MiuixTheme.colorScheme.onBackgroundVariant
         }
     val effectiveLineHeight =
-        if (singleLine && variant == GlassVariant.SheetInput) {
+        lineHeight ?: if (singleLine && variant == GlassVariant.SheetInput) {
             fontSize
         } else {
             AppTypographyTokens.Body.lineHeight
@@ -136,27 +141,8 @@ fun AppLiquidInputField(
         }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val searchColors = appLiquidSearchMaterialColors(isDark)
-    val borderModifier =
-        if (!glass.showBorder) {
-            Modifier
-        } else {
-            Modifier.drawAppSquircleBorder(
-                width = glass.borderWidth,
-                cornerRadius = 999.dp,
-            ) {
-                val focusProgress = focusProgressProvider()
-                glass.borderColor.copy(
-                    alpha = (glass.borderColor.alpha + 0.14f * focusProgress).coerceAtMost(1f),
-                )
-            }
-        }
-
-    val contentAlignment =
-        when (textAlign) {
-            TextAlign.Center -> Alignment.Center
-            TextAlign.End, TextAlign.Right -> Alignment.CenterEnd
-            else -> Alignment.CenterStart
-        }
+    val contentAlignment = liquidInputContentAlignment(singleLine, textAlign)
+    val verticalContentAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
     val effectiveKeyboardOptions =
         keyboardOptions ?: if (singleLine) {
             KeyboardOptions(imeAction = ImeAction.Done)
@@ -168,12 +154,18 @@ fun AppLiquidInputField(
         modifier =
             modifier
                 .defaultMinSize(minHeight = minHeight)
-                .appSquircleClip(999.dp)
+                .appSquircleClip(cornerRadius)
                 .then(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
-                            shape = { ContinuousCapsule },
+                            shape = {
+                                if (cornerRadius == 999.dp) {
+                                    ContinuousCapsule
+                                } else {
+                                    RoundedRectangle(cornerRadius)
+                                }
+                            },
                             layerBlock = {
                                 val focusProgress = focusProgressProvider()
                                 val focusScale =
@@ -236,10 +228,10 @@ fun AppLiquidInputField(
                             .appSquircleBackground(
                                 glass.baseColor.takeIf { it != Color.Transparent }
                                     ?: fallbackSurface.copy(alpha = glass.fallbackAlpha),
-                                999.dp,
+                                cornerRadius,
                             ).then(
                                 if (glass.overlayColor != Color.Transparent) {
-                                    Modifier.appSquircleBackground(glass.overlayColor, 999.dp)
+                                    Modifier.appSquircleBackground(glass.overlayColor, cornerRadius)
                                 } else {
                                     Modifier
                                 },
@@ -248,7 +240,7 @@ fun AppLiquidInputField(
                 ).then(
                     if (usesSearchMaterial) {
                         Modifier.appLiquidSearchMaterialOverlay(
-                            cornerRadius = 999.dp,
+                            cornerRadius = cornerRadius,
                             colors = searchColors,
                             focusProgress = focusProgressProvider,
                             pressProgress = { 0f },
@@ -261,7 +253,21 @@ fun AppLiquidInputField(
                     shadowElevation = 2.dp.toPx() * focusProgress
                     ambientShadowColor = Color.Black.copy(alpha = 0.06f * focusProgress)
                     spotShadowColor = Color.Black.copy(alpha = 0.08f * focusProgress)
-                }.then(borderModifier)
+                }.then(
+                    if (!glass.showBorder) {
+                        Modifier
+                    } else {
+                        Modifier.drawAppSquircleBorder(
+                            width = glass.borderWidth,
+                            cornerRadius = cornerRadius,
+                        ) {
+                            val focusProgress = focusProgressProvider()
+                            glass.borderColor.copy(
+                                alpha = (glass.borderColor.alpha + 0.14f * focusProgress).coerceAtMost(1f),
+                            )
+                        }
+                    },
+                )
                 .padding(
                     horizontal = horizontalPadding,
                     vertical = verticalPadding,
@@ -273,6 +279,7 @@ fun AppLiquidInputField(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
+                enabled = enabled,
                 singleLine = singleLine,
                 textStyle = inputTextStyle,
                 cursorBrush = SolidColor(textColor),
@@ -281,7 +288,7 @@ fun AppLiquidInputField(
                 keyboardActions = keyboardActions,
                 modifier =
                     modifier
-                        .wrapContentHeight(align = Alignment.CenterVertically)
+                        .wrapContentHeight(align = verticalContentAlignment)
                         .onFocusChanged { state ->
                             val active = state.isFocused || state.hasFocus
                             focused = active
@@ -298,14 +305,14 @@ fun AppLiquidInputField(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .wrapContentHeight(align = Alignment.CenterVertically),
+                                .wrapContentHeight(align = verticalContentAlignment),
                         contentAlignment = contentAlignment,
                     ) {
                         if (value.isBlank()) {
                             BasicText(
                                 text = label,
                                 style = inputTextStyle.copy(color = placeholderColor),
-                                maxLines = 1,
+                                maxLines = placeholderMaxLines.coerceAtLeast(1),
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -321,7 +328,7 @@ fun AppLiquidInputField(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(leadingContentGap),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = verticalContentAlignment,
             ) {
                 leadingContent()
                 TextInput(modifier = Modifier.weight(1f))
@@ -329,6 +336,16 @@ fun AppLiquidInputField(
         }
     }
 }
+
+internal fun liquidInputContentAlignment(
+    singleLine: Boolean,
+    textAlign: TextAlign,
+): Alignment =
+    when (textAlign) {
+        TextAlign.Center -> if (singleLine) Alignment.Center else Alignment.TopCenter
+        TextAlign.End, TextAlign.Right -> if (singleLine) Alignment.CenterEnd else Alignment.TopEnd
+        else -> if (singleLine) Alignment.CenterStart else Alignment.TopStart
+    }
 
 @Composable
 fun AppLiquidSearchField(
@@ -511,14 +528,17 @@ fun AppStandaloneLiquidInputField(
     label: String,
     modifier: Modifier = Modifier,
     fieldModifier: Modifier = Modifier.fillMaxWidth(),
+    enabled: Boolean = true,
     singleLine: Boolean = true,
     textAlign: TextAlign = TextAlign.Start,
     fontSize: TextUnit = AppTypographyTokens.Body.fontSize,
+    lineHeight: TextUnit? = null,
     textColor: Color = MiuixTheme.colorScheme.onBackground,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     blurRadius: Dp? = null,
     variant: GlassVariant = GlassVariant.Content,
     minHeight: Dp = AppInteractiveTokens.appLiquidSearchFieldMinHeight,
+    cornerRadius: Dp = 999.dp,
     horizontalPadding: Dp = AppInteractiveTokens.appLiquidSearchFieldHorizontalPadding,
     verticalPadding: Dp = AppInteractiveTokens.appLiquidSearchFieldVerticalPadding,
     keyboardOptions: KeyboardOptions? = null,
@@ -526,6 +546,7 @@ fun AppStandaloneLiquidInputField(
     focusRequester: FocusRequester? = null,
     onFocusActiveChange: ((Boolean) -> Unit)? = null,
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
+    placeholderMaxLines: Int = if (singleLine) 1 else 2,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     AppStandaloneBackdropHost(
@@ -537,14 +558,17 @@ fun AppStandaloneLiquidInputField(
             label = label,
             backdrop = activeBackdrop,
             modifier = fieldModifier,
+            enabled = enabled,
             singleLine = singleLine,
             textAlign = textAlign,
             fontSize = fontSize,
+            lineHeight = lineHeight,
             textColor = textColor,
             visualTransformation = visualTransformation,
             blurRadius = blurRadius,
             variant = variant,
             minHeight = minHeight,
+            cornerRadius = cornerRadius,
             horizontalPadding = horizontalPadding,
             verticalPadding = verticalPadding,
             keyboardOptions = keyboardOptions,
@@ -552,6 +576,7 @@ fun AppStandaloneLiquidInputField(
             focusRequester = focusRequester,
             onFocusActiveChange = onFocusActiveChange,
             leadingContentGap = leadingContentGap,
+            placeholderMaxLines = placeholderMaxLines,
             leadingContent = leadingContent,
         )
     }
