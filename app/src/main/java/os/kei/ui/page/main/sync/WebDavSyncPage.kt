@@ -2,8 +2,8 @@
 
 package os.kei.ui.page.main.sync
 
-import android.content.Intent
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -18,8 +18,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +37,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.feature.webdav.jianguoyun.JianguoyunPreset
 import os.kei.ui.page.main.host.pager.MainLoadedPager
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
@@ -70,6 +71,7 @@ internal fun WebDavSyncPage(
     val scrollBehavior = MiuixScrollBehavior()
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
+    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val categories = remember { WebDavSyncCategory.entries.toList() }
     val pagerState =
         rememberMainLoadedPagerState(
@@ -147,7 +149,7 @@ internal fun WebDavSyncPage(
         title = stringResource(R.string.webdav_sync_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = Color.Transparent,
+        topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
             scope.launch {
@@ -491,17 +493,19 @@ private enum class WebDavSyncDataGroup(
     ),
     Ba(
         titleRes = R.string.webdav_sync_items_ba_title,
-        items = listOf(
-            WebDavSyncItem.BaAccounts,
-            WebDavSyncItem.BaCatalogFavorites,
-            WebDavSyncItem.BaBgmFavorites,
-        ),
+        items =
+            listOf(
+                WebDavSyncItem.BaAccounts,
+                WebDavSyncItem.BaCatalogFavorites,
+                WebDavSyncItem.BaBgmFavorites,
+            ),
     ),
     Os(
         titleRes = R.string.webdav_sync_items_os_title,
-        items = listOf(
-            WebDavSyncItem.OsActivityCards,
-            WebDavSyncItem.OsShellCards,
-        ),
+        items =
+            listOf(
+                WebDavSyncItem.OsActivityCards,
+                WebDavSyncItem.OsShellCards,
+            ),
     ),
 }

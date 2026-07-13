@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.debug
 
 import androidx.compose.foundation.background
@@ -20,6 +22,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideFlaskIcon
@@ -46,51 +49,54 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun DebugComponentLabPage(
     onClose: () -> Unit,
-    onOpenLiquidCatalog: () -> Unit
+    onOpenLiquidCatalog: () -> Unit,
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val accent = MiuixTheme.colorScheme.primary
     val pageBackdrop = rememberLayerBackdrop()
+    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
 
     AppPageScaffold(
         title = stringResource(R.string.debug_component_lab_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = Color.Transparent,
+        topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(
                 icon = appLucideBackIcon(),
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onClose,
-                backdrop = pageBackdrop
+                backdrop = pageBackdrop,
             )
-        }
+        },
     ) { innerPadding ->
         Box(Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                MiuixTheme.colorScheme.background,
-                                accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
-                                MiuixTheme.colorScheme.background
-                            )
-                        )
-                    )
-                    .layerBackdrop(pageBackdrop)
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.background,
+                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
+                                        MiuixTheme.colorScheme.background,
+                                    ),
+                            ),
+                        ).layerBackdrop(pageBackdrop),
             )
             AppPageLazyColumn(
                 innerPadding = innerPadding,
                 state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
                 bottomExtra = 40.dp,
-                sectionSpacing = 14.dp
+                sectionSpacing = 14.dp,
             ) {
                 item {
                     DebugLabIntroCard(accent = accent)
@@ -99,7 +105,7 @@ internal fun DebugComponentLabPage(
                     DebugLiquidPreviewCard(
                         accent = accent,
                         backdrop = pageBackdrop,
-                        onOpenLiquidCatalog = onOpenLiquidCatalog
+                        onOpenLiquidCatalog = onOpenLiquidCatalog,
                     )
                 }
                 item {
@@ -114,7 +120,7 @@ internal fun DebugComponentLabPage(
 private fun DebugLiquidPreviewCard(
     accent: Color,
     backdrop: Backdrop,
-    onOpenLiquidCatalog: () -> Unit
+    onOpenLiquidCatalog: () -> Unit,
 ) {
     val openLabel = stringResource(R.string.debug_component_lab_action_open_liquid_activity)
     AppFeatureCard(
@@ -134,13 +140,13 @@ private fun DebugLiquidPreviewCard(
                 width = 40.dp,
                 height = 40.dp,
                 variant = GlassVariant.Compact,
-                iconTint = accent
+                iconTint = accent,
             )
-        }
+        },
     ) {
         AppSupportingBlock(
             text = stringResource(R.string.debug_component_lab_liquid_entry_note),
-            accentColor = accent
+            accentColor = accent,
         )
         AppInfoListBody {
             AppInfoRow(
@@ -148,14 +154,14 @@ private fun DebugLiquidPreviewCard(
                 value = stringResource(R.string.debug_component_lab_liquid_row_entry_value),
                 labelMaxLines = 1,
                 valueMaxLines = 1,
-                valueOverflow = TextOverflow.Ellipsis
+                valueOverflow = TextOverflow.Ellipsis,
             )
             AppInfoRow(
                 label = stringResource(R.string.debug_component_lab_row_components_title),
                 value = stringResource(R.string.debug_component_lab_liquid_row_components_value),
                 labelMaxLines = 1,
                 valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
+                valueOverflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -173,36 +179,36 @@ private fun DebugLabIntroCard(accent: Color) {
             Icon(
                 imageVector = appLucideFlaskIcon(),
                 contentDescription = null,
-                tint = accent
+                tint = accent,
             )
         },
         headerEndActions = {
             StatusPill(
                 label = stringResource(R.string.debug_component_lab_badge_easter),
                 color = accent,
-                size = AppStatusPillSize.Compact
+                size = AppStatusPillSize.Compact,
             )
-        }
+        },
     ) {
         AppSupportingBlock(
             text = stringResource(R.string.debug_component_lab_intro_note),
-            accentColor = accent
+            accentColor = accent,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap)
+            horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
         ) {
             AppOverviewMetricTile(
                 label = stringResource(R.string.debug_component_lab_metric_host_label),
                 value = stringResource(R.string.debug_component_lab_metric_host_value),
                 modifier = Modifier.weight(1f),
-                valueMaxLines = 1
+                valueMaxLines = 1,
             )
             AppOverviewMetricTile(
                 label = stringResource(R.string.debug_component_lab_metric_focus_label),
                 value = stringResource(R.string.debug_component_lab_metric_focus_value),
                 modifier = Modifier.weight(1f),
-                valueMaxLines = 1
+                valueMaxLines = 1,
             )
         }
     }
@@ -220,9 +226,9 @@ private fun DebugIterationQueueCard(accent: Color) {
             StatusPill(
                 label = stringResource(R.string.debug_component_lab_queue_badge),
                 color = AppStatusColors.Cached,
-                size = AppStatusPillSize.Compact
+                size = AppStatusPillSize.Compact,
             )
-        }
+        },
     ) {
         AppInfoListBody(verticalSpacing = 2.dp) {
             AppInfoRow(
@@ -230,21 +236,21 @@ private fun DebugIterationQueueCard(accent: Color) {
                 value = stringResource(R.string.debug_component_lab_iteration_bgm_value),
                 labelMaxLines = 1,
                 valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
+                valueOverflow = TextOverflow.Ellipsis,
             )
             AppInfoRow(
                 label = stringResource(R.string.debug_component_lab_iteration_controls_title),
                 value = stringResource(R.string.debug_component_lab_iteration_controls_value),
                 labelMaxLines = 1,
                 valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
+                valueOverflow = TextOverflow.Ellipsis,
             )
             AppInfoRow(
                 label = stringResource(R.string.debug_component_lab_iteration_status_title),
                 value = stringResource(R.string.debug_component_lab_iteration_status_value),
                 labelMaxLines = 1,
                 valueMaxLines = 2,
-                valueOverflow = TextOverflow.Ellipsis
+                valueOverflow = TextOverflow.Ellipsis,
             )
         }
     }

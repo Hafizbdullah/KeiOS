@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
 import os.kei.ui.page.main.about.util.openExternalUrl
 import os.kei.ui.page.main.debug.DebugComponentLabActivity
@@ -100,6 +101,7 @@ fun AboutPage(
     val searchQuery = chromeState.searchQuery
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
+    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val showBottomBar = chromeState.bottomBarVisible
     val farJumpAlpha = remember { Animatable(1f) }
@@ -292,7 +294,7 @@ fun AboutPage(
             Modifier
                 .fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = Color.Transparent,
+        topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
             scope.launch {

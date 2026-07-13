@@ -10,13 +10,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
@@ -30,12 +30,13 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
     val scrollBehavior = MiuixScrollBehavior()
     val accent = MiuixTheme.colorScheme.primary
     val pageBackdrop = rememberLayerBackdrop()
+    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
 
     AppPageScaffold(
         title = stringResource(R.string.debug_component_lab_liquid_catalog_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = Color.Transparent,
+        topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
         navigationIcon = {
             AppLiquidNavigationButton(

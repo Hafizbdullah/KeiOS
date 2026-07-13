@@ -35,6 +35,7 @@ import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
@@ -279,6 +280,7 @@ fun SettingsPage(
     val searchListState = rememberLazyListState()
     val topBarBackdrop = rememberLayerBackdrop()
     val bottomBarBackdrop = rememberLayerBackdrop()
+    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val navigationBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val farJumpAlpha = remember { Animatable(1f) }
     val tabJumpCoordinator = remember { SettingsTabJumpCoordinator() }
@@ -444,7 +446,7 @@ fun SettingsPage(
             Modifier
                 .fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = androidx.compose.ui.graphics.Color.Transparent,
+        topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,
         onTitleClick = {
             scope.launch {
