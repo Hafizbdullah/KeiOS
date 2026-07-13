@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -53,6 +55,7 @@ fun AppSurfaceCard(
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    stateDescription: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -71,6 +74,12 @@ fun AppSurfaceCard(
             Modifier
         }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val stateModifier =
+        stateDescription?.let { description ->
+            Modifier.semantics {
+                this.stateDescription = description
+            }
+        } ?: Modifier
     val pressedScaleState =
         appMotionFloatState(
             targetValue =
@@ -103,6 +112,7 @@ fun AppSurfaceCard(
             backdrop = inheritedBackdrop,
             captureBackdrop = null,
             clickModifier = clickModifier,
+            stateModifier = stateModifier,
             interactionSource = interactionSource,
             pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
@@ -123,6 +133,7 @@ fun AppSurfaceCard(
             backdrop = localBackdrop,
             captureBackdrop = if (captureLocalBackdrop) localBackdrop else null,
             clickModifier = clickModifier,
+            stateModifier = stateModifier,
             interactionSource = interactionSource,
             pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
@@ -145,6 +156,7 @@ private fun AppSurfaceCardFrame(
     backdrop: Backdrop,
     captureBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
+    stateModifier: Modifier,
     interactionSource: MutableInteractionSource,
     pressedScale: () -> Float,
     resolvedPressSafePadding: Dp,
@@ -183,7 +195,8 @@ private fun AppSurfaceCardFrame(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .then(clickModifier),
+                    .then(clickModifier)
+                    .then(stateModifier),
             shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
             isInteractive = showIndication && clickable,
             surfaceColor = containerColor,

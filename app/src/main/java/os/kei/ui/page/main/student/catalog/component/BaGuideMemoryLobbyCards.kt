@@ -77,6 +77,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -88,6 +89,7 @@ private val MemoryLobbyMoreMenuMaxHeight = 240.dp
 private val MemoryLobbyVariantMenuMinWidth = 136.dp
 private val MemoryLobbyVariantMenuMaxWidth = 196.dp
 private val MemoryLobbyVariantMenuMaxHeight = 220.dp
+internal val MemoryLobbyHeaderActionsWidth = 72.dp
 private const val MemoryLobbyPreviewDecodeMinPx = 960
 private const val MemoryLobbyPreviewDecodeMaxPx = 2048
 
@@ -244,11 +246,20 @@ internal fun BaGuideMemoryLobbyCard(
             else -> MiuixTheme.colorScheme.surface.copy(alpha = 0.58f)
         }
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
+    val expandStateDescription =
+        stringResource(
+            if (expanded) {
+                R.string.ba_catalog_memory_lobby_action_collapse
+            } else {
+                R.string.ba_catalog_memory_lobby_action_expand
+            },
+        )
     AppSurfaceCard(
         containerColor = containerColor,
         borderColor = borderColor,
         onClick = onToggleExpanded,
         onLongClick = onOpenGuide,
+        stateDescription = expandStateDescription,
         clipContent = true,
     ) {
         Column(
@@ -309,8 +320,8 @@ internal fun BaGuideMemoryLobbyCard(
                     }
                 }
                 Row(
-                    modifier = Modifier.width(82.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
+                    modifier = Modifier.width(MemoryLobbyHeaderActionsWidth),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     BaGuideMemoryLobbyMoreActions(
@@ -321,21 +332,11 @@ internal fun BaGuideMemoryLobbyCard(
                         onOpenFullscreen = { fullscreenImageUrl = firstFullscreenImageUrl },
                         onOpenGuide = onOpenGuide,
                     )
-                    AppCompactIconAction(
-                        icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                        contentDescription =
-                            stringResource(
-                                if (expanded) {
-                                    R.string.ba_catalog_memory_lobby_action_collapse
-                                } else {
-                                    R.string.ba_catalog_memory_lobby_action_expand
-                                },
-                            ),
-                        onClick = {
-                            onToggleExpanded()
-                        },
+                    Icon(
+                        imageVector = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
+                        contentDescription = null,
                         tint = if (expanded) accent else neutralTint,
-                        visualSize = 38.dp,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             }
