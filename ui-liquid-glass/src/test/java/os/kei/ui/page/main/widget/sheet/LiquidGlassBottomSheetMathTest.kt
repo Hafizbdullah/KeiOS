@@ -176,6 +176,78 @@ class LiquidGlassBottomSheetMathTest {
     }
 
     @Test
+    fun glassSurfaceTintStaysInsideAiryOpticalEnvelope() {
+        assertEquals(
+            0.28f,
+            liquidSheetGlassSurfaceColor(
+                isDark = false,
+                detentFraction = 1f / 3f,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.50f,
+            liquidSheetGlassSurfaceColor(
+                isDark = false,
+                detentFraction = 1f,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.34f,
+            liquidSheetGlassSurfaceColor(
+                isDark = true,
+                detentFraction = 1f / 3f,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.58f,
+            liquidSheetGlassSurfaceColor(
+                isDark = true,
+                detentFraction = 1f,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.58f,
+            liquidSheetGlassSurfaceColor(
+                isDark = false,
+                detentFraction = 1f / 3f,
+                surfaceTone = LiquidSheetSurfaceTone.Readable,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.74f,
+            liquidSheetGlassSurfaceColor(
+                isDark = false,
+                detentFraction = 1f,
+                surfaceTone = LiquidSheetSurfaceTone.Readable,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.60f,
+            liquidSheetGlassSurfaceColor(
+                isDark = true,
+                detentFraction = 1f / 3f,
+                surfaceTone = LiquidSheetSurfaceTone.Readable,
+            ).alpha,
+            0.002f,
+        )
+        assertEquals(
+            0.78f,
+            liquidSheetGlassSurfaceColor(
+                isDark = true,
+                detentFraction = 1f,
+                surfaceTone = LiquidSheetSurfaceTone.Readable,
+            ).alpha,
+            0.002f,
+        )
+    }
+
+    @Test
     fun backgroundDepthCurvesIncreaseAfterSheetGrows() {
         assertEquals(
             0.28f,

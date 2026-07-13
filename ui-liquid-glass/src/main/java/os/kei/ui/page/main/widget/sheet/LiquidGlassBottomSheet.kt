@@ -443,17 +443,17 @@ internal fun liquidSheetGlassSurfaceColor(
         when (surfaceTone) {
             LiquidSheetSurfaceTone.Default -> {
                 if (isDark) {
-                    lerp(0.48f, 0.68f, solidness)
+                    lerp(0.34f, 0.58f, solidness)
                 } else {
-                    lerp(0.42f, 0.62f, solidness)
+                    lerp(0.28f, 0.50f, solidness)
                 }
             }
 
             LiquidSheetSurfaceTone.Readable -> {
                 if (isDark) {
-                    lerp(0.68f, 0.84f, solidness)
+                    lerp(0.60f, 0.78f, solidness)
                 } else {
-                    lerp(0.66f, 0.82f, solidness)
+                    lerp(0.58f, 0.74f, solidness)
                 }
             }
         }
