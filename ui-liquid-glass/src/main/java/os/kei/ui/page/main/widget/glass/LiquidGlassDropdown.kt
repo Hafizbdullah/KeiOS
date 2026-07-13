@@ -58,7 +58,7 @@ enum class LiquidGlassDropdownMaterial {
     ActionMenu,
 }
 
-private data class LiquidGlassDropdownMetrics(
+internal data class LiquidGlassDropdownMetrics(
     val containerRadius: Dp,
     val contentPadding: Dp,
     val blurRadius: Dp,
@@ -81,7 +81,7 @@ private data class LiquidGlassDropdownMetrics(
     val darkInnerShadowAlpha: Float,
 )
 
-private fun liquidGlassDropdownMetrics(material: LiquidGlassDropdownMaterial): LiquidGlassDropdownMetrics =
+internal fun liquidGlassDropdownMetrics(material: LiquidGlassDropdownMaterial): LiquidGlassDropdownMetrics =
     when (material) {
         LiquidGlassDropdownMaterial.Default -> LiquidGlassDropdownMetricsDefault
         LiquidGlassDropdownMaterial.ActionMenu -> LiquidGlassDropdownMetricsActionMenu
@@ -100,48 +100,48 @@ private val LiquidGlassDropdownMetricsDefault =
     LiquidGlassDropdownMetrics(
         containerRadius = LiquidGlassDropdownContainerRadius,
         contentPadding = LiquidGlassDropdownContentPadding,
-        blurRadius = 8.dp,
-        lensStart = 18.dp,
-        lensEnd = 34.dp,
-        shadowElevation = 18.dp,
-        innerShadowRadius = 10.dp,
+        blurRadius = 4.dp,
+        lensStart = 16.dp,
+        lensEnd = 28.dp,
+        shadowElevation = 14.dp,
+        innerShadowRadius = 8.dp,
         vibrancy = true,
-        chromaticAberration = true,
-        depthEffect = true,
-        lightHighlightAlpha = 0.86f,
-        darkHighlightAlpha = 0.72f,
-        lightOuterShadowAlpha = 0.12f,
-        darkOuterShadowAlpha = 0.22f,
-        lightSpotShadowAlpha = 0.10f,
-        darkSpotShadowAlpha = 0.18f,
-        lightShadowAlpha = 0.14f,
-        darkShadowAlpha = 0.22f,
-        lightInnerShadowAlpha = 0.12f,
-        darkInnerShadowAlpha = 0.20f,
+        chromaticAberration = false,
+        depthEffect = false,
+        lightHighlightAlpha = 0.64f,
+        darkHighlightAlpha = 0.46f,
+        lightOuterShadowAlpha = 0.09f,
+        darkOuterShadowAlpha = 0.18f,
+        lightSpotShadowAlpha = 0.07f,
+        darkSpotShadowAlpha = 0.14f,
+        lightShadowAlpha = 0.10f,
+        darkShadowAlpha = 0.18f,
+        lightInnerShadowAlpha = 0.08f,
+        darkInnerShadowAlpha = 0.14f,
     )
 
 private val LiquidGlassDropdownMetricsActionMenu =
     LiquidGlassDropdownMetrics(
         containerRadius = 30.dp,
         contentPadding = 5.dp,
-        blurRadius = 32.dp,
-        lensStart = 34.dp,
-        lensEnd = 64.dp,
-        shadowElevation = 26.dp,
-        innerShadowRadius = 14.dp,
-        vibrancy = false,
-        chromaticAberration = true,
-        depthEffect = true,
-        lightHighlightAlpha = 0.88f,
-        darkHighlightAlpha = 0.62f,
-        lightOuterShadowAlpha = 0.14f,
-        darkOuterShadowAlpha = 0.22f,
-        lightSpotShadowAlpha = 0.10f,
-        darkSpotShadowAlpha = 0.18f,
-        lightShadowAlpha = 0.14f,
-        darkShadowAlpha = 0.22f,
-        lightInnerShadowAlpha = 0.12f,
-        darkInnerShadowAlpha = 0.18f,
+        blurRadius = 6.dp,
+        lensStart = 16.dp,
+        lensEnd = 32.dp,
+        shadowElevation = 18.dp,
+        innerShadowRadius = 10.dp,
+        vibrancy = true,
+        chromaticAberration = false,
+        depthEffect = false,
+        lightHighlightAlpha = 0.62f,
+        darkHighlightAlpha = 0.44f,
+        lightOuterShadowAlpha = 0.10f,
+        darkOuterShadowAlpha = 0.18f,
+        lightSpotShadowAlpha = 0.08f,
+        darkSpotShadowAlpha = 0.14f,
+        lightShadowAlpha = 0.10f,
+        darkShadowAlpha = 0.18f,
+        lightInnerShadowAlpha = 0.08f,
+        darkInnerShadowAlpha = 0.14f,
     )
 
 @Composable
@@ -367,7 +367,7 @@ fun AppLiquidGlassDropdownColumn(
     }
 }
 
-private data class LiquidGlassDropdownContainerColors(
+internal data class LiquidGlassDropdownContainerColors(
     val surfaceColor: Color,
     val topSheen: Color,
     val borderColor: Color,
@@ -397,7 +397,7 @@ private fun liquidGlassDropdownContainerColors(
     }
 }
 
-private fun buildLiquidGlassDropdownContainerColors(
+internal fun buildLiquidGlassDropdownContainerColors(
     isDark: Boolean,
     accentColor: Color,
     material: LiquidGlassDropdownMaterial,
@@ -407,9 +407,9 @@ private fun buildLiquidGlassDropdownContainerColors(
         LiquidGlassDropdownMaterial.ActionMenu -> {
             if (isDark) {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color(0xFF101113).copy(alpha = 0.82f),
-                    topSheen = Color.White.copy(alpha = 0.08f),
-                    borderColor = Color.White.copy(alpha = 0.18f),
+                    surfaceColor = surfaceContainer.copy(alpha = 0.38f),
+                    topSheen = Color.White.copy(alpha = 0.05f),
+                    borderColor = Color.White.copy(alpha = 0.14f),
                     fallbackBaseColor = Color(0xFF101113).copy(alpha = 0.92f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
@@ -436,9 +436,9 @@ private fun buildLiquidGlassDropdownContainerColors(
                 )
             } else {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color.White.copy(alpha = 0.92f),
-                    topSheen = Color.White.copy(alpha = 0.22f),
-                    borderColor = Color.White.copy(alpha = 0.94f),
+                    surfaceColor = Color.White.copy(alpha = 0.52f),
+                    topSheen = Color.White.copy(alpha = 0.08f),
+                    borderColor = Color.White.copy(alpha = 0.58f),
                     fallbackBaseColor = Color.White.copy(alpha = 0.97f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
@@ -469,9 +469,9 @@ private fun buildLiquidGlassDropdownContainerColors(
         LiquidGlassDropdownMaterial.Default -> {
             if (isDark) {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = surfaceContainer.copy(alpha = 0.78f),
-                    topSheen = Color.White.copy(alpha = 0.10f),
-                    borderColor = Color.White.copy(alpha = 0.28f),
+                    surfaceColor = surfaceContainer.copy(alpha = 0.34f),
+                    topSheen = Color.White.copy(alpha = 0.05f),
+                    borderColor = Color.White.copy(alpha = 0.20f),
                     fallbackBaseColor = surfaceContainer.copy(alpha = 0.94f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
@@ -498,9 +498,9 @@ private fun buildLiquidGlassDropdownContainerColors(
                 )
             } else {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color.White.copy(alpha = 0.80f),
-                    topSheen = Color.White.copy(alpha = 0.20f),
-                    borderColor = Color.White.copy(alpha = 0.90f),
+                    surfaceColor = Color.White.copy(alpha = 0.46f),
+                    topSheen = Color.White.copy(alpha = 0.08f),
+                    borderColor = Color.White.copy(alpha = 0.54f),
                     fallbackBaseColor = Color.White.copy(alpha = 0.94f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
@@ -538,15 +538,15 @@ internal fun liquidGlassDropdownSelectedSurfaceColor(
             if (isDark) {
                 Color.White.copy(alpha = 0.08f)
             } else {
-                Color.White.copy(alpha = 0.48f)
+                Color.White.copy(alpha = 0.26f)
             }
         }
 
         LiquidGlassDropdownMaterial.Default -> {
             if (isDark) {
-                Color.White.copy(alpha = 0.20f)
+                Color.White.copy(alpha = 0.14f)
             } else {
-                Color(0xFFEFF4FB).copy(alpha = 0.72f)
+                Color(0xFFEFF4FB).copy(alpha = 0.34f)
             }
         }
     }
@@ -560,15 +560,15 @@ internal fun liquidGlassDropdownPressedSurfaceColor(
             if (isDark) {
                 Color.White.copy(alpha = 0.07f)
             } else {
-                Color.White.copy(alpha = 0.42f)
+                Color.White.copy(alpha = 0.22f)
             }
         }
 
         LiquidGlassDropdownMaterial.Default -> {
             if (isDark) {
-                Color.White.copy(alpha = 0.12f)
+                Color.White.copy(alpha = 0.10f)
             } else {
-                Color.White.copy(alpha = 0.52f)
+                Color.White.copy(alpha = 0.28f)
             }
         }
     }
@@ -582,7 +582,7 @@ internal fun liquidGlassDropdownSelectedBorderColor(
             if (isDark) {
                 Color.White.copy(alpha = 0.08f)
             } else {
-                Color.White.copy(alpha = 0.60f)
+                Color.White.copy(alpha = 0.40f)
             }
         }
 
@@ -590,7 +590,7 @@ internal fun liquidGlassDropdownSelectedBorderColor(
             if (isDark) {
                 Color.White.copy(alpha = 0.14f)
             } else {
-                Color.White.copy(alpha = 0.72f)
+                Color.White.copy(alpha = 0.44f)
             }
         }
     }
