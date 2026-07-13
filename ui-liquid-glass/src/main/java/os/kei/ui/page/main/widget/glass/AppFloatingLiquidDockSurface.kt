@@ -30,7 +30,6 @@ import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.min
 
 @Composable
 fun AppFloatingLiquidVerticalDockSurface(
@@ -40,12 +39,7 @@ fun AppFloatingLiquidVerticalDockSurface(
 ) {
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val isDark = isSystemInDarkTheme()
-    val glass =
-        glassStyle(
-            isDark = isDark,
-            variant = GlassVariant.Bar,
-            blurRadius = null,
-        )
+    val material = floatingLiquidDockMaterial(isDark)
     val animationScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
@@ -59,39 +53,6 @@ fun AppFloatingLiquidVerticalDockSurface(
             )
         }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
-    val surfaceAlpha = if (isDark) 0.28f else 0.30f
-    val highlightAlpha = if (isDark) min(glass.highlightAlpha, 0.52f) else 0.98f
-    val shadowAlpha = if (isDark) 0.18f else 0.14f
-    val overlayTop =
-        if (isDark) {
-            Color.White.copy(alpha = 0.070f)
-        } else {
-            Color.White.copy(alpha = 0.115f)
-        }
-    val overlayBottom =
-        if (isDark) {
-            Color(0xFF82B8FF).copy(alpha = 0.055f)
-        } else {
-            Color(0xFFB9D8FF).copy(alpha = 0.095f)
-        }
-    val sideRim =
-        if (isDark) {
-            Color.White.copy(alpha = 0.075f)
-        } else {
-            Color.White.copy(alpha = 0.32f)
-        }
-    val innerRim =
-        if (isDark) {
-            Color.White.copy(alpha = 0.12f)
-        } else {
-            Color.White.copy(alpha = 0.55f)
-        }
-    val edgeColor =
-        if (isDark) {
-            Color.White.copy(alpha = 0.22f)
-        } else {
-            Color(0xFF9FCCFF).copy(alpha = 0.76f)
-        }
 
     Box(
         modifier =
@@ -110,29 +71,27 @@ fun AppFloatingLiquidVerticalDockSurface(
                             },
                             effects = {
                                 vibrancy()
-                                blur(4.dp.toPx())
+                                blur(material.blur.toPx())
                                 safeLiquidLens(
-                                    28.dp.toPx(),
-                                    54.dp.toPx(),
-                                    chromaticAberration = true,
-                                    depthEffect = true,
+                                    material.lensHeight.toPx(),
+                                    material.lensAmount.toPx(),
                                 )
                             },
                             highlight = {
-                                Highlight.Default.copy(alpha = highlightAlpha)
+                                Highlight.Default.copy(alpha = material.highlightAlpha)
                             },
                             shadow = {
-                                Shadow.Default.copy(color = Color.Black.copy(alpha = shadowAlpha))
+                                Shadow.Default.copy(color = Color.Black.copy(alpha = material.shadowAlpha))
                             },
                             innerShadow = {
-                                InnerShadow(radius = 7.dp, alpha = if (isDark) 0.22f else 0.34f)
+                                InnerShadow(radius = 7.dp, alpha = material.innerShadowAlpha)
                             },
                             onDrawSurface = {
-                                drawRect(fallbackSurface.copy(alpha = surfaceAlpha))
+                                drawRect(fallbackSurface.copy(alpha = material.surfaceAlpha))
                             },
                         )
                     } else {
-                        Modifier.appSquircleBackground(fallbackSurface.copy(alpha = surfaceAlpha), 999.dp)
+                        Modifier.appSquircleBackground(fallbackSurface.copy(alpha = material.surfaceAlpha), 999.dp)
                     },
                 ).then(interactiveHighlight.modifier)
                 .then(interactiveHighlight.gestureModifier)
@@ -140,11 +99,11 @@ fun AppFloatingLiquidVerticalDockSurface(
                 .appSquircleClip(999.dp)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(overlayTop, overlayBottom),
+                        colors = listOf(material.overlayTop, material.overlayBottom),
                     ),
                 ).appSquircleBorder(
                     width = 1.dp,
-                    color = edgeColor,
+                    color = material.edgeColor,
                     cornerRadius = 999.dp,
                 ),
         contentAlignment = Alignment.Center,
@@ -158,10 +117,10 @@ fun AppFloatingLiquidVerticalDockSurface(
                         Brush.horizontalGradient(
                             colors =
                                 listOf(
-                                    sideRim,
+                                    material.sideRim,
                                     Color.Transparent,
                                     Color.Transparent,
-                                    sideRim,
+                                    material.sideRim,
                                 ),
                         ),
                     ),
@@ -172,7 +131,7 @@ fun AppFloatingLiquidVerticalDockSurface(
                     .fillMaxSize()
                     .appSquircleBorder(
                         width = 1.dp,
-                        color = innerRim,
+                        color = material.innerRim,
                         cornerRadius = 999.dp,
                     ),
         )
@@ -183,3 +142,51 @@ fun AppFloatingLiquidVerticalDockSurface(
         )
     }
 }
+
+internal fun floatingLiquidDockMaterial(isDark: Boolean): FloatingLiquidDockMaterial =
+    if (isDark) {
+        FloatingLiquidDockMaterial(
+            blur = 4.dp,
+            lensHeight = 16.dp,
+            lensAmount = 28.dp,
+            surfaceAlpha = 0.22f,
+            highlightAlpha = 0.42f,
+            shadowAlpha = 0.14f,
+            innerShadowAlpha = 0.14f,
+            overlayTop = Color.White.copy(alpha = 0.045f),
+            overlayBottom = Color(0xFF82B8FF).copy(alpha = 0.025f),
+            sideRim = Color.White.copy(alpha = 0.055f),
+            innerRim = Color.White.copy(alpha = 0.09f),
+            edgeColor = Color.White.copy(alpha = 0.16f),
+        )
+    } else {
+        FloatingLiquidDockMaterial(
+            blur = 4.dp,
+            lensHeight = 16.dp,
+            lensAmount = 32.dp,
+            surfaceAlpha = 0.22f,
+            highlightAlpha = 0.62f,
+            shadowAlpha = 0.10f,
+            innerShadowAlpha = 0.20f,
+            overlayTop = Color.White.copy(alpha = 0.075f),
+            overlayBottom = Color(0xFFEDF6FF).copy(alpha = 0.045f),
+            sideRim = Color.White.copy(alpha = 0.18f),
+            innerRim = Color.White.copy(alpha = 0.28f),
+            edgeColor = Color.White.copy(alpha = 0.58f),
+        )
+    }
+
+internal data class FloatingLiquidDockMaterial(
+    val blur: androidx.compose.ui.unit.Dp,
+    val lensHeight: androidx.compose.ui.unit.Dp,
+    val lensAmount: androidx.compose.ui.unit.Dp,
+    val surfaceAlpha: Float,
+    val highlightAlpha: Float,
+    val shadowAlpha: Float,
+    val innerShadowAlpha: Float,
+    val overlayTop: Color,
+    val overlayBottom: Color,
+    val sideRim: Color,
+    val innerRim: Color,
+    val edgeColor: Color,
+)

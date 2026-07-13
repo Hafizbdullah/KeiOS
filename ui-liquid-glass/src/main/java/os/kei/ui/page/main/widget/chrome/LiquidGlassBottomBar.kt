@@ -541,8 +541,8 @@ fun LiquidGlassBottomBar(
             }
         }
     val interactionLensScale = glassEffectRuntime().interactionLensScale
+    val material = liquidBottomBarMaterial(isInLightTheme)
     val effectBlurDp = UiPerformanceBudget.backdropBlur
-    val effectLensDp = UiPerformanceBudget.backdropLens
     val useLightweightBackdrop = !effectiveLiquidEffectEnabled
 
     val selectionProgressValue =
@@ -661,11 +661,21 @@ fun LiquidGlassBottomBar(
                                         if (effectiveLiquidEffectEnabled) {
                                             vibrancy()
                                             blur(effectBlurDp.toPx())
-                                            safeLiquidLens(effectLensDp.toPx(), effectLensDp.toPx())
+                                            safeLiquidLens(
+                                                material.lensHeight.toPx(),
+                                                material.lensAmount.toPx(),
+                                            )
                                         }
                                     },
                                     highlight = {
-                                        Highlight.Default.copy(alpha = if (effectiveLiquidEffectEnabled) 1f else 0f)
+                                        Highlight.Default.copy(
+                                            alpha =
+                                                if (effectiveLiquidEffectEnabled) {
+                                                    material.highlightAlpha
+                                                } else {
+                                                    0f
+                                                },
+                                        )
                                     },
                                     shadow = {
                                         Shadow.Default.copy(
@@ -722,14 +732,19 @@ fun LiquidGlassBottomBar(
                                             vibrancy()
                                             blur(effectBlurDp.toPx())
                                             safeLiquidLens(
-                                                effectLensDp.toPx() * progress,
-                                                effectLensDp.toPx() * progress,
+                                                material.lensHeight.toPx() * progress,
+                                                material.lensAmount.toPx() * progress,
                                             )
                                         }
                                     },
                                     highlight = {
                                         Highlight.Default.copy(
-                                            alpha = if (effectiveLiquidEffectEnabled) combinedPressProgressProvider() else 0f,
+                                            alpha =
+                                                if (effectiveLiquidEffectEnabled) {
+                                                    material.highlightAlpha * combinedPressProgressProvider()
+                                                } else {
+                                                    0f
+                                                },
                                         )
                                     },
                                     onDrawSurface = { drawRect(palette.baseFillColor) },
@@ -946,18 +961,42 @@ private fun rememberLiquidBottomBarPalette(
 
         if (isInLightTheme) {
             return@remember LiquidBottomBarPalette(
-                baseFillColor = surfaceContainer.copy(alpha = 0.40f),
+                baseFillColor = surfaceContainer.copy(alpha = liquidBottomBarMaterial(isLight = true).surfaceAlpha),
                 inactiveContentColor = onSurface.copy(alpha = 0.88f),
                 activeContentColor = primary,
             )
         }
 
         return@remember LiquidBottomBarPalette(
-            baseFillColor = surfaceContainer.copy(alpha = 0.20f),
+            baseFillColor = surfaceContainer.copy(alpha = liquidBottomBarMaterial(isLight = false).surfaceAlpha),
             inactiveContentColor = onSurface.copy(alpha = 0.84f),
             activeContentColor = primary.copy(alpha = 0.98f),
         )
     }
+
+internal fun liquidBottomBarMaterial(isLight: Boolean): LiquidBottomBarMaterial =
+    if (isLight) {
+        LiquidBottomBarMaterial(
+            surfaceAlpha = 0.28f,
+            highlightAlpha = 0.66f,
+            lensHeight = 16.dp,
+            lensAmount = 32.dp,
+        )
+    } else {
+        LiquidBottomBarMaterial(
+            surfaceAlpha = 0.18f,
+            highlightAlpha = 0.48f,
+            lensHeight = 16.dp,
+            lensAmount = 28.dp,
+        )
+    }
+
+internal data class LiquidBottomBarMaterial(
+    val surfaceAlpha: Float,
+    val highlightAlpha: Float,
+    val lensHeight: androidx.compose.ui.unit.Dp,
+    val lensAmount: androidx.compose.ui.unit.Dp,
+)
 
 @Stable
 private class LiquidBottomBarPalette(
