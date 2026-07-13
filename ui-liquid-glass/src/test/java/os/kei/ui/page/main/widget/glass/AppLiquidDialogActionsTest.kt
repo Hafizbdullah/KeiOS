@@ -23,6 +23,7 @@ import org.robolectric.annotation.GraphicsMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
@@ -37,7 +38,7 @@ class AppLiquidDialogActionsTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun standaloneBackdropHostPassesNullWithoutParentBackdrop() {
+    fun standaloneBackdropHostCreatesLocalBackdropWithoutParentBackdrop() {
         var observedBackdrop: Backdrop? = null
 
         composeRule.setContent {
@@ -48,6 +49,23 @@ class AppLiquidDialogActionsTest {
         }
 
         composeRule.onNodeWithTag("standalone-content").assertExists()
+        composeRule.runOnIdle { assertNotNull(observedBackdrop) }
+    }
+
+    @Test
+    fun standaloneBackdropHostPassesNullWhenLiquidEffectsAreDisabled() {
+        var observedBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
+                AppStandaloneBackdropHost(modifier = Modifier) { backdrop ->
+                    observedBackdrop = backdrop
+                    Box(modifier = Modifier.testTag("standalone-fallback-content"))
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("standalone-fallback-content").assertExists()
         composeRule.runOnIdle { assertNull(observedBackdrop) }
     }
 

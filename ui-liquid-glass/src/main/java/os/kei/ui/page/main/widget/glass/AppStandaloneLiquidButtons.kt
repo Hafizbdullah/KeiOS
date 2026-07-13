@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -211,6 +213,15 @@ internal fun AppStandaloneBackdropHost(
     ) {
         if (parentBackdrop != null && appGlassRuntimeEffectsEnabled()) {
             content(parentBackdrop)
+        } else if (appGlassRuntimeEffectsEnabled()) {
+            val localBackdrop = rememberLayerBackdrop()
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(localBackdrop),
+            )
+            content(localBackdrop)
         } else {
             content(null)
         }
