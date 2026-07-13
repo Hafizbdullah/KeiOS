@@ -56,6 +56,7 @@ import com.kyant.shapes.Capsule
 import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import androidx.compose.ui.graphics.lerp as lerpColor
@@ -212,6 +213,7 @@ private fun LiquidSwitchToggle(
     val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val touchSlop = LocalViewConfiguration.current.touchSlop
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val currentOnSelect by rememberUpdatedState(onSelect)
     val currentSelected by rememberUpdatedState(selected)
     val currentEnabled by rememberUpdatedState(enabled)
@@ -221,7 +223,7 @@ private fun LiquidSwitchToggle(
     var didDrag by remember { mutableStateOf(false) }
     var fraction by remember { mutableFloatStateOf(if (selected()) 1f else 0f) }
     val dampedDragAnimation =
-        remember(animationScope, dragWidth, isLtr, touchSlop) {
+        remember(animationScope, dragWidth, isLtr, touchSlop, transitionAnimationsEnabled) {
             DampedDragAnimation(
                 animationScope = animationScope,
                 initialValue = fraction,
@@ -229,6 +231,7 @@ private fun LiquidSwitchToggle(
                 visibilityThreshold = 0.001f,
                 initialScale = 1f,
                 pressedScale = 1.5f,
+                animationsEnabled = transitionAnimationsEnabled,
                 consumeDragChanges = true,
                 dragOrientation = Orientation.Horizontal,
                 dragTouchSlop = touchSlop,

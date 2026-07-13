@@ -51,6 +51,7 @@ import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.chrome.snapChromeTranslationPx
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -92,11 +93,13 @@ fun LiquidSurface(
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val animationScope = rememberCoroutineScope()
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
-        remember(animationScope) {
+        remember(animationScope, consumeDragChanges, transitionAnimationsEnabled) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 consumeDragChanges = consumeDragChanges,
+                animationsEnabled = transitionAnimationsEnabled,
             )
         }
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
@@ -256,7 +259,7 @@ fun LiquidSurface(
 
 private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(interactiveHighlight: InteractiveHighlight) {
     if (size.width <= 0f || size.height <= 0f) return
-    val progress = interactiveHighlight.pressProgress
+    val progress = interactiveHighlight.deformationProgress
     val scale = lerp(1f, 1f + 4.dp.toPx() / size.height, progress)
     val maxOffset = size.minDimension
     val offset = interactiveHighlight.offset
@@ -298,6 +301,17 @@ fun AppLiquidFloatingSurface(
             label = pressLabel,
         )
     val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
+    val deformationProgressProvider =
+        remember(pressProgressProvider, transitionAnimationsEnabled) {
+            {
+                if (transitionAnimationsEnabled) {
+                    pressProgressProvider()
+                } else {
+                    0f
+                }
+            }
+        }
     val density = LocalDensity.current
     val pressLiftPx = with(density) { 1.25.dp.toPx() }
     val isDark = isSystemInDarkTheme()
@@ -334,7 +348,7 @@ fun AppLiquidFloatingSurface(
             modifier
                 .padding(resolvedPressSafePadding)
                 .graphicsLayer {
-                    val pressProgress = pressProgressProvider()
+                    val pressProgress = deformationProgressProvider()
                     translationY = snapChromeTranslationPx(-pressLiftPx * pressProgress)
                     scaleX = lerp(1f, 1.010f, pressProgress)
                     scaleY = lerp(1f, 0.992f, pressProgress)

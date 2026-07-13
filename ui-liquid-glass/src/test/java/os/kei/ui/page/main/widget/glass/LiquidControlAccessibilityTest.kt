@@ -38,6 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -101,6 +102,27 @@ class LiquidControlAccessibilityTest {
             .onNode(isToggleable())
             .performTouchInput { click() }
             .assertIsOn()
+    }
+
+    @Test
+    fun reducedMotionSwitchRespondsToPhysicalTap() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalTransitionAnimationsEnabled provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    var checked by remember { mutableStateOf(false) }
+                    AppSwitch(
+                        checked = checked,
+                        onCheckedChange = { checked = it },
+                        modifier = Modifier.testTag("reduced-motion-liquid-switch"),
+                    )
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("reduced-motion-liquid-switch")
+            .performTouchInput { click() }
+        composeRule.onNode(isToggleable()).assertIsOn()
     }
 
     @Test

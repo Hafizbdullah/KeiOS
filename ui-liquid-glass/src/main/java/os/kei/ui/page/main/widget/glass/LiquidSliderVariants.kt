@@ -63,6 +63,7 @@ import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -335,6 +336,7 @@ private fun LiquidTrackSlider(
         val trackWidth = constraints.maxWidth.coerceAtLeast(1)
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val touchSlop = LocalViewConfiguration.current.touchSlop
+        val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
         val hapticFeedback = LocalHapticFeedback.current
         val hapticState = remember { LiquidSliderHapticState() }
         val animationScope = rememberCoroutineScope()
@@ -353,6 +355,7 @@ private fun LiquidTrackSlider(
                 safeKeyPoints,
                 snapToKeyPoints,
                 snapThreshold,
+                transitionAnimationsEnabled,
             ) {
                 DampedDragAnimation(
                     animationScope = animationScope,
@@ -361,6 +364,7 @@ private fun LiquidTrackSlider(
                     visibilityThreshold = visibilityThreshold,
                     initialScale = 1f,
                     pressedScale = style.pressedWidthScale,
+                    animationsEnabled = transitionAnimationsEnabled,
                     consumeDragChanges = true,
                     dragOrientation = Orientation.Horizontal,
                     dragTouchSlop = touchSlop,
@@ -662,7 +666,7 @@ private fun LiquidTrackSlider(
                             // small velocity stretch so dragging feels elastic while the backdrop
                             // sampling stays anchored.
                             layerBlock = {
-                                val progress = dampedDragAnimation.pressProgress
+                                val progress = dampedDragAnimation.deformationProgress
                                 val velocity = dampedDragAnimation.velocity / 60f
                                 val velocityStretch = (velocity * 0.55f).fastCoerceIn(-0.16f, 0.16f)
                                 val velocitySquash = (velocity * 0.20f).fastCoerceIn(-0.10f, 0.10f)

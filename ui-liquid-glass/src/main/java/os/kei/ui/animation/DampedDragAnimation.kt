@@ -13,7 +13,9 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -27,6 +29,7 @@ class DampedDragAnimation(
     val visibilityThreshold: Float,
     val initialScale: Float,
     val pressedScale: Float,
+    val animationsEnabled: Boolean = true,
     val gestureKey: Any? = Unit,
     val canDrag: (Offset) -> Boolean = { true },
     val consumeDragChanges: Boolean = false,
@@ -52,6 +55,9 @@ class DampedDragAnimation(
 
     private val mutatorMutex = MutatorMutex()
     private val velocityTracker = VelocityTracker()
+    private var interactionGeneration = 0L
+    private var pressJob: Job? = null
+    private var releaseJob: Job? = null
 
     val value: Float get() = valueAnimation.value
     val progress: Float
@@ -61,14 +67,15 @@ class DampedDragAnimation(
         }
     val targetValue: Float get() = valueAnimation.targetValue
     val pressProgress: Float get() = pressProgressAnimation.value
-    val scaleX: Float get() = scaleXAnimation.value
-    val scaleY: Float get() = scaleYAnimation.value
-    val velocity: Float get() = velocityAnimation.value
+    val deformationProgress: Float get() = if (animationsEnabled) pressProgressAnimation.value else 0f
+    val scaleX: Float get() = if (animationsEnabled) scaleXAnimation.value else initialScale
+    val scaleY: Float get() = if (animationsEnabled) scaleYAnimation.value else initialScale
+    val velocity: Float get() = if (animationsEnabled) velocityAnimation.value else 0f
 
     val modifier: Modifier =
         Modifier
             .then(if (excludeFromSystemGestures) Modifier.systemGestureExclusion() else Modifier)
-            .pointerInput(gestureKey) {
+            .pointerInput(gestureKey, animationsEnabled) {
                 var accumulatedDrag = Offset.Zero
                 var axisAccepted = dragOrientation == null
                 var axisRejected = false
@@ -143,32 +150,90 @@ class DampedDragAnimation(
 
     fun press() {
         velocityTracker.resetTracking()
-        animationScope.launch {
-            launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
-            launch { scaleXAnimation.animateTo(pressedScale, scaleXAnimationSpec) }
-            launch { scaleYAnimation.animateTo(pressedScale, scaleYAnimationSpec) }
+        interactionGeneration++
+        releaseJob?.cancel()
+        pressJob?.cancel()
+        pressJob =
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                if (animationsEnabled) {
+                    launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
+                    launch { scaleXAnimation.animateTo(pressedScale, scaleXAnimationSpec) }
+                    launch { scaleYAnimation.animateTo(pressedScale, scaleYAnimationSpec) }
+                } else {
+                    pressProgressAnimation.snapTo(1f)
+                    scaleXAnimation.snapTo(initialScale)
+                    scaleYAnimation.snapTo(initialScale)
+                    velocityAnimation.snapTo(0f)
+                }
+            }
+    }
+
+    private suspend fun snapReleasedState() {
+        pressProgressAnimation.snapTo(0f)
+        scaleXAnimation.snapTo(initialScale)
+        scaleYAnimation.snapTo(initialScale)
+        velocityAnimation.snapTo(0f)
+    }
+
+    private fun isCurrentInteraction(generation: Long): Boolean = generation == interactionGeneration
+
+    private suspend fun awaitValueSettled(generation: Long) {
+        if (!isCurrentInteraction(generation) || value == targetValue) return
+        val rangeSpan = abs(valueRange.endInclusive - valueRange.start)
+        val threshold = maxOf(visibilityThreshold, rangeSpan * 0.025f, 1e-6f)
+        snapshotFlow { valueAnimation.value to valueAnimation.targetValue }
+            .filter { (current, target) ->
+                !isCurrentInteraction(generation) || abs(current - target) < threshold
+            }.first()
+    }
+
+    private suspend fun animateReleasedState(generation: Long) {
+        if (!isCurrentInteraction(generation)) return
+        coroutineScope {
+            launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
+            launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
+            launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+            launch { velocityAnimation.animateTo(0f, velocityAnimationSpec) }
+        }
+    }
+
+    private suspend fun settleValueImmediately(targetValue: Float) {
+        mutatorMutex.mutate {
+            valueAnimation.snapTo(targetValue)
+            velocityAnimation.snapTo(0f)
         }
     }
 
     fun release() {
-        animationScope.launch {
-            awaitFrame()
-            if (value != targetValue) {
-                val threshold = (valueRange.endInclusive - valueRange.start) * 0.025f
-                snapshotFlow { valueAnimation.value }
-                    .filter { abs(it - valueAnimation.targetValue) < threshold }
-                    .first()
-            }
-            launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
-            launch { scaleXAnimation.animateTo(initialScale, scaleXAnimationSpec) }
-            launch { scaleYAnimation.animateTo(initialScale, scaleYAnimationSpec) }
+        if (!animationsEnabled) {
+            pressJob?.cancel()
         }
+        releaseJob?.cancel()
+        val generation = ++interactionGeneration
+        releaseJob =
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                if (!animationsEnabled) {
+                    snapReleasedState()
+                    return@launch
+                }
+                awaitFrame()
+                awaitValueSettled(generation)
+                animateReleasedState(generation)
+            }
     }
 
     fun updateValue(value: Float) {
         val targetValue = value.coerceIn(valueRange)
+        if (!animationsEnabled) {
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                settleValueImmediately(targetValue)
+            }
+            return
+        }
         animationScope.launch {
-            launch { valueAnimation.animateTo(targetValue, valueAnimationSpec) { updateVelocity() } }
+            mutatorMutex.mutate {
+                valueAnimation.animateTo(targetValue, valueAnimationSpec) { updateVelocity() }
+            }
         }
     }
 
@@ -180,18 +245,26 @@ class DampedDragAnimation(
         animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
             mutatorMutex.mutate {
                 valueAnimation.snapTo(targetValue)
-                if (updateVelocity) {
+                if (animationsEnabled && updateVelocity) {
                     updateVelocity()
+                } else {
+                    velocityAnimation.snapTo(0f)
                 }
             }
         }
     }
 
     fun animateToValue(value: Float) {
+        val targetValue = value.coerceIn(valueRange)
+        if (!animationsEnabled) {
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                settleValueImmediately(targetValue)
+            }
+            return
+        }
         animationScope.launch {
             mutatorMutex.mutate {
                 press()
-                val targetValue = value.coerceIn(valueRange)
                 launch { valueAnimation.animateTo(targetValue, valueAnimationSpec) }
                 if (velocity != 0f) {
                     launch { velocityAnimation.animateTo(0f, velocityAnimationSpec) }
@@ -202,6 +275,12 @@ class DampedDragAnimation(
     }
 
     private fun updateVelocity() {
+        if (!animationsEnabled) {
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                velocityAnimation.snapTo(0f)
+            }
+            return
+        }
         val rangeSpan = valueRange.endInclusive - valueRange.start
         if (!rangeSpan.isFinite() || abs(rangeSpan) <= 1e-6f) {
             animationScope.launch { velocityAnimation.snapTo(0f) }

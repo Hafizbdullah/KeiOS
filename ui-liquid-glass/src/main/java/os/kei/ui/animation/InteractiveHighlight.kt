@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.util.fastCoerceIn
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
@@ -30,7 +31,8 @@ class InteractiveHighlight(
     val highlightColor: Color = Color.White,
     val highlightStrength: Float = 1f,
     val highlightRadiusScale: Float = 1.2f,
-    val consumeDragChanges: Boolean = false
+    val consumeDragChanges: Boolean = false,
+    val animationsEnabled: Boolean = true,
 ) {
     private val pressProgressAnimationSpec = spring(0.5f, 300f, 0.001f)
     private val positionAnimationSpec = spring(0.5f, 300f, Offset.VisibilityThreshold)
@@ -41,8 +43,12 @@ class InteractiveHighlight(
     private var startPosition = Offset.Zero
     private var pendingDragPosition: Offset? = null
     private var dragPositionSyncJob: Job? = null
+    private var pressJob: Job? = null
+    private var releaseJob: Job? = null
+    private var interactionGeneration = 0L
     val pressProgress: Float get() = pressProgressAnimation.value
-    val offset: Offset get() = positionAnimation.value - startPosition
+    val deformationProgress: Float get() = if (animationsEnabled) pressProgressAnimation.value else 0f
+    val offset: Offset get() = if (animationsEnabled) positionAnimation.value - startPosition else Offset.Zero
 
     /**
      * Current touch position in the composable's coordinate system.
@@ -51,8 +57,9 @@ class InteractiveHighlight(
     val touchPosition: Offset get() = positionAnimation.value
 
     @Language("AGSL")
-    private val shader = RuntimeShader(
-        """
+    private val shader =
+        RuntimeShader(
+            """
     uniform float2 size;
     layout(color) uniform half4 color;
     uniform float radius;
@@ -62,93 +69,125 @@ class InteractiveHighlight(
         float dist = distance(coord, position);
         float intensity = smoothstep(radius, radius * 0.5, dist);
         return color * intensity;
-    }"""
-    )
+    }""",
+        )
 
     // The shader object is stable and its uniforms are mutated in place each
     // frame, so the ShaderBrush wrapper (fixed-shader, size-independent) can be
     // allocated once instead of re-wrapped on every draw frame.
     private val shaderBrush = ShaderBrush(shader)
 
-    val modifier: Modifier = Modifier.drawWithContent {
-        val progress = pressProgressAnimation.value
-        if (progress > 0f) {
-            val strength = highlightStrength.fastCoerceIn(0.1f, 3f)
-            drawRect(
-                highlightColor.copy((0.06f * progress * strength).fastCoerceIn(0f, 0.45f)),
-                blendMode = BlendMode.Plus
-            )
-            shader.apply {
-                val point = position(size, positionAnimation.value)
-                val radiusScale = highlightRadiusScale.fastCoerceIn(0.4f, 1.8f)
-                setFloatUniform("size", size.width, size.height)
-                setColorUniform("color", highlightColor.copy((0.12f * progress * strength).fastCoerceIn(0f, 0.55f)).toArgb())
-                setFloatUniform("radius", size.minDimension * radiusScale)
-                setFloatUniform(
-                    "position",
-                    point.x.fastCoerceIn(0f, size.width),
-                    point.y.fastCoerceIn(0f, size.height)
+    val modifier: Modifier =
+        Modifier.drawWithContent {
+            val progress = pressProgressAnimation.value
+            if (progress > 0f) {
+                val strength = highlightStrength.fastCoerceIn(0.1f, 3f)
+                drawRect(
+                    highlightColor.copy((0.06f * progress * strength).fastCoerceIn(0f, 0.45f)),
+                    blendMode = BlendMode.Plus,
+                )
+                shader.apply {
+                    val point = position(size, positionAnimation.value)
+                    val radiusScale = highlightRadiusScale.fastCoerceIn(0.4f, 1.8f)
+                    setFloatUniform("size", size.width, size.height)
+                    setColorUniform("color", highlightColor.copy((0.12f * progress * strength).fastCoerceIn(0f, 0.55f)).toArgb())
+                    setFloatUniform("radius", size.minDimension * radiusScale)
+                    setFloatUniform(
+                        "position",
+                        point.x.fastCoerceIn(0f, size.width),
+                        point.y.fastCoerceIn(0f, size.height),
+                    )
+                }
+                drawRect(
+                    shaderBrush,
+                    blendMode = BlendMode.Plus,
                 )
             }
-            drawRect(
-                shaderBrush,
-                blendMode = BlendMode.Plus
-            )
+            drawContent()
         }
-        drawContent()
-    }
 
-    val gestureModifier: Modifier = Modifier.pointerInput(animationScope) {
-        inspectDragGestures(
-            onDragStart = { down ->
-                startPosition = down.position
-                pendingDragPosition = down.position
-                dragPositionSyncJob?.cancel()
-                dragPositionSyncJob = null
-                animationScope.launch {
-                    launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
-                    launch { positionAnimation.snapTo(startPosition) }
-                }
-            },
-            onDragEnd = {
-                pendingDragPosition = null
-                dragPositionSyncJob?.cancel()
-                dragPositionSyncJob = null
-                animationScope.launch {
-                    launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
-                    launch { positionAnimation.animateTo(startPosition, positionAnimationSpec) }
-                }
-            },
-            onDragCancel = {
-                pendingDragPosition = null
-                dragPositionSyncJob?.cancel()
-                dragPositionSyncJob = null
-                animationScope.launch {
-                    launch { pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec) }
-                    launch { positionAnimation.animateTo(startPosition, positionAnimationSpec) }
-                }
-            }
-        ) { change, dragAmount ->
-            if (consumeDragChanges && dragAmount != Offset.Zero) {
-                change.consume()
-            }
-            pendingDragPosition = change.position
-            if (dragPositionSyncJob?.isActive != true) {
-                dragPositionSyncJob = animationScope.launch {
-                    try {
-                        while (true) {
-                            awaitFrame()
-                            val nextPosition = pendingDragPosition ?: break
-                            pendingDragPosition = null
-                            positionAnimation.snapTo(nextPosition)
+    val gestureModifier: Modifier =
+        Modifier.pointerInput(animationScope, animationsEnabled) {
+            inspectDragGestures(
+                onDragStart = { down ->
+                    interactionGeneration++
+                    releaseJob?.cancel()
+                    pressJob?.cancel()
+                    startPosition = down.position
+                    pendingDragPosition = down.position
+                    dragPositionSyncJob?.cancel()
+                    dragPositionSyncJob = null
+                    pressJob =
+                        animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                            if (animationsEnabled) {
+                                launch { pressProgressAnimation.animateTo(1f, pressProgressAnimationSpec) }
+                                launch { positionAnimation.snapTo(startPosition) }
+                            } else {
+                                pressProgressAnimation.snapTo(1f)
+                                positionAnimation.snapTo(startPosition)
+                            }
                         }
-                    } finally {
-                        if (dragPositionSyncJob?.isActive != true) {
-                            dragPositionSyncJob = null
-                        }
+                },
+                onDragEnd = {
+                    releaseHighlight()
+                },
+                onDragCancel = {
+                    releaseHighlight()
+                },
+            ) { change, dragAmount ->
+                if (consumeDragChanges && dragAmount != Offset.Zero) {
+                    change.consume()
+                }
+                pendingDragPosition = change.position
+                if (!animationsEnabled) {
+                    dragPositionSyncJob?.cancel()
+                    dragPositionSyncJob = null
+                    animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                        positionAnimation.snapTo(change.position)
                     }
+                    pendingDragPosition = null
+                    return@inspectDragGestures
+                }
+                if (dragPositionSyncJob?.isActive != true) {
+                    val syncJob =
+                        animationScope.launch(start = CoroutineStart.LAZY) {
+                            try {
+                                while (true) {
+                                    awaitFrame()
+                                    val nextPosition = pendingDragPosition ?: break
+                                    pendingDragPosition = null
+                                    positionAnimation.snapTo(nextPosition)
+                                }
+                            } finally {
+                                if (dragPositionSyncJob === coroutineContext[Job]) {
+                                    dragPositionSyncJob = null
+                                }
+                            }
+                        }
+                    dragPositionSyncJob = syncJob
+                    syncJob.start()
                 }
             }
         }
+
+    private fun releaseHighlight() {
+        val generation = ++interactionGeneration
+        pressJob?.cancel()
+        releaseJob?.cancel()
+        pendingDragPosition = null
+        dragPositionSyncJob?.cancel()
+        dragPositionSyncJob = null
+        releaseJob =
+            animationScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                if (animationsEnabled) {
+                    launch {
+                        pressProgressAnimation.animateTo(0f, pressProgressAnimationSpec)
+                    }
+                    launch { positionAnimation.animateTo(startPosition, positionAnimationSpec) }
+                } else if (generation == interactionGeneration) {
+                    pressProgressAnimation.snapTo(0f)
+                    positionAnimation.snapTo(startPosition)
+                }
+            }
     }
 }

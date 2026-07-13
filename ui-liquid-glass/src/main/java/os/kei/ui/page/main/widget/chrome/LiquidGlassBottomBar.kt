@@ -261,7 +261,14 @@ fun LiquidGlassBottomBar(
     val holder = remember { DampedDragAnimationHolder() }
 
     val dampedDragAnimation =
-        remember(animationScope, safeTabsCount, density, isLtr, touchSlop) {
+        remember(
+            animationScope,
+            safeTabsCount,
+            density,
+            isLtr,
+            touchSlop,
+            transitionAnimationsEnabled,
+        ) {
             DampedDragAnimation(
                 animationScope = animationScope,
                 initialValue = currentIndex.toFloat(),
@@ -269,6 +276,7 @@ fun LiquidGlassBottomBar(
                 visibilityThreshold = 0.001f,
                 initialScale = 1f,
                 pressedScale = 78f / 56f,
+                animationsEnabled = transitionAnimationsEnabled,
                 gestureKey = safeTabsCount to isLtr,
                 dragOrientation = Orientation.Horizontal,
                 dragTouchSlop = touchSlop,
@@ -489,9 +497,48 @@ fun LiquidGlassBottomBar(
             label = "liquid_bottom_bar_item_press",
         )
     val itemPressProgressProvider = remember(itemPressProgressState) { { itemPressProgressState.value } }
+    val itemDeformationProgressProvider =
+        remember(
+            itemPressProgressProvider,
+            transitionAnimationsEnabled,
+            effectiveLiquidEffectEnabled,
+            interactionEnabled,
+        ) {
+            {
+                if (
+                    transitionAnimationsEnabled &&
+                    effectiveLiquidEffectEnabled &&
+                    interactionEnabled
+                ) {
+                    itemPressProgressProvider()
+                } else {
+                    0f
+                }
+            }
+        }
     val combinedPressProgressProvider =
         remember(pressProgressProvider, itemPressProgressProvider) {
             { max(pressProgressProvider(), itemPressProgressProvider()) }
+        }
+    val combinedDeformationProgressProvider =
+        remember(
+            dampedDragAnimation,
+            itemDeformationProgressProvider,
+            transitionAnimationsEnabled,
+            effectiveLiquidEffectEnabled,
+            interactionEnabled,
+        ) {
+            {
+                if (
+                    transitionAnimationsEnabled &&
+                    effectiveLiquidEffectEnabled &&
+                    interactionEnabled
+                ) {
+                    max(dampedDragAnimation.deformationProgress, itemDeformationProgressProvider())
+                } else {
+                    0f
+                }
+            }
         }
     val interactionLensScale = glassEffectRuntime().interactionLensScale
     val effectBlurDp = UiPerformanceBudget.backdropBlur
@@ -515,9 +562,17 @@ fun LiquidGlassBottomBar(
         if (
             effectiveLiquidEffectEnabled
         ) {
-            remember(animationScope, tabWidthPx, isLtr, displaySelectionValueProvider, panelOffsetProvider) {
+            remember(
+                animationScope,
+                tabWidthPx,
+                isLtr,
+                displaySelectionValueProvider,
+                panelOffsetProvider,
+                transitionAnimationsEnabled,
+            ) {
                 InteractiveHighlight(
                     animationScope = animationScope,
+                    animationsEnabled = transitionAnimationsEnabled,
                     position = { size, _ ->
                         val displayValue = displaySelectionValueProvider()
                         val x =
@@ -543,7 +598,11 @@ fun LiquidGlassBottomBar(
 
     CompositionLocalProvider(
         LocalLiquidGlassBottomBarTabScale provides {
-            if (effectiveLiquidEffectEnabled) lerp(1f, 1.2f, combinedPressProgressProvider()) else 1f
+            if (effectiveLiquidEffectEnabled) {
+                lerp(1f, 1.2f, combinedDeformationProgressProvider())
+            } else {
+                1f
+            }
         },
         LocalLiquidGlassBottomBarSelectionProgress provides selectionProgressProvider,
         LocalLiquidGlassBottomBarContentColor provides { palette.inactiveContentColor },
@@ -588,8 +647,8 @@ fun LiquidGlassBottomBar(
                             }
                         }.graphicsLayer {
                             translationX = panelOffsetProvider()
-                            val combinedPressProgress = combinedPressProgressProvider()
-                            translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
+                            val deformationProgress = combinedDeformationProgressProvider()
+                            translationY = snapChromeTranslationPx(-pressLiftPx * deformationProgress)
                         }.then(
                             if (useLightweightBackdrop) {
                                 Modifier
@@ -614,9 +673,9 @@ fun LiquidGlassBottomBar(
                                         )
                                     },
                                     layerBlock = {
-                                        val combinedPressProgress = combinedPressProgressProvider()
-                                        scaleX = lerp(1f, 1.006f, combinedPressProgress)
-                                        scaleY = lerp(1f, 0.996f, combinedPressProgress)
+                                        val deformationProgress = combinedDeformationProgressProvider()
+                                        scaleX = lerp(1f, 1.006f, deformationProgress)
+                                        scaleY = lerp(1f, 0.996f, deformationProgress)
                                     },
                                     onDrawSurface = { drawRect(palette.baseFillColor) },
                                 )
@@ -645,7 +704,7 @@ fun LiquidGlassBottomBar(
                                 )
                             },
                         ).graphicsLayer {
-                            val combinedPressProgress = combinedPressProgressProvider()
+                            val combinedPressProgress = combinedDeformationProgressProvider()
                             translationX = panelOffsetProvider()
                             translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                             scaleX = lerp(1f, 1.006f, combinedPressProgress)
@@ -688,7 +747,7 @@ fun LiquidGlassBottomBar(
                     Modifier
                         .padding(horizontal = horizontalPadding)
                         .graphicsLayer {
-                            val combinedPressProgress = combinedPressProgressProvider()
+                            val combinedPressProgress = combinedDeformationProgressProvider()
                             val contentWidth =
                                 totalWidthPx -
                                     horizontalPaddingPx * 2f
@@ -767,7 +826,12 @@ fun LiquidGlassBottomBar(
                                     },
                                     layerBlock = {
                                         if (effectiveLiquidEffectEnabled) {
-                                            val clickScale = lerp(1f, 1.045f, itemPressProgressProvider())
+                                            val clickScale =
+                                                lerp(
+                                                    1f,
+                                                    1.045f,
+                                                    itemDeformationProgressProvider(),
+                                                )
                                             scaleX = dampedDragAnimation.scaleX * clickScale
                                             scaleY = dampedDragAnimation.scaleY * clickScale
                                             val velocity = dampedDragAnimation.velocity / 10f

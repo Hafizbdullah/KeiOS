@@ -50,6 +50,7 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -305,15 +306,24 @@ private fun AppLiquidIconButtonContainer(
             accentColor = resolvedContainerColor ?: Color.Unspecified,
         )
     val animationScope = rememberCoroutineScope()
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
-        remember(animationScope) {
-            InteractiveHighlight(animationScope = animationScope)
+        remember(animationScope, transitionAnimationsEnabled) {
+            InteractiveHighlight(
+                animationScope = animationScope,
+                animationsEnabled = transitionAnimationsEnabled,
+            )
         }
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val animatedScaleState =
         appMotionFloatState(
-            targetValue = if (isPressed) AppInteractiveTokens.pressedScale else 1f,
+            targetValue =
+                if (transitionAnimationsEnabled && isPressed) {
+                    AppInteractiveTokens.pressedScale
+                } else {
+                    1f
+                },
             durationMillis = 110,
             label = "glass_icon_button_scale",
         )
@@ -540,11 +550,17 @@ fun AppLiquidTextButton(
         )
     val liquidInteractionEnabled = enabled && liquidControlsEnabled && (pressScaleEnabled || pressOverlayEnabled)
     val animationScope = rememberCoroutineScope()
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
-        remember(animationScope, consumeDragChangesForInteraction) {
+        remember(
+            animationScope,
+            consumeDragChangesForInteraction,
+            transitionAnimationsEnabled,
+        ) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 consumeDragChanges = consumeDragChangesForInteraction,
+                animationsEnabled = transitionAnimationsEnabled,
             )
         }
     val interactionSource = remember { MutableInteractionSource() }
@@ -552,7 +568,12 @@ fun AppLiquidTextButton(
     val animatedScaleState =
         appMotionFloatState(
             targetValue =
-                if (enabled && isPressed && pressScaleEnabled) {
+                if (
+                    transitionAnimationsEnabled &&
+                    enabled &&
+                    isPressed &&
+                    pressScaleEnabled
+                ) {
                     AppInteractiveTokens.pressedScale
                 } else {
                     1f
@@ -835,7 +856,7 @@ private fun resolveDarkCapsuleHighlightAlpha(
 }
 
 private fun GraphicsLayerScope.applyLiquidButtonLayer(interactiveHighlight: InteractiveHighlight) {
-    val progress = interactiveHighlight.pressProgress
+    val progress = interactiveHighlight.deformationProgress
     if (progress <= 0f) {
         translationX = 0f
         translationY = 0f

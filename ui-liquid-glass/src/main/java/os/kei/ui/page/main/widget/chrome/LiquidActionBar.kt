@@ -60,6 +60,7 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -258,6 +259,7 @@ fun LiquidActionBar(
     val clampedSelectedIndex = selectedIndex.coerceIn(0, items.lastIndex)
 
     val isInLightTheme = !isSystemInDarkTheme()
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val effectiveBlurEnabled = isBlurEnabled && appGlassRuntimeEffectsEnabled()
     val accentColor = MiuixTheme.colorScheme.primary
     val palette =
@@ -311,7 +313,14 @@ fun LiquidActionBar(
     val dragActivationThresholdPx = rememberLiquidActionBarDragActivationThresholdPx()
 
     val dampedDragAnimation =
-        remember(animationScope, items.size, density, isLtr, layeredStyleEnabled) {
+        remember(
+            animationScope,
+            items.size,
+            density,
+            isLtr,
+            layeredStyleEnabled,
+            transitionAnimationsEnabled,
+        ) {
             DampedDragAnimation(
                 animationScope = animationScope,
                 initialValue = clampedSelectedIndex.toFloat(),
@@ -319,6 +328,7 @@ fun LiquidActionBar(
                 visibilityThreshold = 0.001f,
                 initialScale = 1f,
                 pressedScale = pressedScale,
+                animationsEnabled = transitionAnimationsEnabled,
                 gestureKey = items.size to isLtr,
                 canDrag = { true },
                 dragOrientation = Orientation.Horizontal,
@@ -349,7 +359,11 @@ fun LiquidActionBar(
                                 ?.invoke()
                         }
                         animationScope.launch {
-                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            if (transitionAnimationsEnabled) {
+                                offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            } else {
+                                offsetAnimation.snapTo(0f)
+                            }
                         }
                         return@DampedDragAnimation
                     }
@@ -357,7 +371,11 @@ fun LiquidActionBar(
                         settledIndex = fallbackIndex.toFloat()
                         animateToValue(settledIndex)
                         animationScope.launch {
-                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            if (transitionAnimationsEnabled) {
+                                offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            } else {
+                                offsetAnimation.snapTo(0f)
+                            }
                         }
                         return@DampedDragAnimation
                     }
@@ -376,7 +394,11 @@ fun LiquidActionBar(
                         ?.onClick
                         ?.invoke()
                     animationScope.launch {
-                        offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                        if (transitionAnimationsEnabled) {
+                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                        } else {
+                            offsetAnimation.snapTo(0f)
+                        }
                     }
                 },
                 onDragCancelled = {
@@ -386,7 +408,11 @@ fun LiquidActionBar(
                     onInteractionChangedState.value(false)
                     animateToValue(settledIndex)
                     animationScope.launch {
-                        offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                        if (transitionAnimationsEnabled) {
+                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                        } else {
+                            offsetAnimation.snapTo(0f)
+                        }
                     }
                 },
                 onDrag = { _, dragAmount ->
@@ -438,7 +464,7 @@ fun LiquidActionBar(
         )
     val interactionProgressProvider =
         remember(dampedDragAnimation) {
-            { dampedDragAnimation.pressProgress.fastCoerceIn(0f, 1f) }
+            { dampedDragAnimation.deformationProgress.fastCoerceIn(0f, 1f) }
         }
     val actionItemTintProviderFactory =
         remember(layeredStyleEnabled, palette, selectionProgressProvider) {
@@ -487,9 +513,11 @@ fun LiquidActionBar(
                 interactionHighlightColor,
                 interactionHighlightStrength,
                 interactionHighlightRadiusScale,
+                transitionAnimationsEnabled,
             ) {
                 InteractiveHighlight(
                     animationScope = animationScope,
+                    animationsEnabled = transitionAnimationsEnabled,
                     position = { size, _ ->
                         Offset(
                             if (isLtr) {
@@ -633,7 +661,11 @@ fun LiquidActionBar(
                         dampedDragAnimation.animateToValue(settledIndex)
                         item.onClick()
                         animationScope.launch {
-                            offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            if (transitionAnimationsEnabled) {
+                                offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
+                            } else {
+                                offsetAnimation.snapTo(0f)
+                            }
                         }
                     },
                 )

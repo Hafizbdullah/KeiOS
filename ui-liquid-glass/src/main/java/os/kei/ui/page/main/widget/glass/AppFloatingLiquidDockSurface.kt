@@ -25,6 +25,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
@@ -46,13 +47,15 @@ fun AppFloatingLiquidVerticalDockSurface(
             blurRadius = null,
         )
     val animationScope = rememberCoroutineScope()
+    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
-        remember(animationScope) {
+        remember(animationScope, transitionAnimationsEnabled) {
             InteractiveHighlight(
                 animationScope = animationScope,
                 highlightStrength = 1.18f,
                 highlightRadiusScale = 1.34f,
                 consumeDragChanges = false,
+                animationsEnabled = transitionAnimationsEnabled,
             )
         }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
@@ -99,7 +102,7 @@ fun AppFloatingLiquidVerticalDockSurface(
                             backdrop = activeBackdrop,
                             shape = { ContinuousCapsule },
                             layerBlock = {
-                                val progress = interactiveHighlight.pressProgress
+                                val progress = interactiveHighlight.deformationProgress
                                 if (progress > 0f) {
                                     scaleX = 1f + 2.dp.toPx() / size.width.coerceAtLeast(1f) * progress
                                     scaleY = 1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * progress

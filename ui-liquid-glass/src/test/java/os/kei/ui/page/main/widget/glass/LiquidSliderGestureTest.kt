@@ -33,6 +33,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -147,6 +148,32 @@ class LiquidSliderGestureTest {
             click(Offset(x = width * 0.20f, y = height - 2f))
         }
         assertTrue(sliderValue < 0.30f)
+    }
+
+    @Test
+    fun reducedMotionSliderTapChangesValueImmediately() {
+        var sliderValue = 0.1f
+        composeRule.setContent {
+            CompositionLocalProvider(LocalTransitionAnimationsEnabled provides false) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    LiquidMusicProgressSlider(
+                        value = { sliderValue },
+                        onValueChange = { sliderValue = it },
+                        valueRange = 0f..1f,
+                        visibilityThreshold = 0.001f,
+                        backdrop = emptyBackdrop(),
+                        modifier = Modifier.height(18.dp).testTag("reduced-motion-slider"),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("reduced-motion-slider").performTouchInput {
+            click(Offset(x = width * 0.80f, y = centerY))
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(sliderValue > 0.70f)
     }
 
     @Test
