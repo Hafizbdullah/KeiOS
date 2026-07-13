@@ -42,6 +42,8 @@ class LiquidGlassDropdownMaterialTest {
 
             assertTrue(light.surfaceColor.alpha <= 0.53f)
             assertTrue(dark.surfaceColor.alpha <= 0.39f)
+            assertTrue(light.fallbackBaseColor.alpha <= 0.73f)
+            assertTrue(dark.fallbackBaseColor.alpha <= 0.79f)
         }
     }
 

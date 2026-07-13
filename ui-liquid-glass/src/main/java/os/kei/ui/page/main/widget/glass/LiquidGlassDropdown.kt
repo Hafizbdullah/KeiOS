@@ -410,14 +410,14 @@ internal fun buildLiquidGlassDropdownContainerColors(
                     surfaceColor = surfaceContainer.copy(alpha = 0.38f),
                     topSheen = Color.White.copy(alpha = 0.05f),
                     borderColor = Color.White.copy(alpha = 0.14f),
-                    fallbackBaseColor = Color(0xFF101113).copy(alpha = 0.92f),
+                    fallbackBaseColor = Color(0xFF101113).copy(alpha = 0.76f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.18f),
                                     Color.White.copy(alpha = 0.10f),
-                                    Color.White.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.06f),
+                                    Color.White.copy(alpha = 0.03f),
                                 ),
                             start = Offset.Zero,
                             end = Offset(360f, 460f),
@@ -426,8 +426,8 @@ internal fun buildLiquidGlassDropdownContainerColors(
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.14f),
-                                    Color.White.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.White.copy(alpha = 0.03f),
                                     Color.Transparent,
                                 ),
                             center = Offset(112f, 20f),
@@ -439,14 +439,14 @@ internal fun buildLiquidGlassDropdownContainerColors(
                     surfaceColor = Color.White.copy(alpha = 0.52f),
                     topSheen = Color.White.copy(alpha = 0.08f),
                     borderColor = Color.White.copy(alpha = 0.58f),
-                    fallbackBaseColor = Color.White.copy(alpha = 0.97f),
+                    fallbackBaseColor = Color.White.copy(alpha = 0.68f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.96f),
-                                    Color(0xFFF4F8FF).copy(alpha = 0.78f),
-                                    Color.White.copy(alpha = 0.64f),
+                                    Color.White.copy(alpha = 0.34f),
+                                    Color(0xFFF4F8FF).copy(alpha = 0.20f),
+                                    Color.White.copy(alpha = 0.10f),
                                 ),
                             start = Offset.Zero,
                             end = Offset(360f, 460f),
@@ -455,8 +455,8 @@ internal fun buildLiquidGlassDropdownContainerColors(
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.84f),
-                                    Color(0xFFEAF4FF).copy(alpha = 0.34f),
+                                    Color.White.copy(alpha = 0.28f),
+                                    Color(0xFFEAF4FF).copy(alpha = 0.10f),
                                     Color.Transparent,
                                 ),
                             center = Offset(112f, 20f),
@@ -472,14 +472,14 @@ internal fun buildLiquidGlassDropdownContainerColors(
                     surfaceColor = surfaceContainer.copy(alpha = 0.34f),
                     topSheen = Color.White.copy(alpha = 0.05f),
                     borderColor = Color.White.copy(alpha = 0.20f),
-                    fallbackBaseColor = surfaceContainer.copy(alpha = 0.94f),
+                    fallbackBaseColor = surfaceContainer.copy(alpha = 0.78f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.30f),
-                                    Color.White.copy(alpha = 0.16f),
-                                    Color.White.copy(alpha = 0.10f),
+                                    Color.White.copy(alpha = 0.14f),
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.White.copy(alpha = 0.05f),
                                 ),
                             start = Offset.Zero,
                             end = Offset(320f, 420f),
@@ -488,8 +488,8 @@ internal fun buildLiquidGlassDropdownContainerColors(
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.22f),
-                                    Color.White.copy(alpha = 0.08f),
+                                    Color.White.copy(alpha = 0.10f),
+                                    Color.White.copy(alpha = 0.04f),
                                     Color.Transparent,
                                 ),
                             center = Offset(96f, 24f),
@@ -501,14 +501,14 @@ internal fun buildLiquidGlassDropdownContainerColors(
                     surfaceColor = Color.White.copy(alpha = 0.46f),
                     topSheen = Color.White.copy(alpha = 0.08f),
                     borderColor = Color.White.copy(alpha = 0.54f),
-                    fallbackBaseColor = Color.White.copy(alpha = 0.94f),
+                    fallbackBaseColor = Color.White.copy(alpha = 0.72f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.90f),
-                                    Color(0xFFEAF3FF).copy(alpha = 0.58f),
-                                    Color.White.copy(alpha = 0.36f),
+                                    Color.White.copy(alpha = 0.38f),
+                                    Color(0xFFEAF3FF).copy(alpha = 0.24f),
+                                    Color.White.copy(alpha = 0.12f),
                                 ),
                             start = Offset.Zero,
                             end = Offset(320f, 420f),
@@ -517,8 +517,8 @@ internal fun buildLiquidGlassDropdownContainerColors(
                         Brush.radialGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.78f),
-                                    Color(0xFFE1EFFF).copy(alpha = 0.30f),
+                                    Color.White.copy(alpha = 0.30f),
+                                    Color(0xFFE1EFFF).copy(alpha = 0.12f),
                                     Color.Transparent,
                                 ),
                             center = Offset(96f, 24f),
