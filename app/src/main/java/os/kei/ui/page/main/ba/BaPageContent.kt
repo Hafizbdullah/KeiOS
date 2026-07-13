@@ -16,6 +16,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntRect
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.ui.page.main.ba.card.BaAccountPagerCard
 import os.kei.ui.page.main.ba.card.BaApCard
 import os.kei.ui.page.main.ba.card.BaCafeCard
@@ -84,6 +86,7 @@ internal enum class BaPageContentType {
 
 @Composable
 internal fun BaPageContent(
+    topBarBackdrop: LayerBackdrop,
     backdrop: Backdrop?,
     innerPadding: PaddingValues,
     contentBottomPadding: Dp,
@@ -100,6 +103,7 @@ internal fun BaPageContent(
         modifier =
             Modifier
                 .fillMaxSize()
+                .layerBackdrop(topBarBackdrop)
                 .nestedScroll(nestedScrollConnection),
         state = listState,
         contentPadding =
