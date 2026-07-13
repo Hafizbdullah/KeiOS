@@ -28,8 +28,8 @@ import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -61,6 +61,7 @@ internal fun McpSkillOnboardingCard(
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
+        exportBackdropToContent = true,
         showIndication = false,
     ) {
         Column(
@@ -125,6 +126,7 @@ internal fun McpSkillQuickCopyCard(
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
+        exportBackdropToContent = true,
         showIndication = false,
     ) {
         Column(
@@ -188,6 +190,7 @@ internal fun McpSkillResourcesCard(
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
+        exportBackdropToContent = true,
         showIndication = false,
     ) {
         Column(
@@ -281,6 +284,7 @@ internal fun McpSkillReferenceCard(
 ) {
     AppSurfaceCard(
         contentColor = titleColor,
+        exportBackdropToContent = true,
         showIndication = true,
         onClick = { onExpandedChange(!expanded) },
     ) {
@@ -297,8 +301,7 @@ internal fun McpSkillReferenceCard(
                 titleColor = titleColor,
                 subtitleColor = subtitleColor,
             )
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 variant = GlassVariant.Compact,
                 text =
                     if (expanded) {
@@ -308,6 +311,7 @@ internal fun McpSkillReferenceCard(
                     },
                 textColor = accentColor,
                 leadingIcon = if (expanded) appLucideListIcon() else appLucideNotesIcon(),
+                pressSafePadding = 0.dp,
                 onClick = { onExpandedChange(!expanded) },
             )
         }
@@ -372,14 +376,15 @@ private fun SkillCopyButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         variant = GlassVariant.Compact,
         text = text,
         textColor = color,
         leadingIcon = icon,
         modifier = modifier,
+        surfaceModifier = Modifier.fillMaxWidth(),
         textMaxLines = 2,
+        pressSafePadding = 0.dp,
         onClick = onClick,
     )
 }
@@ -390,14 +395,14 @@ private fun SkillTinyCopyButton(
     accentColor: Color,
     onClick: () -> Unit,
 ) {
-    AppLiquidIconButton(
-        backdrop = null,
+    AppStandaloneLiquidIconButton(
         variant = GlassVariant.Compact,
         icon = osLucideCopyIcon(),
         contentDescription = contentDescription,
         width = 34.dp,
         height = 30.dp,
         iconTint = accentColor,
+        pressSafePadding = 0.dp,
         onClick = onClick,
     )
 }
