@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.OsPageCardListDerivedState
 import os.kei.ui.page.main.os.OsPageDerivedState
@@ -127,6 +128,7 @@ internal fun OsPageMainList(
     listState: LazyListState,
     innerPadding: PaddingValues,
     scrollBehaviorConnection: NestedScrollConnection,
+    topBarBackdrop: LayerBackdrop,
     contentBackdrop: LayerBackdrop,
     chromeState: OsPageMainListChromeState,
     overviewState: OsPageMainListOverviewState,
@@ -251,6 +253,7 @@ internal fun OsPageMainList(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .layerBackdrop(topBarBackdrop)
                     .nestedScroll(scrollBehaviorConnection),
             state = listState,
             innerPadding = innerPadding,

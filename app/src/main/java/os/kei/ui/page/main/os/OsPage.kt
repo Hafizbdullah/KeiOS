@@ -660,6 +660,7 @@ fun OsPage(
                 listState = listState,
                 innerPadding = innerPadding,
                 scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
+                topBarBackdrop = backdrops.topBar,
                 contentBackdrop = backdrops.content,
                 chromeState = mainListChromeState,
                 overviewState = mainListOverviewState,
