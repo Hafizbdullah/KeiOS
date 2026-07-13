@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -56,6 +57,7 @@ internal fun McpPageContent(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .layerBackdrop(backdrops.topBar)
                     .nestedScroll(nestedScrollConnection),
             bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
             sectionSpacing = 12.dp,
