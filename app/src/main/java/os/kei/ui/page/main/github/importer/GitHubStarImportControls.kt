@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,13 +26,12 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.os.appLucideListIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
-import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidSearchField
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
@@ -86,6 +84,7 @@ internal fun StarImportListControlCard(
             selectedCount
         ),
         sectionIcon = appLucideListIcon(),
+        exportBackdropToContent = true,
         showIndication = false,
         headerEndActions = {
             StatusPill(
@@ -100,14 +99,12 @@ internal fun StarImportListControlCard(
                 },
                 size = AppStatusPillSize.Compact
             )
-            AppLiquidIconButton(
-                backdrop = null,
+            AppStandaloneLiquidIconButton(
                 icon = appLucideFilterIcon(),
                 contentDescription = stringResource(R.string.github_star_import_filter_options),
                 onClick = { advancedExpanded = !advancedExpanded },
                 width = 36.dp,
                 height = 36.dp,
-                modifier = Modifier.size(36.dp),
                 variant = if (advancedExpanded) GlassVariant.SheetAction else GlassVariant.Content,
                 iconTint = if (advancedExpanded) {
                     GitHubStatusPalette.Update
@@ -117,12 +114,12 @@ internal fun StarImportListControlCard(
             )
         }
     ) {
-        AppLiquidSearchField(
+        AppStandaloneLiquidSearchField(
             value = filterInput,
             onValueChange = onFilterInputChange,
             label = stringResource(R.string.github_star_import_filter_label),
-            backdrop = null,
-            variant = GlassVariant.Content,
+            fieldModifier = Modifier.fillMaxWidth(),
+            variant = GlassVariant.SearchField,
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
         )
@@ -143,8 +140,7 @@ internal fun StarImportListControlCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 text = if (importing) {
                     stringResource(R.string.github_star_import_status_importing)
                 } else {
@@ -152,14 +148,15 @@ internal fun StarImportListControlCard(
                 },
                 onClick = onImport,
                 modifier = Modifier.weight(1.28f),
+                surfaceModifier = Modifier.fillMaxWidth(),
                 enabled = importEnabled,
                 variant = GlassVariant.SheetAction,
                 leadingIcon = appLucideConfirmIcon(),
                 textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis
+                textOverflow = TextOverflow.Ellipsis,
+                pressSafePadding = 0.dp,
             )
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 text = stringResource(R.string.github_star_import_action_select_short),
                 onClick = {
                     if (visibleRecommendedCount > 0) {
@@ -169,14 +166,14 @@ internal fun StarImportListControlCard(
                     }
                 },
                 modifier = Modifier.weight(0.78f),
+                surfaceModifier = Modifier.fillMaxWidth(),
                 enabled = canSelectPrimary && !importing,
                 variant = GlassVariant.Content,
-                leadingIcon = appLucideConfirmIcon(),
                 textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis
+                textOverflow = TextOverflow.Ellipsis,
+                pressSafePadding = 0.dp,
             )
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 text = stringResource(R.string.github_star_import_action_verify_short),
                 onClick = {
                     if (verifySelectedEnabled) {
@@ -186,11 +183,12 @@ internal fun StarImportListControlCard(
                     }
                 },
                 modifier = Modifier.weight(0.78f),
+                surfaceModifier = Modifier.fillMaxWidth(),
                 enabled = canVerifyPrimary,
                 variant = GlassVariant.Content,
-                leadingIcon = appLucideRefreshIcon(),
                 textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis
+                textOverflow = TextOverflow.Ellipsis,
+                pressSafePadding = 0.dp,
             )
         }
         if (advancedExpanded) {
@@ -362,8 +360,7 @@ private fun StarImportAdvancedControls(
         ) {
             GitHubStarImportQuality.entries.forEach { quality ->
                 val selected = quality in qualityFilters
-                AppLiquidTextButton(
-                    backdrop = null,
+                AppStandaloneLiquidTextButton(
                     text = stringResource(
                         R.string.github_star_import_quality_chip_format,
                         stringResource(quality.labelRes()),
@@ -385,7 +382,8 @@ private fun StarImportAdvancedControls(
                     textSize = AppTypographyTokens.Body.fontSize,
                     textLineHeight = AppTypographyTokens.Body.lineHeight,
                     textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis
+                    textOverflow = TextOverflow.Ellipsis,
+                    pressSafePadding = 0.dp,
                 )
             }
         }
@@ -394,18 +392,19 @@ private fun StarImportAdvancedControls(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StarImportConflictStrategy.entries.forEach { strategy ->
-                AppLiquidTextButton(
-                    backdrop = null,
+                AppStandaloneLiquidTextButton(
                     text = stringResource(strategy.labelRes),
                     onClick = { onConflictStrategyChange(strategy) },
                     modifier = Modifier.weight(1f),
+                    surfaceModifier = Modifier.fillMaxWidth(),
                     variant = if (strategy == conflictStrategy) {
                         GlassVariant.SheetAction
                     } else {
                         GlassVariant.Content
                     },
                     textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis
+                    textOverflow = TextOverflow.Ellipsis,
+                    pressSafePadding = 0.dp,
                 )
             }
         }
@@ -470,11 +469,11 @@ private fun StarImportCompactAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
+        surfaceModifier = Modifier.fillMaxWidth(),
         enabled = enabled,
         variant = GlassVariant.Content,
         minHeight = StarImportChipMinHeight,
@@ -483,7 +482,8 @@ private fun StarImportCompactAction(
         textSize = AppTypographyTokens.Body.fontSize,
         textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Ellipsis,
+        pressSafePadding = 0.dp,
     )
 }
 
@@ -494,8 +494,7 @@ private fun StarImportFilterButton(
     onClick: (StarImportViewFilter) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = stringResource(filter.labelRes),
         onClick = { onClick(filter) },
         modifier = modifier,
@@ -510,6 +509,7 @@ private fun StarImportFilterButton(
         textSize = AppTypographyTokens.Body.fontSize,
         textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Clip
+        textOverflow = TextOverflow.Clip,
+        pressSafePadding = 0.dp,
     )
 }

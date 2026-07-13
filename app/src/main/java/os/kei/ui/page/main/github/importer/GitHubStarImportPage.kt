@@ -20,7 +20,6 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ext.showToast
-import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubRepositoryImportCandidate
 import os.kei.feature.github.model.StarImportApplyResult
@@ -43,7 +42,6 @@ internal fun GitHubStarImportPage(
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val pageBackdrop = rememberLayerBackdrop()
-    val topBarColor = rememberAppTopBarColor(enableBackdropEffects = true)
     val viewModel: GitHubStarImportViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listUiState = uiState.listUiState
@@ -101,7 +99,6 @@ internal fun GitHubStarImportPage(
         title = stringResource(R.string.github_star_import_title),
         modifier = Modifier.fillMaxSize(),
         scrollBehavior = scrollBehavior,
-        topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
         reserveTopEndActionSpace = false,
         navigationIcon = {

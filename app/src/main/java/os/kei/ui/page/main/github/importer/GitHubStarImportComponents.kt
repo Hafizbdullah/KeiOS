@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -35,8 +37,8 @@ import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidInputField
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -64,6 +66,7 @@ internal fun StarImportSourceCard(
     onLoadPreview: () -> Unit
 ) {
     AppSurfaceCard(
+        exportBackdropToContent = true,
         showIndication = false,
     ) {
         Column(
@@ -194,26 +197,31 @@ private fun StarImportInputActionRow(
     enabled: Boolean,
     onLoadPreview: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AppLiquidSearchField(
+        AppStandaloneLiquidInputField(
             value = value,
             onValueChange = onValueChange,
             label = label,
-            backdrop = null,
             modifier = Modifier.weight(1f),
+            fieldModifier = Modifier.fillMaxWidth(),
             variant = GlassVariant.Content,
             singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done)
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         )
         StarImportLoadButton(
             loading = loading,
             importing = importing,
             enabled = enabled,
-            onClick = onLoadPreview
+            onClick = {
+                focusManager.clearFocus()
+                onLoadPreview()
+            },
         )
     }
 }
@@ -225,8 +233,7 @@ private fun StarImportLoadButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = if (loading) {
             stringResource(R.string.github_star_import_action_loading)
         } else {
@@ -234,6 +241,7 @@ private fun StarImportLoadButton(
         },
         onClick = onClick,
         modifier = Modifier.widthIn(min = StarImportLoadButtonMinWidth),
+        surfaceModifier = Modifier.widthIn(min = StarImportLoadButtonMinWidth),
         enabled = enabled && !loading && !importing,
         variant = GlassVariant.SheetAction,
         leadingIcon = if (loading) null else appLucideListIcon(),
@@ -243,7 +251,8 @@ private fun StarImportLoadButton(
         textSize = AppTypographyTokens.Body.fontSize,
         textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Clip
+        textOverflow = TextOverflow.Clip,
+        pressSafePadding = 0.dp,
     )
 }
 
@@ -297,11 +306,11 @@ private fun StarImportSourceButton(
     modifier: Modifier = Modifier
 ) {
     val activeColor = GitHubStatusPalette.Update
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = stringResource(source.labelRes),
         onClick = onClick,
         modifier = modifier,
+        surfaceModifier = Modifier.fillMaxWidth(),
         textColor = if (selected) activeColor else MiuixTheme.colorScheme.primary,
         containerColor = if (selected) activeColor else null,
         leadingIcon = if (selected) appLucideConfirmIcon() else null,
@@ -313,7 +322,8 @@ private fun StarImportSourceButton(
         textSize = AppTypographyTokens.Body.fontSize,
         textLineHeight = AppTypographyTokens.Body.lineHeight,
         textMaxLines = 1,
-        textOverflow = TextOverflow.Clip
+        textOverflow = TextOverflow.Clip,
+        pressSafePadding = 0.dp,
     )
 }
 
@@ -420,7 +430,8 @@ internal fun StarImportStarListPickerCard(
         title = stringResource(R.string.github_star_import_lists_title),
         subtitle = stringResource(R.string.github_star_import_lists_summary_format, lists.size),
         sectionIcon = appLucideListIcon(),
-        showIndication = false
+        exportBackdropToContent = true,
+        showIndication = false,
     ) {
         lists.forEach { list ->
             StarImportListChoiceButton(
@@ -438,8 +449,7 @@ private fun StarImportListChoiceButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = if (list.repositoryCount >= 0) {
             stringResource(
                 R.string.github_star_import_list_choice_format,
@@ -451,11 +461,13 @@ private fun StarImportListChoiceButton(
         },
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        surfaceModifier = Modifier.fillMaxWidth(),
         enabled = enabled,
         variant = GlassVariant.Content,
         leadingIcon = appLucideListIcon(),
         textMaxLines = 1,
-        textOverflow = TextOverflow.Ellipsis
+        textOverflow = TextOverflow.Ellipsis,
+        pressSafePadding = 0.dp,
     )
 }
 
