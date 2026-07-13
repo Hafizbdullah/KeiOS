@@ -78,7 +78,7 @@ fun LiquidSurface(
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
     effectVariant: GlassVariant? = null,
     chromaticAberration: Boolean = false,
-    depthEffect: Boolean = true,
+    depthEffect: Boolean = false,
     shadow: Boolean = true,
     shadowAlpha: Float = 0.10f,
     exportedBackdrop: LayerBackdrop? = null,
@@ -92,6 +92,7 @@ fun LiquidSurface(
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
+    val isDark = isSystemInDarkTheme()
     val animationScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
@@ -170,12 +171,20 @@ fun LiquidSurface(
                             centerX = interactiveHighlight.touchPosition.x,
                             centerY = interactiveHighlight.touchPosition.y,
                             radius = effectiveLensRadius.toPx() * 2f,
-                            strength = 8f * interactiveHighlight.pressProgress,
+                            strength = 6f * interactiveHighlight.pressProgress,
                         )
                     }
                 },
                 highlight = {
-                    Highlight.Default.copy(alpha = if (isInteractive && enabled) 1f else 0.82f)
+                    Highlight.Default.copy(
+                        alpha =
+                            liquidSurfaceHighlightAlpha(
+                                isDark = isDark,
+                                interactive = isInteractive,
+                                enabled = enabled,
+                                pressProgress = interactiveHighlight.pressProgress,
+                            ),
+                    )
                 },
                 shadow = {
                     val resolvedShadowAlpha = if (shadow) shadowAlpha.coerceIn(0f, 1f) else 0f
@@ -187,7 +196,7 @@ fun LiquidSurface(
                 },
                 innerShadow = {
                     val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
-                    InnerShadow(radius = 6.dp * progress, alpha = progress)
+                    InnerShadow(radius = 6.dp * progress, alpha = 0.55f * progress)
                 },
                 layerBlock = interactiveLayerBlock,
                 exportedBackdrop = exportedBackdrop,
@@ -255,6 +264,23 @@ fun LiquidSurface(
             )
         }
     }
+}
+
+internal fun liquidSurfaceHighlightAlpha(
+    isDark: Boolean,
+    interactive: Boolean,
+    enabled: Boolean,
+    pressProgress: Float,
+): Float {
+    val baseAlpha = if (isDark) 0.42f else 0.62f
+    val interactionBoost =
+        if (interactive && enabled) {
+            val safeProgress = pressProgress.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
+            0.10f * safeProgress
+        } else {
+            0f
+        }
+    return baseAlpha + interactionBoost
 }
 
 private fun GraphicsLayerScope.applyLiquidSurfaceInteractiveTransform(interactiveHighlight: InteractiveHighlight) {
