@@ -26,7 +26,7 @@ class AppLiquidSearchMaterialTest {
         assertTrue(colors.bottomGlow.alpha <= 0.07f)
         assertTrue(colors.sideRim.alpha <= 0.17f)
         assertTrue(colors.innerRim.alpha <= 0.27f)
-        assertTrue(colors.edge.alpha <= 0.53f)
+        assertTrue(colors.edge.alpha in 0.31f..0.33f)
     }
 
     @Test
@@ -39,5 +39,17 @@ class AppLiquidSearchMaterialTest {
             )
 
         assertTrue(alpha <= 0.68f)
+    }
+
+    @Test
+    fun lightPlaceholderUsesReadableContentColor() {
+        val placeholder =
+            appLiquidSearchPlaceholderColor(
+                contentColor = androidx.compose.ui.graphics.Color.Black,
+                variantColor = androidx.compose.ui.graphics.Color.LightGray,
+                isDark = false,
+            )
+
+        assertTrue(placeholder.alpha in 0.61f..0.63f)
     }
 }

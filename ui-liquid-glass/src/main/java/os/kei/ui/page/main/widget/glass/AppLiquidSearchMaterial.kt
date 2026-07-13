@@ -49,7 +49,7 @@ fun appLiquidSearchMaterialColors(
             },
         sideRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.028f else 0.050f) else Color.White.copy(alpha = 0.16f),
         innerRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.045f else 0.080f) else Color.White.copy(alpha = 0.26f),
-        edge = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.12f else 0.16f) else Color.White.copy(alpha = 0.52f),
+        edge = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.12f else 0.16f) else Color(0xFF86C3FF).copy(alpha = 0.32f),
     )
 
 fun appLiquidSearchHighlightAlpha(
@@ -62,6 +62,7 @@ fun appLiquidSearchHighlightAlpha(
     return targetAlpha.coerceAtMost(if (isDark) darkMaxAlpha else 0.68f)
 }
 
+@Suppress("UNUSED_PARAMETER")
 fun appLiquidSearchPlaceholderColor(
     contentColor: Color,
     variantColor: Color,
@@ -70,7 +71,7 @@ fun appLiquidSearchPlaceholderColor(
     if (isDark) {
         contentColor.copy(alpha = 0.84f)
     } else {
-        variantColor.copy(alpha = 0.78f)
+        contentColor.copy(alpha = 0.62f)
     }
 
 fun Modifier.appLiquidSearchMaterialOverlay(

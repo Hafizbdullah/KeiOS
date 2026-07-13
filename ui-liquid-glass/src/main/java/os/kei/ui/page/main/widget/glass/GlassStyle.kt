@@ -81,7 +81,7 @@ fun glassStyle(
                     if (isDark) {
                         Color.White.copy(alpha = 0.18f)
                     } else {
-                        Color.White.copy(alpha = 0.52f)
+                        Color(0xFF86C3FF).copy(alpha = 0.32f)
                     },
                 borderWidth = 1.1.dp,
                 highlightAlpha = if (isDark) SEARCH_FIELD_DARK_HIGHLIGHT_ALPHA else SEARCH_FIELD_LIGHT_HIGHLIGHT_ALPHA,
