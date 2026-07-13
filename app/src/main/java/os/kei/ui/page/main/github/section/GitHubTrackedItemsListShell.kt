@@ -1,13 +1,14 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.BuildConfig
@@ -106,6 +107,7 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                 },
                 onHeaderLongClick = { actions.onOpenTrackSheetForEdit(item) },
                 clipContent = false,
+                headerContentPadding = githubTrackedCardHeaderPadding,
                 headerActions = {
                     GitHubTrackedItemHeaderActions(
                         item = item,
@@ -124,22 +126,24 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
                     verticalSpacing = CardLayoutRhythm.denseSectionGap,
                 ) {
                     if (item.externalBuildUntilRelease) {
-                        val checkedAt = formatReleaseUpdatedAtNoYear(
-                            state.checkedAtMillis.takeIf { it > 0L },
-                        )
+                        val checkedAt =
+                            formatReleaseUpdatedAtNoYear(
+                                state.checkedAtMillis.takeIf { it > 0L },
+                            )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             StatusPill(
-                                label = stringResource(
-                                    if (!state.loading && !state.hasStableRelease && state.latestPreRawTag.isBlank()) {
-                                        R.string.github_track_badge_waiting_release
-                                    } else {
-                                        R.string.github_track_badge_external_build
-                                    },
-                                ),
+                                label =
+                                    stringResource(
+                                        if (!state.loading && !state.hasStableRelease && state.latestPreRawTag.isBlank()) {
+                                            R.string.github_track_badge_waiting_release
+                                        } else {
+                                            R.string.github_track_badge_external_build
+                                        },
+                                    ),
                                 color = GitHubStatusPalette.Cache,
                                 size = AppStatusPillSize.Compact,
                             )
@@ -192,3 +196,9 @@ internal fun LazyListScope.GitHubTrackedItemsListShell(
         }
     }
 }
+
+internal val githubTrackedCardHeaderPadding =
+    PaddingValues(
+        horizontal = CardLayoutRhythm.cardHorizontalPadding,
+        vertical = 4.dp,
+    )

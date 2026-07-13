@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.animation.AnimatedVisibility
@@ -28,9 +30,10 @@ fun AppLiquidAccordionCard(
     onHeaderLongClick: (() -> Unit)? = null,
     containerColor: Color? = null,
     clipContent: Boolean = true,
+    headerContentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
     contentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
     verticalSpacing: Dp = CardLayoutRhythm.sectionGap,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     AppLiquidExpandableCardFrame(
         backdrop = backdrop,
@@ -44,9 +47,10 @@ fun AppLiquidAccordionCard(
         onHeaderLongClick = onHeaderLongClick,
         containerColor = containerColor,
         clipContent = clipContent,
+        headerContentPadding = headerContentPadding,
         contentPadding = contentPadding,
         verticalSpacing = verticalSpacing,
-        content = content
+        content = content,
     )
 }
 
@@ -62,7 +66,7 @@ fun AppLiquidExpandableSection(
     onHeaderLongClick: (() -> Unit)? = null,
     containerColor: Color? = null,
     clipContent: Boolean = true,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     AppLiquidExpandableCardFrame(
         backdrop = backdrop,
@@ -75,13 +79,15 @@ fun AppLiquidExpandableSection(
         onHeaderLongClick = onHeaderLongClick,
         containerColor = containerColor,
         clipContent = clipContent,
-        contentPadding = PaddingValues(
-            start = CardLayoutRhythm.cardHorizontalPadding,
-            end = CardLayoutRhythm.cardHorizontalPadding,
-            bottom = CardLayoutRhythm.cardVerticalPadding
-        ),
+        headerContentPadding = CardLayoutRhythm.cardContentPadding,
+        contentPadding =
+            PaddingValues(
+                start = CardLayoutRhythm.cardHorizontalPadding,
+                end = CardLayoutRhythm.cardHorizontalPadding,
+                bottom = CardLayoutRhythm.cardVerticalPadding,
+            ),
         verticalSpacing = CardLayoutRhythm.sectionGap,
-        content = content
+        content = content,
     )
 }
 
@@ -98,9 +104,10 @@ private fun AppLiquidExpandableCardFrame(
     onHeaderLongClick: (() -> Unit)?,
     containerColor: Color?,
     clipContent: Boolean,
+    headerContentPadding: PaddingValues,
     contentPadding: PaddingValues,
     verticalSpacing: Dp,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val sectionSurface = containerColor ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
 
@@ -109,33 +116,35 @@ private fun AppLiquidExpandableCardFrame(
         containerColor = sectionSurface,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
         showIndication = false,
-        clipContent = clipContent
+        clipContent = clipContent,
     ) {
         AppCardHeader(
             title = title,
             subtitle = subtitle,
             startAction = headerStartAction,
             titleAccessory = titleAccessory,
-            endActions = if (headerActions != null) {
-                { headerActions.invoke() }
-            } else {
-                null
-            },
+            endActions =
+                if (headerActions != null) {
+                    { headerActions.invoke() }
+                } else {
+                    null
+                },
             expandable = true,
             expanded = expanded,
             expandTint = MiuixTheme.colorScheme.primary,
+            contentPadding = headerContentPadding,
             onClick = { onExpandedChange(!expanded) },
-            onLongClick = onHeaderLongClick
+            onLongClick = onHeaderLongClick,
         )
         AnimatedVisibility(
             visible = expanded,
             enter = appExpandIn(),
-            exit = appExpandOut()
+            exit = appExpandOut(),
         ) {
             AppCardBodyColumn(
                 contentPadding = contentPadding,
                 verticalSpacing = verticalSpacing,
-                content = { content() }
+                content = { content() },
             )
         }
     }
