@@ -43,6 +43,9 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidBackdropGroup
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
@@ -217,6 +220,70 @@ internal fun DebugLiquidButtonsCard(
                 containerColor = Color(0xFF7C5CFF).copy(alpha = 0.26f),
                 variant = GlassVariant.SheetAction,
             )
+        }
+        Text(
+            text = stringResource(R.string.debug_component_lab_liquid_standalone_group_section),
+            color = contentColor,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        Text(
+            text = stringResource(R.string.debug_component_lab_liquid_standalone_group_hint),
+            color = MiuixTheme.colorScheme.onBackgroundVariant,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        AppStandaloneLiquidBackdropGroup(
+            backdrop = backdrop,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppStandaloneLiquidTextButton(
+                        text = stringResource(R.string.debug_component_lab_liquid_button_primary),
+                        onClick = {},
+                        modifier = Modifier.weight(1f),
+                        surfaceModifier = Modifier.fillMaxWidth(),
+                        textColor = contentColor,
+                        leadingIcon = appLucidePlayIcon(),
+                        iconTint = contentColor,
+                        variant = GlassVariant.SheetPrimaryAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        pressSafePadding = 0.dp,
+                    )
+                    AppStandaloneLiquidTextButton(
+                        text = stringResource(R.string.debug_component_lab_liquid_button_shuffle),
+                        onClick = {},
+                        modifier = Modifier.weight(1f),
+                        surfaceModifier = Modifier.fillMaxWidth(),
+                        textColor = contentColor,
+                        leadingIcon = appLucideShuffleIcon(),
+                        iconTint = contentColor,
+                        variant = GlassVariant.SheetAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        pressSafePadding = 0.dp,
+                    )
+                    AppStandaloneLiquidIconButton(
+                        icon = appLucideMoreIcon(),
+                        contentDescription = stringResource(R.string.debug_component_lab_action_more),
+                        onClick = {},
+                        width = 36.dp,
+                        height = 36.dp,
+                        variant = GlassVariant.Content,
+                        iconTint = contentColor,
+                        pressSafePadding = 0.dp,
+                    )
+                }
+            }
         }
     }
 }

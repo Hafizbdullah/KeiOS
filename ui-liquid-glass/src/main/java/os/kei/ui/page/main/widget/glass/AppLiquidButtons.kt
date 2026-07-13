@@ -482,6 +482,7 @@ fun AppLiquidTextButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    surfaceModifier: Modifier = Modifier,
     textColor: Color = MiuixTheme.colorScheme.primary,
     containerColor: Color? = null,
     leadingIcon: ImageVector? = null,
@@ -642,6 +643,7 @@ fun AppLiquidTextButton(
                         )
                     },
                 ).minimumLiquidTouchTargetSize()
+                .then(surfaceModifier)
                 .defaultMinSize(minHeight = minHeight)
                 .graphicsLayer {
                     val scale = animatedScaleProvider()

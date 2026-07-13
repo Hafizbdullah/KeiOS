@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +20,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -33,6 +32,7 @@ fun AppStandaloneLiquidTextButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     buttonModifier: Modifier = Modifier,
+    surfaceModifier: Modifier = Modifier,
     textColor: Color = MiuixTheme.colorScheme.primary,
     containerColor: Color? = null,
     leadingIcon: ImageVector? = null,
@@ -70,6 +70,7 @@ fun AppStandaloneLiquidTextButton(
             text = text,
             onClick = onClick,
             modifier = buttonModifier,
+            surfaceModifier = surfaceModifier,
             textColor = textColor,
             containerColor = containerColor,
             leadingIcon = leadingIcon,
@@ -194,10 +195,37 @@ fun AppStandaloneLiquidIconButton(
     }
 }
 
+/**
+ * Shares one active Backdrop with a compact group of standalone liquid controls.
+ *
+ * The supplied Backdrop should come from an earlier-drawn sibling source or a parent glass
+ * surface's exported Backdrop. A null source keeps the controls on their light fallback surfaces.
+ */
+@Composable
+fun AppStandaloneLiquidBackdropGroup(
+    modifier: Modifier = Modifier,
+    backdrop: Backdrop? = null,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    AppStandaloneBackdropHost(
+        modifier = modifier,
+        backdrop = backdrop,
+        contentAlignment = Alignment.TopStart,
+    ) { activeBackdrop ->
+        CompositionLocalProvider(
+            LocalLiquidParentBackdrop provides activeBackdrop,
+        ) {
+            content()
+        }
+    }
+}
+
 @Composable
 internal fun AppStandaloneBackdropHost(
     modifier: Modifier,
+    backdrop: Backdrop? = null,
     pressSafePadding: Dp = Dp.Unspecified,
+    contentAlignment: Alignment = Alignment.Center,
     content: @Composable BoxScope.(Backdrop?) -> Unit,
 ) {
     val resolvedPressSafePadding =
@@ -206,24 +234,11 @@ internal fun AppStandaloneBackdropHost(
         } else {
             pressSafePadding
         }
-    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val activeBackdrop = activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
     Box(
         modifier = modifier.padding(resolvedPressSafePadding),
-        contentAlignment = Alignment.Center,
+        contentAlignment = contentAlignment,
     ) {
-        if (parentBackdrop != null && appGlassRuntimeEffectsEnabled()) {
-            content(parentBackdrop)
-        } else if (appGlassRuntimeEffectsEnabled()) {
-            val localBackdrop = rememberLayerBackdrop()
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(localBackdrop),
-            )
-            content(localBackdrop)
-        } else {
-            content(null)
-        }
+        content(activeBackdrop)
     }
 }

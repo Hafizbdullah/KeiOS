@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,7 +37,11 @@ import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidBackdropGroup
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidSearchField
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -46,7 +51,9 @@ internal fun DebugLiquidSearchFormCard(
     backdrop: Backdrop,
 ) {
     var formQuery by remember { mutableStateOf("") }
-    var imeActionCount by remember { mutableIntStateOf(0) }
+    var standaloneQuery by remember { mutableStateOf("") }
+    var formImeActionCount by remember { mutableIntStateOf(0) }
+    var standaloneImeActionCount by remember { mutableIntStateOf(0) }
     var floatingExpanded by remember { mutableStateOf(false) }
     var floatingQuery by remember { mutableStateOf("") }
     var verticalExpanded by remember { mutableStateOf(false) }
@@ -82,7 +89,7 @@ internal fun DebugLiquidSearchFormCard(
                 backdrop = backdrop,
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                onImeActionDone = { imeActionCount++ },
+                onImeActionDone = { formImeActionCount++ },
             )
             AppLiquidIconButton(
                 backdrop = backdrop,
@@ -101,7 +108,62 @@ internal fun DebugLiquidSearchFormCard(
                 stringResource(
                     R.string.debug_component_lab_liquid_search_field_state,
                     formQuery.ifBlank { emptyValue },
-                    imeActionCount,
+                    formImeActionCount,
+                ),
+            color = secondaryColor,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+
+        DebugLiquidSearchSectionLabel(
+            text = stringResource(R.string.debug_component_lab_liquid_standalone_group_section),
+            color = contentColor,
+        )
+        Text(
+            text = stringResource(R.string.debug_component_lab_liquid_standalone_group_hint),
+            color = secondaryColor,
+            fontSize = AppTypographyTokens.Supporting.fontSize,
+            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+        AppStandaloneLiquidBackdropGroup(
+            backdrop = backdrop,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppStandaloneLiquidSearchField(
+                    value = standaloneQuery,
+                    onValueChange = { standaloneQuery = it },
+                    label = stringResource(R.string.debug_component_lab_liquid_search_field_placeholder),
+                    modifier = Modifier.weight(1f),
+                    variant = GlassVariant.SearchField,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    onImeActionDone = { standaloneImeActionCount++ },
+                )
+                AppStandaloneLiquidTextButton(
+                    text = stringResource(R.string.common_clear),
+                    onClick = { standaloneQuery = "" },
+                    surfaceModifier = Modifier.widthIn(min = 112.dp),
+                    textColor = contentColor,
+                    leadingIcon = appLucideCloseIcon(),
+                    iconTint = contentColor,
+                    enabled = standaloneQuery.isNotEmpty(),
+                    variant = GlassVariant.SheetAction,
+                    textMaxLines = 1,
+                    textOverflow = TextOverflow.Ellipsis,
+                    pressSafePadding = 0.dp,
+                )
+            }
+        }
+        Text(
+            text =
+                stringResource(
+                    R.string.debug_component_lab_liquid_search_field_state,
+                    standaloneQuery.ifBlank { emptyValue },
+                    standaloneImeActionCount,
                 ),
             color = secondaryColor,
             fontSize = AppTypographyTokens.Supporting.fontSize,

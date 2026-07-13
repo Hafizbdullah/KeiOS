@@ -66,6 +66,8 @@
     <string name="debug_component_lab_liquid_button_rounded">圆角矩形</string>
     <string name="debug_component_lab_liquid_button_oval">椭圆胶囊</string>
     <string name="debug_component_lab_liquid_button_circle">圆形按钮</string>
+    <string name="debug_component_lab_liquid_standalone_group_section">Standalone 共享 Backdrop</string>
+    <string name="debug_component_lab_liquid_standalone_group_hint">一组控件复用页面提供的真实 Backdrop，并保持紧凑间隔与 48dp 触控范围。</string>
     <string name="debug_component_lab_liquid_dropdown_label">Liquid Dropdown 样张</string>
     <string name="debug_component_lab_liquid_dropdown_subtitle">独立 backdrop、动作菜单与按压胶囊</string>
     <string name="debug_component_lab_liquid_dropdown_open">打开菜单</string>

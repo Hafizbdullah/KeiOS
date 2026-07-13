@@ -66,6 +66,8 @@
     <string name="debug_component_lab_liquid_button_rounded">Rounded rectangle</string>
     <string name="debug_component_lab_liquid_button_oval">Oval capsule</string>
     <string name="debug_component_lab_liquid_button_circle">Circle button</string>
+    <string name="debug_component_lab_liquid_standalone_group_section">Standalone shared Backdrop</string>
+    <string name="debug_component_lab_liquid_standalone_group_hint">Grouped controls reuse the real page Backdrop while preserving compact spacing and 48dp touch targets.</string>
     <string name="debug_component_lab_liquid_dropdown_label">Liquid Dropdown proofs</string>
     <string name="debug_component_lab_liquid_dropdown_subtitle">Independent backdrop, action menu, and press pill</string>
     <string name="debug_component_lab_liquid_dropdown_open">Open menu</string>

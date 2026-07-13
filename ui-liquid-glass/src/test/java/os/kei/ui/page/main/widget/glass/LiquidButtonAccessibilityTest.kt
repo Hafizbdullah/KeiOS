@@ -2,7 +2,10 @@ package os.kei.ui.page.main.widget.glass
 
 import android.app.Application
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -28,6 +31,7 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -107,6 +111,70 @@ class LiquidButtonAccessibilityTest {
 
         assertEquals(1, iconClicks)
         assertEquals(0, disabledClicks)
+    }
+
+    @Test
+    fun standaloneGroupKeepsCompactControlsAccessibleAndIndependent() {
+        var iconClicks = 0
+        var textClicks = 0
+        var textSurfaceWidth = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppStandaloneLiquidBackdropGroup(
+                    modifier = Modifier.width(160.dp),
+                ) {
+                    Column {
+                        AppStandaloneLiquidIconButton(
+                            icon = MiuixIcons.Basic.Check,
+                            contentDescription = "Confirm",
+                            onClick = { iconClicks++ },
+                            buttonModifier = Modifier.testTag("standalone-icon-button"),
+                            width = 36.dp,
+                            height = 36.dp,
+                            variant = GlassVariant.Compact,
+                            pressSafePadding = 0.dp,
+                        )
+                        AppStandaloneLiquidTextButton(
+                            text = "Confirm",
+                            onClick = { textClicks++ },
+                            buttonModifier = Modifier.testTag("standalone-text-button"),
+                            surfaceModifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .onSizeChanged { textSurfaceWidth = it.width },
+                            variant = GlassVariant.Compact,
+                            pressSafePadding = 0.dp,
+                        )
+                        AppStandaloneLiquidTextButton(
+                            text = "Unavailable",
+                            onClick = {},
+                            buttonModifier = Modifier.testTag("standalone-disabled-button"),
+                            enabled = false,
+                            variant = GlassVariant.Compact,
+                            pressSafePadding = 0.dp,
+                        )
+                    }
+                }
+            }
+        }
+
+        listOf("standalone-icon-button", "standalone-text-button").forEach { tag ->
+            composeRule
+                .onNodeWithTag(tag)
+                .assertWidthIsAtLeast(48.dp)
+                .assertHeightIsAtLeast(48.dp)
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+                .assertHasClickAction()
+                .performClick()
+        }
+        composeRule
+            .onNodeWithTag("standalone-disabled-button")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assertIsNotEnabled()
+
+        assertEquals(1, iconClicks)
+        assertEquals(1, textClicks)
+        assertTrue(textSurfaceWidth >= with(composeRule.density) { 160.dp.roundToPx() })
     }
 }
 
