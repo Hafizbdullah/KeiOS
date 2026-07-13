@@ -18,8 +18,15 @@ enum class GlassVariant {
     SheetDangerAction,
     Floating,
     Bar,
-    SearchField
+    SearchField,
 }
+
+internal val SEARCH_FIELD_LENS_START = 16.dp
+internal val SEARCH_FIELD_LENS_END = 28.dp
+internal const val SEARCH_FIELD_LIGHT_HIGHLIGHT_ALPHA = 0.62f
+internal const val SEARCH_FIELD_DARK_HIGHLIGHT_ALPHA = 0.42f
+internal const val SEARCH_FIELD_LIGHT_FALLBACK_ALPHA = 0.34f
+internal const val SEARCH_FIELD_DARK_FALLBACK_ALPHA = 0.28f
 
 data class GlassStyle(
     val blur: Dp,
@@ -32,7 +39,7 @@ data class GlassStyle(
     val fallbackAlpha: Float,
     val lensStart: Dp,
     val lensEnd: Dp,
-    val showBorder: Boolean
+    val showBorder: Boolean,
 )
 
 @Composable
@@ -40,44 +47,52 @@ data class GlassStyle(
 fun glassStyle(
     isDark: Boolean,
     variant: GlassVariant,
-    blurRadius: Dp?
+    blurRadius: Dp?,
 ): GlassStyle {
     val glassRuntime = glassEffectRuntime()
+
     fun blur(dp: Dp): Dp = (dp * glassRuntime.blurScaleFor(variant)).clampGlassBlur()
+
     fun lens(dp: Dp): Dp = dp * glassRuntime.lensScaleFor(variant)
 
     return when (variant) {
-        GlassVariant.Bar -> GlassStyle(
-            blur = blur(UiPerformanceBudget.backdropBlur),
-            baseColor = Color.Transparent,
-            overlayColor = Color.Transparent,
-            borderColor = if (isDark) Color.White.copy(alpha = 0.10f) else Color(0xFFD9E6F8).copy(alpha = 0.78f),
-            borderWidth = 1.dp,
-            highlightAlpha = if (isDark) 1f else 0.82f,
-            shadowAlpha = if (isDark) 0.20f else 0.10f,
-            fallbackAlpha = if (isDark) 0.40f else 0.56f,
-            lensStart = lens(24.dp),
-            lensEnd = lens(24.dp),
-            showBorder = true
-        )
+        GlassVariant.Bar -> {
+            GlassStyle(
+                blur = blur(UiPerformanceBudget.backdropBlur),
+                baseColor = Color.Transparent,
+                overlayColor = Color.Transparent,
+                borderColor = if (isDark) Color.White.copy(alpha = 0.10f) else Color(0xFFD9E6F8).copy(alpha = 0.78f),
+                borderWidth = 1.dp,
+                highlightAlpha = if (isDark) 1f else 0.82f,
+                shadowAlpha = if (isDark) 0.20f else 0.10f,
+                fallbackAlpha = if (isDark) 0.40f else 0.56f,
+                lensStart = lens(24.dp),
+                lensEnd = lens(24.dp),
+                showBorder = true,
+            )
+        }
 
-        GlassVariant.SearchField -> GlassStyle(
-            blur = blur(blurRadius ?: 4.dp),
-            baseColor = Color.Transparent,
-            overlayColor = Color.Transparent,
-            borderColor = if (isDark) {
-                Color.White.copy(alpha = 0.28f)
-            } else {
-                Color(0xFF86C3FF).copy(alpha = 0.96f)
-            },
-            borderWidth = 1.1.dp,
-            highlightAlpha = if (isDark) 0.54f else 0.98f,
-            shadowAlpha = if (isDark) 0.22f else 0.18f,
-            fallbackAlpha = if (isDark) 0.38f else 0.42f,
-            lensStart = lens(28.dp),
-            lensEnd = lens(54.dp),
-            showBorder = true
-        )
+        GlassVariant.SearchField -> {
+            GlassStyle(
+                blur = blur(blurRadius ?: 4.dp),
+                baseColor = Color.Transparent,
+                overlayColor = Color.Transparent,
+                borderColor =
+                    if (isDark) {
+                        Color.White.copy(alpha = 0.18f)
+                    } else {
+                        Color.White.copy(alpha = 0.52f)
+                    },
+                borderWidth = 1.1.dp,
+                highlightAlpha = if (isDark) SEARCH_FIELD_DARK_HIGHLIGHT_ALPHA else SEARCH_FIELD_LIGHT_HIGHLIGHT_ALPHA,
+                shadowAlpha = if (isDark) 0.16f else 0.10f,
+                fallbackAlpha = if (isDark) SEARCH_FIELD_DARK_FALLBACK_ALPHA else SEARCH_FIELD_LIGHT_FALLBACK_ALPHA,
+                lensStart = lens(SEARCH_FIELD_LENS_START),
+                lensEnd = lens(SEARCH_FIELD_LENS_END),
+                showBorder = true,
+            )
+        }
+
         GlassVariant.SheetInput -> {
             val blur = blur(blurRadius ?: if (isDark) 6.dp else 11.dp)
             if (isDark) {
@@ -92,7 +107,7 @@ fun glassStyle(
                     fallbackAlpha = 0.76f,
                     lensStart = lens(25.dp),
                     lensEnd = lens(25.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -106,10 +121,11 @@ fun glassStyle(
                     fallbackAlpha = 1f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
+
         GlassVariant.SheetAction -> {
             val blur = blur(blurRadius ?: if (isDark) 6.dp else 11.dp)
             if (isDark) {
@@ -124,7 +140,7 @@ fun glassStyle(
                     fallbackAlpha = 0.76f,
                     lensStart = lens(25.dp),
                     lensEnd = lens(25.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -138,10 +154,11 @@ fun glassStyle(
                     fallbackAlpha = 1f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
+
         GlassVariant.SheetDangerAction -> {
             val blur = blur(blurRadius ?: if (isDark) 6.dp else 11.dp)
             if (isDark) {
@@ -156,7 +173,7 @@ fun glassStyle(
                     fallbackAlpha = 0.78f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -170,10 +187,11 @@ fun glassStyle(
                     fallbackAlpha = 1f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
+
         GlassVariant.SheetPrimaryAction -> {
             val blur = blur(blurRadius ?: if (isDark) 6.dp else 11.dp)
             if (isDark) {
@@ -188,7 +206,7 @@ fun glassStyle(
                     fallbackAlpha = 0.78f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -202,10 +220,11 @@ fun glassStyle(
                     fallbackAlpha = 1f,
                     lensStart = lens(27.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
+
         GlassVariant.Floating -> {
             val blur = blur(blurRadius ?: if (isDark) 8.dp else 11.dp)
             if (isDark) {
@@ -220,7 +239,7 @@ fun glassStyle(
                     fallbackAlpha = 0.68f,
                     lensStart = lens(25.dp),
                     lensEnd = lens(27.dp),
-                    showBorder = false
+                    showBorder = false,
                 )
             } else {
                 GlassStyle(
@@ -234,10 +253,11 @@ fun glassStyle(
                     fallbackAlpha = 0.86f,
                     lensStart = lens(26.dp),
                     lensEnd = lens(28.dp),
-                    showBorder = false
+                    showBorder = false,
                 )
             }
         }
+
         GlassVariant.Compact -> {
             val blur = blur(blurRadius ?: if (isDark) 5.dp else 6.dp)
             if (isDark) {
@@ -252,7 +272,7 @@ fun glassStyle(
                     fallbackAlpha = 0.72f,
                     lensStart = lens(22.dp),
                     lensEnd = lens(22.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -266,10 +286,11 @@ fun glassStyle(
                     fallbackAlpha = 0.92f,
                     lensStart = lens(22.dp),
                     lensEnd = lens(22.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
+
         GlassVariant.Content -> {
             val blur = blur(blurRadius ?: if (isDark) 7.dp else 11.dp)
             if (isDark) {
@@ -284,7 +305,7 @@ fun glassStyle(
                     fallbackAlpha = 0.92f,
                     lensStart = lens(26.dp),
                     lensEnd = lens(28.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             } else {
                 GlassStyle(
@@ -298,7 +319,7 @@ fun glassStyle(
                     fallbackAlpha = 0.98f,
                     lensStart = lens(26.dp),
                     lensEnd = lens(28.dp),
-                    showBorder = true
+                    showBorder = true,
                 )
             }
         }
@@ -316,22 +337,24 @@ fun GlassStyle.tintWithAccent(
 
     return copy(
         baseColor = baseTint.compositeOver(baseColor),
-        overlayColor = if (overlayColor == Color.Transparent) {
-            overlayTint
-        } else {
-            overlayTint.compositeOver(overlayColor)
-        },
-        borderColor = if (borderColor == Color.Transparent) {
-            borderTint
-        } else {
-            borderTint.compositeOver(borderColor)
-        }
+        overlayColor =
+            if (overlayColor == Color.Transparent) {
+                overlayTint
+            } else {
+                overlayTint.compositeOver(overlayColor)
+            },
+        borderColor =
+            if (borderColor == Color.Transparent) {
+                borderTint
+            } else {
+                borderTint.compositeOver(borderColor)
+            },
     )
 }
 
 fun resolveGlassAccentColor(
     color: Color,
-    isDark: Boolean
+    isDark: Boolean,
 ): Color {
     val fallback = if (isDark) Color(0xFF71ADFF) else Color(0xFF3B82F6)
     if (!color.isSpecified || color.alpha <= 0f) return fallback

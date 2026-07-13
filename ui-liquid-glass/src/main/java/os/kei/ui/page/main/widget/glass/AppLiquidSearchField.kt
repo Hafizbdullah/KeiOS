@@ -190,8 +190,8 @@ fun AppLiquidInputField(
                                         if (usesSearchMaterial) 2.dp.toPx() * focusProgress else 4.dp.toPx() * focusProgress,
                                     glass.lensEnd.toPx() +
                                         if (usesSearchMaterial) 4.dp.toPx() * focusProgress else 6.dp.toPx() * focusProgress,
-                                    chromaticAberration = usesSearchMaterial || focusProgress > 0.01f,
-                                    depthEffect = usesSearchMaterial || focusProgress > 0.01f,
+                                    chromaticAberration = false,
+                                    depthEffect = false,
                                 )
                             },
                             highlight = {
@@ -443,8 +443,8 @@ fun AppLiquidSearchSurface(
                                 safeLiquidLens(
                                     glass.lensStart.toPx() + 2.dp.toPx() * materialProgress,
                                     glass.lensEnd.toPx() + 5.dp.toPx() * materialProgress,
-                                    chromaticAberration = true,
-                                    depthEffect = true,
+                                    chromaticAberration = false,
+                                    depthEffect = false,
                                 )
                             },
                             highlight = {

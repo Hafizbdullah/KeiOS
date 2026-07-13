@@ -25,31 +25,31 @@ fun appLiquidSearchMaterialColors(
     AppLiquidSearchMaterialColors(
         overlayTop =
             if (isDark) {
-                Color.White.copy(alpha = if (compactMaterial) 0.026f else 0.070f)
+                Color.White.copy(alpha = if (compactMaterial) 0.020f else 0.045f)
             } else {
-                Color.White.copy(alpha = 0.235f)
+                Color.White.copy(alpha = 0.080f)
             },
         overlayBottom =
             if (isDark) {
-                Color(0xFF82B8FF).copy(alpha = if (compactMaterial) 0.022f else 0.060f)
+                Color(0xFF82B8FF).copy(alpha = if (compactMaterial) 0.016f else 0.035f)
             } else {
-                Color(0xFFB9D8FF).copy(alpha = 0.245f)
+                Color(0xFFEDF6FF).copy(alpha = 0.050f)
             },
         centerGlow =
             if (isDark) {
-                Color(0xFFBBD9FF).copy(alpha = if (compactMaterial) 0.000f else 0.055f)
+                Color(0xFFBBD9FF).copy(alpha = if (compactMaterial) 0.000f else 0.025f)
             } else {
-                Color.White.copy(alpha = 0.340f)
+                Color.White.copy(alpha = 0.100f)
             },
         bottomGlow =
             if (isDark) {
-                Color(0xFF73AFFF).copy(alpha = if (compactMaterial) 0.018f else 0.050f)
+                Color(0xFF73AFFF).copy(alpha = if (compactMaterial) 0.012f else 0.025f)
             } else {
-                Color(0xFFC6E0FF).copy(alpha = 0.275f)
+                Color(0xFFC6E0FF).copy(alpha = 0.060f)
             },
-        sideRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.034f else 0.075f) else Color.White.copy(alpha = 0.56f),
-        innerRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.055f else 0.120f) else Color.White.copy(alpha = 0.84f),
-        edge = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.14f else 0.20f) else Color(0xFF86C3FF).copy(alpha = 0.96f),
+        sideRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.028f else 0.050f) else Color.White.copy(alpha = 0.16f),
+        innerRim = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.045f else 0.080f) else Color.White.copy(alpha = 0.26f),
+        edge = if (isDark) Color.White.copy(alpha = if (compactMaterial) 0.12f else 0.16f) else Color.White.copy(alpha = 0.52f),
     )
 
 fun appLiquidSearchHighlightAlpha(
@@ -58,8 +58,8 @@ fun appLiquidSearchHighlightAlpha(
     isDark: Boolean,
     darkMaxAlpha: Float = 0.34f,
 ): Float {
-    val targetAlpha = baseAlpha + 0.10f * materialProgress
-    return targetAlpha.coerceAtMost(if (isDark) darkMaxAlpha else 1f)
+    val targetAlpha = baseAlpha + 0.05f * materialProgress
+    return targetAlpha.coerceAtMost(if (isDark) darkMaxAlpha else 0.68f)
 }
 
 fun appLiquidSearchPlaceholderColor(
