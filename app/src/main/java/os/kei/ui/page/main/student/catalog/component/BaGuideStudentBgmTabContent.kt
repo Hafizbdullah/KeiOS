@@ -36,6 +36,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -336,9 +338,19 @@ internal fun BaGuideStudentBgmTabContent(
         if (!isPageActive) return@LaunchedEffect
         playbackCoordinator.prepareSelected()
     }
+    val showEmptyStatus = !effectiveLoading && visibleFilteredEntries.isEmpty()
+    val statusBackdrop = rememberLayerBackdrop()
     val entryListGap = rememberBaGuideCatalogEntryListGap()
 
     Box(modifier = Modifier.fillMaxSize()) {
+        if (showEmptyStatus) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(statusBackdrop),
+            )
+        }
         LazyColumn(
             state = listState,
             userScrollEnabled = !sliderInteractionActive,
@@ -391,13 +403,13 @@ internal fun BaGuideStudentBgmTabContent(
                 }
             }
 
-            if (!effectiveLoading && visibleFilteredEntries.isEmpty()) {
+            if (showEmptyStatus) {
                 item(
                     key = "student-bgm-empty",
                     contentType = "student_bgm_status",
                 ) {
                     LiquidInfoBlock(
-                        backdrop = null,
+                        backdrop = statusBackdrop,
                         title = stringResource(R.string.ba_catalog_empty_title),
                         subtitle = stringResource(R.string.ba_catalog_empty_subtitle_search),
                         accent = accent,

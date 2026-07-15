@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -30,56 +33,70 @@ internal fun BaGuideCatalogTabListLayout(
     onOpenGuide: (String) -> Unit,
     onToggleFavorite: (Long) -> Unit
 ) {
+    val statusBackdrop = rememberLayerBackdrop()
+    val showStatusBackdrop = uiState.showError || uiState.showEmpty
     val entryListGap = rememberBaGuideCatalogEntryListGap()
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
-        contentPadding = PaddingValues(
-            top = innerPadding.calculateTopPadding(),
-            bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-            start = AppChromeTokens.pageHorizontalPadding,
-            end = AppChromeTokens.pageHorizontalPadding
-        ),
-        verticalArrangement = Arrangement.spacedBy(entryListGap)
-    ) {
-        if (uiState.showError) {
-            item(
-                key = "ba-guide-tab-error",
-                contentType = "ba_guide_catalog_status"
-            ) {
-                LiquidInfoBlock(
-                    backdrop = null,
-                    title = uiState.syncStatusTitle,
-                    subtitle = uiState.errorText,
-                    body = uiState.syncStatusBody,
-                    accent = Color(0xFFEF4444)
-                )
-            }
-        }
-        if (uiState.showEmpty) {
-            item(
-                key = "ba-guide-tab-empty",
-                contentType = "ba_guide_catalog_status"
-            ) {
-                LiquidInfoBlock(
-                    backdrop = null,
-                    title = uiState.emptyTitle,
-                    subtitle = uiState.emptySubtitle,
-                    accent = accent
-                )
-            }
-        } else {
-            renderBaGuideCatalogEntryListAdapter(
-                displayedEntries = displayedEntries,
-                hasMoreEntries = hasMoreEntries,
-                favoriteCatalogEntries = favoriteCatalogEntries,
-                accent = accent,
-                loadingMoreText = uiState.loadingMoreText,
-                onOpenGuide = onOpenGuide,
-                onToggleFavorite = onToggleFavorite
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (showStatusBackdrop) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(statusBackdrop),
             )
+        }
+        LazyColumn(
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+                    start = AppChromeTokens.pageHorizontalPadding,
+                    end = AppChromeTokens.pageHorizontalPadding,
+                ),
+            verticalArrangement = Arrangement.spacedBy(entryListGap),
+        ) {
+            if (uiState.showError) {
+                item(
+                    key = "ba-guide-tab-error",
+                    contentType = "ba_guide_catalog_status",
+                ) {
+                    LiquidInfoBlock(
+                        backdrop = statusBackdrop,
+                        title = uiState.syncStatusTitle,
+                        subtitle = uiState.errorText,
+                        body = uiState.syncStatusBody,
+                        accent = Color(0xFFEF4444),
+                    )
+                }
+            }
+            if (uiState.showEmpty) {
+                item(
+                    key = "ba-guide-tab-empty",
+                    contentType = "ba_guide_catalog_status",
+                ) {
+                    LiquidInfoBlock(
+                        backdrop = statusBackdrop,
+                        title = uiState.emptyTitle,
+                        subtitle = uiState.emptySubtitle,
+                        accent = accent,
+                    )
+                }
+            } else {
+                renderBaGuideCatalogEntryListAdapter(
+                    displayedEntries = displayedEntries,
+                    hasMoreEntries = hasMoreEntries,
+                    favoriteCatalogEntries = favoriteCatalogEntries,
+                    accent = accent,
+                    loadingMoreText = uiState.loadingMoreText,
+                    onOpenGuide = onOpenGuide,
+                    onToggleFavorite = onToggleFavorite,
+                )
+            }
         }
     }
 }

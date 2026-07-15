@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +28,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
@@ -204,130 +207,142 @@ internal fun BaGuideMemoryLobbyTabContent(
                 lookupCoordinator.prewarmVisibleNetwork(work.prewarmEntries)
             }
     }
+    val statusBackdrop = rememberLayerBackdrop()
+    val showStatusBackdrop = showError || showEmpty
     val entryListGap = rememberBaGuideCatalogEntryListGap()
-    LazyColumn(
-        state = listState,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
-        contentPadding =
-            PaddingValues(
-                top = innerPadding.calculateTopPadding(),
-                bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                start = AppChromeTokens.pageHorizontalPadding,
-                end = AppChromeTokens.pageHorizontalPadding,
-            ),
-        verticalArrangement = Arrangement.spacedBy(entryListGap),
-    ) {
-        if (showError) {
-            item(
-                key = "memory-lobby-error",
-                contentType = "memory_lobby_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = null,
-                    title = stringResource(R.string.ba_catalog_sync_status_title),
-                    subtitle = error.orEmpty(),
-                    body = stringResource(R.string.ba_catalog_sync_status_body_retry),
-                    accent = Color(0xFFEF4444),
-                )
-            }
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (showStatusBackdrop) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(statusBackdrop),
+            )
         }
-        if (showLoading) {
-            item(
-                key = "memory-lobby-loading",
-                contentType = "memory_lobby_status",
-            ) {
-                AppAronaLoadingPanel(accent = accent)
-            }
-        } else {
-            item(
-                key = "memory-lobby-header",
-                contentType = "memory_lobby_header",
-            ) {
-                BaGuideMemoryLobbyHeader(
-                    totalCount = allStudentEntries.size,
-                    displayedCount = visibleFilteredEntries.size,
-                    readyCount = headerCounts.readyCount,
-                    favoriteCount = headerCounts.favoriteCount,
-                    cachedCount = headerCounts.cachedCount,
-                    searchActive = searchQuery.isNotBlank(),
-                    favoritesHidden = favoritesHidden,
-                    accent = accent,
-                    onToggleFavoritesHidden = {
-                        if (favoriteContentIds.isNotEmpty()) {
-                            favoritesHidden = !favoritesHidden
-                        }
-                    },
-                )
-            }
-        }
-
-        if (showEmpty) {
-            item(
-                key = "memory-lobby-empty",
-                contentType = "memory_lobby_status",
-            ) {
-                LiquidInfoBlock(
-                    backdrop = null,
-                    title = stringResource(R.string.ba_catalog_empty_title),
-                    subtitle =
-                        stringResource(
-                            if (searchQuery.isNotBlank()) {
-                                R.string.ba_catalog_empty_subtitle_search
-                            } else {
-                                R.string.ba_catalog_empty_subtitle_default
-                            },
-                        ),
-                    accent = accent,
-                )
-            }
-        } else if (!showLoading) {
-            items(
-                items = displayedEntries,
-                key = { entry -> "memory-lobby-${entry.contentId}" },
-                contentType = { "memory_lobby_entry" },
-            ) { entry ->
-                val expanded = entry.contentId in expandedContentIds
-                BaGuideMemoryLobbyCard(
-                    entry = entry,
-                    lookupState = lookupStates[entry.contentId] ?: BaGuideMemoryLobbyLookupState.Idle,
-                    expanded = expanded,
-                    favorite = entry.contentId in favoriteContentIds,
-                    accent = accent,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                    onToggleExpanded = {
-                        expandedContentIds =
-                            if (expanded) {
-                                expandedContentIds - entry.contentId
-                            } else {
-                                expandedContentIds + entry.contentId
-                            }
-                    },
-                    onResolve = {
-                        lookupCoordinator.resolveEntry(
-                            entry = entry,
-                            allowNetwork = true,
-                        )
-                    },
-                    onOpenGuide = {
-                        onRequestGuideDetailTab(entry.detailUrl, GuideBottomTab.Gallery)
-                        onOpenGuide(entry.detailUrl)
-                    },
-                    onToggleFavorite = { onToggleFavorite(entry.contentId) },
-                )
-            }
-
-            if (listStateHolder.hasMoreEntries) {
+        LazyColumn(
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+                    start = AppChromeTokens.pageHorizontalPadding,
+                    end = AppChromeTokens.pageHorizontalPadding,
+                ),
+            verticalArrangement = Arrangement.spacedBy(entryListGap),
+        ) {
+            if (showError) {
                 item(
-                    key = "memory-lobby-loading-more",
-                    contentType = "memory_lobby_loading_more",
+                    key = "memory-lobby-error",
+                    contentType = "memory_lobby_status",
                 ) {
-                    BaGuideCatalogLoadingMoreRow(
-                        loadingMoreText = stringResource(R.string.ba_catalog_loading_more),
+                    LiquidInfoBlock(
+                        backdrop = statusBackdrop,
+                        title = stringResource(R.string.ba_catalog_sync_status_title),
+                        subtitle = error.orEmpty(),
+                        body = stringResource(R.string.ba_catalog_sync_status_body_retry),
+                        accent = Color(0xFFEF4444),
+                    )
+                }
+            }
+            if (showLoading) {
+                item(
+                    key = "memory-lobby-loading",
+                    contentType = "memory_lobby_status",
+                ) {
+                    AppAronaLoadingPanel(accent = accent)
+                }
+            } else {
+                item(
+                    key = "memory-lobby-header",
+                    contentType = "memory_lobby_header",
+                ) {
+                    BaGuideMemoryLobbyHeader(
+                        totalCount = allStudentEntries.size,
+                        displayedCount = visibleFilteredEntries.size,
+                        readyCount = headerCounts.readyCount,
+                        favoriteCount = headerCounts.favoriteCount,
+                        cachedCount = headerCounts.cachedCount,
+                        searchActive = searchQuery.isNotBlank(),
+                        favoritesHidden = favoritesHidden,
+                        accent = accent,
+                        onToggleFavoritesHidden = {
+                            if (favoriteContentIds.isNotEmpty()) {
+                                favoritesHidden = !favoritesHidden
+                            }
+                        },
+                    )
+                }
+            }
+
+            if (showEmpty) {
+                item(
+                    key = "memory-lobby-empty",
+                    contentType = "memory_lobby_status",
+                ) {
+                    LiquidInfoBlock(
+                        backdrop = statusBackdrop,
+                        title = stringResource(R.string.ba_catalog_empty_title),
+                        subtitle =
+                            stringResource(
+                                if (searchQuery.isNotBlank()) {
+                                    R.string.ba_catalog_empty_subtitle_search
+                                } else {
+                                    R.string.ba_catalog_empty_subtitle_default
+                                },
+                            ),
                         accent = accent,
                     )
+                }
+            } else if (!showLoading) {
+                items(
+                    items = displayedEntries,
+                    key = { entry -> "memory-lobby-${entry.contentId}" },
+                    contentType = { "memory_lobby_entry" },
+                ) { entry ->
+                    val expanded = entry.contentId in expandedContentIds
+                    BaGuideMemoryLobbyCard(
+                        entry = entry,
+                        lookupState = lookupStates[entry.contentId] ?: BaGuideMemoryLobbyLookupState.Idle,
+                        expanded = expanded,
+                        favorite = entry.contentId in favoriteContentIds,
+                        accent = accent,
+                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                        onToggleExpanded = {
+                            expandedContentIds =
+                                if (expanded) {
+                                    expandedContentIds - entry.contentId
+                                } else {
+                                    expandedContentIds + entry.contentId
+                                }
+                        },
+                        onResolve = {
+                            lookupCoordinator.resolveEntry(
+                                entry = entry,
+                                allowNetwork = true,
+                            )
+                        },
+                        onOpenGuide = {
+                            onRequestGuideDetailTab(entry.detailUrl, GuideBottomTab.Gallery)
+                            onOpenGuide(entry.detailUrl)
+                        },
+                        onToggleFavorite = { onToggleFavorite(entry.contentId) },
+                    )
+                }
+
+                if (listStateHolder.hasMoreEntries) {
+                    item(
+                        key = "memory-lobby-loading-more",
+                        contentType = "memory_lobby_loading_more",
+                    ) {
+                        BaGuideCatalogLoadingMoreRow(
+                            loadingMoreText = stringResource(R.string.ba_catalog_loading_more),
+                            accent = accent,
+                        )
+                    }
                 }
             }
         }
