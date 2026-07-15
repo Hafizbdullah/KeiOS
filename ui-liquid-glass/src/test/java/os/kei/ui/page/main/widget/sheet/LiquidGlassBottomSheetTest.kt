@@ -26,15 +26,21 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kyant.backdrop.Backdrop
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
+import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private const val SHEET_TAG = "liquid-sheet"
@@ -238,6 +244,101 @@ class LiquidGlassBottomSheetTest {
             actual = topChromeHeight in minimumTopChromeHeight..maximumTopChromeHeight,
             message = "Expected sheet content to start below top chrome, sheetTop=$sheetTop contentTop=$contentTop",
         )
+    }
+
+    @Test
+    fun exportsSameIndependentBackdropToChromeAndContent() {
+        var sceneBackdrop: Backdrop? = null
+        var startBackdrop: Backdrop? = null
+        var endBackdrop: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                sceneBackdrop = LocalSceneBackdrop.current
+                LiquidGlassBottomSheet(
+                    show = true,
+                    title = "Backdrop",
+                    startAction = {
+                        startBackdrop = LocalLiquidParentBackdrop.current
+                        Box(modifier = Modifier.testTag("sheet-start-action"))
+                    },
+                    endAction = {
+                        endBackdrop = LocalLiquidParentBackdrop.current
+                        Box(modifier = Modifier.testTag("sheet-end-action"))
+                    },
+                ) {
+                    contentBackdrop = LocalLiquidParentBackdrop.current
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .testTag("sheet-backdrop-content"),
+                    )
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("sheet-start-action").assertExists()
+        composeRule.onNodeWithTag("sheet-end-action").assertExists()
+        composeRule.onNodeWithTag("sheet-backdrop-content").assertExists()
+
+        composeRule.runOnIdle {
+            assertNotNull(sceneBackdrop)
+            assertNotNull(startBackdrop)
+            assertSame(startBackdrop, endBackdrop)
+            assertSame(startBackdrop, contentBackdrop)
+            assertNotSame(sceneBackdrop, contentBackdrop)
+        }
+    }
+
+    @Test
+    fun customBackgroundKeepsChromeAndContentOnFallback() {
+        var startBackdrop: Backdrop? = null
+        var endBackdrop: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                LiquidGlassBottomSheet(
+                    show = true,
+                    title = "Fallback",
+                    backgroundColor = Color.White,
+                    startAction = {
+                        startBackdrop = LocalLiquidParentBackdrop.current
+                        Box(modifier = Modifier.testTag("fallback-sheet-start"))
+                    },
+                    endAction = {
+                        endBackdrop = LocalLiquidParentBackdrop.current
+                        Box(modifier = Modifier.testTag("fallback-sheet-end"))
+                    },
+                ) {
+                    contentBackdrop = LocalLiquidParentBackdrop.current
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .testTag("fallback-sheet-content"),
+                    )
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("fallback-sheet-start").assertExists()
+        composeRule.onNodeWithTag("fallback-sheet-end").assertExists()
+        composeRule.onNodeWithTag("fallback-sheet-content").assertExists()
+
+        composeRule.runOnIdle {
+            assertNull(startBackdrop)
+            assertNull(endBackdrop)
+            assertNull(contentBackdrop)
+        }
     }
 
     @Test

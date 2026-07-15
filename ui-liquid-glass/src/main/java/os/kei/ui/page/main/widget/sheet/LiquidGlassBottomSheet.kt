@@ -127,6 +127,7 @@ fun LiquidGlassBottomSheet(
     val sheetBackdrop = rememberLayerBackdrop()
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val useLiquidBackdropSurface = liquidControlsEnabled && backgroundColor == null
+    val activeSheetBackdrop = sheetBackdrop.takeIf { useLiquidBackdropSurface }
     val glassRuntime = LocalGlassEffectRuntime.current
     val sheetBlurRadius =
         UiPerformanceBudget.backdropBlur *
@@ -255,8 +256,26 @@ fun LiquidGlassBottomSheet(
         modifier = modifier,
         surfaceModifier = sheetSurfaceModifier,
         title = title,
-        startAction = startAction,
-        endAction = endAction,
+        startAction =
+            startAction?.let { action ->
+                {
+                    CompositionLocalProvider(
+                        LocalLiquidParentBackdrop provides activeSheetBackdrop,
+                    ) {
+                        action()
+                    }
+                }
+            },
+        endAction =
+            endAction?.let { action ->
+                {
+                    CompositionLocalProvider(
+                        LocalLiquidParentBackdrop provides activeSheetBackdrop,
+                    ) {
+                        action()
+                    }
+                }
+            },
         backgroundColor = resolvedBackgroundColor,
         enableWindowDim = enableWindowDim,
         cornerRadius = cornerRadius,
@@ -344,7 +363,7 @@ fun LiquidGlassBottomSheet(
                     managedScrollableContent = managed
                     if (managed) plainContentExceedsOpeningDetent = false
                 },
-                LocalLiquidParentBackdrop provides if (useLiquidBackdropSurface) sheetBackdrop else null,
+                LocalLiquidParentBackdrop provides activeSheetBackdrop,
             ) {
                 content()
             }
