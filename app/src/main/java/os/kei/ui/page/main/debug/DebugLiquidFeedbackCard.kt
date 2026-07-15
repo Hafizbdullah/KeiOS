@@ -38,12 +38,14 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.dialog.LiquidGlassDialog
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
+import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidToastHost
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
 import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import top.yukonga.miuix.kmp.basic.Text
@@ -81,11 +83,14 @@ internal fun DebugLiquidFeedbackCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_feedback_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_feedback_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideInfoIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidFeedbackSectionLabel(
             text = stringResource(R.string.debug_component_lab_liquid_feedback_checkbox_section),
             color = contentColor,
@@ -94,7 +99,7 @@ internal fun DebugLiquidFeedbackCard(
             label = checkedLabel,
             checked = primaryChecked,
             enabled = true,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentColor = contentColor,
             onCheckedChange = { primaryChecked = it },
         )
@@ -102,7 +107,7 @@ internal fun DebugLiquidFeedbackCard(
             label = uncheckedLabel,
             checked = secondaryChecked,
             enabled = true,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentColor = contentColor,
             onCheckedChange = { secondaryChecked = it },
         )
@@ -110,7 +115,7 @@ internal fun DebugLiquidFeedbackCard(
             label = disabledLabel,
             checked = true,
             enabled = false,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentColor = contentColor,
             onCheckedChange = {},
         )
@@ -147,7 +152,7 @@ internal fun DebugLiquidFeedbackCard(
             activeColor = accent,
             height = 8.dp,
             contentDescription = linearProgressLabel,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
         )
         Text(
             text = musicProgressLabel,
@@ -160,7 +165,7 @@ internal fun DebugLiquidFeedbackCard(
             modifier = Modifier.fillMaxWidth(),
             activeColor = accent,
             contentDescription = musicProgressLabel,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -186,7 +191,7 @@ internal fun DebugLiquidFeedbackCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_feedback_progress_decrease),
                 onClick = { progress = (progress - 0.1f).coerceIn(0f, 1f) },
                 modifier = Modifier.weight(1f),
@@ -197,7 +202,7 @@ internal fun DebugLiquidFeedbackCard(
                 textOverflow = TextOverflow.Ellipsis,
             )
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_feedback_progress_increase),
                 onClick = { progress = (progress + 0.1f).coerceIn(0f, 1f) },
                 modifier = Modifier.weight(1f),
@@ -239,7 +244,7 @@ internal fun DebugLiquidFeedbackCard(
             )
         }
         AppLiquidTextButton(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             text = stringResource(R.string.debug_component_lab_liquid_feedback_toast_show),
             onClick = {
                 val nextSequence = toastSequence + 1
@@ -278,7 +283,7 @@ internal fun DebugLiquidFeedbackCard(
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
         )
         AppLiquidTextButton(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             text = stringResource(R.string.debug_component_lab_liquid_feedback_dialog_open),
             onClick = { dialogVisible = true },
             modifier = Modifier.fillMaxWidth(),
@@ -306,8 +311,7 @@ internal fun DebugLiquidFeedbackCard(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppLiquidTextButton(
-                backdrop = null,
+            AppLiquidDialogActionButton(
                 text = stringResource(R.string.debug_component_lab_liquid_feedback_dialog_cancel),
                 onClick = {
                     dialogResultRes = R.string.debug_component_lab_liquid_feedback_dialog_result_cancelled
@@ -316,12 +320,8 @@ internal fun DebugLiquidFeedbackCard(
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
                 variant = GlassVariant.SheetAction,
-                minHeight = 44.dp,
-                textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis,
             )
-            AppLiquidTextButton(
-                backdrop = null,
+            AppLiquidDialogActionButton(
                 text = stringResource(R.string.debug_component_lab_liquid_feedback_dialog_confirm),
                 onClick = {
                     dialogResultRes = R.string.debug_component_lab_liquid_feedback_dialog_result_confirmed
@@ -330,9 +330,6 @@ internal fun DebugLiquidFeedbackCard(
                 modifier = Modifier.weight(1f),
                 textColor = contentColor,
                 variant = GlassVariant.SheetPrimaryAction,
-                minHeight = 44.dp,
-                textMaxLines = 1,
-                textOverflow = TextOverflow.Ellipsis,
             )
         }
     }

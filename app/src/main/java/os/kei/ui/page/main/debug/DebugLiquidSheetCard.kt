@@ -25,13 +25,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.LiquidSheetInitialDetent
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
@@ -43,7 +46,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DebugLiquidSheetCard(accent: Color) {
+internal fun DebugLiquidSheetCard(
+    accent: Color,
+    backdrop: Backdrop,
+) {
     var show by remember { mutableStateOf(false) }
     var allowDismiss by remember { mutableStateOf(true) }
     var initialDetent by remember { mutableStateOf(LiquidSheetInitialDetent.ThreeQuarter) }
@@ -54,11 +60,14 @@ internal fun DebugLiquidSheetCard(accent: Color) {
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_sheet_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_sheet_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         SheetControlRow(label = stringResource(R.string.debug_component_lab_liquid_sheet_allow_dismiss)) {
             AppSwitch(checked = allowDismiss, onCheckedChange = { allowDismiss = it })
         }
@@ -68,7 +77,7 @@ internal fun DebugLiquidSheetCard(accent: Color) {
         ) {
             LiquidSheetInitialDetent.entries.forEach { detent ->
                 AppLiquidTextButton(
-                    backdrop = null,
+                    backdrop = cardBackdrop,
                     text = detent.debugLabel(),
                     onClick = { initialDetent = detent },
                     modifier = Modifier.weight(1f),
@@ -80,7 +89,7 @@ internal fun DebugLiquidSheetCard(accent: Color) {
             }
         }
         AppLiquidTextButton(
-            backdrop = null,
+            backdrop = cardBackdrop,
             text = stringResource(R.string.debug_component_lab_liquid_sheet_open),
             onClick = { show = true },
             modifier = Modifier.fillMaxWidth(),
@@ -104,6 +113,7 @@ internal fun DebugLiquidSheetCard(accent: Color) {
         allowDismiss = allowDismiss,
         onBlockedDismissRequest = { blockedDismissCount++ },
         initialDetent = initialDetent,
+        preferExportedBackdrop = true,
         useLiquidGlassSheet = true,
     ) {
         SheetContentColumn(verticalSpacing = 12.dp) {
@@ -152,13 +162,14 @@ internal fun DebugLiquidSheetCard(accent: Color) {
                     SheetDescriptionText(stringResource(R.string.debug_component_lab_liquid_sheet_row_desc))
                 }
             }
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 text = stringResource(R.string.common_close),
                 onClick = { show = false },
                 modifier = Modifier.fillMaxWidth().widthIn(min = 48.dp),
+                surfaceModifier = Modifier.fillMaxWidth(),
                 variant = GlassVariant.SheetPrimaryAction,
                 textColor = contentColor,
+                pressSafePadding = 0.dp,
             )
         }
     }

@@ -113,7 +113,10 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
                     )
                 }
                 item {
-                    DebugLiquidSheetCard(accent = accent)
+                    DebugLiquidSheetCard(
+                        accent = accent,
+                        backdrop = pageBackdrop,
+                    )
                 }
                 item {
                     DebugLiquidBackdropCard(accent = accent)
