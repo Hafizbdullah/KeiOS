@@ -38,7 +38,7 @@ import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -273,6 +273,7 @@ private fun JsonImportActionCard(
     AppFeatureCard(
         title = stringResource(R.string.json_import_action_title),
         subtitle = actionSummary(state),
+        exportBackdropToContent = true,
         containerColor = jsonImportCardContainerColor(),
         subtitleColor = jsonImportSecondaryTextColor(),
         showIndication = false,
@@ -469,16 +470,17 @@ private fun JsonImportPrimaryButton(
     modifier: Modifier = Modifier,
     leadingIcon: ImageVector? = null,
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
+        surfaceModifier = Modifier.fillMaxWidth(),
         enabled = enabled,
         textColor = MiuixTheme.colorScheme.primary,
         containerColor = MiuixTheme.colorScheme.primary,
         leadingIcon = leadingIcon,
         variant = GlassVariant.SheetPrimaryAction,
+        pressSafePadding = 0.dp,
         textMaxLines = 1,
         textOverflow = TextOverflow.Ellipsis,
     )
@@ -492,17 +494,18 @@ private fun JsonImportNeutralButton(
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
 ) {
-    AppLiquidTextButton(
-        backdrop = null,
+    AppStandaloneLiquidTextButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
+        surfaceModifier = Modifier.fillMaxWidth(),
         enabled = enabled,
         textColor = MiuixTheme.colorScheme.onBackgroundVariant,
         containerColor = null,
         leadingIcon = leadingIcon,
         iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
         variant = GlassVariant.Content,
+        pressSafePadding = 0.dp,
         textMaxLines = 1,
         textOverflow = TextOverflow.Ellipsis,
     )
