@@ -486,6 +486,7 @@ fun SnapshotWindowBottomSheet(
     enableNestedScroll: Boolean = true,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
     surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
+    preferExportedBackdrop: Boolean = false,
     useLiquidGlassSheet: Boolean = LocalLiquidSheetEnabled.current,
     content: @Composable () -> Unit,
 ) {
@@ -571,6 +572,7 @@ fun SnapshotWindowBottomSheet(
             enableNestedScroll = enableNestedScroll,
             initialDetent = initialDetent,
             surfaceTone = surfaceTone,
+            preferExportedBackdrop = preferExportedBackdrop,
             content = sheetContent,
         )
     } else {

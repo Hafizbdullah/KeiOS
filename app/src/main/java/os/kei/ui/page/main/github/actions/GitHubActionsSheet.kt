@@ -43,6 +43,7 @@ internal fun GitHubActionsSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_actions_sheet_title),
         onDismissRequest = onDismissRequest,
         initialDetent = LiquidSheetInitialDetent.Full,

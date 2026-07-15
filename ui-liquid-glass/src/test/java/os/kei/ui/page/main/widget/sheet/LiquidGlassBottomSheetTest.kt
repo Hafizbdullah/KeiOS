@@ -33,6 +33,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -292,6 +293,85 @@ class LiquidGlassBottomSheetTest {
             assertSame(startBackdrop, endBackdrop)
             assertSame(startBackdrop, contentBackdrop)
             assertNotSame(sceneBackdrop, contentBackdrop)
+        }
+    }
+
+    @Test
+    fun childControlsPreferExportedBackdropWhenOptedIn() {
+        var pageBackdrop: Backdrop? = null
+        var sheetBackdrop: Backdrop? = null
+        var resolvedControlBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                val fallback = LocalSceneBackdrop.current
+                pageBackdrop = fallback
+                LiquidGlassBottomSheet(
+                    show = true,
+                    title = "Inherited backdrop",
+                    preferExportedBackdrop = true,
+                ) {
+                    sheetBackdrop = LocalLiquidParentBackdrop.current
+                    resolvedControlBackdrop = activeGlassBackdrop(fallback)
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .testTag("sheet-inherited-control"),
+                    )
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("sheet-inherited-control").assertExists()
+
+        composeRule.runOnIdle {
+            assertNotNull(pageBackdrop)
+            assertNotNull(sheetBackdrop)
+            assertSame(sheetBackdrop, resolvedControlBackdrop)
+            assertNotSame(pageBackdrop, resolvedControlBackdrop)
+        }
+    }
+
+    @Test
+    fun childControlsKeepPageFallbackWithoutOptIn() {
+        var pageBackdrop: Backdrop? = null
+        var sheetBackdrop: Backdrop? = null
+        var resolvedControlBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            LiquidSheetTestTheme {
+                val fallback = LocalSceneBackdrop.current
+                pageBackdrop = fallback
+                LiquidGlassBottomSheet(
+                    show = true,
+                    title = "Page fallback",
+                ) {
+                    sheetBackdrop = LocalLiquidParentBackdrop.current
+                    resolvedControlBackdrop = activeGlassBackdrop(fallback)
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(96.dp)
+                                .testTag("sheet-page-fallback-control"),
+                    )
+                }
+            }
+        }
+
+        composeRule.mainClock.advanceTimeBy(2_000)
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("sheet-page-fallback-control").assertExists()
+
+        composeRule.runOnIdle {
+            assertNotNull(pageBackdrop)
+            assertNotNull(sheetBackdrop)
+            assertSame(pageBackdrop, resolvedControlBackdrop)
+            assertNotSame(sheetBackdrop, resolvedControlBackdrop)
         }
     }
 

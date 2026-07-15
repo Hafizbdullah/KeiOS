@@ -43,6 +43,7 @@ internal fun GitHubDebugSheet(
     if (!show) return
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_debug_sheet_title),
         onDismissRequest = onDismissRequest,
         startAction = {

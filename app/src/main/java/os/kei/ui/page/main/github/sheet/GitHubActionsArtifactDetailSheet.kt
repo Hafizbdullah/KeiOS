@@ -87,6 +87,7 @@ internal fun GitHubActionsArtifactDetailSheet(
         )
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_actions_artifact_detail_title),
         onDismissRequest = onDismissRequest,
         startAction = {

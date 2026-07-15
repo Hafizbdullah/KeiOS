@@ -43,6 +43,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
@@ -120,6 +121,7 @@ fun LiquidGlassBottomSheet(
     enableNestedScroll: Boolean = true,
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
     surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
+    preferExportedBackdrop: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -261,6 +263,7 @@ fun LiquidGlassBottomSheet(
                 {
                     CompositionLocalProvider(
                         LocalLiquidParentBackdrop provides activeSheetBackdrop,
+                        LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
                     ) {
                         action()
                     }
@@ -271,6 +274,7 @@ fun LiquidGlassBottomSheet(
                 {
                     CompositionLocalProvider(
                         LocalLiquidParentBackdrop provides activeSheetBackdrop,
+                        LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
                     ) {
                         action()
                     }
@@ -364,6 +368,7 @@ fun LiquidGlassBottomSheet(
                     if (managed) plainContentExceedsOpeningDetent = false
                 },
                 LocalLiquidParentBackdrop provides activeSheetBackdrop,
+                LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
             ) {
                 content()
             }

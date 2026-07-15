@@ -48,6 +48,7 @@ internal fun GitHubDroidSourcesSheet(
 
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_droid_sources_sheet_title),
         onDismissRequest = dismissHandler.requestDismiss,
         allowDismiss = dismissHandler.allowDismiss,

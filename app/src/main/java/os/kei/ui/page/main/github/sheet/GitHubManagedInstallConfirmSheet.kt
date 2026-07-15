@@ -72,6 +72,7 @@ internal fun GitHubManagedInstallConfirmSheet(
 
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_page_install_confirm_title),
         onDismissRequest = onDismissRequest,
         allowDismiss = !running,

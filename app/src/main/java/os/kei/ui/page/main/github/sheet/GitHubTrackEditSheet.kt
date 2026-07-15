@@ -204,6 +204,7 @@ internal fun GitHubTrackEditSheet(
         )
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title =
             if (editingTrackedItem == null) {
                 stringResource(R.string.github_track_sheet_title_add)

@@ -82,7 +82,7 @@ fun LiquidLinearProgressBar(
     backdrop: Backdrop? = null,
 ) {
     val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
-    val parentBackdrop = backdrop ?: LocalLiquidParentBackdrop.current
+    val parentBackdrop = preferredLiquidBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
     val glassRuntime = glassEffectRuntime()
     val contentDescriptionState = remember(contentDescription) { contentDescription }
     val progressProvider = progress

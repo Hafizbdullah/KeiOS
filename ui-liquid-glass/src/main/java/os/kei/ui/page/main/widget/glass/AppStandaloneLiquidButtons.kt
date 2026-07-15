@@ -26,6 +26,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 val LocalLiquidParentBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
+/**
+ * Lets an overlay opt into its nearest exported liquid surface before a caller-provided page
+ * fallback. Bottom sheets use this so their controls sample the sheet material itself.
+ */
+val LocalLiquidParentBackdropOverridesFallback = staticCompositionLocalOf { false }
+
 @Composable
 fun AppStandaloneLiquidTextButton(
     text: String,

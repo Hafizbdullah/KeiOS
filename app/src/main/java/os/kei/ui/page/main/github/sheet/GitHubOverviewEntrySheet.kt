@@ -41,6 +41,7 @@ internal fun GitHubOverviewEntrySheet(
     val activeEntries = visibleEntries.orDefaultGitHubOverviewEntries()
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_overview_entry_sheet_title),
         onDismissRequest = onDismissRequest,
         startAction = {

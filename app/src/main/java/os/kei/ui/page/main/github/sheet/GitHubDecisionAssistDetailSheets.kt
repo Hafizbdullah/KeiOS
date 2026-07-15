@@ -91,6 +91,7 @@ internal fun GitHubDecisionAssistDetailSheet(
         }
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(title),
         onDismissRequest = onDismissRequest,
         startAction = {

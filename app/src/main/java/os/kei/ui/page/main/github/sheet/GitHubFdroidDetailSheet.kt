@@ -63,6 +63,7 @@ internal fun GitHubFdroidDetailSheet(
     val item = detail.item
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_fdroid_detail_title),
         onDismissRequest = onDismissRequest,
         startAction = {

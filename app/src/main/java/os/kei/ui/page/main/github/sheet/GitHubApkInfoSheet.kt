@@ -51,6 +51,7 @@ internal fun GitHubApkInfoSheet(
     asset ?: return
     SnapshotWindowBottomSheet(
         show = true,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.github_apk_info_title),
         onDismissRequest = onDismissRequest,
         startAction = {
