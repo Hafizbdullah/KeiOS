@@ -49,6 +49,7 @@ internal fun FeedbackStatusCard(
         sectionIcon = appLucideWarningIcon(),
         titleColor = statusColor,
         containerColor = feedbackCardContainerColor(),
+        exportBackdropToContent = true,
         showIndication = false,
         headerEndActions = {
             AppStandaloneLiquidTextButton(
@@ -120,6 +121,7 @@ internal fun FeedbackLogCard(
         title = stringResource(R.string.feedback_issue_logs_title),
         subtitle = stringResource(R.string.feedback_issue_logs_summary),
         containerColor = feedbackCardContainerColor(),
+        exportBackdropToContent = true,
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.compactSectionGap,
     ) {
@@ -195,6 +197,7 @@ internal fun FeedbackDraftCard(
         subtitle = stringResource(R.string.feedback_issue_draft_summary),
         containerColor = feedbackDraftCardContainerColor(),
         subtitleColor = feedbackSecondaryTextColor(),
+        exportBackdropToContent = true,
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
     ) {
@@ -228,6 +231,7 @@ internal fun FeedbackSubmitCard(
         subtitle = stringResource(R.string.feedback_issue_submit_summary),
         sectionIcon = appLucideExternalLinkIcon(),
         containerColor = feedbackCardContainerColor(),
+        exportBackdropToContent = true,
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
     ) {
