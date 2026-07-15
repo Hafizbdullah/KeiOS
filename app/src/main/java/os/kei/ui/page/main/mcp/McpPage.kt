@@ -114,7 +114,6 @@ fun McpPage(
             keyPrefix = "mcp",
             refreshOnCompositionEnter = true,
             distinctLayers = pageBackdropEffectsEnabled,
-            keepTopBarDistinct = true,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val mcpGlassRuntime = LocalGlassEffectRuntime.current

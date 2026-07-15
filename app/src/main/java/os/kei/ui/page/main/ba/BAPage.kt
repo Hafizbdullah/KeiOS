@@ -61,7 +61,6 @@ fun BAPage(
             keyPrefix = "ba",
             refreshOnCompositionEnter = true,
             distinctLayers = pageBackdropEffectsEnabled,
-            keepTopBarDistinct = true,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val baServerCn = stringResource(R.string.ba_server_cn)

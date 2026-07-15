@@ -49,7 +49,7 @@ class MainPageBackdropSetTest {
     }
 
     @Test
-    fun collapsedLayersShareOneBackdropByDefault() {
+    fun collapsedLayersKeepTopBarIndependentByDefault() {
         var backdrops: MainPageBackdropSet? = null
 
         composeRule.setContent {
@@ -58,28 +58,6 @@ class MainPageBackdropSetTest {
                     rememberMainPageBackdropSet(
                         keyPrefix = "shared",
                         distinctLayers = false,
-                    )
-            }
-        }
-
-        composeRule.runOnIdle {
-            val result = requireNotNull(backdrops)
-            assertSame(result.topBar, result.content)
-            assertSame(result.topBar, result.sheet)
-        }
-    }
-
-    @Test
-    fun collapsedLayersCanKeepTopBarDistinct() {
-        var backdrops: MainPageBackdropSet? = null
-
-        composeRule.setContent {
-            TestTheme {
-                backdrops =
-                    rememberMainPageBackdropSet(
-                        keyPrefix = "topbar-distinct",
-                        distinctLayers = false,
-                        keepTopBarDistinct = true,
                     )
             }
         }
@@ -102,7 +80,6 @@ class MainPageBackdropSetTest {
                     rememberMainPageBackdropSet(
                         keyPrefix = "stable",
                         distinctLayers = distinctLayers.value,
-                        keepTopBarDistinct = true,
                     )
             }
         }
@@ -119,6 +96,15 @@ class MainPageBackdropSetTest {
             assertSame(expanded.topBar, collapsed.topBar)
             assertSame(expanded.content, collapsed.content)
             assertSame(collapsed.content, collapsed.sheet)
+            distinctLayers.value = true
+        }
+        composeRule.waitForIdle()
+
+        composeRule.runOnIdle {
+            val expandedAgain = requireNotNull(backdrops)
+            assertSame(expanded.topBar, expandedAgain.topBar)
+            assertSame(expanded.content, expandedAgain.content)
+            assertNotSame(expandedAgain.content, expandedAgain.sheet)
         }
     }
 
