@@ -47,6 +47,7 @@ internal fun BaGuideCatalogImportPreviewSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = state != null,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.ba_catalog_import_preview_title),
         onDismissRequest = onDismissRequest
     ) {

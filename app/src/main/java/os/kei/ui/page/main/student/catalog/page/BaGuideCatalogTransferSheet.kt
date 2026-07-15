@@ -36,6 +36,7 @@ internal fun BaGuideCatalogTransferSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.ba_catalog_transfer_sheet_title),
         onDismissRequest = onDismissRequest,
     ) {

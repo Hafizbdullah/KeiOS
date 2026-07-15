@@ -45,6 +45,7 @@ internal fun BaStudentGuideCacheStatusSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.guide_cache_status_sheet_title),
         onDismissRequest = onDismissRequest,
         startAction = {
