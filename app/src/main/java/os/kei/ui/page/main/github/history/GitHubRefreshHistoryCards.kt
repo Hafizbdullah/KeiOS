@@ -36,7 +36,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
@@ -204,6 +204,7 @@ internal fun GitHubRefreshHistoryRecordCard(
         title = title,
         subtitle = subtitle,
         modifier = modifier,
+        exportBackdropToContent = true,
         eyebrow = stringResource(R.string.github_history_refresh_time_finished, finishedAt),
         sectionStartAction = {
             Icon(
@@ -369,14 +370,14 @@ private fun GitHubRefreshHistoryRetryActionRow(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        AppLiquidTextButton(
-            backdrop = null,
+        AppStandaloneLiquidTextButton(
             text = stringResource(R.string.github_history_refresh_action_retry_incremental_count, retryTargetCount),
             leadingIcon = appLucideRefreshIcon(),
             variant = GlassVariant.Compact,
             textMaxLines = 1,
             textOverflow = TextOverflow.Ellipsis,
             onClick = onRetryRefresh,
+            pressSafePadding = 0.dp,
         )
     }
 }

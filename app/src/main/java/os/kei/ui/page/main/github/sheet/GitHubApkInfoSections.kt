@@ -34,7 +34,7 @@ import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -397,14 +397,14 @@ internal fun ManifestNodeGroupCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 StatusPill(label = nodes.size.toString(), color = GitHubStatusPalette.Active)
-                AppLiquidIconButton(
-                    backdrop = null,
+                AppStandaloneLiquidIconButton(
                     icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
                     contentDescription = title,
                     onClick = onToggle,
                     width = 32.dp,
                     height = 32.dp,
                     variant = GlassVariant.Content,
+                    pressSafePadding = 0.dp,
                 )
             }
             if (expanded) {
@@ -523,14 +523,14 @@ internal fun ApkInfoMeaningSection() {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AppLiquidIconButton(
-                backdrop = null,
+            AppStandaloneLiquidIconButton(
                 icon = appLucideInfoIcon(),
                 contentDescription = stringResource(R.string.github_apk_info_section_meaning),
                 onClick = { expanded = !expanded },
                 width = 32.dp,
                 height = 32.dp,
                 variant = GlassVariant.Content,
+                pressSafePadding = 0.dp,
             )
             Text(
                 text = stringResource(R.string.github_apk_info_meaning_summary),
@@ -539,14 +539,14 @@ internal fun ApkInfoMeaningSection() {
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
             )
-            AppLiquidIconButton(
-                backdrop = null,
+            AppStandaloneLiquidIconButton(
                 icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
                 contentDescription = stringResource(R.string.github_apk_info_section_meaning),
                 onClick = { expanded = !expanded },
                 width = 32.dp,
                 height = 32.dp,
                 variant = GlassVariant.Content,
+                pressSafePadding = 0.dp,
             )
         }
         if (expanded) {

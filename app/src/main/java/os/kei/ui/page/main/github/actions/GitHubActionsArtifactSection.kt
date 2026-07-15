@@ -24,7 +24,7 @@ import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.supportsManagedApkInstall
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -227,8 +227,7 @@ private fun GitHubActionsArtifactFilterRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         GitHubActionsArtifactFilter.entries.forEach { filter ->
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 variant = if (selected == filter) GlassVariant.SheetAction else GlassVariant.Content,
                 text =
                     when (filter) {
@@ -252,11 +251,13 @@ private fun GitHubActionsArtifactFilterRow(
                                 recommendedCount + alternativesCount,
                             )
                         }
-                    },
+                },
                 onClick = { onSelectedChange(filter) },
                 modifier = Modifier.weight(1f),
+                surfaceModifier = Modifier.fillMaxWidth(),
                 textMaxLines = 1,
                 textOverflow = TextOverflow.Ellipsis,
+                pressSafePadding = 0.dp,
             )
         }
     }

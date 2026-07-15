@@ -70,7 +70,7 @@ import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
@@ -657,6 +657,7 @@ private fun GitHubActionsHistoryRecordCard(
         title = title,
         subtitle = subtitle,
         modifier = modifier,
+        exportBackdropToContent = true,
         eyebrow =
             stringResource(
                 R.string.github_actions_history_time_notified,
@@ -774,24 +775,24 @@ private fun GitHubActionsHistoryActionRow(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
-        AppLiquidTextButton(
-            backdrop = null,
+        AppStandaloneLiquidTextButton(
             text = stringResource(R.string.github_actions_history_action_open_actions),
             leadingIcon = appLucideListIcon(),
             variant = GlassVariant.Compact,
             textMaxLines = 1,
             textOverflow = TextOverflow.Ellipsis,
             onClick = onOpenTrackActions,
+            pressSafePadding = 0.dp,
         )
         if (runUrl.isNotBlank()) {
-            AppLiquidTextButton(
-                backdrop = null,
+            AppStandaloneLiquidTextButton(
                 text = stringResource(R.string.github_actions_history_action_open_run),
                 leadingIcon = appLucideExternalLinkIcon(),
                 variant = GlassVariant.Compact,
                 textMaxLines = 1,
                 textOverflow = TextOverflow.Ellipsis,
                 onClick = onOpenRun,
+                pressSafePadding = 0.dp,
             )
         }
     }
