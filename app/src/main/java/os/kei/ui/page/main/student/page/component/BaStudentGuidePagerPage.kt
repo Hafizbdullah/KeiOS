@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.R
@@ -171,6 +172,14 @@ internal fun BaStudentGuidePagerPage(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // This sibling records only the page background; LazyColumn cards and controls
+        // consume it outside this capture.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(pageBackdrop),
+        )
         val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
         val headerState =
             remember(
