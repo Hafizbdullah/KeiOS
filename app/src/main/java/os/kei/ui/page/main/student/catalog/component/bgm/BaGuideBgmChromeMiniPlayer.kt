@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -167,6 +168,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                         Modifier
                             .fillMaxSize()
                             .padding(horizontal = 8.dp)
+                            .offset(y = MINI_PLAYER_PROGRESS_VERTICAL_OFFSET)
                             .graphicsLayer { alpha = expanded },
                 )
             }
@@ -274,5 +276,7 @@ private fun defaultMiniArtworkBrush(accent: Color): Brush =
     )
 
 private val MINI_PLAYER_MINIMUM_TOUCH_SIZE = 48.dp
+
+private val MINI_PLAYER_PROGRESS_VERTICAL_OFFSET = 4.dp
 
 private const val MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD = 0.001f
