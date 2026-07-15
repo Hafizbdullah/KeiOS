@@ -63,6 +63,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
     )
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
         onDismissFinished = onDismissFinished,

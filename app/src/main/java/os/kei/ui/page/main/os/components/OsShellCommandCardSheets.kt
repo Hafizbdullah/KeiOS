@@ -164,6 +164,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = title,
         onDismissRequest = onDismissRequest,
         startAction = {
@@ -393,6 +394,7 @@ internal fun OsShellCommandCardEditorSheet(
         )
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = title,
         onDismissRequest = dismissHandler.requestDismiss,
         onDismissFinished = onDismissFinished,

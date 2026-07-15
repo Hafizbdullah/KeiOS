@@ -69,6 +69,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
 
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = uiState.sheetTitle,
         onDismissRequest = onDismissRequest,
         startAction = {

@@ -55,6 +55,7 @@ internal fun OsCardVisibilityManagerSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = title,
         onDismissRequest = onDismissRequest,
         startAction = {
@@ -140,6 +141,7 @@ internal fun OsActivityVisibilityManagerSheet(
 ) {
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = title,
         onDismissRequest = onDismissRequest,
         startAction = {
