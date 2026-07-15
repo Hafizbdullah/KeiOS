@@ -6,6 +6,7 @@
 
 package os.kei.ui.page.main.widget.sheet
 
+import android.view.WindowInsets as AndroidWindowInsets
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -32,6 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -381,8 +386,30 @@ private fun LiquidDetentBottomSheetContentLayout(
     }
 
     popupHost(internalVisible.value) {
+        // The Dialog owns its own View, focus tree, and inset controller. Resolve these locals
+        // inside the host content so an IME opened by a Sheet field is dismissed through the
+        // Dialog window rather than the activity window behind it.
+        val dialogDensity = LocalDensity.current
+        val focusManager = LocalFocusManager.current
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val view = LocalView.current
+        val composeImeBottomPx = WindowInsets.ime.getBottom(dialogDensity)
         val completeBack: () -> Unit = {
-            requestAnimatedDismiss(0f)
+            if (
+                liquidSheetImeVisible(
+                    composeImeBottomPx = composeImeBottomPx,
+                    platformImeVisible =
+                        view.rootWindowInsets
+                            ?.isVisible(AndroidWindowInsets.Type.ime()) == true,
+                )
+            ) {
+                focusManager.clearFocus(force = true)
+                view.windowInsetsController?.hide(AndroidWindowInsets.Type.ime())
+                    ?: keyboardController?.hide()
+                coroutineScope.launch { resetGesture() }
+            } else {
+                requestAnimatedDismiss(0f)
+            }
         }
         val navigationEventOwnerAvailable =
             androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current != null
@@ -518,3 +545,8 @@ private fun LiquidDetentBottomSheetContentLayout(
         }
     }
 }
+
+internal fun liquidSheetImeVisible(
+    composeImeBottomPx: Int,
+    platformImeVisible: Boolean,
+): Boolean = composeImeBottomPx > 0 || platformImeVisible
