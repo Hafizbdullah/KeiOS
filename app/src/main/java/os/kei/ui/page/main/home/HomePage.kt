@@ -52,6 +52,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 
@@ -115,6 +116,7 @@ fun HomePage(
     val homeCardBackdrop =
         if (fullBackdropEffectsEnabled) {
             rememberActionBarBackdrop {
+                drawRect(surfaceColor)
                 drawContent()
             }
         } else {
@@ -252,35 +254,49 @@ fun HomePage(
                     end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
                 )
 
-            BgEffectBackground(
-                dynamicBackground = dynamicBackgroundEnabled,
-                modifier = Modifier.fillMaxSize(),
-                bgModifier = foregroundBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
-                effectBackground = effectBackgroundEnabled,
-                isFullSize = true,
-                alpha = heroMotionState.bgAlpha,
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .kyantLayerBackdrop(actionBarBackdrop),
             ) {
-                HomePageHero(
-                    foregroundBackdrop = foregroundBackdrop,
-                    foregroundBlurEnabled = foregroundBlurActive,
-                    homeIconHdrEnabled = homeIconHdrEnabled,
-                    hdrSweepProgress = heroMotionState.hdrSweepProgress,
-                    homeHeaderSinkOffset = heroMotionState.homeHeaderSinkOffset,
-                    logoPadding = logoPadding,
-                    layoutDirection = layoutDirection,
-                    homeAppName = contentState.homeAppName,
-                    homeTagline = contentState.homeTagline,
-                    appVersionText = contentState.appVersionText,
-                    avoidanceProgress = heroMotionState.avoidanceProgress,
-                    iconProgress = heroMotionState.iconProgress,
-                    titleProgress = heroMotionState.titleProgress,
-                    summaryProgress = heroMotionState.summaryProgress,
-                    statusPills = overviewCardState.homeHeaderStatusPills,
-                    onHeroHeightChanged = heroMotionState.onHeroHeightPxChanged,
-                    onIconBottomChanged = heroMotionState.onIconBottomChanged,
-                    onTitleBottomChanged = heroMotionState.onTitleBottomChanged,
-                    onSummaryBottomChanged = heroMotionState.onSummaryBottomChanged,
-                )
+                BgEffectBackground(
+                    dynamicBackground = dynamicBackgroundEnabled,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .then(
+                                homeCardBackdrop?.let { backdrop ->
+                                    Modifier.kyantLayerBackdrop(backdrop)
+                                } ?: Modifier,
+                            ),
+                    bgModifier = foregroundBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
+                    effectBackground = effectBackgroundEnabled,
+                    isFullSize = true,
+                    alpha = heroMotionState.bgAlpha,
+                ) {
+                    HomePageHero(
+                        foregroundBackdrop = foregroundBackdrop,
+                        foregroundBlurEnabled = foregroundBlurActive,
+                        homeIconHdrEnabled = homeIconHdrEnabled,
+                        hdrSweepProgress = heroMotionState.hdrSweepProgress,
+                        homeHeaderSinkOffset = heroMotionState.homeHeaderSinkOffset,
+                        logoPadding = logoPadding,
+                        layoutDirection = layoutDirection,
+                        homeAppName = contentState.homeAppName,
+                        homeTagline = contentState.homeTagline,
+                        appVersionText = contentState.appVersionText,
+                        avoidanceProgress = heroMotionState.avoidanceProgress,
+                        iconProgress = heroMotionState.iconProgress,
+                        titleProgress = heroMotionState.titleProgress,
+                        summaryProgress = heroMotionState.summaryProgress,
+                        statusPills = overviewCardState.homeHeaderStatusPills,
+                        onHeroHeightChanged = heroMotionState.onHeroHeightPxChanged,
+                        onIconBottomChanged = heroMotionState.onIconBottomChanged,
+                        onTitleBottomChanged = heroMotionState.onTitleBottomChanged,
+                        onSummaryBottomChanged = heroMotionState.onSummaryBottomChanged,
+                    )
+                }
 
                 LazyColumn(
                     state = lazyListState,

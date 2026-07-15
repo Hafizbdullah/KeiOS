@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.model.BottomPage
@@ -41,6 +43,7 @@ import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
@@ -188,6 +191,7 @@ internal fun HomeInfoCard(
             label = "home_info_card_press_scale",
         )
     val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
+    val exportedContentBackdrop = rememberLayerBackdrop()
 
     val cardModifier =
         Modifier
@@ -211,9 +215,14 @@ internal fun HomeInfoCard(
             surfaceColor = containerColor,
             blurRadius = blurRadius,
             lensRadius = lensRadius,
+            exportedBackdrop = exportedContentBackdrop,
             interactionSource = interactionSource,
         ) {
-            HomeInfoCardContent(content)
+            CompositionLocalProvider(
+                LocalLiquidParentBackdrop provides exportedContentBackdrop,
+            ) {
+                HomeInfoCardContent(content)
+            }
         }
     } else {
         Box(
