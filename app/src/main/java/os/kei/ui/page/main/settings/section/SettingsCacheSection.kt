@@ -96,6 +96,7 @@ internal fun SettingsCacheSection(
                 subtitle = stringResource(R.string.settings_cache_items_summary),
                 sectionIcon = appLucidePackageIcon(),
                 containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.CacheItems),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.CacheItems, it) },
             ) {

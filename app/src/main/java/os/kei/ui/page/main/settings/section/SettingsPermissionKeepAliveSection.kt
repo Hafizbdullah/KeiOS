@@ -119,6 +119,7 @@ private fun SettingsPermissionCard(
         subtitle = stringResource(R.string.settings_group_permissions_summary),
         sectionIcon = appLucideLockIcon(),
         containerColor = containerColor,
+        exportBackdropToContent = true,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
     ) {
@@ -142,6 +143,7 @@ private fun SettingsKeepAliveCard(
         subtitle = stringResource(R.string.settings_group_keep_alive_summary),
         sectionIcon = appLucideBellIcon(),
         containerColor = containerColor,
+        exportBackdropToContent = true,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
     ) {

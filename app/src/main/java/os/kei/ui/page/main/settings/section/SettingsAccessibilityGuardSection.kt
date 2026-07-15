@@ -38,6 +38,7 @@ internal fun SettingsAccessibilityGuardPolicyCard(
         subtitle = accessibilityGuardPolicySubtitle(state),
         sectionIcon = appLucideLockIcon(),
         containerColor = containerColor,
+        exportBackdropToContent = true,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
     ) {

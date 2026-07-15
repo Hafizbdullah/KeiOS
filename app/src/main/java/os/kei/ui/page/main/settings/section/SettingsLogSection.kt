@@ -123,6 +123,7 @@ internal fun SettingsLogSection(
                 subtitle = stringResource(R.string.settings_group_log_files_summary),
                 sectionIcon = appLucideNotesIcon(),
                 containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.LogFiles),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.LogFiles, it) },
             ) {

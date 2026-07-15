@@ -72,6 +72,7 @@ internal fun SettingsVisualSection(
                 subtitle = stringResource(R.string.settings_group_theme_language_summary),
                 sectionIcon = appLucideLayersIcon(),
                 containerColor = enabledCardColor,
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.ThemeLanguage),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.ThemeLanguage, it) },
             ) {

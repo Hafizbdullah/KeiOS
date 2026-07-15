@@ -172,6 +172,7 @@ internal fun SettingsBackgroundSection(
                 subtitle = stringResource(R.string.settings_group_background_asset_summary),
                 sectionIcon = appLucideMediaIcon(),
                 containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.BackgroundAsset),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.BackgroundAsset, it) },
             ) {
