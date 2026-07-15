@@ -32,9 +32,11 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("io.ktor:ktor-client-mock")
 
-    // WebDAV client (used by DAVx⁵, production-grade)
-    // Exclude xpp3 — Android has built-in XmlPullParser
-    implementation("com.github.bitfireAT:dav4jvm:main-SNAPSHOT") {
+    // WebDAV client (used by DAVx⁵, production-grade).
+    // The Ktor API currently lives on upstream main; pin its verified revision so API changes
+    // are introduced through an explicit dependency upgrade and matching client migration.
+    // Exclude xpp3 — Android has built-in XmlPullParser.
+    implementation("com.github.bitfireAT:dav4jvm:6bed720c12") {
         exclude(group = "org.ogce", module = "xpp3")
     }
 }

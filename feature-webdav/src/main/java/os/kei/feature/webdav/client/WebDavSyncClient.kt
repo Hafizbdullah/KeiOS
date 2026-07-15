@@ -2,6 +2,7 @@ package os.kei.feature.webdav.client
 
 import at.bitfire.dav4jvm.ktor.DavCollection
 import at.bitfire.dav4jvm.ktor.DavResource
+import at.bitfire.dav4jvm.ktor.MultiStatusItem
 import at.bitfire.dav4jvm.ktor.Response
 import at.bitfire.dav4jvm.ktor.exception.ConflictException
 import at.bitfire.dav4jvm.ktor.exception.DavException
@@ -32,6 +33,7 @@ import io.ktor.http.headersOf
 import io.ktor.http.withCharset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
@@ -80,7 +82,7 @@ class WebDavSyncClient(
     suspend fun testConnection(): WebDavTestConnectionResult = withContext(ioDispatcher) {
         try {
             recoverInvalidRequest("test-connection") {
-                collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+                collection().propfind(0, WebDAV.ResourceType).collect { }
                 collectionKnown = true
                 WebDavTestConnectionResult.Success(dirCreated = false)
             }
@@ -181,16 +183,8 @@ class WebDavSyncClient(
                     WebDAV.GetLastModified,
                     WebDAV.GetContentLength,
                     WebDAV.ResourceType,
-                ) { response, relation ->
-                    if (relation == Response.HrefRelation.MEMBER && !response.isCollection()) {
-                        files += WebDavRemoteFile(
-                            href = response.href.toString(),
-                            displayName = response.hrefName(),
-                            lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
-                            contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
-                            etag = response[GetETag::class.java]?.rawETag,
-                        )
-                    }
+                ).collect { item ->
+                    item.toWebDavRemoteFileOrNull()?.let(files::add)
                 }
 
                 files
@@ -234,7 +228,7 @@ class WebDavSyncClient(
     private suspend fun ensureCollection() {
         if (collectionKnown) return
         try {
-            collection().propfind(0, WebDAV.ResourceType) { _, _ -> }
+            collection().propfind(0, WebDAV.ResourceType).collect { }
             collectionKnown = true
         } catch (_: NotFoundException) {
             createDirectorySync()
@@ -284,7 +278,7 @@ class WebDavSyncClient(
     private suspend fun ensureDirectorySegment(url: Url, label: String) {
         val collection = DavCollection(httpClient, url)
         try {
-            collection.propfind(0, WebDAV.ResourceType) { _, _ -> }
+            collection.propfind(0, WebDAV.ResourceType).collect { }
             return
         } catch (_: NotFoundException) {
         } catch (_: ConflictException) {
@@ -352,11 +346,6 @@ class WebDavSyncClient(
             operation()
         }
 
-    private fun Response.isCollection(): Boolean =
-        this[ResourceType::class.java]
-            ?.types
-            ?.contains(WebDAV.Collection) == true
-
     private fun ifMatchHeaders(etag: String?): Headers? =
         etag?.takeIf { it.isNotBlank() }?.let {
             headersOf(HttpHeaders.IfMatch, formatEtagForHeader(it))
@@ -410,6 +399,25 @@ class WebDavSyncClient(
 
         const val USER_AGENT: String = "KeiOS-WebDAV/1 (+https://github.com/KeiOS) ktor"
     }
+}
+
+private fun Response.isCollection(): Boolean =
+    this[ResourceType::class.java]
+        ?.types
+        ?.contains(WebDAV.Collection) == true
+
+internal fun MultiStatusItem.toWebDavRemoteFileOrNull(): WebDavRemoteFile? {
+    val responseItem = this as? MultiStatusItem.Response ?: return null
+    val response = responseItem.response
+    if (responseItem.relation != Response.HrefRelation.MEMBER || response.isCollection()) return null
+
+    return WebDavRemoteFile(
+        href = response.href.toString(),
+        displayName = response.hrefName(),
+        lastModified = response[GetLastModified::class.java]?.lastModified?.toString(),
+        contentLength = response[GetContentLength::class.java]?.contentLength ?: 0L,
+        etag = response[GetETag::class.java]?.rawETag,
+    )
 }
 
 sealed interface WebDavTestConnectionResult {
