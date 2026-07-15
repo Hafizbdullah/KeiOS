@@ -5,10 +5,6 @@
 
 package os.kei.ui.page.main.widget.chrome
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
@@ -37,9 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -81,28 +76,10 @@ internal fun tabbedPageCollapsedDockWidth(
     minWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
 ): Dp = (availableWidth - searchDockWidth - gap).coerceAtLeast(minWidth)
 
-internal fun tabbedPageSearchDockTargetX(
-    searchExpanded: Boolean,
-    collapsedDockWidth: Dp,
+internal fun tabbedPageSearchDockRegionOffset(
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     gap: Dp = TabbedPageBottomChromeSearchGap,
-): Dp =
-    if (searchExpanded) {
-        size + gap
-    } else {
-        collapsedDockWidth + gap
-    }
-
-internal fun tabbedPageSearchDockTargetWidth(
-    searchExpanded: Boolean,
-    expandedSearchWidth: Dp,
-    size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
-): Dp =
-    if (searchExpanded) {
-        expandedSearchWidth
-    } else {
-        size
-    }
+): Dp = size + gap
 
 internal fun tabbedPageCategoryDockExpanded(
     visible: Boolean,
@@ -146,7 +123,6 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val size = AppChromeTokens.floatingBottomBarOuterHeight
     val gap = TabbedPageBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
-    val animationsEnabled = LocalTransitionAnimationsEnabled.current
     val effectiveSearchExpanded = searchEnabled && searchExpanded
     val categoryDockExpanded =
         tabbedPageCategoryDockExpanded(
@@ -160,11 +136,6 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
             label = "${labelPrefix}_bottom_chrome_keyboard_lift",
         )
     val keyboardLiftProvider = remember(keyboardLiftState) { { keyboardLiftState.value } }
-    val sizeAnimationSpec =
-        tween<Dp>(
-            durationMillis = resolvedMotionDuration(TabbedPageBottomChromeMotionMs, animationsEnabled),
-            easing = FastOutSlowInEasing,
-        )
     val searchDockAlphaProvider = remember { { TabbedPageBottomChromeSearchDockVisibleAlpha } }
     BoxWithConstraints(
         modifier =
@@ -195,38 +166,6 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
             } else {
                 maxWidth
             }
-        val visibleDockWidth = collapsedDockWidth
-        val searchTransition =
-            updateTransition(
-                targetState = effectiveSearchExpanded,
-                label = "${labelPrefix}_search_dock",
-            )
-        val searchXState =
-            searchTransition.animateDp(
-                transitionSpec = { sizeAnimationSpec },
-                label = "${labelPrefix}_search_dock_x",
-            ) { expanded ->
-                tabbedPageSearchDockTargetX(
-                    searchExpanded = expanded,
-                    collapsedDockWidth = visibleDockWidth,
-                    size = size,
-                    gap = gap,
-                )
-            }
-        val searchWidthState =
-            searchTransition.animateDp(
-                transitionSpec = { sizeAnimationSpec },
-                label = "${labelPrefix}_search_dock_width",
-            ) { expanded ->
-                tabbedPageSearchDockTargetWidth(
-                    searchExpanded = expanded,
-                    expandedSearchWidth = expandedSearchWidth,
-                    size = size,
-                )
-            }
-        val searchXProvider = remember(searchXState) { { searchXState.value } }
-        val searchWidthProvider = remember(searchWidthState) { { searchWidthState.value } }
-
         AnimatedCompactBottomBar(
             expanded = categoryDockExpanded,
             modifier =
@@ -270,9 +209,9 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
         )
 
         if (searchEnabled) {
-            AppBottomSearchDock(
+            AppFloatingSearchDock(
                 backdrop = backdrop,
-                expanded = searchExpanded,
+                expanded = effectiveSearchExpanded,
                 query = searchQuery,
                 onQueryChange = onSearchQueryChange,
                 onExpandedChange = onSearchExpandedChange,
@@ -281,14 +220,17 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 placeholder = searchPlaceholder,
                 modifier =
                     Modifier
+                        .width(expandedSearchWidth)
                         .zIndex(3f)
                         .graphicsLayer {
                             alpha = searchDockAlphaProvider()
-                        }.offset {
-                            IntOffset(x = searchXProvider().roundToPx(), y = 0)
-                        },
-                expandedWidth = expandedSearchWidth,
-                expandedWidthProvider = searchWidthProvider,
+                        }.offset(
+                            x = tabbedPageSearchDockRegionOffset(size = size, gap = gap),
+                            y = 0.dp,
+                        ),
+                keyboardLift = 0.dp,
+                compactIconTint = MiuixTheme.colorScheme.primary,
+                showActionWhenExpanded = false,
             )
         }
     }
@@ -354,7 +296,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
         selectedPosition = selectedPagePosition,
         selectedPositionProvider = selectedPagePositionProvider,
         onSelected = { index ->
-            if (categories.getOrNull(index) != null && index != selectedPageProvider()) {
+            if ((categories.getOrNull(index) != null) && (index != selectedPageProvider())) {
                 onSelectCategory(index)
             }
         },

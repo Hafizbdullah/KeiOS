@@ -196,7 +196,6 @@ internal fun DebugLiquidSearchFormCard(
                 searchIcon = appLucideSearchIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_search_toggle),
                 placeholder = stringResource(R.string.debug_component_lab_liquid_search_floating_placeholder),
-                horizontalInset = DebugLiquidSearchDockHorizontalInset,
                 keyboardLift = 0.dp,
                 accent = accent,
             )

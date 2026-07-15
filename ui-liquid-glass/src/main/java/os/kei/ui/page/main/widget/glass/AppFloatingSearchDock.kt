@@ -17,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -57,7 +58,6 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -97,7 +97,6 @@ fun AppFloatingSearchDock(
     placeholder: String,
     modifier: Modifier = Modifier,
     dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
-    horizontalInset: Dp = 14.dp,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
     gap: Dp = 8.dp,
@@ -105,6 +104,8 @@ fun AppFloatingSearchDock(
     keyboardLift: Dp? = null,
     keyboardLiftProvider: (() -> Dp)? = null,
     accent: Color = MiuixTheme.colorScheme.primary,
+    compactIconTint: Color = MiuixTheme.colorScheme.onBackground,
+    showActionWhenExpanded: Boolean = true,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -115,95 +116,108 @@ fun AppFloatingSearchDock(
             keyboardLift = keyboardLift,
             focusedLift = focusedLift,
         )
-    val availableWidth = appWindowWidthDp() - horizontalInset * 2
-    val fieldTargetWidth = (availableWidth - size - gap).coerceAtLeast(0.dp)
-    val transition = updateTransition(targetState = expanded, label = "app_floating_search")
-    val fieldWidthState =
-        transition.animateDp(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
-            label = "app_floating_search_field_width",
-        ) { targetExpanded ->
-            if (targetExpanded) fieldTargetWidth else 0.dp
-        }
-    val totalWidthState =
-        transition.animateDp(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
-            label = "app_floating_search_total_width",
-        ) { targetExpanded ->
-            size + if (targetExpanded) gap + fieldTargetWidth else 0.dp
-        }
-    val fieldAlphaState =
-        transition.animateFloat(
-            transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
-            label = "app_floating_search_field_alpha",
-        ) { targetExpanded ->
-            if (targetExpanded) 1f else 0f
-        }
-    val fieldWidthProvider = remember(fieldWidthState) { { fieldWidthState.value } }
-    val totalWidthProvider = remember(totalWidthState) { { totalWidthState.value } }
-    val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
-    val fieldInteractive by
-        remember(expanded, fieldWidthProvider) {
-            derivedStateOf {
-                expanded && fieldWidthProvider() > AppFloatingSearchFieldMinimumInteractiveWidth
+    BoxWithConstraints(
+        modifier = modifier.appFloatingDockLift(resolvedKeyboardLiftProvider),
+    ) {
+        val availableWidth =
+            maxWidth.takeIf { width -> width.value.isFinite() } ?: appWindowWidthDp()
+        val expandedActionWidth = if (showActionWhenExpanded) size + gap else 0.dp
+        val fieldTargetWidth = (availableWidth - expandedActionWidth).coerceAtLeast(0.dp)
+        val transition = updateTransition(targetState = expanded, label = "app_floating_search")
+        val fieldWidthState =
+            transition.animateDp(
+                transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
+                label = "app_floating_search_field_width",
+            ) { targetExpanded ->
+                if (targetExpanded) fieldTargetWidth else 0.dp
             }
+        val totalWidthState =
+            transition.animateDp(
+                transitionSpec = { tween(durationMillis = AppFloatingSearchDockWidthMotionMs) },
+                label = "app_floating_search_total_width",
+            ) { targetExpanded ->
+                if (targetExpanded) fieldTargetWidth + expandedActionWidth else size
+            }
+        val fieldAlphaState =
+            transition.animateFloat(
+                transitionSpec = { tween(durationMillis = AppFloatingSearchDockFadeMotionMs) },
+                label = "app_floating_search_field_alpha",
+            ) { targetExpanded ->
+                if (targetExpanded) 1f else 0f
+            }
+        val fieldWidthProvider = remember(fieldWidthState) { { fieldWidthState.value } }
+        val totalWidthProvider = remember(totalWidthState) { { totalWidthState.value } }
+        val fieldAlphaProvider = remember(fieldAlphaState) { { fieldAlphaState.value } }
+        val fieldInteractive by
+            remember(expanded, fieldWidthProvider) {
+                derivedStateOf {
+                    expanded &&
+                        (fieldWidthProvider() > AppFloatingSearchFieldMinimumInteractiveWidth)
+                }
+            }
+
+        LaunchedEffect(expanded) {
+            if (!expanded) focusManager.clearFocus()
         }
 
-    LaunchedEffect(expanded) {
-        if (!expanded) focusManager.clearFocus()
-    }
+        val fieldContent: @Composable () -> Unit = {
+            AppFloatingSearchField(
+                query = query,
+                onQueryChange = onQueryChange,
+                focusRequester = focusRequester,
+                interactive = fieldInteractive,
+                autoFocus = fieldInteractive && searchAutoFocusEnabled,
+                onFocusActiveChange = { active ->
+                    if (active) onExpandedChange(true)
+                },
+                searchIcon = searchIcon,
+                placeholder = placeholder,
+                accent = accent,
+                backdrop = backdrop,
+                modifier =
+                    Modifier
+                        .appFloatingDockAnimatedWidth(fieldWidthProvider)
+                        .height(size)
+                        .graphicsLayer { alpha = fieldAlphaProvider() },
+            )
+        }
+        val buttonContent: @Composable () -> Unit = {
+            AppFloatingLiquidActionButton(
+                backdrop = backdrop,
+                icon = searchIcon,
+                contentDescription = contentDescription,
+                onClick = { onExpandedChange(!expanded) },
+                size = size,
+                iconSize = iconSize,
+                iconTint = if (expanded) accent else compactIconTint,
+            )
+        }
 
-    val fieldContent: @Composable () -> Unit = {
-        AppFloatingSearchField(
-            query = query,
-            onQueryChange = onQueryChange,
-            focusRequester = focusRequester,
-            interactive = fieldInteractive,
-            autoFocus = fieldInteractive && searchAutoFocusEnabled,
-            onFocusActiveChange = { active ->
-                if (active) onExpandedChange(true)
-            },
-            placeholder = placeholder,
-            accent = accent,
-            backdrop = backdrop,
+        Row(
             modifier =
                 Modifier
-                    .appFloatingDockAnimatedWidth(fieldWidthProvider)
-                    .height(size)
-                    .graphicsLayer { alpha = fieldAlphaProvider() },
-        )
-    }
-    val buttonContent: @Composable () -> Unit = {
-        AppFloatingLiquidActionButton(
-            backdrop = backdrop,
-            icon = searchIcon,
-            contentDescription = contentDescription,
-            onClick = { onExpandedChange(!expanded) },
-            size = size,
-            iconSize = iconSize,
-            iconTint = if (expanded) accent else MiuixTheme.colorScheme.onBackground,
-        )
-    }
-
-    Row(
-        modifier =
-            modifier
-                .appFloatingDockLift(resolvedKeyboardLiftProvider)
-                .appFloatingDockAnimatedWidth(totalWidthProvider)
-                .height(size),
-        horizontalArrangement =
-            Arrangement.spacedBy(
-                gap,
-                if (dockSide == AppFloatingDockSide.Start) Alignment.Start else Alignment.End,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (dockSide == AppFloatingDockSide.Start) {
-            buttonContent()
-            if (expanded && fieldInteractive) fieldContent()
-        } else {
-            if (expanded && fieldInteractive) fieldContent()
-            buttonContent()
+                    .align(
+                        if (dockSide == AppFloatingDockSide.Start) {
+                            Alignment.CenterStart
+                        } else {
+                            Alignment.CenterEnd
+                        },
+                    ).appFloatingDockAnimatedWidth(totalWidthProvider)
+                    .height(size),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    gap,
+                    if (dockSide == AppFloatingDockSide.Start) Alignment.Start else Alignment.End,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (dockSide == AppFloatingDockSide.Start) {
+                if (!expanded || showActionWhenExpanded) buttonContent()
+                if (expanded && fieldInteractive) fieldContent()
+            } else {
+                if (expanded && fieldInteractive) fieldContent()
+                if (!expanded || showActionWhenExpanded) buttonContent()
+            }
         }
     }
 }
@@ -312,6 +326,7 @@ fun AppFloatingVerticalSearchActionDock(
             onFocusActiveChange = { active ->
                 if (active) onExpandedChange(true)
             },
+            searchIcon = searchIcon,
             placeholder = placeholder,
             accent = accent,
             backdrop = backdrop,
@@ -493,7 +508,6 @@ fun AppFloatingVerticalActionDock(
     onCompactClick: (() -> Unit)? = null,
     size: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     iconSize: Dp = 27.dp,
-    gap: Dp = 8.dp,
 ) {
     if (actions.isEmpty()) return
     val dockHeight = appFloatingVerticalDockHeight(size, actions.size)
@@ -841,6 +855,7 @@ private fun AppFloatingSearchField(
     interactive: Boolean,
     autoFocus: Boolean,
     onFocusActiveChange: (Boolean) -> Unit,
+    searchIcon: ImageVector,
     placeholder: String,
     accent: Color,
     backdrop: Backdrop?,
@@ -892,5 +907,13 @@ private fun AppFloatingSearchField(
             ),
         focusRequester = focusRequester.takeIf { interactive },
         onFocusActiveChange = { active -> onFocusActiveChange(active && interactive) },
+        leadingContent = {
+            Icon(
+                imageVector = searchIcon,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(27.dp),
+            )
+        },
     )
 }

@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.widget.glass
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -11,6 +13,7 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
@@ -63,13 +66,64 @@ class AppFloatingSearchDockAccessibilityTest {
     }
 
     @Test
+    fun expandedDockUsesItsParentWidth() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                Box(modifier = Modifier.width(300.dp)) {
+                    AppFloatingSearchDock(
+                        backdrop = null,
+                        expanded = true,
+                        query = "",
+                        onQueryChange = {},
+                        onExpandedChange = {},
+                        searchIcon = MiuixIcons.Basic.Check,
+                        contentDescription = "Search",
+                        placeholder = "Search field",
+                        showActionWhenExpanded = false,
+                        modifier = Modifier.testTag("search-dock"),
+                    )
+                }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag("search-dock").assertWidthIsEqualTo(300.dp)
+    }
+
+    @Test
+    fun expandedFieldOnlyDockRemovesTheSearchActionFromAccessibility() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                Box(modifier = Modifier.width(300.dp)) {
+                    AppFloatingSearchDock(
+                        backdrop = null,
+                        expanded = true,
+                        query = "",
+                        onQueryChange = {},
+                        onExpandedChange = {},
+                        searchIcon = MiuixIcons.Basic.Check,
+                        contentDescription = "Search",
+                        placeholder = "Search field",
+                        showActionWhenExpanded = false,
+                    )
+                }
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule
+            .onAllNodesWithContentDescription("Search", useUnmergedTree = true)
+            .assertCountEquals(0)
+    }
+
+    @Test
     fun fieldRestoresFocusAndInputAfterExpansionThenLeavesSemanticsDuringExit() {
         lateinit var expandedState: MutableState<Boolean>
         lateinit var queryState: MutableState<String>
         var queryChanges = 0
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                expandedState = remember { mutableStateOf(false) }
+                expandedState = remember { mutableStateOf(value = false) }
                 queryState = remember { mutableStateOf("") }
                 AppFloatingSearchDock(
                     backdrop = null,
@@ -110,7 +164,7 @@ class AppFloatingSearchDockAccessibilityTest {
         lateinit var expandedState: MutableState<Boolean>
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                expandedState = remember { mutableStateOf(true) }
+                expandedState = remember { mutableStateOf(value = true) }
                 AppFloatingVerticalSearchActionDock(
                     backdrop = null,
                     expanded = expandedState.value,
