@@ -101,6 +101,7 @@ private fun GitHubShareImportAssetPickerRow(
         )
         SheetLiquidChoiceIndicator(
             selected = selected,
+            enabled = selectionEnabled,
             onSelect = {
                 if (selectionEnabled) onSelect()
             },

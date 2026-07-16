@@ -2,6 +2,7 @@ package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,21 +15,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.kyant.shapes.Capsule
 import os.kei.ui.liquidglass.R
 import os.kei.ui.page.main.widget.isAppInDarkTheme
@@ -43,6 +43,8 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -446,8 +448,9 @@ fun SheetLiquidChoiceIndicator(
     enabled: Boolean = true
 ) {
     val isDark = isAppInDarkTheme()
-    val indicatorBackdrop = rememberLayerBackdrop()
+    val activeBackdrop = resolvedSheetChoiceIndicatorBackdrop()
     val shape = Capsule()
+    val interactionSource = remember { MutableInteractionSource() }
     val surfaceColor = when {
         selected && isDark -> accentColor.copy(alpha = 0.18f)
         selected -> accentColor.copy(alpha = 0.14f)
@@ -457,24 +460,25 @@ fun SheetLiquidChoiceIndicator(
     val idleDotColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.62f else 0.48f)
 
     Box(
-        modifier = modifier.size(width = 44.dp, height = 30.dp),
+        modifier =
+            modifier
+                .size(48.dp)
+                .selectable(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    role = Role.RadioButton,
+                    onClick = onSelect,
+                ),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(indicatorBackdrop)
-        )
         LiquidSurface(
-            backdrop = indicatorBackdrop,
-            modifier = Modifier
-                .fillMaxSize()
-                .semantics {
-                    role = Role.RadioButton
-                    this.selected = selected
-                },
+            backdrop = activeBackdrop,
+            modifier = Modifier.size(width = 44.dp, height = 30.dp),
             shape = shape,
             enabled = enabled,
+            isInteractive = false,
             tint = Color.Unspecified,
             surfaceColor = surfaceColor,
             blurRadius = if (selected) 6.dp else 4.dp,
@@ -483,7 +487,6 @@ fun SheetLiquidChoiceIndicator(
             chromaticAberration = selected,
             depthEffect = selected,
             shadow = selected,
-            onClick = onSelect
         ) {
             Box(
                 modifier = Modifier
@@ -509,6 +512,11 @@ fun SheetLiquidChoiceIndicator(
         }
     }
 }
+
+@Composable
+@ReadOnlyComposable
+internal fun resolvedSheetChoiceIndicatorBackdrop(): Backdrop? =
+    activeGlassBackdrop(LocalLiquidParentBackdrop.current)
 
 @Composable
 fun SheetExpandableCard(
