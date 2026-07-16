@@ -9,23 +9,28 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun LiquidInfoBlock(
-    backdrop: Backdrop?,
+    backdrop: Backdrop? = null,
     title: String,
     subtitle: String,
     body: String = "",
     accent: Color,
+    modifier: Modifier = Modifier,
     content: (@Composable () -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
@@ -38,8 +43,12 @@ fun LiquidInfoBlock(
     val cornerRadius = 16.dp
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
+    val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
+    val cardContentBackdrop = rememberLayerBackdrop()
+    val exportedContentBackdrop = cardContentBackdrop.takeIf { activeBackdrop != null }
     LiquidInfoBlockSurface(
-        backdrop = inheritedBackdrop,
+        backdrop = activeBackdrop,
+        exportedContentBackdrop = exportedContentBackdrop,
         title = title,
         subtitle = subtitle,
         body = body,
@@ -56,12 +65,14 @@ fun LiquidInfoBlock(
         content = content,
         cardSurface = cardSurface,
         cornerRadius = cornerRadius,
+        modifier = modifier,
     )
 }
 
 @Composable
 private fun LiquidInfoBlockSurface(
     backdrop: Backdrop?,
+    exportedContentBackdrop: LayerBackdrop?,
     title: String,
     subtitle: String,
     body: String,
@@ -70,8 +81,9 @@ private fun LiquidInfoBlockSurface(
     content: (@Composable () -> Unit)?,
     cardSurface: Color,
     cornerRadius: Dp,
+    modifier: Modifier,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxWidth()) {
         LiquidSurface(
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),
@@ -80,23 +92,21 @@ private fun LiquidInfoBlockSurface(
             surfaceColor = cardSurface,
             blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content),
             lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content),
+            exportedBackdrop = exportedContentBackdrop,
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+            CompositionLocalProvider(
+                LocalLiquidParentBackdrop provides exportedContentBackdrop,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier =
-                            Modifier.then(
-                                Modifier.padding(horizontal = 0.dp, vertical = 0.dp),
-                            ),
-                    ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         LiquidSurface(
-                            backdrop = backdrop,
-                            modifier = Modifier,
+                            backdrop = exportedContentBackdrop,
+                            modifier = Modifier.weight(weight = 1f, fill = false),
                             shape = RoundedRectangle(999.dp),
                             isInteractive = false,
                             surfaceColor = accent.copy(alpha = 0.18f),
@@ -109,25 +119,29 @@ private fun LiquidInfoBlockSurface(
                                 text = title,
                                 color = titleColor,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
-                }
-                Text(
-                    text = subtitle,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                if (content != null) {
-                    Column(modifier = Modifier.padding(top = 8.dp)) {
-                        content()
+                    if (subtitle.isNotBlank()) {
+                        Text(
+                            text = subtitle,
+                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
                     }
-                } else if (body.isNotBlank()) {
-                    Text(
-                        text = body,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    if (content != null) {
+                        Column(modifier = Modifier.padding(top = 8.dp)) {
+                            content()
+                        }
+                    } else if (body.isNotBlank()) {
+                        Text(
+                            text = body,
+                            color = MiuixTheme.colorScheme.onBackground,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
                 }
             }
         }
