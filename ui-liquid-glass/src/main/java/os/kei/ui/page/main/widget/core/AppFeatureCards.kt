@@ -5,7 +5,6 @@ package os.kei.ui.page.main.widget.core
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -15,11 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -40,7 +37,6 @@ import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -78,25 +74,12 @@ fun AppSurfaceCard(
         } else {
             Modifier
         }
-    val isPressed by interactionSource.collectIsPressedAsState()
     val stateModifier =
         stateDescription?.let { description ->
             Modifier.semantics {
                 this.stateDescription = description
             }
         } ?: Modifier
-    val pressedScaleState =
-        appMotionFloatState(
-            targetValue =
-                if (showIndication && clickable && !useLiquidClick && isPressed) {
-                    0.992f
-                } else {
-                    1f
-                },
-            durationMillis = 120,
-            label = "app_surface_card_press_scale",
-        )
-    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
     val parentBackdrop = LocalLiquidParentBackdrop.current
@@ -125,7 +108,6 @@ fun AppSurfaceCard(
             clickModifier = clickModifier,
             stateModifier = stateModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
             containerColor = containerColor,
             borderColor = borderColor,
@@ -150,7 +132,6 @@ fun AppSurfaceCard(
             clickModifier = clickModifier,
             stateModifier = stateModifier,
             interactionSource = interactionSource,
-            pressedScale = pressedScaleProvider,
             resolvedPressSafePadding = resolvedPressSafePadding,
             containerColor = containerColor,
             borderColor = borderColor,
@@ -178,7 +159,6 @@ private fun AppSurfaceCardFrame(
     clickModifier: Modifier,
     stateModifier: Modifier,
     interactionSource: MutableInteractionSource,
-    pressedScale: () -> Float,
     resolvedPressSafePadding: Dp,
     containerColor: Color,
     borderColor: Color,
@@ -199,13 +179,7 @@ private fun AppSurfaceCardFrame(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(resolvedPressSafePadding)
-                .graphicsLayer {
-                    val scale = pressedScale()
-                    scaleX = scale
-                    scaleY = scale
-                    clip = false
-                },
+                .padding(resolvedPressSafePadding),
     ) {
         LiquidSurface(
             backdrop = backdrop,
