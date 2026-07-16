@@ -179,7 +179,11 @@ class BaLiquidSurfacesBackdropTest {
 
         assertFalse("isSystemInDarkTheme" in source)
         assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+        assertEquals(1, source.occurrencesOf("AppSurfaceBox("))
         assertTrue("activeGlassBackdrop(inheritedBackdrop)" in source)
+        assertFalse("LiquidSurface(" in source)
+        assertFalse("rememberLayerBackdrop" in source)
+        assertFalse("CompositionLocalProvider(" in source)
         assertFalse(".layerBackdrop(" in source)
         assertFalse("localBackdrop" in source)
     }

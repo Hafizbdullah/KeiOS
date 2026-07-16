@@ -3,7 +3,6 @@ package os.kei.ui.page.main.ba
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,11 +24,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.core.AppSurfaceBox
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
@@ -42,6 +39,7 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -74,32 +72,8 @@ private fun BaLiquidSurfaceColumn(
         alpha = if (isDark) accentAlpha * 1.1f else accentAlpha * 0.95f
     )
     val accentTint = accentColor.copy(alpha = (accentAlpha * 0.35f).coerceIn(0f, 0.05f))
-    val interactionSource = remember { MutableInteractionSource() }
     val hasInteraction = onClick != null || onLongClick != null
     val hasLiquidPress = pressFeedback
-    val useLiquidClick = onClick != null && onLongClick == null
-    val clickModifier = if (hasInteraction && !useLiquidClick) {
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick,
-        )
-    } else {
-        Modifier
-    }
-    val fallbackClickModifier = if (hasInteraction) {
-        Modifier.combinedClickable(
-            interactionSource = interactionSource,
-            indication = null,
-            role = Role.Button,
-            onClick = { onClick?.invoke() },
-            onLongClick = onLongClick,
-        )
-    } else {
-        Modifier
-    }
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop =
         if (LocalLiquidParentBackdropOverridesFallback.current) {
@@ -113,12 +87,6 @@ private fun BaLiquidSurfaceColumn(
         } else {
             null
         }
-    val exportedContentBackdrop =
-        if (activeBackdrop != null) {
-            rememberLayerBackdrop()
-        } else {
-            null
-        }
     val liquidShape = RoundedRectangle(cornerRadius)
     val pressSafePadding = if (hasLiquidPress) {
         AppInteractiveTokens.compactLiquidPressSafePadding
@@ -127,51 +95,48 @@ private fun BaLiquidSurfaceColumn(
     }
 
     if (activeBackdrop != null) {
-        Box(modifier = modifier.padding(pressSafePadding)) {
-            LiquidSurface(
-                backdrop = activeBackdrop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(clickModifier),
-                shape = liquidShape,
-                isInteractive = hasLiquidPress,
-                surfaceColor = accentTint
+        AppSurfaceBox(
+            modifier = modifier,
+            backdrop = activeBackdrop,
+            surfaceColor =
+                accentTint
                     .compositeOver(glass.overlayColor)
                     .compositeOver(glass.baseColor),
-                blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, variant),
-                lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, variant),
-                shadow = shadowEnabled && glass.shadowAlpha > 0f,
-                shadowAlpha = glass.shadowAlpha,
-                interactionSource = interactionSource,
-                consumeDragChanges = false,
-                exportedBackdrop = exportedContentBackdrop,
-                onClick = if (useLiquidClick) onClick else null,
-            ) {
-                if (exportedContentBackdrop != null) {
-                    CompositionLocalProvider(
-                        LocalLiquidParentBackdrop provides exportedContentBackdrop,
-                        LocalLiquidParentBackdropOverridesFallback provides true,
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(contentPadding),
-                            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                            content = content,
-                        )
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(contentPadding),
-                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                        content = content,
-                    )
-                }
-            }
+            shape = liquidShape,
+            contentColor = LocalContentColor.current,
+            isInteractive = hasLiquidPress,
+            shadow = shadowEnabled && glass.shadowAlpha > 0f,
+            shadowAlpha = glass.shadowAlpha,
+            exportBackdropToContent = true,
+            pressSafePadding = pressSafePadding,
+            blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, variant),
+            lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, variant),
+            onClick = onClick,
+            onLongClick = onLongClick,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(contentPadding),
+                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                content = content,
+            )
         }
     } else {
+        val interactionSource = remember { MutableInteractionSource() }
+        val fallbackClickModifier =
+            if (hasInteraction) {
+                Modifier.combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Button,
+                    onClick = { onClick?.invoke() },
+                    onLongClick = onLongClick,
+                )
+            } else {
+                Modifier
+            }
         Column(
             modifier = modifier
                 .padding(pressSafePadding)
