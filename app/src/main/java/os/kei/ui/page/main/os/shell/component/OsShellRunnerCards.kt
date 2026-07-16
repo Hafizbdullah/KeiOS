@@ -48,6 +48,7 @@ internal fun OsShellRunnerInputCard(
     val isDark = isSystemInDarkTheme()
     AppSurfaceCard(
         modifier = modifier.fillMaxWidth(),
+        exportBackdropToContent = true,
     ) {
         AppCardHeader(
             title = inputTitle,
@@ -136,6 +137,7 @@ internal fun OsShellRunnerOutputCard(
 ) {
     AppSurfaceCard(
         modifier = modifier.fillMaxWidth(),
+        exportBackdropToContent = true,
     ) {
         AppCardHeader(
             title = outputTitle,

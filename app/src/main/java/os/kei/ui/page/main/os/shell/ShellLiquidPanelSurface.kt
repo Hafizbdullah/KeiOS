@@ -3,7 +3,6 @@ package os.kei.ui.page.main.os.shell
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -12,10 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -26,10 +24,10 @@ internal fun ShellLiquidPanelSurface(
     minHeight: Dp,
     contentPaddingHorizontal: Dp = 14.dp,
     contentPaddingVertical: Dp = 12.dp,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
-    val panelBackdrop = rememberLayerBackdrop()
+    val panelBackdrop = LocalLiquidParentBackdrop.current
     val shape = RoundedRectangle(18.dp)
     val borderColor = if (isDark) {
         Color(0xFF9CCBFF).copy(alpha = 0.24f)
@@ -47,47 +45,39 @@ internal fun ShellLiquidPanelSurface(
         Color(0xFFE4F1FF).copy(alpha = 0.22f)
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = minHeight)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(panelBackdrop)
-        )
-        LiquidSurface(
-            backdrop = panelBackdrop,
-            modifier = Modifier
+    LiquidSurface(
+        backdrop = panelBackdrop,
+        modifier =
+            modifier
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
                 .appSquircleBorder(width = 1.dp, color = borderColor, cornerRadius = 18.dp),
-            shape = shape,
-            tint = Color.Unspecified,
-            surfaceColor = baseColor,
-            blurRadius = 8.dp,
-            lensRadius = 24.dp,
-            effectVariant = GlassVariant.Content,
-            chromaticAberration = true,
-            depthEffect = true,
-            shadow = false,
-            isInteractive = false
-        ) {
-            Box(
-                modifier = Modifier
+        shape = shape,
+        tint = Color.Unspecified,
+        surfaceColor = baseColor,
+        blurRadius = 8.dp,
+        lensRadius = 24.dp,
+        effectVariant = GlassVariant.Content,
+        chromaticAberration = true,
+        depthEffect = true,
+        shadow = false,
+        isInteractive = false,
+    ) {
+        Box(
+            modifier =
+                Modifier
                     .matchParentSize()
-                    .appSquircleBackground(overlayColor, 18.dp)
-            )
-            Box(
-                modifier = Modifier
+                    .appSquircleBackground(overlayColor, 18.dp),
+        )
+        Box(
+            modifier =
+                Modifier
                     .matchParentSize()
                     .padding(
                         horizontal = contentPaddingHorizontal,
-                        vertical = contentPaddingVertical
+                        vertical = contentPaddingVertical,
                     ),
-                content = content
-            )
-        }
+            content = content,
+        )
     }
 }
