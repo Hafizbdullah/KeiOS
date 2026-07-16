@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,8 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
@@ -97,12 +100,25 @@ private fun BaLiquidSurfaceColumn(
     } else {
         Modifier
     }
+    val parentBackdrop = LocalLiquidParentBackdrop.current
+    val inheritedBackdrop =
+        if (LocalLiquidParentBackdropOverridesFallback.current) {
+            parentBackdrop ?: backdrop
+        } else {
+            backdrop ?: parentBackdrop
+        }
     val localBackdrop = rememberLayerBackdrop()
     val activeBackdrop = when {
         !effectsEnabled -> null
-        backdrop != null -> backdrop
+        inheritedBackdrop != null -> inheritedBackdrop
         else -> localBackdrop
     }
+    val exportedContentBackdrop =
+        if (activeBackdrop != null && inheritedBackdrop != null) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     val liquidShape = RoundedRectangle(cornerRadius)
     val pressSafePadding = if (hasLiquidPress) {
         AppInteractiveTokens.compactLiquidPressSafePadding
@@ -112,7 +128,7 @@ private fun BaLiquidSurfaceColumn(
 
     if (activeBackdrop != null) {
         Box(modifier = modifier.padding(pressSafePadding)) {
-            if (backdrop == null) {
+            if (inheritedBackdrop == null) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -135,15 +151,31 @@ private fun BaLiquidSurfaceColumn(
                 shadowAlpha = glass.shadowAlpha,
                 interactionSource = interactionSource,
                 consumeDragChanges = false,
+                exportedBackdrop = exportedContentBackdrop,
                 onClick = if (useLiquidClick) onClick else null,
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(contentPadding),
-                    verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                    content = content,
-                )
+                if (exportedContentBackdrop != null) {
+                    CompositionLocalProvider(
+                        LocalLiquidParentBackdrop provides exportedContentBackdrop,
+                        LocalLiquidParentBackdropOverridesFallback provides true,
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(contentPadding),
+                            verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                            content = content,
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(contentPadding),
+                        verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                        content = content,
+                    )
+                }
             }
         }
     } else {
