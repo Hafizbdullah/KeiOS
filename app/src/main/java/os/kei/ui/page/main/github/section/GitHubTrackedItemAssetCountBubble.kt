@@ -1,26 +1,19 @@
 package os.kei.ui.page.main.github.section
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
-import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
-import top.yukonga.miuix.kmp.basic.Text
+import os.kei.ui.page.main.widget.status.StatusPill
 
 @Suppress("FunctionName")
 @Composable
@@ -31,26 +24,27 @@ internal fun GitHubAssetCountBubble(
     loading: Boolean = false,
 ) {
     val isDark = isAppInDarkTheme()
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val shape = CircleShape
-    val cornerRadius = 999.dp
-    val bubbleModifier =
-        Modifier
-            .then(
-                if (liquidControlsEnabled) {
-                    Modifier
-                } else {
-                    Modifier.appSquircleBackground(
-                        color = color.copy(alpha = if (isDark) 0.18f else 0.12f),
-                        cornerRadius = cornerRadius,
-                    )
-                },
-            ).appSquircleBorder(
-                width = 0.8.dp,
-                color = color.copy(alpha = if (isDark) 0.34f else 0.24f),
-                cornerRadius = cornerRadius,
-            )
-    val content: @Composable () -> Unit = {
+    Box(
+        modifier = modifier.size(28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        StatusPill(
+            label = if (loading) "" else label,
+            color = color,
+            modifier = Modifier.matchParentSize(),
+            contentPadding = PaddingValues(0.dp),
+            backgroundAlphaOverride = if (isDark) 0.18f else 0.12f,
+            borderAlphaOverride = if (isDark) 0.34f else 0.24f,
+            backdrop = LocalLiquidParentBackdrop.current,
+            maxLines = 1,
+            contentColorOverride = if (isDark) color else color.copy(alpha = 0.96f),
+            typographyOverride =
+                TextStyle(
+                    fontSize = AppTypographyTokens.Caption.fontSize,
+                    lineHeight = AppTypographyTokens.Caption.lineHeight,
+                    fontWeight = AppTypographyTokens.Caption.fontWeight,
+                ),
+        )
         if (loading) {
             LiquidCircularProgressBar(
                 size = 14.dp,
@@ -58,60 +52,6 @@ internal fun GitHubAssetCountBubble(
                 activeColor = color,
                 inactiveColor = color.copy(alpha = 0.18f),
             )
-        } else {
-            Text(
-                text = label,
-                color = if (isDark) color else color.copy(alpha = 0.96f),
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-                fontWeight = AppTypographyTokens.Caption.fontWeight,
-                maxLines = 1,
-            )
-        }
-    }
-    Box(
-        modifier = modifier.size(28.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (liquidControlsEnabled) {
-            LiquidSurface(
-                backdrop = LocalLiquidParentBackdrop.current,
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .then(bubbleModifier),
-                shape = shape,
-                isInteractive = false,
-                surfaceColor = color.copy(alpha = if (isDark) 0.18f else 0.12f),
-                blurRadius =
-                    resolvedGlassBlurDp(
-                        UiPerformanceBudget.backdropBlur,
-                        GlassVariant.Compact,
-                    ),
-                lensRadius =
-                    resolvedGlassLensDp(
-                        UiPerformanceBudget.backdropLens,
-                        GlassVariant.Compact,
-                    ),
-                shadow = false,
-            ) {
-                Box(
-                    modifier = Modifier.matchParentSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    content()
-                }
-            }
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .then(bubbleModifier),
-                contentAlignment = Alignment.Center,
-            ) {
-                content()
-            }
         }
     }
 }

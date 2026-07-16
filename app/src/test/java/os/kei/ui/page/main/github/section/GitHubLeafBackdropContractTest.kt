@@ -24,13 +24,32 @@ class GitHubLeafBackdropContractTest {
     }
 
     @Test
-    fun assetCountBubbleConsumesInheritedBackdropAndKeepsItsSize() {
+    fun assetCountBubbleReusesStatusPillAndKeepsLegacyOptics() {
         val source = sourceFile(GITHUB_TRACKED_ITEM_ASSET_COUNT_BUBBLE_SOURCE)
 
         assertEquals(0, source.occurrencesOf("rememberLayerBackdrop"))
         assertEquals(0, source.occurrencesOf(".layerBackdrop("))
+        assertEquals(0, source.occurrencesOf("LiquidSurface("))
+        assertTrue("StatusPill(" in source)
+        assertTrue("label = if (loading) \"\" else label" in source)
         assertTrue("backdrop = LocalLiquidParentBackdrop.current," in source)
         assertTrue("modifier = modifier.size(28.dp)" in source)
+        assertTrue("modifier = Modifier.matchParentSize()" in source)
+        assertTrue("contentPadding = PaddingValues(0.dp)" in source)
+        assertTrue("backgroundAlphaOverride = if (isDark) 0.18f else 0.12f" in source)
+        assertTrue("borderAlphaOverride = if (isDark) 0.34f else 0.24f" in source)
+        assertTrue(
+            "contentColorOverride = if (isDark) color else color.copy(alpha = 0.96f)" in source,
+        )
+        assertTrue("fontSize = AppTypographyTokens.Caption.fontSize" in source)
+        assertTrue("lineHeight = AppTypographyTokens.Caption.lineHeight" in source)
+        assertTrue("fontWeight = AppTypographyTokens.Caption.fontWeight" in source)
+        assertTrue("maxLines = 1" in source)
+        assertTrue("if (loading)" in source)
+        assertTrue("LiquidCircularProgressBar(" in source)
+        assertTrue("size = 14.dp" in source)
+        assertTrue("strokeWidth = 2.dp" in source)
+        assertTrue("inactiveColor = color.copy(alpha = 0.18f)" in source)
     }
 }
 
