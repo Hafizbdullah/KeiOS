@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.os.shell.page
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import os.kei.ui.page.main.os.osLucideClearAllIcon
 import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -76,7 +76,7 @@ fun OsShellRunnerPage(
         persistentState = persistentState,
         textBundle = textBundle,
     )
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val shellCommandAccentColor = if (isDark) Color(0xFF7AB8FF) else Color(0xFF2563EB)
     val shellSuccessAccentColor = if (isDark) Color(0xFF7EE7A8) else Color(0xFF15803D)
     val shellStoppedAccentColor = if (isDark) Color(0xFFFF9E9E) else Color(0xFFDC2626)

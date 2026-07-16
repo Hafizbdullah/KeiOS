@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.os.shell
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LiquidSurface
@@ -26,7 +26,7 @@ internal fun ShellLiquidPanelSurface(
     contentPaddingVertical: Dp = 12.dp,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val panelBackdrop = LocalLiquidParentBackdrop.current
     val shape = RoundedRectangle(18.dp)
     val borderColor = if (isDark) {

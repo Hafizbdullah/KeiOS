@@ -4,7 +4,6 @@ package os.kei.ui.page.main.os.shell.component
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +21,7 @@ import os.kei.ui.page.main.os.osLucideStopIcon
 import os.kei.ui.page.main.os.shell.ShellCommandInputField
 import os.kei.ui.page.main.os.shell.ShellOutputLiquidPanel
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerOutputSnapshot
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
@@ -45,7 +45,7 @@ internal fun OsShellRunnerInputCard(
     onOpenSaveCommandSheet: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     AppSurfaceCard(
         modifier = modifier.fillMaxWidth(),
         exportBackdropToContent = true,
