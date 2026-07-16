@@ -73,7 +73,7 @@ private fun BaLiquidSurfaceColumn(
     )
     val accentTint = accentColor.copy(alpha = (accentAlpha * 0.35f).coerceIn(0f, 0.05f))
     val hasInteraction = onClick != null || onLongClick != null
-    val hasLiquidPress = pressFeedback
+    val hasLiquidPress = pressFeedback && hasInteraction
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop =
         if (LocalLiquidParentBackdropOverridesFallback.current) {
