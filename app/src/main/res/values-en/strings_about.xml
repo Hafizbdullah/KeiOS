@@ -145,6 +145,16 @@
     <string name="debug_component_lab_liquid_chrome_gesture_idle">Gesture idle</string>
     <string name="debug_component_lab_liquid_chrome_bottom_bar">LiquidGlassBottomBar: selection and disabled tab</string>
     <string name="debug_component_lab_liquid_chrome_current_tab">Current page: %1$s</string>
+    <string name="debug_component_lab_liquid_chrome_open_stage">Open full-screen production stage</string>
+    <string name="debug_component_lab_liquid_chrome_production_stage">Production TabbedPageBottomChrome stage</string>
+    <string name="debug_component_lab_liquid_chrome_production_hint">Scrollable content extends behind the glass. Switch between 3/5 tabs, expanded/compact dock, and bottom insets, then open search to exercise the IME.</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_three">3 tabs</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_five">5 tabs</string>
+    <string name="debug_component_lab_liquid_chrome_dock_expanded">Expanded dock</string>
+    <string name="debug_component_lab_liquid_chrome_dock_compact">Compact dock</string>
+    <string name="debug_component_lab_liquid_chrome_inset_zero">0dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_inset_24">24dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_scroll_row">Scrollable sample %1$d</string>
     <string name="debug_component_lab_liquid_action_menu_title">Liquid action menu</string>
     <string name="debug_component_lab_liquid_action_menu_subtitle">Real popup, quick actions, single-choice and nested multiple-choice submenus, and danger state</string>
     <string name="debug_component_lab_liquid_action_menu_lifecycle_hint">Tap outside to dismiss. Back collapses the submenu first, then closes the popup. The counter updates after exit.</string>

@@ -5,6 +5,7 @@ package os.kei.ui.page.main.debug
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -40,6 +41,9 @@ import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogPresentation
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -53,6 +57,7 @@ internal fun DebugLiquidChromeCard(
     var selectedActionIndex by remember { mutableIntStateOf(0) }
     var actionBarInteractionActive by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var productionStageVisible by remember { mutableStateOf(false) }
     val contentColor = MiuixTheme.colorScheme.onBackground
     val secondaryColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
     val actionLabels =
@@ -219,6 +224,26 @@ internal fun DebugLiquidChromeCard(
             color = secondaryColor,
             fontSize = AppTypographyTokens.Supporting.fontSize,
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
+        )
+
+        AppLiquidTextButton(
+            backdrop = cardBackdrop,
+            text = stringResource(R.string.debug_component_lab_liquid_chrome_open_stage),
+            onClick = { productionStageVisible = true },
+            minHeight = 48.dp,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+
+    AppWindowDialogHost(
+        show = productionStageVisible,
+        onDismissRequest = { productionStageVisible = false },
+        presentation = AppWindowDialogPresentation.Fullscreen,
+    ) {
+        DebugTabbedPageBottomChromeStage(
+            accent = accent,
+            onClose = { productionStageVisible = false },
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }

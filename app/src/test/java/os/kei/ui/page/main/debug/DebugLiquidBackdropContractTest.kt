@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.debug
 
-import java.io.File
 import org.junit.Test
+import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -48,10 +48,11 @@ class DebugLiquidBackdropContractTest {
     @Test
     fun searchSamplesConsumeTheNearestExportedCardMaterial() {
         val source = sourceFile(DEBUG_LIQUID_SEARCH_FORM_SOURCE)
-        val card = source.functionBody(
-            start = "internal fun DebugLiquidSearchFormCard(",
-            end = "private fun DebugLiquidSearchSectionLabel(",
-        )
+        val card =
+            source.functionBody(
+                start = "internal fun DebugLiquidSearchFormCard(",
+                end = "private fun DebugLiquidSearchSectionLabel(",
+            )
 
         assertTrue("backdrop = backdrop," in card)
         assertTrue("exportBackdropToContent = true," in card)
@@ -158,7 +159,7 @@ class DebugLiquidBackdropContractTest {
         assertTrue("backdrop = backdrop," in chrome)
         assertTrue("exportBackdropToContent = true," in chrome)
         assertTrue("val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop" in chrome)
-        assertEquals(2, chrome.occurrencesOf("backdrop = cardBackdrop,"))
+        assertEquals(3, chrome.occurrencesOf("backdrop = cardBackdrop,"))
         assertEquals(1, chrome.occurrencesOf("backdrop = backdrop,"))
         assertFalse("rememberLayerBackdrop()" in chrome)
         assertFalse(".layerBackdrop(cardBackdrop)" in chrome)

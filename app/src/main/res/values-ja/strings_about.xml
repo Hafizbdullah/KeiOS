@@ -144,6 +144,16 @@
     <string name="debug_component_lab_liquid_chrome_gesture_idle">ジェスチャー待機</string>
     <string name="debug_component_lab_liquid_chrome_bottom_bar">LiquidGlassBottomBar：選択と無効タブ</string>
     <string name="debug_component_lab_liquid_chrome_current_tab">現在のページ：%1$s</string>
+    <string name="debug_component_lab_liquid_chrome_open_stage">全画面の本番ストレスステージを開く</string>
+    <string name="debug_component_lab_liquid_chrome_production_stage">TabbedPageBottomChrome 本番ストレスステージ</string>
+    <string name="debug_component_lab_liquid_chrome_production_hint">スクロール内容をガラスの背後まで延長します。3/5 タブ、展開/コンパクト Dock、下端 inset を切り替え、検索から IME を確認できます。</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_three">3 タブ</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_five">5 タブ</string>
+    <string name="debug_component_lab_liquid_chrome_dock_expanded">展開 Dock</string>
+    <string name="debug_component_lab_liquid_chrome_dock_compact">コンパクト Dock</string>
+    <string name="debug_component_lab_liquid_chrome_inset_zero">0dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_inset_24">24dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_scroll_row">スクロール例 %1$d</string>
     <string name="debug_component_lab_liquid_action_menu_title">Liquid アクションメニュー</string>
     <string name="debug_component_lab_liquid_action_menu_subtitle">実際の Popup、クイック操作、サブメニュー、単一選択、危険操作</string>
     <string name="debug_component_lab_liquid_action_menu_lifecycle_hint">外側タップで閉じます。Back は先にサブメニューを閉じ、次に Popup を閉じます。終了後に回数を更新します。</string>

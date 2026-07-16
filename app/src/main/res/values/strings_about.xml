@@ -149,6 +149,16 @@
     <string name="debug_component_lab_liquid_chrome_gesture_idle">等待手势</string>
     <string name="debug_component_lab_liquid_chrome_bottom_bar">LiquidGlassBottomBar 选择与禁用</string>
     <string name="debug_component_lab_liquid_chrome_current_tab">当前页面：%1$s</string>
+    <string name="debug_component_lab_liquid_chrome_open_stage">打开全屏生产压力舞台</string>
+    <string name="debug_component_lab_liquid_chrome_production_stage">TabbedPageBottomChrome 生产压力舞台</string>
+    <string name="debug_component_lab_liquid_chrome_production_hint">滚动内容直接延伸到玻璃后方；切换 3/5 分类、展开/紧凑与底部 inset，并点击搜索验证 IME。</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_three">3 分类</string>
+    <string name="debug_component_lab_liquid_chrome_tabs_five">5 分类</string>
+    <string name="debug_component_lab_liquid_chrome_dock_expanded">展开 Dock</string>
+    <string name="debug_component_lab_liquid_chrome_dock_compact">紧凑 Dock</string>
+    <string name="debug_component_lab_liquid_chrome_inset_zero">0dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_inset_24">24dp inset</string>
+    <string name="debug_component_lab_liquid_chrome_scroll_row">滚动样例 %1$d</string>
     <string name="debug_component_lab_liquid_action_menu_title">Liquid Action Menu</string>
     <string name="debug_component_lab_liquid_action_menu_subtitle">真实 Popup、快捷动作、单选与嵌套多选子菜单、危险操作</string>
     <string name="debug_component_lab_liquid_action_menu_lifecycle_hint">点击外部可关闭；Back 先收起子菜单，再关闭 Popup。退出完成后计数更新。</string>
