@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.mcp
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
@@ -15,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
+import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.mcp.section.McpOnboardingGuideSection
 import os.kei.ui.page.main.mcp.section.McpLogsSection
@@ -50,7 +50,10 @@ internal fun McpPageContent(
     refreshRunning: Boolean,
     actions: McpPageActions,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    MainPageContentBackdropScene(
+        contentBackdrop = backdrops.content,
+        modifier = Modifier.fillMaxSize(),
+    ) {
         AppPageLazyColumn(
             innerPadding = innerPadding,
             state = listState,
@@ -190,7 +193,7 @@ internal fun McpPageContent(
         }
 
         McpPageFloatingActionDock(
-            backdrop = backdrops.content,
+            backdrop = backdrops.topBar,
             uiState = uiState,
             runtime = runtime,
             refreshRunning = refreshRunning,
