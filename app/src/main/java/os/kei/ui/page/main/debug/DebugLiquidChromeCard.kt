@@ -40,6 +40,7 @@ import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -72,11 +73,14 @@ internal fun DebugLiquidChromeCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_chrome_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_chrome_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidChromeSectionLabel(
             text = stringResource(R.string.debug_component_lab_liquid_chrome_action_bar),
             color = contentColor,
@@ -86,7 +90,7 @@ internal fun DebugLiquidChromeCard(
             contentAlignment = Alignment.Center,
         ) {
             LiquidActionBar(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 selectedIndex = selectedActionIndex,
                 items =
                     listOf(
@@ -164,7 +168,7 @@ internal fun DebugLiquidChromeCard(
                     .height(72.dp),
             selectedIndex = selectedTabIndex,
             onSelected = { index -> selectedTabIndex = index },
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             tabsCount = tabLabels.size,
             isTabEnabled = { index -> index != disabledTabIndex },
             expandToMaxWidth = true,

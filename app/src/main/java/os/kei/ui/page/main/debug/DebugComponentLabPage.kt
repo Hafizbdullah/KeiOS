@@ -130,14 +130,17 @@ private fun DebugLiquidPreviewCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_catalog_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
         onClick = onOpenLiquidCatalog,
         headerEndActions = {
+            val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
             AppLiquidIconButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 icon = appLucideExternalLinkIcon(),
                 contentDescription = openLabel,
                 onClick = onOpenLiquidCatalog,
@@ -223,6 +226,7 @@ private fun DebugIterationQueueCard(accent: Color) {
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_iterations_title),
         subtitle = stringResource(R.string.debug_component_lab_iterations_subtitle),
+        exportBackdropToContent = true,
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),

@@ -40,6 +40,7 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -79,11 +80,14 @@ internal fun DebugLiquidActionMenuCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_action_menu_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_action_menu_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideMoreIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         Text(
             text = stringResource(R.string.debug_component_lab_liquid_action_menu_lifecycle_hint),
             color = secondaryColor,
@@ -125,7 +129,7 @@ internal fun DebugLiquidActionMenuCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_action_menu_open),
                 onClick = { expanded = true },
                 modifier = Modifier.capturePopupAnchor { anchorBounds = it },

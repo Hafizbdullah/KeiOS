@@ -62,6 +62,34 @@ class DebugLiquidBackdropContractTest {
     }
 
     @Test
+    fun componentLabCardsExportTheirRenderedMaterialToNestedControls() {
+        val source = sourceFile(DEBUG_COMPONENT_LAB_PAGE_SOURCE)
+        val previewCard =
+            source.functionBody(
+                start = "private fun DebugLiquidPreviewCard(",
+                end = "private fun DebugLabIntroCard(",
+            )
+        val iterationCard =
+            source.functionBody(
+                start = "private fun DebugIterationQueueCard(",
+                end = "\n}",
+                fromEnd = true,
+            )
+
+        assertTrue("backdrop = backdrop," in previewCard)
+        assertTrue("exportBackdropToContent = true," in previewCard)
+        assertTrue("val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop" in previewCard)
+        assertEquals(1, previewCard.occurrencesOf("backdrop = cardBackdrop,"))
+        assertEquals(1, previewCard.occurrencesOf("backdrop = backdrop,"))
+        assertFalse(".layerBackdrop(cardBackdrop)" in previewCard)
+
+        assertTrue("exportBackdropToContent = true," in iterationCard)
+        assertTrue("StatusPill(" in iterationCard)
+        assertFalse("rememberLayerBackdrop()" in iterationCard)
+        assertFalse(".layerBackdrop(" in iterationCard)
+    }
+
+    @Test
     fun catalogSamplesConsumeTheNearestExportedCardMaterial() {
         val source = sourceFile(DEBUG_LIQUID_CATALOG_SOURCE)
         val cards =
@@ -70,6 +98,11 @@ class DebugLiquidBackdropContractTest {
                     functionName = "DebugLiquidButtonsCard",
                     nextFunctionName = "DebugLiquidGlassDropdownCard",
                     expectedConsumerCount = 8,
+                ),
+                CatalogCardContract(
+                    functionName = "DebugLiquidGlassDropdownCard",
+                    nextFunctionName = "DebugLiquidBackdropCard",
+                    expectedConsumerCount = 3,
                 ),
                 CatalogCardContract(
                     functionName = "DebugLiquidTransparentButtonsCard",
@@ -114,6 +147,29 @@ class DebugLiquidBackdropContractTest {
             assertEquals(1, card.occurrencesOf("backdrop = backdrop,"), contract.functionName)
             assertFalse(".layerBackdrop(cardBackdrop)" in card, contract.functionName)
         }
+    }
+
+    @Test
+    fun chromeAndActionMenuTriggersConsumeTheirExportedCardMaterial() {
+        val chrome = sourceFile(DEBUG_LIQUID_CHROME_SOURCE)
+        val actionMenu = sourceFile(DEBUG_LIQUID_ACTION_MENU_SOURCE)
+
+        assertTrue("backdrop = backdrop," in chrome)
+        assertTrue("exportBackdropToContent = true," in chrome)
+        assertTrue("val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop" in chrome)
+        assertEquals(2, chrome.occurrencesOf("backdrop = cardBackdrop,"))
+        assertEquals(1, chrome.occurrencesOf("backdrop = backdrop,"))
+        assertFalse("rememberLayerBackdrop()" in chrome)
+        assertFalse(".layerBackdrop(cardBackdrop)" in chrome)
+
+        assertTrue("exportBackdropToContent = true," in actionMenu)
+        assertTrue("val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop" in actionMenu)
+        assertEquals(1, actionMenu.occurrencesOf("backdrop = cardBackdrop,"))
+        assertEquals(2, actionMenu.occurrencesOf("backdrop = backdrop,"))
+        assertTrue("SnapshotWindowListPopup(" in actionMenu)
+        assertFalse("backdrop = cardBackdrop," in actionMenu.substringAfter("SnapshotWindowListPopup("))
+        assertFalse("rememberLayerBackdrop()" in actionMenu)
+        assertFalse(".layerBackdrop(cardBackdrop)" in actionMenu)
     }
 
     @Test
@@ -224,9 +280,15 @@ private fun sourceFile(relativePath: String): String {
 private fun String.functionBody(
     start: String,
     end: String,
+    fromEnd: Boolean = false,
 ): String {
     val startIndex = indexOf(start)
-    val endIndex = indexOf(end, startIndex = startIndex.coerceAtLeast(0))
+    val endIndex =
+        if (fromEnd) {
+            lastIndexOf(end)
+        } else {
+            indexOf(end, startIndex = startIndex.coerceAtLeast(0))
+        }
     require(startIndex >= 0) { "Missing function start: $start" }
     require(endIndex > startIndex) { "Missing function end: $end" }
     return substring(startIndex, endIndex)
@@ -242,6 +304,12 @@ private const val DEBUG_LIQUID_CATALOG_SOURCE =
 
 private const val DEBUG_LIQUID_CATALOG_SAMPLES_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogSamples.kt"
+
+private const val DEBUG_LIQUID_CHROME_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidChromeCard.kt"
+
+private const val DEBUG_LIQUID_ACTION_MENU_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidActionMenuCard.kt"
 
 private const val DEBUG_COMPONENT_LAB_PAGE_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/debug/DebugComponentLabPage.kt"

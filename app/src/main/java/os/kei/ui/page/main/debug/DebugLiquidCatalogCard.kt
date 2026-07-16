@@ -313,14 +313,17 @@ internal fun DebugLiquidGlassDropdownCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_dropdown_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_dropdown_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideMoreIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         LiquidGlassDropdownColumn(
             accentColor = accent,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
         ) {
             LiquidGlassDropdownActionItem(
                 text = stringResource(R.string.debug_component_lab_action_play),
@@ -366,7 +369,7 @@ internal fun DebugLiquidGlassDropdownCard(
         )
         LiquidGlassDropdownColumn(
             accentColor = accent,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
         ) {
             LiquidGlassDropdownSingleChoiceList(
                 options = intervalOptions,
@@ -383,7 +386,7 @@ internal fun DebugLiquidGlassDropdownCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_dropdown_open),
                 onClick = { expanded = true },
                 textColor = contentColor,
