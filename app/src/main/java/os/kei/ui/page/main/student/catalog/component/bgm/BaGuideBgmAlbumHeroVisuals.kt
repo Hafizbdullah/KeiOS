@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.student.catalog.component.bgm
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -43,6 +42,7 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideRepeatIcon
 import os.kei.ui.page.main.os.appLucideVolume2Icon
 import os.kei.ui.page.main.os.appLucideVolumeOffIcon
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
@@ -259,7 +259,7 @@ private fun BaGuideBgmRoundAction(
     backdrop: Backdrop,
 ) {
     val contentTint = if (active) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.34f)
+    val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
     LiquidSurface(
         backdrop = backdrop,
         modifier = Modifier.size(50.dp),
@@ -288,7 +288,7 @@ private fun BaGuideBgmPlayAction(
     backdrop: Backdrop,
 ) {
     val contentTint = if (isPlaying) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = if (isSystemInDarkTheme()) 0.14f else 0.34f)
+    val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
     LiquidSurface(
         backdrop = backdrop,
         modifier =
