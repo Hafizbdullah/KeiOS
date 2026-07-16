@@ -4,7 +4,6 @@ package os.kei.ui.page.main.github
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
@@ -47,7 +47,7 @@ internal fun GitHubSelectedAppCard(
         containerColor =
             GitHubStatusPalette.tonedSurface(
                 GitHubStatusPalette.Update,
-                isDark = isSystemInDarkTheme(),
+                isDark = isAppInDarkTheme(),
             ),
         borderColor = GitHubStatusPalette.Update.copy(alpha = 0.28f),
         verticalSpacing = 0.dp,
@@ -100,7 +100,7 @@ internal fun GitHubAppCandidateRow(
     onClick: () -> Unit,
 ) {
     val appIconBitmaps = LocalGitHubAppIconBitmaps.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val accent = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
     SheetSurfaceCard(
         modifier = Modifier.fillMaxWidth(),
@@ -174,7 +174,7 @@ private fun InstallSourcePill(
     selected: Boolean = false,
 ) {
     val color = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val metrics = rememberAppStatusPillMetrics(AppStatusPillSize.Compact)
     Box(
         modifier =

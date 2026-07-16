@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -23,6 +22,7 @@ import os.kei.ui.page.main.github.share.shareImportRemainingMinutes
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -46,7 +46,7 @@ internal fun GitHubPendingShareImportCard(
     AppSurfaceCard(
         containerColor = GitHubStatusPalette.tonedSurface(
             GitHubStatusPalette.Active,
-            isDark = isSystemInDarkTheme()
+            isDark = isAppInDarkTheme()
         ).copy(alpha = 0.26f),
         borderColor = GitHubStatusPalette.Active.copy(alpha = 0.24f)
     ) {
@@ -299,7 +299,7 @@ private fun GitHubShareImportFlowCard(
     AppSurfaceCard(
         containerColor = GitHubStatusPalette.tonedSurface(
             statusColor,
-            isDark = isSystemInDarkTheme()
+            isDark = isAppInDarkTheme()
         ).copy(alpha = 0.26f),
         borderColor = statusColor.copy(alpha = 0.24f)
     ) {

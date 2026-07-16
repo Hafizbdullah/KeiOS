@@ -12,17 +12,23 @@ class GitHubLiquidThemeSourceTest {
         val infoCardsSource = sourceFile(GITHUB_TRACKED_ITEM_INFO_CARDS_SOURCE)
         val healthCardsSource = sourceFile(GITHUB_TRACKED_ITEM_HEALTH_CARDS_SOURCE)
         val assetCountBubbleSource = sourceFile(GITHUB_TRACKED_ITEM_ASSET_COUNT_BUBBLE_SOURCE)
+        val appSelectionRowsSource = sourceFile(GITHUB_APP_SELECTION_ROWS_SOURCE)
+        val pendingShareImportSource = sourceFile(GITHUB_PENDING_SHARE_IMPORT_SOURCE)
 
         assertEquals(1, pageSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(2, infoCardsSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, healthCardsSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, assetCountBubbleSource.occurrencesOf("isAppInDarkTheme()"))
+        assertEquals(3, appSelectionRowsSource.occurrencesOf("isAppInDarkTheme()"))
+        assertEquals(2, pendingShareImportSource.occurrencesOf("isAppInDarkTheme()"))
 
         listOf(
             pageSource,
             infoCardsSource,
             healthCardsSource,
             assetCountBubbleSource,
+            appSelectionRowsSource,
+            pendingShareImportSource,
         ).forEach { source ->
             assertFalse("isSystemInDarkTheme" in source)
         }
@@ -50,3 +56,7 @@ private const val GITHUB_TRACKED_ITEM_HEALTH_CARDS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemHealthCards.kt"
 private const val GITHUB_TRACKED_ITEM_ASSET_COUNT_BUBBLE_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemAssetCountBubble.kt"
+private const val GITHUB_APP_SELECTION_ROWS_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/github/GitHubAppSelectionRows.kt"
+private const val GITHUB_PENDING_SHARE_IMPORT_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/github/section/GitHubPendingShareImportSection.kt"
