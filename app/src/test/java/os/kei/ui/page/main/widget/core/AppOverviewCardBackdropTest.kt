@@ -9,7 +9,21 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
@@ -59,26 +73,34 @@ class AppOverviewCardBackdropTest {
                     val revision = signal.intValue
                     SideEffect { parentBackdrop = parent }
 
-                    AppOverviewCard(
-                        title = "Overview",
-                        backdrop = parent,
-                        contentColor = expectedContentColor,
-                        modifier = Modifier.size(180.dp),
-                    ) {
-                        val child = LocalLiquidParentBackdrop.current
-                        val contentColor = LocalContentColor.current
-                        SideEffect {
-                            check(revision >= 0)
-                            observedChildBackdrops += child
-                            observedContentColors += contentColor
+                    androidx.compose.runtime.CompositionLocalProvider(LocalLiquidParentBackdrop provides parent) {
+                        AppOverviewCard(
+                            title = "Overview",
+                            contentColor = expectedContentColor,
+                            modifier =
+                                Modifier
+                                    .size(180.dp)
+                                    .testTag("overview-card"),
+                        ) {
+                            val child = LocalLiquidParentBackdrop.current
+                            val contentColor = LocalContentColor.current
+                            SideEffect {
+                                check(revision >= 0)
+                                observedChildBackdrops += child
+                                observedContentColors += contentColor
+                            }
+                            Box(modifier = Modifier.size(1.dp))
                         }
-                        Box(modifier = Modifier.size(1.dp))
                     }
                 }
             }
         }
 
         composeRule.waitForIdle()
+        composeRule
+            .onNodeWithTag("overview-card")
+            .assertWidthIsEqualTo(180.dp)
+            .assertHeightIsEqualTo(180.dp)
         lateinit var settledChildBackdrop: Backdrop
         composeRule.runOnIdle {
             settledChildBackdrop = assertNotNull(observedChildBackdrops.last())
@@ -123,15 +145,56 @@ class AppOverviewCardBackdropTest {
     }
 
     @Test
-    fun sourceExportsCardMaterialWithoutTransparentCaptureFallback() {
-        val source = overviewCardSource()
+    fun sharedSurfaceKeepsClickAndLongClickButtonSemantics() {
+        var clickCount = 0
+        var longClickCount = 0
 
-        assertTrue("exportedBackdrop = contentBackdrop" in source)
-        assertTrue("LocalLiquidParentBackdrop provides contentBackdrop" in source)
-        assertTrue("LocalLiquidParentBackdropOverridesFallback provides true" in source)
-        assertTrue("LocalContentColor provides contentColor" in source)
-        assertTrue("borderColor = borderColor" in source)
-        assertTrue("borderWidth = 1.dp" in source)
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppOverviewCard(
+                    title = "Interactive overview",
+                    onClick = { clickCount++ },
+                    onLongClick = { longClickCount++ },
+                ) {
+                    Box(modifier = Modifier.size(1.dp))
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithText("Interactive overview")
+            .assertHasClickAction()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
+            .performClick()
+            .performTouchInput { longClick() }
+        composeRule.runOnIdle {
+            assertEquals(1, clickCount)
+            assertEquals(1, longClickCount)
+        }
+    }
+
+    @Test
+    fun sourceDelegatesCardMaterialAndTransformToSharedSurface() {
+        val source = overviewCardSource()
+        val cardImplementation = overviewCardImplementationSource(source)
+
+        assertTrue("AppSurfaceCard(" in cardImplementation)
+        assertTrue("shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius)" in cardImplementation)
+        assertTrue("containerColor = containerColor" in cardImplementation)
+        assertTrue("borderColor = borderColor" in cardImplementation)
+        assertTrue("borderWidth = 1.dp" in cardImplementation)
+        assertTrue("contentColor = contentColor" in cardImplementation)
+        assertTrue("exportBackdropToContent = true" in cardImplementation)
+        assertTrue("pressSafePadding = 0.dp" in cardImplementation)
+        assertTrue("showIndication = showIndication" in cardImplementation)
+        assertTrue("onClick = onClick" in cardImplementation)
+        assertTrue("onLongClick = onLongClick" in cardImplementation)
+        assertFalse("LiquidSurface(" in cardImplementation)
+        assertFalse("rememberLayerBackdrop" in cardImplementation)
+        assertFalse("graphicsLayer" in cardImplementation)
+        assertFalse("0.992f" in cardImplementation)
+        assertFalse("app_overview_card_press_scale" in cardImplementation)
         assertEquals(0, source.occurrencesOf(".layerBackdrop("))
         assertEquals(0, source.occurrencesOf("captureBackdrop"))
     }
@@ -155,6 +218,11 @@ private fun overviewCardSource(): String {
         "Unable to locate $APP_OVERVIEW_CARD_SOURCE from $workingDirectory"
     }.readText()
 }
+
+private fun overviewCardImplementationSource(source: String): String =
+    source
+        .substringAfter("fun AppOverviewCard(")
+        .substringBefore("fun AppOverviewMetricTile(")
 
 private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 

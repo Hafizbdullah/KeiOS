@@ -2,9 +2,6 @@
 
 package os.kei.ui.page.main.widget.core
 
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,25 +22,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
-import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
@@ -72,186 +60,55 @@ fun AppOverviewCard(
     headerEndActions: (@Composable RowScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val clickable = onClick != null || onLongClick != null
-    val clickModifier =
-        if (clickable) {
-            Modifier.combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick,
-            )
-        } else {
-            Modifier
-        }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressedScaleState =
-        appMotionFloatState(
-            targetValue = if (showIndication && clickable && isPressed) 0.992f else 1f,
-            durationMillis = 120,
-            label = "app_overview_card_press_scale",
-        )
-    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
-    val parentBackdrop = LocalLiquidParentBackdrop.current
-    val inheritedBackdrop = backdrop ?: parentBackdrop
-    if (inheritedBackdrop != null) {
-        val contentBackdrop = rememberLayerBackdrop()
-        AppOverviewCardSurface(
-            modifier = modifier,
-            backdrop = inheritedBackdrop,
-            contentBackdrop = contentBackdrop,
-            clickModifier = clickModifier,
-            interactionSource = interactionSource,
-            pressedScale = pressedScaleProvider,
-            title = title,
-            subtitle = subtitle,
-            titleColor = titleColor,
-            subtitleColor = subtitleColor,
-            containerColor = containerColor,
-            borderColor = borderColor,
-            contentColor = contentColor,
-            contentVerticalSpacing = contentVerticalSpacing,
-            showIndication = showIndication,
-            clickable = clickable,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            startAction = startAction,
-            titleContent = titleContent,
-            titleAccessory = titleAccessory,
-            headerEndActions = headerEndActions,
-            content = content,
-        )
-    } else {
-        AppOverviewCardSurface(
-            modifier = modifier,
-            backdrop = null,
-            contentBackdrop = null,
-            clickModifier = clickModifier,
-            interactionSource = interactionSource,
-            pressedScale = pressedScaleProvider,
-            title = title,
-            subtitle = subtitle,
-            titleColor = titleColor,
-            subtitleColor = subtitleColor,
-            containerColor = containerColor,
-            borderColor = borderColor,
-            contentColor = contentColor,
-            contentVerticalSpacing = contentVerticalSpacing,
-            showIndication = showIndication,
-            clickable = clickable,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            startAction = startAction,
-            titleContent = titleContent,
-            titleAccessory = titleAccessory,
-            headerEndActions = headerEndActions,
-            content = content,
-        )
-    }
-}
-
-@Composable
-private fun AppOverviewCardSurface(
-    modifier: Modifier,
-    backdrop: Backdrop?,
-    contentBackdrop: LayerBackdrop?,
-    clickModifier: Modifier,
-    interactionSource: MutableInteractionSource,
-    pressedScale: () -> Float,
-    title: String,
-    subtitle: String,
-    titleColor: Color,
-    subtitleColor: Color,
-    containerColor: Color,
-    borderColor: Color,
-    contentColor: Color,
-    contentVerticalSpacing: Dp,
-    showIndication: Boolean,
-    clickable: Boolean,
-    blurRadius: Dp,
-    lensRadius: Dp,
-    startAction: (@Composable () -> Unit)?,
-    titleContent: (@Composable RowScope.() -> Unit)?,
-    titleAccessory: (@Composable RowScope.() -> Unit)?,
-    headerEndActions: (@Composable RowScope.() -> Unit)?,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    val scale = pressedScale()
-                    scaleX = scale
-                    scaleY = scale
-                },
+    AppSurfaceCard(
+        modifier = modifier,
+        backdrop = backdrop,
+        containerColor = containerColor,
+        shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
+        borderColor = borderColor,
+        borderWidth = 1.dp,
+        contentColor = contentColor,
+        showIndication = showIndication,
+        exportBackdropToContent = true,
+        pressSafePadding = 0.dp,
+        blurRadius = blurRadius,
+        lensRadius = lensRadius,
+        onClick = onClick,
+        onLongClick = onLongClick,
     ) {
-        LiquidSurface(
-            backdrop = backdrop,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(clickModifier),
-            shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
-            isInteractive = showIndication && clickable,
-            surfaceColor = containerColor,
-            borderColor = borderColor,
-            borderWidth = 1.dp,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            interactionSource = interactionSource,
-            exportedBackdrop = contentBackdrop,
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap),
         ) {
-            val cardContent: @Composable () -> Unit = {
-                CompositionLocalProvider(LocalContentColor provides contentColor) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap),
-                    ) {
-                        AppCardHeader(
-                            title = title,
-                            subtitle = subtitle,
-                            titleColor = titleColor,
-                            subtitleColor = subtitleColor,
-                            minHeight = 44.dp,
-                            contentPadding =
-                                PaddingValues(
-                                    horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
-                                    vertical = CardLayoutRhythm.overviewHeaderVerticalPadding,
-                                ),
-                            titleTypography = AppTypographyTokens.CompactTitle,
-                            startAction = startAction,
-                            titleContent = titleContent,
-                            titleAccessory = titleAccessory,
-                            endActions = headerEndActions,
-                        )
-                        AppCardBodyColumn(
-                            contentPadding =
-                                PaddingValues(
-                                    start = CardLayoutRhythm.cardHorizontalPadding,
-                                    end = CardLayoutRhythm.cardHorizontalPadding,
-                                    bottom = CardLayoutRhythm.overviewBodyBottomPadding,
-                                ),
-                            verticalSpacing = contentVerticalSpacing,
-                            content = content,
-                        )
-                    }
-                }
-            }
-            if (contentBackdrop != null) {
-                CompositionLocalProvider(
-                    LocalLiquidParentBackdrop provides contentBackdrop,
-                    LocalLiquidParentBackdropOverridesFallback provides true,
-                ) {
-                    cardContent()
-                }
-            } else {
-                cardContent()
-            }
+            AppCardHeader(
+                title = title,
+                subtitle = subtitle,
+                titleColor = titleColor,
+                subtitleColor = subtitleColor,
+                minHeight = 44.dp,
+                contentPadding =
+                    PaddingValues(
+                        horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
+                        vertical = CardLayoutRhythm.overviewHeaderVerticalPadding,
+                    ),
+                titleTypography = AppTypographyTokens.CompactTitle,
+                startAction = startAction,
+                titleContent = titleContent,
+                titleAccessory = titleAccessory,
+                endActions = headerEndActions,
+            )
+            AppCardBodyColumn(
+                contentPadding =
+                    PaddingValues(
+                        start = CardLayoutRhythm.cardHorizontalPadding,
+                        end = CardLayoutRhythm.cardHorizontalPadding,
+                        bottom = CardLayoutRhythm.overviewBodyBottomPadding,
+                    ),
+                verticalSpacing = contentVerticalSpacing,
+                content = content,
+            )
         }
     }
 }
