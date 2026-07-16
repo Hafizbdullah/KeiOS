@@ -25,8 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
 import os.kei.ui.page.main.os.appLucideExternalLinkIcon
@@ -48,6 +46,7 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
@@ -70,19 +69,13 @@ internal fun BaGuideBgmPlaybackSeekBar(
     onSeekFinished: () -> Unit,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val sliderBackdrop = rememberLayerBackdrop()
+    val sliderBackdrop = LocalLiquidParentBackdrop.current
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(48.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(sliderBackdrop),
-        )
         LiquidMusicProgressSlider(
             value = { progress.coerceIn(0f, 1f) },
             onValueChange = { value -> onSeekChanged(value.coerceIn(0f, 1f)) },
@@ -153,19 +146,13 @@ private fun BaGuideBgmVolumeSlider(
     onInteractionChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sliderBackdrop = rememberLayerBackdrop()
+    val sliderBackdrop = LocalLiquidParentBackdrop.current
     val activeColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f)
     Box(
         modifier =
             modifier
                 .height(48.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(sliderBackdrop),
-        )
         LiquidVolumeSlider(
             value = { volume.coerceIn(0f, 1f) },
             onValueChange = { value -> onVolumeChanged(value.coerceIn(0f, 1f)) },
