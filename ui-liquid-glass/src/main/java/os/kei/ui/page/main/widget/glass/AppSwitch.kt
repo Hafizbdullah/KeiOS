@@ -22,7 +22,6 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -44,7 +43,6 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -295,12 +293,7 @@ private fun LiquidSwitchToggle(
     val combinedBackdrop =
         rememberCombinedBackdrop(
             backdrop,
-            rememberBackdrop(trackBackdrop) { drawBackdrop ->
-                val progress = dampedDragAnimation.pressProgress
-                val scaleX = lerp(2f / 3f, 0.75f, progress)
-                val scaleY = lerp(0f, 0.75f, progress)
-                scale(scaleX, scaleY) { drawBackdrop() }
-            },
+            trackBackdrop,
         )
 
     Box(
