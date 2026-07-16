@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +45,7 @@ internal fun BaStudentGuideBottomBar(
     onSelectTab: (Int) -> Unit,
     onExpand: () -> Unit,
 ) {
+    val showTabLabels = guideBottomBarShowsLabels(bottomTabs.size, LocalDensity.current.fontScale)
     AnimatedCompactBottomBar(
         expanded = visible,
         expandedContent = { motionModifier ->
@@ -87,15 +89,17 @@ internal fun BaStudentGuideBottomBar(
                                     modifier = tabIconModifier,
                                 )
                             }
-                            Text(
-                                text = tabLabel,
-                                fontSize = 11.sp,
-                                lineHeight = 14.sp,
-                                color = tabColor,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Visible,
-                            )
+                            if (showTabLabels) {
+                                Text(
+                                    text = tabLabel,
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp,
+                                    color = tabColor,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                         LiquidGlassBottomBarItem(
                             selected = selected,
@@ -162,3 +166,8 @@ internal fun BaStudentGuideBottomBar(
         },
     )
 }
+
+internal fun guideBottomBarShowsLabels(
+    tabCount: Int,
+    fontScale: Float,
+): Boolean = tabCount <= 5 && fontScale <= 1.2f
