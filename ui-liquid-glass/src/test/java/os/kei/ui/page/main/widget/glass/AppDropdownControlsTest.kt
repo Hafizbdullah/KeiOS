@@ -139,13 +139,50 @@ class AppDropdownControlsTest {
                 .map { root ->
                     with(composeRule.density) { root.boundsInRoot.height.toDp() }
                 }.filter { height -> height > 0.dp }
-        val popupHeight = rootHeights.minOrNull()
+        val popupHeight = rootHeights.maxOrNull()
 
         assertTrue(rootHeights.size >= 2, "Expected activity and popup roots, heights=$rootHeights")
         assertTrue(
             popupHeight != null && popupHeight <= popupMaxHeight,
             "Expected popup height <= $popupMaxHeight, heights=$rootHeights",
         )
+    }
+
+    @Test
+    fun customPopupMinWidthKeepsCompactSelectorGeometry() {
+        val popupMinWidth = 136.dp
+
+        composeRule.setContent {
+            DropdownTestTheme {
+                AppDropdownSelector(
+                    selectedText = "A",
+                    options = listOf("A", "B"),
+                    selectedIndex = 0,
+                    expanded = true,
+                    anchorBounds = null,
+                    onExpandedChange = {},
+                    onSelectedIndexChange = {},
+                    onAnchorBoundsChange = {},
+                    popupMinWidth = popupMinWidth,
+                    popupMaxWidth = 196.dp,
+                    dropdownItemVariant = GlassVariant.SheetAction,
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(hasText("B") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
+        }
+        val rootWidths =
+            composeRule
+                .onAllNodes(isRoot())
+                .fetchSemanticsNodes()
+                .map { root ->
+                    with(composeRule.density) { root.boundsInRoot.width.toDp() }
+                }.filter { width -> width > 0.dp }
+
+        assertTrue(rootWidths.size >= 2, "Expected activity and popup roots, widths=$rootWidths")
+        assertEquals(popupMinWidth, rootWidths.maxOrNull())
     }
 }
 

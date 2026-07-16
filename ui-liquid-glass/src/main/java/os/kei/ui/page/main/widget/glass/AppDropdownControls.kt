@@ -142,16 +142,22 @@ fun AppDropdownSelector(
     alignment: PopupPositionProvider.Align = PopupPositionProvider.Align.BottomEnd,
     placement: SnapshotPopupPlacement = SnapshotPopupPlacement.ButtonEnd,
     enabled: Boolean = true,
+    popupMinWidth: Dp = DropdownSelectorMinWidth,
+    dropdownItemVariant: GlassVariant = variant,
 ) {
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
+    val resolvedPopupMinWidth =
+        popupMinWidth.takeIf { minWidth ->
+            minWidth != Dp.Unspecified && minWidth.value.isFinite() && minWidth > 0.dp
+        } ?: DropdownSelectorMinWidth
     val maxScreenWidth =
         (appWindowWidthDp() - DropdownSelectorScreenHorizontalMargin * 2)
-            .coerceAtLeast(DropdownSelectorMinWidth)
+            .coerceAtLeast(resolvedPopupMinWidth)
     val resolvedMaxWidth =
         (popupMaxWidth ?: maxScreenWidth)
             .coerceAtMost(maxScreenWidth)
-            .coerceAtLeast(DropdownSelectorMinWidth)
+            .coerceAtLeast(resolvedPopupMinWidth)
     val anchorWidth =
         remember(anchorBounds, density) {
             anchorBounds?.let { bounds ->
@@ -201,7 +207,7 @@ fun AppDropdownSelector(
         }
     val resolvedPopupWidth =
         maxOf(
-            DropdownSelectorMinWidth,
+            resolvedPopupMinWidth,
             measuredOptionWidth,
             if (popupMatchAnchorWidth) anchorWidth else 0.dp,
         ).coerceAtMost(resolvedMaxWidth)
@@ -279,7 +285,7 @@ fun AppDropdownSelector(
                     onSelectedIndexChange = onSelectedIndexChange,
                     onExpandedChange = onExpandedChange,
                     accentColor = accentColor,
-                    variant = variant,
+                    variant = dropdownItemVariant,
                     textMaxLines = dropdownItemTextMaxLines,
                 )
             }

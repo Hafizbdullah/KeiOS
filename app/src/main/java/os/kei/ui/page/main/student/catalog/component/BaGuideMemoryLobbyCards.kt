@@ -63,13 +63,11 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
-import os.kei.ui.page.main.widget.glass.AppDropdownAnchorButton
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownColumn
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceItem
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -708,64 +706,48 @@ private fun BaGuideMemoryLobbyVideoGroup(
 }
 
 @Composable
-private fun BaGuideMemoryLobbyVariantSelector(
+internal fun BaGuideMemoryLobbyVariantSelector(
     optionLabels: List<String>,
     selectedIndex: Int,
     onSelectedIndexChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var showPicker by remember(optionLabels) { mutableStateOf(false) }
     var pickerPopupAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-    Box(
-        modifier = Modifier.capturePopupAnchor { pickerPopupAnchorBounds = it },
-        contentAlignment = Alignment.Center,
-    ) {
-        if (optionLabels.size > 1) {
-            AppDropdownAnchorButton(
-                text =
-                    optionLabels.getOrElse(selectedIndex) {
-                        stringResource(R.string.guide_gallery_video_format, 1)
-                    },
-                onClick = { showPicker = !showPicker },
-                modifier = Modifier.widthIn(min = 54.dp, max = 96.dp),
-                textColor = Color(0xFF3B82F6),
-                variant = GlassVariant.Compact,
-                horizontalPadding = 8.dp,
-                textSize = AppTypographyTokens.Supporting.fontSize,
-                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-        }
-        key("ba-guide-memory-lobby-variant-popup") {
-            SnapshotWindowListPopup(
-                show = showPicker && optionLabels.size > 1,
-                alignment = PopupPositionProvider.Align.BottomEnd,
-                anchorBounds = pickerPopupAnchorBounds,
-                placement = SnapshotPopupPlacement.ButtonEnd,
-                onDismissRequest = { showPicker = false },
-            ) {
-                LiquidGlassDropdownColumn(
-                    minWidth = MemoryLobbyVariantMenuMinWidth,
-                    maxWidth = MemoryLobbyVariantMenuMaxWidth,
-                    maxHeight = MemoryLobbyVariantMenuMaxHeight,
-                ) {
-                    optionLabels.forEachIndexed { index, option ->
-                        LiquidGlassDropdownSingleChoiceItem(
-                            text = option,
-                            optionSize = optionLabels.size,
-                            isSelected = selectedIndex == index,
-                            index = index,
-                            accentColor = Color(0xFF3B82F6),
-                            variant = GlassVariant.SheetAction,
-                            textMaxLines = 1,
-                            onSelectedIndexChange = { selected ->
-                                onSelectedIndexChange(selected)
-                                showPicker = false
-                            },
-                        )
-                    }
-                }
-            }
-        }
-    }
+    if (optionLabels.size <= 1) return
+
+    AppDropdownSelector(
+        selectedText =
+            optionLabels.getOrElse(selectedIndex) {
+                stringResource(R.string.guide_gallery_video_format, 1)
+            },
+        options = optionLabels,
+        selectedIndex = selectedIndex,
+        expanded = showPicker,
+        anchorBounds = pickerPopupAnchorBounds,
+        onExpandedChange = { showPicker = it },
+        onSelectedIndexChange = onSelectedIndexChange,
+        onAnchorBoundsChange = { pickerPopupAnchorBounds = it },
+        modifier = modifier.widthIn(min = 54.dp, max = 96.dp),
+        variant = GlassVariant.Compact,
+        textColor = Color(0xFF3B82F6),
+        minHeight = 36.dp,
+        horizontalPadding = 8.dp,
+        verticalPadding = 6.dp,
+        anchorTextMaxLines = 1,
+        anchorTextOverflow = TextOverflow.Ellipsis,
+        anchorTextSoftWrap = false,
+        anchorTextSize = AppTypographyTokens.Supporting.fontSize,
+        anchorTextLineHeight = AppTypographyTokens.Supporting.lineHeight,
+        dropdownItemTextMaxLines = 1,
+        popupMinWidth = MemoryLobbyVariantMenuMinWidth,
+        popupMaxWidth = MemoryLobbyVariantMenuMaxWidth,
+        popupMaxHeight = MemoryLobbyVariantMenuMaxHeight,
+        dropdownItemVariant = GlassVariant.SheetAction,
+        anchorAlignment = Alignment.Center,
+        alignment = PopupPositionProvider.Align.BottomEnd,
+        placement = SnapshotPopupPlacement.ButtonEnd,
+    )
 }
 
 @Composable
