@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.prefs.UiPrefs
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
@@ -24,6 +25,7 @@ import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -43,6 +45,7 @@ class OsShellRunnerActivity : ComponentActivity() {
                 shellRunnerViewModel.refreshChromePrefs()
             }
             val chromePrefs by shellRunnerViewModel.chromePrefs.collectAsStateWithLifecycle()
+            val liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled()
             val colorSchemeMode = when (chromePrefs.appThemeMode) {
                 AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
                 AppThemeMode.LIGHT -> ColorSchemeMode.Light
@@ -58,7 +61,8 @@ class OsShellRunnerActivity : ComponentActivity() {
                 ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
                     CompositionLocalProvider(
                         LocalTransitionAnimationsEnabled provides chromePrefs.transitionAnimationsEnabled,
-                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled
+                        LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
+                        LocalLiquidSheetEnabled provides liquidSheetEnabled,
                     ) {
                         AppManagedBackgroundHost(
                             enabled = chromePrefs.nonHomeBackgroundEnabled,
