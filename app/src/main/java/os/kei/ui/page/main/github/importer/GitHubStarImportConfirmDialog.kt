@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package os.kei.ui.page.main.github.importer
 
 import androidx.compose.foundation.layout.Arrangement
@@ -8,8 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,13 +30,45 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.dialog.AppDialogDimensions
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 import java.util.EnumMap
+
+private data class StarImportConfirmSourceSnapshot(
+    val candidates: List<GitHubRepositoryImportCandidate>,
+    val verificationStates: Map<String, StarImportApkVerificationUiState>,
+)
+
+@Stable
+internal class GitHubStarDialogExitSnapshot<T : Any>(
+    initialValue: T?,
+) {
+    var retainedValue: T? by mutableStateOf(initialValue)
+        private set
+
+    fun resolve(currentValue: T?): T? = currentValue ?: retainedValue
+
+    fun retain(currentValue: T?) {
+        if (currentValue != null) {
+            retainedValue = currentValue
+        }
+    }
+
+    fun clear() {
+        retainedValue = null
+    }
+}
+
+@Composable
+internal fun <T : Any> rememberGitHubStarDialogExitSnapshot(currentValue: T?): GitHubStarDialogExitSnapshot<T> {
+    val snapshot = remember { GitHubStarDialogExitSnapshot(currentValue) }
+    SideEffect { snapshot.retain(currentValue) }
+    return snapshot
+}
 
 @Composable
 internal fun GitHubStarImportConfirmDialog(
@@ -37,76 +76,114 @@ internal fun GitHubStarImportConfirmDialog(
     verificationStates: Map<String, StarImportApkVerificationUiState>,
     importing: Boolean,
     onDismissRequest: () -> Unit,
-    onConfirmImport: () -> Unit
+    onConfirmImport: () -> Unit,
 ) {
-    if (candidates.isEmpty()) return
-    val confirmUiState =
+    val currentSnapshot =
         remember(candidates, verificationStates) {
-            buildStarImportConfirmUiState(candidates, verificationStates)
+            if (candidates.isEmpty()) {
+                null
+            } else {
+                StarImportConfirmSourceSnapshot(
+                    candidates = candidates.toList(),
+                    verificationStates = verificationStates.toMap(),
+                )
+            }
         }
-    val summary = confirmUiState.summary
-    val groups = confirmUiState.groups
-    val expandedGroups = remember(confirmUiState) {
-        mutableStateMapOf<StarImportConfirmGroupKey, Boolean>().apply {
-            groups.forEach { group -> put(group.key, group.initiallyExpanded) }
+    val exitSnapshot = rememberGitHubStarDialogExitSnapshot(currentSnapshot)
+    val renderedSnapshot = exitSnapshot.resolve(currentSnapshot)
+    val confirmUiState =
+        remember(renderedSnapshot) {
+            renderedSnapshot?.let {
+                buildStarImportConfirmUiState(it.candidates, it.verificationStates)
+            }
         }
-    }
-    WindowDialog(
-        show = true,
+    val expandedGroups =
+        remember(confirmUiState) {
+            mutableStateMapOf<StarImportConfirmGroupKey, Boolean>().apply {
+                confirmUiState?.groups.orEmpty().forEach { group ->
+                    put(group.key, group.initiallyExpanded)
+                }
+            }
+        }
+    AppWindowDialogHost(
+        show = candidates.isNotEmpty(),
         title = stringResource(R.string.github_star_import_confirm_title),
-        summary = stringResource(
-            R.string.github_star_import_confirm_summary_format,
-            candidates.size,
-            summary.hasApkCount,
-            summary.unverifiedCount
-        ),
+        summary =
+            confirmUiState?.let {
+                stringResource(
+                    R.string.github_star_import_confirm_summary_format,
+                    renderedSnapshot?.candidates?.size ?: 0,
+                    it.summary.hasApkCount,
+                    it.summary.unverifiedCount,
+                )
+            },
         onDismissRequest = onDismissRequest,
+        onDismissFinished = exitSnapshot::clear,
         maxWidth = AppDialogDimensions.ContentRichMaxWidth,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            groups.forEach { group ->
-                StarImportConfirmGroupCard(
-                    group = group,
-                    expanded = expandedGroups[group.key] == true,
-                    onExpandedChange = { expanded -> expandedGroups[group.key] = expanded }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-            if (summary.riskyCount > 0) {
-                Text(
-                    text = stringResource(
-                        R.string.github_star_import_confirm_risky_format,
-                        summary.riskyCount
-                    ),
-                    color = GitHubStatusPalette.Error
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest,
-                    enabled = !importing
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = if (importing) {
-                        stringResource(R.string.github_star_import_status_importing)
-                    } else {
-                        stringResource(R.string.github_star_import_confirm_action)
-                    },
-                    containerColor = GitHubStatusPalette.Update,
-                    variant = GlassVariant.SheetPrimaryAction,
-                    onClick = onConfirmImport,
-                    enabled = !importing
+        confirmUiState?.let { renderedUiState ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                renderedUiState.groups.forEach { group ->
+                    StarImportConfirmGroupCard(
+                        group = group,
+                        expanded = expandedGroups[group.key] == true,
+                        onExpandedChange = { expanded -> expandedGroups[group.key] = expanded },
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                if (renderedUiState.summary.riskyCount > 0) {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.github_star_import_confirm_risky_format,
+                                renderedUiState.summary.riskyCount,
+                            ),
+                        color = GitHubStatusPalette.Error,
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                GitHubStarImportConfirmActions(
+                    importing = importing,
+                    actionsEnabled = candidates.isNotEmpty(),
+                    onDismissRequest = onDismissRequest,
+                    onConfirmImport = onConfirmImport,
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun GitHubStarImportConfirmActions(
+    importing: Boolean,
+    actionsEnabled: Boolean = true,
+    onDismissRequest: () -> Unit,
+    onConfirmImport: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text = stringResource(R.string.common_cancel),
+            onClick = onDismissRequest,
+            enabled = actionsEnabled && !importing,
+        )
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text =
+                if (importing) {
+                    stringResource(R.string.github_star_import_status_importing)
+                } else {
+                    stringResource(R.string.github_star_import_confirm_action)
+                },
+            containerColor = GitHubStatusPalette.Update,
+            variant = GlassVariant.SheetPrimaryAction,
+            onClick = onConfirmImport,
+            enabled = actionsEnabled && !importing,
+        )
     }
 }
 
@@ -115,38 +192,61 @@ internal fun GitHubStarImportExitConfirmDialog(
     show: Boolean,
     selectedCount: Int,
     onDismissRequest: () -> Unit,
-    onConfirmExit: () -> Unit
+    onConfirmExit: () -> Unit,
 ) {
-    if (!show) return
-    WindowDialog(
-        show = true,
+    val currentSelectedCount = selectedCount.takeIf { show }
+    val exitSnapshot = rememberGitHubStarDialogExitSnapshot(currentSelectedCount)
+    val renderedSelectedCount = exitSnapshot.resolve(currentSelectedCount)
+    AppWindowDialogHost(
+        show = show,
         title = stringResource(R.string.github_star_import_exit_confirm_title),
-        summary = stringResource(
-            R.string.github_star_import_exit_confirm_summary_format,
-            selectedCount
-        ),
-        onDismissRequest = onDismissRequest
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_star_import_exit_confirm_keep),
-                    onClick = onDismissRequest
+        summary =
+            renderedSelectedCount?.let {
+                stringResource(
+                    R.string.github_star_import_exit_confirm_summary_format,
+                    it,
                 )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.github_star_import_exit_confirm_action),
-                    containerColor = GitHubStatusPalette.Error,
-                    variant = GlassVariant.SheetDangerAction,
-                    onClick = onConfirmExit
+            },
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = exitSnapshot::clear,
+    ) {
+        renderedSelectedCount?.let {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                GitHubStarImportExitActions(
+                    actionsEnabled = show,
+                    onDismissRequest = onDismissRequest,
+                    onConfirmExit = onConfirmExit,
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun GitHubStarImportExitActions(
+    actionsEnabled: Boolean = true,
+    onDismissRequest: () -> Unit,
+    onConfirmExit: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text = stringResource(R.string.github_star_import_exit_confirm_keep),
+            onClick = onDismissRequest,
+            enabled = actionsEnabled,
+        )
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text = stringResource(R.string.github_star_import_exit_confirm_action),
+            containerColor = GitHubStatusPalette.Error,
+            variant = GlassVariant.SheetDangerAction,
+            onClick = onConfirmExit,
+            enabled = actionsEnabled,
+        )
     }
 }
 
