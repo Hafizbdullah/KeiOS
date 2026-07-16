@@ -104,13 +104,21 @@ fun AppFeatureCard(
             bottom = CardLayoutRhythm.cardVerticalPadding,
         ),
     contentVerticalSpacing: Dp = CardLayoutRhythm.sectionGap,
+    collapseOnSurfaceClick: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val toggleExpanded: () -> Unit = { onExpandedChange(!expanded) }
     val headerClick =
         when {
-            collapsible -> ({ onExpandedChange(!expanded) })
+            collapsible -> toggleExpanded
             onClick != null -> onClick
             else -> null
+        }
+    val surfaceClick =
+        when {
+            collapsible && collapseOnSurfaceClick -> toggleExpanded
+            collapsible -> null
+            else -> onClick
         }
     AppSurfaceCard(
         modifier = modifier,
@@ -120,7 +128,7 @@ fun AppFeatureCard(
         borderColor = borderColor,
         contentColor = contentColor,
         showIndication = showIndication,
-        onClick = if (collapsible) null else onClick,
+        onClick = surfaceClick,
         onLongClick = onLongClick,
     ) {
         AppCardHeader(

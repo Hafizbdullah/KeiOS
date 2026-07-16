@@ -8,6 +8,18 @@ import kotlin.test.assertTrue
 
 class AppSurfaceCardTransformContractTest {
     @Test
+    fun featureCardSurfaceCollapseIsOptInAndKeepsSharedMotion() {
+        val cardSource = sourceFile(APP_FEATURE_CARDS_SOURCE)
+
+        assertTrue("collapseOnSurfaceClick: Boolean = false" in cardSource)
+        assertTrue("collapsible && collapseOnSurfaceClick -> toggleExpanded" in cardSource)
+        assertTrue("collapsible -> null" in cardSource)
+        assertTrue("onClick = surfaceClick" in cardSource)
+        assertTrue("enter = appExpandIn()" in cardSource)
+        assertTrue("exit = appExpandOut()" in cardSource)
+    }
+
+    @Test
     fun interactiveTransformStaysInsideLiquidSurfaceBackdropLayer() {
         val cardSource = sourceFile(APP_FEATURE_CARDS_SOURCE)
         val surfaceBoxSource = sourceFile(APP_SURFACE_BOX_SOURCE)
