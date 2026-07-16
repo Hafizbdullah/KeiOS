@@ -13,11 +13,18 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.SuperIslandFloatBehavior
+import os.kei.core.prefs.UiPrefs
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
 
 internal class MainScreenPrefsViewModel : ViewModel() {
-    private val repository = UiPrefsRepository()
+    private val repository =
+        UiPrefsRepository(
+            initialSnapshot =
+                UiPrefs.defaultSnapshot().copy(
+                    liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled(),
+                ),
+        )
     val snapshot: StateFlow<UiPrefsSnapshot> =
         repository
             .observeSnapshots()

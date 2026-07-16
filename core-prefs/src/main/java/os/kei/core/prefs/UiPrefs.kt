@@ -152,6 +152,7 @@ object UiPrefs {
     private const val NON_HOME_BACKGROUND_SATURATION_DEFAULT = 1.00f
     private const val NON_HOME_BACKGROUND_SATURATION_MIN = 0.60f
     private const val NON_HOME_BACKGROUND_SATURATION_MAX = 1.20f
+    internal const val LIQUID_SHEET_DEFAULT_ENABLED = true
     const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100
     const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
@@ -508,7 +509,8 @@ object UiPrefs {
         kv().encode(KEY_REDUCE_TOAST_INTERRUPTION, value)
     }
 
-    fun isLiquidSheetEnabled(defaultValue: Boolean = false): Boolean = kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
+    fun isLiquidSheetEnabled(defaultValue: Boolean = LIQUID_SHEET_DEFAULT_ENABLED): Boolean =
+        kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
 
     fun setLiquidSheetEnabled(value: Boolean) {
         kv().encode(KEY_LIQUID_SHEET, value)
@@ -580,7 +582,7 @@ object UiPrefs {
             cacheDiagnosticsEnabled = true,
             liquidToastEnabled = true,
             reduceToastInterruptionEnabled = false,
-            liquidSheetEnabled = false,
+            liquidSheetEnabled = LIQUID_SHEET_DEFAULT_ENABLED,
             liquidDialogEnabled = true,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES,
@@ -624,7 +626,7 @@ object UiPrefs {
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
             liquidToastEnabled = store.decodeBool(KEY_LIQUID_TOAST, true),
             reduceToastInterruptionEnabled = store.decodeBool(KEY_REDUCE_TOAST_INTERRUPTION, false),
-            liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, false),
+            liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, LIQUID_SHEET_DEFAULT_ENABLED),
             liquidDialogEnabled = store.decodeBool(KEY_LIQUID_DIALOG, true),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames(),

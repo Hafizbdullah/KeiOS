@@ -11,8 +11,9 @@ import os.kei.core.log.AppLogLevel
 
 class UiPrefsRepository(
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.fileIo,
+    initialSnapshot: UiPrefsSnapshot = UiPrefs.defaultSnapshot(),
 ) {
-    private val snapshots = MutableStateFlow(UiPrefs.defaultSnapshot())
+    private val snapshots = MutableStateFlow(initialSnapshot)
 
     fun observeSnapshots(): StateFlow<UiPrefsSnapshot> = snapshots.asStateFlow()
 

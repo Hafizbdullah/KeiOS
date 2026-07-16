@@ -4,11 +4,18 @@ import os.kei.core.log.AppLogLevel
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class UiPrefsDefaultSnapshotTest {
     @Test
     fun `home hdr highlight starts disabled`() {
         assertFalse(UiPrefs.defaultSnapshot().homeIconHdrEnabled)
+    }
+
+    @Test
+    fun `liquid sheet starts enabled`() {
+        assertTrue(UiPrefs.LIQUID_SHEET_DEFAULT_ENABLED)
+        assertTrue(UiPrefs.defaultSnapshot().liquidSheetEnabled)
     }
 
     @Test
