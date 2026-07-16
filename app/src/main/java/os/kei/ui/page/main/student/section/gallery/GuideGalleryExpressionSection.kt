@@ -40,8 +40,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.ui.resource.resolveString
@@ -61,6 +59,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidMusicProgressSlider
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -77,7 +77,7 @@ internal fun GuideAudioSeekBar(
     onSeekChanged: (Float) -> Unit,
     onSeekFinished: (Float) -> Unit,
 ) {
-    val sliderBackdrop = rememberLayerBackdrop()
+    val sliderBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
     var seekInteractionActive by remember { mutableStateOf(false) }
     Box(
         modifier =
@@ -85,12 +85,6 @@ internal fun GuideAudioSeekBar(
                 .fillMaxWidth()
                 .height(48.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(sliderBackdrop),
-        )
         LiquidMusicProgressSlider(
             value = { progress.coerceIn(0f, 1f) },
             onValueChange = { value -> onSeekChanged(value.coerceIn(0f, 1f)) },

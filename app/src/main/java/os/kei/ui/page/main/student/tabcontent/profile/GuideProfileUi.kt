@@ -30,8 +30,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
@@ -47,6 +45,7 @@ import os.kei.ui.page.main.student.rememberGuideTabCopyAction
 import os.kei.ui.page.main.student.stripGuideWebLinks
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
@@ -224,8 +223,7 @@ internal fun GuideProfileValueCapsule(
     onLongClick: (() -> Unit)? = null,
 ) {
     val isDark = isSystemInDarkTheme()
-    val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = activeGlassBackdrop(localBackdrop)
+    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
     val shape = ContinuousCapsule
     val clickModifier =
         if (onClick != null || onLongClick != null) {
@@ -263,12 +261,6 @@ internal fun GuideProfileValueCapsule(
     CopyModeDisableSelection {
         Box {
             if (activeBackdrop != null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .layerBackdrop(localBackdrop),
-                )
                 LiquidSurface(
                     backdrop = activeBackdrop,
                     modifier = capsuleModifier,
@@ -310,17 +302,10 @@ private fun GuideProfileLiquidSurfaceBox(
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = activeGlassBackdrop(localBackdrop)
+    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
 
     Box(modifier = modifier) {
         if (activeBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(localBackdrop),
-            )
             LiquidSurface(
                 backdrop = activeBackdrop,
                 modifier =

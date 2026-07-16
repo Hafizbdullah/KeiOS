@@ -37,11 +37,12 @@ import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
+import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -337,35 +338,45 @@ internal fun GuideSkillVariantBadge(
     label: String,
     modifier: Modifier = Modifier
 ) {
-    val badgeBackdrop = rememberLayerBackdrop()
+    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
+    val surfaceColor = Color(0x223B82F6)
+    val content: @Composable () -> Unit = {
+        Text(
+            text = label,
+            color = Color(0xFF3B82F6),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1
+        )
+    }
     Box(
         modifier = modifier.size(26.dp),
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .layerBackdrop(badgeBackdrop)
-        )
-        LiquidSurface(
-            backdrop = badgeBackdrop,
-            modifier = Modifier.matchParentSize(),
-            shape = RoundedRectangle(999.dp),
-            isInteractive = false,
-            surfaceColor = Color(0x223B82F6),
-            blurRadius = 2.dp,
-            lensRadius = 10.dp,
-            effectVariant = GlassVariant.Compact,
-            shadow = false,
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                color = Color(0xFF3B82F6),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
+        if (activeBackdrop != null) {
+            LiquidSurface(
+                backdrop = activeBackdrop,
+                modifier = Modifier.matchParentSize(),
+                shape = RoundedRectangle(999.dp),
+                isInteractive = false,
+                surfaceColor = surfaceColor,
+                blurRadius = 2.dp,
+                lensRadius = 10.dp,
+                effectVariant = GlassVariant.Compact,
+                shadow = false,
+                contentAlignment = Alignment.Center
+            ) {
+                content()
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .appSquircleBackground(surfaceColor, 999.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                content()
+            }
         }
     }
 }
