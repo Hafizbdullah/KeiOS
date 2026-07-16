@@ -11,10 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
 internal fun OsDeleteConfirmDialog(
@@ -22,33 +22,44 @@ internal fun OsDeleteConfirmDialog(
     title: String,
     summary: String,
     onDismissRequest: () -> Unit,
-    onConfirmDelete: () -> Unit
+    onConfirmDelete: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialogHost(
         show = show,
         title = title,
         summary = summary,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_delete),
-                    containerColor = MiuixTheme.colorScheme.error,
-                    variant = GlassVariant.SheetDangerAction,
-                    onClick = onConfirmDelete
-                )
-            }
+        OsDeleteConfirmDialogActions(
+            onDismissRequest = onDismissRequest,
+            onConfirmDelete = onConfirmDelete,
+        )
+    }
+}
+
+@Composable
+internal fun OsDeleteConfirmDialogActions(
+    onDismissRequest: () -> Unit,
+    onConfirmDelete: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AppLiquidDialogActionButton(
+                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.common_cancel),
+                onClick = onDismissRequest,
+            )
+            AppLiquidDialogActionButton(
+                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.common_delete),
+                containerColor = MiuixTheme.colorScheme.error,
+                variant = GlassVariant.SheetDangerAction,
+                onClick = onConfirmDelete,
+            )
         }
     }
 }

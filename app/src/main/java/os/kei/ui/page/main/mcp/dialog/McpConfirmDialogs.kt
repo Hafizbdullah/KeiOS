@@ -11,10 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
 
 @Composable
 internal fun McpResetConfigDialog(
@@ -22,32 +22,16 @@ internal fun McpResetConfigDialog(
     onConfirm: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialogHost(
         show = show,
         title = stringResource(R.string.mcp_action_reset_service_config),
         summary = stringResource(R.string.mcp_reset_service_config_confirm_summary),
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_reset),
-                    containerColor = MiuixTheme.colorScheme.error,
-                    variant = GlassVariant.SheetDangerAction,
-                    onClick = onConfirm
-                )
-            }
-        }
+        McpResetConfirmDialogActions(
+            onConfirm = onConfirm,
+            onDismissRequest = onDismissRequest,
+        )
     }
 }
 
@@ -57,31 +41,42 @@ internal fun McpResetTokenDialog(
     onConfirm: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    WindowDialog(
+    AppWindowDialogHost(
         show = show,
         title = stringResource(R.string.mcp_action_reset_token),
         summary = stringResource(R.string.mcp_reset_token_confirm_summary),
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_cancel),
-                    onClick = onDismissRequest
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_reset),
-                    containerColor = MiuixTheme.colorScheme.error,
-                    variant = GlassVariant.SheetDangerAction,
-                    onClick = onConfirm
-                )
-            }
+        McpResetConfirmDialogActions(
+            onConfirm = onConfirm,
+            onDismissRequest = onDismissRequest,
+        )
+    }
+}
+
+@Composable
+internal fun McpResetConfirmDialogActions(
+    onConfirm: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AppLiquidDialogActionButton(
+                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.common_cancel),
+                onClick = onDismissRequest,
+            )
+            AppLiquidDialogActionButton(
+                modifier = Modifier.weight(1f),
+                text = stringResource(R.string.common_reset),
+                containerColor = MiuixTheme.colorScheme.error,
+                variant = GlassVariant.SheetDangerAction,
+                onClick = onConfirm,
+            )
         }
     }
 }
