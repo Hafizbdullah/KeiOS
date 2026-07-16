@@ -62,7 +62,6 @@ internal interface TabbedPageCategory {
 // ── Shared constants ─────────────────────────────────────────────────────────
 
 internal val TabbedPageBottomChromeSearchGap: Dp = 8.dp
-internal val TabbedPageBottomChromeMinSearchWidth: Dp = 196.dp
 internal val TabbedPageBottomChromeCompactHeightMax: Dp = 480.dp
 internal const val TabbedPageBottomChromeMotionMs = 220
 
@@ -72,8 +71,7 @@ internal fun tabbedPageExpandedSearchWidth(
     availableWidth: Dp,
     compactDockWidth: Dp = AppChromeTokens.floatingBottomBarOuterHeight,
     gap: Dp = TabbedPageBottomChromeSearchGap,
-    minWidth: Dp = TabbedPageBottomChromeMinSearchWidth,
-): Dp = (availableWidth - compactDockWidth - gap).coerceAtLeast(minWidth)
+): Dp = (availableWidth - compactDockWidth - gap).coerceAtLeast(0.dp)
 
 internal fun tabbedPageCollapsedDockWidth(
     availableWidth: Dp,

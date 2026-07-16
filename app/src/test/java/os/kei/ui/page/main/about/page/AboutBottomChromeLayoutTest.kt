@@ -27,15 +27,22 @@ class AboutBottomChromeLayoutTest {
     }
 
     @Test
-    fun expandedSearchKeepsMinimumWidthOnNarrowSurfaces() {
-        assertEquals(
-            196.dp,
+    fun expandedSearchKeepsItsRightEdgeInsideNarrowSurfaces() {
+        val availableWidth = 220.dp
+        val compactDockWidth = 62.dp
+        val gap = 8.dp
+        val searchWidth =
             tabbedPageExpandedSearchWidth(
-                availableWidth = 220.dp,
-                compactDockWidth = 62.dp,
-                gap = 8.dp,
-            ),
+                availableWidth = availableWidth,
+                compactDockWidth = compactDockWidth,
+                gap = gap,
+            )
+
+        assertEquals(
+            150.dp,
+            searchWidth,
         )
+        assertEquals(availableWidth, compactDockWidth + gap + searchWidth)
     }
 
     @Test
