@@ -130,7 +130,7 @@
     <string name="debug_component_lab_liquid_chrome_bottom_bar">LiquidGlassBottomBar: selection and disabled tab</string>
     <string name="debug_component_lab_liquid_chrome_current_tab">Current page: %1$s</string>
     <string name="debug_component_lab_liquid_action_menu_title">Liquid action menu</string>
-    <string name="debug_component_lab_liquid_action_menu_subtitle">Real popup, quick actions, submenu, single choice, and danger state</string>
+    <string name="debug_component_lab_liquid_action_menu_subtitle">Real popup, quick actions, single-choice and nested multiple-choice submenus, and danger state</string>
     <string name="debug_component_lab_liquid_action_menu_lifecycle_hint">Tap outside to dismiss. Back collapses the submenu first, then closes the popup. The counter updates after exit.</string>
     <string name="debug_component_lab_liquid_action_menu_open">Open action menu</string>
     <string name="debug_component_lab_liquid_action_menu_idle">No action yet</string>
@@ -141,6 +141,10 @@
     <string name="debug_component_lab_liquid_action_menu_quality_auto">Auto</string>
     <string name="debug_component_lab_liquid_action_menu_quality_high">High quality</string>
     <string name="debug_component_lab_liquid_action_menu_quality_lossless">Lossless</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options">Playback options</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options_summary">Select any; the submenu stays open</string>
+    <string name="debug_component_lab_liquid_action_menu_show_lyrics">Show lyrics</string>
+    <string name="debug_component_lab_liquid_action_menu_normalize_volume">Normalize volume</string>
     <string name="debug_component_lab_liquid_action_menu_info">Passive information</string>
     <string name="debug_component_lab_liquid_action_menu_info_summary">Reads guidance without action or disabled semantics</string>
     <string name="debug_component_lab_liquid_action_menu_disabled">Cloud sync unavailable</string>

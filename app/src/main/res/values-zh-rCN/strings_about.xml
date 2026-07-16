@@ -130,7 +130,7 @@
     <string name="debug_component_lab_liquid_chrome_bottom_bar">LiquidGlassBottomBar 选择与禁用</string>
     <string name="debug_component_lab_liquid_chrome_current_tab">当前页面：%1$s</string>
     <string name="debug_component_lab_liquid_action_menu_title">Liquid Action Menu</string>
-    <string name="debug_component_lab_liquid_action_menu_subtitle">真实 Popup、快捷动作、子菜单、单选与危险操作</string>
+    <string name="debug_component_lab_liquid_action_menu_subtitle">真实 Popup、快捷动作、单选与嵌套多选子菜单、危险操作</string>
     <string name="debug_component_lab_liquid_action_menu_lifecycle_hint">点击外部可关闭；Back 先收起子菜单，再关闭 Popup。退出完成后计数更新。</string>
     <string name="debug_component_lab_liquid_action_menu_open">打开 Action Menu</string>
     <string name="debug_component_lab_liquid_action_menu_idle">尚未执行</string>
@@ -141,6 +141,10 @@
     <string name="debug_component_lab_liquid_action_menu_quality_auto">自动</string>
     <string name="debug_component_lab_liquid_action_menu_quality_high">高质量</string>
     <string name="debug_component_lab_liquid_action_menu_quality_lossless">无损</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options">播放选项</string>
+    <string name="debug_component_lab_liquid_action_menu_playback_options_summary">可同时选择，二级菜单保持打开</string>
+    <string name="debug_component_lab_liquid_action_menu_show_lyrics">显示歌词</string>
+    <string name="debug_component_lab_liquid_action_menu_normalize_volume">均衡音量</string>
     <string name="debug_component_lab_liquid_action_menu_info">被动说明</string>
     <string name="debug_component_lab_liquid_action_menu_info_summary">自然朗读说明，不带动作或禁用语义</string>
     <string name="debug_component_lab_liquid_action_menu_disabled">云同步暂不可用</string>

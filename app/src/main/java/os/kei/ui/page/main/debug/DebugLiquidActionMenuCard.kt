@@ -31,6 +31,7 @@ import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
+import os.kei.ui.page.main.os.appLucideVolume2Icon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -60,6 +61,8 @@ internal fun DebugLiquidActionMenuCard(
     var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var selectedQualityIndex by remember { mutableIntStateOf(0) }
     var compactRowsSelected by remember { mutableStateOf(false) }
+    var showLyricsSelected by remember { mutableStateOf(true) }
+    var normalizeVolumeSelected by remember { mutableStateOf(false) }
     var dismissFinishedCount by remember { mutableIntStateOf(0) }
     val idleAction = stringResource(R.string.debug_component_lab_liquid_action_menu_idle)
     var lastAction by remember { mutableStateOf(idleAction) }
@@ -70,6 +73,14 @@ internal fun DebugLiquidActionMenuCard(
     val downloadLabel = stringResource(R.string.debug_component_lab_action_download)
     val favoriteLabel = stringResource(R.string.debug_component_lab_action_favorite)
     val compactRowsLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_compact_rows)
+    val playbackOptionsLabel =
+        stringResource(R.string.debug_component_lab_liquid_action_menu_playback_options)
+    val playbackOptionsSummary =
+        stringResource(R.string.debug_component_lab_liquid_action_menu_playback_options_summary)
+    val showLyricsLabel =
+        stringResource(R.string.debug_component_lab_liquid_action_menu_show_lyrics)
+    val normalizeVolumeLabel =
+        stringResource(R.string.debug_component_lab_liquid_action_menu_normalize_volume)
     val infoLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_info)
     val infoSummary = stringResource(R.string.debug_component_lab_liquid_action_menu_info_summary)
     val disabledLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_disabled)
@@ -224,6 +235,35 @@ internal fun DebugLiquidActionMenuCard(
                                             },
                                         )
                                     },
+                            ),
+                            LiquidGlassActionMenuSubmenuRow(
+                                id = "playback_options",
+                                text = playbackOptionsLabel,
+                                subtitle = playbackOptionsSummary,
+                                leadingIcon = appLucideVolume2Icon(),
+                                trailingIcon = appLucideChevronRightIcon(),
+                                highlighted = showLyricsSelected || normalizeVolumeSelected,
+                                submenuItems =
+                                    listOf(
+                                        LiquidGlassActionMenuMultipleChoiceRow(
+                                            id = "show_lyrics",
+                                            text = showLyricsLabel,
+                                            checked = showLyricsSelected,
+                                            onCheckedChange = { checked ->
+                                                showLyricsSelected = checked
+                                                lastAction = showLyricsLabel
+                                            },
+                                        ),
+                                        LiquidGlassActionMenuMultipleChoiceRow(
+                                            id = "normalize_volume",
+                                            text = normalizeVolumeLabel,
+                                            checked = normalizeVolumeSelected,
+                                            onCheckedChange = { checked ->
+                                                normalizeVolumeSelected = checked
+                                                lastAction = normalizeVolumeLabel
+                                            },
+                                        ),
+                                    ),
                             ),
                             LiquidGlassActionMenuInfoRow(
                                 id = "passive_info",
