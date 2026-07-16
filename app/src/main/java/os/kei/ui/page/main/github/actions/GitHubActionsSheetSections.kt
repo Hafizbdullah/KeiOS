@@ -203,6 +203,7 @@ internal fun GitHubActionsCollapsibleSection(
     expanded: Boolean,
     isDark: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    contentModifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -266,7 +267,7 @@ internal fun GitHubActionsCollapsibleSection(
             exit = appExpandOut(),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = contentModifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content,
             )

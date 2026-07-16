@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.github.actions
 
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsBranchOption
@@ -21,7 +23,8 @@ internal fun GitHubActionsBranchSection(
         countLabel = stringResource(R.string.github_actions_value_count, state.actionsBranchOptions.size),
         expanded = state.actionsBranchesExpanded,
         isDark = isDark,
-        onExpandedChange = onExpandedChange
+        onExpandedChange = onExpandedChange,
+        contentModifier = Modifier.selectableGroup(),
     ) {
         when {
             state.actionsLoading && state.actionsBranchOptions.isEmpty() -> {

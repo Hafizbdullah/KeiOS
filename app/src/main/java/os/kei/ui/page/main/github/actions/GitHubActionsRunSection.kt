@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -103,7 +104,8 @@ private fun GitHubActionsRunsLazyList(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(max = 520.dp),
+                .heightIn(max = 520.dp)
+                .selectableGroup(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 2.dp),
     ) {
