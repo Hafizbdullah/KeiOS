@@ -152,6 +152,7 @@ private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
                     pageStyle = prefsSnapshot.nonHomeBackgroundPageStyle,
                     scrim = prefsSnapshot.nonHomeBackgroundScrim,
                     style = AppManagedBackgroundStyles.FocusedTask,
+                    exportBackdropToContent = true,
                     content = content,
                 )
             }

@@ -109,6 +109,7 @@ class FeedbackIssueActivity : ComponentActivity() {
                             pageStyle = initialPrefsSnapshot.nonHomeBackgroundPageStyle,
                             scrim = initialPrefsSnapshot.nonHomeBackgroundScrim,
                             style = AppManagedBackgroundStyles.FocusedTask,
+                            exportBackdropToContent = true,
                         ) {
                             FeedbackIssuePage(
                                 state = uiState,
