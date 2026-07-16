@@ -57,6 +57,7 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.appLiquidSearchPlaceholderColor
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -270,8 +271,19 @@ internal fun BaGuideBgmFloatingBottomChrome(
                 }
             }
 
-        val miniPlayerSurfaceBackdrop = rememberLayerBackdrop()
-        val miniPlayerChildBackdrop = rememberCombinedBackdrop(backdrop, miniPlayerSurfaceBackdrop)
+        val activeBackdrop = activeGlassBackdrop(backdrop)
+        val miniPlayerSurfaceBackdrop =
+            if (activeBackdrop != null) {
+                rememberLayerBackdrop()
+            } else {
+                null
+            }
+        val miniPlayerChildBackdrop =
+            if (activeBackdrop != null && miniPlayerSurfaceBackdrop != null) {
+                rememberCombinedBackdrop(activeBackdrop, miniPlayerSurfaceBackdrop)
+            } else {
+                null
+            }
 
         AppLiquidFloatingSurface(
             modifier =
@@ -283,7 +295,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
                         height = { miniPlayerHeight },
                     ).graphicsLayer { alpha = miniPlayerAlphaState.value },
             shape = ContinuousCapsule,
-            backdrop = backdrop,
+            backdrop = activeBackdrop,
             exportedBackdrop = miniPlayerSurfaceBackdrop,
             interactionSource = miniPlayerInteractionSource,
             consumeTouches = true,

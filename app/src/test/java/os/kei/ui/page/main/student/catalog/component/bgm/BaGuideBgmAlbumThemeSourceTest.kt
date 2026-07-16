@@ -56,6 +56,22 @@ class BaGuideBgmAlbumThemeSourceTest {
         )
         assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
     }
+
+    @Test
+    fun miniPlayerExportsNestedMaterialOnlyWhenGlassIsActive() {
+        val source = sourceFile(BA_GUIDE_BGM_BOTTOM_CHROME_SOURCE)
+
+        assertTrue("val activeBackdrop = activeGlassBackdrop(backdrop)" in source)
+        assertEquals(1, source.occurrencesOf("rememberLayerBackdrop()"))
+        assertTrue("if (activeBackdrop != null)" in source)
+        assertTrue(
+            "rememberCombinedBackdrop(activeBackdrop, miniPlayerSurfaceBackdrop)" in source,
+        )
+        assertFalse("rememberCombinedBackdrop(backdrop, miniPlayerSurfaceBackdrop)" in source)
+        assertTrue("backdrop = activeBackdrop," in source)
+        assertTrue("exportedBackdrop = miniPlayerSurfaceBackdrop," in source)
+        assertTrue("backdrop = miniPlayerChildBackdrop," in source)
+    }
 }
 
 private fun String.occurrencesOf(needle: String): Int =
