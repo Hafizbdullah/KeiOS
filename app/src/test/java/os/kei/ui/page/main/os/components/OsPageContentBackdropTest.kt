@@ -1,0 +1,56 @@
+package os.kei.ui.page.main.os.components
+
+import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import org.junit.Test
+
+class OsPageContentBackdropTest {
+    @Test
+    fun pageSceneProducesContentBackdropBeforeListAndFloatingDockConsumers() {
+        val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
+        val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
+        val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = sceneIndex.coerceAtLeast(0))
+        val dockIndex = source.indexOf("AppFloatingVerticalSearchActionDock(", startIndex = listIndex.coerceAtLeast(0))
+
+        assertTrue(sceneIndex >= 0, "OS page must host the shared content Backdrop scene")
+        assertTrue(listIndex > sceneIndex, "The page list must be a consumer sibling inside the scene")
+        assertTrue(dockIndex > listIndex, "The floating dock must be composed after the page list")
+        assertEquals(1, source.occurrencesOf("MainPageContentBackdropScene("))
+        assertTrue(
+            """MainPageContentBackdropScene(
+        contentBackdrop = contentBackdrop,
+        modifier = Modifier.fillMaxSize(),""" in source,
+        )
+        assertEquals(0, source.occurrencesOf(".layerBackdrop(contentBackdrop)"))
+    }
+
+    @Test
+    fun topBarProducerAndContentConsumersRemainConnected() {
+        val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
+
+        assertEquals(1, source.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
+        assertTrue("backdrop = contentBackdrop" in source)
+        assertTrue("contentBackdrop = contentBackdrop" in source)
+        assertTrue(
+            source.indexOf("backdrop = topBarBackdrop", startIndex = source.indexOf("AppFloatingVerticalSearchActionDock(")) >= 0,
+            "Floating dock must sample the scrolling-content identity",
+        )
+    }
+}
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, relativePath) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $relativePath from $workingDirectory"
+    }.readText()
+}
+
+private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
+
+private const val OS_PAGE_MAIN_LIST_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/os/components/OsPageMainList.kt"

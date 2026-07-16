@@ -4,7 +4,6 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
+import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.os.OsPageCardListDerivedState
 import os.kei.ui.page.main.os.OsPageDerivedState
 import os.kei.ui.page.main.os.OsPageMainListActions
@@ -248,7 +248,10 @@ internal fun OsPageMainList(
     val moreIcon = appLucideMoreIcon()
     val expandDockDescription = stringResource(R.string.common_expand)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    MainPageContentBackdropScene(
+        contentBackdrop = contentBackdrop,
+        modifier = Modifier.fillMaxSize(),
+    ) {
         AppPageLazyColumn(
             modifier =
                 Modifier
@@ -514,7 +517,7 @@ internal fun OsPageMainList(
         }
 
         AppFloatingVerticalSearchActionDock(
-            backdrop = contentBackdrop,
+            backdrop = topBarBackdrop,
             expanded = searchExpanded,
             query = queryInput,
             onQueryChange = onQueryInputChange,
