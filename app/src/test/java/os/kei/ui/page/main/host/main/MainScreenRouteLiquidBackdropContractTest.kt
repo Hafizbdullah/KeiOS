@@ -2,10 +2,19 @@ package os.kei.ui.page.main.host.main
 
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MainScreenRouteLiquidBackdropContractTest {
+    @Test
+    fun navigationTransitionVisualsFollowTheKeiOSAppTheme() {
+        val source = sourceFile(MAIN_SCREEN_NAV_HOST_SOURCE)
+
+        assertFalse("isSystemInDarkTheme" in source)
+        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+    }
+
     @Test
     fun liquidRoutesExportManagedPageMaterial() {
         val source = sourceFile(MAIN_SCREEN_NAV_HOST_SOURCE)
@@ -71,6 +80,8 @@ private fun String.composableFunctionBlock(functionName: String): String {
     val end = indexOf("\n@Composable", startIndex = start + marker.length).takeIf { it >= 0 } ?: length
     return substring(start, end)
 }
+
+private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile

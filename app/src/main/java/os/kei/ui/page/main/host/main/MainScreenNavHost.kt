@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -51,6 +50,7 @@ import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.sync.WebDavSyncPage
 import os.kei.ui.page.main.sync.rememberWebDavSyncDataPorts
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyle
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
@@ -102,7 +102,7 @@ internal fun MainScreenNavHost(
     val routeAnimationsEnabled = prefsState.transitionAnimationsEnabled
     val routePredictiveBackAnimationsEnabled =
         routeAnimationsEnabled && predictiveBackPolicy.routePredictiveBackEnabled
-    val isDarkTheme = isSystemInDarkTheme()
+    val isDarkTheme = isAppInDarkTheme()
     val navEffects =
         remember(routeAnimationsEnabled, routePredictiveBackAnimationsEnabled, isDarkTheme) {
             if (routeAnimationsEnabled) {
