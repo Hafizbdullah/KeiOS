@@ -42,6 +42,7 @@ import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -68,11 +69,14 @@ internal fun DebugLiquidSearchFormCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_search_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_search_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideSearchIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidSearchSectionLabel(
             text = stringResource(R.string.debug_component_lab_liquid_search_field_section),
             color = contentColor,
@@ -86,13 +90,13 @@ internal fun DebugLiquidSearchFormCard(
                 value = formQuery,
                 onValueChange = { formQuery = it },
                 label = stringResource(R.string.debug_component_lab_liquid_search_field_placeholder),
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 modifier = Modifier.weight(1f),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 onImeActionDone = { formImeActionCount++ },
             )
             AppLiquidIconButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 icon = appLucideCloseIcon(),
                 contentDescription = stringResource(R.string.common_clear),
                 onClick = { formQuery = "" },
@@ -126,7 +130,7 @@ internal fun DebugLiquidSearchFormCard(
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
         )
         AppStandaloneLiquidBackdropGroup(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
@@ -188,7 +192,7 @@ internal fun DebugLiquidSearchFormCard(
             contentAlignment = Alignment.CenterEnd,
         ) {
             AppFloatingSearchDock(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 expanded = floatingExpanded,
                 query = floatingQuery,
                 onQueryChange = { floatingQuery = it },
@@ -236,7 +240,7 @@ internal fun DebugLiquidSearchFormCard(
             contentAlignment = Alignment.CenterEnd,
         ) {
             AppFloatingVerticalSearchActionDock(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 expanded = verticalExpanded,
                 query = verticalQuery,
                 onQueryChange = { verticalQuery = it },
