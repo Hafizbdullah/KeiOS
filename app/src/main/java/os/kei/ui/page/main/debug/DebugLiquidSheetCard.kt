@@ -2,34 +2,28 @@
 
 package os.kei.ui.page.main.debug
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppLiquidInputField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
@@ -120,35 +114,21 @@ internal fun DebugLiquidSheetCard(
             SheetSectionTitle(stringResource(R.string.debug_component_lab_liquid_sheet_ime_section))
             SheetSectionCard {
                 val fieldDescription = stringResource(R.string.debug_component_lab_liquid_sheet_input)
-                BasicTextField(
+                AppLiquidInputField(
                     value = input,
                     onValueChange = { input = it },
+                    label = fieldDescription,
+                    backdrop = LocalLiquidParentBackdrop.current,
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .semantics { contentDescription = fieldDescription },
-                    textStyle = TextStyle(color = contentColor),
                     singleLine = true,
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
-                                        RoundedCornerShape(14.dp),
-                                    ).padding(horizontal = 14.dp, vertical = 14.dp),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            if (input.isEmpty()) {
-                                Text(
-                                    text = fieldDescription,
-                                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                                )
-                            }
-                            innerTextField()
-                        }
-                    },
+                    variant = GlassVariant.SheetInput,
+                    minHeight = 48.dp,
+                    cornerRadius = 14.dp,
+                    horizontalPadding = 14.dp,
+                    verticalPadding = 14.dp,
                 )
                 SheetDescriptionText(stringResource(R.string.debug_component_lab_liquid_sheet_ime_desc))
             }
