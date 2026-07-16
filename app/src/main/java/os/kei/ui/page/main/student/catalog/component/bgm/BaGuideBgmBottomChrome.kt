@@ -9,10 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,8 +19,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -31,10 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalFocusManager
@@ -42,7 +35,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -57,6 +49,8 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.page.main.widget.glass.AppTextInputContent
+import os.kei.ui.page.main.widget.glass.AppTextInputContentStyle
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.appLiquidSearchPlaceholderColor
 import os.kei.ui.page.main.widget.isAppInDarkTheme
@@ -409,7 +403,7 @@ internal fun BaGuideBgmFloatingBottomChrome(
 }
 
 @Composable
-private fun BaGuideBgmBottomSearchField(
+internal fun BaGuideBgmBottomSearchField(
     query: String,
     placeholder: String?,
     onQueryChange: (String) -> Unit,
@@ -436,7 +430,21 @@ private fun BaGuideBgmBottomSearchField(
             lineHeight = AppTypographyTokens.CardHeader.lineHeight,
             platformStyle = PlatformTextStyle(includeFontPadding = false),
         )
-    Row(
+    val inputContentStyle =
+        remember(textStyle, placeholderColor, accent) {
+            AppTextInputContentStyle(
+                textStyle = textStyle,
+                placeholderColor = placeholderColor,
+                cursorColor = accent,
+                leadingContentGap = 12.dp,
+                placeholderMaxLines = 1,
+            )
+        }
+    AppTextInputContent(
+        value = query,
+        onValueChange = onQueryChange,
+        label = resolvedPlaceholder,
+        style = inputContentStyle,
         modifier =
             modifier
                 .clickable(
@@ -446,56 +454,28 @@ private fun BaGuideBgmBottomSearchField(
                     onFocusActiveChange(true)
                     focusRequester.requestFocus()
                 }.padding(horizontal = 18.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BaGuideBgmDockTabIcon(
-            icon = appLucideSearchIcon(),
-            label = stringResource(R.string.ba_catalog_bgm_nav_search),
-            selected = true,
-            accent = accent,
-            iconSize = 25.dp,
-        )
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            singleLine = true,
-            textStyle = textStyle,
-            cursorBrush = SolidColor(accent),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions =
-                KeyboardActions(
-                    onSearch = {
-                        onFocusActiveChange(false)
-                        focusManager.clearFocus()
-                    },
-                ),
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 24.dp)
-                    .focusRequester(focusRequester)
-                    .onFocusChanged { state ->
-                        onFocusActiveChange(state.isFocused)
-                    },
-            decorationBox = { innerTextField ->
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    if (query.isBlank()) {
-                        BasicText(
-                            text = resolvedPlaceholder,
-                            style = textStyle.copy(color = placeholderColor),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    innerTextField()
-                }
-            },
-        )
-    }
+        fieldModifier = Modifier.defaultMinSize(minHeight = 24.dp),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions =
+            KeyboardActions(
+                onSearch = {
+                    onFocusActiveChange(false)
+                    focusManager.clearFocus()
+                },
+            ),
+        focusRequester = focusRequester,
+        onFocusActiveChange = onFocusActiveChange,
+        leadingContent = {
+            BaGuideBgmDockTabIcon(
+                icon = appLucideSearchIcon(),
+                label = stringResource(R.string.ba_catalog_bgm_nav_search),
+                selected = true,
+                accent = accent,
+                iconSize = 25.dp,
+            )
+        },
+    )
 }
 
 private fun boundedDp(
