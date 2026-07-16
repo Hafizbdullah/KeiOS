@@ -3,10 +3,8 @@
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.foundation.clickable
-import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -16,17 +14,17 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.Backdrop
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -107,13 +105,15 @@ fun AppSupportingBlock(
             Modifier
         }
 
+    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
     Box(
         modifier =
             modifier
                 .then(clickModifier),
     ) {
-        if (appGlassRuntimeEffectsEnabled()) {
+        if (activeBackdrop != null) {
             AppSupportingBlockLiquid(
+                backdrop = activeBackdrop,
                 backgroundColor = backgroundColor,
                 accentColor = accentColor,
                 isDark = isDark,
@@ -130,29 +130,15 @@ fun AppSupportingBlock(
 
 @Composable
 private fun AppSupportingBlockLiquid(
+    backdrop: Backdrop,
     backgroundColor: Color,
     accentColor: Color,
     isDark: Boolean,
     shape: Shape,
     textContent: @Composable () -> Unit,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
-    val parentBackdrop = LocalLiquidParentBackdrop.current
-    val activeBackdrop = parentBackdrop ?: localBackdrop
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .then(
-                    if (parentBackdrop == null) {
-                        Modifier.layerBackdrop(localBackdrop)
-                    } else {
-                        Modifier
-                    },
-                ),
-    )
     LiquidSurface(
-        backdrop = activeBackdrop,
+        backdrop = backdrop,
         shape = shape,
         isInteractive = false,
         surfaceColor = backgroundColor,

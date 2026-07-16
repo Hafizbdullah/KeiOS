@@ -15,10 +15,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppStatusPrimitives
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
@@ -26,9 +22,10 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
@@ -83,14 +80,13 @@ fun StatusPill(
     val textColor = statusPillContentColor(isDark = isDark, accent = resolvedColor)
     val shape = AppStatusPrimitives.pillShape
     val cornerRadius = 999.dp
-    val liquidControlsEnabled = appGlassRuntimeEffectsEnabled()
     val parentBackdrop = LocalLiquidParentBackdrop.current
-    val inheritedBackdrop = backdrop ?: parentBackdrop
+    val activeBackdrop = activeGlassBackdrop(backdrop ?: parentBackdrop)
     val pillModifier =
         Modifier
             .then(modifier)
             .then(
-                if (!liquidControlsEnabled) {
+                if (activeBackdrop == null) {
                     Modifier.drawAppSquircleBackground(cornerRadius) {
                         colorProvider().copy(alpha = backgroundAlpha)
                     }
@@ -117,39 +113,21 @@ fun StatusPill(
             )
         }
     }
-    when {
-        !liquidControlsEnabled -> {
-            StatusPillStatic(
-                modifier = pillModifier,
-                resolvedPadding = resolvedPadding,
-                content = content,
-            )
-        }
-
-        inheritedBackdrop != null -> {
-            StatusPillLiquid(
-                modifier = pillModifier,
-                backdrop = inheritedBackdrop,
-                captureBackdrop = null,
-                shape = shape,
-                surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
-                resolvedPadding = resolvedPadding,
-                content = content,
-            )
-        }
-
-        else -> {
-            val localBackdrop = rememberLayerBackdrop()
-            StatusPillLiquid(
-                modifier = pillModifier,
-                backdrop = localBackdrop,
-                captureBackdrop = localBackdrop,
-                shape = shape,
-                surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
-                resolvedPadding = resolvedPadding,
-                content = content,
-            )
-        }
+    if (activeBackdrop != null) {
+        StatusPillLiquid(
+            modifier = pillModifier,
+            backdrop = activeBackdrop,
+            shape = shape,
+            surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
+            resolvedPadding = resolvedPadding,
+            content = content,
+        )
+    } else {
+        StatusPillStatic(
+            modifier = pillModifier,
+            resolvedPadding = resolvedPadding,
+            content = content,
+        )
     }
 }
 
@@ -175,40 +153,29 @@ private fun StatusPillStatic(
 @Composable
 private fun StatusPillLiquid(
     modifier: Modifier,
-    backdrop: Backdrop?,
-    captureBackdrop: LayerBackdrop?,
+    backdrop: Backdrop,
     shape: Shape,
     surfaceColor: Color,
     resolvedPadding: PaddingValues,
     content: @Composable () -> Unit,
 ) {
-    Box {
-        if (captureBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(captureBackdrop),
-            )
-        }
-        LiquidSurface(
-            backdrop = backdrop,
-            modifier = modifier,
-            shape = shape,
-            isInteractive = false,
-            surfaceColor = surfaceColor,
-            blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
-            lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-            depthEffect = true,
-            shadow = false,
+    LiquidSurface(
+        backdrop = backdrop,
+        modifier = modifier,
+        shape = shape,
+        isInteractive = false,
+        surfaceColor = surfaceColor,
+        blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
+        lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
+        depthEffect = true,
+        shadow = false,
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier.padding(resolvedPadding),
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier.padding(resolvedPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                content()
-            }
+            content()
         }
     }
 }
