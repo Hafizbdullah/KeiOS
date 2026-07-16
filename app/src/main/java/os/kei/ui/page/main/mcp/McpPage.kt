@@ -5,7 +5,6 @@ package os.kei.ui.page.main.mcp
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -41,6 +40,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -75,7 +75,7 @@ fun McpPage(
     val clawSetupPromptTemplate = stringResource(R.string.mcp_claw_setup_prompt_template)
     val currentClawSetupPromptTemplate by rememberUpdatedState(clawSetupPromptTemplate)
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val titleColor = MiuixTheme.colorScheme.onBackground
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     val runningColor = Color(0xFF2E7D32)

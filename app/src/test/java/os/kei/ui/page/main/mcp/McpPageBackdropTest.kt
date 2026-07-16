@@ -2,10 +2,19 @@ package os.kei.ui.page.main.mcp
 
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 
 class McpPageBackdropTest {
+    @Test
+    fun liquidPresentationFollowsTheKeiOSAppTheme() {
+        val source = sourceFile(MCP_PAGE_SOURCE)
+
+        assertFalse("isSystemInDarkTheme" in source)
+        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+    }
+
     @Test
     fun contentProducerPrecedesListAndFloatingDockConsumers() {
         val source = sourceFile(MCP_PAGE_CONTENT_SOURCE)
