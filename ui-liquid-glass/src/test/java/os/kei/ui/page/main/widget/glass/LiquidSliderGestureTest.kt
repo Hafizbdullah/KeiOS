@@ -23,6 +23,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.LayoutDirection
@@ -99,6 +100,46 @@ class LiquidSliderGestureTest {
                     listOf("Key point"),
                 ),
             )
+    }
+
+    @Test
+    fun keyPointSliderWithoutBackdropKeepsSemanticsAndInteractions() {
+        var sliderValue = 0.25f
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                LiquidKeyPointSlider(
+                    value = { sliderValue },
+                    onValueChange = { sliderValue = it },
+                    valueRange = 0f..1f,
+                    visibilityThreshold = 0.001f,
+                    backdrop = null,
+                    keyPoints = listOf(LiquidSliderKeyPoint(0.5f)),
+                    contentDescription = "Fallback key point",
+                    modifier = Modifier.height(28.dp).testTag("fallback-key-point-slider"),
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("fallback-key-point-slider")
+            .assertHeightIsAtLeast(LiquidSliderMinimumInteractiveHeight)
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.ContentDescription,
+                    listOf("Fallback key point"),
+                ),
+            ).assert(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+            .performSemanticsAction(SemanticsActions.SetProgress) { action ->
+                assertTrue(action(0.75f))
+            }
+        composeRule.waitForIdle()
+        assertEquals(0.75f, sliderValue)
+
+        composeRule.onNodeWithTag("fallback-key-point-slider").performTouchInput {
+            click(Offset(x = width * 0.20f, y = height - 2f))
+        }
+        composeRule.waitForIdle()
+        assertTrue(sliderValue < 0.30f)
     }
 
     @Test

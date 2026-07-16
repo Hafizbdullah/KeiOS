@@ -8,9 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.glass.LiquidKeyPointSlider
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LiquidSliderKeyPoint
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -27,25 +26,18 @@ internal fun SettingsLiquidKeyPointSlider(
     activeColor: Color = MiuixTheme.colorScheme.primary,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val sliderBackdrop = rememberLayerBackdrop()
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(48.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(sliderBackdrop),
-        )
         LiquidKeyPointSlider(
             value = { value.coerceIn(valueRange) },
             onValueChange = { next -> onValueChange(next.coerceIn(valueRange)) },
             valueRange = valueRange,
             visibilityThreshold = 0.001f,
-            backdrop = sliderBackdrop,
+            backdrop = LocalLiquidParentBackdrop.current,
             keyPoints = keyPoints.map { point -> LiquidSliderKeyPoint(point) },
             enabled = enabled,
             contentDescription = contentDescription,
