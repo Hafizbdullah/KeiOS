@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.feedback
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -17,11 +18,11 @@ import os.kei.ui.page.main.settings.support.formatBytes
 import os.kei.ui.page.main.settings.support.formatLogTime
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -64,11 +65,14 @@ internal fun FeedbackStatusCard(
         },
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
     ) {
-        Text(
+        AppSupportingBlock(
             text = stringResource(R.string.feedback_issue_status_summary),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
+            accentColor = MiuixTheme.colorScheme.onBackgroundVariant,
+            containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.14f),
+            contentColor = MiuixTheme.colorScheme.onBackgroundVariant,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            typography = AppTypographyTokens.Supporting,
+            fillWidth = true,
         )
     }
 }
