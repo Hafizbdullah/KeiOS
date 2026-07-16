@@ -17,6 +17,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +46,7 @@ fun AppSurfaceCard(
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
     containerColor: Color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+    shape: Shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
     borderColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
     borderWidth: Dp = 0.dp,
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
@@ -54,6 +56,8 @@ fun AppSurfaceCard(
     exportBackdropToContent: Boolean = false,
     clipContent: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
+    blurRadius: Dp = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content),
+    lensRadius: Dp = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content),
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     stateDescription: String? = null,
@@ -80,8 +84,6 @@ fun AppSurfaceCard(
                 this.stateDescription = description
             }
         } ?: Modifier
-    val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content)
-    val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content)
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
     val exportedContentBackdrop =
@@ -109,6 +111,7 @@ fun AppSurfaceCard(
             stateModifier = stateModifier,
             interactionSource = interactionSource,
             resolvedPressSafePadding = resolvedPressSafePadding,
+            shape = shape,
             containerColor = containerColor,
             borderColor = borderColor,
             borderWidth = borderWidth,
@@ -133,6 +136,7 @@ fun AppSurfaceCard(
             stateModifier = stateModifier,
             interactionSource = interactionSource,
             resolvedPressSafePadding = resolvedPressSafePadding,
+            shape = shape,
             containerColor = containerColor,
             borderColor = borderColor,
             borderWidth = borderWidth,
@@ -160,6 +164,7 @@ private fun AppSurfaceCardFrame(
     stateModifier: Modifier,
     interactionSource: MutableInteractionSource,
     resolvedPressSafePadding: Dp,
+    shape: Shape,
     containerColor: Color,
     borderColor: Color,
     borderWidth: Dp,
@@ -188,7 +193,7 @@ private fun AppSurfaceCardFrame(
                     .fillMaxWidth()
                     .then(clickModifier)
                     .then(stateModifier),
-            shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
+            shape = shape,
             isInteractive = showIndication && clickable,
             surfaceColor = containerColor,
             blurRadius = blurRadius,

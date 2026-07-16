@@ -15,6 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.shapes.RoundedRectangle
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,6 +46,28 @@ import kotlin.test.assertSame
 class AppSurfaceCardBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun acceptsPageSpecificShapeAndOpticalRadii() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppSurfaceCard(
+                    shape = RoundedRectangle(20.dp),
+                    blurRadius = 8.dp,
+                    lensRadius = 24.dp,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(24.dp)
+                                .testTag("custom-surface-card"),
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("custom-surface-card").assertExists()
+    }
 
     @Test
     fun surfaceCardExportsIndependentBackdropToContent() {
