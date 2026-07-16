@@ -2,11 +2,20 @@
 
 package os.kei.ui.page.main.feedback
 
+import android.view.WindowInsets as AndroidWindowInsets
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,6 +36,17 @@ internal fun FeedbackLiquidTextField(
     singleLine: Boolean = false,
 ) {
     val isBody = minHeight > 120.dp
+    var fieldFocused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
+
+    BackHandler(enabled = fieldFocused) {
+        focusManager.clearFocus(force = true)
+        view.windowInsetsController?.hide(AndroidWindowInsets.Type.ime())
+            ?: keyboardController?.hide()
+    }
+
     AppStandaloneLiquidInputField(
         value = value,
         onValueChange = onValueChange,
@@ -45,6 +65,7 @@ internal fun FeedbackLiquidTextField(
         horizontalPadding = 14.dp,
         verticalPadding = 12.dp,
         placeholderMaxLines = if (isBody) 2 else 1,
+        onFocusActiveChange = { fieldFocused = it },
     )
 }
 

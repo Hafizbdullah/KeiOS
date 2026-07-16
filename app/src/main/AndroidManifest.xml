@@ -168,7 +168,8 @@
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:enableOnBackInvokedCallback="true"
             android:exported="false"
-            android:label="@string/feedback_issue_title" />
+            android:label="@string/feedback_issue_title"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.page.main.ba.BaActivityCalendarActivity"
