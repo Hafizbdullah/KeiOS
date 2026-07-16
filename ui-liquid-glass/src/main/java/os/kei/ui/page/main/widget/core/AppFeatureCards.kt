@@ -3,43 +3,26 @@
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
-import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
-import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -64,171 +47,30 @@ fun AppSurfaceCard(
     stateDescription: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val clickable = onClick != null || onLongClick != null
-    val useLiquidClick = onClick != null && onLongClick == null
-    val clickModifier =
-        if (clickable && !useLiquidClick) {
-            Modifier.combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = { onClick?.invoke() },
-                onLongClick = onLongClick,
-            )
-        } else {
-            Modifier
-        }
-    val stateModifier =
-        stateDescription?.let { description ->
-            Modifier.semantics {
-                this.stateDescription = description
-            }
-        } ?: Modifier
-    val parentBackdrop = LocalLiquidParentBackdrop.current
-    val inheritedBackdrop = backdrop ?: parentBackdrop
-    val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
-    val exportedContentBackdrop =
-        if (exportBackdropToContent && activeBackdrop != null) {
-            rememberLayerBackdrop()
-        } else {
-            null
-        }
-    val resolvedPressSafePadding =
-        if (pressSafePadding == Dp.Unspecified) {
-            if (showIndication && clickable) {
-                AppInteractiveTokens.compactLiquidPressSafePadding
-            } else {
-                0.dp
-            }
-        } else {
-            pressSafePadding
-        }
-    if (activeBackdrop != null) {
-        AppSurfaceCardFrame(
-            modifier = modifier,
-            backdrop = activeBackdrop,
-            exportedBackdrop = exportedContentBackdrop,
-            clickModifier = clickModifier,
-            stateModifier = stateModifier,
-            interactionSource = interactionSource,
-            resolvedPressSafePadding = resolvedPressSafePadding,
-            shape = shape,
-            containerColor = containerColor,
-            borderColor = borderColor,
-            borderWidth = borderWidth,
-            contentColor = contentColor,
-            depthEffect = depthEffect,
-            highlightAlpha = highlightAlpha,
-            showIndication = showIndication,
-            clickable = clickable,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            clipContent = clipContent,
-            useLiquidClick = useLiquidClick,
-            onClick = onClick,
-            content = content,
-        )
-    } else {
-        AppSurfaceCardFrame(
-            modifier = modifier,
-            backdrop = null,
-            exportedBackdrop = null,
-            clickModifier = clickModifier,
-            stateModifier = stateModifier,
-            interactionSource = interactionSource,
-            resolvedPressSafePadding = resolvedPressSafePadding,
-            shape = shape,
-            containerColor = containerColor,
-            borderColor = borderColor,
-            borderWidth = borderWidth,
-            contentColor = contentColor,
-            depthEffect = depthEffect,
-            highlightAlpha = highlightAlpha,
-            showIndication = showIndication,
-            clickable = clickable,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            clipContent = clipContent,
-            useLiquidClick = useLiquidClick,
-            onClick = onClick,
-            content = content,
-        )
-    }
-}
-
-@Composable
-private fun AppSurfaceCardFrame(
-    modifier: Modifier,
-    backdrop: Backdrop?,
-    exportedBackdrop: LayerBackdrop?,
-    clickModifier: Modifier,
-    stateModifier: Modifier,
-    interactionSource: MutableInteractionSource,
-    resolvedPressSafePadding: Dp,
-    shape: Shape,
-    containerColor: Color,
-    borderColor: Color,
-    borderWidth: Dp,
-    contentColor: Color,
-    depthEffect: Boolean,
-    highlightAlpha: Float?,
-    showIndication: Boolean,
-    clickable: Boolean,
-    blurRadius: Dp,
-    lensRadius: Dp,
-    clipContent: Boolean,
-    useLiquidClick: Boolean,
-    onClick: (() -> Unit)?,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(resolvedPressSafePadding),
+    AppSurfaceBox(
+        modifier = modifier,
+        backdrop = backdrop,
+        surfaceColor = containerColor,
+        shape = shape,
+        borderColor = borderColor,
+        borderWidth = borderWidth,
+        contentColor = contentColor,
+        isInteractive = showIndication && (onClick != null || onLongClick != null),
+        depthEffect = depthEffect,
+        highlightAlpha = highlightAlpha,
+        exportBackdropToContent = exportBackdropToContent,
+        clipContent = clipContent,
+        pressSafePadding = pressSafePadding,
+        blurRadius = blurRadius,
+        lensRadius = lensRadius,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        stateDescription = stateDescription,
     ) {
-        LiquidSurface(
-            backdrop = backdrop,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .then(clickModifier)
-                    .then(stateModifier),
-            shape = shape,
-            isInteractive = showIndication && clickable,
-            surfaceColor = containerColor,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            depthEffect = depthEffect,
-            highlightAlpha = highlightAlpha,
-            borderColor = borderColor,
-            borderWidth = borderWidth,
-            interactionSource = interactionSource,
-            clipContent = clipContent,
-            exportedBackdrop = exportedBackdrop,
-            onClick = if (useLiquidClick) onClick else null,
-        ) {
-            if (exportedBackdrop != null) {
-                CompositionLocalProvider(
-                    LocalLiquidParentBackdrop provides exportedBackdrop,
-                    LocalLiquidParentBackdropOverridesFallback provides true,
-                    LocalContentColor provides contentColor,
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        content = content,
-                    )
-                }
-            } else {
-                CompositionLocalProvider(LocalContentColor provides contentColor) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        content = content,
-                    )
-                }
-            }
-        }
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            content = content,
+        )
     }
 }
 
