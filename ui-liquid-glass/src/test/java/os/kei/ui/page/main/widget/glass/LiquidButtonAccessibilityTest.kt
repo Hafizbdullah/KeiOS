@@ -9,11 +9,15 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -111,6 +115,68 @@ class LiquidButtonAccessibilityTest {
 
         assertEquals(1, iconClicks)
         assertEquals(0, disabledClicks)
+    }
+
+    @Test
+    fun textButtonCanExposeRadioSelectionWithoutChangingItsInteractionBounds() {
+        var clickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppLiquidTextButton(
+                    backdrop = null,
+                    text = "Selected choice",
+                    onClick = { clickCount++ },
+                    role = Role.RadioButton,
+                    selected = true,
+                    variant = GlassVariant.Compact,
+                    modifier = Modifier.testTag("radio-text-button"),
+                )
+            }
+        }
+
+        val radioRole = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        composeRule.onAllNodes(radioRole).assertCountEquals(1)
+        composeRule
+            .onNodeWithTag("radio-text-button")
+            .assertWidthIsAtLeast(48.dp)
+            .assertHeightIsAtLeast(48.dp)
+            .assert(radioRole)
+            .assertIsSelected()
+            .assertHasClickAction()
+            .performClick()
+
+        composeRule.runOnIdle { assertEquals(1, clickCount) }
+    }
+
+    @Test
+    fun standaloneTextButtonForwardsCheckboxToggleState() {
+        var clickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppStandaloneLiquidTextButton(
+                    text = "Enabled filter",
+                    onClick = { clickCount++ },
+                    role = Role.Checkbox,
+                    toggleableState = ToggleableState.On,
+                    buttonModifier = Modifier.testTag("checkbox-standalone-button"),
+                    variant = GlassVariant.Compact,
+                    pressSafePadding = 0.dp,
+                )
+            }
+        }
+
+        val checkboxRole = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+        composeRule.onAllNodes(checkboxRole).assertCountEquals(1)
+        composeRule
+            .onNodeWithTag("checkbox-standalone-button")
+            .assertWidthIsAtLeast(48.dp)
+            .assertHeightIsAtLeast(48.dp)
+            .assert(checkboxRole)
+            .assertIsOn()
+            .assertHasClickAction()
+            .performClick()
+
+        composeRule.runOnIdle { assertEquals(1, clickCount) }
     }
 
     @Test

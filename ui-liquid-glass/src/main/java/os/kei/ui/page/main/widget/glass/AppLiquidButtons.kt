@@ -32,6 +32,10 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -512,6 +516,9 @@ fun AppLiquidTextButton(
     containerAlphaOverride: Float? = null,
     leadingIconModifier: Modifier = Modifier,
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
+    toggleableState: ToggleableState? = null,
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = activeGlassBackdrop(backdrop)
@@ -618,6 +625,15 @@ fun AppLiquidTextButton(
         } else {
             Modifier
         }
+    val stateSemanticsModifier =
+        if (selected != null || toggleableState != null) {
+            Modifier.semantics {
+                selected?.let { this.selected = it }
+                toggleableState?.let { this.toggleableState = it }
+            }
+        } else {
+            Modifier
+        }
 
     LaunchedEffect(isPressed, onPressedChange) {
         onPressedChange?.invoke(isPressed)
@@ -635,7 +651,7 @@ fun AppLiquidTextButton(
                             interactionSource = interactionSource,
                             indication = null,
                             enabled = enabled,
-                            role = Role.Button,
+                            role = role,
                             onClick = { if (enabled) onClick() },
                             onLongClick = longClick,
                         )
@@ -644,11 +660,12 @@ fun AppLiquidTextButton(
                             enabled = enabled,
                             interactionSource = interactionSource,
                             indication = null,
-                            role = Role.Button,
+                            role = role,
                             onClick = onClick,
                         )
                     },
-                ).minimumLiquidTouchTargetSize()
+                ).then(stateSemanticsModifier)
+                .minimumLiquidTouchTargetSize()
                 .then(surfaceModifier)
                 .defaultMinSize(minHeight = minHeight)
                 .graphicsLayer {

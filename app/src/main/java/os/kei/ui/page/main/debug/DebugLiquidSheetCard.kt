@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.debug
 
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -66,19 +68,25 @@ internal fun DebugLiquidSheetCard(
             AppSwitch(checked = allowDismiss, onCheckedChange = { allowDismiss = it })
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             LiquidSheetInitialDetent.entries.forEach { detent ->
+                val selected = detent == initialDetent
                 AppLiquidTextButton(
                     backdrop = cardBackdrop,
                     text = detent.debugLabel(),
                     onClick = { initialDetent = detent },
                     modifier = Modifier.weight(1f),
-                    variant = if (detent == initialDetent) GlassVariant.SheetPrimaryAction else GlassVariant.Compact,
+                    variant = if (selected) GlassVariant.SheetPrimaryAction else GlassVariant.Compact,
                     minHeight = 42.dp,
                     horizontalPadding = 4.dp,
                     textColor = contentColor,
+                    role = Role.RadioButton,
+                    selected = selected,
                 )
             }
         }

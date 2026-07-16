@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -63,6 +65,9 @@ fun AppStandaloneLiquidTextButton(
     containerAlphaOverride: Float? = null,
     leadingIconModifier: Modifier = Modifier,
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
+    toggleableState: ToggleableState? = null,
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -103,6 +108,9 @@ fun AppStandaloneLiquidTextButton(
             containerAlphaOverride = containerAlphaOverride,
             leadingIconModifier = leadingIconModifier,
             leadingContentGap = leadingContentGap,
+            role = role,
+            selected = selected,
+            toggleableState = toggleableState,
         )
     }
 }
