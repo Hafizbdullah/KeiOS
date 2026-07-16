@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
@@ -35,6 +34,7 @@ import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -107,14 +107,14 @@ private fun BaLiquidSurfaceColumn(
         } else {
             backdrop ?: parentBackdrop
         }
-    val localBackdrop = rememberLayerBackdrop()
-    val activeBackdrop = when {
-        !effectsEnabled -> null
-        inheritedBackdrop != null -> inheritedBackdrop
-        else -> localBackdrop
-    }
+    val activeBackdrop =
+        if (effectsEnabled) {
+            activeGlassBackdrop(inheritedBackdrop)
+        } else {
+            null
+        }
     val exportedContentBackdrop =
-        if (activeBackdrop != null && inheritedBackdrop != null) {
+        if (activeBackdrop != null) {
             rememberLayerBackdrop()
         } else {
             null
@@ -128,13 +128,6 @@ private fun BaLiquidSurfaceColumn(
 
     if (activeBackdrop != null) {
         Box(modifier = modifier.padding(pressSafePadding)) {
-            if (inheritedBackdrop == null) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .layerBackdrop(localBackdrop)
-                )
-            }
             LiquidSurface(
                 backdrop = activeBackdrop,
                 modifier = Modifier

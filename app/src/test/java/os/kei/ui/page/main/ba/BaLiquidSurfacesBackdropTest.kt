@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.ba
 
 import android.app.Application
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -21,6 +22,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -134,11 +137,51 @@ class BaLiquidSurfacesBackdropTest {
     }
 
     @Test
+    fun runtimeDisabledCardDoesNotPublishAnEmptyMaterial() {
+        var parentBackdrop: Backdrop? = null
+        var descendantBackdrop: Backdrop? = null
+        var descendantActiveBackdrop: Backdrop? = null
+        var descendantOverridesFallback = true
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                parentBackdrop = backdrop
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides backdrop,
+                    LocalLiquidControlsEnabled provides false,
+                ) {
+                    BaLiquidCard(backdrop = null) {
+                        val observedBackdrop = LocalLiquidParentBackdrop.current
+                        val observedActiveBackdrop = activeGlassBackdrop(observedBackdrop)
+                        val observedOverride = LocalLiquidParentBackdropOverridesFallback.current
+                        SideEffect {
+                            descendantBackdrop = observedBackdrop
+                            descendantActiveBackdrop = observedActiveBackdrop
+                            descendantOverridesFallback = observedOverride
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertNotNull(parentBackdrop)
+            assertSame(parentBackdrop, descendantBackdrop)
+            assertNull(descendantActiveBackdrop)
+            assertFalse(descendantOverridesFallback)
+        }
+    }
+
+    @Test
     fun surfaceMaterialsFollowTheAppTheme() {
         val source = baLiquidSurfacesSource()
 
         assertFalse("isSystemInDarkTheme" in source)
         assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+        assertTrue("activeGlassBackdrop(inheritedBackdrop)" in source)
+        assertFalse(".layerBackdrop(" in source)
+        assertFalse("localBackdrop" in source)
     }
 }
 
