@@ -54,8 +54,8 @@ internal fun CompactBottomBarDock(
 internal fun AnimatedCompactBottomBar(
     expanded: Boolean,
     modifier: Modifier = Modifier,
-    expandedContent: @Composable BoxScope.(Modifier) -> Unit,
-    compactContent: @Composable BoxScope.(Modifier) -> Unit,
+    expandedContent: @Composable BoxScope.(Modifier, Boolean) -> Unit,
+    compactContent: @Composable BoxScope.(Modifier, Boolean) -> Unit,
 ) {
     val density = LocalDensity.current
     val slideOffsetPx = with(density) { 16.dp.toPx() }
@@ -96,6 +96,7 @@ internal fun AnimatedCompactBottomBar(
                     scaleX = 0.86f + 0.14f * progress
                     scaleY = 0.94f + 0.06f * progress
                 },
+                expanded,
             )
         }
         if (!transition.currentState || !transition.targetState) {
@@ -108,6 +109,7 @@ internal fun AnimatedCompactBottomBar(
                     scaleX = 0.88f + 0.12f * progress
                     scaleY = 0.88f + 0.12f * progress
                 },
+                !expanded,
             )
         }
     }

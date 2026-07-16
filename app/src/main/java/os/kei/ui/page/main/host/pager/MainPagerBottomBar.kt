@@ -48,7 +48,7 @@ internal fun MainPagerBottomBar(
 ) {
     AnimatedCompactBottomBar(
         expanded = visible,
-        expandedContent = { motionModifier ->
+        expandedContent = { motionModifier, interactionEnabled ->
             Box(modifier = motionModifier.align(Alignment.BottomCenter)) {
                 val bottomBarTabs: @Composable RowScope.() -> Unit = {
                     tabs.forEachIndexed { index, page ->
@@ -140,12 +140,13 @@ internal fun MainPagerBottomBar(
                         backdrop = backdrop,
                         tabsCount = tabs.size,
                         expandToMaxWidth = true,
+                        interactionEnabled = interactionEnabled,
                         content = bottomBarTabs,
                     )
                 }
             }
         },
-        compactContent = { motionModifier ->
+        compactContent = { motionModifier, interactionEnabled ->
             Box(
                 modifier =
                     motionModifier
@@ -164,6 +165,7 @@ internal fun MainPagerBottomBar(
                 CompactBottomBarDock(
                     backdrop = backdrop,
                     onClick = onExpand,
+                    enabled = interactionEnabled,
                     modifier = Modifier.testTag(page.bottomTabTestTag()),
                 ) {
                     val iconModifier =

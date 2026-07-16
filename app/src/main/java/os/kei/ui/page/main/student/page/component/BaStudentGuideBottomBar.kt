@@ -48,7 +48,7 @@ internal fun BaStudentGuideBottomBar(
     val showTabLabels = guideBottomBarShowsLabels(bottomTabs.size, LocalDensity.current.fontScale)
     AnimatedCompactBottomBar(
         expanded = visible,
-        expandedContent = { motionModifier ->
+        expandedContent = { motionModifier, interactionEnabled ->
             Box(modifier = motionModifier.align(Alignment.BottomCenter)) {
                 val bottomBarModifier =
                     Modifier
@@ -126,11 +126,12 @@ internal fun BaStudentGuideBottomBar(
                     tabsCount = bottomTabs.size,
                     isLiquidEffectEnabled = isLiquidEffectEnabled,
                     expandToMaxWidth = true,
+                    interactionEnabled = interactionEnabled,
                     content = bottomBarTabs,
                 )
             }
         },
-        compactContent = { motionModifier ->
+        compactContent = { motionModifier, interactionEnabled ->
             Box(
                 modifier =
                     motionModifier
@@ -145,6 +146,7 @@ internal fun BaStudentGuideBottomBar(
                 CompactBottomBarDock(
                     backdrop = backdrop,
                     onClick = onExpand,
+                    enabled = interactionEnabled,
                 ) {
                     if (tab.localLogoRes != null) {
                         Icon(

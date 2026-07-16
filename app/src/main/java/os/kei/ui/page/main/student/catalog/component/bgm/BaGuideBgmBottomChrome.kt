@@ -326,13 +326,13 @@ internal fun BaGuideBgmFloatingBottomChrome(
                             y = tabGroupYState.value.roundToPx(),
                         )
                     }.height(tabGroupHeight),
-            expandedContent = { motionModifier ->
+            expandedContent = { motionModifier, interactionEnabled ->
                 Box(modifier = motionModifier.align(Alignment.BottomStart)) {
                     BaGuideBgmExpandedDock(
                         tabs = tabs,
                         selectedDockKey = selectedDockKey,
                         selectedPositionProvider = selectedDockPositionProvider,
-                        interactionEnabled = dockExpanded,
+                        interactionEnabled = interactionEnabled,
                         backdrop = backdrop,
                         onSelectedDockKeyChange = onSelectedDockKeyChange,
                         modifier =
@@ -342,14 +342,14 @@ internal fun BaGuideBgmFloatingBottomChrome(
                     )
                 }
             },
-            compactContent = { motionModifier ->
+            compactContent = { motionModifier, interactionEnabled ->
                 val compactTab = tabs.firstOrNull { it.key == selectedDockKey } ?: tabs.firstOrNull()
                 if (compactTab != null) {
                     Box(modifier = motionModifier.align(Alignment.BottomStart)) {
                         CompactBottomBarDock(
                             backdrop = backdrop,
                             onClick = onCompactDockClick,
-                            enabled = !dockExpanded,
+                            enabled = interactionEnabled,
                         ) {
                             BaGuideBgmDockTabIcon(
                                 icon = compactTab.icon,

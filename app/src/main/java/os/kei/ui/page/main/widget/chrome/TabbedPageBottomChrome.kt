@@ -226,7 +226,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                 Modifier
                     .fillMaxWidth()
                     .height(size),
-            expandedContent = { motionModifier ->
+            expandedContent = { motionModifier, interactionEnabled ->
                 Box(modifier = motionModifier.align(Alignment.BottomStart)) {
                     TabbedPageCategoryBar(
                         categories = categories,
@@ -237,15 +237,17 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         collapsedDockWidth = collapsedDockWidth,
                         backdrop = backdrop,
                         isLiquidEffectEnabled = isLiquidEffectEnabled,
+                        interactionEnabled = interactionEnabled,
                         onSelectCategory = onSelectCategory,
                     )
                 }
             },
-            compactContent = { motionModifier ->
+            compactContent = { motionModifier, interactionEnabled ->
                 Box(modifier = motionModifier.align(Alignment.BottomStart)) {
                     TabbedPageCompactCategoryDock(
                         category = categories[safeSelectedPage],
                         backdrop = backdrop,
+                        enabled = interactionEnabled,
                         onClick = {
                             when (
                                 tabbedPageCompactDockAction(
@@ -316,6 +318,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     collapsedDockWidth: Dp,
     backdrop: LayerBackdrop,
     isLiquidEffectEnabled: Boolean,
+    interactionEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
 ) {
     val bottomBarTabs: @Composable RowScope.() -> Unit = {
@@ -371,6 +374,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
         backdrop = backdrop,
         tabsCount = categories.size,
         isLiquidEffectEnabled = isLiquidEffectEnabled,
+        interactionEnabled = interactionEnabled,
         content = bottomBarTabs,
     )
 }
@@ -379,6 +383,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
 private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(
     category: C,
     backdrop: LayerBackdrop,
+    enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -386,6 +391,7 @@ private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(
         modifier = modifier,
         backdrop = backdrop,
         onClick = onClick,
+        enabled = enabled,
     ) {
         Icon(
             imageVector = ImageVector.vectorResource(category.iconRes),
