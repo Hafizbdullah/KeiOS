@@ -1,10 +1,10 @@
 package os.kei.ui.page.main.jsonimport
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import os.kei.R
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -71,7 +71,7 @@ internal fun jsonImportStageColor(stage: KeiOSJsonImportStage): Color =
 
 @Composable
 internal fun jsonImportHeroCardContainerColor(accent: Color): Color =
-    if (isSystemInDarkTheme()) {
+    if (isAppInDarkTheme()) {
         accent.copy(alpha = 0.16f)
     } else {
         Color.White.copy(alpha = 0.78f)
@@ -79,7 +79,7 @@ internal fun jsonImportHeroCardContainerColor(accent: Color): Color =
 
 @Composable
 internal fun jsonImportCardContainerColor(): Color =
-    if (isSystemInDarkTheme()) {
+    if (isAppInDarkTheme()) {
         MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f)
     } else {
         Color.White.copy(alpha = 0.76f)
@@ -87,7 +87,7 @@ internal fun jsonImportCardContainerColor(): Color =
 
 @Composable
 internal fun jsonImportSecondaryTextColor(): Color =
-    if (isSystemInDarkTheme()) {
+    if (isAppInDarkTheme()) {
         MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f)
     } else {
         Color(0xFF64748B).copy(alpha = 0.96f)
