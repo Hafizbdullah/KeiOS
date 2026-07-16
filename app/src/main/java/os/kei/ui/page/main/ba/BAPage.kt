@@ -29,6 +29,8 @@ import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BASessionState
 import os.kei.ui.page.main.common.applicationViewModel
+import os.kei.ui.page.main.host.pager.MainPageBackdropSet
+import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.chrome.AppScaffold
@@ -56,12 +58,7 @@ fun BAPage(
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
-    val backdrops =
-        rememberMainPageBackdropSet(
-            keyPrefix = "ba",
-            refreshOnCompositionEnter = true,
-            distinctLayers = pageBackdropEffectsEnabled,
-        )
+    val backdrops = rememberBaPageBackdropSet(pageBackdropEffectsEnabled)
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val baServerCn = stringResource(R.string.ba_server_cn)
     val baServerGlobal = stringResource(R.string.ba_server_global)
@@ -344,7 +341,10 @@ fun BAPage(
         calendarPoolViewModel.refreshUnreadCounts(baRouteState.serverIndex)
     }
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        MainPageContentBackdropScene(
+            contentBackdrop = backdrops.content,
+            modifier = Modifier.fillMaxSize(),
+        ) {
             AppScaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
@@ -382,7 +382,7 @@ fun BAPage(
                 )
             }
             BaPageFloatingDock(
-                backdrop = backdrops.content,
+                backdrop = backdrops.topBar,
                 runtime = runtime,
                 unreadCounts = calendarPoolUnreadCounts,
                 onOpenCalendar = {
@@ -432,3 +432,11 @@ fun BAPage(
         )
     }
 }
+
+@Composable
+internal fun rememberBaPageBackdropSet(pageBackdropEffectsEnabled: Boolean): MainPageBackdropSet =
+    rememberMainPageBackdropSet(
+        keyPrefix = "ba",
+        refreshOnCompositionEnter = true,
+        distinctLayers = pageBackdropEffectsEnabled,
+    )
