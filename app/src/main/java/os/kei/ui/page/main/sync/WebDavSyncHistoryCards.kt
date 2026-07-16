@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.sync
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.RowScope
@@ -18,6 +17,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -136,9 +136,8 @@ internal fun WebDavSyncHistoryEntryCard(
         headerEndActions = { HistoryStatusPill(entry.status) },
         contentVerticalSpacing = CardLayoutRhythm.compactSectionGap,
     ) {
-        Column(
+        AppInfoListBody(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
         ) {
             AppInfoRow(
                 label = stringResource(R.string.webdav_sync_history_label_reason),
