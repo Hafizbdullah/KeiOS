@@ -20,20 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow.Companion.Clip
 import androidx.compose.ui.unit.dp
-import os.kei.R
 import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.status.StatusPill
-import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
-import os.kei.ui.page.main.widget.support.buildTextCopyPayload
-import os.kei.ui.page.main.widget.support.rememberLightTextCopyAction
-import os.kei.ui.page.main.widget.support.rememberTextCopyExpandedEnabled
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -124,32 +118,35 @@ fun AboutCompactInfoRow(
     enableLongPressCopy: Boolean = true,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val displayValue = value.ifBlank { stringResource(R.string.common_na) }
-    val copyPayload =
-        remember(title, displayValue) {
-            buildTextCopyPayload(title, displayValue)
-        }
-    val quickCopyAction = rememberLightTextCopyAction(copyPayload)
-    val expandedCopyMode = rememberTextCopyExpandedEnabled()
-    AboutCompactRow(
-        title = title,
-        modifier = modifier,
-        titleIcon = titleIcon,
-        onClick = onClick,
-        onLongClick = onLongClick ?: if (enableLongPressCopy && !expandedCopyMode) quickCopyAction else null,
-    ) {
-        CopyModeSelectionContainer(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = displayValue,
-                color = valueColor,
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                maxLines = Int.MAX_VALUE,
-                overflow = Clip,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.End,
-            )
-        }
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val maxTitleWidth = (maxWidth * 0.44f).coerceAtLeast(96.dp)
+        AppInfoRow(
+            label = title,
+            value = value,
+            labelColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f),
+            valueColor = valueColor,
+            labelMinWidth = 70.dp,
+            labelMaxWidth = maxTitleWidth,
+            horizontalSpacing = CardLayoutRhythm.infoRowGap,
+            rowVerticalPadding = CardLayoutRhythm.compactSectionGap,
+            emphasizedValue = false,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            labelLeadingContent =
+                if (titleIcon == null) {
+                    null
+                } else {
+                    {
+                        Icon(
+                            imageVector = titleIcon,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onBackgroundVariant,
+                        )
+                    }
+                },
+            labelContentSpacing = 6.dp,
+            enableLongPressCopy = enableLongPressCopy,
+        )
     }
 }
 
