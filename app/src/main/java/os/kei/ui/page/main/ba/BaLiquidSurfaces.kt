@@ -2,7 +2,6 @@ package os.kei.ui.page.main.ba
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +38,7 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
@@ -61,7 +61,7 @@ private fun BaLiquidSurfaceColumn(
     pressFeedback: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val glass = glassStyle(
         isDark = isDark,
         variant = variant,

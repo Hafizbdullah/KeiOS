@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import java.io.File
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -130,6 +132,30 @@ class BaLiquidSurfacesBackdropTest {
             assertFalse(disabledOverride)
         }
     }
+
+    @Test
+    fun surfaceMaterialsFollowTheAppTheme() {
+        val source = baLiquidSurfacesSource()
+
+        assertFalse("isSystemInDarkTheme" in source)
+        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+    }
 }
 
 class BaLiquidSurfacesBackdropTestApp : Application()
+
+private fun baLiquidSurfacesSource(): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, BA_LIQUID_SURFACES_SOURCE) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $BA_LIQUID_SURFACES_SOURCE from $workingDirectory"
+    }.readText()
+}
+
+private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
+
+private const val BA_LIQUID_SURFACES_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/ba/BaLiquidSurfaces.kt"
