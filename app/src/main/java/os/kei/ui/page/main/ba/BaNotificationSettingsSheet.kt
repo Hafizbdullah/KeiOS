@@ -19,8 +19,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaCalendarPoolNotifyLeadOption
@@ -31,6 +29,7 @@ import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidKeyPointSlider
 import os.kei.ui.page.main.widget.glass.LiquidSliderKeyPoint
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -363,19 +362,13 @@ private fun BaApThresholdQuickSlider(
             0f
         }
     val keyPointValues = remember { listOf(0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f) }
-    val sliderBackdrop = rememberLayerBackdrop()
+    val sliderBackdrop = LocalLiquidParentBackdrop.current
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(48.dp),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(sliderBackdrop),
-        )
         LiquidKeyPointSlider(
             value = { sliderValue.coerceIn(0f, 1f) },
             onValueChange = { value ->
