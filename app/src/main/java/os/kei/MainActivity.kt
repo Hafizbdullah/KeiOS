@@ -199,12 +199,11 @@ class MainActivity : ComponentActivity() {
             MiuixTheme(controller = controller) {
                 CompositionLocalProvider(LocalOverscrollFactory provides null) {
                     SystemBarAutoStyle(state.appThemeMode)
-                    // Wrap MainScreen in SceneBackdropHost so any glass-on-content surface
-                    // (LiquidGlassBottomSheet etc.) has a real LayerBackdrop to sample.
-                    // Without this the bottom sheet's drawBackdrop has nothing behind it and
-                    // falls back to a flat translucent rectangle.
-                    SceneBackdropHost(backgroundColor = MiuixTheme.colorScheme.background) {
-                        Box(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxSize()) {
+                        // Capture only real app content. The FPS overlay updates at 2 Hz and is
+                        // intentionally kept outside this producer so debug telemetry cannot
+                        // invalidate or become part of descendant Liquid Glass samples.
+                        SceneBackdropHost(backgroundColor = MiuixTheme.colorScheme.background) {
                             MainScreen(
                                 appLabel = appLabel,
                                 hostState = state,
@@ -212,9 +211,9 @@ class MainActivity : ComponentActivity() {
                                 shizukuApiUtils = shizukuApiUtils,
                                 mcpServerManager = mcpServerManager,
                             )
-                            if (BuildConfig.DEBUG) {
-                                DebugFpsOverlay()
-                            }
+                        }
+                        if (BuildConfig.DEBUG) {
+                            DebugFpsOverlay()
                         }
                     }
                 }
