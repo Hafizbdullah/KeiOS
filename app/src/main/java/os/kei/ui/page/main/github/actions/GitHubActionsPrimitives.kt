@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,7 +19,9 @@ import os.kei.R
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
@@ -169,29 +172,69 @@ internal fun GitHubActionsLoadingCard(text: String) {
 internal fun GitHubActionsNoticeCard(
     text: String,
     accent: Color,
-    isDark: Boolean
+    isDark: Boolean,
+    modifier: Modifier = Modifier,
 ) {
+    val colors = githubActionsNoticeColors(accent = accent, isDark = isDark)
+    AppSupportingBlock(
+        text = text,
+        modifier = modifier.fillMaxWidth(),
+        accentColor = colors.accentColor,
+        containerColor = colors.containerColor,
+        contentColor = colors.contentColor,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        typography = AppTypographyTokens.Body,
+        cornerRadius = CardLayoutRhythm.cardCornerRadius,
+        borderColor = colors.borderColor,
+        borderWidth = 1.dp,
+        fillWidth = true,
+        depthEffect = true,
+        highlightAlpha = 0.82f,
+        shadow = true,
+        shadowAlpha = 0.10f,
+    )
+}
+
+@Immutable
+internal data class GitHubActionsNoticeColors(
+    val accentColor: Color,
+    val containerColor: Color,
+    val borderColor: Color,
+    val contentColor: Color,
+)
+
+@Composable
+internal fun githubActionsNoticeColors(
+    accent: Color,
+    isDark: Boolean,
+): GitHubActionsNoticeColors {
     val isError = accent == GitHubStatusPalette.Error
-    SheetSurfaceCard(
-        containerColor = if (isError) {
-            GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Error, isDark).copy(
-                alpha = if (isDark) 0.16f else 0.09f
-            )
-        } else {
-            githubActionsNeutralCardColor(isDark)
-        },
-        borderColor = if (isError) {
-            GitHubStatusPalette.Error.copy(alpha = if (isDark) 0.24f else 0.16f)
-        } else {
-            githubActionsNeutralBorderColor(isDark)
-        },
-        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
-    ) {
-        Text(
-            text = text,
-            color = if (isError) GitHubStatusPalette.Error else githubActionsSecondaryTextColor(isDark),
-            fontSize = AppTypographyTokens.Body.fontSize,
-            lineHeight = AppTypographyTokens.Body.lineHeight
-        )
-    }
+    return GitHubActionsNoticeColors(
+        accentColor =
+            if (isError) {
+                GitHubStatusPalette.Error
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant
+            },
+        containerColor =
+            if (isError) {
+                GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Error, isDark).copy(
+                    alpha = if (isDark) 0.16f else 0.09f,
+                )
+            } else {
+                githubActionsNeutralCardColor(isDark)
+            },
+        borderColor =
+            if (isError) {
+                GitHubStatusPalette.Error.copy(alpha = if (isDark) 0.24f else 0.16f)
+            } else {
+                githubActionsNeutralBorderColor(isDark)
+            },
+        contentColor =
+            if (isError) {
+                GitHubStatusPalette.Error
+            } else {
+                githubActionsSecondaryTextColor(isDark)
+            },
+    )
 }

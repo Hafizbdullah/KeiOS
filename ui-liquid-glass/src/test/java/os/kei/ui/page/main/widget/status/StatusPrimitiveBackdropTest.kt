@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -40,6 +41,23 @@ import kotlin.test.assertTrue
 class StatusPrimitiveBackdropTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun defaultSupportingBlockKeepsOriginalSupportingDensity() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                AppSupportingBlock(
+                    text = "Default supporting density",
+                    modifier = Modifier.testTag("default-supporting-density"),
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("default-supporting-density")
+            .assertHeightIsEqualTo(33.33.dp)
+        composeRule.onNodeWithText("Default supporting density").assertExists()
+    }
 
     @Test
     fun standaloneNullParentKeepsRenderingAndClickSemantics() {
@@ -139,8 +157,28 @@ class StatusPrimitiveBackdropTest {
         assertTrue(
             "activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingBlockSource,
         )
+        assertTrue("containerColor: Color? = null" in supportingBlockSource)
+        assertTrue("contentColor: Color? = null" in supportingBlockSource)
+        assertTrue(
+            "contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 9.dp)" in
+                supportingBlockSource,
+        )
+        assertTrue("typography: AppTypographyToken = AppTypographyTokens.Supporting" in supportingBlockSource)
+        assertTrue("cornerRadius: Dp = 12.dp" in supportingBlockSource)
+        assertTrue("borderColor: Color = Color.Unspecified" in supportingBlockSource)
+        assertTrue("borderWidth: Dp = 0.dp" in supportingBlockSource)
+        assertTrue("fillWidth: Boolean = false" in supportingBlockSource)
+        assertTrue("depthEffect: Boolean = false" in supportingBlockSource)
+        assertTrue("highlightAlpha: Float? = null" in supportingBlockSource)
+        assertTrue("shadow: Boolean = false" in supportingBlockSource)
+        assertTrue("shadowAlpha: Float = 0.10f" in supportingBlockSource)
         assertTrue("if (activeBackdrop != null)" in supportingBlockSource)
-        assertTrue("Modifier.appSquircleBackground(backgroundColor, 12.dp)" in supportingBlockSource)
+        assertTrue(".appSquircleBackground(backgroundColor, cornerRadius)" in supportingBlockSource)
+        assertTrue(".appSquircleBorder(borderWidth, borderColor, cornerRadius)" in supportingBlockSource)
+        assertTrue("depthEffect = depthEffect" in supportingBlockSource)
+        assertTrue("highlightAlpha = highlightAlpha" in supportingBlockSource)
+        assertTrue("shadow = shadow" in supportingBlockSource)
+        assertTrue("shadowAlpha = shadowAlpha" in supportingBlockSource)
     }
 }
 
