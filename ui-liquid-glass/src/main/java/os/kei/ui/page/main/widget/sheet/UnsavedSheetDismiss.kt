@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.ui.liquidglass.R
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
+import os.kei.ui.page.main.widget.glass.AppLiquidWindowBoundary
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowDialog
@@ -73,32 +74,34 @@ fun UnsavedSheetDismissConfirmDialog(
     onKeepEditing: () -> Unit,
     onDiscardChanges: () -> Unit
 ) {
-    WindowDialog(
-        show = show,
-        title = stringResource(R.string.common_unsaved_changes_title),
-        summary = stringResource(R.string.common_unsaved_changes_summary),
-        onDismissRequest = onKeepEditing
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_keep_editing),
-                    containerColor = MiuixTheme.colorScheme.primary,
-                    variant = GlassVariant.SheetPrimaryAction,
-                    onClick = onKeepEditing
-                )
-                AppLiquidDialogActionButton(
-                    modifier = Modifier.weight(1f),
-                    text = stringResource(R.string.common_discard_changes),
-                    textColor = MiuixTheme.colorScheme.error,
-                    variant = GlassVariant.SheetDangerAction,
-                    onClick = onDiscardChanges
-                )
+    AppLiquidWindowBoundary {
+        WindowDialog(
+            show = show,
+            title = stringResource(R.string.common_unsaved_changes_title),
+            summary = stringResource(R.string.common_unsaved_changes_summary),
+            onDismissRequest = onKeepEditing
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AppLiquidDialogActionButton(
+                        modifier = Modifier.weight(1f),
+                        text = stringResource(R.string.common_keep_editing),
+                        containerColor = MiuixTheme.colorScheme.primary,
+                        variant = GlassVariant.SheetPrimaryAction,
+                        onClick = onKeepEditing
+                    )
+                    AppLiquidDialogActionButton(
+                        modifier = Modifier.weight(1f),
+                        text = stringResource(R.string.common_discard_changes),
+                        textColor = MiuixTheme.colorScheme.error,
+                        variant = GlassVariant.SheetDangerAction,
+                        onClick = onDiscardChanges
+                    )
+                }
             }
         }
     }
