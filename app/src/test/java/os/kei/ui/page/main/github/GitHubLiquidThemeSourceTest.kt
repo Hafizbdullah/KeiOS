@@ -19,7 +19,7 @@ class GitHubLiquidThemeSourceTest {
         assertEquals(2, infoCardsSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, healthCardsSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, assetCountBubbleSource.occurrencesOf("isAppInDarkTheme()"))
-        assertEquals(3, appSelectionRowsSource.occurrencesOf("isAppInDarkTheme()"))
+        assertEquals(2, appSelectionRowsSource.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(2, pendingShareImportSource.occurrencesOf("isAppInDarkTheme()"))
 
         listOf(

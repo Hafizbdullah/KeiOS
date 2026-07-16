@@ -10,8 +10,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -41,7 +43,7 @@ import kotlin.test.assertTrue
 @Config(
     application = GitHubAppCandidateRowTestApp::class,
     sdk = [35],
-    qualifiers = "w411dp-h891dp-xxhdpi",
+    qualifiers = "w360dp-h800dp-xxhdpi",
 )
 class GitHubAppCandidateRowTest {
     @get:Rule
@@ -114,11 +116,21 @@ class GitHubAppCandidateRowTest {
                 .onNodeWithText(longCandidate.packageName, useUnmergedTree = true)
                 .fetchSemanticsNode()
                 .boundsInRoot
-        val installSourceBounds =
-            composeRule
-                .onNodeWithText(longCandidate.installSourceLabel, useUnmergedTree = true)
-                .fetchSemanticsNode()
-                .boundsInRoot
+        val installSourceNode =
+            composeRule.onNodeWithText(longCandidate.installSourceLabel, useUnmergedTree = true)
+        val installSourceBounds = installSourceNode.fetchSemanticsNode().boundsInRoot
+
+        installSourceNode
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Role))
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+        val radioButton =
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.Role,
+                Role.RadioButton,
+            )
+        composeRule.onAllNodes(radioButton).assertCountEquals(1)
+        composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(1)
 
         assertTrue(titleBounds.bottom <= packageBounds.top)
         assertTrue(titleBounds.right <= installSourceBounds.left)
@@ -127,6 +139,60 @@ class GitHubAppCandidateRowTest {
             assertTrue(titleBounds.height.toDp() <= 30.dp)
             assertTrue(packageBounds.height.toDp() <= 27.dp)
         }
+    }
+
+    @Test
+    fun selectedAppCardAtLargeFontKeepsLongTextAndInstallSourceSeparated() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(density = density.density, fontScale = 1.5f)
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .width(360.dp)
+                                .testTag("large-font-selected-app-card"),
+                    ) {
+                        GitHubSelectedAppCard(
+                            selectedApp = longCandidate,
+                            showInstallSource = true,
+                        )
+                    }
+                }
+            }
+        }
+
+        val cardBounds =
+            composeRule
+                .onNodeWithTag("large-font-selected-app-card")
+                .assertWidthIsEqualTo(360.dp)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val titleBounds =
+            composeRule
+                .onNodeWithText(longCandidate.label, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val packageBounds =
+            composeRule
+                .onNodeWithText(longCandidate.packageName, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val installSourceNode =
+            composeRule.onNodeWithText(longCandidate.installSourceLabel, useUnmergedTree = true)
+        val installSourceBounds = installSourceNode.fetchSemanticsNode().boundsInRoot
+
+        installSourceNode
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Role))
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
+            .assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+
+        assertTrue(titleBounds.bottom <= packageBounds.top)
+        assertTrue(titleBounds.right <= installSourceBounds.left)
+        assertTrue(packageBounds.right <= installSourceBounds.left)
+        assertTrue(installSourceBounds.right <= cardBounds.right)
     }
 
     @Test
@@ -212,6 +278,45 @@ class GitHubAppCandidateRowTest {
         assertTrue("MiuixInfoItem(" !in transientStates)
     }
 
+    @Test
+    fun installSourcePillReusesCompactStatusMaterialFromExportedSheetCards() {
+        val source = sourceFile(GITHUB_APP_SELECTION_ROWS_SOURCE)
+        val consumers = source.substringBefore("@Composable\ninternal fun InstallSourcePill(")
+        val pill =
+            source
+                .substringAfter("internal fun InstallSourcePill(")
+                .substringBefore("@Composable\ninternal fun AppIconImage(")
+        val sheetStyles = sourceFile(SHEET_STYLES_SOURCE)
+        val surfaceCard =
+            sheetStyles
+                .substringAfter("fun SheetSurfaceCard(")
+                .substringBefore("@Composable\nfun SheetSectionCard(")
+        val choiceCard =
+            sheetStyles
+                .substringAfter("fun SheetChoiceCard(")
+                .substringBefore("@Composable\nfun SheetLiquidChoiceIndicator(")
+
+        assertEquals(2, consumers.occurrencesOf("InstallSourcePill("))
+        assertEquals(1, pill.occurrencesOf("StatusPill("))
+        assertTrue("size = AppStatusPillSize.Compact" in pill)
+        assertTrue("modifier = modifier.widthIn(max = 156.dp)" in pill)
+        assertTrue("maxLines = 1" in pill)
+        assertTrue("overflow = TextOverflow.Ellipsis" in pill)
+        assertTrue("selected: Boolean = false" in pill)
+        assertTrue("GitHubStatusPalette.Update" in pill)
+        assertTrue("MiuixTheme.colorScheme.primary" in pill)
+        assertTrue("modifier: Modifier = Modifier" in pill)
+        assertTrue("backdrop =" !in pill)
+        assertTrue("Box(" !in pill)
+        assertTrue("appSquircleBackground" !in pill)
+        assertTrue("appSquircleBorder" !in pill)
+        assertTrue("rememberAppStatusPillMetrics" !in pill)
+
+        assertTrue("exportBackdropToContent = true" in surfaceCard)
+        assertTrue("SheetSurfaceCard(" in choiceCard)
+        assertTrue("trailing?.invoke(this)" in choiceCard)
+    }
+
     private companion object {
         val candidate =
             InstalledAppItem(
@@ -246,7 +351,13 @@ private fun sourceFile(relativePath: String): String {
     }.readText()
 }
 
+private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
+
 private const val GITHUB_TRACK_APP_PICKER_CONTENT_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackAppPickerContent.kt"
+private const val GITHUB_APP_SELECTION_ROWS_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/github/GitHubAppSelectionRows.kt"
+private const val SHEET_STYLES_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SheetStyles.kt"
 
 class GitHubAppCandidateRowTestApp : Application()

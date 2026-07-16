@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
@@ -30,14 +29,12 @@ import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetChoiceCardDensity
 import os.kei.ui.page.main.widget.sheet.SheetSurfaceCard
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -176,35 +173,20 @@ private fun InstalledAppItem.installSourceDisplayLabel(): String =
         .ifBlank { stringResource(R.string.github_track_sheet_app_install_source_unknown) }
 
 @Composable
-private fun InstallSourcePill(
+internal fun InstallSourcePill(
     label: String,
     selected: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val color = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
-    val isDark = isAppInDarkTheme()
-    val metrics = rememberAppStatusPillMetrics(AppStatusPillSize.Compact)
-    Box(
-        modifier =
-            Modifier
-                .widthIn(max = 156.dp)
-                .appSquircleBackground(color.copy(alpha = if (isDark) 0.16f else 0.2f), 999.dp)
-                .appSquircleBorder(
-                    width = 0.8.dp,
-                    color = color.copy(alpha = if (isDark) 0.32f else 0.4f),
-                    cornerRadius = 999.dp,
-                ).padding(metrics.contentPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            color = if (isDark) color else color.copy(alpha = 0.96f),
-            fontSize = metrics.typography.fontSize,
-            lineHeight = metrics.typography.lineHeight,
-            fontWeight = metrics.typography.fontWeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    StatusPill(
+        label = label,
+        color = color,
+        modifier = modifier.widthIn(max = 156.dp),
+        size = AppStatusPillSize.Compact,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
