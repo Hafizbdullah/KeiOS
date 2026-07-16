@@ -63,6 +63,7 @@ class LiquidSliderGestureTest {
                         visibilityThreshold = 0.001f,
                         backdrop = emptyBackdrop(),
                         contentDescription = "Playback position",
+                        visualVerticalOffset = 10.dp,
                         modifier = Modifier.height(18.dp).testTag("music-slider"),
                     )
                     LiquidKeyPointSlider(

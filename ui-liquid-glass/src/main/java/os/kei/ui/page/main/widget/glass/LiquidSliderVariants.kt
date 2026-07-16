@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -75,6 +76,13 @@ data class LiquidSliderKeyPoint(
     val size: Dp = 5.dp,
 )
 
+/**
+ * Music progress slider with a 48dp interactive root.
+ *
+ * [visualVerticalOffset] moves only the track, key points, and thumb inside that root. Positive
+ * values move the visual treatment downward while preserving gesture and semantics bounds. The
+ * caller keeps the moved treatment inside any ancestor clip.
+ */
 @Composable
 fun LiquidMusicProgressSlider(
     value: () -> Float,
@@ -87,6 +95,7 @@ fun LiquidMusicProgressSlider(
     contentDescription: String? = null,
     activeColor: Color = Color.Unspecified,
     inactiveColor: Color = Color.Unspecified,
+    visualVerticalOffset: Dp = 0.dp,
     onValueChangeFinished: ((Float) -> Unit)? = null,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
@@ -109,6 +118,7 @@ fun LiquidMusicProgressSlider(
         enabled = enabled,
         contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
+        visualVerticalOffset = visualVerticalOffset,
         style =
             LiquidTrackSliderStyle(
                 activeColor = if (activeColor.isSpecified) activeColor else defaultActiveColor,
@@ -166,6 +176,7 @@ fun LiquidVolumeSlider(
         enabled = enabled,
         contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
+        visualVerticalOffset = 0.dp,
         style =
             LiquidTrackSliderStyle(
                 activeColor = accentColor.copy(alpha = 0.92f),
@@ -226,6 +237,7 @@ fun LiquidKeyPointSlider(
         enabled = enabled,
         contentDescription = contentDescription,
         onInteractionChanged = onInteractionChanged,
+        visualVerticalOffset = 0.dp,
         keyPoints = keyPoints,
         snapToKeyPoints = snapToKeyPoints,
         snapThreshold = snapThreshold,
@@ -259,6 +271,7 @@ private fun LiquidTrackSlider(
     enabled: Boolean,
     contentDescription: String?,
     onInteractionChanged: (Boolean) -> Unit,
+    visualVerticalOffset: Dp,
     style: LiquidTrackSliderStyle,
     keyPoints: List<LiquidSliderKeyPoint> = emptyList(),
     snapToKeyPoints: Boolean = false,
@@ -279,6 +292,8 @@ private fun LiquidTrackSlider(
             sanitizeLiquidSliderKeyPoints(keyPoints, safeValueRange)
         }
     val valueResolver = remember { LiquidFiniteValueResolver() }
+    val safeVisualVerticalOffset =
+        visualVerticalOffset.takeIf { offset -> offset.value.isFinite() } ?: 0.dp
     val glassRuntime = glassEffectRuntime()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val trackBackdrop =
@@ -486,11 +501,15 @@ private fun LiquidTrackSlider(
 
         Box(
             modifier =
-                if (trackBackdrop != null) {
-                    Modifier.layerBackdrop(trackBackdrop)
-                } else {
-                    Modifier
-                }.fillMaxWidth()
+                Modifier
+                    .offset(y = safeVisualVerticalOffset)
+                    .then(
+                        if (trackBackdrop != null) {
+                            Modifier.layerBackdrop(trackBackdrop)
+                        } else {
+                            Modifier
+                        },
+                    ).fillMaxWidth()
                     .height(trackLayerHeight),
             contentAlignment = Alignment.CenterStart,
         ) {
@@ -594,6 +613,7 @@ private fun LiquidTrackSlider(
 
         Box(
             Modifier
+                .offset(y = safeVisualVerticalOffset)
                 .graphicsLayer { clip = false }
                 .graphicsLayer {
                     translationX =

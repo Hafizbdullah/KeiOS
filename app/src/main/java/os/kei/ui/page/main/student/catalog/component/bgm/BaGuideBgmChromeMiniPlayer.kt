@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -74,16 +74,12 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val compact = compactProgress().coerceIn(0f, 1f)
     val artworkSize = debugBgmLerpDp(38.dp, 42.dp, expanded)
     val artworkCornerRadius = debugBgmLerpDp(10.dp, 11.dp, expanded)
-    val contentPadding =
-        PaddingValues(
-            horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded),
-            vertical = 5.dp,
-        )
+    val contentPadding = PaddingValues(horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded))
     val titleFontSize = debugBgmLerpSp(12f, AppTypographyTokens.Supporting.fontSize.value, expanded)
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
-    val titleVerticalOffset = debugBgmLerpDp(16.dp, 2.dp, expanded)
+    val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, expanded)
     val sideControlSlotWidth = debugBgmLerpDp(0.dp, 48.dp, expanded)
     val playButtonScale = 1f - compact * 0.02f
     val playPauseTint =
@@ -164,11 +160,13 @@ internal fun BaGuideBgmChromeMiniPlayer(
                     visibilityThreshold = 0.001f,
                     backdrop = backdrop,
                     contentDescription = stringResource(R.string.ba_catalog_bgm_seekbar),
+                    visualVerticalOffset = BaGuideBgmMiniPlayerProgressVisualOffset,
                     modifier =
                         Modifier
-                            .fillMaxSize()
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(MINI_PLAYER_PROGRESS_TOUCH_HEIGHT)
                             .padding(horizontal = 8.dp)
-                            .offset(y = MINI_PLAYER_PROGRESS_VERTICAL_OFFSET)
                             .graphicsLayer { alpha = expanded },
                 )
             }
@@ -277,6 +275,8 @@ private fun defaultMiniArtworkBrush(accent: Color): Brush =
 
 private val MINI_PLAYER_MINIMUM_TOUCH_SIZE = 48.dp
 
-private val MINI_PLAYER_PROGRESS_VERTICAL_OFFSET = 4.dp
+private val MINI_PLAYER_PROGRESS_TOUCH_HEIGHT = 48.dp
+
+internal val BaGuideBgmMiniPlayerProgressVisualOffset = 10.dp
 
 private const val MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD = 0.001f

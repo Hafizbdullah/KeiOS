@@ -4,15 +4,19 @@ import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -23,9 +27,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.R
+import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -75,7 +81,7 @@ class BaGuideBgmChromeMiniPlayerTest {
     }
 
     @Test
-    fun expandedPlayerKeepsProgressTrackBelowTitleInsideSurface() {
+    fun expandedPlayerKeepsDraggedProgressThumbBelowTitleInsideProductionSurface() {
         setMiniPlayer(expanded = 1f)
         val context = ApplicationProvider.getApplicationContext<Application>()
         val titleBounds = composeRule.onNodeWithText(TEST_TRACK_TITLE).fetchSemanticsNode().boundsInRoot
@@ -89,15 +95,40 @@ class BaGuideBgmChromeMiniPlayerTest {
                 .onNodeWithTag(MINI_PLAYER_SURFACE_TEST_TAG)
                 .fetchSemanticsNode()
                 .boundsInRoot
-        val minimumTrackGapPx = 8.dp.value * context.resources.displayMetrics.density
+        val density = context.resources.displayMetrics.density
+        val restingThumbHalfHeightPx = 18.dp.value / 2f * density
+        val maximumDraggedThumbHalfHeightPx = 18.dp.value * 1.30f * 1.10f / 2f * density
+        val visualOffsetPx = BaGuideBgmMiniPlayerProgressVisualOffset.value * density
+        val visualThumbCenterY = seekBounds.center.y + visualOffsetPx
+        val minimumRestingOpticalGapPx = 5.dp.value * density
+        val pressSafePaddingPx = 2.dp.value * density
+        val productionInnerClipBottom = surfaceBounds.bottom - pressSafePaddingPx
+
+        composeRule
+            .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_seekbar))
+            .assertHeightIsEqualTo(48.dp)
 
         assertTrue(
-            seekBounds.center.y >= titleBounds.bottom + minimumTrackGapPx,
-            "Progress track center ${seekBounds.center.y} must stay below title bottom ${titleBounds.bottom}",
+            visualThumbCenterY - restingThumbHalfHeightPx >=
+                titleBounds.bottom + minimumRestingOpticalGapPx,
+            "Resting progress thumb top ${visualThumbCenterY - restingThumbHalfHeightPx} must keep " +
+                "a clear gap below title bottom ${titleBounds.bottom}",
         )
         assertTrue(
-            seekBounds.bottom <= surfaceBounds.bottom,
-            "Seek target bottom ${seekBounds.bottom} must stay inside surface bottom ${surfaceBounds.bottom}",
+            visualThumbCenterY - maximumDraggedThumbHalfHeightPx >= titleBounds.bottom,
+            "Maximum dragged progress thumb top ${visualThumbCenterY - maximumDraggedThumbHalfHeightPx} " +
+                "must stay below title bottom ${titleBounds.bottom}",
+        )
+        assertTrue(
+            visualThumbCenterY + maximumDraggedThumbHalfHeightPx <= productionInnerClipBottom,
+            "Maximum dragged progress thumb bottom " +
+                "${visualThumbCenterY + maximumDraggedThumbHalfHeightPx} must stay " +
+                "inside production inner clip bottom $productionInnerClipBottom",
+        )
+        assertTrue(
+            abs(productionInnerClipBottom - seekBounds.bottom) <= 0.5f,
+            "Seek target bottom ${seekBounds.bottom} must honor the production surface press-safe " +
+                "padding and inner clip bottom $productionInnerClipBottom",
         )
     }
 
@@ -127,30 +158,38 @@ class BaGuideBgmChromeMiniPlayerTest {
         onNextClick: () -> Unit = {},
     ) {
         composeRule.setContent {
-            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(62.dp)
-                        .testTag(MINI_PLAYER_SURFACE_TEST_TAG),
-                ) {
-                    BaGuideBgmChromeMiniPlayer(
-                        accent = Color(0xFF3B82F6),
-                        currentTrackTitle = TEST_TRACK_TITLE,
-                        artworkImageUrl = "",
-                        isPlaying = false,
-                        playbackProgress = { 0.25f },
-                        onPlaybackProgressChange = {},
-                        onPlaybackProgressChangeFinished = {},
-                        onPlaybackSliderInteractionChanged = {},
-                        expandedProgress = { expanded },
-                        compactProgress = { 1f - expanded },
-                        onPlayPauseClick = onPlayPauseClick,
-                        onPreviousClick = onPreviousClick,
-                        onNextClick = onNextClick,
-                        backdrop = emptyBackdrop(),
-                        modifier = Modifier.matchParentSize(),
-                    )
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1.5f)) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(62.dp)
+                            .testTag(MINI_PLAYER_SURFACE_TEST_TAG),
+                    ) {
+                        AppLiquidFloatingSurface(
+                            modifier = Modifier.matchParentSize(),
+                            consumeTouches = true,
+                        ) {
+                            BaGuideBgmChromeMiniPlayer(
+                                accent = Color(0xFF3B82F6),
+                                currentTrackTitle = TEST_TRACK_TITLE,
+                                artworkImageUrl = "",
+                                isPlaying = false,
+                                playbackProgress = { 0.25f },
+                                onPlaybackProgressChange = {},
+                                onPlaybackProgressChangeFinished = {},
+                                onPlaybackSliderInteractionChanged = {},
+                                expandedProgress = { expanded },
+                                compactProgress = { 1f - expanded },
+                                onPlayPauseClick = onPlayPauseClick,
+                                onPreviousClick = onPreviousClick,
+                                onNextClick = onNextClick,
+                                backdrop = emptyBackdrop(),
+                                modifier = Modifier.matchParentSize(),
+                            )
+                        }
+                    }
                 }
             }
         }
