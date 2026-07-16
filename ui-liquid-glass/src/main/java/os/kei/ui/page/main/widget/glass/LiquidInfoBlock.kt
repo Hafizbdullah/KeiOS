@@ -2,7 +2,7 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +33,7 @@ fun LiquidInfoBlock(
     modifier: Modifier = Modifier,
     content: (@Composable () -> Unit)? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val cardSurface =
         if (isDark) {
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.84f)

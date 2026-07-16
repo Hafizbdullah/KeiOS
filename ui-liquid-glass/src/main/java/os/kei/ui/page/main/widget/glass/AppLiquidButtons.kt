@@ -6,7 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -117,7 +117,7 @@ fun AppLiquidIconButton(
     badgeColor: Color? = null,
     badgeContentColor: Color? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
     val resolvedHeight = if (height == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else height
     AppLiquidIconButtonTooltip(
@@ -173,7 +173,7 @@ fun AppLiquidIconButton(
     onPressedChange: ((Boolean) -> Unit)? = null,
     tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
     val resolvedHeight = if (height == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else height
     AppLiquidIconButtonTooltip(
@@ -507,7 +507,7 @@ fun AppLiquidTextButton(
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = activeGlassBackdrop(backdrop)
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val longClick = onLongClick
     val glass =

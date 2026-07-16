@@ -3,7 +3,7 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -156,7 +156,7 @@ fun LiquidGlassDropdownColumn(
     material: LiquidGlassDropdownMaterial = LiquidGlassDropdownMaterial.Default,
     content: @Composable () -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val metrics = liquidGlassDropdownMetrics(material)
     val effectVariant = liquidGlassDropdownVariant(material)
     val effectBlurRadius = resolvedGlassBlurDp(metrics.blurRadius, effectVariant)

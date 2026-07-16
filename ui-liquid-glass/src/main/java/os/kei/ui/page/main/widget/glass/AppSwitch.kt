@@ -57,6 +57,7 @@ import com.kyant.shapes.Capsule
 import kotlinx.coroutines.flow.collectLatest
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.animation.DampedDragAnimation
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
@@ -96,7 +97,7 @@ fun AppSwitch(
         enabled = enabled,
         modifier = touchModifier,
         checkedColor =
-            if (androidx.compose.foundation.isSystemInDarkTheme()) {
+            if (isAppInDarkTheme()) {
                 AppLiquidSwitchDarkBlue
             } else {
                 AppLiquidSwitchLightBlue
@@ -116,7 +117,7 @@ private fun AppFallbackSwitchToggle(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    val isLightTheme = !androidx.compose.foundation.isSystemInDarkTheme()
+    val isLightTheme = !isAppInDarkTheme()
     val accentColor = if (isLightTheme) AppLiquidSwitchLightBlue else AppLiquidSwitchDarkBlue
     val trackColor =
         if (isLightTheme) {
@@ -187,7 +188,7 @@ private fun LiquidSwitchToggle(
     enabled: Boolean = true,
     checkedColor: Color = Color.Unspecified,
 ) {
-    val isLightTheme = !androidx.compose.foundation.isSystemInDarkTheme()
+    val isLightTheme = !isAppInDarkTheme()
     val accentColor =
         if (checkedColor.isSpecified) {
             checkedColor

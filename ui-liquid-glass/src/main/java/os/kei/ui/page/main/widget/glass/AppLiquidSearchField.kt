@@ -2,7 +2,7 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -86,7 +86,7 @@ fun AppLiquidInputField(
     placeholderMaxLines: Int = if (singleLine) 1 else 2,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     var focused by remember { mutableStateOf(false) }
     val usesSearchMaterial = variant == GlassVariant.SearchField
@@ -410,7 +410,7 @@ fun AppLiquidSearchSurface(
     contentAlignment: Alignment = Alignment.CenterStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val density = LocalDensity.current
     val focusProgressState =

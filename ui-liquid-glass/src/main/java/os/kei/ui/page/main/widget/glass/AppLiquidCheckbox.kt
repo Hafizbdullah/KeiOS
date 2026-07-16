@@ -5,7 +5,7 @@ package os.kei.ui.page.main.widget.glass
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
@@ -50,7 +50,7 @@ fun AppLiquidCheckbox(
     enabled: Boolean = true,
     contentDescription: String? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val accent = if (isDark) Color(0xFF7AB8FF) else Color(0xFF3B82F6)
     val uncheckedSurface =

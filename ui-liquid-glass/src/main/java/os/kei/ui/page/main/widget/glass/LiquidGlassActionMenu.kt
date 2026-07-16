@@ -16,7 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -413,7 +413,7 @@ private fun LiquidGlassActionMenuSubmenuPanel(
                     contentDescription = null,
                     tint =
                         MiuixTheme.colorScheme.onBackgroundVariant.copy(
-                            alpha = if (isSystemInDarkTheme()) 0.82f else 0.70f,
+                            alpha = if (isAppInDarkTheme()) 0.82f else 0.70f,
                         ),
                     modifier =
                         Modifier
@@ -507,7 +507,7 @@ private fun LiquidGlassActionMenuQuickActionButton(
     onActionClick: (LiquidGlassActionMenuQuickAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scaleState =
@@ -586,7 +586,7 @@ private fun LiquidGlassActionMenuDivider() {
                 .background(
                     color =
                         MiuixTheme.colorScheme.onBackground.copy(
-                            alpha = if (isSystemInDarkTheme()) 0.12f else 0.10f,
+                            alpha = if (isAppInDarkTheme()) 0.12f else 0.10f,
                         ),
                 ),
     )

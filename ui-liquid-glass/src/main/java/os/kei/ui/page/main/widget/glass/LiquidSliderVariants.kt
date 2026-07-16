@@ -4,7 +4,7 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.defaultMinSize
@@ -99,7 +99,7 @@ fun LiquidMusicProgressSlider(
     onValueChangeFinished: ((Float) -> Unit)? = null,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val isLightTheme = !isSystemInDarkTheme()
+    val isLightTheme = !isAppInDarkTheme()
     val defaultActiveColor = if (isLightTheme) Color(0xFF0088FF) else Color(0xFF5DAEFF)
     val defaultInactiveColor =
         if (isLightTheme) {
@@ -150,7 +150,7 @@ fun LiquidVolumeSlider(
     onValueChangeFinished: ((Float) -> Unit)? = null,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val isLightTheme = !isSystemInDarkTheme()
+    val isLightTheme = !isAppInDarkTheme()
     val accentColor =
         if (activeColor.isSpecified) {
             activeColor
@@ -211,7 +211,7 @@ fun LiquidKeyPointSlider(
     onValueChangeFinished: ((Float) -> Unit)? = null,
     onInteractionChanged: (Boolean) -> Unit = {},
 ) {
-    val isLightTheme = !isSystemInDarkTheme()
+    val isLightTheme = !isAppInDarkTheme()
     val accentColor =
         if (activeColor.isSpecified) {
             activeColor

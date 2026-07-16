@@ -18,6 +18,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppStatusPrimitives
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
@@ -72,7 +73,7 @@ fun StatusPill(
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val colorProvider = color
     val resolvedColor = colorProvider()
     val metrics = rememberAppStatusPillMetrics(size)

@@ -3,7 +3,7 @@
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -80,7 +80,7 @@ fun AppSupportingBlock(
     overflow: TextOverflow = TextOverflow.Clip,
     onClick: (() -> Unit)? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val shape = RoundedRectangle(12.dp)
     val backgroundColor =
         if (isDark) {

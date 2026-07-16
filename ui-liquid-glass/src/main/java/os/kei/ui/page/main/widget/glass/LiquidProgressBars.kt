@@ -8,7 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -420,11 +420,11 @@ private data class LiquidCircularIndeterminateStates(
 )
 
 @Composable
-private fun liquidProgressDefaultActiveColor(): Color = if (isSystemInDarkTheme()) Color(0xFF5DAEFF) else Color(0xFF0088FF)
+private fun liquidProgressDefaultActiveColor(): Color = if (isAppInDarkTheme()) Color(0xFF5DAEFF) else Color(0xFF0088FF)
 
 @Composable
 private fun liquidProgressDefaultInactiveColor(): Color =
-    if (isSystemInDarkTheme()) {
+    if (isAppInDarkTheme()) {
         Color.White.copy(alpha = 0.18f)
     } else {
         Color(0xFF1D1D1F).copy(alpha = 0.15f)

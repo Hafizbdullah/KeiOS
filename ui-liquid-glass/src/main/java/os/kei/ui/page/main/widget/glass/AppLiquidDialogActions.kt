@@ -2,7 +2,7 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -34,7 +34,7 @@ fun AppLiquidDialogActionButton(
             GlassVariant.SheetAction
         },
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val accent = containerColor ?: MiuixTheme.colorScheme.primary
     val defaultContentColor =
         if (isDark) {

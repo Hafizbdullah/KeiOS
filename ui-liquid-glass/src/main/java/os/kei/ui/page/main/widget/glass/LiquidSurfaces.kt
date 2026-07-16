@@ -8,7 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -95,7 +95,7 @@ fun LiquidSurface(
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val animationScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val interactiveHighlight =
@@ -362,7 +362,7 @@ fun AppLiquidFloatingSurface(
         }
     val density = LocalDensity.current
     val pressLiftPx = with(density) { 1.25.dp.toPx() }
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.20f else 0.40f)
     val overlayColor =
         if (isDark) {

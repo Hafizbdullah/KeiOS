@@ -13,7 +13,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,7 +106,7 @@ fun LiquidGlassDropdownItem(
         return
     }
 
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val itemBackdrop = LocalLiquidGlassDropdownBackdrop.current
     val material = LocalLiquidGlassDropdownMaterial.current
     val itemAccent =
@@ -375,7 +375,7 @@ private fun LiquidGlassDropdownMeasureItem(
     textMaxLines: Int = 1,
     enabled: Boolean = true,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val itemAccent =
         liquidGlassDropdownItemAccent(
             isDark = isDark,
