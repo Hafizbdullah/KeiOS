@@ -2,16 +2,18 @@ package os.kei.ui.page.main.about.page
 
 import androidx.compose.ui.unit.dp
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChromeSearchDockVisibleAlpha
+import os.kei.ui.page.main.widget.chrome.TabbedPageCompactDockAction
 import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryDockExpanded
 import os.kei.ui.page.main.widget.chrome.tabbedPageChromeVisible
 import os.kei.ui.page.main.widget.chrome.tabbedPageCollapsedDockWidth
+import os.kei.ui.page.main.widget.chrome.tabbedPageCompactDockAction
 import os.kei.ui.page.main.widget.chrome.tabbedPageExpandedSearchWidth
 import os.kei.ui.page.main.widget.chrome.tabbedPageSearchDockRegionOffset
 import os.kei.ui.page.main.widget.chrome.tabbedPageUsesCompactHeightDock
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AboutBottomChromeLayoutTest {
     @Test
@@ -138,6 +140,38 @@ class AboutBottomChromeLayoutTest {
                 visible = true,
                 compactHeightPresentation = false,
                 compactHeightDockExpanded = false,
+            ),
+        )
+    }
+
+    @Test
+    fun compactDockClosesSearchBeforeExpandingOrShowingCategories() {
+        assertEquals(
+            TabbedPageCompactDockAction.CloseSearch,
+            tabbedPageCompactDockAction(
+                searchExpanded = true,
+                compactHeightPresentation = true,
+            ),
+        )
+        assertEquals(
+            TabbedPageCompactDockAction.CloseSearch,
+            tabbedPageCompactDockAction(
+                searchExpanded = true,
+                compactHeightPresentation = false,
+            ),
+        )
+        assertEquals(
+            TabbedPageCompactDockAction.ExpandCompactHeightDock,
+            tabbedPageCompactDockAction(
+                searchExpanded = false,
+                compactHeightPresentation = true,
+            ),
+        )
+        assertEquals(
+            TabbedPageCompactDockAction.ShowDock,
+            tabbedPageCompactDockAction(
+                searchExpanded = false,
+                compactHeightPresentation = false,
             ),
         )
     }

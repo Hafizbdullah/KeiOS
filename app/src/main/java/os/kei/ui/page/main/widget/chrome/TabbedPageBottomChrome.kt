@@ -103,6 +103,22 @@ internal fun tabbedPageChromeVisible(
     compactHeightDockExpanded: Boolean,
 ): Boolean = visible && (!compactHeightPresentation || compactHeightDockExpanded)
 
+internal enum class TabbedPageCompactDockAction {
+    CloseSearch,
+    ExpandCompactHeightDock,
+    ShowDock,
+}
+
+internal fun tabbedPageCompactDockAction(
+    searchExpanded: Boolean,
+    compactHeightPresentation: Boolean,
+): TabbedPageCompactDockAction =
+    when {
+        searchExpanded -> TabbedPageCompactDockAction.CloseSearch
+        compactHeightPresentation -> TabbedPageCompactDockAction.ExpandCompactHeightDock
+        else -> TabbedPageCompactDockAction.ShowDock
+    }
+
 // ── Generic bottom chrome ────────────────────────────────────────────────────
 
 /**
@@ -116,6 +132,7 @@ internal fun tabbedPageChromeVisible(
 @Composable
 internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     visible: Boolean,
+    modifier: Modifier = Modifier,
     navigationBarBottom: Dp,
     categories: List<C>,
     selectedPage: Int,
@@ -176,7 +193,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     val searchDockAlphaProvider = remember { { TabbedPageBottomChromeSearchDockVisibleAlpha } }
     BoxWithConstraints(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .offset {
                     IntOffset(x = 0, y = -keyboardLiftProvider().roundToPx())
@@ -230,13 +247,24 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         category = categories[safeSelectedPage],
                         backdrop = backdrop,
                         onClick = {
-                            if (compactHeightPresentation) {
-                                compactHeightDockExpanded = true
-                                onExpandDock()
-                            } else if (visible && searchEnabled) {
-                                onSearchExpandedChange(false)
-                            } else {
-                                onExpandDock()
+                            when (
+                                tabbedPageCompactDockAction(
+                                    searchExpanded = effectiveSearchExpanded,
+                                    compactHeightPresentation = compactHeightPresentation,
+                                )
+                            ) {
+                                TabbedPageCompactDockAction.CloseSearch -> {
+                                    onSearchExpandedChange(false)
+                                }
+
+                                TabbedPageCompactDockAction.ExpandCompactHeightDock -> {
+                                    compactHeightDockExpanded = true
+                                    onExpandDock()
+                                }
+
+                                TabbedPageCompactDockAction.ShowDock -> {
+                                    onExpandDock()
+                                }
                             }
                         },
                         modifier =
