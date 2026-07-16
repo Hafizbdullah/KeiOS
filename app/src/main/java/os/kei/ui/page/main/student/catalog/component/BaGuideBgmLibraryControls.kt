@@ -3,6 +3,7 @@ package os.kei.ui.page.main.student.catalog.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,15 +22,13 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideAddIcon
-import os.kei.ui.page.main.os.appLucideChevronDownIcon
-import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
 import os.kei.ui.page.main.student.component.GuideLiquidCard
+import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -77,13 +76,6 @@ internal fun BaGuideBgmLibraryHeader(
             cachedCount.coerceAtLeast(0)
         )
     }
-    val toolsDescription = stringResource(
-        if (toolsExpanded) {
-            R.string.ba_catalog_bgm_overview_collapse_tools
-        } else {
-            R.string.ba_catalog_bgm_overview_expand_tools
-        }
-    )
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
@@ -95,52 +87,34 @@ internal fun BaGuideBgmLibraryHeader(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
+            AppCardHeader(
+                title = stringResource(R.string.ba_catalog_bgm_library_title),
+                subtitle = summary,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(CardLayoutRhythm.infoRowGap),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.ba_catalog_bgm_library_title),
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.Body.fontSize,
-                        lineHeight = AppTypographyTokens.Body.lineHeight,
-                        fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                endActions = {
+                    StatusPill(
+                        label = stringResource(
+                            R.string.ba_catalog_bgm_library_queue_summary,
+                            displayedCount.coerceAtLeast(0)
+                        ),
+                        color = accent,
+                        size = AppStatusPillSize.Compact
                     )
-                    Text(
-                        text = summary,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
-                        fontSize = AppTypographyTokens.Supporting.fontSize,
-                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                StatusPill(
-                    label = stringResource(
-                        R.string.ba_catalog_bgm_library_queue_summary,
-                        displayedCount.coerceAtLeast(0)
-                    ),
-                    color = accent,
-                    size = AppStatusPillSize.Compact
-                )
-                AppStandaloneLiquidIconButton(
-                    icon = if (toolsExpanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                    contentDescription = toolsDescription,
-                    onClick = { toolsExpanded = !toolsExpanded },
-                    width = 30.dp,
-                    height = 30.dp,
-                    iconTint = MiuixTheme.colorScheme.onBackgroundVariant,
-                    containerColor = MiuixTheme.colorScheme.surfaceContainer,
-                    variant = GlassVariant.Compact
-                )
-            }
+                },
+                expandable = true,
+                expanded = toolsExpanded,
+                expandTint = MiuixTheme.colorScheme.onBackgroundVariant,
+                titleMaxLines = 1,
+                subtitleMaxLines = 1,
+                minHeight = 50.dp,
+                contentPadding = PaddingValues(0.dp),
+                horizontalSpacing = 10.dp,
+                textVerticalSpacing = 1.dp,
+                titleTypography = AppTypographyTokens.BodyEmphasis,
+                subtitleTypography = AppTypographyTokens.Supporting,
+                onClick = { toolsExpanded = !toolsExpanded }
+            )
             BaGuideBgmSortGroupDropdownRow(
                 sortMode = sortMode,
                 groupMode = groupMode,
