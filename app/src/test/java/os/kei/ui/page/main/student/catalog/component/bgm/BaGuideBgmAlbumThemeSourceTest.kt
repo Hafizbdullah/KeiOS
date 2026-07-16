@@ -4,6 +4,7 @@ import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class BaGuideBgmAlbumThemeSourceTest {
     @Test
@@ -15,10 +16,19 @@ class BaGuideBgmAlbumThemeSourceTest {
             "Album actions must follow the selected KeiOS theme",
         )
         assertEquals(
-            2,
+            1,
             source.occurrencesOf("isAppInDarkTheme()"),
-            "Both round and primary album actions must use the app theme",
+            "The shared album action surface must use the app theme",
         )
+        assertTrue(
+            "val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)" in
+                source,
+            "Album actions must keep the shared light and dark glass film",
+        )
+        assertEquals(2, source.occurrencesOf("AppLiquidIconButton("))
+        assertEquals(1, source.occurrencesOf("AppLiquidTextButton("))
+        assertEquals(3, source.occurrencesOf("containerColor = actionSurfaceColor"))
+        assertEquals(3, source.occurrencesOf("containerAlphaOverride = actionSurfaceColor.alpha"))
     }
 
     @Test
