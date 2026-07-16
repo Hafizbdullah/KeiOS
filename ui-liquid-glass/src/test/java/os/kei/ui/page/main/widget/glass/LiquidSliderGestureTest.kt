@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.down
@@ -82,7 +83,7 @@ class LiquidSliderGestureTest {
 
         composeRule
             .onNodeWithTag("music-slider")
-            .assertHeightIsAtLeast(LiquidSliderMinimumInteractiveHeight)
+            .assertHeightIsEqualTo(LiquidSliderMinimumInteractiveHeight)
             .assert(
                 SemanticsMatcher.expectValue(
                     SemanticsProperties.ContentDescription,
@@ -125,7 +126,7 @@ class LiquidSliderGestureTest {
     }
 
     @Test
-    fun tapsAtTheExpandedVerticalEdgesChangeTheValue() {
+    fun offsetVisualsStillAcceptTapsAtBothVerticalEdges() {
         var sliderValue = 0.1f
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
@@ -135,6 +136,7 @@ class LiquidSliderGestureTest {
                     valueRange = 0f..1f,
                     visibilityThreshold = 0.001f,
                     backdrop = emptyBackdrop(),
+                    visualVerticalOffset = 10.dp,
                     modifier = Modifier.height(18.dp).testTag("edge-slider"),
                 )
             }
