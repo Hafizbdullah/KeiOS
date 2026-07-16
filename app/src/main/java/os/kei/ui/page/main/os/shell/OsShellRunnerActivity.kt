@@ -69,6 +69,7 @@ class OsShellRunnerActivity : ComponentActivity() {
                             pageStyle = chromePrefs.nonHomeBackgroundPageStyle,
                             scrim = chromePrefs.nonHomeBackgroundScrim,
                             style = AppManagedBackgroundStyles.FocusedTask,
+                            exportBackdropToContent = true,
                         ) {
                             OsShellRunnerPage(
                                 canRunShellCommand = canRunShellCommand,
