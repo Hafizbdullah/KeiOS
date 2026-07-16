@@ -129,6 +129,8 @@ class StatusPrimitiveBackdropTest {
         assertTrue("fallbackOptics.rimColor" in statusPillSource)
         assertTrue("StatusPillLiquid(" in statusPillSource)
         assertTrue("surfaceColor = resolvedColor.copy(alpha = backgroundAlpha)" in statusPillSource)
+        assertTrue("contentColorOverride: Color? = null" in statusPillSource)
+        assertTrue("contentColorOverride ?:" in statusPillSource)
         assertTrue("typographyOverride: TextStyle? = null" in statusPillSource)
         assertTrue("blurRadiusOverride: Dp? = null" in statusPillSource)
         assertTrue("lensRadiusOverride: Dp? = null" in statusPillSource)

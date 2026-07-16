@@ -53,6 +53,7 @@ fun StatusPill(
     typographyOverride: TextStyle? = null,
     blurRadiusOverride: Dp? = null,
     lensRadiusOverride: Dp? = null,
+    contentColorOverride: Color? = null,
 ) {
     StatusPill(
         label = label,
@@ -68,6 +69,7 @@ fun StatusPill(
         typographyOverride = typographyOverride,
         blurRadiusOverride = blurRadiusOverride,
         lensRadiusOverride = lensRadiusOverride,
+        contentColorOverride = contentColorOverride,
     )
 }
 
@@ -86,6 +88,7 @@ fun StatusPill(
     typographyOverride: TextStyle? = null,
     blurRadiusOverride: Dp? = null,
     lensRadiusOverride: Dp? = null,
+    contentColorOverride: Color? = null,
 ) {
     val isDark = isAppInDarkTheme()
     val colorProvider = color
@@ -94,7 +97,8 @@ fun StatusPill(
     val resolvedPadding = contentPadding ?: metrics.contentPadding
     val backgroundAlpha = backgroundAlphaOverride ?: if (isDark) 0.18f else 0.24f
     val borderAlpha = borderAlphaOverride ?: if (isDark) 0.35f else 0.42f
-    val textColor = statusPillContentColor(isDark = isDark, accent = resolvedColor)
+    val textColor =
+        contentColorOverride ?: statusPillContentColor(isDark = isDark, accent = resolvedColor)
     val shape = AppStatusPrimitives.pillShape
     val cornerRadius = 999.dp
     val parentBackdrop = LocalLiquidParentBackdrop.current

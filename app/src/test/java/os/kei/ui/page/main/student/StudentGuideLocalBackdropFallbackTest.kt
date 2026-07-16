@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -53,6 +54,7 @@ class StudentGuideLocalBackdropFallbackTest {
     @Test
     fun standaloneFallbacksKeepBadgeCapsuleAndSeekSemantics() {
         var capsuleClicks = 0
+        var capsuleLongClicks = 0
         var changedProgress = 0f
         var finishedProgress = 0f
 
@@ -72,6 +74,7 @@ class StudentGuideLocalBackdropFallbackTest {
                             label = "Profile value",
                             tint = Color(0xFF3B82F6),
                             onClick = { capsuleClicks++ },
+                            onLongClick = { capsuleLongClicks++ },
                         )
                         GuideAudioSeekBar(
                             progress = 0.25f,
@@ -94,6 +97,9 @@ class StudentGuideLocalBackdropFallbackTest {
             .onNodeWithText("Profile value")
             .assertHasClickAction()
             .performClick()
+        composeRule
+            .onNodeWithText("Profile value")
+            .performTouchInput { longClick() }
 
         val context = ApplicationProvider.getApplicationContext<Application>()
         composeRule
@@ -102,6 +108,7 @@ class StudentGuideLocalBackdropFallbackTest {
             .performTouchInput { click() }
         composeRule.runOnIdle {
             assertEquals(1, capsuleClicks)
+            assertEquals(1, capsuleLongClicks)
             assertTrue(changedProgress > 0f)
             assertTrue(finishedProgress > 0f)
         }
@@ -118,10 +125,10 @@ class StudentGuideLocalBackdropFallbackTest {
             assertFalse(".layerBackdrop(" in source)
         }
         assertEquals(
-            2,
+            1,
             profileSource.occurrencesOf("activeGlassBackdrop(LocalLiquidParentBackdrop.current)"),
         )
-        assertTrue("Modifier.appSquircleBackground" in profileSource)
+        assertTrue(".appSquircleBackground(surfaceColor, cornerRadius)" in profileSource)
         assertTrue(
             "val sliderBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in gallerySource,
         )
@@ -152,6 +159,25 @@ class StudentGuideLocalBackdropFallbackTest {
         assertTrue("lensRadiusOverride = 10.dp" in badgeSource)
         assertTrue("maxLines = 1" in badgeSource)
         assertTrue("activeGlassBackdrop(backdrop ?: parentBackdrop)" in statusPillSource)
+    }
+
+    @Test
+    fun profileValueCapsuleReusesStatusPillWithLegacyOpticsAndCopyInteraction() {
+        val profileSource = sourceFile(GUIDE_PROFILE_UI_SOURCE)
+        val capsuleSource =
+            profileSource
+                .substringAfter("internal fun GuideProfileValueCapsule(")
+                .substringBefore("private fun GuideProfileLiquidSurfaceBox(")
+
+        assertTrue("StatusPill(" in capsuleSource)
+        assertFalse("LiquidSurface(" in capsuleSource)
+        assertFalse("appSquircleBackground" in capsuleSource)
+        assertTrue("Modifier.copyModeAwareRow(" in capsuleSource)
+        assertTrue("contentPadding = PaddingValues(horizontal = 9.dp, vertical = 3.dp)" in capsuleSource)
+        assertTrue("backgroundAlphaOverride = if (isDark) 0.20f else 0.16f" in capsuleSource)
+        assertTrue("borderAlphaOverride = if (isDark) 0.42f else 0.46f" in capsuleSource)
+        assertTrue("contentColorOverride = if (isDark) tint else tint.copy(alpha = 0.92f)" in capsuleSource)
+        assertTrue("maxLines = Int.MAX_VALUE" in capsuleSource)
     }
 }
 

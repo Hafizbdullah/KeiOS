@@ -51,8 +51,8 @@ import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeDisableSelection
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
@@ -223,8 +223,6 @@ internal fun GuideProfileValueCapsule(
     onLongClick: (() -> Unit)? = null,
 ) {
     val isDark = isAppInDarkTheme()
-    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
-    val shape = ContinuousCapsule
     val clickModifier =
         if (onClick != null || onLongClick != null) {
             Modifier.copyModeAwareRow(
@@ -235,61 +233,17 @@ internal fun GuideProfileValueCapsule(
         } else {
             Modifier
         }
-    val capsuleModifier =
-        Modifier
-            .appSquircleClip(999.dp)
-            .then(
-                if (activeBackdrop == null) {
-                    Modifier.appSquircleBackground(tint.copy(alpha = if (isDark) 0.20f else 0.16f), 999.dp)
-                } else {
-                    Modifier
-                },
-            ).appSquircleBorder(
-                width = 0.8.dp,
-                color = tint.copy(alpha = if (isDark) 0.42f else 0.46f),
-                cornerRadius = 999.dp,
-            ).then(clickModifier)
-    val content: @Composable () -> Unit = {
-        Text(
-            text = label,
-            color = if (isDark) tint else tint.copy(alpha = 0.92f),
-            maxLines = Int.MAX_VALUE,
-            overflow = TextOverflow.Clip,
-            textAlign = TextAlign.Center,
-        )
-    }
-    CopyModeDisableSelection {
-        Box {
-            if (activeBackdrop != null) {
-                LiquidSurface(
-                    backdrop = activeBackdrop,
-                    modifier = capsuleModifier,
-                    shape = shape,
-                    isInteractive = false,
-                    surfaceColor = tint.copy(alpha = if (isDark) 0.20f else 0.16f),
-                    blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
-                    lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-                    shadow = false,
-                ) {
-                    Box(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        content()
-                    }
-                }
-            } else {
-                Box(
-                    modifier =
-                        capsuleModifier
-                            .padding(horizontal = 9.dp, vertical = 3.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    content()
-                }
-            }
-        }
-    }
+    StatusPill(
+        label = label,
+        color = tint,
+        modifier = clickModifier,
+        contentPadding = PaddingValues(horizontal = 9.dp, vertical = 3.dp),
+        backgroundAlphaOverride = if (isDark) 0.20f else 0.16f,
+        borderAlphaOverride = if (isDark) 0.42f else 0.46f,
+        maxLines = Int.MAX_VALUE,
+        overflow = TextOverflow.Clip,
+        contentColorOverride = if (isDark) tint else tint.copy(alpha = 0.92f),
+    )
 }
 
 @Composable
