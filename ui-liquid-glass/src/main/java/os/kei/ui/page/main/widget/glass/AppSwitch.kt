@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -77,7 +78,8 @@ fun AppSwitch(
         modifier
             .requiredSize(width = 64.dp, height = 48.dp)
 
-    if (!appGlassRuntimeEffectsEnabled()) {
+    val activeBackdrop = resolvedAppSwitchBackdrop()
+    if (activeBackdrop == null) {
         AppFallbackSwitchToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -87,32 +89,25 @@ fun AppSwitch(
         return
     }
 
-    val switchBackdrop = rememberLayerBackdrop()
-    Box(
+    LiquidSwitchToggle(
+        selected = { checked },
+        onSelect = onCheckedChange,
+        backdrop = activeBackdrop,
+        enabled = enabled,
         modifier = touchModifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(switchBackdrop),
-        )
-        LiquidSwitchToggle(
-            selected = { checked },
-            onSelect = onCheckedChange,
-            backdrop = switchBackdrop,
-            enabled = enabled,
-            modifier = Modifier.matchParentSize(),
-            checkedColor =
-                if (androidx.compose.foundation.isSystemInDarkTheme()) {
-                    AppLiquidSwitchDarkBlue
-                } else {
-                    AppLiquidSwitchLightBlue
-                },
-        )
-    }
+        checkedColor =
+            if (androidx.compose.foundation.isSystemInDarkTheme()) {
+                AppLiquidSwitchDarkBlue
+            } else {
+                AppLiquidSwitchLightBlue
+            },
+    )
 }
+
+@Composable
+@ReadOnlyComposable
+internal fun resolvedAppSwitchBackdrop(): Backdrop? =
+    activeGlassBackdrop(LocalLiquidParentBackdrop.current)
 
 @Composable
 private fun AppFallbackSwitchToggle(

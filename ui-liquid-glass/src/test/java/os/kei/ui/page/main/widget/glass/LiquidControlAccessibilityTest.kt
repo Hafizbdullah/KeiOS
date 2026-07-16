@@ -33,6 +33,8 @@ import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,6 +45,8 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -102,6 +106,56 @@ class LiquidControlAccessibilityTest {
             .onNode(isToggleable())
             .performTouchInput { click() }
             .assertIsOn()
+    }
+
+    @Test
+    fun switchWithParentBackdropRespondsToPhysicalTap() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val parentBackdrop = rememberLayerBackdrop()
+                CompositionLocalProvider(LocalLiquidParentBackdrop provides parentBackdrop) {
+                    var checked by remember { mutableStateOf(false) }
+                    AppSwitch(
+                        checked = checked,
+                        onCheckedChange = { checked = it },
+                        modifier = Modifier.testTag("parent-liquid-switch"),
+                    )
+                }
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("parent-liquid-switch")
+            .performTouchInput { click() }
+        composeRule.onNode(isToggleable()).assertIsOn()
+    }
+
+    @Test
+    fun switchResolvesOnlyAnEnabledParentBackdrop() {
+        var expectedBackdrop: Backdrop? = null
+        var resolvedBackdrop: Backdrop? = null
+        var disabledBackdrop: Backdrop? = null
+        var standaloneBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val parentBackdrop = rememberLayerBackdrop()
+                expectedBackdrop = parentBackdrop
+                CompositionLocalProvider(LocalLiquidParentBackdrop provides parentBackdrop) {
+                    resolvedBackdrop = resolvedAppSwitchBackdrop()
+                    CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
+                        disabledBackdrop = resolvedAppSwitchBackdrop()
+                    }
+                }
+                standaloneBackdrop = resolvedAppSwitchBackdrop()
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertSame(expectedBackdrop, resolvedBackdrop)
+            assertNull(disabledBackdrop)
+            assertNull(standaloneBackdrop)
+        }
     }
 
     @Test
@@ -207,17 +261,20 @@ class LiquidControlAccessibilityTest {
         composeRule.setContent {
             CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    var checked by remember { mutableStateOf(false) }
-                    val viewConfiguration = LocalViewConfiguration.current
-                    SideEffect { touchSlop = viewConfiguration.touchSlop }
-                    AppSwitch(
-                        checked = checked,
-                        onCheckedChange = { selected ->
-                            selectedValues += selected
-                            checked = selected
-                        },
-                        modifier = Modifier.testTag("split-drag-liquid-switch"),
-                    )
+                    val parentBackdrop = rememberLayerBackdrop()
+                    CompositionLocalProvider(LocalLiquidParentBackdrop provides parentBackdrop) {
+                        var checked by remember { mutableStateOf(false) }
+                        val viewConfiguration = LocalViewConfiguration.current
+                        SideEffect { touchSlop = viewConfiguration.touchSlop }
+                        AppSwitch(
+                            checked = checked,
+                            onCheckedChange = { selected ->
+                                selectedValues += selected
+                                checked = selected
+                            },
+                            modifier = Modifier.testTag("split-drag-liquid-switch"),
+                        )
+                    }
                 }
             }
         }

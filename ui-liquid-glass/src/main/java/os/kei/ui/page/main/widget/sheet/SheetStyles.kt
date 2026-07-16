@@ -152,6 +152,7 @@ fun SheetSurfaceCard(
         )
     AppSurfaceCard(
         modifier = modifier,
+        exportBackdropToContent = true,
         containerColor = resolvedContainerColor,
         borderColor = borderColor ?: sheetCardBorderColor(surfaceTone),
         borderWidth = optics.borderWidth,
