@@ -20,9 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -144,6 +146,41 @@ class LiquidGlassActionMenuTest {
 
         assertEquals("6h", selectedInterval)
         assertEquals(2, dismissCount)
+    }
+
+    @Test
+    fun multipleChoiceRowExposesCheckboxStateAndReportsTheNextValue() {
+        var requestedValue: Boolean? = null
+        var dismissCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                ActionMenuTestSurface {
+                    LiquidGlassActionMenu(
+                        items =
+                            listOf(
+                                LiquidGlassActionMenuMultipleChoiceRow(
+                                    id = "compact_rows",
+                                    text = "紧凑行",
+                                    checked = true,
+                                    onCheckedChange = { checked -> requestedValue = checked },
+                                ),
+                            ),
+                        onDismissRequest = { dismissCount += 1 },
+                    )
+                }
+            }
+        }
+
+        val checkboxRole =
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Checkbox)
+        composeRule
+            .onNode(hasText("紧凑行") and hasClickAction())
+            .assert(checkboxRole)
+            .assertIsOn()
+            .performClick()
+
+        assertEquals(false, requestedValue)
+        assertEquals(1, dismissCount)
     }
 
     @Test

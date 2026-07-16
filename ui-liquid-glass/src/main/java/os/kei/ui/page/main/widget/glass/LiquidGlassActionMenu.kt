@@ -120,6 +120,18 @@ data class LiquidGlassActionMenuSingleChoiceRow(
     val variant: GlassVariant = GlassVariant.SheetAction,
 ) : LiquidGlassActionMenuItem
 
+data class LiquidGlassActionMenuMultipleChoiceRow(
+    override val id: String,
+    val text: String,
+    val checked: Boolean,
+    val onCheckedChange: (Boolean) -> Unit,
+    val leadingIcon: ImageVector? = null,
+    val trailingIcon: ImageVector? = null,
+    val subtitle: String? = null,
+    val enabled: Boolean = true,
+    val variant: GlassVariant = GlassVariant.SheetAction,
+) : LiquidGlassActionMenuItem
+
 @Composable
 fun LiquidGlassActionMenu(
     modifier: Modifier = Modifier,
@@ -360,6 +372,25 @@ private fun LiquidGlassActionMenuItemRow(
                     item.onClick()
                     onDismissRequest()
                 },
+                leadingIcon = item.leadingIcon,
+                trailingIcon = item.trailingIcon,
+                subtitle = item.subtitle,
+                accentColor = accentColor,
+                variant = item.variant,
+                enabled = item.enabled,
+            )
+        }
+
+        is LiquidGlassActionMenuMultipleChoiceRow -> {
+            LiquidGlassDropdownMultipleChoiceItem(
+                text = item.text,
+                checked = item.checked,
+                onCheckedChange = { checked ->
+                    item.onCheckedChange(checked)
+                    onDismissRequest()
+                },
+                index = index,
+                optionSize = optionSize,
                 leadingIcon = item.leadingIcon,
                 trailingIcon = item.trailingIcon,
                 subtitle = item.subtitle,

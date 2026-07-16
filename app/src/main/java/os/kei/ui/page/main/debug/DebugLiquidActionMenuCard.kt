@@ -37,6 +37,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuMultipleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
@@ -191,13 +192,13 @@ internal fun DebugLiquidActionMenuCard(
                                 highlighted = true,
                                 onClick = { lastAction = favoriteLabel },
                             ),
-                            LiquidGlassActionMenuSingleChoiceRow(
+                            LiquidGlassActionMenuMultipleChoiceRow(
                                 id = "compact_rows",
                                 text = compactRowsLabel,
-                                selected = compactRowsSelected,
+                                checked = compactRowsSelected,
                                 leadingIcon = appLucideListIcon(),
-                                onClick = {
-                                    compactRowsSelected = !compactRowsSelected
+                                onCheckedChange = { checked ->
+                                    compactRowsSelected = checked
                                     lastAction = compactRowsLabel
                                 },
                             ),

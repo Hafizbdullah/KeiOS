@@ -655,6 +655,46 @@ fun LiquidGlassDropdownSingleChoiceItem(
 }
 
 @Composable
+fun LiquidGlassDropdownMultipleChoiceItem(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    index: Int = 0,
+    optionSize: Int = 1,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+    subtitle: String? = null,
+    trailingContent: (@Composable RowScope.() -> Unit)? = null,
+    accentColor: Color = MiuixTheme.colorScheme.primary,
+    variant: GlassVariant = GlassVariant.SheetAction,
+    enabled: Boolean = true,
+    textMaxLines: Int = 1,
+) {
+    LiquidGlassDropdownItem(
+        text = text,
+        selected = checked,
+        onClick = { onCheckedChange(!checked) },
+        modifier = modifier,
+        index = index,
+        optionSize = optionSize,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        subtitle = subtitle,
+        trailingContent = trailingContent,
+        accentColor = accentColor,
+        variant = variant,
+        enabled = enabled,
+        highlighted = checked,
+        showCheck = checked,
+        highlightContent = checked,
+        reserveCheckSlot = true,
+        textMaxLines = textMaxLines,
+        itemType = LiquidGlassDropdownItemType.MultipleChoice,
+    )
+}
+
+@Composable
 fun LiquidGlassDropdownSingleChoiceList(
     options: List<String>,
     selectedIndex: Int,
