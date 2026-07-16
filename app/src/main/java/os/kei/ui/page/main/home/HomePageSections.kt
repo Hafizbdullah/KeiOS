@@ -3,9 +3,6 @@
 package os.kei.ui.page.main.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,23 +26,18 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
+import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.motion.appMotionFloatState
-import os.kei.ui.page.main.widget.shape.appSquircleSurface
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
@@ -163,77 +153,28 @@ internal fun HomeInfoCard(
 ) {
     val blurRadius = resolvedGlassBlurDp(8.dp, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(24.dp, GlassVariant.Content)
+    val activeBackdrop = backdrop.takeIf { blurEnabled }
     val containerColor =
-        if (blurEnabled) {
+        if (activeBackdrop != null) {
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = HOME_INFO_CARD_SURFACE_ALPHA)
         } else {
             MiuixTheme.colorScheme.surfaceContainer
         }
-    val interactionSource = remember { MutableInteractionSource() }
-    val clickAction = onClick
-    val clickable = clickAction != null
-    val clickModifier =
-        if (clickAction != null) {
-            Modifier.combinedClickable(
-                interactionSource = interactionSource,
-                indication = null,
-                role = Role.Button,
-                onClick = clickAction,
-            )
-        } else {
+    AppSurfaceCard(
+        modifier =
             Modifier
-        }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressedScaleState =
-        appMotionFloatState(
-            targetValue = if (clickable && isPressed) 0.992f else 1f,
-            durationMillis = 120,
-            label = "home_info_card_press_scale",
-        )
-    val pressedScaleProvider = remember(pressedScaleState) { { pressedScaleState.value } }
-    val exportedContentBackdrop = rememberLayerBackdrop()
-
-    val cardModifier =
-        Modifier
-            .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
-            .padding(bottom = HOME_INFO_CARD_GAP)
-            .graphicsLayer {
-                val scale = pressedScaleProvider()
-                scaleX = scale
-                scaleY = scale
-            }
-
-    if (backdrop != null && blurEnabled) {
-        LiquidSurface(
-            backdrop = backdrop,
-            modifier =
-                cardModifier
-                    .fillMaxWidth()
-                    .then(clickModifier),
-            shape = RoundedRectangle(20.dp),
-            isInteractive = clickable,
-            surfaceColor = containerColor,
-            blurRadius = blurRadius,
-            lensRadius = lensRadius,
-            exportedBackdrop = exportedContentBackdrop,
-            interactionSource = interactionSource,
-        ) {
-            CompositionLocalProvider(
-                LocalLiquidParentBackdrop provides exportedContentBackdrop,
-            ) {
-                HomeInfoCardContent(content)
-            }
-        }
-    } else {
-        Box(
-            modifier =
-                cardModifier
-                    .fillMaxWidth()
-                    .then(clickModifier)
-                    .appSquircleSurface(MiuixTheme.colorScheme.surfaceContainer, 20.dp),
-        ) {
-            HomeInfoCardContent(content)
-        }
+                .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
+                .padding(bottom = HOME_INFO_CARD_GAP),
+        backdrop = activeBackdrop,
+        containerColor = containerColor,
+        shape = RoundedRectangle(20.dp),
+        exportBackdropToContent = true,
+        pressSafePadding = 0.dp,
+        blurRadius = blurRadius,
+        lensRadius = lensRadius,
+        onClick = onClick,
+    ) {
+        HomeInfoCardContent(content)
     }
 }
 
