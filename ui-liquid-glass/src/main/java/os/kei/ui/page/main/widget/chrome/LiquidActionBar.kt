@@ -8,7 +8,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -55,6 +54,7 @@ import com.kyant.capsule.ContinuousCapsule
 import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
@@ -257,7 +257,7 @@ fun LiquidActionBar(
     if (items.isEmpty()) return
     val clampedSelectedIndex = selectedIndex.coerceIn(0, items.lastIndex)
 
-    val isInLightTheme = !isSystemInDarkTheme()
+    val isInLightTheme = !isAppInDarkTheme()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val effectiveBlurEnabled = isBlurEnabled && appGlassRuntimeEffectsEnabled()
     val accentColor = MiuixTheme.colorScheme.primary

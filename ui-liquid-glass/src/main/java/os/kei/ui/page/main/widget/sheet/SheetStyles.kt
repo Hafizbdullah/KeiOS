@@ -2,7 +2,6 @@ package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +31,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.Capsule
 import os.kei.ui.liquidglass.R
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppCardBodyColumn
 import os.kei.ui.page.main.widget.core.AppCardHeader
@@ -136,7 +136,7 @@ fun SheetSurfaceCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val visualMode = LocalSheetVisualMode.current
     val sheetBaseColor = MiuixTheme.colorScheme.background
     val rawContainerColor = containerColor ?: sheetCardSurfaceColor(surfaceTone, isDark, visualMode)
@@ -445,7 +445,7 @@ fun SheetLiquidChoiceIndicator(
     accentColor: Color = MiuixTheme.colorScheme.primary,
     enabled: Boolean = true
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val indicatorBackdrop = rememberLayerBackdrop()
     val shape = Capsule()
     val surfaceColor = when {

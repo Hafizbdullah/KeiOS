@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -39,6 +38,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
@@ -124,7 +124,7 @@ fun LiquidGlassBottomSheet(
     preferExportedBackdrop: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val sceneBackdrop = LocalSceneBackdrop.current
     val sheetBackdrop = rememberLayerBackdrop()
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current

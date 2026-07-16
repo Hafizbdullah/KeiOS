@@ -7,7 +7,6 @@
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +26,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
 
@@ -43,7 +43,7 @@ internal fun LiquidDetentBackgroundDimLayer(
 ) {
     val baseColor = MiuixTheme.colorScheme.windowDimming
     val sceneBackdrop = LocalSceneBackdrop.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     Box(
         modifier =
             Modifier

@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +24,7 @@ import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -38,7 +38,7 @@ fun AppFloatingLiquidVerticalDockSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val activeBackdrop = activeGlassBackdrop(backdrop)
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val material = floatingLiquidDockMaterial(isDark)
     val animationScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current

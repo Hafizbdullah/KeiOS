@@ -8,7 +8,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +73,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
@@ -206,7 +206,7 @@ fun LiquidGlassBottomBar(
 ) {
     val density = LocalDensity.current
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
-    val isInLightTheme = !isSystemInDarkTheme()
+    val isInLightTheme = !isAppInDarkTheme()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val animationScope = rememberCoroutineScope()
     val touchSlop = LocalViewConfiguration.current.touchSlop
