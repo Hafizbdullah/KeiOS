@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +28,7 @@ import os.kei.ui.page.main.github.repositoryHealthStatusColor
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -132,7 +132,7 @@ internal fun GitHubHealthPreviewBlock(
     health: GitHubRepositoryHealth,
     onClick: () -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val localBackdrop = rememberLayerBackdrop()
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val activeBackdrop = parentBackdrop ?: localBackdrop

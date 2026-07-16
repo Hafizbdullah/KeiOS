@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -42,6 +41,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -133,7 +133,7 @@ internal fun GitHubLinkedInfoCard(
     onClick: () -> Unit,
 ) {
     val parentBackdrop = LocalLiquidParentBackdrop.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val surfaceColor =
         if (isDark) {
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.56f)
@@ -236,7 +236,7 @@ internal fun GitHubInlineLiquidSurface(
 
 @Composable
 internal fun gitHubPreReleaseCardTextColor(): Color {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     return if (isDark) {
         Color(0xFF93C5FD)
     } else {

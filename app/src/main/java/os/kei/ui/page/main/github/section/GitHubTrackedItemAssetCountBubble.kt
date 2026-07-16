@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.section
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +17,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
@@ -30,7 +30,7 @@ internal fun GitHubAssetCountBubble(
     modifier: Modifier = Modifier,
     loading: Boolean = false,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val shape = CircleShape
     val cornerRadius = 999.dp

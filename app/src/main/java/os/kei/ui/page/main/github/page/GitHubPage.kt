@@ -6,7 +6,6 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -44,6 +43,7 @@ import os.kei.ui.page.main.github.section.GitHubMainContentTracked
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import kotlin.math.abs
 
@@ -64,7 +64,7 @@ fun GitHubPage(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val githubPageViewModel: GitHubPageViewModel = applicationViewModel(create = ::GitHubPageViewModel)
     val isListScrolling by remember(listState) {
         derivedStateOf { listState.isScrollInProgress }
