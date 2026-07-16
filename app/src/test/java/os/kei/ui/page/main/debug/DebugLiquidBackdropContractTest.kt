@@ -77,12 +77,99 @@ class DebugLiquidBackdropContractTest {
             assertFalse(".layerBackdrop(cardBackdrop)" in card, contract.functionName)
         }
     }
+
+    @Test
+    fun nestedCatalogSurfacesExportTheirRenderedMaterialToDescendants() {
+        val source = sourceFile(DEBUG_LIQUID_CATALOG_SAMPLES_SOURCE)
+        val surfaces =
+            listOf(
+                NestedSurfaceContract(
+                    functionName = "DebugLiquidSurfaceFamilySamples",
+                    nextFunctionName = "DebugLiquidClusterCardSample",
+                    exportedBackdropName = "cardBackdrop",
+                    expectedInputCount = 2,
+                    expectedDescendantCount = 1,
+                    flexibleMinimumHeightDp = 128,
+                    allowedFixedHeightCount = 1,
+                ),
+                NestedSurfaceContract(
+                    functionName = "DebugLiquidClusterCardSample",
+                    nextFunctionName = "DebugLiquidParentBackdropSample",
+                    exportedBackdropName = "clusterBackdrop",
+                    expectedInputCount = 1,
+                    expectedDescendantCount = 5,
+                    flexibleMinimumHeightDp = 158,
+                    allowedFixedHeightCount = 0,
+                ),
+                NestedSurfaceContract(
+                    functionName = "DebugLiquidParameterPanelSample",
+                    nextFunctionName = "DebugLiquidParameterSlider",
+                    exportedBackdropName = "panelBackdrop",
+                    expectedInputCount = 1,
+                    expectedDescendantCount = 5,
+                    flexibleMinimumHeightDp = 96,
+                    allowedFixedHeightCount = 0,
+                ),
+            )
+
+        surfaces.forEach { contract ->
+            val sample =
+                source.functionBody(
+                    start = "internal fun ${contract.functionName}(",
+                    end = "fun ${contract.nextFunctionName}(",
+                )
+
+            assertTrue("exportBackdropToContent = true," in sample, contract.functionName)
+            assertTrue(
+                "val ${contract.exportedBackdropName} = " +
+                    "LocalLiquidParentBackdrop.current ?: backdrop" in sample,
+                contract.functionName,
+            )
+            assertEquals(
+                contract.expectedInputCount,
+                sample.occurrencesOf("backdrop = backdrop,"),
+                contract.functionName,
+            )
+            assertEquals(
+                contract.expectedDescendantCount,
+                sample.occurrencesOf("backdrop = ${contract.exportedBackdropName},"),
+                contract.functionName,
+            )
+            assertFalse(
+                ".layerBackdrop(${contract.exportedBackdropName})" in sample,
+                contract.functionName,
+            )
+            assertFalse(
+                "val ${contract.exportedBackdropName} = rememberLayerBackdrop()" in sample,
+                contract.functionName,
+            )
+            assertTrue(
+                ".heightIn(min = ${contract.flexibleMinimumHeightDp}.dp)" in sample,
+                contract.functionName,
+            )
+            assertEquals(
+                contract.allowedFixedHeightCount,
+                sample.occurrencesOf(".height(${contract.flexibleMinimumHeightDp}.dp)"),
+                contract.functionName,
+            )
+        }
+    }
 }
 
 private data class CatalogCardContract(
     val functionName: String,
     val nextFunctionName: String,
     val expectedConsumerCount: Int,
+)
+
+private data class NestedSurfaceContract(
+    val functionName: String,
+    val nextFunctionName: String,
+    val exportedBackdropName: String,
+    val expectedInputCount: Int,
+    val expectedDescendantCount: Int,
+    val flexibleMinimumHeightDp: Int,
+    val allowedFixedHeightCount: Int,
 )
 
 private fun sourceFile(relativePath: String): String {
@@ -114,3 +201,6 @@ private const val DEBUG_LIQUID_SEARCH_FORM_SOURCE =
 
 private const val DEBUG_LIQUID_CATALOG_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogCard.kt"
+
+private const val DEBUG_LIQUID_CATALOG_SAMPLES_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogSamples.kt"

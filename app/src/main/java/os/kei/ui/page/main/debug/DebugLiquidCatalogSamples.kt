@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -288,7 +289,6 @@ internal fun DebugLiquidSurfaceFamilySamples(
     contentColor: Color,
     secondaryColor: Color
 ) {
-    val cardBackdrop = rememberLayerBackdrop()
     Text(
         text = stringResource(R.string.debug_component_lab_liquid_surface_family_label),
         color = contentColor,
@@ -304,22 +304,19 @@ internal fun DebugLiquidSurfaceFamilySamples(
         LiquidRoundedCard(
             backdrop = backdrop,
             surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.08f),
+            exportBackdropToContent = true,
             contentPadding = PaddingValues(14.dp),
             modifier = Modifier
                 .weight(1f)
-                .height(128.dp)
+                .heightIn(min = 128.dp)
         ) {
             Box(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .layerBackdrop(cardBackdrop)
-                )
+                val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
                 Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.debug_component_lab_liquid_rounded_card_title),
@@ -399,26 +396,22 @@ internal fun DebugLiquidClusterCardSample(
     contentColor: Color,
     secondaryColor: Color
 ) {
-    val clusterBackdrop = rememberLayerBackdrop()
     LiquidRoundedCard(
         backdrop = backdrop,
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.06f),
+        exportBackdropToContent = true,
         contentPadding = PaddingValues(14.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(158.dp)
+            .heightIn(min = 158.dp)
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(clusterBackdrop)
-            )
+            val clusterBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
             Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
@@ -657,24 +650,20 @@ internal fun DebugLiquidParameterPanelSample(
     chromaticAberrationEnabled: Boolean,
     onChromaticAberrationChange: (Boolean) -> Unit
 ) {
-    val panelBackdrop = rememberLayerBackdrop()
     val previewCorner = 18.dp + 42.dp * cornerDemoValue.coerceIn(0f, 1f)
     val previewBlur = 2.dp + 18.dp * blurDemoValue.coerceIn(0f, 1f)
     val previewLens = 6.dp + 30.dp * refractionHeightValue.coerceIn(0f, 1f)
     LiquidRoundedCard(
         backdrop = backdrop,
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.08f),
+        exportBackdropToContent = true,
         contentPadding = PaddingValues(14.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .layerBackdrop(panelBackdrop)
-            )
+            val panelBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -699,11 +688,11 @@ internal fun DebugLiquidParameterPanelSample(
                     contentPadding = PaddingValues(14.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(96.dp)
+                        .heightIn(min = 96.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.debug_component_lab_liquid_parameter_preview_title),

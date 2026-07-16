@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -41,6 +42,7 @@ import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
@@ -620,6 +622,7 @@ fun LiquidRoundedCard(
     contentPadding: PaddingValues = PaddingValues(16.dp),
     tint: Color = Color.Unspecified,
     surfaceColor: Color = Color.Unspecified,
+    exportBackdropToContent: Boolean = false,
     blurRadius: Dp = UiPerformanceBudget.backdropBlur,
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
     effectVariant: GlassVariant? = GlassVariant.Content,
@@ -628,6 +631,12 @@ fun LiquidRoundedCard(
     shadow: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val exportedContentBackdrop =
+        if (exportBackdropToContent) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     LiquidSurface(
         backdrop = backdrop,
         modifier = modifier,
@@ -640,10 +649,23 @@ fun LiquidRoundedCard(
         chromaticAberration = chromaticAberration,
         depthEffect = depthEffect,
         shadow = shadow,
+        exportedBackdrop = exportedContentBackdrop,
     ) {
-        Box(
-            modifier = Modifier.padding(contentPadding),
-            content = content,
-        )
+        if (exportedContentBackdrop != null) {
+            CompositionLocalProvider(
+                LocalLiquidParentBackdrop provides exportedContentBackdrop,
+                LocalLiquidParentBackdropOverridesFallback provides true,
+            ) {
+                Box(
+                    modifier = Modifier.padding(contentPadding),
+                    content = content,
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier.padding(contentPadding),
+                content = content,
+            )
+        }
     }
 }
