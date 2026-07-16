@@ -34,7 +34,6 @@ import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidInputField
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -111,12 +110,10 @@ internal fun WebDavConnectionCard(
             )
         } else {
             WebDavFieldLabel(stringResource(R.string.webdav_sync_server_url))
-            AppStandaloneLiquidInputField(
+            WebDavLiquidTextField(
                 value = state.serverUrl,
                 onValueChange = onUpdateServerUrl,
                 label = stringResource(R.string.webdav_sync_server_url_placeholder),
-                variant = GlassVariant.SheetInput,
-                singleLine = true,
             )
             urlErrorText(state.urlError)?.let { text ->
                 Text(
@@ -129,21 +126,17 @@ internal fun WebDavConnectionCard(
         }
 
         WebDavFieldLabel(stringResource(R.string.webdav_sync_username))
-        AppStandaloneLiquidInputField(
+        WebDavLiquidTextField(
             value = state.username,
             onValueChange = onUpdateUsername,
             label = stringResource(R.string.webdav_sync_username_placeholder),
-            variant = GlassVariant.SheetInput,
-            singleLine = true,
         )
 
         WebDavFieldLabel(stringResource(R.string.webdav_sync_app_password))
-        AppStandaloneLiquidInputField(
+        WebDavLiquidTextField(
             value = state.appPassword,
             onValueChange = onUpdateAppPassword,
             label = stringResource(R.string.webdav_sync_password_placeholder),
-            variant = GlassVariant.SheetInput,
-            singleLine = true,
             visualTransformation = if (state.passwordVisible) {
                 VisualTransformation.None
             } else {
@@ -168,12 +161,10 @@ internal fun WebDavConnectionCard(
         )
 
         WebDavFieldLabel(stringResource(R.string.webdav_sync_remote_dir))
-        AppStandaloneLiquidInputField(
+        WebDavLiquidTextField(
             value = state.remoteDir,
             onValueChange = onUpdateRemoteDir,
             label = WebDavSyncStore.DEFAULT_REMOTE_DIR,
-            variant = GlassVariant.SheetInput,
-            singleLine = true,
         )
 
         if (state.provider == WebDavProvider.Jianguoyun) {
