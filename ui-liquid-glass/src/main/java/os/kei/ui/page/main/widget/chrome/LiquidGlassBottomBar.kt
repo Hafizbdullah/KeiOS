@@ -25,6 +25,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
@@ -82,6 +84,7 @@ import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.max
@@ -95,6 +98,13 @@ private val LocalLiquidGlassBottomBarItemPressHandler =
     staticCompositionLocalOf<(Int, Boolean) -> Unit> {
         { _, _ -> }
     }
+
+@Immutable
+data class LiquidGlassBottomBarSelectionOptics(
+    val overlayColor: Color,
+    val rimColor: Color,
+    val rimWidth: Dp = 1.dp,
+)
 
 @Composable
 fun liquidGlassBottomBarItemSelectionProgress(tabIndex: Int): Float = LocalLiquidGlassBottomBarSelectionProgress.current(tabIndex)
@@ -202,6 +212,7 @@ fun LiquidGlassBottomBar(
     interactionEnabled: Boolean = true,
     isLiquidEffectEnabled: Boolean = true,
     expandToMaxWidth: Boolean = false,
+    selectionOptics: LiquidGlassBottomBarSelectionOptics? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
     val density = LocalDensity.current
@@ -877,7 +888,24 @@ fun LiquidGlassBottomBar(
                                 ((totalWidthPx - (horizontalPadding * 2).toPx()) / safeTabsCount).toDp()
                             },
                         ),
-                )
+                ) {
+                    selectionOptics?.let { optics ->
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .appSquircleBackground(optics.overlayColor, 999.dp),
+                        )
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .appSquircleBorder(
+                                    width = optics.rimWidth,
+                                    color = optics.rimColor,
+                                    cornerRadius = 999.dp,
+                                ),
+                        )
+                    }
+                }
             }
         }
     }

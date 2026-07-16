@@ -5,7 +5,9 @@ package os.kei.ui.page.main.student.catalog.component.bgm
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -13,7 +15,9 @@ import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
+import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarSelectionOptics
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 
@@ -33,6 +37,8 @@ internal fun BaGuideBgmExpandedDock(
         tabs
             .indexOfFirst { it.key == selectedDockKey }
             .coerceAtLeast(0)
+    val isDark = isAppInDarkTheme()
+    val selectionOptics = remember(isDark) { baGuideBgmDockSelectionOptics(isDark) }
     val tabContent: @Composable RowScope.() -> Unit = {
         tabs.forEachIndexed { index, tab ->
             val contentColor = liquidGlassBottomBarItemContentColor(index)
@@ -76,6 +82,13 @@ internal fun BaGuideBgmExpandedDock(
         tabsCount = tabs.size,
         interactionEnabled = interactionEnabled,
         expandToMaxWidth = true,
+        selectionOptics = selectionOptics,
         content = tabContent,
     )
 }
+
+internal fun baGuideBgmDockSelectionOptics(isDark: Boolean): LiquidGlassBottomBarSelectionOptics =
+    LiquidGlassBottomBarSelectionOptics(
+        overlayColor = Color.White.copy(alpha = if (isDark) 0.03f else 0.08f),
+        rimColor = Color.White.copy(alpha = if (isDark) 0.16f else 0.38f),
+    )
