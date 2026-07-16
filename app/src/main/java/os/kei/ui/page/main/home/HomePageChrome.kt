@@ -70,6 +70,16 @@ private val HOME_KEI_TITLE_GRADIENT_COLORS =
         Color(0xFFFF5893),
     )
 private val HOME_HERO_SHARED_AVOIDANCE_LIFT = 72.dp
+private val HOME_HERO_TOP_PADDING = 36.dp
+private val HOME_HERO_COMPACT_LANDSCAPE_TOP_PADDING = 12.dp
+private val HOME_HERO_ICON_SIZE = 88.dp
+private val HOME_HERO_COMPACT_LANDSCAPE_ICON_SIZE = 64.dp
+private val HOME_HERO_TITLE_TOP_PADDING = 10.dp
+private val HOME_HERO_COMPACT_LANDSCAPE_TITLE_TOP_PADDING = 4.dp
+private val HOME_HERO_TITLE_BOTTOM_PADDING = 4.dp
+private val HOME_HERO_COMPACT_LANDSCAPE_TITLE_BOTTOM_PADDING = 0.dp
+private val HOME_HERO_SPACER_TRAILING_CLEARANCE = 90.dp
+private val HOME_HERO_COMPACT_LANDSCAPE_SPACER_TRAILING_CLEARANCE = 12.dp
 private const val HOME_HERO_AVOIDANCE_ALPHA_WEIGHT = 0.28f
 private const val HOME_HERO_FOREGROUND_BLUR_RADIUS_DP = 50f
 
@@ -359,6 +369,7 @@ internal fun HomePageHero(
     titleProgress: () -> Float,
     summaryProgress: () -> Float,
     statusPills: List<HomeHeaderStatusPillState>,
+    compactHeightPresentation: Boolean,
     onHeroHeightChanged: (Int) -> Unit,
     onIconBottomChanged: (Float) -> Unit,
     onTitleBottomChanged: (Float) -> Unit,
@@ -366,13 +377,34 @@ internal fun HomePageHero(
 ) {
     val density = LocalDensity.current
     val sharedAvoidanceLiftPx = with(density) { HOME_HERO_SHARED_AVOIDANCE_LIFT.toPx() }
+    val topPadding = homePageHeroTopPadding(compactHeightPresentation)
+    val iconSize =
+        if (compactHeightPresentation) {
+            HOME_HERO_COMPACT_LANDSCAPE_ICON_SIZE
+        } else {
+            HOME_HERO_ICON_SIZE
+        }
+    val titleTopPadding =
+        if (compactHeightPresentation) {
+            HOME_HERO_COMPACT_LANDSCAPE_TITLE_TOP_PADDING
+        } else {
+            HOME_HERO_TITLE_TOP_PADDING
+        }
+    val titleBottomPadding =
+        if (compactHeightPresentation) {
+            HOME_HERO_COMPACT_LANDSCAPE_TITLE_BOTTOM_PADDING
+        } else {
+            HOME_HERO_TITLE_BOTTOM_PADDING
+        }
+    val titleFontSize = if (compactHeightPresentation) 24.sp else 30.sp
+    val showSupportingDetails = homePageHeroShowsSupportingDetails(compactHeightPresentation)
 
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .padding(
-                    top = logoPadding.calculateTopPadding() + 36.dp + homeHeaderSinkOffset,
+                    top = logoPadding.calculateTopPadding() + topPadding + homeHeaderSinkOffset,
                     start = logoPadding.calculateStartPadding(layoutDirection),
                     end = logoPadding.calculateEndPadding(layoutDirection),
                 )
@@ -383,7 +415,7 @@ internal fun HomePageHero(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .size(88.dp)
+                    .size(iconSize)
                     .graphicsLayer {
                         val avoidanceValue = avoidanceProgress()
                         val iconValue = iconProgress()
@@ -415,7 +447,7 @@ internal fun HomePageHero(
                 contentDescription = null,
                 modifier =
                     Modifier
-                        .size(88.dp)
+                        .size(iconSize)
                         .graphicsLayer {
                             val avoidanceValue = avoidanceProgress()
                             val iconValue = iconProgress()
@@ -447,7 +479,7 @@ internal fun HomePageHero(
                             end = Offset(260f, 104f),
                         ),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 30.sp,
+                    fontSize = titleFontSize,
                     shadow =
                         ComposeTextShadow(
                             color = Color(0x55FF74A6),
@@ -459,9 +491,13 @@ internal fun HomePageHero(
         Box(
             modifier =
                 Modifier
-                    .padding(top = 10.dp, bottom = 4.dp)
+                    .padding(top = titleTopPadding, bottom = titleBottomPadding)
                     .onGloballyPositioned { coordinates ->
-                        onTitleBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
+                        val bottom = coordinates.positionInWindow().y + coordinates.size.height
+                        onTitleBottomChanged(bottom)
+                        if (!showSupportingDetails) {
+                            onSummaryBottomChanged(bottom)
+                        }
                     }
                     .graphicsLayer {
                         val avoidanceValue = avoidanceProgress()
@@ -513,72 +549,74 @@ internal fun HomePageHero(
             )
         }
 
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        val avoidanceValue = avoidanceProgress()
-                        val iconValue = iconProgress()
-                        val titleValue = titleProgress()
-                        val summaryValue = summaryProgress()
-                        val sharedLiftProgress =
-                            homeHeroSharedLiftProgress(
-                                avoidanceProgress = avoidanceValue,
-                                iconProgress = iconValue,
-                                titleProgress = titleValue,
-                                summaryProgress = summaryValue,
-                            )
-                        val summaryExitProgress =
-                            homeHeroSummaryExitProgress(
-                                avoidanceProgress = avoidanceValue,
-                                summaryProgress = summaryValue,
-                            )
-                        alpha = 1f - summaryExitProgress
-                        translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
-                        scaleX = 1f - (summaryExitProgress * 0.05f)
-                        scaleY = 1f - (summaryExitProgress * 0.05f)
-                    }
-                    .onGloballyPositioned { coordinates ->
-                        onSummaryBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
-                    },
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = homeTagline,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = appVersionText,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-            Row(
+        if (showSupportingDetails) {
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                        .graphicsLayer {
+                            val avoidanceValue = avoidanceProgress()
+                            val iconValue = iconProgress()
+                            val titleValue = titleProgress()
+                            val summaryValue = summaryProgress()
+                            val sharedLiftProgress =
+                                homeHeroSharedLiftProgress(
+                                    avoidanceProgress = avoidanceValue,
+                                    iconProgress = iconValue,
+                                    titleProgress = titleValue,
+                                    summaryProgress = summaryValue,
+                                )
+                            val summaryExitProgress =
+                                homeHeroSummaryExitProgress(
+                                    avoidanceProgress = avoidanceValue,
+                                    summaryProgress = summaryValue,
+                                )
+                            alpha = 1f - summaryExitProgress
+                            translationY = -sharedAvoidanceLiftPx * sharedLiftProgress
+                            scaleX = 1f - (summaryExitProgress * 0.05f)
+                            scaleY = 1f - (summaryExitProgress * 0.05f)
+                        }
+                        .onGloballyPositioned { coordinates ->
+                            onSummaryBottomChanged(coordinates.positionInWindow().y + coordinates.size.height)
+                        },
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                statusPills.forEach { pill ->
-                    val modifier = Modifier.defaultMinSize(minWidth = pill.minWidth)
-                    if (pill.contentPadding == null) {
-                        StatusPill(
-                            label = pill.label,
-                            color = pill.color,
-                            modifier = modifier,
-                        )
-                    } else {
-                        StatusPill(
-                            label = pill.label,
-                            color = pill.color,
-                            modifier = modifier,
-                            contentPadding = pill.contentPadding,
-                        )
+                Text(
+                    text = homeTagline,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = appVersionText,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                ) {
+                    statusPills.forEach { pill ->
+                        val modifier = Modifier.defaultMinSize(minWidth = pill.minWidth)
+                        if (pill.contentPadding == null) {
+                            StatusPill(
+                                label = pill.label,
+                                color = pill.color,
+                                modifier = modifier,
+                            )
+                        } else {
+                            StatusPill(
+                                label = pill.label,
+                                color = pill.color,
+                                modifier = modifier,
+                                contentPadding = pill.contentPadding,
+                            )
+                        }
                     }
                 }
             }
@@ -618,17 +656,24 @@ internal fun HomePageHeroSpacer(
     logoPadding: PaddingValues,
     listContentPadding: PaddingValues,
     homeHeaderSinkOffset: Dp,
+    compactHeightPresentation: Boolean,
     onLogoHeightPxChanged: (Int) -> Unit,
     onLogoAreaBottomChanged: (Float) -> Unit,
 ) {
+    val topPadding = homePageHeroTopPadding(compactHeightPresentation)
+    val trailingClearance = homePageHeroSpacerTrailingClearance(compactHeightPresentation)
     Box(
         Modifier
             .fillMaxWidth()
             .height(
-                logoHeightDp + 36.dp +
-                        logoPadding.calculateTopPadding() -
-                        listContentPadding.calculateTopPadding() + 90.dp +
-                        homeHeaderSinkOffset,
+                homePageHeroSpacerHeight(
+                    heroContentHeight = logoHeightDp,
+                    logoTopPadding = logoPadding.calculateTopPadding(),
+                    listTopPadding = listContentPadding.calculateTopPadding(),
+                    topPadding = topPadding,
+                    trailingClearance = trailingClearance,
+                    homeHeaderSinkOffset = homeHeaderSinkOffset,
+                ),
             )
             .onSizeChanged { size -> onLogoHeightPxChanged(size.height) }
             .onGloballyPositioned { coordinates ->
@@ -636,6 +681,40 @@ internal fun HomePageHeroSpacer(
             },
     )
 }
+
+internal fun homePageHeroTopPadding(compactHeightPresentation: Boolean): Dp =
+    if (compactHeightPresentation) {
+        HOME_HERO_COMPACT_LANDSCAPE_TOP_PADDING
+    } else {
+        HOME_HERO_TOP_PADDING
+    }
+
+internal fun homePageHeroSpacerTrailingClearance(compactHeightPresentation: Boolean): Dp =
+    if (compactHeightPresentation) {
+        HOME_HERO_COMPACT_LANDSCAPE_SPACER_TRAILING_CLEARANCE
+    } else {
+        HOME_HERO_SPACER_TRAILING_CLEARANCE
+    }
+
+internal fun homePageHeroShowsSupportingDetails(compactHeightPresentation: Boolean): Boolean =
+    !compactHeightPresentation
+
+internal fun homePageHeroSpacerHeight(
+    heroContentHeight: Dp,
+    logoTopPadding: Dp,
+    listTopPadding: Dp,
+    topPadding: Dp,
+    trailingClearance: Dp,
+    homeHeaderSinkOffset: Dp,
+): Dp =
+    (
+        heroContentHeight +
+            topPadding +
+            logoTopPadding -
+            listTopPadding +
+            trailingClearance +
+            homeHeaderSinkOffset
+    ).coerceAtLeast(0.dp)
 
 @Composable
 internal fun HomePageOverviewCards(

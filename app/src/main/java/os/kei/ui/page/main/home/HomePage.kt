@@ -23,8 +23,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -56,6 +58,27 @@ import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 
+internal val HomePageCompactLandscapeHeightMax: Dp = 480.dp
+private val HOME_PAGE_HERO_TOP_EXTRA = 24.dp
+
+internal fun homePageUsesCompactLandscapeLayout(
+    availableWidth: Dp,
+    availableHeight: Dp,
+): Boolean =
+    availableWidth > availableHeight &&
+        availableHeight <= HomePageCompactLandscapeHeightMax
+
+internal fun homePageLogoTopPadding(
+    scaffoldTopPadding: Dp,
+    contentTopPadding: Dp,
+    compactHeightPresentation: Boolean,
+): Dp =
+    if (compactHeightPresentation) {
+        scaffoldTopPadding
+    } else {
+        scaffoldTopPadding + contentTopPadding + HOME_PAGE_HERO_TOP_EXTRA
+    }
+
 @Composable
 fun HomePage(
     shizukuStatus: String,
@@ -85,6 +108,12 @@ fun HomePage(
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val layoutDirection = LocalLayoutDirection.current
+    val configuration = LocalConfiguration.current
+    val compactLandscapeLayout =
+        homePageUsesCompactLandscapeLayout(
+            availableWidth = configuration.screenWidthDp.dp,
+            availableHeight = configuration.screenHeightDp.dp,
+        )
     val lazyListState = rememberLazyListState()
     val pageScope = rememberCoroutineScope()
     BindLazyListScrollBoundsEffect(
@@ -249,7 +278,12 @@ fun HomePage(
                 )
             val logoPadding =
                 PaddingValues(
-                    top = innerPadding.calculateTopPadding() + runtime.contentTopPadding + 24.dp,
+                    top =
+                        homePageLogoTopPadding(
+                            scaffoldTopPadding = innerPadding.calculateTopPadding(),
+                            contentTopPadding = runtime.contentTopPadding,
+                            compactHeightPresentation = compactLandscapeLayout,
+                        ),
                     start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
                     end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
                 )
@@ -291,6 +325,7 @@ fun HomePage(
                         titleProgress = heroMotionState.titleProgress,
                         summaryProgress = heroMotionState.summaryProgress,
                         statusPills = overviewCardState.homeHeaderStatusPills,
+                        compactHeightPresentation = compactLandscapeLayout,
                         onHeroHeightChanged = heroMotionState.onHeroHeightPxChanged,
                         onIconBottomChanged = heroMotionState.onIconBottomChanged,
                         onTitleBottomChanged = heroMotionState.onTitleBottomChanged,
@@ -313,6 +348,7 @@ fun HomePage(
                             logoPadding = logoPadding,
                             listContentPadding = listContentPadding,
                             homeHeaderSinkOffset = heroMotionState.homeHeaderSinkOffset,
+                            compactHeightPresentation = compactLandscapeLayout,
                             onLogoHeightPxChanged = heroMotionState.onLogoHeightPxChanged,
                             onLogoAreaBottomChanged = heroMotionState.onLogoAreaBottomChanged,
                         )
