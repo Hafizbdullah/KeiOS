@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -35,9 +36,14 @@ import os.kei.R
 import os.kei.ui.page.main.student.GuideRemoteIcon
 import os.kei.ui.page.main.student.GuideSkillCardModel
 import os.kei.ui.page.main.student.component.GuideLiquidCard
+import os.kei.ui.page.main.student.component.GuideSkillMetadataPillTypography
+import os.kei.ui.page.main.student.component.GuideSkillPrimaryMetadataPillMinHeight
+import os.kei.ui.page.main.student.component.GuideSkillPrimaryMetadataPillPadding
+import os.kei.ui.page.main.student.component.GuideSkillStateMetadataPillMinHeight
+import os.kei.ui.page.main.student.component.GuideSkillStateMetadataPillPadding
 import os.kei.ui.page.main.student.guideLocalizedLabel
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
@@ -244,16 +250,10 @@ fun GuideSkillCardItem(
                                 Spacer(modifier = Modifier.height(typeAlignToTitleOffset))
                             }
                             Box(modifier = Modifier.onSizeChanged { typeCapsuleHeightPx = it.height }) {
-                                AppLiquidTextButton(
+                                GuideSkillMetadataPill(
                                     backdrop = backdrop,
-                                    text = displaySkillType,
-                                    enabled = false,
-                                    textColor = Color(0xFF3B82F6),
-                                    variant = GlassVariant.Compact,
-                                    minHeight = 30.dp,
-                                    horizontalPadding = 10.dp,
-                                    verticalPadding = 6.dp,
-                                    onClick = {}
+                                    label = displaySkillType,
+                                    kind = GuideSkillMetadataPillKind.Primary,
                                 )
                             }
                         }
@@ -311,16 +311,10 @@ fun GuideSkillCardItem(
                             Spacer(modifier = Modifier.height(costAlignToDescriptionOffset))
                         }
                         if (skillCost.isNotBlank()) {
-                            AppLiquidTextButton(
+                            GuideSkillMetadataPill(
                                 backdrop = backdrop,
-                                text = "COST:$skillCost",
-                                enabled = false,
-                                textColor = Color(0xFF3B82F6),
-                                variant = GlassVariant.Compact,
-                                minHeight = 30.dp,
-                                horizontalPadding = 10.dp,
-                                verticalPadding = 6.dp,
-                                onClick = {}
+                                label = "COST:$skillCost",
+                                kind = GuideSkillMetadataPillKind.Primary,
                             )
                         }
                     }
@@ -328,6 +322,42 @@ fun GuideSkillCardItem(
             }
         }
     }
+}
+
+internal enum class GuideSkillMetadataPillKind {
+    Primary,
+    State,
+}
+
+@Composable
+internal fun GuideSkillMetadataPill(
+    label: String,
+    backdrop: Backdrop?,
+    kind: GuideSkillMetadataPillKind,
+    modifier: Modifier = Modifier,
+) {
+    val minHeight =
+        when (kind) {
+            GuideSkillMetadataPillKind.Primary -> GuideSkillPrimaryMetadataPillMinHeight
+            GuideSkillMetadataPillKind.State -> GuideSkillStateMetadataPillMinHeight
+        }
+    val contentPadding =
+        when (kind) {
+            GuideSkillMetadataPillKind.Primary -> GuideSkillPrimaryMetadataPillPadding
+            GuideSkillMetadataPillKind.State -> GuideSkillStateMetadataPillPadding
+        }
+
+    StatusPill(
+        label = label,
+        color = Color(0xFF3B82F6),
+        modifier = modifier.heightIn(min = minHeight),
+        size = AppStatusPillSize.Compact,
+        contentPadding = contentPadding,
+        backdrop = backdrop,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        typographyOverride = GuideSkillMetadataPillTypography,
+    )
 }
 
 @Composable
@@ -359,16 +389,10 @@ internal fun GuideSkillStateTagButton(
     backdrop: Backdrop?,
     modifier: Modifier = Modifier
 ) {
-    AppLiquidTextButton(
+    GuideSkillMetadataPill(
         backdrop = backdrop,
-        text = label,
-        enabled = false,
-        textColor = Color(0xFF3B82F6),
-        variant = GlassVariant.Compact,
-        minHeight = 26.dp,
-        horizontalPadding = 8.dp,
-        verticalPadding = 5.dp,
+        label = label,
+        kind = GuideSkillMetadataPillKind.State,
         modifier = modifier,
-        onClick = {}
     )
 }
