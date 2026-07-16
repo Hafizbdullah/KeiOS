@@ -635,14 +635,15 @@ fun LiquidRoundedCard(
     shadow: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val activeBackdrop = activeGlassBackdrop(backdrop)
     val exportedContentBackdrop =
-        if (exportBackdropToContent) {
+        if (exportBackdropToContent && activeBackdrop != null) {
             rememberLayerBackdrop()
         } else {
             null
         }
     LiquidSurface(
-        backdrop = backdrop,
+        backdrop = activeBackdrop,
         modifier = modifier,
         shape = RoundedRectangle(cornerRadius),
         tint = tint,

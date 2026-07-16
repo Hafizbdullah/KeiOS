@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -22,8 +23,10 @@ import org.robolectric.annotation.GraphicsMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -79,6 +82,144 @@ class LiquidRoundedCardBackdropTest {
             assertNotNull(pageBackdrop)
             assertNotNull(contentBackdrop)
             assertNotSame(pageBackdrop, contentBackdrop)
+            assertSame(contentBackdrop, resolvedExplicitFallback)
+            assertTrue(overridesExplicitFallback)
+        }
+    }
+
+    @Test
+    fun parentMaterialIsNotReplacedByAnEmptyExportWhenRuntimeEffectsAreDisabled() {
+        var parentBackdrop: Backdrop? = null
+        var explicitFallback: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+        var resolvedExplicitFallback: Backdrop? = null
+        var overridesExplicitFallback = true
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val parent = rememberLayerBackdrop()
+                val fallback = rememberLayerBackdrop()
+                parentBackdrop = parent
+                explicitFallback = fallback
+                CompositionLocalProvider(
+                    LocalLiquidControlsEnabled provides false,
+                    LocalLiquidParentBackdrop provides parent,
+                ) {
+                    Box(modifier = Modifier.size(280.dp)) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .matchParentSize()
+                                    .background(Color.White)
+                                    .layerBackdrop(parent),
+                        )
+                        LiquidRoundedCard(
+                            backdrop = parent,
+                            exportBackdropToContent = true,
+                            modifier = Modifier.testTag("rounded-card-runtime-disabled"),
+                        ) {
+                            contentBackdrop = LocalLiquidParentBackdrop.current
+                            resolvedExplicitFallback = preferredLiquidBackdrop(fallback)
+                            overridesExplicitFallback =
+                                LocalLiquidParentBackdropOverridesFallback.current
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("rounded-card-runtime-disabled").assertExists()
+        composeRule.runOnIdle {
+            assertNotNull(parentBackdrop)
+            assertNotNull(explicitFallback)
+            assertSame(parentBackdrop, contentBackdrop)
+            assertSame(explicitFallback, resolvedExplicitFallback)
+            assertFalse(overridesExplicitFallback)
+        }
+    }
+
+    @Test
+    fun windowBoundaryRejectsExplicitParentWithoutPublishingAnEmptyExport() {
+        var pageBackdrop: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+        var resolvedExplicitBackdrop: Backdrop? = null
+        var overridesExplicitFallback = true
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val page = rememberLayerBackdrop()
+                pageBackdrop = page
+                CompositionLocalProvider(LocalLiquidControlsEnabled provides true) {
+                    LiquidBackdropWindowBoundary {
+                        LiquidRoundedCard(
+                            backdrop = page,
+                            exportBackdropToContent = true,
+                            modifier = Modifier.testTag("rounded-card-window-fallback"),
+                        ) {
+                            contentBackdrop = LocalLiquidParentBackdrop.current
+                            resolvedExplicitBackdrop = preferredLiquidBackdrop(page)
+                            overridesExplicitFallback =
+                                LocalLiquidParentBackdropOverridesFallback.current
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("rounded-card-window-fallback").assertExists()
+        composeRule.runOnIdle {
+            assertNotNull(pageBackdrop)
+            assertNull(contentBackdrop)
+            assertNull(resolvedExplicitBackdrop)
+            assertFalse(overridesExplicitFallback)
+        }
+    }
+
+    @Test
+    fun windowLocalParentStillExportsIndependentCardMaterial() {
+        var windowParentBackdrop: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+        var resolvedExplicitFallback: Backdrop? = null
+        var overridesExplicitFallback = false
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val pageBackdrop = rememberLayerBackdrop()
+                CompositionLocalProvider(LocalLiquidControlsEnabled provides true) {
+                    LiquidBackdropWindowBoundary {
+                        val windowParent = rememberLayerBackdrop()
+                        windowParentBackdrop = windowParent
+                        CompositionLocalProvider(LocalLiquidParentBackdrop provides windowParent) {
+                            Box(modifier = Modifier.size(280.dp)) {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .matchParentSize()
+                                            .background(Color.White)
+                                            .layerBackdrop(windowParent),
+                                )
+                                LiquidRoundedCard(
+                                    backdrop = pageBackdrop,
+                                    exportBackdropToContent = true,
+                                    modifier = Modifier.testTag("rounded-card-window-local"),
+                                ) {
+                                    contentBackdrop = LocalLiquidParentBackdrop.current
+                                    resolvedExplicitFallback = preferredLiquidBackdrop(pageBackdrop)
+                                    overridesExplicitFallback =
+                                        LocalLiquidParentBackdropOverridesFallback.current
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("rounded-card-window-local").assertExists()
+        composeRule.runOnIdle {
+            assertNotNull(windowParentBackdrop)
+            assertNotNull(contentBackdrop)
+            assertNotSame(windowParentBackdrop, contentBackdrop)
             assertSame(contentBackdrop, resolvedExplicitFallback)
             assertTrue(overridesExplicitFallback)
         }
