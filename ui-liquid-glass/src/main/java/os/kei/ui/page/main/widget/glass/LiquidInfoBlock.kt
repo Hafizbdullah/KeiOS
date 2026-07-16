@@ -2,10 +2,12 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import os.kei.ui.page.main.widget.isAppInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -15,13 +17,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+enum class LiquidInfoBlockDensity {
+    Standard,
+    Compact,
+}
+
+private const val COMPACT_TITLE_WEIGHT = 0.3f
+private const val COMPACT_SUBTITLE_WEIGHT = 0.7f
 
 @Composable
 fun LiquidInfoBlock(
@@ -31,6 +44,7 @@ fun LiquidInfoBlock(
     body: String = "",
     accent: Color,
     modifier: Modifier = Modifier,
+    density: LiquidInfoBlockDensity = LiquidInfoBlockDensity.Standard,
     content: (@Composable () -> Unit)? = null,
 ) {
     val isDark = isAppInDarkTheme()
@@ -57,6 +71,7 @@ fun LiquidInfoBlock(
         subtitle = subtitle,
         body = body,
         accent = accent,
+        density = density,
         titleColor =
             if (isDark) {
                 accent
@@ -81,6 +96,7 @@ private fun LiquidInfoBlockSurface(
     subtitle: String,
     body: String,
     accent: Color,
+    density: LiquidInfoBlockDensity,
     titleColor: Color,
     content: (@Composable () -> Unit)?,
     cardSurface: Color,
@@ -109,6 +125,7 @@ private fun LiquidInfoBlockSurface(
                         subtitle = subtitle,
                         body = body,
                         accent = accent,
+                        density = density,
                         titleColor = titleColor,
                         content = content,
                     )
@@ -120,6 +137,7 @@ private fun LiquidInfoBlockSurface(
                     subtitle = subtitle,
                     body = body,
                     accent = accent,
+                    density = density,
                     titleColor = titleColor,
                     content = content,
                 )
@@ -135,53 +153,116 @@ private fun LiquidInfoBlockContent(
     subtitle: String,
     body: String,
     accent: Color,
+    density: LiquidInfoBlockDensity,
     titleColor: Color,
     content: (@Composable () -> Unit)?,
 ) {
+    val compact = density == LiquidInfoBlockDensity.Compact
+    val contentPadding =
+        if (compact) {
+            PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+        } else {
+            PaddingValues(16.dp)
+        }
+    val contentSpacing = if (compact) 6.dp else 8.dp
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(contentPadding),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LiquidSurface(
-                backdrop = exportedContentBackdrop,
-                modifier = Modifier.weight(weight = 1f, fill = false),
-                shape = RoundedRectangle(999.dp),
-                isInteractive = false,
-                surfaceColor = accent.copy(alpha = 0.18f),
-                blurRadius = 4.dp,
-                lensRadius = 18.dp,
-                effectVariant = GlassVariant.Compact,
-                shadow = false,
+        if (compact) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                LiquidInfoBlockTitlePill(
+                    backdrop = exportedContentBackdrop,
+                    title = title,
+                    accent = accent,
+                    titleColor = titleColor,
+                    density = density,
+                )
+                if (subtitle.isNotBlank()) {
+                    Text(
+                        text = subtitle,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        fontSize = AppTypographyTokens.Supporting.fontSize,
+                        lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(COMPACT_SUBTITLE_WEIGHT),
+                    )
+                }
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LiquidInfoBlockTitlePill(
+                    backdrop = exportedContentBackdrop,
+                    title = title,
+                    accent = accent,
+                    titleColor = titleColor,
+                    density = density,
+                )
+            }
+            if (subtitle.isNotBlank()) {
                 Text(
-                    text = title,
-                    color = titleColor,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = subtitle,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    modifier = Modifier.padding(top = contentSpacing),
                 )
             }
         }
-        if (subtitle.isNotBlank()) {
-            Text(
-                text = subtitle,
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
         if (content != null) {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
-                content()
-            }
+            Column(modifier = Modifier.padding(top = contentSpacing)) { content() }
         } else if (body.isNotBlank()) {
             Text(
                 text = body,
                 color = MiuixTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(top = 8.dp),
+                fontSize = if (compact) AppTypographyTokens.Body.fontSize else TextUnit.Unspecified,
+                lineHeight = if (compact) AppTypographyTokens.Body.lineHeight else TextUnit.Unspecified,
+                modifier = Modifier.padding(top = contentSpacing),
             )
         }
+    }
+}
+
+@Composable
+private fun RowScope.LiquidInfoBlockTitlePill(
+    backdrop: Backdrop?,
+    title: String,
+    accent: Color,
+    titleColor: Color,
+    density: LiquidInfoBlockDensity,
+) {
+    val compact = density == LiquidInfoBlockDensity.Compact
+    LiquidSurface(
+        backdrop = backdrop,
+        modifier =
+            Modifier.weight(
+                weight = if (compact) COMPACT_TITLE_WEIGHT else 1f,
+                fill = false,
+            ),
+        shape = RoundedRectangle(999.dp),
+        isInteractive = false,
+        surfaceColor = accent.copy(alpha = 0.18f),
+        blurRadius = 4.dp,
+        lensRadius = 18.dp,
+        effectVariant = GlassVariant.Compact,
+        shadow = false,
+    ) {
+        Text(
+            text = title,
+            color = titleColor,
+            fontSize = if (compact) AppTypographyTokens.Supporting.fontSize else TextUnit.Unspecified,
+            lineHeight = if (compact) AppTypographyTokens.Supporting.lineHeight else TextUnit.Unspecified,
+            modifier =
+                Modifier.padding(
+                    horizontal = if (compact) 8.dp else 10.dp,
+                    vertical = if (compact) 3.dp else 4.dp,
+                ),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

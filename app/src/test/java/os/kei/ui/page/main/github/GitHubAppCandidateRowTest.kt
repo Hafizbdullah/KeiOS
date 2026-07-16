@@ -196,6 +196,22 @@ class GitHubAppCandidateRowTest {
         assertTrue(".selectableGroup()" in source)
     }
 
+    @Test
+    fun pickerLoadingAndEmptyStatesUseCompactLiquidInfoBlocks() {
+        val source = sourceFile(GITHUB_TRACK_APP_PICKER_CONTENT_SOURCE)
+        val transientStates =
+            source
+                .substringAfter("if (!appFilterReady)")
+                .substringBefore("} else {\n                LazyColumn(")
+
+        assertEquals(2, Regex("LiquidInfoBlock\\(").findAll(transientStates).count())
+        assertEquals(
+            2,
+            Regex("density = LiquidInfoBlockDensity\\.Compact").findAll(transientStates).count(),
+        )
+        assertTrue("MiuixInfoItem(" !in transientStates)
+    }
+
     private companion object {
         val candidate =
             InstalledAppItem(

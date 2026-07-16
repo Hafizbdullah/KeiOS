@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
@@ -35,6 +38,7 @@ import kotlin.test.assertNotSame
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -257,6 +261,63 @@ class LiquidInfoBlockTest {
                 .height
 
         assertTrue(blankHeight < visibleHeight)
+    }
+
+    @Test
+    fun compactStatusKeepsTitleAndSubtitleInOneDenseRowAtLargeFont() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(density = density.density, fontScale = 1.5f),
+                ) {
+                    LiquidInfoBlock(
+                        title = "App list",
+                        subtitle = "No matching results",
+                        accent = Color(0xFF2563EB),
+                        density = LiquidInfoBlockDensity.Compact,
+                        modifier =
+                            Modifier
+                                .width(360.dp)
+                                .testTag("compact-status"),
+                    )
+                }
+            }
+        }
+
+        val blockBounds =
+            composeRule
+                .onNodeWithTag("compact-status")
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val titleBounds =
+            composeRule
+                .onNodeWithText("App list", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val subtitleBounds =
+            composeRule
+                .onNodeWithText("No matching results", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+
+        with(composeRule.density) {
+            assertTrue(titleBounds.right + 8.dp.toPx() <= subtitleBounds.left + 0.5f)
+            assertTrue(abs(titleBounds.center.y - subtitleBounds.center.y) <= 1.dp.toPx())
+            val blockHeight = blockBounds.height.toDp()
+            val blockWidth = blockBounds.width.toDp()
+            val titleHeight = titleBounds.height.toDp()
+            val titleWidth = titleBounds.width.toDp()
+            val subtitleHeight = subtitleBounds.height.toDp()
+            val subtitleWidth = subtitleBounds.width.toDp()
+            assertTrue(
+                blockHeight <= 56.dp,
+                "Compact block was ${blockWidth}x$blockHeight " +
+                    "(title=${titleWidth}x$titleHeight, subtitle=${subtitleWidth}x$subtitleHeight)",
+            )
+            assertTrue(titleHeight <= 28.dp, "Compact title height was $titleHeight")
+            assertTrue(subtitleHeight <= 28.dp, "Compact subtitle height was $subtitleHeight")
+        }
     }
 }
 

@@ -52,6 +52,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.glass.LiquidInfoBlockDensity
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -491,14 +493,20 @@ internal fun GitHubTrackAppPickerContent(
                 )
             }
             if (!appFilterReady) {
-                MiuixInfoItem(
-                    stringResource(R.string.github_track_sheet_label_app_list),
-                    stringResource(R.string.common_loading)
+                LiquidInfoBlock(
+                    backdrop = backdrop,
+                    title = stringResource(R.string.github_track_sheet_label_app_list),
+                    subtitle = stringResource(R.string.common_loading),
+                    accent = MiuixTheme.colorScheme.primary,
+                    density = LiquidInfoBlockDensity.Compact,
                 )
             } else if (filteredApps.isEmpty()) {
-                MiuixInfoItem(
-                    stringResource(R.string.github_track_sheet_label_app_list),
-                    stringResource(R.string.github_track_sheet_msg_app_no_match)
+                LiquidInfoBlock(
+                    backdrop = backdrop,
+                    title = stringResource(R.string.github_track_sheet_label_app_list),
+                    subtitle = stringResource(R.string.github_track_sheet_msg_app_no_match),
+                    accent = MiuixTheme.colorScheme.primary,
+                    density = LiquidInfoBlockDensity.Compact,
                 )
             } else {
                 LazyColumn(
