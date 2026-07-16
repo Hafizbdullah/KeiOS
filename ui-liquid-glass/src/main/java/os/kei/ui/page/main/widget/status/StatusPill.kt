@@ -95,12 +95,12 @@ fun StatusPill(
     val resolvedColor = colorProvider()
     val metrics = rememberAppStatusPillMetrics(size)
     val resolvedPadding = contentPadding ?: metrics.contentPadding
-    val backgroundAlpha = backgroundAlphaOverride ?: if (isDark) 0.18f else 0.24f
-    val borderAlpha = borderAlphaOverride ?: if (isDark) 0.35f else 0.42f
+    val backgroundAlpha = backgroundAlphaOverride ?: statusPillBackgroundAlpha(isDark)
+    val borderAlpha = borderAlphaOverride ?: statusPillBorderAlpha(isDark)
     val textColor =
         contentColorOverride ?: statusPillContentColor(isDark = isDark, accent = resolvedColor)
     val shape = AppStatusPrimitives.pillShape
-    val cornerRadius = 999.dp
+    val cornerRadius = StatusPillCornerRadius
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val activeBackdrop = activeGlassBackdrop(backdrop ?: parentBackdrop)
     val resolvedTypography =
@@ -122,35 +122,13 @@ fun StatusPill(
     val pillModifier =
         Modifier
             .then(modifier)
-            .then(
-                if (activeBackdrop == null) {
-                    Modifier
-                        .drawAppSquircleBackground(cornerRadius) {
-                            fallbackOptics.baseColor
-                        }.appSquircleClip(cornerRadius)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        fallbackOptics.veilTop,
-                                        fallbackOptics.veilMiddle,
-                                        fallbackOptics.innerShadeBottom,
-                                    ),
-                            ),
-                        )
-                } else {
-                    Modifier
-                },
-            ).drawAppSquircleBorder(
-                width = 0.8.dp,
+            .statusPillMaterial(
+                activeBackdrop = activeBackdrop,
                 cornerRadius = cornerRadius,
-            ) {
-                if (activeBackdrop == null) {
-                    fallbackOptics.rimColor
-                } else {
-                    colorProvider().copy(alpha = borderAlpha)
-                }
-            }
+                color = colorProvider,
+                borderAlpha = borderAlpha,
+                fallbackOptics = fallbackOptics,
+            )
     val content: @Composable () -> Unit = {
         DisableSelection {
             Text(
@@ -238,6 +216,50 @@ internal fun statusPillContentColor(
     isDark: Boolean,
     accent: Color,
 ): Color = if (isDark) accent else accent.copy(alpha = 0.96f)
+
+internal fun statusPillBackgroundAlpha(isDark: Boolean): Float = if (isDark) 0.18f else 0.24f
+
+internal fun statusPillBorderAlpha(isDark: Boolean): Float = if (isDark) 0.35f else 0.42f
+
+@Composable
+internal fun Modifier.statusPillMaterial(
+    activeBackdrop: Backdrop?,
+    cornerRadius: Dp,
+    color: () -> Color,
+    borderAlpha: Float,
+    fallbackOptics: StatusPillFallbackOptics,
+): Modifier =
+    then(
+        if (activeBackdrop == null) {
+            Modifier
+                .drawAppSquircleBackground(cornerRadius) {
+                    fallbackOptics.baseColor
+                }.appSquircleClip(cornerRadius)
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                fallbackOptics.veilTop,
+                                fallbackOptics.veilMiddle,
+                                fallbackOptics.innerShadeBottom,
+                            ),
+                    ),
+                )
+        } else {
+            Modifier
+        },
+    ).drawAppSquircleBorder(
+        width = 0.8.dp,
+        cornerRadius = cornerRadius,
+    ) {
+        if (activeBackdrop == null) {
+            fallbackOptics.rimColor
+        } else {
+            color().copy(alpha = borderAlpha)
+        }
+    }
+
+internal val StatusPillCornerRadius = 999.dp
 
 @Immutable
 internal data class StatusPillFallbackOptics(

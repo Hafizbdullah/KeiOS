@@ -84,7 +84,8 @@ class DebugLiquidBackdropContractTest {
         assertFalse(".layerBackdrop(cardBackdrop)" in previewCard)
 
         assertTrue("exportBackdropToContent = true," in iterationCard)
-        assertTrue("StatusPill(" in iterationCard)
+        assertTrue("StatusIconPill(" in iterationCard)
+        assertTrue("icon = appLucideLayersIcon()" in iterationCard)
         assertFalse("rememberLayerBackdrop()" in iterationCard)
         assertFalse(".layerBackdrop(" in iterationCard)
     }

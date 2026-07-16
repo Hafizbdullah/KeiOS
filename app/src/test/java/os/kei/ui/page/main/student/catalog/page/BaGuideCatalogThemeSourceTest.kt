@@ -4,6 +4,7 @@ import java.io.File
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class BaGuideCatalogThemeSourceTest {
     @Test
@@ -15,11 +16,15 @@ class BaGuideCatalogThemeSourceTest {
     }
 
     @Test
-    fun catalogStatusPillFollowsTheKeiOSAppTheme() {
-        val source = sourceFile(BA_GUIDE_CATALOG_STATUS_PILL_SOURCE)
+    fun catalogStatusIconPillDelegatesThemeResolutionToTheSharedAtom() {
+        val wrapperSource = sourceFile(BA_GUIDE_CATALOG_STATUS_PILL_SOURCE)
+        val sharedSource = sourceFile(STATUS_ICON_PILL_SOURCE)
 
-        assertFalse("isSystemInDarkTheme" in source)
-        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+        assertFalse("isSystemInDarkTheme" in wrapperSource)
+        assertFalse("isAppInDarkTheme" in wrapperSource)
+        assertTrue("StatusIconPill(" in wrapperSource)
+        assertFalse("isSystemInDarkTheme" in sharedSource)
+        assertEquals(1, sharedSource.occurrencesOf("isAppInDarkTheme()"))
     }
 }
 
@@ -40,3 +45,5 @@ private const val BA_GUIDE_CATALOG_PAGE_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/page/BaGuideCatalogPage.kt"
 private const val BA_GUIDE_CATALOG_STATUS_PILL_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/component/BaGuideCatalogStatusIconPill.kt"
+private const val STATUS_ICON_PILL_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/status/StatusIconPill.kt"

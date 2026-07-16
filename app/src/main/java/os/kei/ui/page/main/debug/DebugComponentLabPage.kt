@@ -43,6 +43,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusIconPill
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -231,10 +232,10 @@ private fun DebugIterationQueueCard(accent: Color) {
         titleColor = accent,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.16f),
         headerEndActions = {
-            StatusPill(
+            StatusIconPill(
                 label = stringResource(R.string.debug_component_lab_queue_badge),
                 color = AppStatusColors.Cached,
-                size = AppStatusPillSize.Compact,
+                icon = appLucideLayersIcon(),
             )
         },
     ) {
