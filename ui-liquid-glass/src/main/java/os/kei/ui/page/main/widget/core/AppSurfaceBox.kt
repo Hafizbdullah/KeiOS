@@ -63,6 +63,8 @@ fun AppSurfaceBox(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     stateDescription: String? = null,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -74,7 +76,7 @@ fun AppSurfaceBox(
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = enabled,
-                role = Role.Button,
+                role = role,
                 onClick = { onClick?.invoke() },
                 onLongClick = onLongClick,
             )
@@ -137,6 +139,8 @@ fun AppSurfaceBox(
             clipContent = clipContent,
             contentAlignment = contentAlignment,
             exportedBackdrop = exportedContentBackdrop,
+            role = role,
+            selected = selected,
             onClick = if (useLiquidClick) onClick else null,
         ) {
             if (exportedContentBackdrop != null) {

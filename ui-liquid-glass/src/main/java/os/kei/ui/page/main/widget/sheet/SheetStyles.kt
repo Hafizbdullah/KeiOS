@@ -136,6 +136,8 @@ fun SheetSurfaceCard(
     contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     pressSafePadding: Dp = Dp.Unspecified,
     onClick: (() -> Unit)? = null,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val isDark = isAppInDarkTheme()
@@ -162,7 +164,9 @@ fun SheetSurfaceCard(
         depthEffect = optics.depthEffect,
         highlightAlpha = optics.highlightAlpha,
         pressSafePadding = pressSafePadding,
-        onClick = onClick
+        onClick = onClick,
+        role = role,
+        selected = selected,
     ) {
         AppCardBodyColumn(
             contentPadding = contentPadding,
@@ -391,7 +395,9 @@ fun SheetChoiceCard(
                 MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f)
             },
             pressSafePadding = 0.dp,
-            onClick = onSelect
+            onClick = onSelect,
+            role = Role.RadioButton,
+            selected = selected,
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -431,7 +437,7 @@ fun SheetChoiceCard(
                 }
                 SheetLiquidChoiceIndicator(
                     selected = selected,
-                    onSelect = onSelect,
+                    onSelect = null,
                     accentColor = selectedAccentColor
                 )
             }
@@ -442,7 +448,7 @@ fun SheetChoiceCard(
 @Composable
 fun SheetLiquidChoiceIndicator(
     selected: Boolean,
-    onSelect: () -> Unit,
+    onSelect: (() -> Unit)?,
     modifier: Modifier = Modifier,
     accentColor: Color = MiuixTheme.colorScheme.primary,
     enabled: Boolean = true
@@ -459,9 +465,9 @@ fun SheetLiquidChoiceIndicator(
     }
     val idleDotColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.62f else 0.48f)
 
-    Box(
-        modifier =
-            modifier
+    val interactionModifier =
+        if (onSelect != null) {
+            Modifier
                 .size(48.dp)
                 .selectable(
                     selected = selected,
@@ -470,7 +476,12 @@ fun SheetLiquidChoiceIndicator(
                     enabled = enabled,
                     role = Role.RadioButton,
                     onClick = onSelect,
-                ),
+                )
+        } else {
+            Modifier.size(width = 44.dp, height = 30.dp)
+        }
+    Box(
+        modifier = modifier.then(interactionModifier),
         contentAlignment = Alignment.Center
     ) {
         LiquidSurface(

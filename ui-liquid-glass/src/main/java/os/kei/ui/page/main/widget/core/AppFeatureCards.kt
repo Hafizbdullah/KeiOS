@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -45,6 +46,8 @@ fun AppSurfaceCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     stateDescription: String? = null,
+    role: Role = Role.Button,
+    selected: Boolean? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppSurfaceBox(
@@ -66,6 +69,8 @@ fun AppSurfaceCard(
         onClick = onClick,
         onLongClick = onLongClick,
         stateDescription = stateDescription,
+        role = role,
+        selected = selected,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),

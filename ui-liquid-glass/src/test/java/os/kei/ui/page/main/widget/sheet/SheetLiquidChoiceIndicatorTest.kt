@@ -8,11 +8,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -90,26 +92,31 @@ class SheetLiquidChoiceIndicatorTest {
     }
 
     @Test
-    fun indicatorInsideChoiceCardInvokesSelectionOnce() {
+    fun choiceCardUsesOneRadioButtonAndInvokesSelectionOnce() {
         var clickCount = 0
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 SheetChoiceCard(
                     title = "Local network",
                     summary = "Allow devices on the same network",
-                    selected = false,
+                    selected = true,
                     onSelect = { clickCount++ },
                 )
             }
         }
 
+        val radioButton =
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.Role,
+                Role.RadioButton,
+            )
+        composeRule.onAllNodes(radioButton).assertCountEquals(1)
+        composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
         composeRule
-            .onNode(
-                SemanticsMatcher.expectValue(
-                    SemanticsProperties.Role,
-                    Role.RadioButton,
-                ),
-            ).performClick()
+            .onNode(radioButton)
+            .assertIsSelected()
+            .performClick()
         composeRule.runOnIdle { assertEquals(1, clickCount) }
     }
 
