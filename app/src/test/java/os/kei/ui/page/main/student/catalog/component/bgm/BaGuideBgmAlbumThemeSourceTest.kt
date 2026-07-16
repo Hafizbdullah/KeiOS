@@ -35,6 +35,17 @@ class BaGuideBgmAlbumThemeSourceTest {
             "Both populated and empty track surfaces must use the app theme",
         )
     }
+
+    @Test
+    fun bottomChromeSearchFollowsTheKeiOSAppTheme() {
+        val source = sourceFile(BA_GUIDE_BGM_BOTTOM_CHROME_SOURCE)
+
+        assertFalse(
+            "isSystemInDarkTheme" in source,
+            "Bottom chrome search material must follow the selected KeiOS theme",
+        )
+        assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
+    }
 }
 
 private fun String.occurrencesOf(needle: String): Int =
@@ -55,3 +66,5 @@ private const val BA_GUIDE_BGM_ALBUM_HERO_VISUALS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmAlbumHeroVisuals.kt"
 private const val BA_GUIDE_BGM_TRACK_LIST_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmTrackList.kt"
+private const val BA_GUIDE_BGM_BOTTOM_CHROME_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmBottomChrome.kt"

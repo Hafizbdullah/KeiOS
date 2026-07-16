@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.student.catalog.component
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -11,6 +10,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import top.yukonga.miuix.kmp.basic.Icon
@@ -26,7 +26,7 @@ internal fun BaGuideCatalogStatusIconPill(
     icon: ImageVector,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val backgroundAlpha = if (isDark) 0.20f else 0.16f
     val borderAlpha = if (isDark) 0.42f else 0.36f
     val iconTint = if (isDark) color else color.copy(alpha = 0.96f)

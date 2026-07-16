@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.student.catalog.page
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -36,6 +35,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.perf.ReportPagerPerformanceState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -61,7 +61,7 @@ fun BaGuideCatalogPage(
         }
     val pageTitle = stringResource(R.string.ba_catalog_page_title)
     val accent = MiuixTheme.colorScheme.primary
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val panelBackground = if (isDark) Color(0xFF10141B) else MiuixTheme.colorScheme.background
     var activationCount by rememberSaveable { mutableIntStateOf(0) }
     DisposableEffect(Unit) {

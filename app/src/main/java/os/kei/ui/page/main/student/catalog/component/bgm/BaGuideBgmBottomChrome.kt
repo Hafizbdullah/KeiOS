@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -59,6 +58,7 @@ import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
 import os.kei.ui.page.main.widget.glass.appLiquidSearchPlaceholderColor
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -408,7 +408,7 @@ private fun BaGuideBgmBottomSearchField(
 ) {
     val focusManager = LocalFocusManager.current
     val resolvedPlaceholder = placeholder ?: stringResource(R.string.ba_catalog_bgm_search_placeholder)
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val contentColor = MiuixTheme.colorScheme.onBackground
     val placeholderColor =
         appLiquidSearchPlaceholderColor(
