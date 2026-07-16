@@ -20,6 +20,21 @@ class BaGuideBgmAlbumThemeSourceTest {
             "Both round and primary album actions must use the app theme",
         )
     }
+
+    @Test
+    fun trackListSurfacesFollowTheKeiOSAppTheme() {
+        val source = sourceFile(BA_GUIDE_BGM_TRACK_LIST_SOURCE)
+
+        assertFalse(
+            "isSystemInDarkTheme" in source,
+            "Track list materials must follow the selected KeiOS theme",
+        )
+        assertEquals(
+            2,
+            source.occurrencesOf("isAppInDarkTheme()"),
+            "Both populated and empty track surfaces must use the app theme",
+        )
+    }
 }
 
 private fun String.occurrencesOf(needle: String): Int =
@@ -38,3 +53,5 @@ private fun sourceFile(relativePath: String): String {
 
 private const val BA_GUIDE_BGM_ALBUM_HERO_VISUALS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmAlbumHeroVisuals.kt"
+private const val BA_GUIDE_BGM_TRACK_LIST_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/student/catalog/component/bgm/BaGuideBgmTrackList.kt"

@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.student.catalog.component.bgm
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +24,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
@@ -101,7 +101,7 @@ private fun BaGuideBgmTrackChunk(
     onTrackOfflineClick: (String) -> Unit,
     onTrackShareClick: (BaGuideBgmTrack) -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val listShape = RoundedRectangle(24.dp)
     LiquidSurface(
         backdrop = backdrop,
@@ -144,7 +144,7 @@ private fun BaGuideBgmEmptyTrackResult(
     accent: Color,
     backdrop: Backdrop?,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val resultSurfaceBackdrop =
         if (activeBackdrop != null) {
