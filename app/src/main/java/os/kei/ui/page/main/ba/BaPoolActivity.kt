@@ -15,7 +15,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -59,6 +58,7 @@ import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -298,7 +298,7 @@ private fun BaPoolPage(
                                 colors =
                                     listOf(
                                         MiuixTheme.colorScheme.background,
-                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.11f else 0.07f),
+                                        accent.copy(alpha = if (isAppInDarkTheme()) 0.11f else 0.07f),
                                         MiuixTheme.colorScheme.background,
                                     ),
                             ),
