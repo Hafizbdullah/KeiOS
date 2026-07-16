@@ -81,7 +81,8 @@ data class LiquidSliderKeyPoint(
  *
  * [visualVerticalOffset] moves only the track, key points, and thumb inside that root. Positive
  * values move the visual treatment downward while preserving gesture and semantics bounds. The
- * caller keeps the moved treatment inside any ancestor clip.
+ * caller keeps the moved treatment inside any ancestor clip. A null [backdrop] keeps the same
+ * interaction and geometry while using the static track and thumb fallback.
  */
 @Composable
 fun LiquidMusicProgressSlider(
@@ -89,7 +90,7 @@ fun LiquidMusicProgressSlider(
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     visibilityThreshold: Float,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     contentDescription: String? = null,
@@ -141,7 +142,7 @@ fun LiquidVolumeSlider(
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
     visibilityThreshold: Float,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     contentDescription: String? = null,
