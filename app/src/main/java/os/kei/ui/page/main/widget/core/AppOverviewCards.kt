@@ -36,6 +36,7 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -242,7 +243,10 @@ private fun AppOverviewCardSurface(
                 }
             }
             if (contentBackdrop != null) {
-                CompositionLocalProvider(LocalLiquidParentBackdrop provides contentBackdrop) {
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides contentBackdrop,
+                    LocalLiquidParentBackdropOverridesFallback provides true,
+                ) {
                     cardContent()
                 }
             } else {

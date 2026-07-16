@@ -20,12 +20,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppStandaloneBackdropHost
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.preferredLiquidBackdrop
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -46,10 +50,14 @@ class AppSurfaceCardBackdropTest {
     fun surfaceCardExportsIndependentBackdropToContent() {
         var sceneBackdrop: Backdrop? = null
         var contentBackdrop: Backdrop? = null
+        var resolvedExplicitFallback: Backdrop? = null
+        var observedContentColor = Color.Unspecified
+        val expectedContentColor = Color(0xFF2468AC)
 
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
+                val explicitFallback = rememberLayerBackdrop()
                 sceneBackdrop = backdrop
                 Box(modifier = Modifier.size(220.dp)) {
                     Box(
@@ -62,8 +70,11 @@ class AppSurfaceCardBackdropTest {
                     AppSurfaceCard(
                         backdrop = backdrop,
                         exportBackdropToContent = true,
+                        contentColor = expectedContentColor,
                     ) {
                         contentBackdrop = LocalLiquidParentBackdrop.current
+                        resolvedExplicitFallback = preferredLiquidBackdrop(explicitFallback)
+                        observedContentColor = LocalContentColor.current
                         Box(
                             modifier =
                                 Modifier
@@ -80,11 +91,13 @@ class AppSurfaceCardBackdropTest {
             assertNotNull(sceneBackdrop)
             assertNotNull(contentBackdrop)
             assertNotSame(sceneBackdrop, contentBackdrop)
+            assertSame(contentBackdrop, resolvedExplicitFallback)
+            assertEquals(expectedContentColor, observedContentColor)
         }
     }
 
     @Test
-    fun surfaceCardWithoutParentStillExportsBackdropToContent() {
+    fun surfaceCardWithoutParentKeepsContentOnSolidFallback() {
         var contentBackdrop: Backdrop? = null
 
         composeRule.setContent {
@@ -102,7 +115,51 @@ class AppSurfaceCardBackdropTest {
         }
 
         composeRule.onNodeWithTag("fallback-export-content").assertExists()
-        composeRule.runOnIdle { assertNotNull(contentBackdrop) }
+        composeRule.runOnIdle { assertNull(contentBackdrop) }
+    }
+
+    @Test
+    fun expandableSectionExportsItsSurfaceToExpandedContent() {
+        var sceneBackdrop: Backdrop? = null
+        var contentBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                sceneBackdrop = backdrop
+                Box(modifier = Modifier.size(260.dp)) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.White)
+                                .layerBackdrop(backdrop),
+                    )
+                    AppLiquidExpandableSection(
+                        backdrop = backdrop,
+                        title = "Expandable",
+                        subtitle = "Backdrop",
+                        expanded = true,
+                        onExpandedChange = {},
+                    ) {
+                        contentBackdrop = LocalLiquidParentBackdrop.current
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(24.dp)
+                                    .testTag("expandable-section-content"),
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("expandable-section-content").assertExists()
+        composeRule.runOnIdle {
+            assertNotNull(sceneBackdrop)
+            assertNotNull(contentBackdrop)
+            assertNotSame(sceneBackdrop, contentBackdrop)
+        }
     }
 
     @Test

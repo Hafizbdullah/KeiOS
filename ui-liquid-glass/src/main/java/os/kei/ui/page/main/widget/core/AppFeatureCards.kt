@@ -28,19 +28,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -54,7 +55,6 @@ fun AppSurfaceCard(
     depthEffect: Boolean = false,
     highlightAlpha: Float? = null,
     showIndication: Boolean = true,
-    captureLocalBackdrop: Boolean = true,
     exportBackdropToContent: Boolean = false,
     clipContent: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
@@ -102,7 +102,7 @@ fun AppSurfaceCard(
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
     val exportedContentBackdrop =
-        if (exportBackdropToContent) {
+        if (exportBackdropToContent && inheritedBackdrop != null) {
             rememberLayerBackdrop()
         } else {
             null
@@ -121,7 +121,6 @@ fun AppSurfaceCard(
         AppSurfaceCardFrame(
             modifier = modifier,
             backdrop = inheritedBackdrop,
-            captureBackdrop = null,
             exportedBackdrop = exportedContentBackdrop,
             clickModifier = clickModifier,
             stateModifier = stateModifier,
@@ -131,6 +130,7 @@ fun AppSurfaceCard(
             containerColor = containerColor,
             borderColor = borderColor,
             borderWidth = borderWidth,
+            contentColor = contentColor,
             depthEffect = depthEffect,
             highlightAlpha = highlightAlpha,
             showIndication = showIndication,
@@ -143,12 +143,10 @@ fun AppSurfaceCard(
             content = content,
         )
     } else {
-        val localBackdrop = rememberLayerBackdrop()
         AppSurfaceCardFrame(
             modifier = modifier,
-            backdrop = localBackdrop,
-            captureBackdrop = if (captureLocalBackdrop) localBackdrop else null,
-            exportedBackdrop = exportedContentBackdrop,
+            backdrop = null,
+            exportedBackdrop = null,
             clickModifier = clickModifier,
             stateModifier = stateModifier,
             interactionSource = interactionSource,
@@ -157,6 +155,7 @@ fun AppSurfaceCard(
             containerColor = containerColor,
             borderColor = borderColor,
             borderWidth = borderWidth,
+            contentColor = contentColor,
             depthEffect = depthEffect,
             highlightAlpha = highlightAlpha,
             showIndication = showIndication,
@@ -174,8 +173,7 @@ fun AppSurfaceCard(
 @Composable
 private fun AppSurfaceCardFrame(
     modifier: Modifier,
-    backdrop: Backdrop,
-    captureBackdrop: LayerBackdrop?,
+    backdrop: Backdrop?,
     exportedBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
     stateModifier: Modifier,
@@ -185,6 +183,7 @@ private fun AppSurfaceCardFrame(
     containerColor: Color,
     borderColor: Color,
     borderWidth: Dp,
+    contentColor: Color,
     depthEffect: Boolean,
     highlightAlpha: Float?,
     showIndication: Boolean,
@@ -208,14 +207,6 @@ private fun AppSurfaceCardFrame(
                     clip = false
                 },
     ) {
-        if (captureBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(captureBackdrop),
-            )
-        }
         LiquidSurface(
             backdrop = backdrop,
             modifier =
@@ -240,6 +231,8 @@ private fun AppSurfaceCardFrame(
             if (exportedBackdrop != null) {
                 CompositionLocalProvider(
                     LocalLiquidParentBackdrop provides exportedBackdrop,
+                    LocalLiquidParentBackdropOverridesFallback provides true,
+                    LocalContentColor provides contentColor,
                 ) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -247,10 +240,12 @@ private fun AppSurfaceCardFrame(
                     )
                 }
             } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    content = content,
-                )
+                CompositionLocalProvider(LocalContentColor provides contentColor) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        content = content,
+                    )
+                }
             }
         }
     }

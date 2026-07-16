@@ -67,7 +67,6 @@ internal fun GitHubActionsArtifactCard(
         borderColor = githubActionsNeutralBorderColor(isDark),
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         verticalSpacing = 10.dp,
-        captureLocalBackdrop = false,
         onClick = onOpenDetail,
         pills = {
             if (recommended) {

@@ -124,6 +124,7 @@ private fun AppLiquidExpandableCardFrame(
         containerColor = sectionSurface,
         borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f),
         showIndication = false,
+        exportBackdropToContent = true,
         clipContent = clipContent,
     ) {
         AppCardHeader(

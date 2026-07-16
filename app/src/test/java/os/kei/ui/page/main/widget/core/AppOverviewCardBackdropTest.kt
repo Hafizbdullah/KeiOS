@@ -127,6 +127,7 @@ class AppOverviewCardBackdropTest {
 
         assertTrue("exportedBackdrop = contentBackdrop" in source)
         assertTrue("LocalLiquidParentBackdrop provides contentBackdrop" in source)
+        assertTrue("LocalLiquidParentBackdropOverridesFallback provides true" in source)
         assertTrue("LocalContentColor provides contentColor" in source)
         assertTrue("borderColor = borderColor" in source)
         assertTrue("borderWidth = 1.dp" in source)

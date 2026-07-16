@@ -158,7 +158,6 @@ fun SheetSurfaceCard(
         contentColor = contentColor,
         depthEffect = optics.depthEffect,
         highlightAlpha = optics.highlightAlpha,
-        captureLocalBackdrop = false,
         pressSafePadding = pressSafePadding,
         onClick = onClick
     ) {

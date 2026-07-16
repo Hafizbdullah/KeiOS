@@ -34,7 +34,6 @@ internal fun GitHubAssetFileCard(
     titleMaxLines: Int = 3,
     contentPadding: PaddingValues = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
     verticalSpacing: Dp = 7.dp,
-    captureLocalBackdrop: Boolean = true,
     onClick: (() -> Unit)? = null,
     pills: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
@@ -44,7 +43,6 @@ internal fun GitHubAssetFileCard(
         modifier = modifier,
         containerColor = containerColor,
         borderColor = borderColor,
-        captureLocalBackdrop = captureLocalBackdrop,
         onClick = onClick,
     ) {
         AppCardBodyColumn(
