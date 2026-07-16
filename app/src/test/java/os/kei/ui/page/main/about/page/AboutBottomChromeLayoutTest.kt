@@ -7,9 +7,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChromeSearchDockVisibleAlpha
 import os.kei.ui.page.main.widget.chrome.tabbedPageCategoryDockExpanded
+import os.kei.ui.page.main.widget.chrome.tabbedPageChromeVisible
 import os.kei.ui.page.main.widget.chrome.tabbedPageCollapsedDockWidth
 import os.kei.ui.page.main.widget.chrome.tabbedPageExpandedSearchWidth
 import os.kei.ui.page.main.widget.chrome.tabbedPageSearchDockRegionOffset
+import os.kei.ui.page.main.widget.chrome.tabbedPageUsesCompactHeightDock
 
 class AboutBottomChromeLayoutTest {
     @Test
@@ -82,6 +84,53 @@ class AboutBottomChromeLayoutTest {
             tabbedPageCategoryDockExpanded(
                 visible = true,
                 searchExpanded = true,
+            ),
+        )
+    }
+
+    @Test
+    fun compactLandscapeStartsWithTheSelectedCategoryDock() {
+        assertTrue(
+            tabbedPageUsesCompactHeightDock(
+                availableWidth = 952.dp,
+                availableHeight = 426.dp,
+            ),
+        )
+        assertFalse(
+            tabbedPageChromeVisible(
+                visible = true,
+                compactHeightPresentation = true,
+                compactHeightDockExpanded = false,
+            ),
+        )
+        assertTrue(
+            tabbedPageChromeVisible(
+                visible = true,
+                compactHeightPresentation = true,
+                compactHeightDockExpanded = true,
+            ),
+        )
+    }
+
+    @Test
+    fun portraitAndTallWindowsKeepTheExpandedCategoryDock() {
+        assertFalse(
+            tabbedPageUsesCompactHeightDock(
+                availableWidth = 411.dp,
+                availableHeight = 891.dp,
+            ),
+        )
+        assertFalse(
+            tabbedPageUsesCompactHeightDock(
+                availableWidth = 952.dp,
+                availableHeight = 600.dp,
+            ),
+        )
+        assertTrue(
+            tabbedPageChromeVisible(
+                visible = true,
+                compactHeightPresentation = false,
+                compactHeightDockExpanded = false,
             ),
         )
     }

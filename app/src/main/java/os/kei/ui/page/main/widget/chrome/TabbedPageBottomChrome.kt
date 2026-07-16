@@ -19,11 +19,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +63,7 @@ internal interface TabbedPageCategory {
 
 internal val TabbedPageBottomChromeSearchGap: Dp = 8.dp
 internal val TabbedPageBottomChromeMinSearchWidth: Dp = 196.dp
+internal val TabbedPageBottomChromeCompactHeightMax: Dp = 480.dp
 internal const val TabbedPageBottomChromeMotionMs = 220
 
 // ── Shared utility functions ─────────────────────────────────────────────────
@@ -85,6 +91,19 @@ internal fun tabbedPageCategoryDockExpanded(
     visible: Boolean,
     searchExpanded: Boolean,
 ): Boolean = visible && !searchExpanded
+
+internal fun tabbedPageUsesCompactHeightDock(
+    availableWidth: Dp,
+    availableHeight: Dp,
+): Boolean =
+    availableWidth > availableHeight &&
+        availableHeight <= TabbedPageBottomChromeCompactHeightMax
+
+internal fun tabbedPageChromeVisible(
+    visible: Boolean,
+    compactHeightPresentation: Boolean,
+    compactHeightDockExpanded: Boolean,
+): Boolean = visible && (!compactHeightPresentation || compactHeightDockExpanded)
 
 // ── Generic bottom chrome ────────────────────────────────────────────────────
 
@@ -120,13 +139,33 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     labelPrefix: String = "tabbed_page",
 ) {
     val safeSelectedPage = selectedPage.coerceIn(0, categories.lastIndex)
+    val configuration = LocalConfiguration.current
+    val compactHeightPresentation =
+        tabbedPageUsesCompactHeightDock(
+            availableWidth = configuration.screenWidthDp.dp,
+            availableHeight = configuration.screenHeightDp.dp,
+        )
+    var compactHeightDockExpanded by remember { mutableStateOf(!compactHeightPresentation) }
+    LaunchedEffect(compactHeightPresentation) {
+        compactHeightDockExpanded = !compactHeightPresentation
+    }
+    LaunchedEffect(visible, compactHeightPresentation) {
+        if (compactHeightPresentation && !visible) {
+            compactHeightDockExpanded = false
+        }
+    }
     val size = AppChromeTokens.floatingBottomBarOuterHeight
     val gap = TabbedPageBottomChromeSearchGap
     val outerPadding = AppChromeTokens.pageHorizontalPadding
     val effectiveSearchExpanded = searchEnabled && searchExpanded
     val categoryDockExpanded =
         tabbedPageCategoryDockExpanded(
-            visible = visible,
+            visible =
+                tabbedPageChromeVisible(
+                    visible = visible,
+                    compactHeightPresentation = compactHeightPresentation,
+                    compactHeightDockExpanded = compactHeightDockExpanded,
+                ),
             searchExpanded = effectiveSearchExpanded,
         )
     val keyboardLiftState =
@@ -193,7 +232,10 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
                         category = categories[safeSelectedPage],
                         backdrop = backdrop,
                         onClick = {
-                            if (visible && searchEnabled) {
+                            if (compactHeightPresentation) {
+                                compactHeightDockExpanded = true
+                                onExpandDock()
+                            } else if (visible && searchEnabled) {
                                 onSearchExpandedChange(false)
                             } else {
                                 onExpandDock()
