@@ -10,6 +10,7 @@ class ManagedActivityLiquidBackdropContractTest {
         listOf(
             "GitHub Star Import" to GITHUB_STAR_IMPORT_ACTIVITY_SOURCE,
             "Feedback" to FEEDBACK_ISSUE_ACTIVITY_SOURCE,
+            "JSON Import" to JSON_IMPORT_ACTIVITY_SOURCE,
             "OS Shell" to OS_SHELL_RUNNER_ACTIVITY_SOURCE,
         ).forEach { (pageName, sourcePath) ->
             val hostCall = sourceFile(sourcePath).functionCallBlock("AppManagedBackgroundHost")
@@ -26,6 +27,7 @@ class ManagedActivityLiquidBackdropContractTest {
         listOf(
             "GitHub Star Import" to GITHUB_STAR_IMPORT_PAGE_SOURCE,
             "Feedback" to FEEDBACK_ISSUE_PAGE_SOURCE,
+            "JSON Import" to JSON_IMPORT_PAGE_SOURCE,
         ).forEach { (pageName, sourcePath) ->
             val source = sourceFile(sourcePath)
 
@@ -78,5 +80,9 @@ private const val FEEDBACK_ISSUE_ACTIVITY_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/feedback/FeedbackIssueActivity.kt"
 private const val FEEDBACK_ISSUE_PAGE_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/feedback/FeedbackIssuePage.kt"
+private const val JSON_IMPORT_ACTIVITY_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/jsonimport/KeiOSJsonImportActivity.kt"
+private const val JSON_IMPORT_PAGE_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/jsonimport/KeiOSJsonImportPage.kt"
 private const val OS_SHELL_RUNNER_ACTIVITY_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/os/shell/OsShellRunnerActivity.kt"

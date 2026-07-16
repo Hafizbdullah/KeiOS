@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,6 +19,9 @@ import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.common.applicationViewModel
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
+import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
+import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -30,18 +34,18 @@ class KeiOSJsonImportActivity : ComponentActivity() {
         enableEdgeToEdge()
         val initialIntent = intent
         setContent {
-            val appThemeMode = UiPrefs.getAppThemeMode()
+            val prefsSnapshot = remember { UiPrefs.loadSnapshot() }
             val colorSchemeMode =
-                when (appThemeMode) {
+                when (prefsSnapshot.appThemeMode) {
                     AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
                     AppThemeMode.LIGHT -> ColorSchemeMode.Light
                     AppThemeMode.DARK -> ColorSchemeMode.Dark
                 }
-            val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
+            val transitionAnimationsEnabled = prefsSnapshot.transitionAnimationsEnabled
             val predictiveBackPolicy =
                 PredictiveBackOemCompat.currentPolicy(
                     transitionAnimationsEnabled = transitionAnimationsEnabled,
-                    predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),
+                    predictiveBackAnimationsEnabled = prefsSnapshot.predictiveBackAnimationsEnabled,
                 )
             val controller = ThemeController(colorSchemeMode)
 
@@ -50,6 +54,7 @@ class KeiOSJsonImportActivity : ComponentActivity() {
                     CompositionLocalProvider(
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
+                        LocalLiquidControlsEnabled provides prefsSnapshot.liquidSwitchEnabled,
                     ) {
                         val viewModel: KeiOSJsonImportViewModel = applicationViewModel(create = ::KeiOSJsonImportViewModel)
                         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -69,12 +74,25 @@ class KeiOSJsonImportActivity : ComponentActivity() {
                             }
                         }
 
-                        KeiOSJsonImportPage(
-                            state = uiState,
-                            onConfirmImport = viewModel::confirmImport,
-                            onOpenResult = viewModel::requestOpenResult,
-                            onClose = { finish() },
-                        )
+                        AppManagedBackgroundHost(
+                            enabled = prefsSnapshot.nonHomeBackgroundEnabled,
+                            imageUri = prefsSnapshot.nonHomeBackgroundUri,
+                            opacity = prefsSnapshot.nonHomeBackgroundOpacity,
+                            saturation = prefsSnapshot.nonHomeBackgroundSaturation,
+                            contentScale = prefsSnapshot.nonHomeBackgroundContentScale,
+                            alignment = prefsSnapshot.nonHomeBackgroundAlignment,
+                            pageStyle = prefsSnapshot.nonHomeBackgroundPageStyle,
+                            scrim = prefsSnapshot.nonHomeBackgroundScrim,
+                            style = AppManagedBackgroundStyles.FocusedTask,
+                            exportBackdropToContent = true,
+                        ) {
+                            KeiOSJsonImportPage(
+                                state = uiState,
+                                onConfirmImport = viewModel::confirmImport,
+                                onOpenResult = viewModel::requestOpenResult,
+                                onClose = { finish() },
+                            )
+                        }
                     }
                 }
             }
