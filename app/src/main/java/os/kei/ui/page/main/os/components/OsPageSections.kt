@@ -4,7 +4,6 @@ package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +25,7 @@ import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityIcon
 import os.kei.ui.page.main.os.titleText
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -199,33 +199,31 @@ internal fun OsActivityVisibilityManagerSheet(
                     text = stringResource(R.string.os_activity_sheet_transfer_title),
                     color = MiuixTheme.colorScheme.onBackground,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
+                AppDualActionRow(
+                    spacing = 8.dp,
+                    first = { modifier ->
                         AppLiquidTextButton(
                             backdrop = sheetBackdrop,
                             text = stringResource(R.string.os_activity_sheet_action_export_backup),
                             onClick = onExportAllCards,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = modifier,
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
                             pressOverlayEnabled = true,
                         )
-                    }
-                    Box(modifier = Modifier.weight(1f)) {
+                    },
+                    second = { modifier ->
                         AppLiquidTextButton(
                             backdrop = sheetBackdrop,
                             text = stringResource(R.string.os_activity_sheet_action_import_backup),
                             onClick = onImportAllCards,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = modifier,
                             enabled = !transferInProgress,
                             variant = GlassVariant.SheetAction,
                             pressOverlayEnabled = true,
                         )
-                    }
-                }
+                    },
+                )
             }
             SheetDescriptionText(text = stringResource(R.string.os_activity_sheet_transfer_desc))
             SheetDescriptionText(text = activityHintText)
