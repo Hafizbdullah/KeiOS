@@ -126,6 +126,38 @@ class SheetLiquidChoiceIndicatorTest {
     }
 
     @Test
+    fun disabledChoiceCardKeepsOneSelectedDisabledRadioAndDoesNotInvokeSelection() {
+        var clickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                SheetChoiceCard(
+                    title = "Unavailable source",
+                    summary = "Selection is temporarily locked",
+                    selected = true,
+                    enabled = false,
+                    onSelect = { clickCount++ },
+                    selectedLabel = null,
+                )
+            }
+        }
+
+        val radioButton =
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.Role,
+                Role.RadioButton,
+            )
+        composeRule.onAllNodes(radioButton).assertCountEquals(1)
+        composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
+        composeRule
+            .onNode(radioButton)
+            .assertIsSelected()
+            .assertIsNotEnabled()
+            .performClick()
+        composeRule.runOnIdle { assertEquals(0, clickCount) }
+    }
+
+    @Test
     fun standardChoiceCardKeepsDefaultDensity() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
