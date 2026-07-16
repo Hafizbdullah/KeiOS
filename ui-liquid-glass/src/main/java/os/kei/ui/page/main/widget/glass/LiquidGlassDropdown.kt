@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.foundation.background
-import os.kei.ui.page.main.widget.isAppInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -22,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -32,6 +32,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
@@ -269,8 +270,12 @@ fun LiquidGlassDropdownColumn(
                     subcompose("probe") {
                         CompositionLocalProvider(
                             LocalLiquidGlassDropdownSizingPass provides true,
-                            content = content,
-                        )
+                        ) {
+                            Box(
+                                modifier = Modifier.clearAndSetSemantics {},
+                                content = { content() },
+                            )
+                        }
                     }.map { measurable ->
                         measurable.measure(probeConstraints)
                     }

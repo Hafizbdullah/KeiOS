@@ -56,9 +56,9 @@ import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -377,7 +377,7 @@ class LiquidGlassActionMenuTest {
     }
 
     @Test
-    fun quickActionExposesOneButtonLabelAndDisabledState() {
+    fun quickActionExposesExactlyOneButtonLabelAndDisabledState() {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 ActionMenuTestSurface {
@@ -408,17 +408,15 @@ class LiquidGlassActionMenuTest {
             composeRule
                 .onAllNodes(
                     hasTestTag("quick-info"),
-                    useUnmergedTree = true,
                 ).assertAll(expectedQuickActionSemantics)
                 .fetchSemanticsNodes()
         val labelledNodes =
             composeRule
                 .onAllNodes(
                     hasContentDescription("查看信息"),
-                    useUnmergedTree = true,
                 ).fetchSemanticsNodes()
-        assertTrue(quickActionNodes.isNotEmpty())
-        assertEquals(quickActionNodes.size, labelledNodes.size)
+        assertEquals(1, quickActionNodes.size)
+        assertEquals(1, labelledNodes.size)
         composeRule.onAllNodesWithText("信息", useUnmergedTree = true).assertCountEquals(0)
     }
 
@@ -523,6 +521,7 @@ class LiquidGlassActionMenuTest {
                 .bounds()
         val tolerance = with(composeRule.density) { 1.dp.toPx() }
         val maximumMenuWidth = with(composeRule.density) { 312.dp.toPx() }
+
         fun textBoundsInside(
             text: String,
             parent: Rect,
@@ -593,10 +592,13 @@ private fun assertPassiveInfoSemantics(node: androidx.compose.ui.test.SemanticsN
         .assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
 }
 
-private fun androidx.compose.ui.test.SemanticsNodeInteraction.bounds(): Rect =
-    fetchSemanticsNode().boundsInRoot
+private fun androidx.compose.ui.test.SemanticsNodeInteraction.bounds(): Rect = fetchSemanticsNode().boundsInRoot
 
-private fun assertInside(outer: Rect, inner: Rect, tolerance: Float) {
+private fun assertInside(
+    outer: Rect,
+    inner: Rect,
+    tolerance: Float,
+) {
     assertTrue(inner.left >= outer.left - tolerance, "Left edge escaped: outer=$outer, inner=$inner")
     assertTrue(inner.top >= outer.top - tolerance, "Top edge escaped: outer=$outer, inner=$inner")
     assertTrue(inner.right <= outer.right + tolerance, "Right edge escaped: outer=$outer, inner=$inner")
