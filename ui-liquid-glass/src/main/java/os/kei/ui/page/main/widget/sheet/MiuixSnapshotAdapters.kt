@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
@@ -63,6 +62,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowPopup
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
@@ -308,7 +308,7 @@ fun SnapshotWindowListPopup(
     }
 
     if (popupRender) {
-        Popup(
+        LiquidBackdropWindowPopup(
             popupPositionProvider = composePopupPositionProvider,
             onDismissRequest = { currentOnDismissRequest.value?.invoke() },
             properties =

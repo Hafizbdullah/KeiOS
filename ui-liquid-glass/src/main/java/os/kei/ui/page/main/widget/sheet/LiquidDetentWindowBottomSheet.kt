@@ -40,12 +40,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.window.Dialog
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowDialog
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.anim.folmeSpring
@@ -109,7 +109,7 @@ internal fun LiquidDetentWindowBottomSheet(
         dragHandleColor = dragHandleColor,
         popupHost = { visible, hostContent ->
             if (visible) {
-                Dialog(
+                LiquidBackdropWindowDialog(
                     onDismissRequest = {
                         if (allowDismiss) {
                             requestDismiss()

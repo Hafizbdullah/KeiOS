@@ -39,9 +39,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
 import kotlin.test.assertNull
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private const val SHEET_TAG = "liquid-sheet"
@@ -248,15 +246,13 @@ class LiquidGlassBottomSheetTest {
     }
 
     @Test
-    fun exportsSameIndependentBackdropToChromeAndContent() {
-        var sceneBackdrop: Backdrop? = null
+    fun clearsInheritedBackdropFromChromeAndContent() {
         var startBackdrop: Backdrop? = null
         var endBackdrop: Backdrop? = null
         var contentBackdrop: Backdrop? = null
 
         composeRule.setContent {
             LiquidSheetTestTheme {
-                sceneBackdrop = LocalSceneBackdrop.current
                 LiquidGlassBottomSheet(
                     show = true,
                     title = "Backdrop",
@@ -288,16 +284,14 @@ class LiquidGlassBottomSheetTest {
         composeRule.onNodeWithTag("sheet-backdrop-content").assertExists()
 
         composeRule.runOnIdle {
-            assertNotNull(sceneBackdrop)
-            assertNotNull(startBackdrop)
-            assertSame(startBackdrop, endBackdrop)
-            assertSame(startBackdrop, contentBackdrop)
-            assertNotSame(sceneBackdrop, contentBackdrop)
+            assertNull(startBackdrop)
+            assertNull(endBackdrop)
+            assertNull(contentBackdrop)
         }
     }
 
     @Test
-    fun childControlsPreferExportedBackdropWhenOptedIn() {
+    fun childControlsIgnoreCapturedPageBackdropWhenExportOptInIsRetainedForCompatibility() {
         var pageBackdrop: Backdrop? = null
         var sheetBackdrop: Backdrop? = null
         var resolvedControlBackdrop: Backdrop? = null
@@ -330,14 +324,13 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.runOnIdle {
             assertNotNull(pageBackdrop)
-            assertNotNull(sheetBackdrop)
-            assertSame(sheetBackdrop, resolvedControlBackdrop)
-            assertNotSame(pageBackdrop, resolvedControlBackdrop)
+            assertNull(sheetBackdrop)
+            assertNull(resolvedControlBackdrop)
         }
     }
 
     @Test
-    fun childControlsKeepPageFallbackWithoutOptIn() {
+    fun childControlsIgnoreCapturedPageBackdropWithoutExportOptIn() {
         var pageBackdrop: Backdrop? = null
         var sheetBackdrop: Backdrop? = null
         var resolvedControlBackdrop: Backdrop? = null
@@ -369,9 +362,8 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.runOnIdle {
             assertNotNull(pageBackdrop)
-            assertNotNull(sheetBackdrop)
-            assertSame(pageBackdrop, resolvedControlBackdrop)
-            assertNotSame(sheetBackdrop, resolvedControlBackdrop)
+            assertNull(sheetBackdrop)
+            assertNull(resolvedControlBackdrop)
         }
     }
 

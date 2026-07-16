@@ -38,7 +38,6 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -54,6 +53,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
+import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowDialog
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -158,7 +158,7 @@ fun LiquidGlassDialog(
     val renderedScale = if (transitionAnimationsEnabled) scale.value else 1f
     val renderedAlpha = if (transitionAnimationsEnabled) alpha.value else 1f
 
-    Dialog(
+    LiquidBackdropWindowDialog(
         onDismissRequest = {
             if (dismissible) {
                 currentOnDismissRequest?.invoke()

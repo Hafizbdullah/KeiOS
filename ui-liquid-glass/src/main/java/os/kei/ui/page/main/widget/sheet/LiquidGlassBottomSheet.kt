@@ -1,4 +1,4 @@
-@file:Suppress("FunctionName")
+@file:Suppress("FunctionName", "UNUSED_PARAMETER")
 
 package os.kei.ui.page.main.widget.sheet
 
@@ -12,15 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -30,22 +27,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.vibrancy
-import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.shadow.InnerShadow
-import com.kyant.backdrop.shadow.Shadow
-import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import kotlin.math.roundToInt
 
@@ -61,9 +46,6 @@ private const val DETENT_HALF = 0.50f
 private const val DETENT_THREE_QUARTER = 0.75f
 private const val DETENT_FULL = 1.0f
 private const val DETENT_SOLIDNESS_START = 0.58f
-private const val LIQUID_SHEET_BLUR_SCALE = 0.58f
-private const val LIQUID_SHEET_LENS_SCALE = 0.30f
-private const val LIQUID_SHEET_REFRACTION_AMOUNT_SCALE = 1.28f
 private const val LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE = 1.48f
 private const val LIQUID_SHEET_VISUAL_FRACTION_STEPS = 48f
 private val LiquidSheetDetentDragThreshold = 72.dp
@@ -125,20 +107,7 @@ fun LiquidGlassBottomSheet(
     content: @Composable () -> Unit,
 ) {
     val isDark = isAppInDarkTheme()
-    val sceneBackdrop = LocalSceneBackdrop.current
-    val sheetBackdrop = rememberLayerBackdrop()
-    val liquidControlsEnabled = LocalLiquidControlsEnabled.current
-    val useLiquidBackdropSurface = liquidControlsEnabled && backgroundColor == null
-    val activeSheetBackdrop = sheetBackdrop.takeIf { useLiquidBackdropSurface }
     val glassRuntime = LocalGlassEffectRuntime.current
-    val sheetBlurRadius =
-        UiPerformanceBudget.backdropBlur *
-            LIQUID_SHEET_BLUR_SCALE *
-            glassRuntime.blurScaleFor(GlassVariant.Floating)
-    val sheetLensRadius =
-        UiPerformanceBudget.backdropLens *
-            LIQUID_SHEET_LENS_SCALE *
-            glassRuntime.lensScaleFor(GlassVariant.Floating)
     val backgroundDepthBlurRadius =
         UiPerformanceBudget.backdropBlur *
             LIQUID_SHEET_BACKGROUND_DEPTH_BLUR_SCALE *
@@ -162,124 +131,28 @@ fun LiquidGlassBottomSheet(
     val openingContentMinHeight = (openingMinHeight - LiquidSheetEstimatedChromeHeight).coerceAtLeast(0.dp)
     val resolvedSheetMaxWidth = liquidSheetMaxWidth(sheetMaxWidth)
     val density = LocalDensity.current
-    val visualDetentFraction = remember(show) { mutableFloatStateOf(targetFraction) }
-
-    LaunchedEffect(show, targetFraction) {
-        if (show) {
-            visualDetentFraction.floatValue = liquidSheetQuantizedVisualDetentFraction(targetFraction)
-        }
-    }
-
     val animatedContentDetentHeight =
         animateDpAsState(
             targetValue = contentDetentHeight,
             label = "liquid_sheet_detent_content_height",
         )
     val shouldBoundManagedScrollableContent = managedScrollableContent && scrollableContentOverflowsOpeningDetent
-    val sheetShape = RoundedRectangle(cornerRadius)
-    val sheetSurfaceModifier =
-        if (useLiquidBackdropSurface) {
-            Modifier.drawBackdrop(
-                backdrop = sceneBackdrop,
-                shape = { sheetShape },
-                effects = {
-                    vibrancy()
-                    blur(sheetBlurRadius.toPx())
-                    safeLiquidLens(
-                        sheetLensRadius.toPx(),
-                        (sheetLensRadius * LIQUID_SHEET_REFRACTION_AMOUNT_SCALE).toPx(),
-                        chromaticAberration = false,
-                        depthEffect = false,
-                    )
-                },
-                exportedBackdrop = sheetBackdrop,
-                highlight = {
-                    Highlight.Default.copy(alpha = if (isDark) 0.72f else 0.86f)
-                },
-                shadow = {
-                    Shadow.Default.copy(
-                        color = Color.Black.copy(alpha = if (isDark) 0.20f else 0.13f),
-                    )
-                },
-                innerShadow = {
-                    InnerShadow(radius = 7.dp, alpha = if (isDark) 0.16f else 0.10f)
-                },
-                onDrawSurface = {
-                    drawRect(
-                        liquidSheetGlassSurfaceColor(
-                            isDark = isDark,
-                            detentFraction = visualDetentFraction.floatValue,
-                            surfaceTone = surfaceTone,
-                        ),
-                    )
-                },
-                onDrawFront = {
-                    val solidness = liquidSheetSolidness(visualDetentFraction.floatValue)
-                    val topEdgeColor =
-                        if (isDark) {
-                            Color.White.copy(alpha = lerp(0.12f, 0.16f, solidness))
-                        } else {
-                            Color.White.copy(alpha = lerp(0.54f, 0.62f, solidness))
-                        }
-                    drawLine(
-                        color = topEdgeColor,
-                        start = Offset(x = cornerRadius.toPx(), y = 1.dp.toPx()),
-                        end = Offset(x = size.width - cornerRadius.toPx(), y = 1.dp.toPx()),
-                        strokeWidth = 1.dp.toPx(),
-                    )
-                    drawRect(
-                        Color.Black.copy(
-                            alpha =
-                                if (isDark) {
-                                    lerp(0.018f, 0.028f, solidness)
-                                } else {
-                                    lerp(0.012f, 0.018f, solidness)
-                                },
-                        ),
-                    )
-                },
-            )
-        } else {
-            Modifier
-        }
     val resolvedBackgroundColor =
         backgroundColor
-            ?: if (useLiquidBackdropSurface) {
-                Color.Transparent
-            } else {
-                liquidSheetSurfaceColor(
-                    isDark = isDark,
-                    detentFraction = targetFraction,
-                    surfaceTone = surfaceTone,
-                )
-            }
+            ?: liquidSheetSurfaceColor(
+                isDark = isDark,
+                detentFraction = targetFraction,
+                surfaceTone = surfaceTone,
+            )
     LiquidDetentWindowBottomSheet(
         show = show,
         modifier = modifier,
-        surfaceModifier = sheetSurfaceModifier,
+        // A Dialog owns a separate coordinates space. Keep the activity LayerBackdrop out of its
+        // modifier chain and use the existing light, detent-aware fallback surface.
+        surfaceModifier = Modifier,
         title = title,
-        startAction =
-            startAction?.let { action ->
-                {
-                    CompositionLocalProvider(
-                        LocalLiquidParentBackdrop provides activeSheetBackdrop,
-                        LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
-                    ) {
-                        action()
-                    }
-                }
-            },
-        endAction =
-            endAction?.let { action ->
-                {
-                    CompositionLocalProvider(
-                        LocalLiquidParentBackdrop provides activeSheetBackdrop,
-                        LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
-                    ) {
-                        action()
-                    }
-                }
-            },
+        startAction = startAction,
+        endAction = endAction,
         backgroundColor = resolvedBackgroundColor,
         enableWindowDim = enableWindowDim,
         cornerRadius = cornerRadius,
@@ -302,12 +175,6 @@ fun LiquidGlassBottomSheet(
         onBlockedDismissRequest = onBlockedDismissRequest,
         contentCanScrollUp = { contentCanScrollUp },
         backgroundDepthBlurRadius = backgroundDepthBlurRadius,
-        onVisibleHeightFractionChanged = { fraction ->
-            val nextFraction = liquidSheetQuantizedVisualDetentFraction(fraction)
-            if (visualDetentFraction.floatValue != nextFraction) {
-                visualDetentFraction.floatValue = nextFraction
-            }
-        },
     ) {
         Box(
             modifier =
@@ -367,8 +234,6 @@ fun LiquidGlassBottomSheet(
                     managedScrollableContent = managed
                     if (managed) plainContentExceedsOpeningDetent = false
                 },
-                LocalLiquidParentBackdrop provides activeSheetBackdrop,
-                LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
             ) {
                 content()
             }

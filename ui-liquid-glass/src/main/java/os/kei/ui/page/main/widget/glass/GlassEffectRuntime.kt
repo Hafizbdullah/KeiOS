@@ -54,10 +54,12 @@ fun appGlassRuntimeEffectsEnabled(): Boolean =
 @Composable
 @ReadOnlyComposable
 fun preferredLiquidBackdrop(backdrop: Backdrop?): Backdrop? =
-    if (LocalLiquidParentBackdropOverridesFallback.current) {
-        LocalLiquidParentBackdrop.current ?: backdrop
-    } else {
-        backdrop
+    when {
+        LocalLiquidBackdropWindowBoundary.current ->
+            LocalLiquidParentBackdrop.current ?: LocalLiquidDialogBackdrop.current
+        LocalLiquidParentBackdropOverridesFallback.current ->
+            LocalLiquidParentBackdrop.current ?: backdrop
+        else -> backdrop
     }
 
 @Composable
