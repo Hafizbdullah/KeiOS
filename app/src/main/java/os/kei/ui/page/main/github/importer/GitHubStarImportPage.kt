@@ -130,7 +130,7 @@ internal fun GitHubStarImportPage(
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .layerBackdrop(pageBackdrop),
-            sectionSpacing = 10.dp,
+            sectionSpacing = 8.dp,
         ) {
             item(
                 key = "star-import-source",

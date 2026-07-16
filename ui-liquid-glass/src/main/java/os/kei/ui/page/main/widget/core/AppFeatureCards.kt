@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
@@ -50,6 +51,7 @@ fun AppSurfaceCard(
     stateDescription: String? = null,
     role: Role = Role.Button,
     selected: Boolean? = null,
+    toggleableState: ToggleableState? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppSurfaceBox(
@@ -74,6 +76,7 @@ fun AppSurfaceCard(
         stateDescription = stateDescription,
         role = role,
         selected = selected,
+        toggleableState = toggleableState,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
