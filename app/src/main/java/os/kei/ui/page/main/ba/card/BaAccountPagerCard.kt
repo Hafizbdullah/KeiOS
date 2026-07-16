@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -176,6 +177,7 @@ private fun BaAccountPageCard(
         )
     val clipboardLabel = stringResource(R.string.ba_friend_code_clipboard_label)
     val copiedToastRes = R.string.ba_toast_friend_code_copied
+    val editActionLabel = stringResource(R.string.ba_account_management_edit_action)
     val headerInteractionSource = remember { MutableInteractionSource() }
     fun copyFriendCode() {
         val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
@@ -201,8 +203,11 @@ private fun BaAccountPageCard(
                 Modifier.combinedClickable(
                     interactionSource = headerInteractionSource,
                     indication = null,
-                    onClick = {},
+                    onClickLabel = editActionLabel,
+                    role = Role.Button,
+                    onLongClickLabel = editActionLabel,
                     onLongClick = { currentOnEditAccount() },
+                    onClick = { currentOnEditAccount() },
                 ),
             title = officeTitle,
             displayName = account.displayName,

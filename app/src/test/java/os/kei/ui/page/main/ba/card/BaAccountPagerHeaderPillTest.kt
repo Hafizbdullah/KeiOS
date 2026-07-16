@@ -7,15 +7,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -26,6 +31,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.R
+import os.kei.ui.page.main.ba.BaOfficeAccountCardUiState
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountNotificationMode
+import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -154,6 +163,46 @@ class BaAccountPagerHeaderPillTest {
     }
 
     @Test
+    fun accountHeaderTapAndLongPressBothOpenTheExistingEditor() {
+        val editRequests = mutableListOf<BaAccountId>()
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val officeTitle = context.getString(R.string.ba_office_name_global)
+        val editActionLabel = context.getString(R.string.ba_account_management_edit_action)
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                BaAccountPagerCard(
+                    backdrop = null,
+                    accounts = listOf(INTERACTIVE_ACCOUNT),
+                    activeAccountId = INTERACTIVE_ACCOUNT.id,
+                    serverOptions = listOf("China", "Global", "Japan"),
+                    onAccountSelected = {},
+                    onEditAccount = editRequests::add,
+                )
+            }
+        }
+
+        val header = composeRule.onNodeWithText(officeTitle)
+        header
+            .assertHasClickAction()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
+
+        val semantics = header.fetchSemanticsNode().config
+        assertEquals(editActionLabel, semantics[SemanticsActions.OnClick].label)
+        assertEquals(editActionLabel, semantics[SemanticsActions.OnLongClick].label)
+
+        header.performClick()
+        header.performTouchInput { longClick() }
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf(INTERACTIVE_ACCOUNT.id, INTERACTIVE_ACCOUNT.id),
+                editRequests,
+            )
+        }
+    }
+
+    @Test
     fun productionPillsReuseExportedCardBackdropWithoutLegacyBadgeDrawing() {
         val source = sourceFile(BA_ACCOUNT_PAGER_CARD_SOURCE)
         val surfaceSource = sourceFile(BA_LIQUID_SURFACES_SOURCE)
@@ -203,6 +252,18 @@ private const val HEADER_TAG = "ba-account-header"
 private const val SERVER_PILL_TAG = "ba-account-server-pill"
 private const val PAGE_PILL_TAG = "ba-account-page-pill"
 private const val DISABLED_PILL_TAG = "ba-account-disabled-pill"
+private val INTERACTIVE_ACCOUNT =
+    BaOfficeAccountCardUiState(
+        id = BaAccountId("interactive-account"),
+        displayName = "Interactive account",
+        nickname = "Sensei",
+        friendCode = "GLOBAL01",
+        serverIndex = 1,
+        enabled = true,
+        notificationMode = BaAccountNotificationMode.FollowGlobal,
+        remindersEnabled = true,
+        customReminderSettings = BaGlobalReminderSettings(),
+    )
 private const val BA_ACCOUNT_PAGER_CARD_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/ba/card/BaAccountPagerCard.kt"
 private const val BA_LIQUID_SURFACES_SOURCE =
