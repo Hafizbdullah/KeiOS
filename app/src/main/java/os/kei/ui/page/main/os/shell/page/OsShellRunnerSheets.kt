@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -27,11 +32,45 @@ import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.component.OsShellRunnerSaveSheet
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
 import os.kei.ui.page.main.os.shell.state.toOutputSnapshot
+import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowDialog
+
+@Immutable
+internal data class OsShellDangerousCommandDialogContent(
+    val title: String,
+    val summary: String,
+    val confirmText: String,
+)
+
+@Stable
+internal class OsShellDialogExitSnapshot<T : Any>(
+    initialValue: T?,
+) {
+    var retainedValue: T? by mutableStateOf(initialValue)
+        private set
+
+    fun resolve(currentValue: T?): T? = currentValue ?: retainedValue
+
+    fun retain(currentValue: T?) {
+        if (currentValue != null) {
+            retainedValue = currentValue
+        }
+    }
+
+    fun clear() {
+        retainedValue = null
+    }
+}
+
+@Composable
+internal fun <T : Any> rememberOsShellDialogExitSnapshot(currentValue: T?): OsShellDialogExitSnapshot<T> {
+    val snapshot = remember { OsShellDialogExitSnapshot(currentValue) }
+    SideEffect { snapshot.retain(currentValue) }
+    return snapshot
+}
 
 @Composable
 internal fun OsShellRunnerSheets(
@@ -146,7 +185,7 @@ internal fun OsShellRunnerSheets(
 }
 
 @Composable
-private fun OsShellDangerousCommandConfirmDialog(
+internal fun OsShellDangerousCommandConfirmDialog(
     show: Boolean,
     title: String,
     summary: String,
@@ -154,29 +193,64 @@ private fun OsShellDangerousCommandConfirmDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    WindowDialog(
+    val currentContent =
+        remember(show, title, summary, confirmText) {
+            if (show) {
+                OsShellDangerousCommandDialogContent(
+                    title = title,
+                    summary = summary,
+                    confirmText = confirmText,
+                )
+            } else {
+                null
+            }
+        }
+    val exitSnapshot = rememberOsShellDialogExitSnapshot(currentContent)
+    val renderedContent = exitSnapshot.resolve(currentContent)
+
+    AppWindowDialogHost(
         show = show,
-        title = title,
-        summary = summary,
+        title = renderedContent?.title,
+        summary = renderedContent?.summary,
         onDismissRequest = onDismissRequest,
+        onDismissFinished = exitSnapshot::clear,
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            AppLiquidDialogActionButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(R.string.common_cancel),
-                onClick = onDismissRequest,
-            )
-            AppLiquidDialogActionButton(
-                modifier = Modifier.weight(1f),
-                text = confirmText,
-                containerColor = MiuixTheme.colorScheme.error,
-                variant = GlassVariant.SheetDangerAction,
-                onClick = onConfirm,
+        renderedContent?.let { content ->
+            Spacer(modifier = Modifier.height(16.dp))
+            OsShellDangerousCommandConfirmActions(
+                confirmText = content.confirmText,
+                actionsEnabled = show,
+                onDismissRequest = onDismissRequest,
+                onConfirm = onConfirm,
             )
         }
+    }
+}
+
+@Composable
+internal fun OsShellDangerousCommandConfirmActions(
+    confirmText: String,
+    actionsEnabled: Boolean = true,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text = stringResource(R.string.common_cancel),
+            onClick = onDismissRequest,
+            enabled = actionsEnabled,
+        )
+        AppLiquidDialogActionButton(
+            modifier = Modifier.weight(1f),
+            text = confirmText,
+            containerColor = MiuixTheme.colorScheme.error,
+            variant = GlassVariant.SheetDangerAction,
+            onClick = onConfirm,
+            enabled = actionsEnabled,
+        )
     }
 }
