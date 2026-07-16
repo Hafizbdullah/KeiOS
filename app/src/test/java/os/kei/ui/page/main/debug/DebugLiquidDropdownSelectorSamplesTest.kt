@@ -1,0 +1,280 @@
+package os.kei.ui.page.main.debug
+
+import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertWidthIsEqualTo
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kyant.backdrop.backdrops.emptyBackdrop
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import os.kei.R
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import java.io.File
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+@RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(
+    application = DebugLiquidDropdownSelectorSamplesTestApp::class,
+    sdk = [35],
+    qualifiers = "w360dp-h800dp-xxhdpi",
+)
+class DebugLiquidDropdownSelectorSamplesTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun productionMatrixDelegatesEveryPressureStateToTheSharedSelector() {
+        val source = sourceFile(DROPDOWN_SAMPLES_SOURCE)
+        val matrixSource =
+            source
+                .substringAfter("internal fun DebugLiquidProductionDropdownSelectorSamples(")
+                .substringBefore("private fun DebugLiquidProductionDropdownSelector(")
+        val selectorSource =
+            source
+                .substringAfter("private fun DebugLiquidProductionDropdownSelector(")
+                .substringBefore("private fun DebugLiquidDropdownSampleLabel(")
+
+        assertEquals(5, matrixSource.occurrencesOf("DebugLiquidProductionDropdownSelector("))
+        assertTrue("AppDropdownSelector(" in selectorSource)
+        assertTrue("anchorFillMaxWidth = true" in selectorSource)
+        assertTrue("anchorTextOverflow = TextOverflow.Ellipsis" in selectorSource)
+        assertTrue("anchorTextSoftWrap = false" in selectorSource)
+        assertTrue("dropdownItemTextMaxLines = 1" in selectorSource)
+        assertTrue("popupMatchAnchorWidth = true" in selectorSource)
+        assertTrue("enabled = enabled" in selectorSource)
+        assertTrue("DebugLiquidDropdownStressOptionCount = 16" in source)
+        assertTrue("DebugLiquidDropdownStressSelectedIndex = 14" in source)
+        assertFalse("SnapshotWindowListPopup(" in source)
+        assertFalse("LiquidGlassDropdownColumn(" in source)
+    }
+
+    @Test
+    fun largeFontKeepsFullAndSplitAnchorsInsideThe324DpMatrix() {
+        setProductionMatrix()
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        listOf(
+            DEBUG_LIQUID_STANDARD_SELECTOR_TAG,
+            DEBUG_LIQUID_MULTILINGUAL_SELECTOR_TAG,
+            DEBUG_LIQUID_SCROLL_SELECTOR_TAG,
+        ).forEach { tag ->
+            composeRule
+                .onNodeWithTag(tag)
+                .assertWidthIsEqualTo(324.dp)
+        }
+        listOf(
+            context.getString(R.string.debug_component_lab_liquid_selector_option_balanced),
+            context.getString(R.string.debug_component_lab_liquid_selector_long_zh),
+            context.getString(
+                R.string.debug_component_lab_liquid_selector_scroll_option,
+                DebugLiquidDropdownStressSelectedIndex + 1,
+            ),
+        ).forEach { label ->
+            composeRule
+                .onNode(hasText(label) and buttonRoleMatcher)
+                .assertHeightIsAtLeast(48.dp)
+        }
+
+        listOf(
+            DEBUG_LIQUID_DISABLED_SELECTOR_TAG,
+            DEBUG_LIQUID_EMPTY_SELECTOR_TAG,
+        ).forEach { tag ->
+            composeRule
+                .onNodeWithTag(tag)
+                .assertWidthIsEqualTo(157.dp)
+        }
+        listOf(
+            context.getString(R.string.debug_component_lab_liquid_selector_disabled),
+            context.getString(R.string.debug_component_lab_liquid_selector_empty),
+        ).forEach { label ->
+            composeRule
+                .onNode(hasText(label) and buttonRoleMatcher)
+                .assertHeightIsAtLeast(48.dp)
+                .assertIsNotEnabled()
+        }
+        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+    }
+
+    @Test
+    fun multilingualPopupMatchesItsAnchorAndKeepsEveryLongLabelInsideTheWindow() {
+        setProductionMatrix()
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val longLabels =
+            listOf(
+                context.getString(R.string.debug_component_lab_liquid_selector_long_zh),
+                context.getString(R.string.debug_component_lab_liquid_selector_long_en),
+                context.getString(R.string.debug_component_lab_liquid_selector_long_ja),
+            )
+        val selectorAnchor = composeRule.onNodeWithTag(DEBUG_LIQUID_MULTILINGUAL_SELECTOR_TAG)
+        val anchorBounds =
+            selectorAnchor
+                .assertWidthIsEqualTo(324.dp)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        composeRule
+            .onAllNodes(hasText(longLabels.first()), useUnmergedTree = true)
+            .fetchSemanticsNodes()
+            .forEach { textNode ->
+                assertTrue(textNode.boundsInRoot.left >= anchorBounds.left)
+                assertTrue(textNode.boundsInRoot.right <= anchorBounds.right)
+            }
+
+        composeRule
+            .onNode(hasText(longLabels.first()) and buttonRoleMatcher)
+            .performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(radioRoleMatcher).fetchSemanticsNodes().size == longLabels.size
+        }
+
+        longLabels.forEach { label ->
+            composeRule
+                .onNode(hasText(label) and radioRoleMatcher)
+                .assertIsDisplayed()
+        }
+        val rootWidths =
+            composeRule
+                .onAllNodes(isRoot())
+                .fetchSemanticsNodes()
+                .map { root -> with(composeRule.density) { root.boundsInRoot.width.toDp() } }
+                .filter { width -> width > 0.dp }
+        assertTrue(rootWidths.size >= 2, "Expected activity and popup roots, widths=$rootWidths")
+        assertTrue(324.dp in rootWidths, "Expected popup width to match 324dp anchor, widths=$rootWidths")
+        assertTrue(rootWidths.all { width -> width <= 360.dp }, "Popup escaped the window: $rootWidths")
+
+        composeRule
+            .onNode(hasText(longLabels[1]) and radioRoleMatcher)
+            .performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(radioRoleMatcher).fetchSemanticsNodes().isEmpty()
+        }
+        composeRule
+            .onNode(hasText(longLabels[1]) and buttonRoleMatcher)
+            .assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithTag(DEBUG_LIQUID_MULTILINGUAL_SELECTOR_TAG)
+            .assertWidthIsEqualTo(324.dp)
+        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+    }
+
+    @Test
+    fun sixteenItemPopupScrollsToTheLateSelectionAndClosesAfterChoosingItsNeighbor() {
+        setProductionMatrix()
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val selectedLabel =
+            context.getString(
+                R.string.debug_component_lab_liquid_selector_scroll_option,
+                DebugLiquidDropdownStressSelectedIndex + 1,
+            )
+        val neighborLabel =
+            context.getString(
+                R.string.debug_component_lab_liquid_selector_scroll_option,
+                DebugLiquidDropdownStressSelectedIndex,
+            )
+
+        composeRule
+            .onNode(hasText(selectedLabel) and buttonRoleMatcher)
+            .performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(radioRoleMatcher).fetchSemanticsNodes().size ==
+                DebugLiquidDropdownStressOptionCount
+        }
+
+        composeRule.onAllNodes(selectedRadioMatcher).assertCountEquals(1)
+        composeRule
+            .onNode(hasText(selectedLabel) and radioRoleMatcher)
+            .assertIsSelected()
+            .assertIsDisplayed()
+        composeRule
+            .onNode(hasText(neighborLabel) and radioRoleMatcher)
+            .assertIsDisplayed()
+            .performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(radioRoleMatcher).fetchSemanticsNodes().isEmpty()
+        }
+        composeRule
+            .onNode(hasText(neighborLabel) and buttonRoleMatcher)
+            .assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithTag(DEBUG_LIQUID_SCROLL_SELECTOR_TAG)
+            .assertWidthIsEqualTo(324.dp)
+        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+    }
+
+    private fun setProductionMatrix() {
+        composeRule.setContent {
+            val baseDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(baseDensity.density, fontScale = 1.5f),
+                LocalTransitionAnimationsEnabled provides false,
+            ) {
+                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.TopCenter,
+                    ) {
+                        DebugLiquidProductionDropdownSelectorSamples(
+                            backdrop = emptyBackdrop(),
+                            modifier = Modifier.width(324.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private companion object {
+        val buttonRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        val radioRoleMatcher = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
+        val selectedRadioMatcher =
+            radioRoleMatcher and SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
+
+        const val DROPDOWN_SAMPLES_SOURCE =
+            "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidDropdownSelectorSamples.kt"
+    }
+}
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, relativePath) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $relativePath from $workingDirectory"
+    }.readText()
+}
+
+private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
+
+class DebugLiquidDropdownSelectorSamplesTestApp : Application()

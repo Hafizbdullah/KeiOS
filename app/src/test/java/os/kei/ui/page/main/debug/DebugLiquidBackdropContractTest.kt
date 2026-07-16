@@ -103,7 +103,7 @@ class DebugLiquidBackdropContractTest {
                 CatalogCardContract(
                     functionName = "DebugLiquidGlassDropdownCard",
                     nextFunctionName = "DebugLiquidBackdropCard",
-                    expectedConsumerCount = 3,
+                    expectedConsumerCount = 4,
                 ),
                 CatalogCardContract(
                     functionName = "DebugLiquidTransparentButtonsCard",

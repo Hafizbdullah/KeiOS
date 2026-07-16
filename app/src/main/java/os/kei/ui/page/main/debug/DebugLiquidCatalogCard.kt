@@ -440,6 +440,11 @@ internal fun DebugLiquidGlassDropdownCard(
                 }
             }
         }
+
+        DebugLiquidProductionDropdownSelectorSamples(
+            backdrop = cardBackdrop,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
