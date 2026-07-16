@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -25,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,9 +39,10 @@ import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.ba.BaOfficeAccountCardUiState
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.sanitizeBaAccountFriendCode
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
@@ -260,7 +261,7 @@ private fun BaAccountPageCard(
 }
 
 @Composable
-private fun BaAccountOfficeHeader(
+internal fun BaAccountOfficeHeader(
     modifier: Modifier = Modifier,
     title: String,
     displayName: String,
@@ -282,6 +283,7 @@ private fun BaAccountOfficeHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
+                modifier = Modifier.weight(2f, fill = false),
                 text = title,
                 color = MiuixTheme.colorScheme.onBackground,
                 fontSize = AppTypographyTokens.SectionTitle.fontSize,
@@ -318,69 +320,62 @@ private fun BaAccountOfficeHeader(
 }
 
 @Composable
-private fun BaAccountServerBadge(
+internal fun BaAccountServerBadge(
     text: String,
     accentColor: Color,
+    modifier: Modifier = Modifier,
 ) {
-    Text(
-        modifier =
-            Modifier
-                .appSquircleBackground(
-                    color = accentColor.copy(alpha = 0.12f),
-                    cornerRadius = 999.dp,
-                )
-                .padding(horizontal = 7.dp, vertical = 2.dp),
+    BaAccountHeaderStatusPill(
         text = text,
-        color = accentColor,
-        fontSize = AppTypographyTokens.Body.fontSize,
-        lineHeight = AppTypographyTokens.Body.lineHeight,
-        fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+        accentColor = accentColor,
+        modifier = modifier,
     )
 }
 
 @Composable
-private fun BaAccountCountChip(
+internal fun BaAccountCountChip(
     text: String,
     accentColor: Color,
+    modifier: Modifier = Modifier,
 ) {
-    Text(
-        modifier =
-            Modifier
-                .widthIn(min = 42.dp)
-                .appSquircleBackground(
-                    color = accentColor.copy(alpha = 0.12f),
-                    cornerRadius = 999.dp,
-                )
-                .padding(horizontal = 7.dp, vertical = 2.dp),
+    BaAccountHeaderStatusPill(
         text = text,
-        color = accentColor,
-        fontSize = AppTypographyTokens.Body.fontSize,
-        lineHeight = AppTypographyTokens.Body.lineHeight,
-        fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-        textAlign = TextAlign.Center,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+        accentColor = accentColor,
+        modifier = modifier.widthIn(min = 42.dp),
     )
 }
 
 @Composable
-private fun BaAccountDisabledBadge() {
-    Text(
-        modifier =
-            Modifier
-                .appSquircleBackground(
-                    color = AppStatusColors.Failed.copy(alpha = 0.12f),
-                    cornerRadius = 999.dp,
-                )
-                .padding(horizontal = 7.dp, vertical = 2.dp),
+internal fun BaAccountDisabledBadge(modifier: Modifier = Modifier) {
+    BaAccountHeaderStatusPill(
         text = stringResource(R.string.ba_account_disabled_badge),
-        color = AppStatusColors.Failed,
-        fontSize = AppTypographyTokens.Body.fontSize,
-        lineHeight = AppTypographyTokens.Body.lineHeight,
-        fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+        accentColor = AppStatusColors.Failed,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun BaAccountHeaderStatusPill(
+    text: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    StatusPill(
+        label = text,
+        color = accentColor,
+        modifier = modifier,
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp),
+        backgroundAlphaOverride = 0.12f,
+        borderAlphaOverride = 0f,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
+        typographyOverride =
+            TextStyle(
+                fontSize = AppTypographyTokens.Body.fontSize,
+                lineHeight = AppTypographyTokens.Body.lineHeight,
+                fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
+            ),
+        contentColorOverride = accentColor,
     )
 }
