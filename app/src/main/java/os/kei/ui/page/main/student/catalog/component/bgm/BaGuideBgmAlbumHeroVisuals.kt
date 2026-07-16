@@ -30,9 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
@@ -55,7 +52,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun BaGuideBgmAlbumArtwork(
     accent: Color,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     imageUrl: String = "",
 ) {
     val shape = RoundedRectangle(28.dp)
@@ -104,6 +101,7 @@ internal fun BaGuideBgmAlbumArtwork(
 @Composable
 internal fun BaGuideBgmAlbumPrimaryActions(
     accent: Color,
+    backdrop: Backdrop?,
     repeatEnabled: Boolean,
     isPlaying: Boolean,
     volumeControlVisible: Boolean,
@@ -113,19 +111,12 @@ internal fun BaGuideBgmAlbumPrimaryActions(
     onVolumeClick: () -> Unit,
 ) {
     val neutralTint = MiuixTheme.colorScheme.onBackground
-    val actionsBackdrop = rememberLayerBackdrop()
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(50.dp + AppInteractiveTokens.liquidPressSafePadding * 2),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(actionsBackdrop),
-        )
         Row(
             modifier =
                 Modifier
@@ -141,14 +132,14 @@ internal fun BaGuideBgmAlbumPrimaryActions(
                 neutralTint = neutralTint,
                 active = repeatEnabled,
                 onClick = onRepeatClick,
-                backdrop = actionsBackdrop,
+                backdrop = backdrop,
             )
             BaGuideBgmPlayAction(
                 accent = accent,
                 neutralTint = neutralTint,
                 isPlaying = isPlaying,
                 onClick = onPlayPauseClick,
-                backdrop = actionsBackdrop,
+                backdrop = backdrop,
             )
             BaGuideBgmRoundAction(
                 icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
@@ -157,7 +148,7 @@ internal fun BaGuideBgmAlbumPrimaryActions(
                 neutralTint = neutralTint,
                 active = volumeControlVisible,
                 onClick = onVolumeClick,
-                backdrop = actionsBackdrop,
+                backdrop = backdrop,
             )
         }
     }
@@ -171,12 +162,10 @@ internal fun BaGuideBgmAlbumVolumeControl(
     onVolumeChangeFinished: (Float) -> Unit,
     onToggleMuted: () -> Unit,
     onInteractionChanged: (Boolean) -> Unit,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
 ) {
     var sliderActive by rememberSaveable { mutableStateOf(false) }
-    val volumeBackdrop = rememberLayerBackdrop()
-    val sliderBackdrop = rememberCombinedBackdrop(backdrop, volumeBackdrop)
     val neutralTint = MiuixTheme.colorScheme.onBackgroundVariant
     val muted = volume <= 0.001f
     val sliderTint = if (muted) neutralTint.copy(alpha = 0.58f) else accent.copy(alpha = 0.95f)
@@ -192,12 +181,6 @@ internal fun BaGuideBgmAlbumVolumeControl(
                 .fillMaxWidth()
                 .height(BaGuideBgmVolumeControlHeight),
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(volumeBackdrop),
-        )
         Row(
             modifier =
                 Modifier
@@ -231,7 +214,7 @@ internal fun BaGuideBgmAlbumVolumeControl(
                 },
                 valueRange = 0f..1f,
                 visibilityThreshold = 0.001f,
-                backdrop = sliderBackdrop,
+                backdrop = backdrop,
                 contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
                 activeColor = sliderTint,
                 inactiveColor = sliderInactiveTint,
@@ -256,7 +239,7 @@ private fun BaGuideBgmRoundAction(
     neutralTint: Color,
     active: Boolean,
     onClick: () -> Unit = {},
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
 ) {
     val contentTint = if (active) accent.copy(alpha = 0.98f) else neutralTint
     val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
@@ -285,7 +268,7 @@ private fun BaGuideBgmPlayAction(
     neutralTint: Color,
     isPlaying: Boolean,
     onClick: () -> Unit,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
 ) {
     val contentTint = if (isPlaying) accent.copy(alpha = 0.98f) else neutralTint
     val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)

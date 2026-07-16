@@ -53,7 +53,7 @@ internal fun BaGuideBgmAlbumContent(
     userScrollEnabled: Boolean,
     topPadding: Dp,
     bottomPadding: Dp,
-    contentBackdrop: Backdrop,
+    contentBackdrop: Backdrop?,
     artworkImageUrl: String = "",
     showAlbumTitle: Boolean = true,
     promoteSectionTitle: Boolean = false,

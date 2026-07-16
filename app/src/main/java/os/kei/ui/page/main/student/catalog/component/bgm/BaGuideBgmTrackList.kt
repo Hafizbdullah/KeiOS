@@ -27,6 +27,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidSurface
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -38,7 +39,7 @@ internal fun LazyListScope.renderBaGuideBgmTrackList(
     currentTrackId: String,
     isPlaying: Boolean,
     accent: Color,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     isTrackFavorite: (String) -> Boolean,
     isTrackOfflineSaved: (String) -> Boolean,
     onTrackClick: (String) -> Unit,
@@ -92,7 +93,7 @@ private fun BaGuideBgmTrackChunk(
     currentTrackId: String,
     isPlaying: Boolean,
     accent: Color,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     isTrackFavorite: (String) -> Boolean,
     isTrackOfflineSaved: (String) -> Boolean,
     onTrackClick: (String) -> Unit,
@@ -141,13 +142,24 @@ private fun BaGuideBgmTrackChunk(
 @Composable
 private fun BaGuideBgmEmptyTrackResult(
     accent: Color,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
 ) {
     val isDark = isSystemInDarkTheme()
-    val resultSurfaceBackdrop = rememberLayerBackdrop()
-    val iconBackdrop = rememberCombinedBackdrop(backdrop, resultSurfaceBackdrop)
+    val activeBackdrop = activeGlassBackdrop(backdrop)
+    val resultSurfaceBackdrop =
+        if (activeBackdrop != null) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
+    val iconBackdrop =
+        if (activeBackdrop != null && resultSurfaceBackdrop != null) {
+            rememberCombinedBackdrop(activeBackdrop, resultSurfaceBackdrop)
+        } else {
+            null
+        }
     LiquidSurface(
-        backdrop = backdrop,
+        backdrop = activeBackdrop,
         shape = RoundedRectangle(24.dp),
         tint = accent.copy(alpha = if (isDark) 0.10f else 0.07f),
         surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = if (isDark) 0.16f else 0.22f),

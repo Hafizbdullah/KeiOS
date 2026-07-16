@@ -20,8 +20,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -38,6 +36,7 @@ import os.kei.ui.page.main.student.catalog.component.resolveStudentArtworkImageU
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideFavoriteBgmOfflineCacheUiState
 import os.kei.ui.page.main.student.section.gallery.formatAudioDuration
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 
 @Composable
 internal fun BaGuideFavoriteBgmMusicContent(
@@ -65,7 +64,7 @@ internal fun BaGuideFavoriteBgmMusicContent(
     onOpenGuide: (String) -> Unit,
     onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
 ) {
-    val contentBackdrop = rememberLayerBackdrop()
+    val contentBackdrop = LocalLiquidParentBackdrop.current
     val listState = rememberLazyListState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val snapshotFlowManager = rememberAppSnapshotFlowManager()
@@ -210,12 +209,6 @@ internal fun BaGuideFavoriteBgmMusicContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(contentBackdrop),
-        )
         BaGuideBgmAlbumContent(
             accent = accent,
             tracks = displayedTracks,

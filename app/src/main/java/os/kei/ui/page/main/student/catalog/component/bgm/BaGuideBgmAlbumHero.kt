@@ -53,7 +53,7 @@ internal fun BaGuideBgmAlbumHero(
     onVolumeControlVisibleChange: (Boolean) -> Unit,
     onLastAudibleVolumeChange: (Float) -> Unit,
     onVolumeSliderInteractionChanged: (Boolean) -> Unit,
-    contentBackdrop: Backdrop,
+    contentBackdrop: Backdrop?,
     artworkImageUrl: String = "",
     showAlbumTitle: Boolean = true,
     promoteSectionTitle: Boolean = false,
@@ -177,6 +177,7 @@ internal fun BaGuideBgmAlbumHero(
         ) {
             BaGuideBgmAlbumPrimaryActions(
                 accent = accent,
+                backdrop = contentBackdrop,
                 repeatEnabled = repeatEnabled,
                 isPlaying = isPlaying,
                 volumeControlVisible = volumeControlVisible,
