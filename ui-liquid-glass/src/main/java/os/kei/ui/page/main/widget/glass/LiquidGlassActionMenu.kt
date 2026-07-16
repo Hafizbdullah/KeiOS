@@ -85,6 +85,15 @@ sealed interface LiquidGlassActionMenuItem {
     val id: String
 }
 
+data class LiquidGlassActionMenuInfoRow(
+    override val id: String,
+    val text: String,
+    val modifier: Modifier = Modifier,
+    val leadingIcon: ImageVector? = null,
+    val trailingIcon: ImageVector? = null,
+    val subtitle: String? = null,
+) : LiquidGlassActionMenuItem
+
 data class LiquidGlassActionMenuActionRow(
     override val id: String,
     val text: String,
@@ -343,6 +352,19 @@ private fun LiquidGlassActionMenuItemRow(
     onDismissRequest: () -> Unit,
 ) {
     when (item) {
+        is LiquidGlassActionMenuInfoRow -> {
+            LiquidGlassDropdownInfoItem(
+                text = item.text,
+                modifier = item.modifier,
+                index = index,
+                optionSize = optionSize,
+                leadingIcon = item.leadingIcon,
+                trailingIcon = item.trailingIcon,
+                subtitle = item.subtitle,
+                accentColor = accentColor,
+            )
+        }
+
         is LiquidGlassActionMenuActionRow -> {
             LiquidGlassDropdownActionItem(
                 text = item.text,

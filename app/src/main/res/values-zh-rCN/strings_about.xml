@@ -141,6 +141,8 @@
     <string name="debug_component_lab_liquid_action_menu_quality_auto">自动</string>
     <string name="debug_component_lab_liquid_action_menu_quality_high">高质量</string>
     <string name="debug_component_lab_liquid_action_menu_quality_lossless">无损</string>
+    <string name="debug_component_lab_liquid_action_menu_info">被动说明</string>
+    <string name="debug_component_lab_liquid_action_menu_info_summary">自然朗读说明，不带动作或禁用语义</string>
     <string name="debug_component_lab_liquid_action_menu_disabled">云同步暂不可用</string>
     <string name="debug_component_lab_liquid_action_menu_danger">移除样张</string>
     <string name="debug_component_lab_liquid_feedback_title">Liquid 反馈与覆盖层</string>

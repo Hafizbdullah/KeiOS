@@ -22,6 +22,7 @@ import os.kei.ui.page.main.student.catalog.page.studentTypeLabelRes
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuInfoRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
@@ -151,13 +152,11 @@ internal fun BaGuideCatalogMoreActionPopup(
                         )
                     }
                     add(
-                        LiquidGlassActionMenuActionRow(
+                        LiquidGlassActionMenuInfoRow(
                             id = "refresh_scope",
                             text = stringResource(R.string.ba_catalog_more_refresh_scope_title),
                             subtitle = stringResource(R.string.ba_catalog_more_refresh_scope_summary),
                             leadingIcon = infoIcon,
-                            enabled = false,
-                            onClick = {},
                         ),
                     )
                     add(

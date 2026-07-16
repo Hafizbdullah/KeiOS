@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
@@ -612,6 +613,72 @@ private fun LiquidGlassDropdownIcon(
         contentDescription = contentDescription,
         modifier = modifier,
     )
+}
+
+/**
+ * A passive dropdown row for context and supporting information.
+ *
+ * The row deliberately owns no click, selection, enabled, or role semantics. Its icon is
+ * decorative and its text descendants are merged so accessibility services read the title and
+ * subtitle as ordinary information.
+ */
+@Composable
+fun LiquidGlassDropdownInfoItem(
+    text: String,
+    modifier: Modifier = Modifier,
+    index: Int = 0,
+    optionSize: Int = 1,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+    subtitle: String? = null,
+    accentColor: Color = MiuixTheme.colorScheme.primary,
+    textMaxLines: Int = 1,
+) {
+    val isDark = isAppInDarkTheme()
+    val infoAccent =
+        liquidGlassDropdownItemAccent(
+            isDark = isDark,
+            accentColor = accentColor,
+            variant = GlassVariant.SheetAction,
+        )
+    val textColor =
+        MiuixTheme.colorScheme.onBackground.copy(
+            alpha = if (isDark) 0.94f else 0.88f,
+        )
+    val iconColor = infoAccent.copy(alpha = if (isDark) 0.88f else 0.78f)
+    val outerTopPadding =
+        if (index == 0) LiquidGlassDropdownItemPressSafePadding else 2.dp
+    val outerBottomPadding =
+        if (index == optionSize - 1) LiquidGlassDropdownItemPressSafePadding else 2.dp
+    val accessibilityModifier =
+        if (LocalLiquidGlassDropdownSizingPass.current) {
+            Modifier.clearAndSetSemantics {}
+        } else {
+            Modifier.semantics(mergeDescendants = true) {}
+        }
+
+    Box(
+        modifier =
+            modifier
+                .padding(top = outerTopPadding, bottom = outerBottomPadding)
+                .defaultMinSize(minHeight = LiquidGlassDropdownRowMinHeight)
+                .then(accessibilityModifier),
+    ) {
+        LiquidGlassDropdownRowContent(
+            text = text,
+            textColor = ColorProducer { textColor },
+            iconColor = ColorProducer { iconColor },
+            checkColor = Color.Transparent,
+            showCheck = false,
+            reserveCheckSlot = false,
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
+            subtitle = subtitle,
+            trailingContent = null,
+            modifier = Modifier.liquidGlassDropdownRowContent(),
+            textMaxLines = textMaxLines,
+        )
+    }
 }
 
 @Composable

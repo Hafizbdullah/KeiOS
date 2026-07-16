@@ -24,6 +24,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideDownloadIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideListIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideMusicIcon
@@ -37,6 +38,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuInfoRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuMultipleChoiceRow
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSingleChoiceRow
@@ -68,6 +70,8 @@ internal fun DebugLiquidActionMenuCard(
     val downloadLabel = stringResource(R.string.debug_component_lab_action_download)
     val favoriteLabel = stringResource(R.string.debug_component_lab_action_favorite)
     val compactRowsLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_compact_rows)
+    val infoLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_info)
+    val infoSummary = stringResource(R.string.debug_component_lab_liquid_action_menu_info_summary)
     val disabledLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_disabled)
     val dangerLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_danger)
     val qualityLabel = stringResource(R.string.debug_component_lab_liquid_action_menu_quality)
@@ -220,6 +224,12 @@ internal fun DebugLiquidActionMenuCard(
                                             },
                                         )
                                     },
+                            ),
+                            LiquidGlassActionMenuInfoRow(
+                                id = "passive_info",
+                                text = infoLabel,
+                                subtitle = infoSummary,
+                                leadingIcon = appLucideInfoIcon(),
                             ),
                             LiquidGlassActionMenuActionRow(
                                 id = "disabled",

@@ -141,6 +141,8 @@
     <string name="debug_component_lab_liquid_action_menu_quality_auto">Auto</string>
     <string name="debug_component_lab_liquid_action_menu_quality_high">High quality</string>
     <string name="debug_component_lab_liquid_action_menu_quality_lossless">Lossless</string>
+    <string name="debug_component_lab_liquid_action_menu_info">Passive information</string>
+    <string name="debug_component_lab_liquid_action_menu_info_summary">Reads guidance without action or disabled semantics</string>
     <string name="debug_component_lab_liquid_action_menu_disabled">Cloud sync unavailable</string>
     <string name="debug_component_lab_liquid_action_menu_danger">Remove proof</string>
     <string name="debug_component_lab_liquid_feedback_title">Liquid feedback and overlays</string>
