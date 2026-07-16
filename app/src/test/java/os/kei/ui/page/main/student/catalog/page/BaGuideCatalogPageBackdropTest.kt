@@ -88,6 +88,10 @@ class BaGuideCatalogPageBackdropTest {
         assertTrue(panelBackgroundIndex > producerIndex, "Panel background must be drawn inside the producer layer")
         assertTrue(gradientIndex > panelBackgroundIndex, "Page gradient must be drawn inside the producer layer")
         assertTrue(pagerIndex > gradientIndex, "Producer sibling must be composed before Pager consumers")
+        assertTrue(
+            "CompositionLocalProvider(LocalLiquidParentBackdrop provides catalogSceneBackdrop)" in source,
+            "Catalog cards must inherit the real page scene Backdrop",
+        )
         assertEquals(1, source.occurrencesOf(".layerBackdrop(catalogSceneBackdrop)"))
         assertEquals(1, source.occurrencesOf("val catalogSceneBackdrop = rememberBaGuideCatalogSceneBackdrop()"))
         assertEquals(1, source.occurrencesOf("catalogSceneBackdrop = catalogSceneBackdrop"))

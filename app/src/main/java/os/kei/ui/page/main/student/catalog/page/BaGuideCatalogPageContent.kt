@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogDataUiState
@@ -201,49 +203,51 @@ internal fun BaGuideCatalogPageContent(
                     .fillMaxSize()
                     .layerBackdrop(bottomChromeBackdrop),
         ) {
-            Crossfade(
-                targetState = initialContentRevealed,
-                animationSpec = tween(durationMillis = initialContentFadeMs),
-                label = "BaGuideCatalogInitialContent",
-            ) { contentReady ->
-                if (contentReady) {
-                    BaGuideCatalogPagePager(
-                        pagerState = pagerState,
-                        tabs = tabs,
-                        pageState = pageState,
-                        filterSortState = filterSortState,
-                        catalogDataState = catalogDataState,
-                        catalogListDerivedStates = catalogListDerivedStates,
-                        catalogFavoriteEntries = catalogFavoriteEntries,
-                        studentBgmListDerivedState = studentBgmListDerivedState,
-                        memoryLobbyListDerivedState = memoryLobbyListDerivedState,
-                        studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
-                        favoriteBgmListDerivedState = favoriteBgmListDerivedState,
-                        favoriteBgms = favoriteBgms,
-                        favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
-                        pageActions = pageActions,
-                        playbackCoordinator = playbackCoordinator,
-                        playbackUiState = playbackUiState,
-                        chromeScrollState = chromeScrollState,
-                        pageChromeBackdrop = pageChromeBackdrop,
-                        catalogSceneBackdrop = catalogSceneBackdrop,
-                        transitionAnimationsEnabled = transitionAnimationsEnabled,
-                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                        accent = accent,
-                        onOpenGuide = onOpenGuide,
-                        onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
-                        modifier =
-                            Modifier
-                                .drawWithContent {
-                                    drawContent()
-                                    val veilAlpha = pagerSwitchMotion.veilAlpha
-                                    if (veilAlpha > 0f) {
-                                        drawRect(panelBackground.copy(alpha = veilAlpha))
-                                    }
-                                },
-                    )
-                } else {
-                    BaGuideCatalogInitialLoadingContent(accent = accent)
+            CompositionLocalProvider(LocalLiquidParentBackdrop provides catalogSceneBackdrop) {
+                Crossfade(
+                    targetState = initialContentRevealed,
+                    animationSpec = tween(durationMillis = initialContentFadeMs),
+                    label = "BaGuideCatalogInitialContent",
+                ) { contentReady ->
+                    if (contentReady) {
+                        BaGuideCatalogPagePager(
+                            pagerState = pagerState,
+                            tabs = tabs,
+                            pageState = pageState,
+                            filterSortState = filterSortState,
+                            catalogDataState = catalogDataState,
+                            catalogListDerivedStates = catalogListDerivedStates,
+                            catalogFavoriteEntries = catalogFavoriteEntries,
+                            studentBgmListDerivedState = studentBgmListDerivedState,
+                            memoryLobbyListDerivedState = memoryLobbyListDerivedState,
+                            studentBgmDisplayedDerivedState = studentBgmDisplayedDerivedState,
+                            favoriteBgmListDerivedState = favoriteBgmListDerivedState,
+                            favoriteBgms = favoriteBgms,
+                            favoriteBgmOfflineCacheState = favoriteBgmOfflineCacheState,
+                            pageActions = pageActions,
+                            playbackCoordinator = playbackCoordinator,
+                            playbackUiState = playbackUiState,
+                            chromeScrollState = chromeScrollState,
+                            pageChromeBackdrop = pageChromeBackdrop,
+                            catalogSceneBackdrop = catalogSceneBackdrop,
+                            transitionAnimationsEnabled = transitionAnimationsEnabled,
+                            mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                            accent = accent,
+                            onOpenGuide = onOpenGuide,
+                            onRequestVisibleCatalogImages = onRequestVisibleCatalogImages,
+                            modifier =
+                                Modifier
+                                    .drawWithContent {
+                                        drawContent()
+                                        val veilAlpha = pagerSwitchMotion.veilAlpha
+                                        if (veilAlpha > 0f) {
+                                            drawRect(panelBackground.copy(alpha = veilAlpha))
+                                        }
+                                    },
+                        )
+                    } else {
+                        BaGuideCatalogInitialLoadingContent(accent = accent)
+                    }
                 }
             }
             Box(

@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -17,7 +17,9 @@ import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 
 @Composable
 internal fun GuideLiquidCard(
@@ -35,9 +37,14 @@ internal fun GuideLiquidCard(
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val cardBackdrop = rememberLayerBackdrop()
     val parentBackdrop = LocalLiquidParentBackdrop.current
-    val activeBackdrop = parentBackdrop ?: cardBackdrop
+    val activeBackdrop = activeGlassBackdrop(parentBackdrop)
+    val exportedContentBackdrop =
+        if (activeBackdrop != null) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     val pressSafePadding = if (isInteractive && enabled && onClick != null) {
         AppInteractiveTokens.compactLiquidPressSafePadding
     } else {
@@ -49,17 +56,6 @@ internal fun GuideLiquidCard(
             .fillMaxWidth()
             .padding(pressSafePadding)
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .then(
-                    if (parentBackdrop == null) {
-                        Modifier.layerBackdrop(cardBackdrop)
-                    } else {
-                        Modifier
-                    },
-                )
-        )
         LiquidSurface(
             backdrop = activeBackdrop,
             modifier = Modifier.fillMaxWidth(),
@@ -73,8 +69,19 @@ internal fun GuideLiquidCard(
             effectVariant = effectVariant,
             depthEffect = depthEffect,
             shadow = shadow,
+            exportedBackdrop = exportedContentBackdrop,
             onClick = onClick,
-            content = content
-        )
+        ) {
+            if (exportedContentBackdrop != null) {
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides exportedContentBackdrop,
+                    LocalLiquidParentBackdropOverridesFallback provides true,
+                ) {
+                    content()
+                }
+            } else {
+                content()
+            }
+        }
     }
 }
