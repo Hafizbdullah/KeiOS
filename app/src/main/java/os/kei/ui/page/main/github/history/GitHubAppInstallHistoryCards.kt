@@ -77,6 +77,7 @@ internal fun GitHubAppInstallHistoryRecordCard(
         title = title,
         subtitle = subtitle,
         modifier = modifier,
+        exportBackdropToContent = true,
         eyebrow = stringResource(R.string.github_history_apps_time_changed, changedAt),
         sectionStartAction = {
             val packageName = record.packageName.trim()

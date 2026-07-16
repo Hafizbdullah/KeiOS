@@ -88,6 +88,7 @@ internal fun GitHubHistoryOverviewCard(
         }
     AppSurfaceCard(
         modifier = modifier,
+        exportBackdropToContent = true,
         showIndication = false,
     ) {
         Column(

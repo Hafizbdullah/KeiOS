@@ -293,7 +293,10 @@ internal fun MainScreenNavHost(
                             }
                         }
                         entry<KeiosRoute.McpSkill> {
-                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            MainScreenRouteBackgroundHost(
+                                prefsState = prefsState,
+                                exportBackdropToContent = true,
+                            ) {
                                 McpSkillPage(
                                     mcpServerManager = mcpServerManager,
                                     onBack = onRouteBack,
@@ -301,7 +304,10 @@ internal fun MainScreenNavHost(
                             }
                         }
                         entry<KeiosRoute.GitHubActionsNotificationHistory> {
-                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            MainScreenRouteBackgroundHost(
+                                prefsState = prefsState,
+                                exportBackdropToContent = true,
+                            ) {
                                 GitHubActionsNotificationHistoryPage(
                                     onBack = onRouteBack,
                                     onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,

@@ -63,6 +63,7 @@ internal fun GitHubTrackChangeHistoryRecordCard(
         title = title,
         subtitle = subtitle,
         modifier = modifier,
+        exportBackdropToContent = true,
         eyebrow = stringResource(R.string.github_history_tracking_time_changed, changedAt),
         sectionStartAction = {
             val packageName = record.packageName.trim()
