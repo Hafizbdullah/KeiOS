@@ -2,8 +2,6 @@
 
 package os.kei.ui.page.main.github.history
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -23,6 +21,7 @@ import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -93,9 +92,9 @@ internal fun GitHubTrackChangeHistoryRecordCard(
             )
         },
     ) {
-        Column(
+        AppInfoListBody(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.compactSectionGap),
+            verticalSpacing = CardLayoutRhythm.compactSectionGap,
         ) {
             AppInfoRow(
                 label = stringResource(R.string.github_history_tracking_label_action),
