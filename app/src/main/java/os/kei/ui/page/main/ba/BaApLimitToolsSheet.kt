@@ -2,9 +2,6 @@
 
 package os.kei.ui.page.main.ba
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -21,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -96,35 +94,39 @@ internal fun BaApLimitToolsSheet(
                     )
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                AppLiquidTextButton(
-                    modifier = Modifier.weight(1f),
-                    backdrop = backdrop,
-                    text = stringResource(R.string.ba_ap_limit_tools_set_max),
-                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    variant = GlassVariant.SheetAction,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = {
-                        onApLimitInputChange(BA_AP_LIMIT_MAX.toString())
-                    },
-                )
-                AppLiquidTextButton(
-                    modifier = Modifier.weight(1f),
-                    backdrop = backdrop,
-                    text = stringResource(R.string.common_save),
-                    textColor = accentGreen,
-                    containerColor = accentGreen,
-                    variant = GlassVariant.SheetAction,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = onSaveApLimit,
-                )
-            }
+            AppDualActionRow(
+                spacing = 8.dp,
+                first = { modifier ->
+                    AppLiquidTextButton(
+                        modifier = modifier,
+                        backdrop = backdrop,
+                        text = stringResource(R.string.ba_ap_limit_tools_set_max),
+                        textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        variant = GlassVariant.SheetAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        pressOverlayEnabled = true,
+                        onClick = {
+                            onApLimitInputChange(BA_AP_LIMIT_MAX.toString())
+                        },
+                    )
+                },
+                second = { modifier ->
+                    AppLiquidTextButton(
+                        modifier = modifier,
+                        backdrop = backdrop,
+                        text = stringResource(R.string.common_save),
+                        textColor = accentGreen,
+                        containerColor = accentGreen,
+                        variant = GlassVariant.SheetAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        pressOverlayEnabled = true,
+                        onClick = onSaveApLimit,
+                    )
+                },
+            )
         }
     }
 }

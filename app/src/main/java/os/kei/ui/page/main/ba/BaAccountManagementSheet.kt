@@ -37,6 +37,7 @@ import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
 import os.kei.ui.page.main.ba.support.normalizeBaAccountFriendCodeInput
 import os.kei.ui.page.main.ba.support.sanitizeBaAccountFriendCode
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -572,29 +573,33 @@ private fun BaAccountDeleteConfirmCard(
                 account.displayName,
             ),
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            AppLiquidTextButton(
-                modifier = Modifier.weight(1f),
-                backdrop = backdrop,
-                text = stringResource(R.string.ba_account_management_editor_cancel),
-                textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                variant = GlassVariant.SheetAction,
-                onClick = onCancel,
-            )
-            AppLiquidTextButton(
-                modifier = Modifier.weight(1f),
-                backdrop = backdrop,
-                text = stringResource(R.string.ba_account_management_delete_confirm),
-                textColor = dangerColor,
-                containerColor = dangerColor,
-                variant = GlassVariant.SheetDangerAction,
-                onClick = onConfirm,
-            )
-        }
+        AppDualActionRow(
+            spacing = 8.dp,
+            first = { modifier ->
+                AppLiquidTextButton(
+                    modifier = modifier,
+                    backdrop = backdrop,
+                    text = stringResource(R.string.ba_account_management_editor_cancel),
+                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                    variant = GlassVariant.SheetAction,
+                    pressOverlayEnabled = true,
+                    onClick = onCancel,
+                )
+            },
+            second = { modifier ->
+                AppLiquidTextButton(
+                    modifier = modifier,
+                    backdrop = backdrop,
+                    text = stringResource(R.string.ba_account_management_delete_confirm),
+                    textColor = dangerColor,
+                    containerColor = dangerColor,
+                    variant = GlassVariant.SheetDangerAction,
+                    pressOverlayEnabled = true,
+                    onClick = onConfirm,
+                )
+            },
+        )
     }
 }
 
