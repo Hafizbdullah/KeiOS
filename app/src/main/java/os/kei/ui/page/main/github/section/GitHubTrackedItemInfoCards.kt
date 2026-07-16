@@ -17,10 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.shapes.RoundedRectangle
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubVersionUtils
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -142,7 +139,6 @@ internal fun GitHubLinkedInfoCard(
         }
     GitHubInlineLiquidSurface(
         backdrop = parentBackdrop,
-        captureBackdrop = null,
         tint = MiuixTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.10f),
         surfaceColor = surfaceColor,
         onClick = onClick,
@@ -203,7 +199,6 @@ internal fun GitHubLinkedInfoCard(
 @Composable
 internal fun GitHubInlineLiquidSurface(
     backdrop: Backdrop?,
-    captureBackdrop: LayerBackdrop?,
     tint: Color,
     surfaceColor: Color,
     modifier: Modifier = Modifier.fillMaxWidth(),
@@ -211,14 +206,6 @@ internal fun GitHubInlineLiquidSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(modifier = modifier) {
-        if (captureBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(captureBackdrop),
-            )
-        }
         LiquidSurface(
             backdrop = backdrop,
             modifier = Modifier.fillMaxWidth(),

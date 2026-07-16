@@ -13,7 +13,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubDirectApkRemoteHealth
 import os.kei.feature.github.model.GitHubTrackedApp
@@ -133,9 +132,7 @@ internal fun GitHubHealthPreviewBlock(
     onClick: () -> Unit,
 ) {
     val isDark = isAppInDarkTheme()
-    val localBackdrop = rememberLayerBackdrop()
     val parentBackdrop = LocalLiquidParentBackdrop.current
-    val activeBackdrop = parentBackdrop ?: localBackdrop
     val color = health.level.repositoryHealthStatusColor()
     val surfaceColor =
         if (isDark) {
@@ -144,8 +141,7 @@ internal fun GitHubHealthPreviewBlock(
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
         }
     GitHubInlineLiquidSurface(
-        backdrop = activeBackdrop,
-        captureBackdrop = if (parentBackdrop == null) localBackdrop else null,
+        backdrop = parentBackdrop,
         tint = color.copy(alpha = if (isDark) 0.16f else 0.10f),
         surfaceColor = surfaceColor,
         onClick = onClick,

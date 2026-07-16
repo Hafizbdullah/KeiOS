@@ -16,11 +16,33 @@ class GitHubLeafBackdropContractTest {
         assertEquals(0, linkedCard.occurrencesOf(".layerBackdrop("))
         assertTrue("val parentBackdrop = LocalLiquidParentBackdrop.current" in linkedCard)
         assertTrue("backdrop = parentBackdrop," in linkedCard)
-        assertTrue("captureBackdrop = null," in linkedCard)
         assertTrue("onClick = onClick," in linkedCard)
 
         assertTrue("backdrop: Backdrop?" in inlineSurface)
         assertTrue("backdrop = backdrop," in inlineSurface)
+        assertEquals(0, inlineSurface.occurrencesOf("captureBackdrop"))
+        assertEquals(0, inlineSurface.occurrencesOf(".layerBackdrop("))
+    }
+
+    @Test
+    fun healthPreviewConsumesInheritedBackdropAndKeepsStaticFallback() {
+        val healthSource = sourceFile(GITHUB_TRACKED_ITEM_HEALTH_CARDS_SOURCE)
+        val infoSource = sourceFile(GITHUB_TRACKED_ITEM_INFO_CARDS_SOURCE)
+        val healthPreview = healthSource.functionBody("internal fun GitHubHealthPreviewBlock(")
+        val inlineSurface = infoSource.functionBody("internal fun GitHubInlineLiquidSurface(")
+
+        assertEquals(0, healthPreview.occurrencesOf("rememberLayerBackdrop"))
+        assertEquals(0, healthPreview.occurrencesOf(".layerBackdrop("))
+        assertEquals(0, healthPreview.occurrencesOf("localBackdrop"))
+        assertEquals(0, healthPreview.occurrencesOf("captureBackdrop"))
+        assertTrue("val parentBackdrop = LocalLiquidParentBackdrop.current" in healthPreview)
+        assertTrue("backdrop = parentBackdrop," in healthPreview)
+        assertTrue("surfaceContainer.copy(alpha = 0.76f)" in healthPreview)
+
+        assertTrue("backdrop: Backdrop?" in inlineSurface)
+        assertTrue("backdrop = backdrop," in inlineSurface)
+        assertEquals(0, inlineSurface.occurrencesOf("rememberLayerBackdrop"))
+        assertEquals(0, inlineSurface.occurrencesOf(".layerBackdrop("))
     }
 
     @Test
@@ -75,5 +97,7 @@ private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).
 
 private const val GITHUB_TRACKED_ITEM_INFO_CARDS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemInfoCards.kt"
+private const val GITHUB_TRACKED_ITEM_HEALTH_CARDS_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemHealthCards.kt"
 private const val GITHUB_TRACKED_ITEM_ASSET_COUNT_BUBBLE_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/section/GitHubTrackedItemAssetCountBubble.kt"
