@@ -97,7 +97,8 @@
     <string name="webdav_sync_item_os_shell_contract">JSON includes built-in shell cards and your custom cards.</string>
 
     <string name="webdav_sync_configured_summary">Sync configured</string>
-    <string name="webdav_sync_not_configured_summary">Tap to configure WebDAV sync</string>
+    <string name="webdav_sync_not_configured_summary">Sync not configured</string>
+    <string name="webdav_sync_open_settings">Open WebDAV sync settings</string>
     <string name="webdav_sync_status_label">Status</string>
     <string name="webdav_sync_status_active">Active</string>
     <string name="webdav_sync_status_enabled">Enabled</string>

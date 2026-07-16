@@ -82,7 +82,11 @@ internal fun SettingsSearchContent(
             }
         } else {
             matchingSearchTargets.forEach { target ->
-                settingsCardItem(target.card, settingsSearchCardInput)
+                settingsCardItem(
+                    card = target.card,
+                    input = settingsSearchCardInput,
+                    isSearchResult = true,
+                )
             }
         }
     }

@@ -30,6 +30,7 @@ import os.kei.ui.page.main.settings.state.SettingsWebDavSyncUiState
 internal fun LazyListScope.settingsCardItem(
     card: SettingsSearchCard,
     input: SettingsSearchCardRenderInput,
+    isSearchResult: Boolean = false,
 ) {
     item(
         key = "settings_card_${card.name}",
@@ -239,6 +240,7 @@ internal fun LazyListScope.settingsCardItem(
                     disabledCardColor = input.disabledCardColor,
                     expanded = input.isCardExpanded(SettingsCardExpansionId.WebDavSync),
                     onExpandedChange = { input.updateCardExpanded(SettingsCardExpansionId.WebDavSync, it) },
+                    isSearchResult = isSearchResult,
                 )
             }
         }

@@ -20,33 +20,31 @@ internal fun SettingsWebDavSyncSection(
     disabledCardColor: Color,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
+    isSearchResult: Boolean = false,
 ) {
     val presentation = deriveWebDavSyncPresentation(state.configured)
+    val summary =
+        if (state.configured) {
+            stringResource(R.string.webdav_sync_configured_summary)
+        } else {
+            stringResource(R.string.webdav_sync_not_configured_summary)
+        }
     SettingsGroupCard(
         header = stringResource(R.string.settings_category_data),
         title = stringResource(R.string.webdav_sync_title),
-        subtitle =
-            if (state.configured) {
-                stringResource(R.string.webdav_sync_configured_summary)
-            } else {
-                stringResource(R.string.webdav_sync_not_configured_summary)
-            },
+        subtitle = summary,
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        collapsible = !isSearchResult,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
     ) {
         SettingsNavigationItem(
-            title = stringResource(R.string.webdav_sync_title),
-            summary =
-                if (state.configured) {
-                    stringResource(R.string.webdav_sync_configured_summary)
-                } else {
-                    stringResource(R.string.webdav_sync_not_configured_summary)
-                },
+            title = stringResource(R.string.webdav_sync_open_settings),
+            summary = "",
             onClick = onClick,
         )
-        if (state.configured) {
+        if (state.configured && !isSearchResult) {
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_status_label),
                 value = stringResource(R.string.webdav_sync_status_active),

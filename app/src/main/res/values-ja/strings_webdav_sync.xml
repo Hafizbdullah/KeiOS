@@ -75,7 +75,8 @@
     <string name="webdav_sync_item_os_shell_desc">Shell コマンドカード</string>
     <string name="webdav_sync_item_os_shell_contract">JSON には組み込み Shell カードとカスタムカードが含まれます。</string>
     <string name="webdav_sync_configured_summary">同期を設定済み</string>
-    <string name="webdav_sync_not_configured_summary">タップして WebDAV 同期を設定</string>
+    <string name="webdav_sync_not_configured_summary">同期は未設定</string>
+    <string name="webdav_sync_open_settings">WebDAV 同期設定を開く</string>
     <string name="webdav_sync_status_label">状態</string>
     <string name="webdav_sync_status_active">有効</string>
     <string name="webdav_sync_status_enabled">有効</string>

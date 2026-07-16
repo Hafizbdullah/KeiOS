@@ -49,9 +49,9 @@ internal fun SettingsGroupCard(
     sectionIcon: ImageVector? = null,
     containerColor: Color,
     exportBackdropToContent: Boolean = false,
-    collapsible: Boolean = true,
     expanded: Boolean = true,
-    onExpandedChange: (Boolean) -> Unit = {},
+    onExpandedChange: ((Boolean) -> Unit)? = null,
+    collapsible: Boolean = onExpandedChange != null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppFeatureCard(
@@ -63,7 +63,7 @@ internal fun SettingsGroupCard(
         exportBackdropToContent = exportBackdropToContent,
         collapsible = collapsible,
         expanded = expanded,
-        onExpandedChange = onExpandedChange,
+        onExpandedChange = onExpandedChange ?: {},
         showIndication = false,
         contentVerticalSpacing = CardLayoutRhythm.denseSectionGap,
         contentPadding =
