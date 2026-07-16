@@ -23,6 +23,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppStandaloneBackdropHost
+import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowBoundary
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.preferredLiquidBackdrop
@@ -90,20 +91,21 @@ class AppSurfaceCardBackdropTest {
                                 .background(Color.White)
                                 .layerBackdrop(backdrop),
                     )
-                    AppSurfaceCard(
-                        backdrop = backdrop,
-                        exportBackdropToContent = true,
-                        contentColor = expectedContentColor,
-                    ) {
-                        contentBackdrop = LocalLiquidParentBackdrop.current
-                        resolvedExplicitFallback = preferredLiquidBackdrop(explicitFallback)
-                        observedContentColor = LocalContentColor.current
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(24.dp)
-                                    .testTag("surface-card-content"),
-                        )
+                    CompositionLocalProvider(LocalLiquidParentBackdrop provides backdrop) {
+                        AppSurfaceCard(
+                            exportBackdropToContent = true,
+                            contentColor = expectedContentColor,
+                        ) {
+                            contentBackdrop = LocalLiquidParentBackdrop.current
+                            resolvedExplicitFallback = preferredLiquidBackdrop(explicitFallback)
+                            observedContentColor = LocalContentColor.current
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(24.dp)
+                                        .testTag("surface-card-content"),
+                            )
+                        }
                     }
                 }
             }
@@ -269,15 +271,32 @@ class AppSurfaceCardBackdropTest {
 
     @Test
     fun disabledLiquidEffectsKeepDescendantControlsOnFallback() {
-        var observedBackdrop: Backdrop? = null
+        var parentBackdrop: Backdrop? = null
+        var observedContentBackdrop: Backdrop? = null
+        var observedActiveBackdrop: Backdrop? = null
 
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
-                    AppSurfaceCard(exportBackdropToContent = true) {
-                        AppStandaloneBackdropHost(modifier = Modifier) { activeBackdrop ->
-                            observedBackdrop = activeBackdrop
-                            Box(modifier = Modifier.testTag("disabled-effects-content"))
+                val backdrop = rememberLayerBackdrop()
+                parentBackdrop = backdrop
+                Box(modifier = Modifier.size(220.dp)) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.White)
+                                .layerBackdrop(backdrop),
+                    )
+                    CompositionLocalProvider(
+                        LocalLiquidParentBackdrop provides backdrop,
+                        LocalLiquidControlsEnabled provides false,
+                    ) {
+                        AppSurfaceCard(exportBackdropToContent = true) {
+                            observedContentBackdrop = LocalLiquidParentBackdrop.current
+                            AppStandaloneBackdropHost(modifier = Modifier) { activeBackdrop ->
+                                observedActiveBackdrop = activeBackdrop
+                                Box(modifier = Modifier.testTag("disabled-effects-content"))
+                            }
                         }
                     }
                 }
@@ -285,7 +304,53 @@ class AppSurfaceCardBackdropTest {
         }
 
         composeRule.onNodeWithTag("disabled-effects-content").assertExists()
-        composeRule.runOnIdle { assertNull(observedBackdrop) }
+        composeRule.runOnIdle {
+            assertNotNull(parentBackdrop)
+            assertSame(parentBackdrop, observedContentBackdrop)
+            assertNull(observedActiveBackdrop)
+        }
+    }
+
+    @Test
+    fun windowBoundaryRejectsCapturedBackdropWithoutPublishingEmptyExport() {
+        var capturedPageBackdrop: Backdrop? = null
+        var observedContentBackdrop: Backdrop? = null
+        var observedActiveBackdrop: Backdrop? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                capturedPageBackdrop = backdrop
+                Box(modifier = Modifier.size(220.dp)) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.White)
+                                .layerBackdrop(backdrop),
+                    )
+                    LiquidBackdropWindowBoundary {
+                        AppSurfaceCard(
+                            backdrop = backdrop,
+                            exportBackdropToContent = true,
+                        ) {
+                            observedContentBackdrop = LocalLiquidParentBackdrop.current
+                            AppStandaloneBackdropHost(modifier = Modifier) { activeBackdrop ->
+                                observedActiveBackdrop = activeBackdrop
+                                Box(modifier = Modifier.testTag("window-boundary-card-content"))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("window-boundary-card-content").assertExists()
+        composeRule.runOnIdle {
+            assertNotNull(capturedPageBackdrop)
+            assertNull(observedContentBackdrop)
+            assertNull(observedActiveBackdrop)
+        }
     }
 
     @Test

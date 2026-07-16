@@ -34,6 +34,7 @@ import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.motion.appExpandIn
@@ -86,8 +87,9 @@ fun AppSurfaceCard(
         } ?: Modifier
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
+    val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
     val exportedContentBackdrop =
-        if (exportBackdropToContent && inheritedBackdrop != null) {
+        if (exportBackdropToContent && activeBackdrop != null) {
             rememberLayerBackdrop()
         } else {
             null
@@ -102,10 +104,10 @@ fun AppSurfaceCard(
         } else {
             pressSafePadding
         }
-    if (inheritedBackdrop != null) {
+    if (activeBackdrop != null) {
         AppSurfaceCardFrame(
             modifier = modifier,
-            backdrop = inheritedBackdrop,
+            backdrop = activeBackdrop,
             exportedBackdrop = exportedContentBackdrop,
             clickModifier = clickModifier,
             stateModifier = stateModifier,
