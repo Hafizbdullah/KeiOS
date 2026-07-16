@@ -34,6 +34,15 @@ internal fun LiquidBackdropWindowBoundary(content: @Composable () -> Unit) {
     )
 }
 
+/**
+ * Prevents backdrop producers from a parent window from leaking into an independently positioned
+ * Dialog or Popup window.
+ */
+@Composable
+fun AppLiquidWindowBoundary(content: @Composable () -> Unit) {
+    LiquidBackdropWindowBoundary(content = content)
+}
+
 @Composable
 internal fun LiquidBackdropWindowDialog(
     onDismissRequest: () -> Unit,

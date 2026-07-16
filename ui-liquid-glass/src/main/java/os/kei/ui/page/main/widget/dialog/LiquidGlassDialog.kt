@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -91,6 +92,7 @@ fun LiquidGlassDialog(
     onDismissRequest: (() -> Unit)? = null,
     onDismissFinished: (() -> Unit)? = null,
     dismissible: Boolean = true,
+    maxWidth: Dp = LiquidDialogMaxWidth,
     content: @Composable () -> Unit = {},
 ) {
     var renderDialog by remember { mutableStateOf(show) }
@@ -251,7 +253,7 @@ fun LiquidGlassDialog(
             Column(
                 modifier =
                     modifier
-                        .widthIn(max = LiquidDialogMaxWidth)
+                        .widthIn(max = maxWidth)
                         .fillMaxWidth(0.88f)
                         .graphicsLayer {
                             scaleX = renderedScale
@@ -266,7 +268,9 @@ fun LiquidGlassDialog(
                         }.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                CompositionLocalProvider(LocalLiquidDialogBackdrop provides if (liquidControlsEnabled) dialogBackdrop else null) {
+                CompositionLocalProvider(
+                    LocalLiquidDialogBackdrop provides if (liquidControlsEnabled) dialogBackdrop else null,
+                ) {
                     // Title
                     if (!title.isNullOrBlank()) {
                         Text(

@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowBoundary
+import os.kei.ui.page.main.widget.glass.AppLiquidWindowBoundary
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.preferredLiquidBackdrop
@@ -33,6 +33,8 @@ class WindowBackdropBoundaryContractTest {
         assertTrue("LocalLiquidParentBackdrop provides null" in boundary)
         assertTrue("LocalLiquidParentBackdropOverridesFallback provides false" in boundary)
         assertTrue("LocalLiquidDialogBackdrop provides null" in boundary)
+        assertTrue("fun AppLiquidWindowBoundary(content: @Composable () -> Unit)" in boundary)
+        assertTrue("LiquidBackdropWindowBoundary(content = content)" in boundary)
         assertTrue(
             "LocalLiquidParentBackdrop.current ?: LocalLiquidDialogBackdrop.current" in resolver,
             "A window can consume a parent or dialog backdrop created inside its own boundary",
@@ -106,7 +108,7 @@ class WindowBackdropBoundaryRuntimeTest {
             val windowParentBackdrop = rememberLayerBackdrop()
             val windowDialogBackdrop = rememberLayerBackdrop()
 
-            LiquidBackdropWindowBoundary {
+            AppLiquidWindowBoundary {
                 val explicitResolution = preferredLiquidBackdrop(capturedPageBackdrop)
                 SideEffect {
                     explicitOnly = explicitResolution

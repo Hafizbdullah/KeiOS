@@ -10,10 +10,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
 import os.kei.core.prefs.UiPrefs
+import os.kei.ui.page.main.widget.glass.AppLiquidWindowBoundary
+import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
 import top.yukonga.miuix.kmp.utils.platformDialogProperties
+import top.yukonga.miuix.kmp.window.WindowDialog
 
 enum class AppWindowDialogPresentation {
     Card,
@@ -23,23 +28,43 @@ enum class AppWindowDialogPresentation {
 @Composable
 fun AppWindowDialogHost(
     show: Boolean,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    summary: String? = null,
     onDismissRequest: (() -> Unit)? = null,
     dismissible: Boolean = true,
     onDismissFinished: (() -> Unit)? = null,
+    maxWidth: Dp = DialogDefaults.MaxWidth,
     presentation: AppWindowDialogPresentation = AppWindowDialogPresentation.Card,
     content: @Composable () -> Unit,
 ) {
-    if (
-        presentation == AppWindowDialogPresentation.Card &&
-        UiPrefs.isLiquidDialogEnabled()
-    ) {
-        LiquidGlassDialog(
-            show = show,
-            onDismissRequest = onDismissRequest,
-            dismissible = dismissible,
-            onDismissFinished = onDismissFinished,
-            content = content,
-        )
+    if (presentation == AppWindowDialogPresentation.Card) {
+        if (UiPrefs.isLiquidDialogEnabled()) {
+            LiquidGlassDialog(
+                show = show,
+                modifier = modifier,
+                title = title,
+                summary = summary,
+                onDismissRequest = onDismissRequest,
+                dismissible = dismissible,
+                onDismissFinished = onDismissFinished,
+                maxWidth = maxWidth,
+                content = content,
+            )
+        } else {
+            AppLiquidWindowBoundary {
+                WindowDialog(
+                    show = show,
+                    modifier = modifier,
+                    title = title,
+                    summary = summary,
+                    onDismissRequest = onDismissRequest.takeIf { dismissible },
+                    onDismissFinished = onDismissFinished,
+                    maxWidth = maxWidth,
+                    content = content,
+                )
+            }
+        }
         return
     }
 
@@ -56,18 +81,20 @@ fun AppWindowDialogHost(
     }
     if (!show) return
 
-    Dialog(
-        onDismissRequest = {
-            if (dismissible) {
+    AppLiquidWindowBoundary {
+        Dialog(
+            onDismissRequest = {
+                if (dismissible) {
+                    currentOnDismissRequest?.invoke()
+                }
+            },
+            properties = platformDialogProperties(),
+        ) {
+            RemovePlatformDialogDefaultEffects()
+            BackHandler(enabled = dismissible) {
                 currentOnDismissRequest?.invoke()
             }
-        },
-        properties = platformDialogProperties(),
-    ) {
-        RemovePlatformDialogDefaultEffects()
-        BackHandler(enabled = dismissible) {
-            currentOnDismissRequest?.invoke()
+            content()
         }
-        content()
     }
 }
