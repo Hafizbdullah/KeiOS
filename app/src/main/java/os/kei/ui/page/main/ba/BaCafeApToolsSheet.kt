@@ -2,9 +2,6 @@
 
 package os.kei.ui.page.main.ba
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,6 +15,7 @@ import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 import os.kei.ui.page.main.ba.support.cafeHourlyGain
 import os.kei.ui.page.main.ba.support.calculateCafeFullAtMs
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -120,39 +118,41 @@ internal fun BaCafeApToolsSheet(
                     color = accentPink,
                     fontWeight = FontWeight.Bold,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    AppLiquidTextButton(
-                        modifier = Modifier.weight(1f),
-                        backdrop = backdrop,
-                        text = stringResource(R.string.ba_cafe_ap_action_clear),
-                        textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                        containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                        variant = GlassVariant.SheetAction,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis,
-                        onClick = {
-                            onClearCafeStoredAp()
-                            onDismissRequest()
-                        },
-                    )
-                    AppLiquidTextButton(
-                        modifier = Modifier.weight(1f),
-                        backdrop = backdrop,
-                        text = stringResource(R.string.ba_cafe_ap_action_fill),
-                        textColor = accentPink,
-                        containerColor = accentPink,
-                        variant = GlassVariant.SheetAction,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis,
-                        onClick = {
-                            onFillCafeStoredAp()
-                            onDismissRequest()
-                        },
-                    )
-                }
+                AppDualActionRow(
+                    spacing = 8.dp,
+                    first = { modifier ->
+                        AppLiquidTextButton(
+                            modifier = modifier,
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_cafe_ap_action_clear),
+                            textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                            containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                            variant = GlassVariant.SheetAction,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            onClick = {
+                                onClearCafeStoredAp()
+                                onDismissRequest()
+                            },
+                        )
+                    },
+                    second = { modifier ->
+                        AppLiquidTextButton(
+                            modifier = modifier,
+                            backdrop = backdrop,
+                            text = stringResource(R.string.ba_cafe_ap_action_fill),
+                            textColor = accentPink,
+                            containerColor = accentPink,
+                            variant = GlassVariant.SheetAction,
+                            textMaxLines = 1,
+                            textOverflow = TextOverflow.Ellipsis,
+                            onClick = {
+                                onFillCafeStoredAp()
+                                onDismissRequest()
+                            },
+                        )
+                    },
+                )
             }
         }
     }

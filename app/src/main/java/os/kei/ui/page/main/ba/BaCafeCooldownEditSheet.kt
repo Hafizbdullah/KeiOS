@@ -26,6 +26,7 @@ import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.ba.support.formatBaDateTimeWithSeconds
 import os.kei.ui.page.main.ba.support.formatBaRemainingTime
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -188,35 +189,37 @@ internal fun BaCafeCooldownEditSheet(
                     )
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                AppLiquidTextButton(
-                    modifier = Modifier.weight(1f),
-                    backdrop = backdrop,
-                    text = stringResource(R.string.ba_cafe_cooldown_action_ready_now),
-                    textColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
-                    variant = GlassVariant.SheetAction,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = { onSaveRemaining(0L) },
-                )
-                AppLiquidTextButton(
-                    modifier = Modifier.weight(1f),
-                    backdrop = backdrop,
-                    text = stringResource(R.string.common_save),
-                    textColor = accentPink,
-                    containerColor = accentPink,
-                    variant = GlassVariant.SheetAction,
-                    textMaxLines = 1,
-                    textOverflow = TextOverflow.Ellipsis,
-                    onClick = {
-                        onSaveRemaining(parseCooldownInputMs(hoursInput, minutesInput, secondsInput))
-                    },
-                )
-            }
+            AppDualActionRow(
+                spacing = 8.dp,
+                first = { modifier ->
+                    AppLiquidTextButton(
+                        modifier = modifier,
+                        backdrop = backdrop,
+                        text = stringResource(R.string.ba_cafe_cooldown_action_ready_now),
+                        textColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        containerColor = MiuixTheme.colorScheme.onBackgroundVariant,
+                        variant = GlassVariant.SheetAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        onClick = { onSaveRemaining(0L) },
+                    )
+                },
+                second = { modifier ->
+                    AppLiquidTextButton(
+                        modifier = modifier,
+                        backdrop = backdrop,
+                        text = stringResource(R.string.common_save),
+                        textColor = accentPink,
+                        containerColor = accentPink,
+                        variant = GlassVariant.SheetAction,
+                        textMaxLines = 1,
+                        textOverflow = TextOverflow.Ellipsis,
+                        onClick = {
+                            onSaveRemaining(parseCooldownInputMs(hoursInput, minutesInput, secondsInput))
+                        },
+                    )
+                },
+            )
         }
     }
 }

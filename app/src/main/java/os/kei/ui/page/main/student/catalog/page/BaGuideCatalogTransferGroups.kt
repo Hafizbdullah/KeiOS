@@ -21,6 +21,7 @@ import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.os.appLucideUploadIcon
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -171,32 +172,33 @@ private fun BaGuideCatalogTransferActionRow(
     onExport: () -> Unit,
     onImport: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AppStandaloneLiquidTextButton(
-            text = exportText,
-            onClick = onExport,
-            modifier = Modifier.weight(1f),
-            leadingIcon = exportIcon,
-            textColor = accent,
-            iconTint = accent,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-        )
-        AppStandaloneLiquidTextButton(
-            text = importText,
-            onClick = onImport,
-            modifier = Modifier.weight(1f),
-            leadingIcon = importIcon,
-            textColor = accent,
-            iconTint = accent,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-        )
-    }
+    AppDualActionRow(
+        spacing = 8.dp,
+        first = { modifier ->
+            AppStandaloneLiquidTextButton(
+                text = exportText,
+                onClick = onExport,
+                modifier = modifier,
+                leadingIcon = exportIcon,
+                textColor = accent,
+                iconTint = accent,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+            )
+        },
+        second = { modifier ->
+            AppStandaloneLiquidTextButton(
+                text = importText,
+                onClick = onImport,
+                modifier = modifier,
+                leadingIcon = importIcon,
+                textColor = accent,
+                iconTint = accent,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+            )
+        },
+    )
 }

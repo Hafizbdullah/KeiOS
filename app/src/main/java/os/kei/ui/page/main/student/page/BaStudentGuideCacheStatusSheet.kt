@@ -2,12 +2,8 @@
 
 package os.kei.ui.page.main.student.page
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -18,6 +14,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.student.BaGuideStudentDetailFreshnessTier
 import os.kei.ui.page.main.student.page.state.BaStudentGuideCacheStatusUiState
+import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -141,34 +138,36 @@ private fun BaStudentGuideCacheStatusActions(
     onRefreshCurrentStudent: () -> Unit,
     onClearCurrentStudentCache: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        AppLiquidTextButton(
-            modifier = Modifier.weight(1f),
-            backdrop = backdrop,
-            text = stringResource(R.string.guide_cache_status_action_refresh),
-            textColor = MiuixTheme.colorScheme.primary,
-            containerColor = MiuixTheme.colorScheme.primary,
-            variant = GlassVariant.SheetAction,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            onClick = onRefreshCurrentStudent,
-        )
-        AppLiquidTextButton(
-            modifier = Modifier.weight(1f),
-            backdrop = backdrop,
-            text = stringResource(R.string.guide_cache_status_action_clear),
-            textColor = MiuixTheme.colorScheme.error,
-            containerColor = MiuixTheme.colorScheme.error,
-            variant = GlassVariant.SheetAction,
-            enabled = hasStatus,
-            textMaxLines = 1,
-            textOverflow = TextOverflow.Ellipsis,
-            onClick = onClearCurrentStudentCache,
-        )
-    }
+    AppDualActionRow(
+        spacing = 8.dp,
+        first = { modifier ->
+            AppLiquidTextButton(
+                modifier = modifier,
+                backdrop = backdrop,
+                text = stringResource(R.string.guide_cache_status_action_refresh),
+                textColor = MiuixTheme.colorScheme.primary,
+                containerColor = MiuixTheme.colorScheme.primary,
+                variant = GlassVariant.SheetAction,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+                onClick = onRefreshCurrentStudent,
+            )
+        },
+        second = { modifier ->
+            AppLiquidTextButton(
+                modifier = modifier,
+                backdrop = backdrop,
+                text = stringResource(R.string.guide_cache_status_action_clear),
+                textColor = MiuixTheme.colorScheme.error,
+                containerColor = MiuixTheme.colorScheme.error,
+                variant = GlassVariant.SheetAction,
+                enabled = hasStatus,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+                onClick = onClearCurrentStudentCache,
+            )
+        },
+    )
 }
 
 @Composable
