@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -62,6 +64,11 @@ private const val DefaultExpandedHintSentinel = "\u0000default-expanded-hint"
 enum class SheetCardSurfaceTone {
     Default,
     Readable,
+}
+
+enum class SheetChoiceCardDensity {
+    Standard,
+    Compact,
 }
 
 @Composable
@@ -371,8 +378,14 @@ fun SheetChoiceCard(
     summaryColor: Color = MiuixTheme.colorScheme.onBackgroundVariant,
     selectedLabel: String? = DefaultSelectedLabelSentinel,
     leading: (@Composable () -> Unit)? = null,
+    density: SheetChoiceCardDensity = SheetChoiceCardDensity.Standard,
+    containerColor: Color? = null,
+    borderColor: Color? = null,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+    showIndicator: Boolean = true,
     details: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
+    val compact = density == SheetChoiceCardDensity.Compact
     val resolvedSelectedLabel = when (selectedLabel) {
         DefaultSelectedLabelSentinel -> stringResource(R.string.common_selected)
         else -> selectedLabel
@@ -384,30 +397,35 @@ fun SheetChoiceCard(
     ) {
         SheetSurfaceCard(
             modifier = Modifier.fillMaxWidth(),
-            containerColor = if (selected) {
-                selectedAccentColor.copy(alpha = 0.12f)
-            } else {
-                MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.68f)
-            },
-            borderColor = if (selected) {
-                selectedAccentColor.copy(alpha = 0.32f)
-            } else {
-                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f)
-            },
+            containerColor =
+                containerColor ?: if (selected) {
+                    selectedAccentColor.copy(alpha = 0.12f)
+                } else {
+                    MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.68f)
+                },
+            borderColor =
+                borderColor ?: if (selected) {
+                    selectedAccentColor.copy(alpha = 0.32f)
+                } else {
+                    MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.14f)
+                },
             pressSafePadding = 0.dp,
             onClick = onSelect,
             role = Role.RadioButton,
             selected = selected,
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = if (compact) 40.dp else Dp.Unspecified),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 leading?.invoke()
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 8.dp)
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -416,9 +434,27 @@ fun SheetChoiceCard(
                         Text(
                             text = title,
                             color = if (selected) selectedAccentColor else unselectedTitleColor,
-                            fontWeight = AppTypographyTokens.CardHeader.fontWeight,
-                            fontSize = AppTypographyTokens.CardHeader.fontSize,
-                            lineHeight = AppTypographyTokens.CardHeader.lineHeight
+                            fontWeight =
+                                if (compact) {
+                                    if (selected) FontWeight.Bold else AppTypographyTokens.BodyEmphasis.fontWeight
+                                } else {
+                                    AppTypographyTokens.CardHeader.fontWeight
+                                },
+                            fontSize =
+                                if (compact) {
+                                    AppTypographyTokens.Body.fontSize
+                                } else {
+                                    AppTypographyTokens.CardHeader.fontSize
+                                },
+                            lineHeight =
+                                if (compact) {
+                                    AppTypographyTokens.Body.lineHeight
+                                } else {
+                                    AppTypographyTokens.CardHeader.lineHeight
+                                },
+                            maxLines = if (compact) 1 else Int.MAX_VALUE,
+                            overflow = if (compact) TextOverflow.Ellipsis else TextOverflow.Clip,
+                            modifier = if (compact) Modifier.weight(1f, fill = false) else Modifier,
                         )
                         if (selected && !resolvedSelectedLabel.isNullOrBlank()) {
                             StatusPill(
@@ -430,16 +466,31 @@ fun SheetChoiceCard(
                     Text(
                         text = summary,
                         color = summaryColor,
-                        fontSize = AppTypographyTokens.Body.fontSize,
-                        lineHeight = AppTypographyTokens.Body.lineHeight
+                        fontSize =
+                            if (compact) {
+                                AppTypographyTokens.Supporting.fontSize
+                            } else {
+                                AppTypographyTokens.Body.fontSize
+                            },
+                        lineHeight =
+                            if (compact) {
+                                AppTypographyTokens.Supporting.lineHeight
+                            } else {
+                                AppTypographyTokens.Body.lineHeight
+                            },
+                        maxLines = if (compact) 1 else Int.MAX_VALUE,
+                        overflow = if (compact) TextOverflow.Ellipsis else TextOverflow.Clip,
                     )
                     details?.invoke(this)
                 }
-                SheetLiquidChoiceIndicator(
-                    selected = selected,
-                    onSelect = null,
-                    accentColor = selectedAccentColor
-                )
+                trailing?.invoke(this)
+                if (showIndicator) {
+                    SheetLiquidChoiceIndicator(
+                        selected = selected,
+                        onSelect = null,
+                        accentColor = selectedAccentColor
+                    )
+                }
             }
         }
     }

@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.widget.sheet
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -9,13 +11,16 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -117,6 +122,112 @@ class SheetLiquidChoiceIndicatorTest {
             .onNode(radioButton)
             .assertIsSelected()
             .performClick()
+        composeRule.runOnIdle { assertEquals(1, clickCount) }
+    }
+
+    @Test
+    fun standardChoiceCardKeepsDefaultDensity() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                SheetChoiceCard(
+                    title = "Local network",
+                    summary = "Allow devices on the same network",
+                    selected = false,
+                    onSelect = {},
+                    modifier = Modifier.testTag("standard-choice-card"),
+                    selectedLabel = null,
+                )
+            }
+        }
+
+        val cardBounds =
+            composeRule
+                .onNodeWithTag("standard-choice-card")
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val titleBounds =
+            composeRule
+                .onNodeWithText("Local network", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val summaryBounds =
+            composeRule
+                .onNodeWithText("Allow devices on the same network", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        with(composeRule.density) {
+            val titleSummaryGap = (summaryBounds.top - titleBounds.bottom).toDp()
+            val contentHeight = (titleBounds.height + summaryBounds.height).toDp() + titleSummaryGap
+            val expectedCardHeight = contentHeight + 24.dp + 12.dp
+            val actualCardHeight = cardBounds.height.toDp()
+
+            assertEquals(8f, titleSummaryGap.value, absoluteTolerance = 0.5f)
+            assertEquals(expectedCardHeight.value, actualCardHeight.value, absoluteTolerance = 0.5f)
+        }
+    }
+
+    @Test
+    fun compactChoiceCardKeepsDenseGeometrySlotsAndSingleSelectionAction() {
+        var clickCount = 0
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                SheetChoiceCard(
+                    title = "A deliberately long application title",
+                    summary = "os.kei.example.application",
+                    selected = true,
+                    onSelect = { clickCount++ },
+                    modifier = Modifier.testTag("compact-choice-card"),
+                    pressSafePadding = 4.dp,
+                    selectedLabel = null,
+                    density = SheetChoiceCardDensity.Compact,
+                    leading = {
+                        Box(Modifier.size(32.dp).testTag("compact-leading"))
+                    },
+                    trailing = {
+                        Box(Modifier.size(width = 50.dp, height = 18.dp).testTag("compact-trailing"))
+                    },
+                    showIndicator = false,
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("compact-choice-card")
+            .assertHeightIsEqualTo(72.dp)
+        composeRule
+            .onNodeWithTag("compact-leading", useUnmergedTree = true)
+            .assertWidthIsEqualTo(32.dp)
+            .assertHeightIsEqualTo(32.dp)
+        composeRule
+            .onNodeWithTag("compact-trailing", useUnmergedTree = true)
+            .assertWidthIsEqualTo(50.dp)
+            .assertHeightIsEqualTo(18.dp)
+
+        val titleBounds =
+            composeRule
+                .onNodeWithText("A deliberately long application title", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val summaryBounds =
+            composeRule
+                .onNodeWithText("os.kei.example.application", useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val titleSummaryGap =
+            with(composeRule.density) {
+                (summaryBounds.top - titleBounds.bottom).toDp()
+            }
+        assertEquals(2.dp, titleSummaryGap)
+
+        val radioButton =
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.Role,
+                Role.RadioButton,
+            )
+        composeRule.onAllNodes(radioButton).assertCountEquals(1)
+        composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onNode(radioButton).performClick()
         composeRule.runOnIdle { assertEquals(1, clickCount) }
     }
 

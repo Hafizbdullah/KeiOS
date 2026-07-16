@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +31,41 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.rememberAppStatusPillMetrics
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCardDensity
 import os.kei.ui.page.main.widget.sheet.SheetSurfaceCard
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Immutable
+internal data class GitHubAppCandidateColors(
+    val containerColor: Color,
+    val borderColor: Color,
+    val titleColor: Color,
+)
+
+@Composable
+internal fun gitHubAppCandidateColors(
+    selected: Boolean,
+    isDark: Boolean,
+): GitHubAppCandidateColors =
+    if (selected) {
+        GitHubAppCandidateColors(
+            containerColor = GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark),
+            borderColor = GitHubStatusPalette.Update.copy(alpha = 0.3f),
+            titleColor = GitHubStatusPalette.Update,
+        )
+    } else {
+        GitHubAppCandidateColors(
+            containerColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.64f),
+            borderColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.12f),
+            titleColor = MiuixTheme.colorScheme.primary,
+        )
+    }
 
 @Composable
 internal fun GitHubSelectedAppCard(
@@ -98,68 +129,44 @@ internal fun GitHubAppCandidateRow(
     selected: Boolean,
     showInstallSource: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val appIconBitmaps = LocalGitHubAppIconBitmaps.current
-    val isDark = isAppInDarkTheme()
-    val accent = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
-    SheetSurfaceCard(
-        modifier = Modifier.fillMaxWidth(),
-        containerColor =
-            if (selected) {
-                GitHubStatusPalette.tonedSurface(GitHubStatusPalette.Update, isDark)
-            } else {
-                null
-            },
-        borderColor =
-            if (selected) {
-                GitHubStatusPalette.Update.copy(alpha = 0.3f)
-            } else {
-                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.12f)
-            },
-        verticalSpacing = 0.dp,
-        onClick = onClick,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    val colors = gitHubAppCandidateColors(selected = selected, isDark = isAppInDarkTheme())
+    SheetChoiceCard(
+        title = app.label,
+        summary = app.packageName,
+        selected = selected,
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        density = SheetChoiceCardDensity.Compact,
+        pressSafePadding = AppInteractiveTokens.compactLiquidPressSafePadding,
+        selectedLabel = null,
+        selectedAccentColor = GitHubStatusPalette.Update,
+        unselectedTitleColor = colors.titleColor,
+        containerColor = colors.containerColor,
+        borderColor = colors.borderColor,
+        leading = {
             val packageName = app.packageName.trim()
             AppIconImage(
                 packageName = packageName,
                 bitmap = appIconBitmaps[packageName],
                 size = 32.dp,
             )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = app.label,
-                    color = accent,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = AppTypographyTokens.Body.fontSize,
-                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = app.packageName,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        },
+        trailing =
             if (showInstallSource) {
-                InstallSourcePill(
-                    label = app.installSourceDisplayLabel(),
-                    selected = selected,
-                )
-            }
-        }
-    }
+                {
+                    InstallSourcePill(
+                        label = app.installSourceDisplayLabel(),
+                        selected = selected,
+                    )
+                }
+            } else {
+                null
+            },
+        showIndicator = false,
+    )
 }
 
 @Composable

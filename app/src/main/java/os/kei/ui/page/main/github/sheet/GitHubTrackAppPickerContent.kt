@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -504,7 +505,8 @@ internal fun GitHubTrackAppPickerContent(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = listMinHeight, max = listMaxHeight),
+                        .heightIn(min = listMinHeight, max = listMaxHeight)
+                        .selectableGroup(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 2.dp)
                 ) {
