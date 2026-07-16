@@ -93,18 +93,21 @@ internal fun DebugLiquidButtonsCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_button_shapes_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_catalog_subtitle),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_primary),
                 onClick = {},
                 modifier = Modifier.weight(1f),
@@ -116,7 +119,7 @@ internal fun DebugLiquidButtonsCard(
                 textOverflow = TextOverflow.Ellipsis,
             )
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_shuffle),
                 onClick = {},
                 modifier = Modifier.weight(1f),
@@ -134,7 +137,7 @@ internal fun DebugLiquidButtonsCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_compact),
                 onClick = {},
                 modifier = Modifier.weight(1f),
@@ -148,7 +151,7 @@ internal fun DebugLiquidButtonsCard(
                 textOverflow = TextOverflow.Ellipsis,
             )
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_disabled),
                 onClick = {},
                 enabled = false,
@@ -176,7 +179,7 @@ internal fun DebugLiquidButtonsCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_rounded),
                 onClick = {},
                 modifier = Modifier.weight(1f),
@@ -191,7 +194,7 @@ internal fun DebugLiquidButtonsCard(
                 textOverflow = TextOverflow.Ellipsis,
             )
             AppLiquidTextButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 text = stringResource(R.string.debug_component_lab_liquid_button_oval),
                 onClick = {},
                 modifier =
@@ -209,7 +212,7 @@ internal fun DebugLiquidButtonsCard(
                 textOverflow = TextOverflow.Ellipsis,
             )
             AppLiquidIconButton(
-                backdrop = backdrop,
+                backdrop = cardBackdrop,
                 icon = appLucideMoreIcon(),
                 contentDescription = stringResource(R.string.debug_component_lab_liquid_button_circle),
                 onClick = {},
@@ -235,7 +238,7 @@ internal fun DebugLiquidButtonsCard(
             lineHeight = AppTypographyTokens.Supporting.lineHeight,
         )
         AppStandaloneLiquidBackdropGroup(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
@@ -466,13 +469,16 @@ internal fun DebugLiquidTransparentButtonsCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_clear_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_clear_capsule),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucidePlayIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidTransparentButtonSamples(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentColor = contentColor,
         )
     }
@@ -488,20 +494,23 @@ internal fun DebugLiquidSurfaceCardsCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_surface_family_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_cluster_card_body),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideLayersIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidSurfaceFamilySamples(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             accent = accent,
             contentColor = contentColor,
             secondaryColor = secondaryColor,
         )
 
         DebugLiquidClusterCardSample(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             accent = accent,
             contentColor = contentColor,
             secondaryColor = secondaryColor,
@@ -551,13 +560,16 @@ internal fun DebugLiquidParameterCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_parameter_panel_title),
         subtitle = stringResource(R.string.debug_component_lab_liquid_parameter_preview_body),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         DebugLiquidParameterPanelSample(
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             accent = accent,
             contentColor = contentColor,
             secondaryColor = secondaryColor,
@@ -600,11 +612,14 @@ internal fun DebugLiquidControlsCard(
     AppFeatureCard(
         title = stringResource(R.string.debug_component_lab_liquid_slider_label),
         subtitle = stringResource(R.string.debug_component_lab_liquid_key_points_slider_label),
+        backdrop = backdrop,
+        exportBackdropToContent = true,
         sectionIcon = appLucideConfigIcon(),
         titleColor = accent,
         borderColor = accent.copy(alpha = 0.20f),
         contentVerticalSpacing = CardLayoutRhythm.sectionGap,
     ) {
+        val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -654,7 +669,7 @@ internal fun DebugLiquidControlsCard(
             onValueChangeFinished = { sliderValue = it.coerceIn(0f, 1f) },
             valueRange = 0f..1f,
             visibilityThreshold = 0.001f,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentDescription = stringResource(R.string.debug_component_lab_liquid_volume_slider_label),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -667,7 +682,7 @@ internal fun DebugLiquidControlsCard(
             keyPointProgress = keyPointProgress,
             onKeyPointProgressChange = { keyPointProgress = it.coerceIn(0f, 1f) },
             keyPoints = keyPoints,
-            backdrop = backdrop,
+            backdrop = cardBackdrop,
             contentColor = contentColor,
             secondaryColor = secondaryColor,
         )

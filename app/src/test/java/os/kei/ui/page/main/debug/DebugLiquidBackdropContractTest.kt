@@ -22,7 +22,68 @@ class DebugLiquidBackdropContractTest {
         assertEquals(1, card.occurrencesOf("backdrop = backdrop,"))
         assertFalse(".layerBackdrop(cardBackdrop)" in card)
     }
+
+    @Test
+    fun catalogSamplesConsumeTheNearestExportedCardMaterial() {
+        val source = sourceFile(DEBUG_LIQUID_CATALOG_SOURCE)
+        val cards =
+            listOf(
+                CatalogCardContract(
+                    functionName = "DebugLiquidButtonsCard",
+                    nextFunctionName = "DebugLiquidGlassDropdownCard",
+                    expectedConsumerCount = 8,
+                ),
+                CatalogCardContract(
+                    functionName = "DebugLiquidTransparentButtonsCard",
+                    nextFunctionName = "DebugLiquidSurfaceCardsCard",
+                    expectedConsumerCount = 1,
+                ),
+                CatalogCardContract(
+                    functionName = "DebugLiquidSurfaceCardsCard",
+                    nextFunctionName = "DebugLiquidParentBackdropCard",
+                    expectedConsumerCount = 2,
+                ),
+                CatalogCardContract(
+                    functionName = "DebugLiquidParameterCard",
+                    nextFunctionName = "DebugLiquidControlsCard",
+                    expectedConsumerCount = 1,
+                ),
+                CatalogCardContract(
+                    functionName = "DebugLiquidControlsCard",
+                    nextFunctionName = "DebugLiquidSliderSamples",
+                    expectedConsumerCount = 2,
+                ),
+            )
+
+        cards.forEach { contract ->
+            val card =
+                source.functionBody(
+                    start = "internal fun ${contract.functionName}(",
+                    end = "fun ${contract.nextFunctionName}(",
+                )
+
+            assertTrue("backdrop = backdrop," in card, contract.functionName)
+            assertTrue("exportBackdropToContent = true," in card, contract.functionName)
+            assertTrue(
+                "val cardBackdrop = LocalLiquidParentBackdrop.current ?: backdrop" in card,
+                contract.functionName,
+            )
+            assertEquals(
+                contract.expectedConsumerCount,
+                card.occurrencesOf("backdrop = cardBackdrop,"),
+                contract.functionName,
+            )
+            assertEquals(1, card.occurrencesOf("backdrop = backdrop,"), contract.functionName)
+            assertFalse(".layerBackdrop(cardBackdrop)" in card, contract.functionName)
+        }
+    }
 }
+
+private data class CatalogCardContract(
+    val functionName: String,
+    val nextFunctionName: String,
+    val expectedConsumerCount: Int,
+)
 
 private fun sourceFile(relativePath: String): String {
     val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
@@ -50,3 +111,6 @@ private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).
 
 private const val DEBUG_LIQUID_SEARCH_FORM_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidSearchFormCard.kt"
+
+private const val DEBUG_LIQUID_CATALOG_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogCard.kt"
