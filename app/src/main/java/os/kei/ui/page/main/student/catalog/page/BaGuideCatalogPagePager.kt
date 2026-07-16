@@ -9,6 +9,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
@@ -52,6 +53,7 @@ internal fun BaGuideCatalogPagePager(
     playbackUiState: BaGuideBgmPlaybackUiState,
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
     pageChromeBackdrop: LayerBackdrop,
+    catalogSceneBackdrop: Backdrop,
     transitionAnimationsEnabled: Boolean,
     mediaAdaptiveRotationEnabled: Boolean,
     accent: Color,
@@ -93,6 +95,7 @@ internal fun BaGuideCatalogPagePager(
                 playbackCoordinator = playbackCoordinator,
                 playbackUiState = playbackUiState,
                 chromeScrollState = chromeScrollState,
+                catalogSceneBackdrop = catalogSceneBackdrop,
                 accent = accent,
                 mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                 onOpenGuide = onOpenGuide,
@@ -126,6 +129,7 @@ private fun BaGuideCatalogPageTabContent(
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     playbackUiState: BaGuideBgmPlaybackUiState,
     chromeScrollState: BaGuideBgmBottomChromeScrollState,
+    catalogSceneBackdrop: Backdrop,
     accent: Color,
     mediaAdaptiveRotationEnabled: Boolean,
     onOpenGuide: (String) -> Unit,
@@ -138,6 +142,7 @@ private fun BaGuideCatalogPageTabContent(
             val catalogTab = resolvedCatalogTab
             BaGuideCatalogV2ListContent(
                 tab = catalogTab,
+                catalogSceneBackdrop = catalogSceneBackdrop,
                 filterSortState = filterSortState,
                 derivedState = catalogListDerivedStates[catalogTab] ?: BaGuideCatalogListDerivedState.Empty,
                 favoriteCatalogEntries = catalogFavoriteEntries,
@@ -163,6 +168,7 @@ private fun BaGuideCatalogPageTabContent(
         pageTab.specialTab == BaGuideCatalogSpecialTab.MemoryLobby -> {
             BaGuideMemoryLobbyTabContent(
                 catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
+                catalogSceneBackdrop = catalogSceneBackdrop,
                 derivedState = memoryLobbyListDerivedState,
                 searchQuery = pageSearchQuery,
                 loading = catalogDataState.loading,
@@ -188,6 +194,7 @@ private fun BaGuideCatalogPageTabContent(
         pageTab.specialTab == BaGuideCatalogSpecialTab.StudentBgm -> {
             BaGuideStudentBgmTabContent(
                 catalogSyncedAtMs = catalogDataState.catalog.syncedAtMs,
+                catalogSceneBackdrop = catalogSceneBackdrop,
                 favorites = favoriteBgms,
                 derivedState = studentBgmListDerivedState,
                 displayedDerivedState = studentBgmDisplayedDerivedState,

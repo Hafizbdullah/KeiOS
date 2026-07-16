@@ -36,8 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -61,6 +60,7 @@ private const val STUDENT_BGM_ENTRY_START_INDEX = 1
 @Composable
 internal fun BaGuideStudentBgmTabContent(
     catalogSyncedAtMs: Long,
+    catalogSceneBackdrop: Backdrop,
     favorites: List<GuideBgmFavoriteItem>,
     derivedState: BaGuideStudentBgmListDerivedState,
     displayedDerivedState: BaGuideStudentBgmDisplayedDerivedState,
@@ -339,18 +339,9 @@ internal fun BaGuideStudentBgmTabContent(
         playbackCoordinator.prepareSelected()
     }
     val showEmptyStatus = !effectiveLoading && visibleFilteredEntries.isEmpty()
-    val statusBackdrop = rememberLayerBackdrop()
     val entryListGap = rememberBaGuideCatalogEntryListGap()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (showEmptyStatus) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(statusBackdrop),
-            )
-        }
         LazyColumn(
             state = listState,
             userScrollEnabled = !sliderInteractionActive,
@@ -409,7 +400,7 @@ internal fun BaGuideStudentBgmTabContent(
                     contentType = "student_bgm_status",
                 ) {
                     LiquidInfoBlock(
-                        backdrop = statusBackdrop,
+                        backdrop = catalogSceneBackdrop,
                         title = stringResource(R.string.ba_catalog_empty_title),
                         subtitle = stringResource(R.string.ba_catalog_empty_subtitle_search),
                         accent = accent,

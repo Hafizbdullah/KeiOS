@@ -2,10 +2,9 @@
 
 package os.kei.ui.page.main.student.catalog.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,10 +25,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import os.kei.R
+import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
+import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogFilterSortState
@@ -48,6 +46,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun BaGuideCatalogV2ListContent(
     tab: BaGuideCatalogTab,
+    catalogSceneBackdrop: Backdrop,
     filterSortState: BaGuideCatalogFilterSortState,
     derivedState: BaGuideCatalogListDerivedState,
     favoriteCatalogEntries: Map<Long, Long>,
@@ -163,95 +162,83 @@ internal fun BaGuideCatalogV2ListContent(
                 }
             }
     }
-    val statusBackdrop = rememberLayerBackdrop()
-    val showStatusBackdrop = uiState.showError || uiState.showEmpty
     val entryListGap = rememberBaGuideCatalogEntryListGap()
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (showStatusBackdrop) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(statusBackdrop),
-            )
-        }
-        LazyColumn(
-            state = tabListState.listState,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                    start = AppChromeTokens.pageHorizontalPadding,
-                    end = AppChromeTokens.pageHorizontalPadding,
-                ),
-            verticalArrangement = Arrangement.spacedBy(entryListGap),
-        ) {
-            if (uiState.showError) {
-                item(
-                    key = "ba-guide-catalog-error-${tab.name}",
-                    contentType = "ba_guide_catalog_status",
-                ) {
-                    LiquidInfoBlock(
-                        backdrop = statusBackdrop,
-                        title = uiState.syncStatusTitle,
-                        subtitle = uiState.errorText,
-                        body = uiState.syncStatusBody,
-                        accent = Color(0xFFEF4444),
-                    )
-                }
-            }
-            if (uiState.showLoading) {
-                item(
-                    key = "ba-guide-catalog-loading-${tab.name}",
-                    contentType = "ba_guide_catalog_loading",
-                ) {
-                    AppAronaLoadingPanel(accent = accent)
-                }
-            }
-            if (studentFavoriteHeaderVisible && !uiState.showLoading) {
-                item(
-                    key = "ba-guide-catalog-favorites-header-${tab.name}",
-                    contentType = "ba_guide_catalog_favorites_header",
-                ) {
-                    BaGuideCatalogFavoriteVisibilityHeader(
-                        totalCount = derivedState.filteredEntries.size,
-                        favoriteCount = favoriteCount,
-                        favoritesHidden = favoritesHidden,
-                        onToggleFavoritesHidden = {
-                            if (favoriteCount > 0) {
-                                favoritesHidden = !favoritesHidden
-                            }
-                        },
-                    )
-                }
-            }
-            if (uiState.showEmpty) {
-                item(
-                    key = "ba-guide-catalog-empty-${tab.name}",
-                    contentType = "ba_guide_catalog_status",
-                ) {
-                    LiquidInfoBlock(
-                        backdrop = statusBackdrop,
-                        title = uiState.emptyTitle,
-                        subtitle = uiState.emptySubtitle,
-                        accent = accent,
-                    )
-                }
-            } else if (!uiState.showLoading) {
-                renderBaGuideCatalogEntryListAdapter(
-                    displayedEntries = tabListState.displayedEntries,
-                    hasMoreEntries = tabListState.hasMoreEntries,
-                    favoriteCatalogEntries = favoriteCatalogEntries,
-                    accent = accent,
-                    loadingMoreText = uiState.loadingMoreText,
-                    onOpenGuide = onOpenGuide,
-                    onToggleFavorite = onToggleFavorite,
+    LazyColumn(
+        state = tabListState.listState,
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+        contentPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
+                start = AppChromeTokens.pageHorizontalPadding,
+                end = AppChromeTokens.pageHorizontalPadding,
+            ),
+        verticalArrangement = Arrangement.spacedBy(entryListGap),
+    ) {
+        if (uiState.showError) {
+            item(
+                key = "ba-guide-catalog-error-${tab.name}",
+                contentType = "ba_guide_catalog_status",
+            ) {
+                LiquidInfoBlock(
+                    backdrop = catalogSceneBackdrop,
+                    title = uiState.syncStatusTitle,
+                    subtitle = uiState.errorText,
+                    body = uiState.syncStatusBody,
+                    accent = Color(0xFFEF4444),
                 )
             }
+        }
+        if (uiState.showLoading) {
+            item(
+                key = "ba-guide-catalog-loading-${tab.name}",
+                contentType = "ba_guide_catalog_loading",
+            ) {
+                AppAronaLoadingPanel(accent = accent)
+            }
+        }
+        if (studentFavoriteHeaderVisible && !uiState.showLoading) {
+            item(
+                key = "ba-guide-catalog-favorites-header-${tab.name}",
+                contentType = "ba_guide_catalog_favorites_header",
+            ) {
+                BaGuideCatalogFavoriteVisibilityHeader(
+                    totalCount = derivedState.filteredEntries.size,
+                    favoriteCount = favoriteCount,
+                    favoritesHidden = favoritesHidden,
+                    onToggleFavoritesHidden = {
+                        if (favoriteCount > 0) {
+                            favoritesHidden = !favoritesHidden
+                        }
+                    },
+                )
+            }
+        }
+        if (uiState.showEmpty) {
+            item(
+                key = "ba-guide-catalog-empty-${tab.name}",
+                contentType = "ba_guide_catalog_status",
+            ) {
+                LiquidInfoBlock(
+                    backdrop = catalogSceneBackdrop,
+                    title = uiState.emptyTitle,
+                    subtitle = uiState.emptySubtitle,
+                    accent = accent,
+                )
+            }
+        } else if (!uiState.showLoading) {
+            renderBaGuideCatalogEntryListAdapter(
+                displayedEntries = tabListState.displayedEntries,
+                hasMoreEntries = tabListState.hasMoreEntries,
+                favoriteCatalogEntries = favoriteCatalogEntries,
+                accent = accent,
+                loadingMoreText = uiState.loadingMoreText,
+                onOpenGuide = onOpenGuide,
+                onToggleFavorite = onToggleFavorite,
+            )
         }
     }
 }

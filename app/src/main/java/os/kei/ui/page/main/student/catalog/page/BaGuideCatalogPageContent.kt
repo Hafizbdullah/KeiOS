@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
@@ -168,23 +169,32 @@ internal fun BaGuideCatalogPageContent(
     }
     val initialContentFadeMs =
         resolvedMotionDuration(CatalogInitialContentCrossfadeMs, transitionAnimationsEnabled)
+    val catalogSceneBackdrop = rememberBaGuideCatalogSceneBackdrop()
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(panelBackground)
-                .background(
-                    Brush.verticalGradient(
-                        colors =
-                            listOf(
-                                accent.copy(alpha = if (isDark) 0.20f else 0.08f),
-                                MiuixTheme.colorScheme.surface.copy(alpha = if (isDark) 0.10f else 0.55f),
-                                panelBackground,
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(catalogSceneBackdrop),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .background(panelBackground)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        accent.copy(alpha = if (isDark) 0.20f else 0.08f),
+                                        MiuixTheme.colorScheme.surface.copy(alpha = if (isDark) 0.10f else 0.55f),
+                                        panelBackground,
+                                    ),
                             ),
-                    ),
-                ),
-    ) {
+                        ),
+            )
+        }
         Box(
             modifier =
                 Modifier
@@ -216,6 +226,7 @@ internal fun BaGuideCatalogPageContent(
                         playbackUiState = playbackUiState,
                         chromeScrollState = chromeScrollState,
                         pageChromeBackdrop = pageChromeBackdrop,
+                        catalogSceneBackdrop = catalogSceneBackdrop,
                         transitionAnimationsEnabled = transitionAnimationsEnabled,
                         mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
                         accent = accent,
@@ -383,6 +394,9 @@ internal fun BaGuideCatalogPageContent(
         }
     }
 }
+
+@Composable
+internal fun rememberBaGuideCatalogSceneBackdrop(): LayerBackdrop = rememberLayerBackdrop()
 
 @Composable
 private fun BaGuideCatalogInitialLoadingContent(accent: Color) {
