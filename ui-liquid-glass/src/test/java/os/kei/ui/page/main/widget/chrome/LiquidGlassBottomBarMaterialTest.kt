@@ -2,6 +2,7 @@ package os.kei.ui.page.main.widget.chrome
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,21 +19,51 @@ class LiquidGlassBottomBarMaterialTest {
     }
 
     @Test
-    fun darkMaterialUsesQuieterRefraction() {
+    fun darkMaterialPreservesReferenceRefraction() {
         val material = liquidBottomBarMaterial(isLight = false)
 
-        assertTrue(material.surfaceAlpha <= 0.20f)
-        assertTrue(material.highlightAlpha < 0.55f)
-        assertTrue(material.lensAmount <= 32.dp)
+        assertEquals(0.18f, material.surfaceAlpha)
+        assertEquals(0.48f, material.highlightAlpha)
+        assertEquals(16.dp, material.lensHeight)
+        assertEquals(28.dp, material.lensAmount)
     }
 
     @Test
     fun lightSelectionIndicatorKeepsAVisibleNeutralFilm() {
         val indicator = liquidBottomBarSelectionIndicatorColor(isLight = true)
 
-        assertTrue(indicator.alpha in 0.09f..0.11f)
-        assertEquals(Color.Black.red, indicator.red)
-        assertEquals(Color.Black.green, indicator.green)
-        assertEquals(Color.Black.blue, indicator.blue)
+        assertEquals(Color.Black.copy(alpha = 0.10f), indicator)
+    }
+
+    @Test
+    fun darkSelectionIndicatorKeepsAVisibleNeutralFilm() {
+        val indicator = liquidBottomBarSelectionIndicatorColor(isLight = false)
+
+        assertEquals(Color.White.copy(alpha = 0.10f), indicator)
+    }
+
+    @Test
+    fun bottomBarRenderingSourceStaysBelowFileSizeBudget() {
+        val lineCount = sourceFile(LIQUID_BOTTOM_BAR_SOURCE).useLines { it.count() }
+
+        assertTrue(
+            "LiquidGlassBottomBar.kt has $lineCount lines; keep rendering source below 1000 lines",
+            lineCount < 1_000,
+        )
     }
 }
+
+private fun sourceFile(relativePath: String): File {
+    val candidates =
+        generateSequence(File(requireNotNull(System.getProperty("user.dir")))) { it.parentFile }
+    return requireNotNull(
+        candidates
+            .map { File(it, relativePath) }
+            .firstOrNull(File::isFile),
+    ) {
+        "Unable to locate $relativePath from ${System.getProperty("user.dir")}"
+    }
+}
+
+private const val LIQUID_BOTTOM_BAR_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/chrome/LiquidGlassBottomBar.kt"

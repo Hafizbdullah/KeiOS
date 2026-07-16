@@ -27,7 +27,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -953,79 +952,3 @@ internal fun liquidBottomBarResolvedEnabledIndex(
     }
     return current
 }
-
-@Composable
-private fun rememberLiquidBottomBarPalette(
-    isLiquidEffectEnabled: Boolean,
-    isInLightTheme: Boolean,
-    primary: Color,
-    onSurface: Color,
-    surfaceContainer: Color,
-): LiquidBottomBarPalette =
-    remember(
-        isLiquidEffectEnabled,
-        isInLightTheme,
-        primary,
-        onSurface,
-        surfaceContainer,
-    ) {
-        if (!isLiquidEffectEnabled) {
-            return@remember LiquidBottomBarPalette(
-                baseFillColor = surfaceContainer,
-                inactiveContentColor = onSurface,
-                activeContentColor = primary,
-            )
-        }
-
-        if (isInLightTheme) {
-            return@remember LiquidBottomBarPalette(
-                baseFillColor = surfaceContainer.copy(alpha = liquidBottomBarMaterial(isLight = true).surfaceAlpha),
-                inactiveContentColor = onSurface.copy(alpha = 0.88f),
-                activeContentColor = primary,
-            )
-        }
-
-        return@remember LiquidBottomBarPalette(
-            baseFillColor = surfaceContainer.copy(alpha = liquidBottomBarMaterial(isLight = false).surfaceAlpha),
-            inactiveContentColor = onSurface.copy(alpha = 0.84f),
-            activeContentColor = primary.copy(alpha = 0.98f),
-        )
-    }
-
-internal fun liquidBottomBarMaterial(isLight: Boolean): LiquidBottomBarMaterial =
-    if (isLight) {
-        LiquidBottomBarMaterial(
-            surfaceAlpha = 0.40f,
-            highlightAlpha = 1f,
-            lensHeight = 24.dp,
-            lensAmount = 24.dp,
-        )
-    } else {
-        LiquidBottomBarMaterial(
-            surfaceAlpha = 0.18f,
-            highlightAlpha = 0.48f,
-            lensHeight = 16.dp,
-            lensAmount = 28.dp,
-        )
-    }
-
-internal fun liquidBottomBarSelectionIndicatorColor(isLight: Boolean): Color =
-    if (isLight) {
-        Color.Black.copy(alpha = 0.10f)
-    } else {
-        Color.White.copy(alpha = 0.10f)
-    }
-
-internal data class LiquidBottomBarMaterial(
-    val surfaceAlpha: Float,
-    val highlightAlpha: Float,
-    val lensHeight: androidx.compose.ui.unit.Dp,
-    val lensAmount: androidx.compose.ui.unit.Dp,
-)
-
-@Stable
-private class LiquidBottomBarPalette(
-    val baseFillColor: Color,
-    val inactiveContentColor: Color,
-    val activeContentColor: Color,
-)
