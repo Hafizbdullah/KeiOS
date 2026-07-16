@@ -85,6 +85,32 @@ fun AppCompactIconAction(
     }
 }
 
+@Composable
+fun AppCompactIconIndicator(
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    tint: Color = MiuixTheme.colorScheme.primary,
+    visualSize: Dp = AppCompactIconActionDefaultVisualSize,
+) {
+    val resolvedVisualSize = resolveCompactIconActionVisualSize(visualSize)
+    Box(
+        modifier =
+            Modifier
+                .defaultMinSize(
+                    minWidth = AppCompactIconActionMinimumTouchSize,
+                    minHeight = AppCompactIconActionMinimumTouchSize,
+                ).then(modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(resolvedVisualSize),
+            tint = tint,
+        )
+    }
+}
+
 internal fun resolveCompactIconActionVisualSize(requestedSize: Dp): Dp {
     if (
         requestedSize == Dp.Unspecified ||

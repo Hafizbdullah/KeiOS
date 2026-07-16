@@ -85,6 +85,24 @@ class GitHubActionsSelectableSemanticsTest {
         assertTrue(".selectableGroup()" in runSource.substringAfter("LazyColumn("))
     }
 
+    @Test
+    fun collapsibleHeaderExposesOneExpandAction() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                GitHubActionsCollapsibleSection(
+                    title = "Workflows",
+                    summary = "Selected workflow",
+                    countLabel = "3",
+                    expanded = false,
+                    isDark = false,
+                    onExpandedChange = {},
+                ) {}
+            }
+        }
+
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(1)
+    }
+
     private companion object {
         val radioRole =
             SemanticsMatcher.expectValue(

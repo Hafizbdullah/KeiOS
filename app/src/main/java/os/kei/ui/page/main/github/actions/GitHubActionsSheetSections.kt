@@ -27,7 +27,7 @@ import os.kei.ui.page.main.github.page.GitHubPageState
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.core.AppCompactIconAction
+import os.kei.ui.page.main.widget.core.AppCompactIconIndicator
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.appExpandIn
@@ -249,15 +249,10 @@ internal fun GitHubActionsCollapsibleSection(
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                     minWidth = GitHubActionsCountPillMinWidth,
                 )
-                AppCompactIconAction(
+                AppCompactIconIndicator(
                     icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                    contentDescription =
-                        stringResource(
-                            if (expanded) R.string.common_collapse else R.string.common_expand,
-                        ),
                     tint = MiuixTheme.colorScheme.onBackgroundVariant,
                     visualSize = 40.dp,
-                    onClick = { onExpandedChange(!expanded) },
                 )
             }
         }

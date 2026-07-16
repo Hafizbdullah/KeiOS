@@ -14,11 +14,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -173,6 +175,24 @@ class AppCompactIconActionTest {
         assertEquals(30.dp, resolveCompactIconActionVisualSize(24.dp))
         assertEquals(38.dp, resolveCompactIconActionVisualSize(38.dp))
         assertEquals(42.dp, resolveCompactIconActionVisualSize(56.dp))
+    }
+
+    @Test
+    fun indicatorKeepsTheVisualSlotWithoutCreatingAnAction() {
+        composeRule.setContent {
+            CompactActionTestTheme {
+                AppCompactIconIndicator(
+                    icon = MiuixIcons.Basic.Check,
+                    modifier = Modifier.size(36.dp).testTag("indicator"),
+                )
+            }
+        }
+
+        composeRule
+            .onNodeWithTag("indicator")
+            .assertWidthIsEqualTo(48.dp)
+            .assertHeightIsEqualTo(48.dp)
+        composeRule.onAllNodes(hasClickAction(), useUnmergedTree = true).assertCountEquals(0)
     }
 }
 
