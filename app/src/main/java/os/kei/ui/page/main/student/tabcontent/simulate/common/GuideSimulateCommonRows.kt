@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -17,14 +19,16 @@ import androidx.compose.ui.unit.dp
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.GuideRemoteIcon
 import os.kei.ui.page.main.student.buildGuideTabCopyPayload
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMaxWidth
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
 import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.guideLocalizedValue
 import os.kei.ui.page.main.student.guideTabCopyable
 import os.kei.ui.page.main.student.rememberGuideTabCopyAction
 import os.kei.ui.page.main.student.tabcontent.simulate.isSimulateSubHeader
 import os.kei.ui.page.main.student.tabcontent.simulate.simulateStatGlyphForKey
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import com.kyant.backdrop.backdrops.LayerBackdrop
@@ -72,13 +76,17 @@ internal fun GuideSimulateInlineCapsule(
     backdrop: LayerBackdrop
 ) {
     val displayText = guideLocalizedLabel(text)
-    AppLiquidTextButton(
+    StatusPill(
+        label = displayText,
+        color = Color(0xFF60A5FA),
         backdrop = backdrop,
-        text = displayText,
-        enabled = false,
-        textColor = Color(0xFF60A5FA),
-        variant = GlassVariant.Compact,
-        onClick = {}
+        modifier =
+            Modifier
+                .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+        size = AppStatusPillSize.Compact,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
     )
 }
 
@@ -112,13 +120,17 @@ internal fun GuideSimulateRowItem(
                         iconHeight = 24.dp
                     )
                 }
-                AppLiquidTextButton(
+                StatusPill(
+                    label = displayKey,
+                    color = Color(0xFF3B82F6),
                     backdrop = backdrop,
-                    text = displayKey,
-                    enabled = false,
-                    textColor = Color(0xFF3B82F6),
-                    variant = GlassVariant.Compact,
-                    onClick = {}
+                    modifier =
+                        Modifier
+                            .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                            .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+                    size = AppStatusPillSize.Compact,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

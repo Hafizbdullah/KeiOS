@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
@@ -21,16 +22,20 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideVoiceEntry
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMaxWidth
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
 import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.guideLocalizedVoiceEntryTitle
 import os.kei.ui.page.main.student.guideLocalizedVoiceLanguage
 import os.kei.ui.page.main.student.guideLocalizedVoiceLineLabel
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -163,13 +168,17 @@ fun GuideVoiceEntryCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (entry.section.isNotBlank()) {
-                        AppLiquidTextButton(
+                        StatusPill(
+                            label = displaySection,
+                            color = Color(0xFF3B82F6),
                             backdrop = backdrop,
-                            text = displaySection,
-                            enabled = false,
-                            textColor = Color(0xFF3B82F6),
-                            variant = GlassVariant.Compact,
-                            onClick = {},
+                            modifier =
+                                Modifier
+                                    .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                                    .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+                            size = AppStatusPillSize.Compact,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     Text(

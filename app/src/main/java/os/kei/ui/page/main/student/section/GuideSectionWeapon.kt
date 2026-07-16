@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -41,11 +42,14 @@ import os.kei.ui.page.main.student.GuideRemoteImage
 import os.kei.ui.page.main.student.GuideWeaponCardModel
 import os.kei.ui.page.main.student.GuideWeaponStarEffect
 import os.kei.ui.page.main.student.GuideWeaponStatRow
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMaxWidth
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.section.gallery.GuideImageFullscreenDialog
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
@@ -117,13 +121,14 @@ fun GuideWeaponCardItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    AppLiquidTextButton(
+                    StatusPill(
+                        label = uniqueWeaponShortLabel,
+                        color = Color(0xFF3B82F6),
                         backdrop = backdrop,
-                        text = uniqueWeaponShortLabel,
-                        enabled = false,
-                        textColor = Color(0xFF3B82F6),
-                        variant = GlassVariant.Compact,
-                        onClick = {}
+                        modifier = Modifier.heightIn(min = GuidePassiveMetadataPillMinHeight),
+                        size = AppStatusPillSize.Compact,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
 
@@ -339,13 +344,17 @@ internal fun GuideWeaponStarEffectItem(
                 ) {
                     GuideWeaponStarBadgeRow(effect.starLabel, iconSize = 18.dp)
                     if (effect.roleTag.isNotBlank()) {
-                        AppLiquidTextButton(
+                        StatusPill(
+                            label = displayRoleTag,
+                            color = Color(0xFF3B82F6),
                             backdrop = backdrop,
-                            text = displayRoleTag,
-                            enabled = false,
-                            textColor = Color(0xFF3B82F6),
-                            variant = GlassVariant.Compact,
-                            onClick = {}
+                            modifier =
+                                Modifier
+                                    .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                                    .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+                            size = AppStatusPillSize.Compact,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     Text(
@@ -441,13 +450,17 @@ internal fun GuideWeaponTwoStarEffectItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     if (effect.roleTag.isNotBlank()) {
-                        AppLiquidTextButton(
+                        StatusPill(
+                            label = displayRoleTag,
+                            color = Color(0xFF3B82F6),
                             backdrop = backdrop,
-                            text = displayRoleTag,
-                            enabled = false,
-                            textColor = Color(0xFF3B82F6),
-                            variant = GlassVariant.Compact,
-                            onClick = {}
+                            modifier =
+                                Modifier
+                                    .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                                    .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+                            size = AppStatusPillSize.Compact,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

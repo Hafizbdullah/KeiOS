@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,11 +28,15 @@ import os.kei.ui.page.main.student.GuideMediaProgressState
 import os.kei.ui.page.main.student.GuideRemoteImageAdaptive
 import os.kei.ui.page.main.student.GuideVideoControlAction
 import os.kei.ui.page.main.student.GuideVideoFullscreenActivity
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMaxWidth
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.GuidePressableMediaSurface
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Download
@@ -91,13 +97,17 @@ internal fun GuideGalleryCardContent(
                 overflow = TextOverflow.Ellipsis,
             )
             if (showMediaTypeLabel && mediaTypeLabel.isNotBlank()) {
-                AppLiquidTextButton(
+                StatusPill(
+                    label = mediaTypeLabel,
+                    color = Color(0xFF3B82F6),
                     backdrop = backdrop,
-                    text = mediaTypeLabel,
-                    enabled = false,
-                    textColor = Color(0xFF3B82F6),
-                    variant = GlassVariant.Compact,
-                    onClick = {},
+                    modifier =
+                        Modifier
+                            .heightIn(min = GuidePassiveMetadataPillMinHeight)
+                            .widthIn(max = GuidePassiveMetadataPillMaxWidth),
+                    size = AppStatusPillSize.Compact,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             if (normalizedMediaType == "video" && displayMediaUrl.isNotBlank()) {

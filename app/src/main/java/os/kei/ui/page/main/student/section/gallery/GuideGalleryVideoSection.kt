@@ -6,6 +6,7 @@ import android.graphics.Rect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,10 +37,11 @@ import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 import os.kei.ui.page.main.student.section.buildGuideCopyPayload
 import os.kei.ui.page.main.student.section.guideCopyable
+import os.kei.ui.page.main.student.component.GuidePassiveMetadataPillMinHeight
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -201,13 +203,14 @@ fun GuideGalleryUnlockLevelCardItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                AppLiquidTextButton(
+                StatusPill(
+                    label = level,
+                    color = Color(0xFF3B82F6),
                     backdrop = backdrop,
-                    text = level,
-                    enabled = false,
-                    textColor = Color(0xFF3B82F6),
-                    variant = GlassVariant.Compact,
-                    onClick = {},
+                    modifier = Modifier.heightIn(min = GuidePassiveMetadataPillMinHeight),
+                    size = AppStatusPillSize.Compact,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
