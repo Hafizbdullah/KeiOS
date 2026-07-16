@@ -8,6 +8,31 @@ import kotlin.test.assertTrue
 
 class DebugLiquidBackdropContractTest {
     @Test
+    fun debugPagesProvideTheirSiblingProducedBackdropToCards() {
+        listOf(
+            "Component Lab" to DEBUG_COMPONENT_LAB_PAGE_SOURCE,
+            "Liquid Catalog" to DEBUG_LIQUID_CATALOG_PAGE_SOURCE,
+        ).forEach { (pageName, sourcePath) ->
+            val source = sourceFile(sourcePath)
+            val producer = ".layerBackdrop(pageBackdrop)"
+            val provider =
+                "CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop)"
+            val producerIndex = source.indexOf(producer)
+            val providerIndex = source.indexOf(provider)
+
+            assertEquals(1, source.occurrencesOf("rememberLayerBackdrop()"), pageName)
+            assertEquals(1, source.occurrencesOf(producer), pageName)
+            assertEquals(1, source.occurrencesOf(provider), pageName)
+            assertTrue(producerIndex >= 0, pageName)
+            assertTrue(providerIndex > producerIndex, pageName)
+
+            val consumerTree = source.substring(providerIndex)
+            assertTrue("AppPageLazyColumn(" in consumerTree, pageName)
+            assertFalse(producer in consumerTree, pageName)
+        }
+    }
+
+    @Test
     fun searchSamplesConsumeTheNearestExportedCardMaterial() {
         val source = sourceFile(DEBUG_LIQUID_SEARCH_FORM_SOURCE)
         val card = source.functionBody(
@@ -204,3 +229,9 @@ private const val DEBUG_LIQUID_CATALOG_SOURCE =
 
 private const val DEBUG_LIQUID_CATALOG_SAMPLES_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogSamples.kt"
+
+private const val DEBUG_COMPONENT_LAB_PAGE_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugComponentLabPage.kt"
+
+private const val DEBUG_LIQUID_CATALOG_PAGE_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidCatalogPage.kt"

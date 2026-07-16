@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,6 +41,7 @@ import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
@@ -88,28 +90,30 @@ internal fun DebugComponentLabPage(
                             ),
                         ).layerBackdrop(pageBackdrop),
             )
-            AppPageLazyColumn(
-                innerPadding = innerPadding,
-                state = listState,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                bottomExtra = 40.dp,
-                sectionSpacing = 14.dp,
-            ) {
-                item {
-                    DebugLabIntroCard(accent = accent)
-                }
-                item {
-                    DebugLiquidPreviewCard(
-                        accent = accent,
-                        backdrop = pageBackdrop,
-                        onOpenLiquidCatalog = onOpenLiquidCatalog,
-                    )
-                }
-                item {
-                    DebugIterationQueueCard(accent = accent)
+            CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop) {
+                AppPageLazyColumn(
+                    innerPadding = innerPadding,
+                    state = listState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    bottomExtra = 40.dp,
+                    sectionSpacing = 14.dp,
+                ) {
+                    item {
+                        DebugLabIntroCard(accent = accent)
+                    }
+                    item {
+                        DebugLiquidPreviewCard(
+                            accent = accent,
+                            backdrop = pageBackdrop,
+                            onOpenLiquidCatalog = onOpenLiquidCatalog,
+                        )
+                    }
+                    item {
+                        DebugIterationQueueCard(accent = accent)
+                    }
                 }
             }
         }
