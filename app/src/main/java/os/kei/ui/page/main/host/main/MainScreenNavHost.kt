@@ -213,7 +213,10 @@ internal fun MainScreenNavHost(
                             )
                         }
                         entry<KeiosRoute.Settings> {
-                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            MainScreenRouteBackgroundHost(
+                                prefsState = prefsState,
+                                exportBackdropToContent = true,
+                            ) {
                                 SettingsPage(
                                     notificationPermissionGranted = notificationPermissionGranted,
                                     onRequestNotificationPermission = onRequestNotificationPermission,
@@ -426,6 +429,7 @@ private fun <T : Any> noNavPredictiveContentTransform():
 private fun MainScreenRouteBackgroundHost(
     prefsState: MainScreenUiPrefsState,
     style: AppManagedBackgroundStyle = AppManagedBackgroundStyles.Standard,
+    exportBackdropToContent: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     AppManagedBackgroundHost(
@@ -438,6 +442,7 @@ private fun MainScreenRouteBackgroundHost(
         pageStyle = prefsState.nonHomeBackgroundPageStyle,
         scrim = prefsState.nonHomeBackgroundScrim,
         style = style,
+        exportBackdropToContent = exportBackdropToContent,
         content = content,
     )
 }

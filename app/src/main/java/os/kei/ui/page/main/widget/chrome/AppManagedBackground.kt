@@ -26,9 +26,12 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 
@@ -129,6 +132,7 @@ fun AppManagedBackgroundHost(
     alignment: NonHomeBackgroundAlignment = NonHomeBackgroundAlignment.Center,
     pageStyle: NonHomeBackgroundPageStyle = NonHomeBackgroundPageStyle.Standard,
     style: AppManagedBackgroundStyle = AppManagedBackgroundStyles.Standard,
+    exportBackdropToContent: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val trimmedUri = imageUri.trim()
@@ -142,35 +146,63 @@ fun AppManagedBackgroundHost(
                 sceneStyle = style,
             )
         }
+    val sceneBackdrop =
+        if (exportBackdropToContent) {
+            rememberLayerBackdrop {
+                drawRect(baseColor)
+                drawContent()
+            }
+        } else {
+            null
+        }
 
     Box(
         modifier =
             modifier
-                .fillMaxSize()
-                .background(baseColor),
+                .fillMaxSize(),
     ) {
-        if (active) {
-            AppManagedBackgroundImage(
-                enabled = true,
-                imageUri = trimmedUri,
-                opacity = opacity * resolvedStyle.opacityMultiplier,
-                saturation = saturation,
-                contentScale = contentScale,
-                alignment = alignment,
-                modifier = Modifier.fillMaxSize(),
-            )
-            AppManagedBackgroundOverlay(
-                baseColor = baseColor,
-                darkBase = darkBase,
-                style = resolvedStyle,
-                scrim = scrim,
-                modifier = Modifier.fillMaxSize(),
-            )
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .then(
+                        if (sceneBackdrop != null) {
+                            Modifier.layerBackdrop(sceneBackdrop)
+                        } else {
+                            Modifier.background(baseColor)
+                        },
+                    ),
+        ) {
+            if (active) {
+                AppManagedBackgroundImage(
+                    enabled = true,
+                    imageUri = trimmedUri,
+                    opacity = opacity * resolvedStyle.opacityMultiplier,
+                    saturation = saturation,
+                    contentScale = contentScale,
+                    alignment = alignment,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                AppManagedBackgroundOverlay(
+                    baseColor = baseColor,
+                    darkBase = darkBase,
+                    style = resolvedStyle,
+                    scrim = scrim,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
         CompositionLocalProvider(
             LocalAppScaffoldContainerColor provides if (active) Color.Transparent else null,
         ) {
-            content()
+            if (sceneBackdrop != null) {
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides sceneBackdrop,
+                    content = content,
+                )
+            } else {
+                content()
+            }
         }
     }
 }

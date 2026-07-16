@@ -74,6 +74,7 @@ internal fun SettingsLogSection(
                         enabledCardColor,
                         disabledCardColor,
                     ),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.LogLevel),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.LogLevel, it) },
             ) {

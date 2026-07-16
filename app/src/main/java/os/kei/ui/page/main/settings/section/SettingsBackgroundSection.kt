@@ -241,6 +241,7 @@ internal fun SettingsBackgroundSection(
                 subtitle = stringResource(R.string.settings_group_background_layout_summary),
                 sectionIcon = appLucideMediaIcon(),
                 containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.BackgroundLayout),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.BackgroundLayout, it) },
             ) {
@@ -345,6 +346,7 @@ internal fun SettingsBackgroundSection(
                 subtitle = stringResource(R.string.settings_group_background_rendering_summary),
                 sectionIcon = appLucideMediaIcon(),
                 containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+                exportBackdropToContent = true,
                 expanded = isCardExpanded(SettingsCardExpansionId.BackgroundRendering),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.BackgroundRendering, it) },
             ) {

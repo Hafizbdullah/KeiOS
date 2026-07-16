@@ -77,6 +77,7 @@ internal fun SettingsNotifySection(
         subtitle = stringResource(R.string.settings_group_notify_summary),
         sectionIcon = appLucideAlertIcon(),
         containerColor = settingsSectionContainerColor(presentation, enabledCardColor, disabledCardColor),
+        exportBackdropToContent = true,
         expanded = expanded,
         onExpandedChange = onExpandedChange,
     ) {
