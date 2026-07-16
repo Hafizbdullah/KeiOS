@@ -4,9 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.graphics.Color
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import os.kei.core.prefs.AppThemeMode
-import os.kei.core.prefs.UiPrefs
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -23,14 +26,32 @@ internal fun Context.launchDebugActivity(activityClass: Class<out Activity>) {
     }
 }
 
+internal fun ComponentActivity.enableDebugEdgeToEdge(appThemeMode: AppThemeMode) {
+    val transparent = Color.TRANSPARENT
+    val systemBarStyle =
+        when (appThemeMode) {
+            AppThemeMode.FOLLOW_SYSTEM -> SystemBarStyle.auto(transparent, transparent)
+            AppThemeMode.LIGHT -> SystemBarStyle.light(transparent, transparent)
+            AppThemeMode.DARK -> SystemBarStyle.dark(transparent)
+        }
+
+    enableEdgeToEdge(
+        statusBarStyle = systemBarStyle,
+        navigationBarStyle = systemBarStyle,
+    )
+}
+
 @Composable
-internal fun DebugActivityTheme(content: @Composable () -> Unit) {
-    val appThemeMode = UiPrefs.getAppThemeMode()
-    val colorSchemeMode = when (appThemeMode) {
-        AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
-        AppThemeMode.LIGHT -> ColorSchemeMode.Light
-        AppThemeMode.DARK -> ColorSchemeMode.Dark
-    }
+internal fun DebugActivityTheme(
+    appThemeMode: AppThemeMode,
+    content: @Composable () -> Unit,
+) {
+    val colorSchemeMode =
+        when (appThemeMode) {
+            AppThemeMode.FOLLOW_SYSTEM -> ColorSchemeMode.System
+            AppThemeMode.LIGHT -> ColorSchemeMode.Light
+            AppThemeMode.DARK -> ColorSchemeMode.Dark
+        }
 
     MiuixTheme(controller = ThemeController(colorSchemeMode)) {
         content()
