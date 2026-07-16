@@ -568,7 +568,6 @@ private fun GuideGalleryErrorCard(error: String) {
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {},
     ) {
         Column(
             modifier =
@@ -592,7 +591,6 @@ private fun GuideGalleryEmptyCard() {
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {},
     ) {
         Column(
             modifier =
@@ -616,7 +614,6 @@ private fun GuideGalleryRelatedLinksCard(
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {},
     ) {
         Column(
             modifier =

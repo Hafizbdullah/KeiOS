@@ -39,7 +39,6 @@ internal fun LazyListScope.renderGuideNpcSatelliteArchiveContent(guide: BaStuden
         GuideLiquidCard(
             modifier = Modifier.fillMaxWidth(),
             surfaceColor = Color(0x223B82F6),
-            onClick = {},
         ) {
             Column(
                 modifier =

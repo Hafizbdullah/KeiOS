@@ -174,7 +174,6 @@ fun GuideSkillCardItem(
     GuideLiquidCard(
         modifier = modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
     ) {
         CopyModeSelectionContainer {
             Row(

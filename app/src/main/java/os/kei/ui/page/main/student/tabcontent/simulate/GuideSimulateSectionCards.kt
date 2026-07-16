@@ -57,7 +57,6 @@ internal fun GuideSimulateSectionCard(
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
     ) {
         Column(
             modifier = Modifier
@@ -105,7 +104,6 @@ internal fun GuideSimulateEquipmentCard(
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
     ) {
         Column(
             modifier = Modifier
@@ -208,7 +206,6 @@ internal fun GuideSimulateUnlockCard(
     GuideLiquidCard(
         modifier = Modifier.fillMaxWidth(),
         surfaceColor = Color(0x223B82F6),
-        onClick = {}
     ) {
         Column(
             modifier = Modifier

@@ -388,7 +388,6 @@ internal fun BaGuideBgmUndoBlock(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         surfaceColor = Color(0x223B82F6),
-        onClick = {},
     ) {
         Row(
             modifier =

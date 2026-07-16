@@ -45,7 +45,7 @@ internal fun GuideLiquidCard(
         } else {
             null
         }
-    val pressSafePadding = if (isInteractive && enabled && onClick != null) {
+    val pressSafePadding = if (isInteractive && enabled) {
         AppInteractiveTokens.compactLiquidPressSafePadding
     } else {
         0.dp

@@ -88,7 +88,6 @@ internal fun BaGuideBgmLibraryHeader(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         surfaceColor = Color(0x123B82F6),
-        onClick = {}
     ) {
         Column(
             modifier = Modifier

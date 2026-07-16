@@ -58,7 +58,6 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
             GuideLiquidCard(
                 modifier = Modifier.fillMaxWidth(),
                 surfaceColor = Color(0x223B82F6),
-                onClick = {}
             ) {
                 Column(
                     modifier = Modifier
@@ -148,7 +147,6 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
             GuideLiquidCard(
                 modifier = Modifier.fillMaxWidth(),
                 surfaceColor = Color(0x223B82F6),
-                onClick = {}
             ) {
                 Column(
                     modifier = Modifier

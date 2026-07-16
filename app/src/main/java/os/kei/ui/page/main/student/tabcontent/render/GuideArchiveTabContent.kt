@@ -49,7 +49,6 @@ internal fun LazyListScope.renderGuideArchiveTabContent(
         GuideLiquidCard(
             modifier = Modifier.fillMaxWidth(),
             surfaceColor = Color(0x223B82F6),
-            onClick = {},
         ) {
             if (guide != null) {
                 val useNpcPortraitTopCrop = isNpcSatelliteGuide
@@ -180,7 +179,6 @@ internal fun LazyListScope.renderGuideArchiveTabContent(
         GuideLiquidCard(
             modifier = Modifier.fillMaxWidth(),
             surfaceColor = Color(0x223B82F6),
-            onClick = {},
         ) {
             if (guide != null) {
                 Column(
