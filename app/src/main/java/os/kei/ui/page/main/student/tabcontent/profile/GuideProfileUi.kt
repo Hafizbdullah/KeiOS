@@ -42,21 +42,16 @@ import os.kei.ui.page.main.student.guideLocalizedValue
 import os.kei.ui.page.main.student.guideTabCopyable
 import os.kei.ui.page.main.student.rememberGuideTabCopyAction
 import os.kei.ui.page.main.student.stripGuideWebLinks
+import os.kei.ui.page.main.widget.core.AppSurfaceBox
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
-import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
-import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeDisableSelection
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -250,37 +245,24 @@ internal fun GuideProfileValueCapsule(
 private fun GuideProfileLiquidSurfaceBox(
     modifier: Modifier,
     shape: Shape,
-    cornerRadius: Dp,
     surfaceColor: Color,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
-
-    Box(modifier = modifier) {
-        if (activeBackdrop != null) {
-            LiquidSurface(
-                backdrop = activeBackdrop,
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .appSquircleClip(cornerRadius),
-                shape = shape,
-                isInteractive = false,
-                surfaceColor = surfaceColor,
-                blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
-                lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
-                shadow = false,
-            ) {}
-        } else {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .appSquircleBackground(surfaceColor, cornerRadius),
-            )
-        }
+    AppSurfaceBox(
+        modifier = modifier,
+        surfaceColor = surfaceColor,
+        shape = shape,
+        contentColor = LocalContentColor.current,
+        isInteractive = false,
+        shadow = false,
+        clipContent = false,
+        pressSafePadding = 0.dp,
+        blurRadius = UiPerformanceBudget.backdropBlur,
+        lensRadius = UiPerformanceBudget.backdropLens,
+        effectVariant = GlassVariant.Compact,
+    ) {
         Box(
             modifier =
                 Modifier
@@ -513,7 +495,6 @@ internal fun GuideGiftPreferenceGrid(items: List<GiftPreferenceItem>) {
                                 .width(cardWidth)
                                 .height(giftBoxHeight),
                         shape = RoundedRectangle(12.dp),
-                        cornerRadius = 12.dp,
                         surfaceColor = Color(0x203B82F6),
                     ) {
                         GuideRemoteIcon(
@@ -534,7 +515,6 @@ internal fun GuideGiftPreferenceGrid(items: List<GiftPreferenceItem>) {
                                         .width(emojiBubbleSize)
                                         .height(emojiBubbleSize),
                                 shape = ContinuousCapsule,
-                                cornerRadius = 999.dp,
                                 surfaceColor = if (isDark) Color(0x663B82F6) else Color(0xCCEFF6FF),
                                 contentAlignment = Alignment.Center,
                             ) {

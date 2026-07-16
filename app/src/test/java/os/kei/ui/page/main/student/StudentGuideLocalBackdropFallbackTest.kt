@@ -124,11 +124,20 @@ class StudentGuideLocalBackdropFallbackTest {
             assertFalse("rememberLayerBackdrop" in source)
             assertFalse(".layerBackdrop(" in source)
         }
-        assertEquals(
-            1,
-            profileSource.occurrencesOf("activeGlassBackdrop(LocalLiquidParentBackdrop.current)"),
-        )
-        assertTrue(".appSquircleBackground(surfaceColor, cornerRadius)" in profileSource)
+        val profileSurfaceSource =
+            profileSource
+                .substringAfter("private fun GuideProfileLiquidSurfaceBox(")
+                .substringBefore("internal fun GuideProfileRowsSection(")
+        assertTrue("AppSurfaceBox(" in profileSurfaceSource)
+        assertFalse("LiquidSurface(" in profileSurfaceSource)
+        assertFalse("activeGlassBackdrop(" in profileSurfaceSource)
+        assertFalse("appSquircleBackground" in profileSurfaceSource)
+        assertTrue("isInteractive = false" in profileSurfaceSource)
+        assertTrue("shadow = false" in profileSurfaceSource)
+        assertTrue("clipContent = false" in profileSurfaceSource)
+        assertTrue("pressSafePadding = 0.dp" in profileSurfaceSource)
+        assertTrue("effectVariant = GlassVariant.Compact" in profileSurfaceSource)
+        assertTrue(".matchParentSize()\n                    .padding(contentPadding)" in profileSurfaceSource)
         assertTrue(
             "val sliderBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in gallerySource,
         )
