@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,6 +34,7 @@ import os.kei.feature.github.model.FdroidRepositoryPresets
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
@@ -481,7 +481,7 @@ private fun FdroidCandidateRow(
     onClick: () -> Unit,
 ) {
     val accent = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     SheetControlRow(
         modifier =
             Modifier

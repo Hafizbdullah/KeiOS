@@ -1,6 +1,5 @@
 package os.kei.ui.page.main.github.actions
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,6 +17,7 @@ import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -33,7 +33,7 @@ internal fun GitHubActionsArtifactHintText(
     Text(
         text = text,
         modifier = Modifier.fillMaxWidth(),
-        color = githubActionsSecondaryTextColor(isSystemInDarkTheme()),
+        color = githubActionsSecondaryTextColor(isAppInDarkTheme()),
         fontSize = AppTypographyTokens.Supporting.fontSize,
         lineHeight = AppTypographyTokens.Supporting.lineHeight,
         maxLines = 2,
@@ -138,7 +138,7 @@ internal fun GitHubActionsPillRow(
 
 @Composable
 internal fun GitHubActionsLoadingCard(text: String) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     SheetSurfaceCard(
         containerColor = githubActionsNeutralCardColor(isDark),
         borderColor = githubActionsNeutralBorderColor(isDark),

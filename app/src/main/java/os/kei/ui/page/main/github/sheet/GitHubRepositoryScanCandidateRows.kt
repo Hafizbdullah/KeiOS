@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.ui.page.main.github.GitHubStatusPalette
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
@@ -125,7 +125,7 @@ private fun RepositoryScanCandidateRow(
             recommended -> GitHubStatusPalette.Active
             else -> MiuixTheme.colorScheme.primary
         }
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val metaText = candidate.repositoryCandidateMetaText()
     val starCountText =
         candidate.repository.starCount

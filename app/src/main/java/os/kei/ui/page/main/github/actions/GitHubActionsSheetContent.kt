@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.github.actions
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -16,6 +15,7 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.github.localizedGitHubActionsErrorMessage
 import os.kei.ui.page.main.github.page.GitHubActionsArtifactFilter
 import os.kei.ui.page.main.github.page.GitHubPageState
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 
 @Composable
@@ -40,7 +40,7 @@ internal fun GitHubActionsSheetContent(
     onOpenArtifactDetail: (GitHubActionsRunMatch, GitHubActionsArtifactMatch, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val workflows = state.actionsWorkflows
 
     SheetContentColumn(verticalSpacing = 10.dp) {
