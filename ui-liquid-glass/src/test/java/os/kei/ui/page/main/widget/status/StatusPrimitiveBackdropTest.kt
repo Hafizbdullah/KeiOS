@@ -121,7 +121,14 @@ class StatusPrimitiveBackdropTest {
         }
         assertTrue("activeGlassBackdrop(backdrop ?: parentBackdrop)" in statusPillSource)
         assertTrue("if (activeBackdrop != null)" in statusPillSource)
-        assertTrue("Modifier.drawAppSquircleBackground(cornerRadius)" in statusPillSource)
+        assertTrue(".drawAppSquircleBackground(cornerRadius)" in statusPillSource)
+        assertTrue("statusPillFallbackOptics(" in statusPillSource)
+        assertTrue(".appSquircleClip(cornerRadius)" in statusPillSource)
+        assertTrue("fallbackOptics.veilTop" in statusPillSource)
+        assertTrue("fallbackOptics.innerShadeBottom" in statusPillSource)
+        assertTrue("fallbackOptics.rimColor" in statusPillSource)
+        assertTrue("StatusPillLiquid(" in statusPillSource)
+        assertTrue("surfaceColor = resolvedColor.copy(alpha = backgroundAlpha)" in statusPillSource)
         assertTrue(
             "activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingBlockSource,
         )

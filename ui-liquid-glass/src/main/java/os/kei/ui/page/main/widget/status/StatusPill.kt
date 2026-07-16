@@ -2,15 +2,19 @@
 
 package os.kei.ui.page.main.widget.status
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +30,7 @@ import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
@@ -82,14 +87,32 @@ fun StatusPill(
     val cornerRadius = 999.dp
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val activeBackdrop = activeGlassBackdrop(backdrop ?: parentBackdrop)
+    val fallbackOptics =
+        statusPillFallbackOptics(
+            isDark = isDark,
+            accent = resolvedColor,
+            backgroundAlpha = backgroundAlpha,
+            borderAlpha = borderAlpha,
+        )
     val pillModifier =
         Modifier
             .then(modifier)
             .then(
                 if (activeBackdrop == null) {
-                    Modifier.drawAppSquircleBackground(cornerRadius) {
-                        colorProvider().copy(alpha = backgroundAlpha)
-                    }
+                    Modifier
+                        .drawAppSquircleBackground(cornerRadius) {
+                            fallbackOptics.baseColor
+                        }.appSquircleClip(cornerRadius)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        fallbackOptics.veilTop,
+                                        fallbackOptics.veilMiddle,
+                                        fallbackOptics.innerShadeBottom,
+                                    ),
+                            ),
+                        )
                 } else {
                     Modifier
                 },
@@ -97,7 +120,11 @@ fun StatusPill(
                 width = 0.8.dp,
                 cornerRadius = cornerRadius,
             ) {
-                colorProvider().copy(alpha = borderAlpha)
+                if (activeBackdrop == null) {
+                    fallbackOptics.rimColor
+                } else {
+                    colorProvider().copy(alpha = borderAlpha)
+                }
             }
     val content: @Composable () -> Unit = {
         DisableSelection {
@@ -184,3 +211,40 @@ internal fun statusPillContentColor(
     isDark: Boolean,
     accent: Color,
 ): Color = if (isDark) accent else accent.copy(alpha = 0.96f)
+
+@Immutable
+internal data class StatusPillFallbackOptics(
+    val baseColor: Color,
+    val veilTop: Color,
+    val veilMiddle: Color,
+    val innerShadeBottom: Color,
+    val rimColor: Color,
+)
+
+internal fun statusPillFallbackOptics(
+    isDark: Boolean,
+    accent: Color,
+    backgroundAlpha: Float,
+    borderAlpha: Float,
+): StatusPillFallbackOptics {
+    val resolvedBackgroundAlpha = backgroundAlpha.coerceIn(0f, 1f)
+    val resolvedBorderAlpha = borderAlpha.coerceIn(0f, 1f)
+    return StatusPillFallbackOptics(
+        baseColor = accent.copy(alpha = resolvedBackgroundAlpha),
+        veilTop =
+            Color.White.copy(
+                alpha = resolvedBackgroundAlpha * if (isDark) 0.42f else 0.62f,
+            ),
+        veilMiddle = Color.White.copy(alpha = resolvedBackgroundAlpha * 0.12f),
+        innerShadeBottom =
+            Color.Black.copy(
+                alpha = resolvedBackgroundAlpha * if (isDark) 0.20f else 0.14f,
+            ),
+        rimColor =
+            lerp(
+                start = accent,
+                stop = Color.White,
+                fraction = if (isDark) 0.42f else 0.58f,
+            ).copy(alpha = resolvedBorderAlpha),
+    )
+}
