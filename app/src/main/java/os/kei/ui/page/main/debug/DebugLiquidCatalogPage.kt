@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.debug
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,6 +22,7 @@ import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -59,7 +59,7 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
                                 colors =
                                     listOf(
                                         MiuixTheme.colorScheme.background,
-                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
+                                        accent.copy(alpha = if (isAppInDarkTheme()) 0.12f else 0.08f),
                                         MiuixTheme.colorScheme.background,
                                     ),
                             ),

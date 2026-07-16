@@ -8,6 +8,19 @@ import kotlin.test.assertTrue
 
 class DebugLiquidBackdropContractTest {
     @Test
+    fun debugPageMaterialsFollowTheAppTheme() {
+        listOf(
+            Triple("Component Lab", DEBUG_COMPONENT_LAB_PAGE_SOURCE, 2),
+            Triple("Liquid Catalog", DEBUG_LIQUID_CATALOG_PAGE_SOURCE, 1),
+        ).forEach { (pageName, sourcePath, expectedReads) ->
+            val source = sourceFile(sourcePath)
+
+            assertFalse("isSystemInDarkTheme" in source, pageName)
+            assertEquals(expectedReads, source.occurrencesOf("isAppInDarkTheme()"), pageName)
+        }
+    }
+
+    @Test
     fun debugPagesProvideTheirSiblingProducedBackdropToCards() {
         listOf(
             "Component Lab" to DEBUG_COMPONENT_LAB_PAGE_SOURCE,

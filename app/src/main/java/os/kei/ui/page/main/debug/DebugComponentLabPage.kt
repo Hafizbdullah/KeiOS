@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.debug
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -42,6 +41,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
@@ -84,7 +84,7 @@ internal fun DebugComponentLabPage(
                                 colors =
                                     listOf(
                                         MiuixTheme.colorScheme.background,
-                                        accent.copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.08f),
+                                        accent.copy(alpha = if (isAppInDarkTheme()) 0.12f else 0.08f),
                                         MiuixTheme.colorScheme.background,
                                     ),
                             ),
@@ -177,7 +177,7 @@ private fun DebugLabIntroCard(accent: Color) {
         title = stringResource(R.string.debug_component_lab_intro_title),
         subtitle = stringResource(R.string.debug_component_lab_intro_subtitle),
         titleColor = accent,
-        containerColor = accent.copy(alpha = if (isSystemInDarkTheme()) 0.16f else 0.12f),
+        containerColor = accent.copy(alpha = if (isAppInDarkTheme()) 0.16f else 0.12f),
         borderColor = accent.copy(alpha = 0.24f),
         startAction = {
             Icon(
