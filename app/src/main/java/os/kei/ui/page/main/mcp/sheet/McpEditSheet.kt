@@ -50,6 +50,7 @@ internal fun McpEditServiceSheet(
     )
     SnapshotWindowBottomSheet(
         show = show,
+        preferExportedBackdrop = true,
         title = stringResource(R.string.mcp_sheet_edit_service_title),
         onDismissRequest = dismissHandler.requestDismiss,
         allowDismiss = dismissHandler.allowDismiss,
