@@ -5,8 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +27,21 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class MainPageBackdropSetTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun contentSceneKeepsFullSizeProducerBeforeConsumerSlot() {
+        val source = sourceFile(MAIN_PAGE_BACKDROP_SET_SOURCE)
+        val producerIndex = source.indexOf(".layerBackdrop(contentBackdrop)")
+        val consumerIndex = source.indexOf("content()", startIndex = producerIndex + 1)
+
+        assertTrue(producerIndex >= 0, "Expected a content Backdrop producer")
+        assertTrue(consumerIndex > producerIndex, "Content consumers must be composed after the producer sibling")
+        assertTrue(".matchParentSize()" in source, "The producer must cover the complete page scene")
+        assertTrue(
+            "Box(modifier = modifier)" in source,
+            "The scene modifier must remain on the neutral parent rather than the Backdrop producer",
+        )
+    }
 
     @Test
     fun distinctLayersUseIndependentBackdropIdentities() {
@@ -113,5 +130,19 @@ class MainPageBackdropSetTest {
         MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
     }
 }
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, relativePath) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $relativePath from $workingDirectory"
+    }.readText()
+}
+
+private const val MAIN_PAGE_BACKDROP_SET_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/host/pager/MainPageBackdropSet.kt"
 
 class MainPageBackdropSetTestApp : Application()

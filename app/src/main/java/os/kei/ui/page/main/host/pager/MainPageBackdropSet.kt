@@ -1,5 +1,7 @@
 package os.kei.ui.page.main.host.pager
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
@@ -8,7 +10,9 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -18,6 +22,31 @@ data class MainPageBackdropSet(
     val content: LayerBackdrop,
     val sheet: LayerBackdrop,
 )
+
+/**
+ * Hosts a page scene whose first sibling produces [contentBackdrop] and whose later siblings may
+ * safely consume it. Keeping the producer out of [content] avoids the recursive glass-on-glass
+ * path caused by wrapping consumers in `Modifier.layerBackdrop(contentBackdrop)`.
+ *
+ * [rememberMainPageBackdropSet] paints the current page surface before the producer's content, so
+ * the full scene remains available even where the page content itself has transparent pixels.
+ */
+@Composable
+internal fun MainPageContentBackdropScene(
+    contentBackdrop: LayerBackdrop,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(modifier = modifier) {
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .layerBackdrop(contentBackdrop),
+        )
+        content()
+    }
+}
 
 @Composable
 fun rememberMainPageBackdropSet(
