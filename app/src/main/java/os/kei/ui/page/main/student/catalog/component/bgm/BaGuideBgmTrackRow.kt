@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,6 +29,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -42,9 +44,12 @@ import os.kei.ui.page.main.os.appLucideExternalLinkIcon
 import os.kei.ui.page.main.os.appLucideHeartIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
+import os.kei.ui.page.main.os.appLucideUndoIcon
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuQuickAction
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
@@ -138,29 +143,17 @@ internal fun BaGuideBgmTrackRow(
                 favorite = favorite,
                 offlineSaved = offlineSaved,
                 onDismissRequest = { moreExpanded = false },
-                onPlayClick = {
-                    moreExpanded = false
-                    onClick()
-                },
-                onFavoriteClick = {
-                    moreExpanded = false
-                    onFavoriteClick()
-                },
-                onOfflineClick = {
-                    moreExpanded = false
-                    onOfflineClick()
-                },
-                onOpenGuideClick = {
-                    moreExpanded = false
-                    onShareClick()
-                },
+                onPlayClick = onClick,
+                onFavoriteClick = onFavoriteClick,
+                onOfflineClick = onOfflineClick,
+                onOpenGuideClick = onShareClick,
             )
         }
     }
 }
 
 @Composable
-private fun BaGuideBgmTrackMorePopup(
+internal fun BaGuideBgmTrackMorePopup(
     show: Boolean,
     anchorBounds: IntRect?,
     favorite: Boolean,
@@ -171,6 +164,16 @@ private fun BaGuideBgmTrackMorePopup(
     onOfflineClick: () -> Unit,
     onOpenGuideClick: () -> Unit,
 ) {
+    var retainedFavorite by remember { mutableStateOf(favorite) }
+    var retainedOfflineSaved by remember { mutableStateOf(offlineSaved) }
+    val renderedFavorite = if (show) favorite else retainedFavorite
+    val renderedOfflineSaved = if (show) offlineSaved else retainedOfflineSaved
+    SideEffect {
+        if (show) {
+            retainedFavorite = favorite
+            retainedOfflineSaved = offlineSaved
+        }
+    }
     SnapshotWindowListPopup(
         show = show,
         alignment = PopupPositionProvider.Align.BottomEnd,
@@ -178,44 +181,65 @@ private fun BaGuideBgmTrackMorePopup(
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
     ) {
+        val playAction = stringResource(R.string.ba_catalog_bgm_action_play)
+        val favoriteAction =
+            stringResource(
+                if (renderedFavorite) {
+                    R.string.ba_catalog_bgm_action_unfavorite
+                } else {
+                    R.string.ba_catalog_bgm_action_favorite
+                },
+            )
+        val offlineAction =
+            stringResource(
+                if (renderedOfflineSaved) {
+                    R.string.ba_catalog_bgm_action_remove_offline
+                } else {
+                    R.string.ba_catalog_bgm_action_save_offline
+                },
+            )
+
         LiquidGlassActionMenu(
+            modifier = Modifier.testTag(BA_GUIDE_BGM_TRACK_MENU_TEST_TAG),
             minWidth = BA_GUIDE_BGM_TRACK_MENU_MIN_WIDTH,
             maxWidth = BA_GUIDE_BGM_TRACK_MENU_MAX_WIDTH,
             maxHeight = BA_GUIDE_BGM_TRACK_MENU_MAX_HEIGHT,
-            items =
+            quickActions =
                 listOf(
-                    LiquidGlassActionMenuActionRow(
+                    LiquidGlassActionMenuQuickAction(
                         id = "play",
-                        text = stringResource(R.string.ba_catalog_bgm_action_play),
-                        leadingIcon = appLucidePlayIcon(),
+                        icon = appLucidePlayIcon(),
+                        label = playAction,
+                        contentDescription = playAction,
                         onClick = onPlayClick,
                     ),
-                    LiquidGlassActionMenuActionRow(
+                    LiquidGlassActionMenuQuickAction(
                         id = "favorite",
-                        text =
-                            stringResource(
-                                if (favorite) {
-                                    R.string.ba_catalog_bgm_action_unfavorite
-                                } else {
-                                    R.string.ba_catalog_bgm_action_favorite
-                                },
-                            ),
-                        leadingIcon = appLucideHeartIcon(),
+                        icon =
+                            if (renderedFavorite) {
+                                appLucideUndoIcon()
+                            } else {
+                                appLucideHeartIcon()
+                            },
+                        label = favoriteAction,
+                        contentDescription = favoriteAction,
                         onClick = onFavoriteClick,
                     ),
-                    LiquidGlassActionMenuActionRow(
+                    LiquidGlassActionMenuQuickAction(
                         id = "offline",
-                        text =
-                            stringResource(
-                                if (offlineSaved) {
-                                    R.string.ba_catalog_bgm_action_remove_offline
-                                } else {
-                                    R.string.ba_catalog_bgm_action_save_offline
-                                },
-                            ),
-                        leadingIcon = appLucideDownloadIcon(),
+                        icon =
+                            if (renderedOfflineSaved) {
+                                appLucideTrashIcon()
+                            } else {
+                                appLucideDownloadIcon()
+                            },
+                        label = offlineAction,
+                        contentDescription = offlineAction,
                         onClick = onOfflineClick,
                     ),
+                ),
+            items =
+                listOf(
                     LiquidGlassActionMenuActionRow(
                         id = "open_gallery",
                         text = stringResource(R.string.ba_catalog_bgm_action_open_gallery),
@@ -355,6 +379,7 @@ private data class BaGuideBgmPlayingBarHeightProviders(
 private const val BA_GUIDE_BGM_PLAYING_BAR_STATIC_HEIGHT = 0.56f
 private const val BA_GUIDE_BGM_PLAYING_BAR_MIN_HEIGHT = 0.32f
 private const val BA_GUIDE_BGM_PLAYING_BAR_COUNT = 3
-private val BA_GUIDE_BGM_TRACK_MENU_MIN_WIDTH = 168.dp
+internal const val BA_GUIDE_BGM_TRACK_MENU_TEST_TAG = "ba_guide_bgm_track_action_menu"
+private val BA_GUIDE_BGM_TRACK_MENU_MIN_WIDTH = 252.dp
 private val BA_GUIDE_BGM_TRACK_MENU_MAX_WIDTH = 280.dp
 private val BA_GUIDE_BGM_TRACK_MENU_MAX_HEIGHT = 336.dp
