@@ -102,6 +102,7 @@ private fun JsonImportStatusCard(state: KeiOSJsonImportUiState) {
     AppFeatureCard(
         title = statusText,
         subtitle = statusSubtitle(state),
+        exportBackdropToContent = true,
         eyebrow = stringResource(R.string.json_import_status_eyebrow),
         sectionIcon = if (isError) appLucideWarningIcon() else appLucidePackageIcon(),
         titleColor = accent,
@@ -189,6 +190,7 @@ private fun JsonImportPreviewCard(preview: KeiOSJsonImportPreview) {
     AppFeatureCard(
         title = title,
         subtitle = subtitle,
+        exportBackdropToContent = true,
         eyebrow = stringResource(R.string.json_import_preview_eyebrow),
         sectionIcon = appLucidePackageIcon(),
         containerColor = jsonImportCardContainerColor(),
