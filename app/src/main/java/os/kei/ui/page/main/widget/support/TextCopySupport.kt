@@ -71,6 +71,7 @@ internal fun Modifier.copyModeAwareRow(
     copyPayload: String,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    enableDefaultLongPressCopy: Boolean = true,
 ): Modifier =
     composed {
         val expandedCopyMode = rememberTextCopyExpandedEnabled()
@@ -88,7 +89,8 @@ internal fun Modifier.copyModeAwareRow(
             }
         } else {
             val quickCopyAction = rememberLightTextCopyAction(copyPayload)
-            val resolvedLongClick = onLongClick ?: quickCopyAction
+            val resolvedLongClick =
+                onLongClick ?: if (enableDefaultLongPressCopy) quickCopyAction else null
             val hapticFeedback = LocalHapticFeedback.current
             if (onClick != null || resolvedLongClick != null) {
                 this.combinedClickable(

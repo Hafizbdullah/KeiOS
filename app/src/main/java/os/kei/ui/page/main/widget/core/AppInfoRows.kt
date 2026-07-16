@@ -5,6 +5,7 @@ package os.kei.ui.page.main.widget.core
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.buildTextCopyPayload
@@ -59,6 +61,9 @@ fun AppInfoRow(
     copyPayloadOverride: String? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    labelLeadingContent: (@Composable RowScope.() -> Unit)? = null,
+    labelContentSpacing: Dp = 6.dp,
+    enableLongPressCopy: Boolean = true,
 ) {
     val displayLabel = label.ifBlank { stringResource(R.string.common_info) }
     val displayValue = value.ifBlank { stringResource(R.string.common_na) }
@@ -74,6 +79,7 @@ fun AppInfoRow(
                 copyPayload = copyPayload,
                 onClick = onClick,
                 onLongClick = onLongClick,
+                enableDefaultLongPressCopy = enableLongPressCopy,
             ).padding(vertical = rowVerticalPadding)
 
     if (stacked) {
@@ -81,16 +87,16 @@ fun AppInfoRow(
             modifier = rowModifier,
             verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
         ) {
-            CopyModeSelectionContainer {
-                Text(
-                    text = displayLabel,
-                    color = labelColor,
-                    fontSize = labelFontSize,
-                    lineHeight = labelLineHeight,
-                    maxLines = labelMaxLines,
-                    overflow = labelOverflow,
-                )
-            }
+            AppInfoRowLabel(
+                displayLabel = displayLabel,
+                labelColor = labelColor,
+                labelFontSize = labelFontSize,
+                labelLineHeight = labelLineHeight,
+                labelMaxLines = labelMaxLines,
+                labelOverflow = labelOverflow,
+                labelLeadingContent = labelLeadingContent,
+                labelContentSpacing = labelContentSpacing,
+            )
             CopyModeSelectionContainer(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = displayValue,
@@ -137,17 +143,18 @@ fun AppInfoRow(
                 } else {
                     baseValueModifier
                 }
-            CopyModeSelectionContainer(modifier = labelModifier) {
-                Text(
-                    text = displayLabel,
-                    color = labelColor,
-                    fontSize = labelFontSize,
-                    lineHeight = labelLineHeight,
-                    modifier = if (labelWeight != null) Modifier.fillMaxWidth() else Modifier,
-                    maxLines = labelMaxLines,
-                    overflow = labelOverflow,
-                )
-            }
+            AppInfoRowLabel(
+                displayLabel = displayLabel,
+                labelColor = labelColor,
+                labelFontSize = labelFontSize,
+                labelLineHeight = labelLineHeight,
+                labelMaxLines = labelMaxLines,
+                labelOverflow = labelOverflow,
+                labelLeadingContent = labelLeadingContent,
+                labelContentSpacing = labelContentSpacing,
+                modifier = labelModifier,
+                fillWidth = labelWeight != null,
+            )
             CopyModeSelectionContainer(modifier = valueModifier) {
                 Text(
                     text = displayValue,
@@ -159,6 +166,50 @@ fun AppInfoRow(
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = valueMaxLines,
                     overflow = valueOverflow,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppInfoRowLabel(
+    displayLabel: String,
+    labelColor: Color,
+    labelFontSize: TextUnit,
+    labelLineHeight: TextUnit,
+    labelMaxLines: Int,
+    labelOverflow: TextOverflow,
+    labelLeadingContent: (@Composable RowScope.() -> Unit)?,
+    labelContentSpacing: Dp,
+    modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
+) {
+    CopyModeSelectionContainer(modifier = modifier) {
+        if (labelLeadingContent == null) {
+            Text(
+                text = displayLabel,
+                color = labelColor,
+                fontSize = labelFontSize,
+                lineHeight = labelLineHeight,
+                modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+                maxLines = labelMaxLines,
+                overflow = labelOverflow,
+            )
+        } else {
+            Row(
+                modifier = if (fillWidth) Modifier.fillMaxWidth() else Modifier,
+                horizontalArrangement = Arrangement.spacedBy(labelContentSpacing),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                labelLeadingContent()
+                Text(
+                    text = displayLabel,
+                    color = labelColor,
+                    fontSize = labelFontSize,
+                    lineHeight = labelLineHeight,
+                    maxLines = labelMaxLines,
+                    overflow = labelOverflow,
                 )
             }
         }
