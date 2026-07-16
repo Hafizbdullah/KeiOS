@@ -3,10 +3,8 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -15,11 +13,10 @@ import os.kei.ui.page.main.os.appLucideChevronLeftIcon
 import os.kei.ui.page.main.os.appLucideChevronRightIcon
 import os.kei.ui.page.main.os.appLucideFilterIcon
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogFilterDefinition
-import os.kei.ui.page.main.widget.glass.AppLiquidGlassDropdownColumn
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownActionItem
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownItem
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownItemType
-import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownMaterial
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuMultipleChoiceRow
+import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuSubmenuRow
 import os.kei.ui.page.main.widget.sheet.SnapshotPopupPlacement
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowListPopup
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -45,93 +42,70 @@ internal fun BaGuideCatalogFilterActionPopup(
         placement = SnapshotPopupPlacement.ButtonEnd,
         onDismissRequest = onDismissRequest,
     ) {
-        var focusedFilterId by remember(definitions) {
-            mutableStateOf<Int?>(null)
-        }
         val clearText = stringResource(R.string.ba_catalog_filter_clear)
         val allText = stringResource(R.string.ba_catalog_filter_all)
-        val focusedDefinition = definitions.firstOrNull { it.id == focusedFilterId }
-        AppLiquidGlassDropdownColumn(
+        val filterIcon = appLucideFilterIcon()
+        val chevronLeftIcon = appLucideChevronLeftIcon()
+        val chevronRightIcon = appLucideChevronRightIcon()
+        LiquidGlassActionMenu(
+            modifier = Modifier.testTag(BaCatalogFilterMenuTestTag),
             minWidth = BaCatalogFilterMenuMinWidth,
             maxWidth = BaCatalogFilterMenuMaxWidth,
             maxHeight = BaCatalogFilterMenuMaxHeight,
-            initialScrollItemIndex =
-                focusedDefinition?.let { definition ->
-                    definitions.indexOfFirst { it.id == definition.id }.takeIf { it >= 0 }
-                },
-            material = LiquidGlassDropdownMaterial.ActionMenu,
-        ) {
-            if (focusedDefinition == null) {
-                LiquidGlassDropdownActionItem(
-                    text = clearText,
-                    onClick = onClearFilters,
-                    index = 0,
-                    optionSize = definitions.size + 1,
-                    leadingIcon = appLucideFilterIcon(),
-                    enabled = selectedOptionIdsByFilterId.values.any { it.isNotEmpty() },
-                )
-                definitions.forEachIndexed { index, definition ->
-                    val selectedIds = selectedOptionIdsByFilterId[definition.id].orEmpty()
-                    LiquidGlassDropdownActionItem(
-                        text = definition.name,
-                        subtitle =
-                            selectedFilterSubtitle(
-                                definition = definition,
-                                selectedIds = selectedIds,
-                                allText = allText,
-                                selectedCountText =
-                                    stringResource(
-                                        R.string.ba_catalog_filter_selected_count,
-                                        selectedIds.size,
-                                    ),
-                            ),
-                        trailingIcon = appLucideChevronRightIcon(),
-                        highlighted = selectedIds.isNotEmpty(),
-                        onClick = { focusedFilterId = definition.id },
-                        index = index + 1,
-                        optionSize = definitions.size + 1,
-                    )
-                }
-            } else {
-                val selectedIds = selectedOptionIdsByFilterId[focusedDefinition.id].orEmpty()
-                LiquidGlassDropdownActionItem(
-                    text = focusedDefinition.name,
-                    subtitle =
-                        selectedFilterSubtitle(
-                            definition = focusedDefinition,
-                            selectedIds = selectedIds,
-                            allText = allText,
-                            selectedCountText =
-                                stringResource(
-                                    R.string.ba_catalog_filter_selected_count,
-                                    selectedIds.size,
-                                ),
+            items =
+                buildList {
+                    add(
+                        LiquidGlassActionMenuActionRow(
+                            id = "clear",
+                            text = clearText,
+                            leadingIcon = filterIcon,
+                            enabled = selectedOptionIdsByFilterId.values.any { it.isNotEmpty() },
+                            dismissOnClick = false,
+                            onClick = onClearFilters,
                         ),
-                    leadingIcon = appLucideChevronLeftIcon(),
-                    onClick = { focusedFilterId = null },
-                    index = 0,
-                    optionSize = focusedDefinition.options.size + 1,
-                )
-                focusedDefinition.options.forEachIndexed { index, option ->
-                    val selected = option.id in selectedIds
-                    LiquidGlassDropdownItem(
-                        text = option.name,
-                        selected = selected,
-                        onClick = { onToggleOption(focusedDefinition.id, option.id) },
-                        reserveCheckSlot = true,
-                        highlighted = selected,
-                        showCheck = selected,
-                        highlightContent = selected,
-                        textMaxLines = 1,
-                        index = index + 1,
-                        optionSize = focusedDefinition.options.size + 1,
-                        itemType = LiquidGlassDropdownItemType.MultipleChoice,
                     )
-                }
-            }
-        }
+                    definitions.forEachIndexed { definitionIndex, definition ->
+                        val selectedIds = selectedOptionIdsByFilterId[definition.id].orEmpty()
+                        add(
+                            LiquidGlassActionMenuSubmenuRow(
+                                id = "filter_${definition.id}",
+                                text = definition.name,
+                                subtitle =
+                                    selectedFilterSubtitle(
+                                        definition = definition,
+                                        selectedIds = selectedIds,
+                                        allText = allText,
+                                        selectedCountText =
+                                            stringResource(
+                                                R.string.ba_catalog_filter_selected_count,
+                                                selectedIds.size,
+                                            ),
+                                ),
+                                trailingIcon = chevronRightIcon,
+                                highlighted = selectedIds.isNotEmpty(),
+                                backLeadingIcon = chevronLeftIcon,
+                                initialScrollItemIndex = definitionIndex,
+                                submenuItems =
+                                    definition.options.map { option ->
+                                        LiquidGlassActionMenuMultipleChoiceRow(
+                                            id = "filter_${definition.id}_option_${option.id}",
+                                            text = option.name,
+                                            checked = option.id in selectedIds,
+                                            onCheckedChange = {
+                                                onToggleOption(definition.id, option.id)
+                                            },
+                                        )
+                                    },
+                            ),
+                        )
+                    }
+                },
+            onDismissRequest = onDismissRequest,
+        )
     }
 }
+
+internal const val BaCatalogFilterMenuTestTag = "ba_catalog_filter_action_menu"
 
 private fun selectedFilterSubtitle(
     definition: BaGuideCatalogFilterDefinition,

@@ -85,6 +85,8 @@ sealed interface LiquidGlassActionMenuItem {
     val id: String
 }
 
+sealed interface LiquidGlassActionMenuSubmenuItem : LiquidGlassActionMenuItem
+
 data class LiquidGlassActionMenuInfoRow(
     override val id: String,
     val text: String,
@@ -103,17 +105,21 @@ data class LiquidGlassActionMenuActionRow(
     val subtitle: String? = null,
     val enabled: Boolean = true,
     val highlighted: Boolean = false,
+    val dismissOnClick: Boolean = true,
     val variant: GlassVariant = GlassVariant.SheetAction,
 ) : LiquidGlassActionMenuItem
 
 data class LiquidGlassActionMenuSubmenuRow(
     override val id: String,
     val text: String,
-    val submenuItems: List<LiquidGlassActionMenuSingleChoiceRow>,
+    val submenuItems: List<LiquidGlassActionMenuSubmenuItem>,
     val leadingIcon: ImageVector? = null,
     val trailingIcon: ImageVector? = null,
     val subtitle: String? = null,
     val enabled: Boolean = true,
+    val highlighted: Boolean = false,
+    val backLeadingIcon: ImageVector? = null,
+    val initialScrollItemIndex: Int? = null,
     val variant: GlassVariant = GlassVariant.SheetAction,
 ) : LiquidGlassActionMenuItem
 
@@ -127,7 +133,7 @@ data class LiquidGlassActionMenuSingleChoiceRow(
     val subtitle: String? = null,
     val enabled: Boolean = true,
     val variant: GlassVariant = GlassVariant.SheetAction,
-) : LiquidGlassActionMenuItem
+) : LiquidGlassActionMenuSubmenuItem
 
 data class LiquidGlassActionMenuMultipleChoiceRow(
     override val id: String,
@@ -139,7 +145,7 @@ data class LiquidGlassActionMenuMultipleChoiceRow(
     val subtitle: String? = null,
     val enabled: Boolean = true,
     val variant: GlassVariant = GlassVariant.SheetAction,
-) : LiquidGlassActionMenuItem
+) : LiquidGlassActionMenuSubmenuItem
 
 @Composable
 fun LiquidGlassActionMenu(
@@ -267,6 +273,7 @@ fun LiquidGlassActionMenu(
         accentColor = accentColor,
         backdrop = backdrop,
         material = LiquidGlassDropdownMaterial.ActionMenu,
+        initialScrollItemIndex = renderedSubmenu?.initialScrollItemIndex,
     ) {
         if (quickActions.isNotEmpty()) {
             LiquidGlassActionMenuQuickActionsRow(
@@ -370,7 +377,9 @@ private fun LiquidGlassActionMenuItemRow(
                 text = item.text,
                 onClick = {
                     item.onClick()
-                    onDismissRequest()
+                    if (item.dismissOnClick) {
+                        onDismissRequest()
+                    }
                 },
                 index = index,
                 optionSize = optionSize,
@@ -432,11 +441,14 @@ private fun LiquidGlassActionMenuItemRow(
                 trailingIcon = item.trailingIcon,
                 subtitle =
                     item.subtitle
-                        ?: item.submenuItems.firstOrNull { choice -> choice.selected }?.text,
+                        ?: item.submenuItems
+                            .filterIsInstance<LiquidGlassActionMenuSingleChoiceRow>()
+                            .firstOrNull { choice -> choice.selected }
+                            ?.text,
                 accentColor = accentColor,
                 variant = item.variant,
                 enabled = item.enabled && item.submenuItems.isNotEmpty(),
-                highlighted = expanded,
+                highlighted = item.highlighted || expanded,
             )
         }
     }
@@ -455,12 +467,15 @@ private fun LiquidGlassActionMenuSubmenuPanel(
         onClick = onCollapse,
         index = 0,
         optionSize = 1,
-        leadingIcon = item.leadingIcon,
+        leadingIcon = item.backLeadingIcon ?: item.leadingIcon,
         subtitle =
             item.subtitle
-                ?: item.submenuItems.firstOrNull { choice -> choice.selected }?.text,
+                ?: item.submenuItems
+                    .filterIsInstance<LiquidGlassActionMenuSingleChoiceRow>()
+                    .firstOrNull { choice -> choice.selected }
+                    ?.text,
         trailingContent = {
-            item.trailingIcon?.let { icon ->
+            item.trailingIcon?.takeIf { item.backLeadingIcon == null }?.let { icon ->
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
@@ -505,21 +520,42 @@ private fun LiquidGlassActionMenuSubmenuPanel(
             LiquidGlassActionMenuDivider()
             val optionSize = item.submenuItems.size
             item.submenuItems.forEachIndexed { choiceIndex, choice ->
-                LiquidGlassDropdownSingleChoiceItem(
-                    text = choice.text,
-                    optionSize = optionSize,
-                    isSelected = choice.selected,
-                    index = choiceIndex,
-                    onSelectedIndexChange = {
-                        choice.onClick()
-                        onDismissRequest()
-                    },
-                    trailingIcon = choice.trailingIcon,
-                    subtitle = choice.subtitle,
-                    accentColor = accentColor,
-                    variant = choice.variant,
-                    enabled = choice.enabled,
-                )
+                when (choice) {
+                    is LiquidGlassActionMenuSingleChoiceRow -> {
+                        LiquidGlassDropdownSingleChoiceItem(
+                            text = choice.text,
+                            optionSize = optionSize,
+                            isSelected = choice.selected,
+                            index = choiceIndex,
+                            onSelectedIndexChange = {
+                                choice.onClick()
+                                onDismissRequest()
+                            },
+                            leadingIcon = choice.leadingIcon,
+                            trailingIcon = choice.trailingIcon,
+                            subtitle = choice.subtitle,
+                            accentColor = accentColor,
+                            variant = choice.variant,
+                            enabled = choice.enabled,
+                        )
+                    }
+
+                    is LiquidGlassActionMenuMultipleChoiceRow -> {
+                        LiquidGlassDropdownMultipleChoiceItem(
+                            text = choice.text,
+                            checked = choice.checked,
+                            onCheckedChange = choice.onCheckedChange,
+                            index = choiceIndex,
+                            optionSize = optionSize,
+                            leadingIcon = choice.leadingIcon,
+                            trailingIcon = choice.trailingIcon,
+                            subtitle = choice.subtitle,
+                            accentColor = accentColor,
+                            variant = choice.variant,
+                            enabled = choice.enabled,
+                        )
+                    }
+                }
             }
         }
     }
