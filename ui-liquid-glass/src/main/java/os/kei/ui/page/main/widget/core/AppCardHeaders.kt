@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import os.kei.ui.liquidglass.R
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -60,10 +61,12 @@ fun AppCardHeader(
     expandTint: Color = MiuixTheme.colorScheme.primary,
     titleMaxLines: Int = 2,
     subtitleMaxLines: Int = 2,
-    minHeight: androidx.compose.ui.unit.Dp = AppInteractiveTokens.controlRowMinHeight,
+    minHeight: Dp = AppInteractiveTokens.controlRowMinHeight,
     contentPadding: PaddingValues = CardLayoutRhythm.cardContentPadding,
-    horizontalSpacing: androidx.compose.ui.unit.Dp = CardLayoutRhythm.controlRowGap,
-    endActionSpacing: androidx.compose.ui.unit.Dp = CardLayoutRhythm.infoRowGap,
+    horizontalSpacing: Dp = CardLayoutRhythm.controlRowGap,
+    endActionSpacing: Dp = CardLayoutRhythm.infoRowGap,
+    textVerticalSpacing: Dp = CardLayoutRhythm.controlRowTextGap,
+    startActionSize: Dp = AppInteractiveTokens.cardHeaderLeadingSlotSize,
     titleTypography: AppTypographyToken = AppTypographyTokens.SectionTitle,
     subtitleTypography: AppTypographyToken = AppTypographyTokens.Supporting,
     onClick: (() -> Unit)? = null,
@@ -120,7 +123,7 @@ fun AppCardHeader(
     ) {
         startAction?.let { action ->
             Box(
-                modifier = Modifier.size(AppInteractiveTokens.cardHeaderLeadingSlotSize),
+                modifier = Modifier.size(startActionSize),
                 contentAlignment = Alignment.Center,
             ) {
                 action()
@@ -128,7 +131,7 @@ fun AppCardHeader(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.controlRowTextGap),
+            verticalArrangement = Arrangement.spacedBy(textVerticalSpacing),
         ) {
             eyebrow?.takeIf { it.isNotBlank() }?.let { value ->
                 Text(

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
@@ -95,6 +96,12 @@ fun AppFeatureCard(
     contentColor: Color = MiuixTheme.colorScheme.onBackground,
     titleColor: Color = contentColor,
     subtitleColor: Color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+    titleMaxLines: Int = 2,
+    subtitleMaxLines: Int = 2,
+    titleTypography: AppTypographyToken = AppTypographyTokens.SectionTitle,
+    subtitleTypography: AppTypographyToken = AppTypographyTokens.Supporting,
+    headerTextVerticalSpacing: Dp = CardLayoutRhythm.controlRowTextGap,
+    headerStartActionSize: Dp = AppInteractiveTokens.cardHeaderLeadingSlotSize,
     sectionIcon: ImageVector? = null,
     sectionStartAction: (@Composable () -> Unit)? = null,
     collapsible: Boolean = false,
@@ -145,6 +152,12 @@ fun AppFeatureCard(
             eyebrowColor = eyebrowColor,
             titleColor = titleColor,
             subtitleColor = subtitleColor,
+            titleMaxLines = titleMaxLines,
+            subtitleMaxLines = subtitleMaxLines,
+            titleTypography = titleTypography,
+            subtitleTypography = subtitleTypography,
+            textVerticalSpacing = headerTextVerticalSpacing,
+            startActionSize = headerStartActionSize,
             startAction =
                 sectionStartAction ?: sectionIcon?.let { icon ->
                     {
