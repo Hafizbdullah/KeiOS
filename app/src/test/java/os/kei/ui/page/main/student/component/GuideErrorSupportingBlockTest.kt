@@ -1,0 +1,179 @@
+package os.kei.ui.page.main.student.component
+
+import android.app.Application
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import java.io.File
+import kotlin.math.abs
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+
+@RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(
+    application = GuideErrorSupportingBlockTestApp::class,
+    sdk = [35],
+    qualifiers = "w360dp-h800dp-xxhdpi",
+)
+class GuideErrorSupportingBlockTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun longErrorRemainsCompleteAndSeparatedAtLargeFontInLightTheme() {
+        verifyLongErrorLayout(ColorSchemeMode.Light)
+    }
+
+    @Test
+    fun longErrorRemainsCompleteAndSeparatedAtLargeFontInDarkTheme() {
+        verifyLongErrorLayout(ColorSchemeMode.Dark)
+    }
+
+    @Test
+    fun productionTabsReuseOneExplicitBackdropErrorBlockWithoutTruncation() {
+        val helperSource = sourceFile(GUIDE_ERROR_BLOCK_SOURCE)
+        val statusPrimitiveSource = sourceFile(APP_STATUS_PRIMITIVES_SOURCE)
+        val rendererSources = GUIDE_RENDERER_SOURCES.map(::sourceFile)
+
+        assertTrue("AppSupportingBlock(" in helperSource)
+        assertTrue("backdrop = backdrop" in helperSource)
+        assertTrue("fillWidth = true" in helperSource)
+        assertTrue("cornerRadius = 16.dp" in helperSource)
+        assertTrue("PaddingValues(horizontal = 12.dp, vertical = 9.dp)" in helperSource)
+        assertTrue("if (isDark) 0.12f else 0.08f" in helperSource)
+        assertFalse("maxLines =" in helperSource)
+        assertFalse("overflow =" in helperSource)
+        assertFalse("rememberLayerBackdrop" in helperSource)
+        assertFalse(".layerBackdrop(" in helperSource)
+
+        assertTrue("backdrop: Backdrop? = null" in statusPrimitiveSource)
+        assertTrue(
+            "activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in statusPrimitiveSource,
+        )
+        rendererSources.forEach { rendererSource ->
+            assertTrue("GuideErrorSupportingBlock(" in rendererSource)
+        }
+    }
+
+    private fun verifyLongErrorLayout(colorSchemeMode: ColorSchemeMode) {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(colorSchemeMode)) {
+                val baseDensity = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(baseDensity.density, fontScale = 1.5f),
+                    LocalLiquidParentBackdrop provides null,
+                ) {
+                    val explicitBackdrop = rememberLayerBackdrop()
+                    Column(
+                        modifier =
+                            Modifier
+                                .width(360.dp)
+                                .testTag(ROOT_TAG),
+                    ) {
+                        Text(BEFORE_TEXT, modifier = Modifier.testTag(BEFORE_TAG))
+                        GuideErrorSupportingBlock(
+                            error = LONG_ERROR_MESSAGE,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .testTag(ERROR_BLOCK_TAG),
+                            backdrop = explicitBackdrop,
+                        )
+                        Text(AFTER_TEXT, modifier = Modifier.testTag(AFTER_TAG))
+                    }
+                }
+            }
+        }
+
+        val rootBounds = composeRule.onNodeWithTag(ROOT_TAG).bounds()
+        val beforeBounds = composeRule.onNodeWithTag(BEFORE_TAG).bounds()
+        val errorNode = composeRule.onNodeWithTag(ERROR_BLOCK_TAG)
+        val errorBounds = errorNode.bounds()
+        val errorTextBounds =
+            composeRule
+                .onNodeWithText(LONG_ERROR_MESSAGE, useUnmergedTree = true)
+                .bounds()
+        val afterBounds = composeRule.onNodeWithTag(AFTER_TAG).bounds()
+        val tolerance = with(composeRule.density) { 1.dp.toPx() }
+
+        errorNode.assertReadOnly()
+        assertTrue(abs(errorBounds.width - rootBounds.width) <= tolerance)
+        assertTrue(beforeBounds.bottom <= errorBounds.top + tolerance)
+        assertTrue(errorBounds.bottom <= afterBounds.top + tolerance)
+        assertTrue(errorTextBounds.top >= errorBounds.top - tolerance)
+        assertTrue(errorTextBounds.bottom <= errorBounds.bottom + tolerance)
+        assertTrue(errorTextBounds.height > beforeBounds.height * 2f)
+    }
+}
+
+private fun SemanticsNodeInteraction.bounds(): Rect = fetchSemanticsNode().boundsInRoot
+
+private fun SemanticsNodeInteraction.assertReadOnly() {
+    assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Role))
+    assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Disabled))
+    assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected))
+    assert(!SemanticsMatcher.keyIsDefined(SemanticsProperties.ToggleableState))
+    assert(!SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+}
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, relativePath) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $relativePath from $workingDirectory"
+    }.readText()
+}
+
+class GuideErrorSupportingBlockTestApp : Application()
+
+private const val ROOT_TAG = "guide-error-root"
+private const val BEFORE_TAG = "guide-error-before"
+private const val ERROR_BLOCK_TAG = "guide-error-block"
+private const val AFTER_TAG = "guide-error-after"
+private const val BEFORE_TEXT = "Student section"
+private const val AFTER_TEXT = "Next student card"
+private const val LONG_ERROR_MESSAGE =
+    "The student guide response could not be parsed because several nested records use an unsupported format; " +
+        "the complete diagnostic remains visible so the source can be corrected and refreshed."
+private const val GUIDE_ERROR_BLOCK_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/student/component/GuideErrorSupportingBlock.kt"
+private const val APP_STATUS_PRIMITIVES_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppStatusPrimitives.kt"
+private val GUIDE_RENDERER_SOURCES =
+    listOf(
+        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideSkillsTabContent.kt",
+        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideVoiceTabContent.kt",
+        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideSimulateTabContent.kt",
+        "app/src/main/java/os/kei/ui/page/main/student/tabcontent/render/GuideGalleryTabContentSections.kt",
+    )

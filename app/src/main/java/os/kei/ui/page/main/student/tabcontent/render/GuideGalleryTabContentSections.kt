@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
@@ -22,6 +21,7 @@ import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.component.GuideErrorSupportingBlock
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.isExpressionGalleryItem
 import os.kei.ui.page.main.student.section.GuideGalleryCardItem
@@ -54,7 +54,10 @@ internal fun LazyListScope.renderGuideGalleryStateContent(
             key = guideGalleryListKey("error", error.hashCode()),
             contentType = GuideGalleryContentType.ERROR,
         ) {
-            GuideGalleryErrorCard(error = error)
+            GuideGalleryErrorCard(
+                error = error,
+                backdrop = backdrop,
+            )
         }
         item(
             key = guideGalleryListKey("spacer", "error"),
@@ -564,26 +567,15 @@ private fun guideGalleryRelatedLinksStableKey(rows: List<BaGuideRow>): String =
     )
 
 @Composable
-private fun GuideGalleryErrorCard(error: String) {
-    GuideLiquidCard(
+private fun GuideGalleryErrorCard(
+    error: String,
+    backdrop: LayerBackdrop,
+) {
+    GuideErrorSupportingBlock(
+        error = error,
+        backdrop = backdrop,
         modifier = Modifier.fillMaxWidth(),
-        surfaceColor = Color(0x223B82F6),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = error,
-                color = MiuixTheme.colorScheme.error,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+    )
 }
 
 @Composable

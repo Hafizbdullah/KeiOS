@@ -129,6 +129,28 @@ class StatusPrimitiveBackdropTest {
     }
 
     @Test
+    fun explicitSupportingBackdropKeepsTopLevelUseRendered() {
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val explicitBackdrop = rememberLayerBackdrop()
+                CompositionLocalProvider(
+                    LocalLiquidControlsEnabled provides true,
+                    LocalLiquidParentBackdrop provides null,
+                ) {
+                    AppSupportingBlock(
+                        text = "Explicit supporting material",
+                        modifier = Modifier.testTag("explicit-supporting-block"),
+                        backdrop = explicitBackdrop,
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("explicit-supporting-block").assertExists()
+        composeRule.onNodeWithText("Explicit supporting material").assertExists()
+    }
+
+    @Test
     fun primitivesContainNoStandaloneLayerBackdropProducer() {
         val statusPillSource = sourceFile(STATUS_PILL_SOURCE)
         val supportingBlockSource = sourceFile(APP_STATUS_PRIMITIVES_SOURCE)
@@ -154,8 +176,9 @@ class StatusPrimitiveBackdropTest {
         assertTrue("lensRadiusOverride: Dp? = null" in statusPillSource)
         assertTrue("blurRadius = blurRadiusOverride ?: UiPerformanceBudget.backdropBlur" in statusPillSource)
         assertTrue("lensRadius = lensRadiusOverride ?: UiPerformanceBudget.backdropLens" in statusPillSource)
+        assertTrue("backdrop: Backdrop? = null" in supportingBlockSource)
         assertTrue(
-            "activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingBlockSource,
+            "activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in supportingBlockSource,
         )
         assertTrue("containerColor: Color? = null" in supportingBlockSource)
         assertTrue("contentColor: Color? = null" in supportingBlockSource)

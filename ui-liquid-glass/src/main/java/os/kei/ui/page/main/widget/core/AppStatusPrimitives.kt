@@ -93,6 +93,7 @@ fun AppSupportingBlock(
     highlightAlpha: Float? = null,
     shadow: Boolean = false,
     shadowAlpha: Float = 0.10f,
+    backdrop: Backdrop? = null,
 ) {
     val isDark = isAppInDarkTheme()
     val shape = RoundedRectangle(cornerRadius)
@@ -124,7 +125,7 @@ fun AppSupportingBlock(
             Modifier
         }
 
-    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
+    val activeBackdrop = activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
     Box(
         modifier =
             modifier

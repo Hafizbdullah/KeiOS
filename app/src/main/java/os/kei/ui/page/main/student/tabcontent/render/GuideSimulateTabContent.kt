@@ -10,11 +10,11 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
+import os.kei.ui.page.main.student.component.GuideErrorSupportingBlock
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.simulateRowsForDisplay
 import os.kei.ui.page.main.student.tabcontent.simulate.GuideSimulateAbilityCard
@@ -55,24 +55,11 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
 
     if (!error.isNullOrBlank()) {
         item {
-            GuideLiquidCard(
+            GuideErrorSupportingBlock(
+                error = error,
+                backdrop = backdrop,
                 modifier = Modifier.fillMaxWidth(),
-                surfaceColor = Color(0x223B82F6),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = error.orEmpty(),
-                        color = MiuixTheme.colorScheme.error,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+            )
         }
         item { Spacer(modifier = Modifier.height(10.dp)) }
     }
