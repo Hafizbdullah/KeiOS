@@ -3,9 +3,11 @@ package os.kei.ui.page.main.ba.card
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,10 +37,13 @@ import os.kei.ui.page.main.ba.support.formatBaRemainingTime
 import os.kei.ui.page.main.ba.support.poolProgress
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.ba.support.studentGuideOpenUrl
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidLinearProgressBar
 import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -307,10 +313,9 @@ internal fun BaCalendarEntryPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            BaCalendarPoolEntryStatusPill(
                 text = statusText,
-                color = statusColor,
-                fontWeight = FontWeight.Medium
+                accentColor = statusColor,
             )
             Text(
                 text = remainText,
@@ -623,12 +628,9 @@ internal fun BaPoolEntryPanel(
                 modifier = if (showPoolCoverImage) Modifier.weight(1f) else Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                Text(
+                BaCalendarPoolEntryStatusPill(
                     text = statusText,
-                    color = statusColor,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    accentColor = statusColor,
                 )
                 Text(
                     text = "$tagLabel · ${pool.name}",
@@ -662,6 +664,32 @@ internal fun BaPoolEntryPanel(
             inactiveColor = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.42f)
         )
     }
+}
+
+@Composable
+internal fun BaCalendarPoolEntryStatusPill(
+    text: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    StatusPill(
+        label = text,
+        color = accentColor,
+        modifier = modifier.widthIn(max = 128.dp),
+        size = AppStatusPillSize.Compact,
+        contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp),
+        backgroundAlphaOverride = 0.12f,
+        borderAlphaOverride = 0f,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        typographyOverride =
+            TextStyle(
+                fontSize = AppTypographyTokens.Caption.fontSize,
+                lineHeight = AppTypographyTokens.Caption.lineHeight,
+                fontWeight = FontWeight.Medium,
+            ),
+        contentColorOverride = accentColor,
+    )
 }
 
 @Composable
