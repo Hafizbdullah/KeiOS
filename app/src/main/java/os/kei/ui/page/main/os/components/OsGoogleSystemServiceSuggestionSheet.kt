@@ -4,6 +4,7 @@ package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionItem
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.sheet.SheetActionGroup
 import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
@@ -111,55 +113,65 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                 SheetSectionTitle(
                     text = stringResource(R.string.os_google_system_service_recommend_section),
                 )
-                SheetChoiceCard(
-                    title = stringResource(R.string.os_google_system_service_action_recommend_explicit_title),
-                    summary = stringResource(R.string.os_google_system_service_action_recommend_explicit_summary),
-                    selected = uiState.explicitActionRecommendationSelected,
-                    onSelect = onApplyExplicitActionRecommendation,
-                    accentColor = Color(0xFF16A34A),
-                    selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor = Color(0xFF16A34A),
-                    summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null,
-                )
-                SheetChoiceCard(
-                    title = stringResource(R.string.os_google_system_service_action_recommend_implicit_title),
-                    summary = stringResource(R.string.os_google_system_service_action_recommend_implicit_summary),
-                    selected = uiState.implicitActionRecommendationSelected,
-                    onSelect = onApplyImplicitActionRecommendation,
-                    accentColor = Color(0xFF16A34A),
-                    selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor = Color(0xFF16A34A),
-                    summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null,
-                )
+                SheetActionGroup(
+                    modifier = Modifier.selectableGroup(),
+                    verticalSpacing = 10.dp,
+                ) {
+                    SheetChoiceCard(
+                        title = stringResource(R.string.os_google_system_service_action_recommend_explicit_title),
+                        summary = stringResource(R.string.os_google_system_service_action_recommend_explicit_summary),
+                        selected = uiState.explicitActionRecommendationSelected,
+                        onSelect = onApplyExplicitActionRecommendation,
+                        accentColor = Color(0xFF16A34A),
+                        selectedAccentColor = MiuixTheme.colorScheme.primary,
+                        unselectedTitleColor = Color(0xFF16A34A),
+                        summaryColor = Color(0xFF16A34A),
+                        selectedLabel = null,
+                    )
+                    SheetChoiceCard(
+                        title = stringResource(R.string.os_google_system_service_action_recommend_implicit_title),
+                        summary = stringResource(R.string.os_google_system_service_action_recommend_implicit_summary),
+                        selected = uiState.implicitActionRecommendationSelected,
+                        onSelect = onApplyImplicitActionRecommendation,
+                        accentColor = Color(0xFF16A34A),
+                        selectedAccentColor = MiuixTheme.colorScheme.primary,
+                        unselectedTitleColor = Color(0xFF16A34A),
+                        summaryColor = Color(0xFF16A34A),
+                        selectedLabel = null,
+                    )
+                }
             }
             if (uiState.showCategoryRecommendations) {
                 SheetSectionTitle(
                     text = stringResource(R.string.os_google_system_service_recommend_section),
                 )
-                SheetChoiceCard(
-                    title = stringResource(R.string.os_google_system_service_category_recommend_explicit_title),
-                    summary = stringResource(R.string.os_google_system_service_category_recommend_explicit_summary),
-                    selected = uiState.explicitCategoryRecommendationSelected,
-                    onSelect = onApplyExplicitCategoryRecommendation,
-                    accentColor = Color(0xFF16A34A),
-                    selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor = Color(0xFF16A34A),
-                    summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null,
-                )
-                SheetChoiceCard(
-                    title = stringResource(R.string.os_google_system_service_category_recommend_implicit_title),
-                    summary = stringResource(R.string.os_google_system_service_category_recommend_implicit_summary),
-                    selected = uiState.implicitCategoryRecommendationSelected,
-                    onSelect = onApplyImplicitCategoryRecommendation,
-                    accentColor = Color(0xFF16A34A),
-                    selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor = Color(0xFF16A34A),
-                    summaryColor = Color(0xFF16A34A),
-                    selectedLabel = null,
-                )
+                SheetActionGroup(
+                    modifier = Modifier.selectableGroup(),
+                    verticalSpacing = 10.dp,
+                ) {
+                    SheetChoiceCard(
+                        title = stringResource(R.string.os_google_system_service_category_recommend_explicit_title),
+                        summary = stringResource(R.string.os_google_system_service_category_recommend_explicit_summary),
+                        selected = uiState.explicitCategoryRecommendationSelected,
+                        onSelect = onApplyExplicitCategoryRecommendation,
+                        accentColor = Color(0xFF16A34A),
+                        selectedAccentColor = MiuixTheme.colorScheme.primary,
+                        unselectedTitleColor = Color(0xFF16A34A),
+                        summaryColor = Color(0xFF16A34A),
+                        selectedLabel = null,
+                    )
+                    SheetChoiceCard(
+                        title = stringResource(R.string.os_google_system_service_category_recommend_implicit_title),
+                        summary = stringResource(R.string.os_google_system_service_category_recommend_implicit_summary),
+                        selected = uiState.implicitCategoryRecommendationSelected,
+                        onSelect = onApplyImplicitCategoryRecommendation,
+                        accentColor = Color(0xFF16A34A),
+                        selectedAccentColor = MiuixTheme.colorScheme.primary,
+                        unselectedTitleColor = Color(0xFF16A34A),
+                        summaryColor = Color(0xFF16A34A),
+                        selectedLabel = null,
+                    )
+                }
             }
             if (uiState.showPackageLoading) {
                 Text(
@@ -173,74 +185,90 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
-            uiState.orderedSuggestions.forEach { suggestion ->
-                val selected = uiState.isCurrentSuggestionSelected(suggestion)
-                val leading =
-                    when (target) {
-                        ShortcutSuggestionField.PackageName -> {
-                            val packageName = suggestion.value.trim()
-                            val packageBitmap = packageIconBitmaps[packageName]
-                            @Composable {
-                                AppIconImage(
-                                    packageName = packageName,
-                                    bitmap = packageBitmap,
-                                    size = 24.dp,
-                                )
-                            }
-                        }
+            if (uiState.orderedSuggestions.isNotEmpty()) {
+                SheetActionGroup(
+                    modifier =
+                        if (target.usesExclusiveSuggestionGroup()) {
+                            Modifier.selectableGroup()
+                        } else {
+                            Modifier
+                        },
+                    verticalSpacing = 10.dp,
+                ) {
+                    uiState.orderedSuggestions.forEach { suggestion ->
+                        val selected = uiState.isCurrentSuggestionSelected(suggestion)
+                        val leading =
+                            when (target) {
+                                ShortcutSuggestionField.PackageName -> {
+                                    val packageName = suggestion.value.trim()
+                                    val packageBitmap = packageIconBitmaps[packageName]
+                                    @Composable {
+                                        AppIconImage(
+                                            packageName = packageName,
+                                            bitmap = packageBitmap,
+                                            size = 24.dp,
+                                        )
+                                    }
+                                }
 
-                        ShortcutSuggestionField.ClassName -> {
-                            if (suggestion.value.trim().isBlank()) {
-                                null
-                            } else {
-                                val iconKey =
-                                    osActivityShortcutIconKey(draft.packageName, suggestion.value)
-                                val iconBitmap = activityIconBitmaps[iconKey]
-                                @Composable {
-                                    ShortcutActivityIcon(
-                                        packageName = draft.packageName,
-                                        className = suggestion.value,
-                                        size = 24.dp,
-                                        bitmap = iconBitmap,
-                                        packageBitmap = packageIconBitmaps[draft.packageName.trim()],
-                                        fallbackToPackageIcon = true,
-                                    )
+                                ShortcutSuggestionField.ClassName -> {
+                                    if (suggestion.value.trim().isBlank()) {
+                                        null
+                                    } else {
+                                        val iconKey =
+                                            osActivityShortcutIconKey(
+                                                draft.packageName,
+                                                suggestion.value,
+                                            )
+                                        val iconBitmap = activityIconBitmaps[iconKey]
+                                        @Composable {
+                                            ShortcutActivityIcon(
+                                                packageName = draft.packageName,
+                                                className = suggestion.value,
+                                                size = 24.dp,
+                                                bitmap = iconBitmap,
+                                                packageBitmap =
+                                                    packageIconBitmaps[draft.packageName.trim()],
+                                                fallbackToPackageIcon = true,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                else -> {
+                                    null
                                 }
                             }
-                        }
-
-                        else -> {
-                            null
-                        }
+                        val classSuggestionWarning =
+                            target == ShortcutSuggestionField.ClassName &&
+                                (suggestion.value.trim().isBlank() || suggestion.classItemExported)
+                        SheetChoiceCard(
+                            title = suggestion.label,
+                            summary = suggestion.summary,
+                            selected = selected,
+                            onSelect = { onApplySuggestion(suggestion) },
+                            selectedAccentColor = MiuixTheme.colorScheme.primary,
+                            unselectedTitleColor =
+                                if (classSuggestionWarning) {
+                                    Color(0xFFDC2626)
+                                } else if (target == ShortcutSuggestionField.ClassName) {
+                                    Color(0xFF16A34A)
+                                } else {
+                                    MiuixTheme.colorScheme.onBackground
+                                },
+                            summaryColor =
+                                if (classSuggestionWarning) {
+                                    Color(0xFFDC2626)
+                                } else if (target == ShortcutSuggestionField.ClassName) {
+                                    Color(0xFF16A34A)
+                                } else {
+                                    MiuixTheme.colorScheme.onBackgroundVariant
+                                },
+                            selectedLabel = null,
+                            leading = leading,
+                        )
                     }
-                val classSuggestionWarning =
-                    target == ShortcutSuggestionField.ClassName &&
-                        (suggestion.value.trim().isBlank() || suggestion.classItemExported)
-                SheetChoiceCard(
-                    title = suggestion.label,
-                    summary = suggestion.summary,
-                    selected = selected,
-                    onSelect = { onApplySuggestion(suggestion) },
-                    selectedAccentColor = MiuixTheme.colorScheme.primary,
-                    unselectedTitleColor =
-                        if (classSuggestionWarning) {
-                            Color(0xFFDC2626)
-                        } else if (target == ShortcutSuggestionField.ClassName) {
-                            Color(0xFF16A34A)
-                        } else {
-                            MiuixTheme.colorScheme.onBackground
-                        },
-                    summaryColor =
-                        if (classSuggestionWarning) {
-                            Color(0xFFDC2626)
-                        } else if (target == ShortcutSuggestionField.ClassName) {
-                            Color(0xFF16A34A)
-                        } else {
-                            MiuixTheme.colorScheme.onBackgroundVariant
-                        },
-                    selectedLabel = null,
-                    leading = leading,
-                )
+                }
             }
             if (uiState.showPackageNoResult || uiState.showClassNoResult) {
                 Text(
@@ -254,3 +282,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
         }
     }
 }
+
+internal fun ShortcutSuggestionField.usesExclusiveSuggestionGroup(): Boolean =
+    this != ShortcutSuggestionField.IntentCategory &&
+        this != ShortcutSuggestionField.IntentFlags

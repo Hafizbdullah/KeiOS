@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.github.sheet
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -155,21 +156,31 @@ internal fun GitHubStrategySheet(
             )
 
             SheetSectionTitle(stringResource(R.string.github_strategy_section_strategy))
-            guides.forEach { guide ->
-                GitHubStrategyGuideCard(
-                    guide = guide,
-                    selected = selectedStrategyInput == guide.option,
-                    onSelect = { onSelectedStrategyChange(guide.option) }
-                )
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
+                guides.forEach { guide ->
+                    GitHubStrategyGuideCard(
+                        guide = guide,
+                        selected = selectedStrategyInput == guide.option,
+                        onSelect = { onSelectedStrategyChange(guide.option) },
+                    )
+                }
             }
 
             SheetSectionTitle(stringResource(R.string.github_strategy_section_actions_strategy))
-            actionsGuides.forEach { guide ->
-                GitHubActionsStrategyGuideCard(
-                    guide = guide,
-                    selected = selectedActionsStrategyInput == guide.option,
-                    onSelect = { onSelectedActionsStrategyChange(guide.option) }
-                )
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
+                actionsGuides.forEach { guide ->
+                    GitHubActionsStrategyGuideCard(
+                        guide = guide,
+                        selected = selectedActionsStrategyInput == guide.option,
+                        onSelect = { onSelectedActionsStrategyChange(guide.option) },
+                    )
+                }
             }
 
             if (tokenUsedByDraft) {

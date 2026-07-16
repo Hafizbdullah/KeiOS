@@ -2,6 +2,7 @@ package os.kei.ui.page.main.mcp.sheet
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -103,7 +104,7 @@ internal fun McpEditServiceSheet(
                 }
             }
             SheetSectionTitle(stringResource(R.string.mcp_sheet_section_network_access))
-            SheetActionGroup {
+            SheetActionGroup(modifier = Modifier.selectableGroup()) {
                 McpNetworkModeOption(
                     title = stringResource(R.string.mcp_network_mode_local_only_short),
                     summary = stringResource(R.string.mcp_network_mode_local_only_summary),

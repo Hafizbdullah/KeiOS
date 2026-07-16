@@ -2,8 +2,10 @@
 
 package os.kei.ui.page.main.os.shell
 
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
@@ -105,7 +107,10 @@ internal fun OsShellBehaviorSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_startup_behavior_title))
-            SheetActionGroup(verticalSpacing = 8.dp) {
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_startup_behavior_focus_title),
                     summary = stringResource(R.string.os_shell_settings_startup_behavior_focus_summary),
@@ -121,7 +126,10 @@ internal fun OsShellBehaviorSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_exit_cleanup_title))
-            SheetActionGroup(verticalSpacing = 8.dp) {
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_exit_cleanup_keep_all_title),
                     summary = stringResource(R.string.os_shell_settings_exit_cleanup_keep_all_summary),
@@ -228,7 +236,10 @@ internal fun OsShellOutputSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_output_save_mode_title))
-            SheetActionGroup(verticalSpacing = 8.dp) {
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_output_save_mode_full_title),
                     summary = stringResource(R.string.os_shell_settings_output_save_mode_full_summary),
@@ -244,7 +255,10 @@ internal fun OsShellOutputSettingsSheet(
             }
 
             SheetSectionTitle(text = stringResource(R.string.os_shell_settings_copy_mode_title))
-            SheetActionGroup(verticalSpacing = 8.dp) {
+            SheetActionGroup(
+                modifier = Modifier.selectableGroup(),
+                verticalSpacing = 8.dp,
+            ) {
                 OsShellSettingsChoiceCard(
                     title = stringResource(R.string.os_shell_settings_copy_mode_full_title),
                     summary = stringResource(R.string.os_shell_settings_copy_mode_full_summary),
