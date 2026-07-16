@@ -94,56 +94,90 @@ private fun LiquidInfoBlockSurface(
             lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content),
             exportedBackdrop = exportedContentBackdrop,
         ) {
-            CompositionLocalProvider(
-                LocalLiquidParentBackdrop provides exportedContentBackdrop,
-            ) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+            if (exportedContentBackdrop != null) {
+                CompositionLocalProvider(
+                    LocalLiquidParentBackdrop provides exportedContentBackdrop,
+                    LocalLiquidParentBackdropOverridesFallback provides true,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        LiquidSurface(
-                            backdrop = exportedContentBackdrop,
-                            modifier = Modifier.weight(weight = 1f, fill = false),
-                            shape = RoundedRectangle(999.dp),
-                            isInteractive = false,
-                            surfaceColor = accent.copy(alpha = 0.18f),
-                            blurRadius = 4.dp,
-                            lensRadius = 18.dp,
-                            effectVariant = GlassVariant.Compact,
-                            shadow = false,
-                        ) {
-                            Text(
-                                text = title,
-                                color = titleColor,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                    if (subtitle.isNotBlank()) {
-                        Text(
-                            text = subtitle,
-                            color = MiuixTheme.colorScheme.onBackgroundVariant,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
-                    if (content != null) {
-                        Column(modifier = Modifier.padding(top = 8.dp)) {
-                            content()
-                        }
-                    } else if (body.isNotBlank()) {
-                        Text(
-                            text = body,
-                            color = MiuixTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
+                    LiquidInfoBlockContent(
+                        exportedContentBackdrop = exportedContentBackdrop,
+                        title = title,
+                        subtitle = subtitle,
+                        body = body,
+                        accent = accent,
+                        titleColor = titleColor,
+                        content = content,
+                    )
                 }
+            } else {
+                LiquidInfoBlockContent(
+                    exportedContentBackdrop = null,
+                    title = title,
+                    subtitle = subtitle,
+                    body = body,
+                    accent = accent,
+                    titleColor = titleColor,
+                    content = content,
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun LiquidInfoBlockContent(
+    exportedContentBackdrop: Backdrop?,
+    title: String,
+    subtitle: String,
+    body: String,
+    accent: Color,
+    titleColor: Color,
+    content: (@Composable () -> Unit)?,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LiquidSurface(
+                backdrop = exportedContentBackdrop,
+                modifier = Modifier.weight(weight = 1f, fill = false),
+                shape = RoundedRectangle(999.dp),
+                isInteractive = false,
+                surfaceColor = accent.copy(alpha = 0.18f),
+                blurRadius = 4.dp,
+                lensRadius = 18.dp,
+                effectVariant = GlassVariant.Compact,
+                shadow = false,
+            ) {
+                Text(
+                    text = title,
+                    color = titleColor,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (subtitle.isNotBlank()) {
+            Text(
+                text = subtitle,
+                color = MiuixTheme.colorScheme.onBackgroundVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+        if (content != null) {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+                content()
+            }
+        } else if (body.isNotBlank()) {
+            Text(
+                text = body,
+                color = MiuixTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }

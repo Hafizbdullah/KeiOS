@@ -31,6 +31,7 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
@@ -48,10 +49,13 @@ class LiquidInfoBlockTest {
     fun exportsIndependentCardBackdropToContent() {
         var pageBackdrop: Backdrop? = null
         var contentBackdrop: Backdrop? = null
+        var resolvedExplicitFallback: Backdrop? = null
+        var overridesExplicitFallback = false
 
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val backdrop = rememberLayerBackdrop()
+                val explicitFallback = rememberLayerBackdrop()
                 pageBackdrop = backdrop
                 Box(modifier = Modifier.size(280.dp)) {
                     Box(
@@ -69,6 +73,8 @@ class LiquidInfoBlockTest {
                         modifier = Modifier.testTag("info-block"),
                     ) {
                         contentBackdrop = LocalLiquidParentBackdrop.current
+                        resolvedExplicitFallback = preferredLiquidBackdrop(explicitFallback)
+                        overridesExplicitFallback = LocalLiquidParentBackdropOverridesFallback.current
                         Box(modifier = Modifier.testTag("info-content"))
                     }
                 }
@@ -81,6 +87,8 @@ class LiquidInfoBlockTest {
             assertNotNull(pageBackdrop)
             assertNotNull(contentBackdrop)
             assertNotSame(pageBackdrop, contentBackdrop)
+            assertSame(contentBackdrop, resolvedExplicitFallback)
+            assertTrue(overridesExplicitFallback)
         }
     }
 
