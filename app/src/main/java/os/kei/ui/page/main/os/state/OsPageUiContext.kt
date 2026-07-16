@@ -1,7 +1,6 @@
 package os.kei.ui.page.main.os.state
 
 import android.content.Context
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -11,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.rememberMainPageBackdropSet
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -38,7 +38,7 @@ internal fun rememberOsPageUiContext(
     val context = LocalContext.current
     val density = LocalDensity.current
     val textBundle = rememberOsPageTextBundle()
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val backdrops =
         rememberMainPageBackdropSet(
             keyPrefix = "os",
