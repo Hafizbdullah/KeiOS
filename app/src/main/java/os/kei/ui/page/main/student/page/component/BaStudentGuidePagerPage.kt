@@ -14,8 +14,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -42,11 +43,12 @@ import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderStat
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
-import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -197,103 +199,105 @@ internal fun BaStudentGuidePagerPage(
                 )
             }
 
-        LazyColumn(
-            state = pageListState,
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(pageNestedScrollConnection),
-            contentPadding =
-                PaddingValues(
-                    top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
-                    bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                ),
-        ) {
-            item(
-                key = "ba-student-guide-header-${tabRenderState.activeBottomTab.name}",
-                contentType = "ba_student_guide_header",
+        CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop) {
+            LazyColumn(
+                state = pageListState,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(pageNestedScrollConnection),
+                contentPadding =
+                    PaddingValues(
+                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                        bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                        start = 16.dp,
+                        end = 16.dp,
+                    ),
             ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement =
-                        androidx.compose.foundation.layout.Arrangement
-                            .spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                item(
+                    key = "ba-student-guide-header-${tabRenderState.activeBottomTab.name}",
+                    contentType = "ba_student_guide_header",
                 ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = headerState.title,
-                            color = MiuixTheme.colorScheme.onBackground,
-                            fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                            lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                            fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-                        )
-                    }
-                    if (headerState.showSyncIndicator) {
-                        LiquidCircularProgressBar(
-                            progress = { syncProgress },
-                            size = 18.dp,
-                            strokeWidth = 2.dp,
-                            activeColor = headerState.indicatorColor,
-                            inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f),
-                        )
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement =
+                            androidx.compose.foundation.layout.Arrangement
+                                .spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = headerState.title,
+                                color = MiuixTheme.colorScheme.onBackground,
+                                fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                                lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                                fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
+                            )
+                        }
+                        if (headerState.showSyncIndicator) {
+                            LiquidCircularProgressBar(
+                                progress = { syncProgress },
+                                size = 18.dp,
+                                strokeWidth = 2.dp,
+                                activeColor = headerState.indicatorColor,
+                                inactiveColor = headerState.indicatorColor.copy(alpha = 0.30f),
+                            )
+                        }
                     }
                 }
-            }
-            item(
-                key = "ba-student-guide-header-spacer-${tabRenderState.activeBottomTab.name}",
-                contentType = "ba_student_guide_spacer",
-            ) {
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-            if (sourceUrl.isBlank()) {
                 item(
-                    key = "ba-student-guide-empty-source",
-                    contentType = "ba_student_guide_status",
+                    key = "ba-student-guide-header-spacer-${tabRenderState.activeBottomTab.name}",
+                    contentType = "ba_student_guide_spacer",
                 ) {
-                    LiquidInfoBlock(
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                if (sourceUrl.isBlank()) {
+                    item(
+                        key = "ba-student-guide-empty-source",
+                        contentType = "ba_student_guide_status",
+                    ) {
+                        LiquidInfoBlock(
+                            backdrop = pageBackdrop,
+                            title = stringResource(R.string.guide_empty_student_title),
+                            subtitle = stringResource(R.string.guide_empty_student_subtitle),
+                            accent = accent,
+                        )
+                    }
+                } else {
+                    renderBaStudentGuideTabContent(
+                        activeBottomTab = tabRenderState.activeBottomTab,
+                        activeBottomTabLabel = activeBottomTabLabel,
+                        info = info,
+                        error = error,
                         backdrop = pageBackdrop,
-                        title = stringResource(R.string.guide_empty_student_title),
-                        subtitle = stringResource(R.string.guide_empty_student_subtitle),
                         accent = accent,
+                        context = context,
+                        sourceUrl = sourceUrl,
+                        galleryCacheRevision = galleryCacheRevision,
+                        playingVoiceUrl = tabRenderState.playingVoiceUrl,
+                        isVoicePlaying = tabRenderState.isVoicePlaying,
+                        voicePlayProgress = tabRenderState.voicePlayProgress,
+                        selectedVoiceLanguage = tabRenderState.selectedVoiceLanguage,
+                        bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
+                        profileLinkTitles = profileLinkTitles,
+                        profileLinkMissingLinks = profileLinkMissingLinks,
+                        isNpcSatelliteGuide = isNpcSatelliteGuide,
+                        mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
+                        contentPresentationState =
+                            contentPresentationState.takeIf { it.matches(info) },
+                        onOpenExternal = onOpenExternal,
+                        onOpenGuide = onOpenGuide,
+                        onSaveMedia = onSaveMedia,
+                        onSaveMediaPack = onSaveMediaPack,
+                        onToggleBgmFavorite = onToggleBgmFavorite,
+                        onRequestProfileLinkTitles = onRequestProfileLinkTitles,
+                        onToggleVoicePlayback = onToggleVoicePlayback,
+                        onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
                     )
                 }
-            } else {
-                renderBaStudentGuideTabContent(
-                    activeBottomTab = tabRenderState.activeBottomTab,
-                    activeBottomTabLabel = activeBottomTabLabel,
-                    info = info,
-                    error = error,
-                    backdrop = pageBackdrop,
-                    accent = accent,
-                    context = context,
-                    sourceUrl = sourceUrl,
-                    galleryCacheRevision = galleryCacheRevision,
-                    playingVoiceUrl = tabRenderState.playingVoiceUrl,
-                    isVoicePlaying = tabRenderState.isVoicePlaying,
-                    voicePlayProgress = tabRenderState.voicePlayProgress,
-                    selectedVoiceLanguage = tabRenderState.selectedVoiceLanguage,
-                    bgmFavoriteAudioUrls = bgmFavoriteAudioUrls,
-                    profileLinkTitles = profileLinkTitles,
-                    profileLinkMissingLinks = profileLinkMissingLinks,
-                    isNpcSatelliteGuide = isNpcSatelliteGuide,
-                    mediaAdaptiveRotationEnabled = mediaAdaptiveRotationEnabled,
-                    contentPresentationState =
-                        contentPresentationState.takeIf { it.matches(info) },
-                    onOpenExternal = onOpenExternal,
-                    onOpenGuide = onOpenGuide,
-                    onSaveMedia = onSaveMedia,
-                    onSaveMediaPack = onSaveMediaPack,
-                    onToggleBgmFavorite = onToggleBgmFavorite,
-                    onRequestProfileLinkTitles = onRequestProfileLinkTitles,
-                    onToggleVoicePlayback = onToggleVoicePlayback,
-                    onSelectedVoiceLanguageChange = onSelectedVoiceLanguageChange,
-                )
             }
         }
 
