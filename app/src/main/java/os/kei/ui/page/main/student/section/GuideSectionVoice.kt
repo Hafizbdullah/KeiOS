@@ -76,7 +76,6 @@ fun GuideVoiceLanguageCard(
         modifier = modifier.fillMaxWidth(),
         containerColor = Color(0x223B82F6),
         contentColor = MiuixTheme.colorScheme.onBackground,
-        onClick = {},
     ) {
         CopyModeSelectionContainer {
             Row(
@@ -151,7 +150,6 @@ fun GuideVoiceEntryCard(
         modifier = modifier.fillMaxWidth(),
         containerColor = Color(0x223B82F6),
         contentColor = MiuixTheme.colorScheme.onBackground,
-        onClick = {},
     ) {
         CopyModeSelectionContainer {
             Column(
