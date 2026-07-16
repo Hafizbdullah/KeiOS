@@ -66,7 +66,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     controlInteractionSource: MutableInteractionSource? = null,
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
 ) {
     val expanded = expandedProgress().coerceIn(0f, 1f)

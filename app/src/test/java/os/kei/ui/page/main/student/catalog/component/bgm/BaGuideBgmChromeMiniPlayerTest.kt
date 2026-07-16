@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kyant.backdrop.backdrops.emptyBackdrop
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -190,7 +189,7 @@ class BaGuideBgmChromeMiniPlayerTest {
                                 onPlayPauseClick = onPlayPauseClick,
                                 onPreviousClick = onPreviousClick,
                                 onNextClick = onNextClick,
-                                backdrop = emptyBackdrop(),
+                                backdrop = null,
                                 modifier = Modifier.matchParentSize(),
                             )
                         }
