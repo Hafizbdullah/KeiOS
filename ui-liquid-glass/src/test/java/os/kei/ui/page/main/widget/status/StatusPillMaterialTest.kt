@@ -78,6 +78,36 @@ class StatusPillMaterialTest {
         assertEquals(0f, optics.rimColor.alpha, COLOR_CHANNEL_TOLERANCE)
     }
 
+    @Test
+    fun transparentRimVariantFallbackKeepsTheLegacyBlueSurfaceInLightAndDarkThemes() {
+        val accent = Color(0xFF3B82F6)
+        val surfaceAlpha = 0x22 / 255f
+        val lightOptics =
+            statusPillFallbackOptics(
+                isDark = false,
+                accent = accent,
+                backgroundAlpha = surfaceAlpha,
+                borderAlpha = 0f,
+            )
+        val darkOptics =
+            statusPillFallbackOptics(
+                isDark = true,
+                accent = accent,
+                backgroundAlpha = surfaceAlpha,
+                borderAlpha = 0f,
+            )
+
+        listOf(lightOptics, darkOptics).forEach { optics ->
+            assertEquals(surfaceAlpha, optics.baseColor.alpha, COLOR_CHANNEL_TOLERANCE)
+            assertEquals(accent.red, optics.baseColor.red, COLOR_CHANNEL_TOLERANCE)
+            assertEquals(accent.green, optics.baseColor.green, COLOR_CHANNEL_TOLERANCE)
+            assertEquals(accent.blue, optics.baseColor.blue, COLOR_CHANNEL_TOLERANCE)
+            assertEquals(0f, optics.rimColor.alpha, COLOR_CHANNEL_TOLERANCE)
+        }
+        assertTrue(lightOptics.veilTop.alpha > darkOptics.veilTop.alpha)
+        assertTrue(lightOptics.innerShadeBottom.alpha < darkOptics.innerShadeBottom.alpha)
+    }
+
     private companion object {
         const val COLOR_CHANNEL_TOLERANCE = 0.001f
     }

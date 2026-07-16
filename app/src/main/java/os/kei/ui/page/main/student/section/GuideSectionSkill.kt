@@ -1,9 +1,9 @@
 package os.kei.ui.page.main.student.section
 
-import os.kei.ui.page.main.widget.glass.GlassVariant
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,25 +24,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.GuideRemoteIcon
 import os.kei.ui.page.main.student.GuideSkillCardModel
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.guideLocalizedLabel
-import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
-import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
-import com.kyant.backdrop.Backdrop
-import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
-import os.kei.ui.page.main.widget.glass.LiquidSurface
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -338,47 +336,22 @@ internal fun GuideSkillVariantBadge(
     label: String,
     modifier: Modifier = Modifier
 ) {
-    val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
-    val surfaceColor = Color(0x223B82F6)
-    val content: @Composable () -> Unit = {
-        Text(
-            text = label,
-            color = Color(0xFF3B82F6),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1
-        )
-    }
-    Box(
+    StatusPill(
+        label = label,
+        color = Color(0xFF3B82F6),
         modifier = modifier.size(26.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        if (activeBackdrop != null) {
-            LiquidSurface(
-                backdrop = activeBackdrop,
-                modifier = Modifier.matchParentSize(),
-                shape = RoundedRectangle(999.dp),
-                isInteractive = false,
-                surfaceColor = surfaceColor,
-                blurRadius = 2.dp,
-                lensRadius = 10.dp,
-                effectVariant = GlassVariant.Compact,
-                shadow = false,
-                contentAlignment = Alignment.Center
-            ) {
-                content()
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .appSquircleBackground(surfaceColor, 999.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                content()
-            }
-        }
-    }
+        contentPadding = PaddingValues(0.dp),
+        backgroundAlphaOverride = 0x22 / 255f,
+        borderAlphaOverride = 0f,
+        maxLines = 1,
+        typographyOverride =
+            TextStyle(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            ),
+        blurRadiusOverride = 2.dp,
+        lensRadiusOverride = 10.dp,
+    )
 }
 
 @Composable

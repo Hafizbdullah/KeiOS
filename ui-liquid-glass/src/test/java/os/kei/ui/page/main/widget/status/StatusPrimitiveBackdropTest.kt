@@ -129,6 +129,11 @@ class StatusPrimitiveBackdropTest {
         assertTrue("fallbackOptics.rimColor" in statusPillSource)
         assertTrue("StatusPillLiquid(" in statusPillSource)
         assertTrue("surfaceColor = resolvedColor.copy(alpha = backgroundAlpha)" in statusPillSource)
+        assertTrue("typographyOverride: TextStyle? = null" in statusPillSource)
+        assertTrue("blurRadiusOverride: Dp? = null" in statusPillSource)
+        assertTrue("lensRadiusOverride: Dp? = null" in statusPillSource)
+        assertTrue("blurRadius = blurRadiusOverride ?: UiPerformanceBudget.backdropBlur" in statusPillSource)
+        assertTrue("lensRadius = lensRadiusOverride ?: UiPerformanceBudget.backdropLens" in statusPillSource)
         assertTrue(
             "activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingBlockSource,
         )

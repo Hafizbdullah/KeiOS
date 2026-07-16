@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
@@ -34,6 +36,7 @@ import os.kei.ui.page.main.widget.shape.appSquircleClip
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun StatusPill(
@@ -47,6 +50,9 @@ fun StatusPill(
     backdrop: Backdrop? = null,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
+    typographyOverride: TextStyle? = null,
+    blurRadiusOverride: Dp? = null,
+    lensRadiusOverride: Dp? = null,
 ) {
     StatusPill(
         label = label,
@@ -59,6 +65,9 @@ fun StatusPill(
         backdrop = backdrop,
         maxLines = maxLines,
         overflow = overflow,
+        typographyOverride = typographyOverride,
+        blurRadiusOverride = blurRadiusOverride,
+        lensRadiusOverride = lensRadiusOverride,
     )
 }
 
@@ -74,6 +83,9 @@ fun StatusPill(
     backdrop: Backdrop? = null,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
+    typographyOverride: TextStyle? = null,
+    blurRadiusOverride: Dp? = null,
+    lensRadiusOverride: Dp? = null,
 ) {
     val isDark = isAppInDarkTheme()
     val colorProvider = color
@@ -87,6 +99,15 @@ fun StatusPill(
     val cornerRadius = 999.dp
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val activeBackdrop = activeGlassBackdrop(backdrop ?: parentBackdrop)
+    val resolvedTypography =
+        MiuixTheme.textStyles.main.merge(
+            typographyOverride
+                ?: TextStyle(
+                    fontSize = metrics.typography.fontSize,
+                    lineHeight = metrics.typography.lineHeight,
+                    fontWeight = metrics.typography.fontWeight,
+                ),
+        )
     val fallbackOptics =
         statusPillFallbackOptics(
             isDark = isDark,
@@ -131,12 +152,10 @@ fun StatusPill(
             Text(
                 text = label,
                 color = textColor,
-                fontSize = metrics.typography.fontSize,
-                lineHeight = metrics.typography.lineHeight,
-                fontWeight = metrics.typography.fontWeight,
                 textAlign = TextAlign.Center,
                 maxLines = maxLines,
                 overflow = overflow,
+                style = resolvedTypography,
             )
         }
     }
@@ -146,6 +165,8 @@ fun StatusPill(
             backdrop = activeBackdrop,
             shape = shape,
             surfaceColor = resolvedColor.copy(alpha = backgroundAlpha),
+            blurRadius = blurRadiusOverride ?: UiPerformanceBudget.backdropBlur,
+            lensRadius = lensRadiusOverride ?: UiPerformanceBudget.backdropLens,
             resolvedPadding = resolvedPadding,
             content = content,
         )
@@ -183,6 +204,8 @@ private fun StatusPillLiquid(
     backdrop: Backdrop,
     shape: Shape,
     surfaceColor: Color,
+    blurRadius: Dp,
+    lensRadius: Dp,
     resolvedPadding: PaddingValues,
     content: @Composable () -> Unit,
 ) {
@@ -192,8 +215,8 @@ private fun StatusPillLiquid(
         shape = shape,
         isInteractive = false,
         surfaceColor = surfaceColor,
-        blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact),
-        lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact),
+        blurRadius = resolvedGlassBlurDp(blurRadius, GlassVariant.Compact),
+        lensRadius = resolvedGlassLensDp(lensRadius, GlassVariant.Compact),
         depthEffect = true,
         shadow = false,
         contentAlignment = Alignment.Center,
