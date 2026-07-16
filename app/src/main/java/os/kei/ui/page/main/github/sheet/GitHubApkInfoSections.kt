@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
@@ -32,6 +33,7 @@ import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideChevronDownIcon
 import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
@@ -486,30 +488,25 @@ internal fun InfoRow(
     value: String,
 ) {
     if (value.isBlank()) return
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    AppInfoRow(
+        label = label,
+        value = value,
+        labelWeight = 0.36f,
+        valueWeight = 0.64f,
+        horizontalSpacing = 8.dp,
+        rowVerticalPadding = 0.dp,
         verticalAlignment = Alignment.Top,
-    ) {
-        Text(
-            text = label,
-            modifier = Modifier.weight(0.36f),
-            color = MiuixTheme.colorScheme.onBackgroundVariant,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = value,
-            modifier = Modifier.weight(0.64f),
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+        valueTextAlign = TextAlign.Start,
+        labelMaxLines = 1,
+        valueMaxLines = 2,
+        labelOverflow = TextOverflow.Ellipsis,
+        valueOverflow = TextOverflow.Ellipsis,
+        labelFontSize = AppTypographyTokens.Supporting.fontSize,
+        labelLineHeight = AppTypographyTokens.Supporting.lineHeight,
+        valueFontSize = AppTypographyTokens.Supporting.fontSize,
+        valueLineHeight = AppTypographyTokens.Supporting.lineHeight,
+        emphasizedValue = false,
+    )
 }
 
 @Composable

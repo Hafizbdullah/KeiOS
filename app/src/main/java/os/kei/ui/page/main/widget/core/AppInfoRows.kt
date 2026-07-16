@@ -47,6 +47,7 @@ fun AppInfoRow(
     valueMinWidth: Dp = Dp.Unspecified,
     horizontalSpacing: Dp = CardLayoutRhythm.infoRowGap,
     rowVerticalPadding: Dp = CardLayoutRhythm.infoRowVerticalPadding,
+    verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     valueTextAlign: TextAlign = TextAlign.End,
     labelMaxLines: Int = Int.MAX_VALUE,
     valueMaxLines: Int = Int.MAX_VALUE,
@@ -115,7 +116,7 @@ fun AppInfoRow(
         Row(
             modifier = rowModifier,
             horizontalArrangement = Arrangement.spacedBy(horizontalSpacing),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = verticalAlignment,
         ) {
             val labelModifier =
                 when {
