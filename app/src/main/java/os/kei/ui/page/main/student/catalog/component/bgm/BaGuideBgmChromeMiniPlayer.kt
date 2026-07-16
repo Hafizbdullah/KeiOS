@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -80,7 +81,12 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
     val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, expanded)
-    val sideControlSlotWidth = debugBgmLerpDp(0.dp, 48.dp, expanded)
+    val sideControlSlotWidth =
+        debugBgmLerpDp(
+            0.dp,
+            BaGuideBgmMiniPlayerTransportControlSlotSize,
+            expanded,
+        )
     val playButtonScale = 1f - compact * 0.02f
     val playPauseTint =
         if (isPlaying) {
@@ -101,7 +107,10 @@ internal fun BaGuideBgmChromeMiniPlayer(
             surfaceColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.12f),
             chromaticAberration = true,
             isInteractive = false,
-            modifier = Modifier.size(artworkSize),
+            modifier =
+                Modifier
+                    .size(artworkSize)
+                    .testTag(BaGuideBgmMiniPlayerArtworkSlotTestTag),
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -135,7 +144,8 @@ internal fun BaGuideBgmChromeMiniPlayer(
             modifier =
                 Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .testTag(BaGuideBgmMiniPlayerTitleSlotTestTag),
         ) {
             Text(
                 text = currentTrackTitle,
@@ -171,64 +181,69 @@ internal fun BaGuideBgmChromeMiniPlayer(
                 )
             }
         }
-        BaGuideBgmChromeMiniPlayerSideControl(
-            width = sideControlSlotWidth,
-            progress = expandedProvider,
+        Row(
+            modifier = Modifier.testTag(BaGuideBgmMiniPlayerTransportGroupTestTag),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            BaGuideBgmInlineIcon(
-                icon = appLucideSkipBackIcon(),
-                contentDescription = stringResource(R.string.ba_catalog_bgm_action_previous),
-                tint = MiuixTheme.colorScheme.onBackground,
-                size = 32.dp,
-                iconSize = 22.dp,
-                interactionSource = controlInteractionSource,
-                onClick = onPreviousClick,
-            )
-        }
-        val playInteractionSource = controlInteractionSource ?: remember { MutableInteractionSource() }
-        val playContentDescription =
-            stringResource(
-                if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play,
-            )
-        Box(
-            modifier =
-                Modifier
-                    .defaultMinSize(
-                        minWidth = MINI_PLAYER_MINIMUM_TOUCH_SIZE,
-                        minHeight = MINI_PLAYER_MINIMUM_TOUCH_SIZE,
-                    ).size(36.dp)
-                    .semantics { contentDescription = playContentDescription }
-                    .graphicsLayer {
-                        scaleX = playButtonScale
-                        scaleY = playButtonScale
-                    }.clickable(
-                        interactionSource = playInteractionSource,
-                        indication = null,
-                        role = Role.Button,
-                        onClick = onPlayPauseClick,
-                    ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
-                contentDescription = null,
-                tint = playPauseTint,
-                modifier = Modifier.size(playIconSize),
-            )
-        }
-        BaGuideBgmChromeMiniPlayerSideControl(
-            width = sideControlSlotWidth,
-            progress = expandedProvider,
-        ) {
-            BaGuideBgmInlineIcon(
-                icon = appLucideSkipForwardIcon(),
-                contentDescription = stringResource(R.string.ba_catalog_bgm_action_next),
-                tint = MiuixTheme.colorScheme.onBackground,
-                size = 32.dp,
-                iconSize = 22.dp,
-                interactionSource = controlInteractionSource,
-                onClick = onNextClick,
-            )
+            BaGuideBgmChromeMiniPlayerSideControl(
+                width = sideControlSlotWidth,
+                progress = expandedProvider,
+            ) {
+                BaGuideBgmInlineIcon(
+                    icon = appLucideSkipBackIcon(),
+                    contentDescription = stringResource(R.string.ba_catalog_bgm_action_previous),
+                    tint = MiuixTheme.colorScheme.onBackground,
+                    size = 32.dp,
+                    iconSize = 22.dp,
+                    interactionSource = controlInteractionSource,
+                    onClick = onPreviousClick,
+                )
+            }
+            val playInteractionSource = controlInteractionSource ?: remember { MutableInteractionSource() }
+            val playContentDescription =
+                stringResource(
+                    if (isPlaying) R.string.ba_catalog_bgm_action_pause else R.string.ba_catalog_bgm_action_play,
+                )
+            Box(
+                modifier =
+                    Modifier
+                        .defaultMinSize(
+                            minWidth = BaGuideBgmMiniPlayerTransportControlSlotSize,
+                            minHeight = BaGuideBgmMiniPlayerTransportControlSlotSize,
+                        ).size(36.dp)
+                        .semantics { contentDescription = playContentDescription }
+                        .graphicsLayer {
+                            scaleX = playButtonScale
+                            scaleY = playButtonScale
+                        }.clickable(
+                            interactionSource = playInteractionSource,
+                            indication = null,
+                            role = Role.Button,
+                            onClick = onPlayPauseClick,
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
+                    contentDescription = null,
+                    tint = playPauseTint,
+                    modifier = Modifier.size(playIconSize),
+                )
+            }
+            BaGuideBgmChromeMiniPlayerSideControl(
+                width = sideControlSlotWidth,
+                progress = expandedProvider,
+            ) {
+                BaGuideBgmInlineIcon(
+                    icon = appLucideSkipForwardIcon(),
+                    contentDescription = stringResource(R.string.ba_catalog_bgm_action_next),
+                    tint = MiuixTheme.colorScheme.onBackground,
+                    size = 32.dp,
+                    iconSize = 22.dp,
+                    interactionSource = controlInteractionSource,
+                    onClick = onNextClick,
+                )
+            }
         }
     }
 }
@@ -273,7 +288,16 @@ private fun defaultMiniArtworkBrush(accent: Color): Brush =
         colors = listOf(Color(0xFFFFC857), accent, Color(0xFFFF4D6D)),
     )
 
-private val MINI_PLAYER_MINIMUM_TOUCH_SIZE = 48.dp
+internal val BaGuideBgmMiniPlayerTransportControlSlotSize = 48.dp
+
+internal val BaGuideBgmMiniPlayerTransportControlGroupWidth =
+    BaGuideBgmMiniPlayerTransportControlSlotSize * 3f
+
+internal const val BaGuideBgmMiniPlayerArtworkSlotTestTag = "ba_bgm_mini_player_artwork_slot"
+
+internal const val BaGuideBgmMiniPlayerTitleSlotTestTag = "ba_bgm_mini_player_title_slot"
+
+internal const val BaGuideBgmMiniPlayerTransportGroupTestTag = "ba_bgm_mini_player_transport_group"
 
 private val MINI_PLAYER_PROGRESS_TOUCH_HEIGHT = 48.dp
 
