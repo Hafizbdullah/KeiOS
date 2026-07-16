@@ -19,6 +19,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
+import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.os.appLucideAddIcon
 import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
@@ -174,7 +175,8 @@ internal fun GitHubMainContent(
                 ),
             )
         }
-    Box(
+    MainPageContentBackdropScene(
+        contentBackdrop = surfaces.contentBackdrop,
         modifier =
             Modifier
                 .fillMaxSize()
@@ -344,7 +346,7 @@ internal fun GitHubMainContent(
                 }
 
                 AppFloatingVerticalSearchActionDock(
-                    backdrop = surfaces.contentBackdrop,
+                    backdrop = surfaces.topBarBackdrop,
                     expanded = controls.searchExpanded,
                     query = controls.trackedSearch,
                     onQueryChange = actions.onTrackedSearchChange,
