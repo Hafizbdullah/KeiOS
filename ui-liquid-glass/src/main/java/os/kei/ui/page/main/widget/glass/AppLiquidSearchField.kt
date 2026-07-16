@@ -2,18 +2,12 @@
 
 package os.kei.ui.page.main.widget.glass
 
-import os.kei.ui.page.main.widget.isAppInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -24,11 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -37,7 +28,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -52,6 +42,7 @@ import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleClip
@@ -84,6 +75,9 @@ fun AppLiquidInputField(
     onFocusActiveChange: ((Boolean) -> Unit)? = null,
     leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
     placeholderMaxLines: Int = if (singleLine) 1 else 2,
+    readOnly: Boolean = false,
+    minLines: Int = 1,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     leadingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val isDark = isAppInDarkTheme()
@@ -141,13 +135,28 @@ fun AppLiquidInputField(
         }
     val fallbackSurface = MiuixTheme.colorScheme.surfaceContainer
     val searchColors = appLiquidSearchMaterialColors(isDark)
-    val contentAlignment = liquidInputContentAlignment(singleLine, textAlign)
-    val verticalContentAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
     val effectiveKeyboardOptions =
         keyboardOptions ?: if (singleLine) {
             KeyboardOptions(imeAction = ImeAction.Done)
         } else {
             KeyboardOptions.Default
+        }
+    val inputContentStyle =
+        remember(
+            inputTextStyle,
+            placeholderColor,
+            textColor,
+            leadingContentGap,
+            placeholderMaxLines,
+        ) {
+            AppTextInputContentStyle(
+                textStyle = inputTextStyle,
+                placeholderColor = placeholderColor,
+                cursorColor = textColor,
+                leadingContentGap = leadingContentGap,
+                placeholderMaxLines = placeholderMaxLines,
+                wrapFieldContentHeight = true,
+            )
         }
 
     Box(
@@ -267,85 +276,35 @@ fun AppLiquidInputField(
                             )
                         }
                     },
-                )
-                .padding(
+                ).padding(
                     horizontal = horizontalPadding,
                     vertical = verticalPadding,
                 ),
         contentAlignment = Alignment.CenterStart,
     ) {
-        @Composable
-        fun TextInput(modifier: Modifier) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                enabled = enabled,
-                singleLine = singleLine,
-                textStyle = inputTextStyle,
-                cursorBrush = SolidColor(textColor),
-                visualTransformation = visualTransformation,
-                keyboardOptions = effectiveKeyboardOptions,
-                keyboardActions = keyboardActions,
-                modifier =
-                    modifier
-                        .wrapContentHeight(align = verticalContentAlignment)
-                        .onFocusChanged { state ->
-                            val active = state.isFocused || state.hasFocus
-                            focused = active
-                            onFocusActiveChange?.invoke(active)
-                        }.then(
-                            if (focusRequester != null) {
-                                Modifier.focusRequester(focusRequester)
-                            } else {
-                                Modifier
-                            },
-                        ),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight(align = verticalContentAlignment),
-                        contentAlignment = contentAlignment,
-                    ) {
-                        if (value.isBlank()) {
-                            BasicText(
-                                text = label,
-                                style = inputTextStyle.copy(color = placeholderColor),
-                                maxLines = placeholderMaxLines.coerceAtLeast(1),
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        innerTextField()
-                    }
-                },
-            )
-        }
-
-        if (leadingContent == null) {
-            TextInput(modifier = Modifier.fillMaxWidth())
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(leadingContentGap),
-                verticalAlignment = verticalContentAlignment,
-            ) {
-                leadingContent()
-                TextInput(modifier = Modifier.weight(1f))
-            }
-        }
+        AppTextInputContent(
+            value = value,
+            onValueChange = onValueChange,
+            label = label,
+            style = inputContentStyle,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            readOnly = readOnly,
+            singleLine = singleLine,
+            minLines = minLines,
+            maxLines = maxLines,
+            visualTransformation = visualTransformation,
+            keyboardOptions = effectiveKeyboardOptions,
+            keyboardActions = keyboardActions,
+            focusRequester = focusRequester,
+            onFocusActiveChange = { active ->
+                focused = active
+                onFocusActiveChange?.invoke(active)
+            },
+            leadingContent = leadingContent,
+        )
     }
 }
-
-internal fun liquidInputContentAlignment(
-    singleLine: Boolean,
-    textAlign: TextAlign,
-): Alignment =
-    when (textAlign) {
-        TextAlign.Center -> if (singleLine) Alignment.Center else Alignment.TopCenter
-        TextAlign.End, TextAlign.Right -> if (singleLine) Alignment.CenterEnd else Alignment.TopEnd
-        else -> if (singleLine) Alignment.CenterStart else Alignment.TopStart
-    }
 
 @Composable
 fun AppLiquidSearchField(
