@@ -9,8 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
@@ -76,19 +74,8 @@ internal fun GitHubAssetCountBubble(
         contentAlignment = Alignment.Center,
     ) {
         if (liquidControlsEnabled) {
-            val localBackdrop = rememberLayerBackdrop()
-            val parentBackdrop = LocalLiquidParentBackdrop.current
-            val activeBackdrop = parentBackdrop ?: localBackdrop
-            if (parentBackdrop == null) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .layerBackdrop(localBackdrop),
-                )
-            }
             LiquidSurface(
-                backdrop = activeBackdrop,
+                backdrop = LocalLiquidParentBackdrop.current,
                 modifier =
                     Modifier
                         .matchParentSize()

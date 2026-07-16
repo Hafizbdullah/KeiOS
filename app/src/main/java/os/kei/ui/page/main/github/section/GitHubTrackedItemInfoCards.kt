@@ -132,9 +132,7 @@ internal fun GitHubLinkedInfoCard(
     statusColor: Color = labelColor,
     onClick: () -> Unit,
 ) {
-    val localBackdrop = rememberLayerBackdrop()
     val parentBackdrop = LocalLiquidParentBackdrop.current
-    val activeBackdrop = parentBackdrop ?: localBackdrop
     val isDark = isSystemInDarkTheme()
     val surfaceColor =
         if (isDark) {
@@ -143,8 +141,8 @@ internal fun GitHubLinkedInfoCard(
             MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f)
         }
     GitHubInlineLiquidSurface(
-        backdrop = activeBackdrop,
-        captureBackdrop = if (parentBackdrop == null) localBackdrop else null,
+        backdrop = parentBackdrop,
+        captureBackdrop = null,
         tint = MiuixTheme.colorScheme.primary.copy(alpha = if (isDark) 0.18f else 0.10f),
         surfaceColor = surfaceColor,
         onClick = onClick,
@@ -204,7 +202,7 @@ internal fun GitHubLinkedInfoCard(
 @Suppress("FunctionName")
 @Composable
 internal fun GitHubInlineLiquidSurface(
-    backdrop: Backdrop,
+    backdrop: Backdrop?,
     captureBackdrop: LayerBackdrop?,
     tint: Color,
     surfaceColor: Color,
