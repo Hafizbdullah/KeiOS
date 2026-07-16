@@ -2,17 +2,16 @@
 
 package os.kei.ui.page.main.github.sheet
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -25,14 +24,11 @@ import os.kei.R
 import os.kei.feature.github.model.GitHubPackageRepositoryScanCandidate
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
-import os.kei.ui.page.main.widget.sheet.SheetControlRow
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCardDensity
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
-import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -92,6 +88,7 @@ internal fun RepositoryScanCandidateList(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .selectableGroup()
                     .heightIn(max = RepositoryScanCandidateListMaxHeight),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 2.dp),
@@ -113,19 +110,19 @@ internal fun RepositoryScanCandidateList(
 }
 
 @Composable
-private fun RepositoryScanCandidateRow(
+internal fun RepositoryScanCandidateRow(
     candidate: GitHubPackageRepositoryScanCandidate,
     recommended: Boolean,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val accent =
-        when {
-            selected -> GitHubStatusPalette.Update
-            recommended -> GitHubStatusPalette.Active
-            else -> MiuixTheme.colorScheme.primary
-        }
-    val isDark = isAppInDarkTheme()
+    val colors =
+        gitHubCandidateChoiceColors(
+            selected = selected,
+            recommended = recommended,
+            isDark = isAppInDarkTheme(),
+        )
     val metaText = candidate.repositoryCandidateMetaText()
     val starCountText =
         candidate.repository.starCount
@@ -135,95 +132,73 @@ private fun RepositoryScanCandidateRow(
         starCountText?.let {
             stringResource(R.string.github_track_sheet_repo_candidate_stars_format, it)
         }
-    SheetControlRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .appSquircleBackground(accent.copy(alpha = if (isDark) 0.08f else 0.1f), 12.dp)
-                .appSquircleBorder(
-                    width = 0.8.dp,
-                    color = accent.copy(alpha = if (selected || recommended) 0.34f else 0.18f),
-                    cornerRadius = 12.dp,
-                ).clickable(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-        minHeight = 68.dp,
-        labelContent = {
-            Text(
-                text = candidate.repository.fullName,
-                color =
-                    if (selected) {
-                        GitHubStatusPalette.Update
-                    } else {
-                        MiuixTheme.colorScheme.onBackground
-                    },
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = candidate.repository.description.ifBlank { candidate.trackedApp.repoUrl },
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (metaText.isNotBlank()) {
-                Text(
-                    text = metaText,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
-                    fontSize = AppTypographyTokens.Caption.fontSize,
-                    lineHeight = AppTypographyTokens.Caption.lineHeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        },
-    ) {
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            when {
-                selected -> {
-                    StatusPill(
-                        label = stringResource(R.string.github_track_sheet_repo_candidate_selected),
-                        color = GitHubStatusPalette.Update,
-                        size = AppStatusPillSize.Compact,
-                    )
-                }
-
-                recommended -> {
-                    StatusPill(
+    SheetChoiceCard(
+        title = candidate.repository.fullName,
+        summary = candidate.repository.description.ifBlank { candidate.trackedApp.repoUrl },
+        selected = selected,
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        density = SheetChoiceCardDensity.Compact,
+        pressSafePadding = GitHubCandidateChoicePressSafePadding,
+        contentPadding = GitHubCandidateChoiceContentPadding,
+        selectedAccentColor = GitHubStatusPalette.Update,
+        unselectedTitleColor = colors.titleColor,
+        summaryColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        selectedLabel =
+            if (selected) {
+                stringResource(R.string.github_track_sheet_repo_candidate_selected)
+            } else {
+                null
+            },
+        containerColor = colors.containerColor,
+        borderColor = colors.borderColor,
+        trailing = {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (recommended && !selected) {
+                    GitHubCandidateStatusPill(
                         label = stringResource(R.string.github_track_sheet_repo_candidate_recommended),
                         color = GitHubStatusPalette.Active,
-                        size = AppStatusPillSize.Compact,
+                    )
+                }
+                if (starLabel != null) {
+                    GitHubCandidateStatusPill(
+                        label = starLabel,
+                        color = MiuixTheme.colorScheme.primary,
+                    )
+                }
+                if (candidate.repository.archived) {
+                    GitHubCandidateStatusPill(
+                        label = stringResource(R.string.github_track_sheet_repo_candidate_archived),
+                        color = GitHubStatusPalette.Error,
+                    )
+                } else if (candidate.repository.fork) {
+                    GitHubCandidateStatusPill(
+                        label = stringResource(R.string.github_track_sheet_repo_candidate_fork),
+                        color = GitHubStatusPalette.PreRelease,
                     )
                 }
             }
-            if (starLabel != null) {
-                StatusPill(
-                    label = starLabel,
-                    color = MiuixTheme.colorScheme.primary,
-                    size = AppStatusPillSize.Compact,
-                )
-            }
-            if (candidate.repository.archived) {
-                StatusPill(
-                    label = stringResource(R.string.github_track_sheet_repo_candidate_archived),
-                    color = GitHubStatusPalette.Error,
-                    size = AppStatusPillSize.Compact,
-                )
-            } else if (candidate.repository.fork) {
-                StatusPill(
-                    label = stringResource(R.string.github_track_sheet_repo_candidate_fork),
-                    color = GitHubStatusPalette.PreRelease,
-                    size = AppStatusPillSize.Compact,
-                )
-            }
-        }
-    }
+        },
+        showIndicator = false,
+        details =
+            if (metaText.isNotBlank()) {
+                {
+                    Text(
+                        text = metaText,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
+                        fontSize = AppTypographyTokens.Caption.fontSize,
+                        lineHeight = AppTypographyTokens.Caption.lineHeight,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            } else {
+                null
+            },
+    )
 }
 
 @Composable

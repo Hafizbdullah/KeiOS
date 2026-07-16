@@ -40,6 +40,7 @@ import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
+import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
@@ -379,6 +380,7 @@ fun SheetChoiceCard(
     selectedLabel: String? = DefaultSelectedLabelSentinel,
     leading: (@Composable () -> Unit)? = null,
     density: SheetChoiceCardDensity = SheetChoiceCardDensity.Standard,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
     containerColor: Color? = null,
     borderColor: Color? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
@@ -413,6 +415,7 @@ fun SheetChoiceCard(
             onClick = onSelect,
             role = Role.RadioButton,
             selected = selected,
+            contentPadding = contentPadding,
         ) {
             Row(
                 modifier =
@@ -459,7 +462,13 @@ fun SheetChoiceCard(
                         if (selected && !resolvedSelectedLabel.isNullOrBlank()) {
                             StatusPill(
                                 label = resolvedSelectedLabel,
-                                color = selectedAccentColor
+                                color = selectedAccentColor,
+                                size =
+                                    if (compact) {
+                                        AppStatusPillSize.Compact
+                                    } else {
+                                        AppStatusPillSize.Default
+                                    },
                             )
                         }
                     }

@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -41,8 +41,8 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.shape.appSquircleBackground
-import os.kei.ui.page.main.widget.shape.appSquircleBorder
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
+import os.kei.ui.page.main.widget.sheet.SheetChoiceCardDensity
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
@@ -408,7 +408,7 @@ private fun FdroidSearchFailureNotice(
 }
 
 @Composable
-private fun FdroidCandidateList(
+internal fun FdroidCandidateList(
     candidates: List<FdroidAppSearchCandidate>,
     selectedCandidate: FdroidAppSearchCandidate?,
     onCandidateSelected: (FdroidAppSearchCandidate) -> Unit,
@@ -455,6 +455,7 @@ private fun FdroidCandidateList(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .selectableGroup()
                     .heightIn(max = FdroidCandidateListMaxHeight),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(vertical = 2.dp),
@@ -475,43 +476,80 @@ private fun FdroidCandidateList(
 }
 
 @Composable
-private fun FdroidCandidateRow(
+internal fun FdroidCandidateRow(
     candidate: FdroidAppSearchCandidate,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val accent = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.primary
-    val isDark = isAppInDarkTheme()
-    SheetControlRow(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .appSquircleBackground(accent.copy(alpha = if (isDark) 0.08f else 0.1f), 12.dp)
-                .appSquircleBorder(
-                    width = 0.8.dp,
-                    color = accent.copy(alpha = if (selected) 0.34f else 0.18f),
-                    cornerRadius = 12.dp,
-                ).clickable(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-        minHeight = 76.dp,
-        labelContent = {
-            Text(
-                text = candidate.displayName,
-                color = if (selected) GitHubStatusPalette.Update else MiuixTheme.colorScheme.onBackground,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                fontSize = AppTypographyTokens.Body.fontSize,
-                lineHeight = AppTypographyTokens.Body.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = candidate.summary.ifBlank { candidate.packageName },
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+    val colors =
+        gitHubCandidateChoiceColors(
+            selected = selected,
+            recommended = false,
+            isDark = isAppInDarkTheme(),
+        )
+    SheetChoiceCard(
+        title = candidate.displayName,
+        summary = candidate.summary.ifBlank { candidate.packageName },
+        selected = selected,
+        onSelect = onClick,
+        modifier = modifier.fillMaxWidth(),
+        density = SheetChoiceCardDensity.Compact,
+        pressSafePadding = GitHubCandidateChoicePressSafePadding,
+        contentPadding = GitHubCandidateChoiceContentPadding,
+        selectedAccentColor = GitHubStatusPalette.Update,
+        unselectedTitleColor = colors.titleColor,
+        summaryColor = MiuixTheme.colorScheme.onBackgroundVariant,
+        selectedLabel =
+            if (selected) {
+                stringResource(R.string.github_track_sheet_fdroid_candidate_selected)
+            } else {
+                null
+            },
+        containerColor = colors.containerColor,
+        borderColor = colors.borderColor,
+        trailing = {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                GitHubCandidateStatusPill(
+                    label = candidate.repoDisplayName,
+                    color = colors.accentColor,
+                )
+                if (candidate.antiFeatures.isNotEmpty()) {
+                    GitHubCandidateStatusPill(
+                        label =
+                            stringResource(
+                                R.string.github_track_sheet_fdroid_candidate_antifeatures_format,
+                                candidate.antiFeatures.size,
+                            ),
+                        color = GitHubStatusPalette.PreRelease,
+                    )
+                }
+                GitHubCandidateStatusPill(
+                    label =
+                        stringResource(
+                            when (candidate.source) {
+                                FdroidAppSearchSource.PackageApi -> {
+                                    R.string.github_track_sheet_fdroid_candidate_source_package_api
+                                }
+
+                                FdroidAppSearchSource.OfficialSearchApi -> {
+                                    R.string.github_track_sheet_fdroid_candidate_source_api
+                                }
+
+                                FdroidAppSearchSource.RepositoryIndex -> {
+                                    R.string.github_track_sheet_fdroid_candidate_source_index
+                                }
+                            },
+                        ),
+                    color = MiuixTheme.colorScheme.primary,
+                )
+            }
+        },
+        showIndicator = false,
+        details = {
             Text(
                 text = candidate.fdroidCandidateMetaText(),
                 color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
@@ -521,56 +559,7 @@ private fun FdroidCandidateRow(
                 overflow = TextOverflow.Ellipsis,
             )
         },
-    ) {
-        Column(
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (selected) {
-                StatusPill(
-                    label = stringResource(R.string.github_track_sheet_fdroid_candidate_selected),
-                    color = GitHubStatusPalette.Update,
-                    size = AppStatusPillSize.Compact,
-                )
-            }
-            StatusPill(
-                label = candidate.repoDisplayName,
-                color = accent,
-                size = AppStatusPillSize.Compact,
-            )
-            if (candidate.antiFeatures.isNotEmpty()) {
-                StatusPill(
-                    label =
-                        stringResource(
-                            R.string.github_track_sheet_fdroid_candidate_antifeatures_format,
-                            candidate.antiFeatures.size,
-                        ),
-                    color = GitHubStatusPalette.PreRelease,
-                    size = AppStatusPillSize.Compact,
-                )
-            }
-            StatusPill(
-                label =
-                    stringResource(
-                        when (candidate.source) {
-                            FdroidAppSearchSource.PackageApi -> {
-                                R.string.github_track_sheet_fdroid_candidate_source_package_api
-                            }
-
-                            FdroidAppSearchSource.OfficialSearchApi -> {
-                                R.string.github_track_sheet_fdroid_candidate_source_api
-                            }
-
-                            FdroidAppSearchSource.RepositoryIndex -> {
-                                R.string.github_track_sheet_fdroid_candidate_source_index
-                            }
-                        },
-                    ),
-                color = MiuixTheme.colorScheme.primary,
-                size = AppStatusPillSize.Compact,
-            )
-        }
-    }
+    )
 }
 
 @Composable
