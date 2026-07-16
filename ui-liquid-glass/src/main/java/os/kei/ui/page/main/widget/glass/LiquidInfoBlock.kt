@@ -44,8 +44,12 @@ fun LiquidInfoBlock(
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
     val activeBackdrop = activeGlassBackdrop(inheritedBackdrop)
-    val cardContentBackdrop = rememberLayerBackdrop()
-    val exportedContentBackdrop = cardContentBackdrop.takeIf { activeBackdrop != null }
+    val exportedContentBackdrop =
+        if (activeBackdrop != null) {
+            rememberLayerBackdrop()
+        } else {
+            null
+        }
     LiquidInfoBlockSurface(
         backdrop = activeBackdrop,
         exportedContentBackdrop = exportedContentBackdrop,

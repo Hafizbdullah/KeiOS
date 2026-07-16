@@ -20,6 +20,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import java.io.File
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -44,6 +46,19 @@ import kotlin.test.assertTrue
 class LiquidInfoBlockTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun exportedMaterialIsAllocatedOnlyForAnActiveParent() {
+        val source = sourceFile(LIQUID_INFO_BLOCK_SOURCE)
+        val exportBlock =
+            source
+                .substringAfter("val exportedContentBackdrop =")
+                .substringBefore("LiquidInfoBlockSurface(")
+
+        assertTrue("if (activeBackdrop != null)" in exportBlock)
+        assertTrue("rememberLayerBackdrop()" in exportBlock)
+        assertFalse("takeIf" in exportBlock)
+    }
 
     @Test
     fun exportsIndependentCardBackdropToContent() {
@@ -246,3 +261,17 @@ class LiquidInfoBlockTest {
 }
 
 class LiquidInfoBlockTestApp : Application()
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> File(directory, relativePath) }
+            .firstOrNull(File::isFile)
+    return requireNotNull(sourceFile) {
+        "Unable to locate $relativePath from $workingDirectory"
+    }.readText()
+}
+
+private const val LIQUID_INFO_BLOCK_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidInfoBlock.kt"
