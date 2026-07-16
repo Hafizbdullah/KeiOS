@@ -392,18 +392,18 @@ fun AppLiquidFloatingSurface(
     val effectBlurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Floating)
     val effectLensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Floating)
     val optimizedCornerRadius = appLiquidOptimizedCornerRadius(shape)
+    val pressVisualTransform: GraphicsLayerScope.() -> Unit = {
+        val pressProgress = deformationProgressProvider()
+        translationY = snapChromeTranslationPx(-pressLiftPx * pressProgress)
+        scaleX = lerp(1f, 1.010f, pressProgress)
+        scaleY = lerp(1f, 0.992f, pressProgress)
+        clip = false
+    }
 
     Box(
         modifier =
             modifier
-                .padding(resolvedPressSafePadding)
-                .graphicsLayer {
-                    val pressProgress = deformationProgressProvider()
-                    translationY = snapChromeTranslationPx(-pressLiftPx * pressProgress)
-                    scaleX = lerp(1f, 1.010f, pressProgress)
-                    scaleY = lerp(1f, 0.992f, pressProgress)
-                    clip = false
-                },
+                .padding(resolvedPressSafePadding),
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -443,11 +443,13 @@ fun AppLiquidFloatingSurface(
                                         color = Color.Black.copy(alpha = shadowAlpha),
                                     )
                                 },
+                                layerBlock = pressVisualTransform,
                                 exportedBackdrop = exportedBackdrop,
                                 onDrawSurface = { drawRect(surfaceColor) },
                             )
                         } else {
                             Modifier
+                                .graphicsLayer(block = pressVisualTransform)
                                 .appLiquidOptimizedSurface(
                                     shape = shape,
                                     optimizedCornerRadius = optimizedCornerRadius,
@@ -460,6 +462,7 @@ fun AppLiquidFloatingSurface(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .graphicsLayer(block = pressVisualTransform)
                     .appLiquidOptimizedBorder(
                         shape = shape,
                         optimizedCornerRadius = optimizedCornerRadius,
@@ -473,6 +476,7 @@ fun AppLiquidFloatingSurface(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .graphicsLayer(block = pressVisualTransform)
                     .then(
                         if (clipContent) {
                             Modifier.appLiquidOptimizedClip(
