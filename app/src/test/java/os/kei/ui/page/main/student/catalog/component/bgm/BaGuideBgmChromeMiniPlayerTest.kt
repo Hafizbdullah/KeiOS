@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -207,6 +208,62 @@ class BaGuideBgmChromeMiniPlayerTest {
     }
 
     @Test
+    fun transitioningPlayerRevealsProgressAfterTitleClears() {
+        val expandedState = mutableFloatStateOf(HIDDEN_PROGRESS_SAMPLES.first())
+        setMiniPlayer(expanded = { expandedState.floatValue })
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val density = context.resources.displayMetrics.density
+        val maximumDraggedThumbHalfHeightPx = 18.dp.value * 1.30f * 1.10f / 2f * density
+        val visualOffsetPx = BaGuideBgmMiniPlayerProgressVisualOffset.value * density
+        val pressSafePaddingPx = 2.dp.value * density
+
+        HIDDEN_PROGRESS_SAMPLES.forEach { expanded ->
+            composeRule.runOnIdle { expandedState.floatValue = expanded }
+            composeRule.waitForIdle()
+
+            composeRule
+                .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_seekbar))
+                .assertDoesNotExist()
+        }
+
+        VISIBLE_PROGRESS_SAMPLES.forEach { expanded ->
+            composeRule.runOnIdle { expandedState.floatValue = expanded }
+            composeRule.waitForIdle()
+
+            val titleBounds =
+                composeRule
+                    .onNodeWithText(TEST_TRACK_TITLE)
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+            val seekBounds =
+                composeRule
+                    .onNodeWithContentDescription(context.getString(R.string.ba_catalog_bgm_seekbar))
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+            val surfaceBounds =
+                composeRule
+                    .onNodeWithTag(MINI_PLAYER_SURFACE_TEST_TAG)
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+            val visualThumbCenterY = seekBounds.center.y + visualOffsetPx
+            val maximumDraggedThumbTop = visualThumbCenterY - maximumDraggedThumbHalfHeightPx
+            val maximumDraggedThumbBottom = visualThumbCenterY + maximumDraggedThumbHalfHeightPx
+            val productionInnerClipBottom = surfaceBounds.bottom - pressSafePaddingPx
+
+            assertTrue(
+                maximumDraggedThumbTop + 0.5f >= titleBounds.bottom,
+                "At expandedProgress=$expanded, maximum dragged thumb top $maximumDraggedThumbTop " +
+                    "must stay below title bottom ${titleBounds.bottom}",
+            )
+            assertTrue(
+                maximumDraggedThumbBottom <= productionInnerClipBottom + 0.5f,
+                "At expandedProgress=$expanded, maximum dragged thumb bottom $maximumDraggedThumbBottom " +
+                    "must stay inside production clip bottom $productionInnerClipBottom",
+            )
+        }
+    }
+
+    @Test
     fun compactPlayerRemovesSeekAndSideTransportSemantics() {
         setMiniPlayer(expanded = 0f)
         val context = ApplicationProvider.getApplicationContext<Application>()
@@ -227,6 +284,18 @@ class BaGuideBgmChromeMiniPlayerTest {
 
     private fun setMiniPlayer(
         expanded: Float,
+        onPreviousClick: () -> Unit = {},
+        onPlayPauseClick: () -> Unit = {},
+        onNextClick: () -> Unit = {},
+    ) = setMiniPlayer(
+        expanded = { expanded },
+        onPreviousClick = onPreviousClick,
+        onPlayPauseClick = onPlayPauseClick,
+        onNextClick = onNextClick,
+    )
+
+    private fun setMiniPlayer(
+        expanded: () -> Float,
         onPreviousClick: () -> Unit = {},
         onPlayPauseClick: () -> Unit = {},
         onNextClick: () -> Unit = {},
@@ -254,8 +323,8 @@ class BaGuideBgmChromeMiniPlayerTest {
                                 onPlaybackProgressChange = {},
                                 onPlaybackProgressChangeFinished = {},
                                 onPlaybackSliderInteractionChanged = {},
-                                expandedProgress = { expanded },
-                                compactProgress = { 1f - expanded },
+                                expandedProgress = expanded,
+                                compactProgress = { 1f - expanded() },
                                 onPlayPauseClick = onPlayPauseClick,
                                 onPreviousClick = onPreviousClick,
                                 onNextClick = onNextClick,
@@ -273,5 +342,9 @@ class BaGuideBgmChromeMiniPlayerTest {
 private const val TEST_TRACK_TITLE = "学生 · A long track title"
 
 private const val MINI_PLAYER_SURFACE_TEST_TAG = "ba_bgm_mini_player_surface"
+
+private val HIDDEN_PROGRESS_SAMPLES = listOf(0.01f, 0.25f, 0.5f)
+
+private val VISIBLE_PROGRESS_SAMPLES = listOf(0.51f, 0.75f)
 
 class BaGuideBgmChromeMiniPlayerTestApp : Application()

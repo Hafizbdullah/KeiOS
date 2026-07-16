@@ -73,6 +73,13 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val expanded = expandedProgress().coerceIn(0f, 1f)
     val expandedProvider = { expandedProgress().coerceIn(0f, 1f) }
     val compact = compactProgress().coerceIn(0f, 1f)
+    val titleMotionProgress =
+        (expanded / MINI_PLAYER_PROGRESS_REVEAL_START).coerceIn(0f, 1f)
+    val progressReveal =
+        (
+            (expanded - MINI_PLAYER_PROGRESS_REVEAL_START) /
+                (1f - MINI_PLAYER_PROGRESS_REVEAL_START)
+        ).coerceIn(0f, 1f)
     val artworkSize = debugBgmLerpDp(38.dp, 42.dp, expanded)
     val artworkCornerRadius = debugBgmLerpDp(10.dp, 11.dp, expanded)
     val contentPadding = PaddingValues(horizontal = debugBgmLerpDp(10.dp, 14.dp, expanded))
@@ -80,7 +87,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
-    val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, expanded)
+    val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, titleMotionProgress)
     val sideControlSlotWidth =
         debugBgmLerpDp(
             0.dp,
@@ -160,7 +167,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                         translationY = titleVerticalOffset.toPx()
                     },
             )
-            if (expanded > MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD) {
+            if (progressReveal > MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD) {
                 LiquidMusicProgressSlider(
                     value = { playbackProgress().coerceIn(0f, 1f) },
                     onValueChange = onPlaybackProgressChange,
@@ -177,7 +184,7 @@ internal fun BaGuideBgmChromeMiniPlayer(
                             .fillMaxWidth()
                             .height(MINI_PLAYER_PROGRESS_TOUCH_HEIGHT)
                             .padding(horizontal = 8.dp)
-                            .graphicsLayer { alpha = expanded },
+                            .graphicsLayer { alpha = progressReveal },
                 )
             }
         }
@@ -302,5 +309,7 @@ internal const val BaGuideBgmMiniPlayerTransportGroupTestTag = "ba_bgm_mini_play
 private val MINI_PLAYER_PROGRESS_TOUCH_HEIGHT = 48.dp
 
 internal val BaGuideBgmMiniPlayerProgressVisualOffset = 10.dp
+
+private const val MINI_PLAYER_PROGRESS_REVEAL_START = 0.5f
 
 private const val MINI_PLAYER_EXPANDED_CONTENT_THRESHOLD = 0.001f
