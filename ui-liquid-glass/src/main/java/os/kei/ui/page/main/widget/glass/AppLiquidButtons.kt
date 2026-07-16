@@ -116,6 +116,7 @@ fun AppLiquidIconButton(
     badgeLabel: String? = null,
     badgeColor: Color? = null,
     badgeContentColor: Color? = null,
+    containerAlphaOverride: Float? = null,
 ) {
     val isDark = isAppInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -136,6 +137,7 @@ fun AppLiquidIconButton(
             variant = variant,
             isDark = isDark,
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
             contentTint = iconTint,
             enabled = enabled,
             onPressedChange = onPressedChange,
@@ -172,6 +174,7 @@ fun AppLiquidIconButton(
     enabled: Boolean = true,
     onPressedChange: ((Boolean) -> Unit)? = null,
     tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
+    containerAlphaOverride: Float? = null,
 ) {
     val isDark = isAppInDarkTheme()
     val resolvedWidth = if (width == Dp.Unspecified) defaultAppLiquidIconButtonSize(variant) else width
@@ -192,6 +195,7 @@ fun AppLiquidIconButton(
             variant = variant,
             isDark = isDark,
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
             contentTint = iconTint,
             enabled = enabled,
             onPressedChange = onPressedChange,
@@ -258,6 +262,7 @@ private fun AppLiquidIconButtonContainer(
     variant: GlassVariant,
     isDark: Boolean,
     containerColor: Color?,
+    containerAlphaOverride: Float?,
     contentTint: Color,
     enabled: Boolean,
     onPressedChange: ((Boolean) -> Unit)?,
@@ -288,22 +293,20 @@ private fun AppLiquidIconButtonContainer(
             isDark = isDark,
             variant = variant,
         )
-    val resolvedContainerColor =
-        sanitizeCapsuleContainerColor(
+    val containerOverlay =
+        resolveLiquidButtonContainerOverlay(
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
+            variant = variant,
             isDark = isDark,
         )
     val transparentContainer = containerColor?.alpha == 0f
     val showBorder = glass.showBorder && !transparentContainer && containerColor == null
-    val containerOverlay =
-        resolvedContainerColor
-            ?.takeUnless { transparentContainer }
-            ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
     val pressedOverlayColor =
         appControlPressedOverlayColor(
             isDark = isDark,
             variant = variant,
-            accentColor = resolvedContainerColor ?: Color.Unspecified,
+            accentColor = containerOverlay ?: Color.Unspecified,
         )
     val animationScope = rememberCoroutineScope()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -417,12 +420,14 @@ private fun AppLiquidIconButtonContainer(
                                 InnerShadow(radius = 6.dp * progress, alpha = progress)
                             },
                             onDrawSurface = {
-                                if (variant == GlassVariant.Bar) {
-                                    drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
-                                } else {
-                                    drawRect(glass.baseColor)
-                                    if (surfaceOverlayColor != Color.Transparent) {
-                                        drawRect(surfaceOverlayColor)
+                                if (containerAlphaOverride == null || containerOverlay == null) {
+                                    if (variant == GlassVariant.Bar) {
+                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                    } else {
+                                        drawRect(glass.baseColor)
+                                        if (surfaceOverlayColor != Color.Transparent) {
+                                            drawRect(surfaceOverlayColor)
+                                        }
                                     }
                                 }
                                 containerOverlay?.let { drawRect(it) }
@@ -504,6 +509,9 @@ fun AppLiquidTextButton(
     pressScaleEnabled: Boolean = true,
     pressOverlayEnabled: Boolean = true,
     consumeDragChangesForInteraction: Boolean = false,
+    containerAlphaOverride: Float? = null,
+    leadingIconModifier: Modifier = Modifier,
+    leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
 ) {
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val activeBackdrop = activeGlassBackdrop(backdrop)
@@ -533,21 +541,19 @@ fun AppLiquidTextButton(
             isDark = isDark,
             variant = variant,
         )
-    val resolvedContainerColor =
-        sanitizeCapsuleContainerColor(
+    val containerOverlay =
+        resolveLiquidButtonContainerOverlay(
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
+            variant = variant,
             isDark = isDark,
         )
     val transparentContainer = containerColor?.alpha == 0f
-    val containerOverlay =
-        resolvedContainerColor
-            ?.takeUnless { transparentContainer }
-            ?.copy(alpha = glassContainerOverlayAlpha(variant, isDark))
     val pressedOverlayColor =
         appControlPressedOverlayColor(
             isDark = isDark,
             variant = variant,
-            accentColor = resolvedContainerColor ?: textColor,
+            accentColor = containerOverlay ?: textColor,
         )
     val liquidInteractionEnabled = enabled && liquidControlsEnabled && (pressScaleEnabled || pressOverlayEnabled)
     val animationScope = rememberCoroutineScope()
@@ -696,12 +702,14 @@ fun AppLiquidTextButton(
                                 InnerShadow(radius = 6.dp * progress, alpha = progress)
                             },
                             onDrawSurface = {
-                                if (variant == GlassVariant.Bar) {
-                                    drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
-                                } else {
-                                    drawRect(glass.baseColor)
-                                    if (surfaceOverlayColor != Color.Transparent) {
-                                        drawRect(surfaceOverlayColor)
+                                if (containerAlphaOverride == null || containerOverlay == null) {
+                                    if (variant == GlassVariant.Bar) {
+                                        drawRect(fallbackSurface.copy(alpha = glass.fallbackAlpha))
+                                    } else {
+                                        drawRect(glass.baseColor)
+                                        if (surfaceOverlayColor != Color.Transparent) {
+                                            drawRect(surfaceOverlayColor)
+                                        }
                                     }
                                 }
                                 containerOverlay?.let { drawRect(it) }
@@ -738,7 +746,7 @@ fun AppLiquidTextButton(
         DisableSelection {
             Row(
                 modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding),
-                horizontalArrangement = Arrangement.spacedBy(AppInteractiveTokens.controlContentGap),
+                horizontalArrangement = Arrangement.spacedBy(leadingContentGap),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 leadingIcon?.let { icon ->
@@ -746,6 +754,7 @@ fun AppLiquidTextButton(
                         imageVector = icon,
                         contentDescription = null,
                         tint = iconTint,
+                        modifier = leadingIconModifier,
                     )
                 }
                 if (text.isNotBlank()) {
@@ -800,6 +809,29 @@ internal fun glassContainerOverlayAlpha(
         GlassVariant.SearchField -> if (isDark) 0.18f else 0.22f
         GlassVariant.Content -> if (isDark) 0.26f else 0.32f
     }
+
+internal fun resolveLiquidButtonContainerOverlay(
+    containerColor: Color?,
+    containerAlphaOverride: Float?,
+    variant: GlassVariant,
+    isDark: Boolean,
+): Color? {
+    if (containerColor == null || containerColor.alpha == 0f) return null
+    val resolvedContainerColor =
+        if (containerAlphaOverride != null) {
+            containerColor
+        } else {
+            sanitizeCapsuleContainerColor(
+                containerColor = containerColor,
+                isDark = isDark,
+            )
+        }
+    return resolvedContainerColor?.copy(
+        alpha =
+            containerAlphaOverride?.coerceIn(0f, 1f)
+                ?: glassContainerOverlayAlpha(variant, isDark),
+    )
+}
 
 private fun appLiquidButtonShadowAlpha(
     baseAlpha: Float,

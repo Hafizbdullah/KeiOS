@@ -38,9 +38,9 @@ class BaGuideFavoriteBgmBackdropContractTest {
             "Album actions must consume the same real material as artwork and volume",
         )
         assertEquals(
-            5,
+            3,
             visualsSource.occurrencesOf("backdrop: Backdrop?,"),
-            "Artwork, actions, volume, round actions and play action must support static fallback",
+            "Artwork, the shared action group and volume must support static fallback",
         )
         assertFalse("rememberLayerBackdrop" in visualsSource)
         assertFalse("rememberCombinedBackdrop" in visualsSource)
@@ -65,8 +65,33 @@ class BaGuideFavoriteBgmBackdropContractTest {
 
         assertTrue(".height(50.dp + AppInteractiveTokens.liquidPressSafePadding * 2)" in source)
         assertTrue("Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally)" in source)
+        assertEquals(2, source.occurrencesOf("modifier = Modifier.size(50.dp)"))
+        assertEquals(2, source.occurrencesOf("width = 50.dp,"))
+        assertEquals(2, source.occurrencesOf("height = 50.dp,"))
+        assertEquals(2, source.occurrencesOf("iconModifier = Modifier.size(22.dp)"))
+        assertTrue(".widthIn(min = 108.dp, max = 128.dp)" in source)
+        assertTrue("minHeight = 50.dp," in source)
+        assertTrue("leadingIconModifier = Modifier.size(20.dp)" in source)
+        assertTrue("leadingContentGap = 7.dp" in source)
         assertTrue(".padding(horizontal = 10.dp)" in source)
         assertTrue("Arrangement.spacedBy(12.dp)" in source)
+    }
+
+    @Test
+    fun albumActionsReuseSharedButtonsWithOriginalThemeFilm() {
+        val source = sourceFile(ALBUM_VISUALS_SOURCE)
+
+        assertEquals(2, source.occurrencesOf("AppLiquidIconButton("))
+        assertEquals(1, source.occurrencesOf("AppLiquidTextButton("))
+        assertEquals(1, source.occurrencesOf("LiquidSurface("), "Only album artwork keeps a raw liquid surface")
+        assertFalse("BaGuideBgmRoundAction" in source)
+        assertFalse("BaGuideBgmPlayAction" in source)
+        assertTrue(
+            "Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)" in source,
+        )
+        assertEquals(3, source.occurrencesOf("variant = GlassVariant.SheetAction"))
+        assertEquals(3, source.occurrencesOf("containerColor = actionSurfaceColor"))
+        assertEquals(3, source.occurrencesOf("containerAlphaOverride = actionSurfaceColor.alpha"))
     }
 }
 

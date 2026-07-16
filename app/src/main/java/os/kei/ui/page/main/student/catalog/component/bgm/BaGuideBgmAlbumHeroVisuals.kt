@@ -23,14 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.capsule.ContinuousCapsule
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideMusicIcon
@@ -42,6 +40,9 @@ import os.kei.ui.page.main.os.appLucideVolumeOffIcon
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
+import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
 import os.kei.ui.page.main.widget.glass.LiquidVolumeSlider
 import os.kei.ui.page.main.widget.shape.appSquircleClip
@@ -111,6 +112,7 @@ internal fun BaGuideBgmAlbumPrimaryActions(
     onVolumeClick: () -> Unit,
 ) {
     val neutralTint = MiuixTheme.colorScheme.onBackground
+    val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
     Box(
         modifier =
             Modifier
@@ -125,30 +127,69 @@ internal fun BaGuideBgmAlbumPrimaryActions(
             horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BaGuideBgmRoundAction(
+            AppLiquidIconButton(
+                backdrop = backdrop,
                 icon = appLucideRepeatIcon(),
                 contentDescription = stringResource(R.string.ba_catalog_bgm_action_repeat),
-                accent = accent,
-                neutralTint = neutralTint,
-                active = repeatEnabled,
                 onClick = onRepeatClick,
-                backdrop = backdrop,
+                modifier = Modifier.size(50.dp),
+                width = 50.dp,
+                height = 50.dp,
+                shape = CircleShape,
+                variant = GlassVariant.SheetAction,
+                iconTint = if (repeatEnabled) accent.copy(alpha = 0.98f) else neutralTint,
+                iconModifier = Modifier.size(22.dp),
+                containerColor = actionSurfaceColor,
+                containerAlphaOverride = actionSurfaceColor.alpha,
             )
-            BaGuideBgmPlayAction(
-                accent = accent,
-                neutralTint = neutralTint,
-                isPlaying = isPlaying,
+            val playTint = if (isPlaying) accent.copy(alpha = 0.98f) else neutralTint
+            AppLiquidTextButton(
+                backdrop = backdrop,
+                text =
+                    stringResource(
+                        if (isPlaying) {
+                            R.string.ba_catalog_bgm_action_pause
+                        } else {
+                            R.string.ba_catalog_bgm_action_play_short
+                        },
+                    ),
                 onClick = onPlayPauseClick,
-                backdrop = backdrop,
+                modifier =
+                    Modifier
+                        .height(50.dp)
+                        .widthIn(min = 108.dp, max = 128.dp),
+                textColor = playTint,
+                containerColor = actionSurfaceColor,
+                leadingIcon = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
+                iconTint = playTint,
+                variant = GlassVariant.SheetAction,
+                minHeight = 50.dp,
+                horizontalPadding = 16.dp,
+                verticalPadding = 0.dp,
+                textMaxLines = 1,
+                textOverflow = TextOverflow.Ellipsis,
+                textSoftWrap = false,
+                textSize = AppTypographyTokens.Supporting.fontSize,
+                textLineHeight = AppTypographyTokens.Supporting.lineHeight,
+                textFontWeight = FontWeight.SemiBold,
+                containerAlphaOverride = actionSurfaceColor.alpha,
+                leadingIconModifier = Modifier.size(20.dp),
+                leadingContentGap = 7.dp,
             )
-            BaGuideBgmRoundAction(
+            AppLiquidIconButton(
+                backdrop = backdrop,
                 icon = if (muted) appLucideVolumeOffIcon() else appLucideVolume2Icon(),
                 contentDescription = stringResource(R.string.ba_catalog_bgm_volume_slider_label),
-                accent = accent,
-                neutralTint = neutralTint,
-                active = volumeControlVisible,
                 onClick = onVolumeClick,
-                backdrop = backdrop,
+                modifier = Modifier.size(50.dp),
+                width = 50.dp,
+                height = 50.dp,
+                shape = CircleShape,
+                variant = GlassVariant.SheetAction,
+                iconTint = if (volumeControlVisible) accent.copy(alpha = 0.98f) else neutralTint,
+                iconModifier = Modifier.size(22.dp),
+                containerColor = actionSurfaceColor,
+                containerAlphaOverride = actionSurfaceColor.alpha,
             )
         }
     }
@@ -226,94 +267,6 @@ internal fun BaGuideBgmAlbumVolumeControl(
                 fontSize = AppTypographyTokens.Supporting.fontSize,
                 lineHeight = AppTypographyTokens.Supporting.lineHeight,
                 maxLines = 1,
-            )
-        }
-    }
-}
-
-@Composable
-private fun BaGuideBgmRoundAction(
-    icon: ImageVector,
-    contentDescription: String,
-    accent: Color,
-    neutralTint: Color,
-    active: Boolean,
-    onClick: () -> Unit = {},
-    backdrop: Backdrop?,
-) {
-    val contentTint = if (active) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
-    LiquidSurface(
-        backdrop = backdrop,
-        modifier = Modifier.size(50.dp),
-        shape = CircleShape,
-        tint = Color.Unspecified,
-        surfaceColor = actionSurfaceColor,
-        chromaticAberration = true,
-        onClick = onClick,
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = contentTint,
-            modifier = Modifier.size(22.dp),
-        )
-    }
-}
-
-@Composable
-private fun BaGuideBgmPlayAction(
-    accent: Color,
-    neutralTint: Color,
-    isPlaying: Boolean,
-    onClick: () -> Unit,
-    backdrop: Backdrop?,
-) {
-    val contentTint = if (isPlaying) accent.copy(alpha = 0.98f) else neutralTint
-    val actionSurfaceColor = Color.White.copy(alpha = if (isAppInDarkTheme()) 0.14f else 0.34f)
-    LiquidSurface(
-        backdrop = backdrop,
-        modifier =
-            Modifier
-                .height(50.dp)
-                .widthIn(min = 108.dp, max = 128.dp),
-        shape = ContinuousCapsule,
-        tint = Color.Unspecified,
-        surfaceColor = actionSurfaceColor,
-        chromaticAberration = true,
-        onClick = onClick,
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = if (isPlaying) appLucidePauseIcon() else appLucidePlayIcon(),
-                contentDescription = null,
-                tint = contentTint,
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text =
-                    stringResource(
-                        if (isPlaying) {
-                            R.string.ba_catalog_bgm_action_pause
-                        } else {
-                            R.string.ba_catalog_bgm_action_play_short
-                        },
-                    ),
-                color = contentTint,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }

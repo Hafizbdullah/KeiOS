@@ -60,6 +60,9 @@ fun AppStandaloneLiquidTextButton(
     pressScaleEnabled: Boolean = true,
     pressOverlayEnabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
+    containerAlphaOverride: Float? = null,
+    leadingIconModifier: Modifier = Modifier,
+    leadingContentGap: Dp = AppInteractiveTokens.controlContentGap,
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -97,6 +100,9 @@ fun AppStandaloneLiquidTextButton(
             textFontWeight = textFontWeight,
             pressScaleEnabled = pressScaleEnabled,
             pressOverlayEnabled = pressOverlayEnabled,
+            containerAlphaOverride = containerAlphaOverride,
+            leadingIconModifier = leadingIconModifier,
+            leadingContentGap = leadingContentGap,
         )
     }
 }
@@ -119,6 +125,7 @@ fun AppStandaloneLiquidIconButton(
     enabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
     tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
+    containerAlphaOverride: Float? = null,
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -144,6 +151,7 @@ fun AppStandaloneLiquidIconButton(
             variant = variant,
             iconTint = iconTint,
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
             enabled = enabled,
             tooltipText = tooltipText,
         )
@@ -169,6 +177,7 @@ fun AppStandaloneLiquidIconButton(
     enabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
     tooltipText: String? = contentDescription.takeIf { it.isNotBlank() },
+    containerAlphaOverride: Float? = null,
 ) {
     val resolvedPressSafePadding =
         if (pressSafePadding == Dp.Unspecified) {
@@ -195,6 +204,7 @@ fun AppStandaloneLiquidIconButton(
             iconTint = iconTint,
             iconModifier = iconModifier,
             containerColor = containerColor,
+            containerAlphaOverride = containerAlphaOverride,
             enabled = enabled,
             tooltipText = tooltipText,
         )
