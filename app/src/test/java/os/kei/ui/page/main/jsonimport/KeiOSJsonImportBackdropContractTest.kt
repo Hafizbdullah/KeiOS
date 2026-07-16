@@ -48,6 +48,42 @@ class KeiOSJsonImportBackdropContractTest {
     }
 
     @Test
+    fun errorMessageUsesTheStatusCardBackdropAndCompactSupportingMaterial() {
+        val source = sourceFile(JSON_IMPORT_CONTENT_SOURCE)
+        val statusCard =
+            source.functionBody(
+                start = "private fun JsonImportStatusCard(",
+                end = "private fun JsonImportSourceCard(",
+            )
+        val supportingBlock =
+            source.functionBody(
+                start = "internal fun JsonImportErrorSupportingBlock(",
+                end = "private fun JsonImportSourceCard(",
+            )
+
+        assertTrue("exportBackdropToContent = true," in statusCard)
+        assertTrue("JsonImportErrorSupportingBlock(errorMessage = state.errorMessage)" in statusCard)
+        assertTrue("if (errorMessage.isBlank()) return" in supportingBlock)
+        assertTrue("AppSupportingBlock(" in supportingBlock)
+        assertTrue("text = errorMessage," in supportingBlock)
+        assertTrue("accentColor = errorColor," in supportingBlock)
+        assertTrue(
+            "containerColor = errorColor.copy(alpha = if (isDark) 0.12f else 0.08f)," in supportingBlock,
+        )
+        assertTrue("contentColor = MiuixTheme.colorScheme.onErrorContainer," in supportingBlock)
+        assertTrue(
+            "contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)," in supportingBlock,
+        )
+        assertTrue("typography = AppTypographyTokens.Supporting," in supportingBlock)
+        assertTrue("fillWidth = true," in supportingBlock)
+        assertFalse(Regex("\\bText\\(").containsMatchIn(supportingBlock))
+        assertFalse("maxLines =" in supportingBlock)
+        assertFalse("overflow =" in supportingBlock)
+        assertFalse("rememberLayerBackdrop()" in supportingBlock)
+        assertFalse(".layerBackdrop(" in supportingBlock)
+    }
+
+    @Test
     fun informationOnlyCardsAvoidUnusedMaterialExports() {
         val source = sourceFile(JSON_IMPORT_CONTENT_SOURCE)
         listOf(

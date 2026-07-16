@@ -31,11 +31,13 @@ import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideWarningIcon
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
 import os.kei.ui.page.main.settings.support.formatBytes
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.core.AppDualActionRow
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppOverviewMetricTile
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
+import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
@@ -131,19 +133,29 @@ private fun JsonImportStatusCard(state: KeiOSJsonImportUiState) {
                 contentDescription = statusText,
             )
         }
-        state.errorMessage
-            .takeIf { it.isNotBlank() }
-            ?.let {
-                Text(
-                    text = it,
-                    color = MiuixTheme.colorScheme.error,
-                    fontSize = AppTypographyTokens.Supporting.fontSize,
-                    lineHeight = AppTypographyTokens.Supporting.lineHeight,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        JsonImportErrorSupportingBlock(errorMessage = state.errorMessage)
     }
+}
+
+@Composable
+internal fun JsonImportErrorSupportingBlock(
+    errorMessage: String,
+    modifier: Modifier = Modifier,
+) {
+    if (errorMessage.isBlank()) return
+
+    val isDark = isAppInDarkTheme()
+    val errorColor = MiuixTheme.colorScheme.error
+    AppSupportingBlock(
+        text = errorMessage,
+        modifier = modifier,
+        accentColor = errorColor,
+        containerColor = errorColor.copy(alpha = if (isDark) 0.12f else 0.08f),
+        contentColor = MiuixTheme.colorScheme.onErrorContainer,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+        typography = AppTypographyTokens.Supporting,
+        fillWidth = true,
+    )
 }
 
 @Composable
