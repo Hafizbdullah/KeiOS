@@ -145,9 +145,10 @@ private fun GitHubShareImportAttachDuplicateActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.weight(1f),
+            buttonModifier =
                 Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportAttachClose),
             text = stringResource(R.string.common_close),
             leadingIcon = appLucideCloseIcon(),
@@ -171,9 +172,10 @@ private fun GitHubShareImportAttachConfirmActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.weight(1f),
+            buttonModifier =
                 Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportAttachCancel),
             text = stringResource(R.string.common_cancel),
             leadingIcon = appLucideCloseIcon(),
@@ -183,9 +185,10 @@ private fun GitHubShareImportAttachConfirmActions(
             enabled = !submitting,
         )
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.weight(1f),
+            buttonModifier =
                 Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportAttachConfirm),
             text =
                 if (submitting && !submittingAndOpen) {
@@ -201,7 +204,8 @@ private fun GitHubShareImportAttachConfirmActions(
     }
     if (onConfirmAndOpenGitHub != null) {
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.fillMaxWidth(),
+            buttonModifier =
                 Modifier
                     .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportAttachConfirmOpenGitHub),

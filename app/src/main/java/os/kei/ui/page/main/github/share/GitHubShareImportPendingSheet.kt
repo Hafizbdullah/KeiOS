@@ -95,18 +95,20 @@ internal fun GitHubShareImportPendingSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 AppLiquidDialogActionButton(
-                    modifier =
+                    modifier = Modifier.weight(1f),
+                    buttonModifier =
                         Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .testTag(KeiOsTestTags.GitHubShareImportPendingClose),
                     text = stringResource(R.string.common_close),
                     leadingIcon = appLucideCloseIcon(),
                     onClick = onClose,
                 )
                 AppLiquidDialogActionButton(
-                    modifier =
+                    modifier = Modifier.weight(1f),
+                    buttonModifier =
                         Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .testTag(KeiOsTestTags.GitHubShareImportPendingCancel),
                     text = stringResource(R.string.github_share_import_pending_action_cancel),
                     leadingIcon = appLucideCloseIcon(),

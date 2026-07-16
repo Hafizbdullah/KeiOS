@@ -31,9 +31,10 @@ internal fun GitHubShareImportAssetPickerActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.weight(1f),
+            buttonModifier =
                 Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportCancel),
             text = stringResource(R.string.common_cancel),
             leadingIcon = appLucideCloseIcon(),
@@ -42,9 +43,10 @@ internal fun GitHubShareImportAssetPickerActions(
             onClick = onCancel,
         )
         AppLiquidDialogActionButton(
-            modifier =
+            modifier = Modifier.weight(1f),
+            buttonModifier =
                 Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .testTag(KeiOsTestTags.GitHubShareImportConfirm),
             text = gitHubShareImportConfirmLabel(managedInstallProgress),
             leadingIcon = appLucidePackageIcon(),

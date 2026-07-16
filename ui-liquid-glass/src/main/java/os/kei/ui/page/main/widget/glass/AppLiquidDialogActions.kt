@@ -47,14 +47,13 @@ fun AppLiquidDialogActionButton(
         }
     val resolvedTextColor = textColor ?: defaultContentColor
     val resolvedIconTint = iconTint ?: resolvedTextColor
-    val interactiveModifier = modifier.then(buttonModifier)
     val dialogBackdrop = LocalLiquidDialogBackdrop.current
     if (dialogBackdrop != null) {
         AppLiquidTextButton(
             backdrop = dialogBackdrop,
             text = text,
             onClick = onClick,
-            modifier = interactiveModifier,
+            modifier = modifier.then(buttonModifier),
             textColor = resolvedTextColor,
             containerColor = containerColor,
             leadingIcon = leadingIcon,
@@ -72,8 +71,8 @@ fun AppLiquidDialogActionButton(
         AppStandaloneLiquidTextButton(
             text = text,
             onClick = onClick,
-            modifier = Modifier,
-            buttonModifier = interactiveModifier,
+            modifier = modifier,
+            buttonModifier = buttonModifier,
             textColor = resolvedTextColor,
             containerColor = containerColor,
             leadingIcon = leadingIcon,
