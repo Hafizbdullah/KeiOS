@@ -2,7 +2,6 @@
 
 package os.kei.ui.page.main.student.tabcontent.profile
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -50,6 +49,7 @@ import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
 import os.kei.ui.page.main.widget.shape.appSquircleClip
@@ -222,7 +222,7 @@ internal fun GuideProfileValueCapsule(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val activeBackdrop = activeGlassBackdrop(LocalLiquidParentBackdrop.current)
     val shape = ContinuousCapsule
     val clickModifier =
@@ -514,7 +514,7 @@ internal fun GuideGiftPreferenceGrid(items: List<GiftPreferenceItem>) {
         )
         return
     }
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val horizontalSpacing = 4.dp
     val minCardWidth = 78.dp
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
