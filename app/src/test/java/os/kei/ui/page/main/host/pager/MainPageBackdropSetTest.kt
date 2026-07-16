@@ -29,14 +29,20 @@ class MainPageBackdropSetTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun contentSceneKeepsFullSizeProducerBeforeConsumerSlot() {
+    fun contentSceneKeepsFullSizeProducersBeforeConsumerSlot() {
         val source = sourceFile(MAIN_PAGE_BACKDROP_SET_SOURCE)
-        val producerIndex = source.indexOf(".layerBackdrop(contentBackdrop)")
-        val consumerIndex = source.indexOf("content()", startIndex = producerIndex + 1)
+        val contentProducerIndex = source.indexOf(".layerBackdrop(contentBackdrop)")
+        val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetBackdrop)")
+        val consumerIndex = source.indexOf("content()", startIndex = sheetProducerIndex + 1)
 
-        assertTrue(producerIndex >= 0, "Expected a content Backdrop producer")
-        assertTrue(consumerIndex > producerIndex, "Content consumers must be composed after the producer sibling")
+        assertTrue(contentProducerIndex >= 0, "Expected a content Backdrop producer")
+        assertTrue(sheetProducerIndex > contentProducerIndex, "Sheet producer must follow the content producer")
+        assertTrue(consumerIndex > sheetProducerIndex, "Content consumers must follow both producer siblings")
         assertTrue(".matchParentSize()" in source, "The producer must cover the complete page scene")
+        assertTrue(
+            "sheetBackdrop != null && sheetBackdrop !== contentBackdrop" in source,
+            "Collapsed content and sheet identities must avoid duplicate producers",
+        )
         assertTrue(
             "Box(modifier = modifier)" in source,
             "The scene modifier must remain on the neutral parent rather than the Backdrop producer",

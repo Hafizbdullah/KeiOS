@@ -34,6 +34,7 @@ data class MainPageBackdropSet(
 @Composable
 internal fun MainPageContentBackdropScene(
     contentBackdrop: LayerBackdrop,
+    sheetBackdrop: LayerBackdrop? = null,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -44,6 +45,14 @@ internal fun MainPageContentBackdropScene(
                     .matchParentSize()
                     .layerBackdrop(contentBackdrop),
         )
+        if (sheetBackdrop != null && sheetBackdrop !== contentBackdrop) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(sheetBackdrop),
+            )
+        }
         content()
     }
 }

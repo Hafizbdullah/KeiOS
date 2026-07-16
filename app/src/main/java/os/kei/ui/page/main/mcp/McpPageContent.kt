@@ -52,6 +52,7 @@ internal fun McpPageContent(
 ) {
     MainPageContentBackdropScene(
         contentBackdrop = backdrops.content,
+        sheetBackdrop = backdrops.sheet,
         modifier = Modifier.fillMaxSize(),
     ) {
         AppPageLazyColumn(

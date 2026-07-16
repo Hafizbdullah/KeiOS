@@ -343,6 +343,7 @@ fun BAPage(
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         MainPageContentBackdropScene(
             contentBackdrop = backdrops.content,
+            sheetBackdrop = backdrops.sheet,
             modifier = Modifier.fillMaxSize(),
         ) {
             AppScaffold(

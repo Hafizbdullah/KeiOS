@@ -130,6 +130,7 @@ internal fun OsPageMainList(
     scrollBehaviorConnection: NestedScrollConnection,
     topBarBackdrop: LayerBackdrop,
     contentBackdrop: LayerBackdrop,
+    sheetBackdrop: LayerBackdrop,
     chromeState: OsPageMainListChromeState,
     overviewState: OsPageMainListOverviewState,
     contentState: OsPageMainListContentState,
@@ -250,6 +251,7 @@ internal fun OsPageMainList(
 
     MainPageContentBackdropScene(
         contentBackdrop = contentBackdrop,
+        sheetBackdrop = sheetBackdrop,
         modifier = Modifier.fillMaxSize(),
     ) {
         AppPageLazyColumn(

@@ -311,6 +311,7 @@ fun GitHubPage(
                 GitHubMainContentSurfaces(
                     topBarBackdrop = backdrops.topBar,
                     contentBackdrop = backdrops.content,
+                    sheetBackdrop = backdrops.sheet,
                     topBarColor = topBarColor,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     isDark = isDark,

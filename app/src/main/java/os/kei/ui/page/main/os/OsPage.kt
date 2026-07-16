@@ -662,6 +662,7 @@ fun OsPage(
                 scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
                 topBarBackdrop = backdrops.topBar,
                 contentBackdrop = backdrops.content,
+                sheetBackdrop = backdrops.sheet,
                 chromeState = mainListChromeState,
                 overviewState = mainListOverviewState,
                 contentState = mainListContentState,

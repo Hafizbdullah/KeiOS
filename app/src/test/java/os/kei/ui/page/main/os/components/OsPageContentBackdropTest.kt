@@ -20,6 +20,7 @@ class OsPageContentBackdropTest {
         assertTrue(
             """MainPageContentBackdropScene(
         contentBackdrop = contentBackdrop,
+        sheetBackdrop = sheetBackdrop,
         modifier = Modifier.fillMaxSize(),""" in source,
         )
         assertEquals(0, source.occurrencesOf(".layerBackdrop(contentBackdrop)"))
