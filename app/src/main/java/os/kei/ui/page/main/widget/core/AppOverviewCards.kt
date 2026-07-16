@@ -5,7 +5,6 @@ package os.kei.ui.page.main.widget.core
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +39,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallba
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import os.kei.ui.page.main.widget.shape.appSquircleBackground
 import os.kei.ui.page.main.widget.shape.appSquircleBorder
@@ -269,7 +269,7 @@ fun AppOverviewMetricTile(
     valueMaxLines: Int = 2,
     emphasizedValue: Boolean = true,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val resolvedContainerColor =
         containerColor ?: if (isDark) {
             Color(0xFF0F1115).copy(alpha = 0.34f)
@@ -378,7 +378,7 @@ fun AppOverviewInlineMetricTile(
     backdrop: Backdrop? = null,
     emphasizedValue: Boolean = true,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val resolvedContainerColor =
         containerColor ?: if (isDark) {
             Color(0xFF0F1115).copy(alpha = 0.32f)

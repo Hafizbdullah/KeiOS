@@ -16,6 +16,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
@@ -133,6 +134,14 @@ class AppOverviewCardBackdropTest {
         assertTrue("borderWidth = 1.dp" in source)
         assertEquals(0, source.occurrencesOf(".layerBackdrop("))
         assertEquals(0, source.occurrencesOf("captureBackdrop"))
+    }
+
+    @Test
+    fun metricTileMaterialsFollowTheAppTheme() {
+        val source = overviewCardSource()
+
+        assertFalse("isSystemInDarkTheme" in source)
+        assertEquals(2, source.occurrencesOf("isAppInDarkTheme()"))
     }
 }
 
