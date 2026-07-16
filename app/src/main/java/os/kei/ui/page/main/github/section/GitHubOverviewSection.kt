@@ -119,7 +119,6 @@ internal fun GitHubOverviewCard(
                 GitHubOverviewLookupModePill(
                     label = lookupValue,
                     color = lookupColor,
-                    backdrop = backdrop,
                 )
             }
         },
@@ -163,7 +162,6 @@ internal fun GitHubOverviewCard(
                 },
                 backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
                 borderAlphaOverride = if (isDark) 0.35f else 0.42f,
-                backdrop = backdrop
             )
             StatusPill(
                 label = formatRefreshAgo(context = context, lastRefreshMs = lastRefreshMs),
@@ -176,12 +174,10 @@ internal fun GitHubOverviewCard(
                 },
                 backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
                 borderAlphaOverride = if (isDark) 0.35f else 0.42f,
-                backdrop = backdrop
             )
         }
     ) {
         GitHubOverviewExpandedContent(
-            backdrop = backdrop,
             isDark = isDark,
             visibleEntries = entries,
             metrics = metrics,
@@ -194,7 +190,6 @@ internal fun GitHubOverviewCard(
 
 @Composable
 private fun GitHubOverviewExpandedContent(
-    backdrop: Backdrop?,
     isDark: Boolean,
     visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
@@ -232,14 +227,12 @@ private fun GitHubOverviewExpandedContent(
     ) {
         AppOverviewPillFlow(
             pills = pills,
-            backdrop = backdrop,
         )
         if (metrics.failedCount > 0) {
             if (failedFilterActive) {
                 StatusPill(
                     label = stringResource(R.string.github_overview_failed_filter_active),
                     color = GitHubStatusPalette.Error,
-                    backdrop = backdrop
                 )
             }
             Row(
@@ -395,14 +388,12 @@ private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
 private fun GitHubOverviewLookupModePill(
     label: String,
     color: Color,
-    backdrop: Backdrop?,
 ) {
     StatusPill(
         label = label,
         color = color,
         size = AppStatusPillSize.Compact,
         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 3.dp),
-        backdrop = backdrop,
     )
 }
 

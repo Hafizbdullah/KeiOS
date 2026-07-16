@@ -47,7 +47,6 @@ internal fun McpOverviewCardSection(
         titleContent = {
             McpOverviewIdentityPills(
                 pills = overviewPills,
-                backdrop = backdrop,
             )
         },
         headerEndActions = {
@@ -57,7 +56,6 @@ internal fun McpOverviewCardSection(
                     color = overviewAccentColor,
                     backgroundAlphaOverride = if (isDark) 0.18f else 0.24f,
                     borderAlphaOverride = if (isDark) 0.35f else 0.42f,
-                    backdrop = backdrop
                 )
             }
             StatusPill(
@@ -65,13 +63,11 @@ internal fun McpOverviewCardSection(
                     if (running) R.string.common_status_running else R.string.common_status_not_running
                 ),
                 color = overviewAccentColor,
-                backdrop = backdrop
             )
         }
     ) {
         McpOverviewConnectionPills(
             pills = overviewPills,
-            backdrop = backdrop,
         )
     }
 }
@@ -79,7 +75,6 @@ internal fun McpOverviewCardSection(
 @Composable
 private fun McpOverviewIdentityPills(
     pills: McpOverviewPills,
-    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -93,18 +88,16 @@ private fun McpOverviewIdentityPills(
         ) {
             AppOverviewPillItem(
                 pill = pills.service,
-                backdrop = backdrop,
             )
         }
-        AppOverviewPillItem(pill = pills.network, backdrop = backdrop)
-        AppOverviewPillItem(pill = pills.clients, backdrop = backdrop)
+        AppOverviewPillItem(pill = pills.network)
+        AppOverviewPillItem(pill = pills.clients)
     }
 }
 
 @Composable
 private fun McpOverviewConnectionPills(
     pills: McpOverviewPills,
-    backdrop: Backdrop?,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -118,10 +111,9 @@ private fun McpOverviewConnectionPills(
         ) {
             AppOverviewPillItem(
                 pill = pills.endpoint,
-                backdrop = backdrop,
             )
         }
-        AppOverviewPillItem(pill = pills.token, backdrop = backdrop)
+        AppOverviewPillItem(pill = pills.token)
     }
 }
 

@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -47,6 +46,7 @@ import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.LocalContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
@@ -98,10 +98,11 @@ fun AppOverviewCard(
     val parentBackdrop = LocalLiquidParentBackdrop.current
     val inheritedBackdrop = backdrop ?: parentBackdrop
     if (inheritedBackdrop != null) {
+        val contentBackdrop = rememberLayerBackdrop()
         AppOverviewCardSurface(
             modifier = modifier,
             backdrop = inheritedBackdrop,
-            captureBackdrop = null,
+            contentBackdrop = contentBackdrop,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
             pressedScale = pressedScaleProvider,
@@ -110,6 +111,8 @@ fun AppOverviewCard(
             titleColor = titleColor,
             subtitleColor = subtitleColor,
             containerColor = containerColor,
+            borderColor = borderColor,
+            contentColor = contentColor,
             contentVerticalSpacing = contentVerticalSpacing,
             showIndication = showIndication,
             clickable = clickable,
@@ -122,11 +125,10 @@ fun AppOverviewCard(
             content = content,
         )
     } else {
-        val localBackdrop = rememberLayerBackdrop()
         AppOverviewCardSurface(
             modifier = modifier,
-            backdrop = localBackdrop,
-            captureBackdrop = localBackdrop,
+            backdrop = null,
+            contentBackdrop = null,
             clickModifier = clickModifier,
             interactionSource = interactionSource,
             pressedScale = pressedScaleProvider,
@@ -135,6 +137,8 @@ fun AppOverviewCard(
             titleColor = titleColor,
             subtitleColor = subtitleColor,
             containerColor = containerColor,
+            borderColor = borderColor,
+            contentColor = contentColor,
             contentVerticalSpacing = contentVerticalSpacing,
             showIndication = showIndication,
             clickable = clickable,
@@ -152,8 +156,8 @@ fun AppOverviewCard(
 @Composable
 private fun AppOverviewCardSurface(
     modifier: Modifier,
-    backdrop: Backdrop,
-    captureBackdrop: LayerBackdrop?,
+    backdrop: Backdrop?,
+    contentBackdrop: LayerBackdrop?,
     clickModifier: Modifier,
     interactionSource: MutableInteractionSource,
     pressedScale: () -> Float,
@@ -162,6 +166,8 @@ private fun AppOverviewCardSurface(
     titleColor: Color,
     subtitleColor: Color,
     containerColor: Color,
+    borderColor: Color,
+    contentColor: Color,
     contentVerticalSpacing: Dp,
     showIndication: Boolean,
     clickable: Boolean,
@@ -183,14 +189,6 @@ private fun AppOverviewCardSurface(
                     scaleY = scale
                 },
     ) {
-        if (captureBackdrop != null) {
-            Box(
-                modifier =
-                    Modifier
-                        .matchParentSize()
-                        .layerBackdrop(captureBackdrop),
-            )
-        }
         LiquidSurface(
             backdrop = backdrop,
             modifier =
@@ -200,41 +198,55 @@ private fun AppOverviewCardSurface(
             shape = RoundedRectangle(CardLayoutRhythm.cardCornerRadius),
             isInteractive = showIndication && clickable,
             surfaceColor = containerColor,
+            borderColor = borderColor,
+            borderWidth = 1.dp,
             blurRadius = blurRadius,
             lensRadius = lensRadius,
             interactionSource = interactionSource,
+            exportedBackdrop = contentBackdrop,
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap),
-            ) {
-                AppCardHeader(
-                    title = title,
-                    subtitle = subtitle,
-                    titleColor = titleColor,
-                    subtitleColor = subtitleColor,
-                    minHeight = 44.dp,
-                    contentPadding =
-                        PaddingValues(
-                            horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
-                            vertical = CardLayoutRhythm.overviewHeaderVerticalPadding,
-                        ),
-                    titleTypography = AppTypographyTokens.CompactTitle,
-                    startAction = startAction,
-                    titleContent = titleContent,
-                    titleAccessory = titleAccessory,
-                    endActions = headerEndActions,
-                )
-                AppCardBodyColumn(
-                    contentPadding =
-                        PaddingValues(
-                            start = CardLayoutRhythm.cardHorizontalPadding,
-                            end = CardLayoutRhythm.cardHorizontalPadding,
-                            bottom = CardLayoutRhythm.overviewBodyBottomPadding,
-                        ),
-                    verticalSpacing = contentVerticalSpacing,
-                    content = content,
-                )
+            val cardContent: @Composable () -> Unit = {
+                CompositionLocalProvider(LocalContentColor provides contentColor) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.overviewHeaderBodyGap),
+                    ) {
+                        AppCardHeader(
+                            title = title,
+                            subtitle = subtitle,
+                            titleColor = titleColor,
+                            subtitleColor = subtitleColor,
+                            minHeight = 44.dp,
+                            contentPadding =
+                                PaddingValues(
+                                    horizontal = CardLayoutRhythm.overviewHeaderHorizontalPadding,
+                                    vertical = CardLayoutRhythm.overviewHeaderVerticalPadding,
+                                ),
+                            titleTypography = AppTypographyTokens.CompactTitle,
+                            startAction = startAction,
+                            titleContent = titleContent,
+                            titleAccessory = titleAccessory,
+                            endActions = headerEndActions,
+                        )
+                        AppCardBodyColumn(
+                            contentPadding =
+                                PaddingValues(
+                                    start = CardLayoutRhythm.cardHorizontalPadding,
+                                    end = CardLayoutRhythm.cardHorizontalPadding,
+                                    bottom = CardLayoutRhythm.overviewBodyBottomPadding,
+                                ),
+                            verticalSpacing = contentVerticalSpacing,
+                            content = content,
+                        )
+                    }
+                }
+            }
+            if (contentBackdrop != null) {
+                CompositionLocalProvider(LocalLiquidParentBackdrop provides contentBackdrop) {
+                    cardContent()
+                }
+            } else {
+                cardContent()
             }
         }
     }
