@@ -1,9 +1,13 @@
 package os.kei.ui.page.main.debug
 
 import android.app.Application
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +70,7 @@ class DebugTabbedPageBottomChromeStageTest {
         assertTrue(source.indexOf(producer) < source.indexOf(consumer))
         assertTrue("modifier: Modifier = Modifier," in chromeSource)
         assertTrue("modifier\n                .fillMaxWidth()" in chromeSource)
+        assertTrue(".statusBarsPadding()" in source)
         assertTrue("AppWindowDialogPresentation.Fullscreen" in cardSource)
         assertTrue(cardSource.indexOf("AppWindowDialogHost(") < cardSource.indexOf("DebugTabbedPageBottomChromeStage("))
     }
@@ -165,6 +170,29 @@ class DebugTabbedPageBottomChromeStageTest {
     }
 
     @Test
+    fun backClosesStageSearchBeforeTheFullscreenHost() {
+        var hostBackCount = 0
+        lateinit var backDispatcher: OnBackPressedDispatcher
+        setStage(
+            onHostBack = { hostBackCount++ },
+            onBackDispatcher = { backDispatcher = it },
+        )
+
+        composeRule.onNodeWithContentDescription(searchDescription()).performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size == 1
+        }
+
+        composeRule.runOnIdle { backDispatcher.onBackPressed() }
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(hasSetTextAction()).assertCountEquals(0)
+        assertEquals(0, hostBackCount)
+
+        composeRule.runOnIdle { backDispatcher.onBackPressed() }
+        assertEquals(1, hostBackCount)
+    }
+
+    @Test
     @Config(qualifiers = "w411dp-h891dp-xxhdpi")
     fun fiveTabsKeepAtLeast48DpTargetsInThe411DpViewport() {
         setStage()
@@ -184,7 +212,10 @@ class DebugTabbedPageBottomChromeStageTest {
         }
     }
 
-    private fun setStage() {
+    private fun setStage(
+        onHostBack: (() -> Unit)? = null,
+        onBackDispatcher: ((OnBackPressedDispatcher) -> Unit)? = null,
+    ) {
         composeRule.setContent {
             val baseDensity = LocalDensity.current
             CompositionLocalProvider(
@@ -192,6 +223,11 @@ class DebugTabbedPageBottomChromeStageTest {
                 LocalTransitionAnimationsEnabled provides false,
                 LocalSearchAutoFocusEnabled provides false,
             ) {
+                val dispatcherOwner = checkNotNull(LocalOnBackPressedDispatcherOwner.current)
+                SideEffect { onBackDispatcher?.invoke(dispatcherOwner.onBackPressedDispatcher) }
+                if (onHostBack != null) {
+                    BackHandler(onBack = onHostBack)
+                }
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                     Box(modifier = Modifier.fillMaxSize()) {
                         DebugTabbedPageBottomChromeStage(

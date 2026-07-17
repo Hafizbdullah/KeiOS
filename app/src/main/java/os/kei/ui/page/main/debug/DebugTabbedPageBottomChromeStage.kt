@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.debug
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
@@ -74,6 +76,9 @@ internal fun DebugTabbedPageBottomChromeStage(
     LaunchedEffect(categories.size) {
         selectedPage = selectedPage.coerceIn(0, categories.lastIndex)
     }
+    BackHandler(enabled = searchExpanded) {
+        searchExpanded = false
+    }
 
     Column(
         modifier =
@@ -87,6 +92,7 @@ internal fun DebugTabbedPageBottomChromeStage(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(start = 14.dp, top = 12.dp, end = 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
