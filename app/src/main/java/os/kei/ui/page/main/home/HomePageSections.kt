@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.R
+import os.kei.core.ui.effect.background.blend.ColorBlendToken
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
@@ -40,8 +41,6 @@ import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurBlendMode
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
@@ -121,19 +120,7 @@ internal fun Modifier.homeHeroForegroundBlur(
     val isDark = isAppInDarkTheme()
     val logoBlend =
         remember(isDark) {
-            if (isDark) {
-                listOf(
-                    BlendColorEntry(Color(0xE6A1A1A1), BlurBlendMode.ColorDodge),
-                    BlendColorEntry(Color(0x4DE6E6E6), BlurBlendMode.LinearLight),
-                    BlendColorEntry(Color(0xFFFF73AD), BlurBlendMode.Lab),
-                )
-            } else {
-                listOf(
-                    BlendColorEntry(Color(0xCC4A4A4A), BlurBlendMode.ColorBurn),
-                    BlendColorEntry(Color(0xFF4F4F4F), BlurBlendMode.LinearLight),
-                    BlendColorEntry(Color(0xFFFF5C96), BlurBlendMode.Lab),
-                )
-            }
+            if (isDark) ColorBlendToken.HomeHeroLogo_Dark else ColorBlendToken.HomeHeroLogo_Light
         }
     return textureBlur(
         backdrop = backdrop,

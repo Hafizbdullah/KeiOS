@@ -8,6 +8,19 @@ import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurBlendMode
 
 object ColorBlendToken {
+    // Home Hero Series
+    val HomeHeroLogo_Light = listOf(
+        BlendColorEntry(Color(0xCC4A4A4A), BlurBlendMode.ColorBurn),
+        BlendColorEntry(Color(0xFF4F4F4F), BlurBlendMode.LinearLight),
+        BlendColorEntry(Color(0xFFFF5C96), BlurBlendMode.Lab),
+    )
+
+    val HomeHeroLogo_Dark = listOf(
+        BlendColorEntry(Color(0xE6A1A1A1), BlurBlendMode.ColorDodge),
+        BlendColorEntry(Color(0x4DE6E6E6), BlurBlendMode.LinearLight),
+        BlendColorEntry(Color(0xFFFF73AD), BlurBlendMode.Lab),
+    )
+
     // Info Series
     val Info_Extra_Thin_Light = listOf(
         BlendColorEntry(Color(0x3BB0B0B1), BlurBlendMode.PlusDarker),
