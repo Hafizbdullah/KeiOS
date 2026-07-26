@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -21,6 +22,8 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -54,8 +57,15 @@ fun AppSurfaceCard(
     toggleableState: ToggleableState? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val edgeStack = LocalAppEdgeStackCards.current
+    val edgeStackModifier =
+        if (edgeStack != null) {
+            Modifier.appEdgeStackedCard(edgeStack)
+        } else {
+            Modifier
+        }
     AppSurfaceBox(
-        modifier = modifier,
+        modifier = edgeStackModifier.then(modifier),
         backdrop = backdrop,
         surfaceColor = containerColor,
         shape = shape,
@@ -78,10 +88,14 @@ fun AppSurfaceCard(
         selected = selected,
         toggleableState = toggleableState,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            content = content,
-        )
+        // Only the outermost page card stacks; nested surfaces inside the card body
+        // must not re-apply the edge transform.
+        CompositionLocalProvider(LocalAppEdgeStackCards provides null) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                content = content,
+            )
+        }
     }
 }
 

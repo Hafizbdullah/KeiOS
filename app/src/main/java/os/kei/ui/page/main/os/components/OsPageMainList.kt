@@ -4,16 +4,16 @@ package os.kei.ui.page.main.os.components
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,9 +46,13 @@ import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
@@ -249,76 +253,79 @@ internal fun OsPageMainList(
     val moreIcon = appLucideMoreIcon()
     val expandDockDescription = stringResource(R.string.common_expand)
 
+    val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
     MainPageContentBackdropScene(
         contentBackdrop = contentBackdrop,
         sheetBackdrop = sheetBackdrop,
         modifier = Modifier.fillMaxSize(),
     ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+        // The overview card is the page's status hub: it lives above the lazy list so it
+        // never scrolls or joins the edge stack, and the pile forms beneath it.
+        AppOverviewCard(
+            title = stringResource(R.string.os_overview_title),
+            backdrop = contentBackdrop,
+            containerColor = overviewCardColor,
+            borderColor = overviewBorderColor,
+            contentColor = titleColor,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                    ),
+            onClick = {
+                if (refreshing) return@AppOverviewCard
+                onRefreshAll()
+            },
+            headerEndActions = {
+                if (systemOverviewState != SystemOverviewState.Idle) {
+                    LiquidCircularProgressBar(
+                        progress = { indicatorProgress },
+                        size = 16.dp,
+                        strokeWidth = 2.dp,
+                        activeColor = statusColor,
+                        inactiveColor = indicatorBg,
+                    )
+                }
+                StatusPill(
+                    label = statusLabel,
+                    color = statusColor,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+                    backgroundAlphaOverride = if (isDark) 0.24f else 0.34f,
+                    borderAlphaOverride = if (isDark) 0.42f else 0.52f,
+                )
+            },
+        ) {
+            AppOverviewPillFlow(
+                pills = overviewMetrics.map { metric ->
+                    AppOverviewPill(
+                        label = stringResource(
+                            R.string.os_overview_metric_pill,
+                            metric.label,
+                            metric.value,
+                        ),
+                        color = metric.valueColor ?: MiuixTheme.colorScheme.primary,
+                    )
+                },
+            )
+        }
+        CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
         AppPageLazyColumn(
             modifier =
                 Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f)
                     .layerBackdrop(topBarBackdrop)
-                    .nestedScroll(scrollBehaviorConnection),
+                    .nestedScroll(scrollBehaviorConnection)
+                    .appEdgeStackContainer(edgeStackState),
             state = listState,
-            innerPadding = innerPadding,
+            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+            topExtra = AppEdgeStackListTopInset,
             sectionSpacing = 0.dp,
         ) {
-            item(
-                key = "os-overview-card",
-                contentType = "os_overview_card",
-            ) {
-                AppOverviewCard(
-                    title = stringResource(R.string.os_overview_title),
-                    backdrop = contentBackdrop,
-                    containerColor = overviewCardColor,
-                    borderColor = overviewBorderColor,
-                    contentColor = titleColor,
-                    onClick = {
-                        if (refreshing) return@AppOverviewCard
-                        onRefreshAll()
-                    },
-                    headerEndActions = {
-                        if (systemOverviewState != SystemOverviewState.Idle) {
-                            LiquidCircularProgressBar(
-                                progress = { indicatorProgress },
-                                size = 16.dp,
-                                strokeWidth = 2.dp,
-                                activeColor = statusColor,
-                                inactiveColor = indicatorBg,
-                            )
-                        }
-                        StatusPill(
-                            label = statusLabel,
-                            color = statusColor,
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
-                            backgroundAlphaOverride = if (isDark) 0.24f else 0.34f,
-                            borderAlphaOverride = if (isDark) 0.42f else 0.52f,
-                        )
-                    },
-                ) {
-                    AppOverviewPillFlow(
-                        pills = overviewMetrics.map { metric ->
-                            AppOverviewPill(
-                                label = stringResource(
-                                    R.string.os_overview_metric_pill,
-                                    metric.label,
-                                    metric.value,
-                                ),
-                                color = metric.valueColor ?: MiuixTheme.colorScheme.primary,
-                            )
-                        },
-                    )
-                }
-            }
-
-            item(
-                key = "os-overview-space",
-                contentType = "os_overview_space",
-            ) {
-                Spacer(modifier = Modifier.height(AppChromeTokens.pageSectionGap))
-            }
-
             addTopInfoCard(
                 visible = isCardVisible(OsSectionCard.TOP_INFO),
                 contentBackdrop = contentBackdrop,
@@ -514,6 +521,8 @@ internal fun OsPageMainList(
                 onOpenActivity = onOpenActivityShortcutCard,
                 onHeaderLongClick = onOpenActivityShortcutCardEditor,
             )
+        }
+        }
         }
 
         AppFloatingVerticalSearchActionDock(

@@ -2,10 +2,15 @@
 
 package os.kei.ui.page.main.mcp
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -30,8 +35,13 @@ import os.kei.ui.page.main.mcp.section.McpToolSystemSection
 import os.kei.ui.page.main.mcp.section.McpToolWorkflowSection
 import os.kei.ui.page.main.mcp.state.McpPageOverviewState
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 
 @Composable
 internal fun McpPageContent(
@@ -50,37 +60,53 @@ internal fun McpPageContent(
     refreshRunning: Boolean,
     actions: McpPageActions,
 ) {
+    val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
     MainPageContentBackdropScene(
         contentBackdrop = backdrops.content,
         sheetBackdrop = backdrops.sheet,
         modifier = Modifier.fillMaxSize(),
     ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+        // The MCP status hub stays pinned above the list; tool cards stack beneath it.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                    ),
+        ) {
+            McpOverviewCardSection(
+                backdrop = backdrops.content,
+                titleColor = titleColor,
+                overviewCardColor = overviewState.overviewCardColor,
+                overviewBorderColor = overviewState.overviewBorderColor,
+                overviewAccentColor = overviewState.overviewAccentColor,
+                runtimeText = overviewState.runtimeText,
+                isDark = isDark,
+                running = uiState.running,
+                overviewPills = overviewState.overviewPills,
+                onToggleServer = actions.onToggleServer,
+                onOpenEditSheet = actions.onOpenEditSheet,
+            )
+        }
+        CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
         AppPageLazyColumn(
-            innerPadding = innerPadding,
+            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             state = listState,
             modifier =
                 Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f)
                     .layerBackdrop(backdrops.topBar)
-                    .nestedScroll(nestedScrollConnection),
+                    .nestedScroll(nestedScrollConnection)
+                    .appEdgeStackContainer(edgeStackState),
             bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
+            topExtra = AppEdgeStackListTopInset,
             sectionSpacing = 12.dp,
         ) {
-            item(key = "mcp-overview", contentType = "mcp_overview_section") {
-                McpOverviewCardSection(
-                    backdrop = backdrops.content,
-                    titleColor = titleColor,
-                    overviewCardColor = overviewState.overviewCardColor,
-                    overviewBorderColor = overviewState.overviewBorderColor,
-                    overviewAccentColor = overviewState.overviewAccentColor,
-                    runtimeText = overviewState.runtimeText,
-                    isDark = isDark,
-                    running = uiState.running,
-                    overviewPills = overviewState.overviewPills,
-                    onToggleServer = actions.onToggleServer,
-                    onOpenEditSheet = actions.onOpenEditSheet,
-                )
-            }
             item(key = "mcp-onboarding-guide", contentType = "mcp_onboarding_guide_section") {
                 McpOnboardingGuideSection(
                     backdrop = backdrops.content,
@@ -191,6 +217,8 @@ internal fun McpPageContent(
                     subtitleColor = subtitleColor,
                 )
             }
+        }
+        }
         }
 
         McpPageFloatingActionDock(
