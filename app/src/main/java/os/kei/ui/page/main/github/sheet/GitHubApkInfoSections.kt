@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -30,18 +31,17 @@ import os.kei.feature.github.model.GitHubApkManifestNode
 import os.kei.feature.github.model.GitHubApkSignatureInfo
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.ui.page.main.github.GitHubStatusPalette
-import os.kei.ui.page.main.os.appLucideChevronDownIcon
-import os.kei.ui.page.main.os.appLucideChevronUpIcon
 import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.widget.core.AppCardBodyColumn
+import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidIconButton
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.status.StatusPill
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -381,35 +381,28 @@ internal fun ManifestNodeGroupCard(
                 }
         }
     val hiddenNodeCount = remember(nodes) { (nodes.size - MANIFEST_NODE_LIMIT).coerceAtLeast(0) }
-    AppSurfaceCard(onClick = onToggle) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    modifier = Modifier.weight(1f),
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = AppTypographyTokens.Body.fontSize,
-                    lineHeight = AppTypographyTokens.Body.lineHeight,
-                    fontWeight = AppTypographyTokens.BodyEmphasis.fontWeight,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    AppSurfaceCard(exportBackdropToContent = true) {
+        AppCardHeader(
+            title = title,
+            subtitle = "",
+            titleMaxLines = 1,
+            titleTypography = AppTypographyTokens.BodyEmphasis,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+            horizontalSpacing = 8.dp,
+            endActionSpacing = 8.dp,
+            endActions = {
                 StatusPill(label = nodes.size.toString(), color = GitHubStatusPalette.Active)
-                AppStandaloneLiquidIconButton(
-                    icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                    contentDescription = title,
-                    onClick = onToggle,
-                    width = 32.dp,
-                    height = 32.dp,
-                    variant = GlassVariant.Content,
-                    pressSafePadding = 0.dp,
-                )
-            }
-            if (expanded) {
+            },
+            expandable = true,
+            expanded = expanded,
+            expandTint = MiuixTheme.colorScheme.onBackgroundVariant,
+            onClick = onToggle,
+        )
+        if (expanded) {
+            AppCardBodyColumn(
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                verticalSpacing = 8.dp,
+            ) {
                 nodeRows.forEach { row ->
                     key(row.id) {
                         ManifestNodeRow(row)
@@ -513,47 +506,41 @@ internal fun InfoRow(
 @OptIn(ExperimentalLayoutApi::class)
 internal fun ApkInfoMeaningSection() {
     var expanded by remember { mutableStateOf(false) }
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_meaning))
-    SheetSectionCard(verticalSpacing = 8.dp) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppStandaloneLiquidIconButton(
-                icon = appLucideInfoIcon(),
-                contentDescription = stringResource(R.string.github_apk_info_section_meaning),
-                onClick = { expanded = !expanded },
-                width = 32.dp,
-                height = 32.dp,
-                variant = GlassVariant.Content,
-                pressSafePadding = 0.dp,
-            )
-            Text(
-                text = stringResource(R.string.github_apk_info_meaning_summary),
-                modifier = Modifier.weight(1f),
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-            AppStandaloneLiquidIconButton(
-                icon = if (expanded) appLucideChevronUpIcon() else appLucideChevronDownIcon(),
-                contentDescription = stringResource(R.string.github_apk_info_section_meaning),
-                onClick = { expanded = !expanded },
-                width = 32.dp,
-                height = 32.dp,
-                variant = GlassVariant.Content,
-                pressSafePadding = 0.dp,
-            )
-        }
+    SheetSectionCard(
+        verticalSpacing = 0.dp,
+        contentPadding = PaddingValues(0.dp),
+    ) {
+        AppCardHeader(
+            title = stringResource(R.string.github_apk_info_section_meaning),
+            subtitle = stringResource(R.string.github_apk_info_meaning_summary),
+            startAction = {
+                Icon(
+                    imageVector = appLucideInfoIcon(),
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                )
+            },
+            expandable = true,
+            expanded = expanded,
+            expandTint = MiuixTheme.colorScheme.onBackgroundVariant,
+            titleMaxLines = 1,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+            horizontalSpacing = 8.dp,
+            onClick = { expanded = !expanded },
+        )
         if (expanded) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
+            AppCardBodyColumn(
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 12.dp),
+                verticalSpacing = 0.dp,
             ) {
-                apkMeaningEntries().forEach { entry ->
-                    StatusPill(entry, GitHubStatusPalette.Active)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    apkMeaningEntries().forEach { entry ->
+                        StatusPill(entry, GitHubStatusPalette.Active)
+                    }
                 }
             }
         }
