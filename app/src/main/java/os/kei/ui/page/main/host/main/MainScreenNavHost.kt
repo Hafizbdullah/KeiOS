@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -45,6 +46,7 @@ import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.nav.core.NavBackStack
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransition
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
@@ -111,6 +113,19 @@ internal fun MainScreenNavHost(
                 NavDisplayEffects.None
             }
         }
+    // Full-page swipe back (the edge predictive gesture stays independent). Directions are
+    // physical, so RTL picks the mirrored swipe; gated with route animations because a dismiss
+    // without a transition would pop with no visual feedback. BaStudentGuide opts out below —
+    // its HorizontalPager owns horizontal drags.
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val swipeBackDirection =
+        remember(routeAnimationsEnabled, isRtl) {
+            when {
+                !routeAnimationsEnabled -> null
+                isRtl -> NavSwipeDirection.RightToLeft
+                else -> NavSwipeDirection.LeftToRight
+            }
+        }
 
     CompositionLocalProvider(
         LocalBackNavigationRuntimeController provides backRuntimeController,
@@ -175,7 +190,7 @@ internal fun MainScreenNavHost(
                             onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed,
                         )
                     }
-                    entry<KeiosRoute.Settings> {
+                    entry<KeiosRoute.Settings>(swipeDismiss = swipeBackDirection) {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -255,7 +270,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.McpSkill> {
+                    entry<KeiosRoute.McpSkill>(swipeDismiss = swipeBackDirection) {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -266,7 +281,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.GitHubActionsNotificationHistory> {
+                    entry<KeiosRoute.GitHubActionsNotificationHistory>(swipeDismiss = swipeBackDirection) {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -278,7 +293,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.About> {
+                    entry<KeiosRoute.About>(swipeDismiss = swipeBackDirection) {
                         MainScreenRouteBackgroundHost(prefsState = prefsState) {
                             AboutPage(
                                 appLabel = appLabel,
@@ -297,7 +312,10 @@ internal fun MainScreenNavHost(
                             onBack = onRouteBack,
                         )
                     }
-                    entry<KeiosRoute.BaGuideCatalog>(transition = catalogTransition) { route ->
+                    entry<KeiosRoute.BaGuideCatalog>(
+                        transition = catalogTransition,
+                        swipeDismiss = swipeBackDirection,
+                    ) { route ->
                         BaGuideCatalogPage(
                             liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                             preloadingEnabled = prefsState.preloadingEnabled,
@@ -308,7 +326,7 @@ internal fun MainScreenNavHost(
                             onOpenGuide = pagerCoordinator.onOpenGuideDetail,
                         )
                     }
-                    entry<KeiosRoute.WebDavSync> {
+                    entry<KeiosRoute.WebDavSync>(swipeDismiss = swipeBackDirection) {
                         val dataPorts = rememberWebDavSyncDataPorts()
                         MainScreenRouteBackgroundHost(prefsState = prefsState) {
                             WebDavSyncPage(
