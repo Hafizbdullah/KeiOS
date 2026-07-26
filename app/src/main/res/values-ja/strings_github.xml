@@ -5,6 +5,11 @@
     <string name="github_refresh_title_cancelled">GitHub プロジェクト追跡更新をキャンセルしました</string>
     <string name="github_refresh_title_completed">GitHub プロジェクト追跡更新が完了しました</string>
     <string name="github_refresh_title_failed">GitHub プロジェクト追跡更新に失敗しました</string>
+    <string name="github_pull_refresh_pull">引き下げて追跡リストを更新</string>
+    <string name="github_pull_refresh_release">指を離して更新</string>
+    <string name="github_pull_refresh_refreshing">更新中…</string>
+    <string name="github_pull_refresh_done">更新完了</string>
+    <string name="github_history_pull_refresh_pull">引き下げて履歴を更新</string>
     <string name="github_refresh_title_partial_failed">GitHub プロジェクト追跡更新が一部失敗しました</string>
     <string name="github_refresh_content">確認 %1$d/%2$d · pre-release 更新 %3$d · stable 更新 %4$d</string>
     <string name="github_refresh_content_with_failed">確認 %1$d/%2$d · pre-release 更新 %3$d · stable 更新 %4$d · 失敗 %5$d</string>

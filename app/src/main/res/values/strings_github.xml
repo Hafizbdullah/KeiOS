@@ -5,6 +5,11 @@
     <string name="github_refresh_title_cancelled">GitHub项目追踪刷新已取消</string>
     <string name="github_refresh_title_completed">GitHub项目追踪刷新完成</string>
     <string name="github_refresh_title_failed">GitHub项目追踪刷新失败</string>
+    <string name="github_pull_refresh_pull">下拉刷新追踪列表</string>
+    <string name="github_pull_refresh_release">松开立即刷新</string>
+    <string name="github_pull_refresh_refreshing">正在刷新…</string>
+    <string name="github_pull_refresh_done">刷新完成</string>
+    <string name="github_history_pull_refresh_pull">下拉刷新历史记录</string>
     <string name="github_refresh_title_partial_failed">GitHub项目追踪部分失败</string>
     <string name="github_refresh_content">已检查 %1$d/%2$d · 预发可更新 %3$d · 稳定可更新 %4$d</string>
     <string name="github_refresh_content_with_failed">已检查 %1$d/%2$d · 预发可更新 %3$d · 稳定可更新 %4$d · 失败 %5$d</string>

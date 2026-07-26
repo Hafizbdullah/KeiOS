@@ -6,7 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -16,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubTrackedFilterMode
 import os.kei.ui.page.main.github.OverviewRefreshState
@@ -38,6 +46,7 @@ import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.testing.KeiOsTestTags
+import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Suppress("FunctionName")
@@ -86,6 +95,24 @@ internal fun GitHubMainContent(
             OverviewRefreshState.Cached -> AppFloatingRefreshStatus.Cached
             OverviewRefreshState.Idle -> AppFloatingRefreshStatus.Idle
         }
+    // Background and dock refreshes drive the same OverviewRefreshState, so the pull header
+    // keys on a gesture-scoped session instead of the shared state; otherwise a launch-time
+    // or dock refresh would expand the header and freeze list scrolling without a pull.
+    var pullRefreshSessionActive by remember { mutableStateOf(false) }
+    val overviewRefreshStateNow by rememberUpdatedState(overview.refreshState)
+    LaunchedEffect(pullRefreshSessionActive) {
+        if (!pullRefreshSessionActive) return@LaunchedEffect
+        val refreshStarted =
+            withTimeoutOrNull(GitHubPullRefreshStartTimeoutMs) {
+                snapshotFlow { overviewRefreshStateNow }
+                    .first { it == OverviewRefreshState.Refreshing }
+            } != null
+        if (refreshStarted) {
+            snapshotFlow { overviewRefreshStateNow }
+                .first { it != OverviewRefreshState.Refreshing }
+        }
+        pullRefreshSessionActive = false
+    }
     val actionsHistoryIcon = appLucideHistoryIcon()
     val moreIcon = appLucideMoreIcon()
     val actionsHistoryDescription = stringResource(R.string.github_history_cd_open)
@@ -195,155 +222,177 @@ internal fun GitHubMainContent(
             },
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
-                AppPageLazyColumn(
+                PullToRefresh(
+                    isRefreshing = pullRefreshSessionActive,
+                    onRefresh = {
+                        if (tracked.sortedTracked.isNotEmpty()) {
+                            pullRefreshSessionActive = true
+                        }
+                        actions.onRefreshVisibleTracked()
+                    },
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .layerBackdrop(surfaces.topBarBackdrop)
-                            .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
-                    state = layout.listState,
-                    innerPadding = innerPadding,
-                    bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
-                    sectionSpacing = CardLayoutRhythm.denseSectionGap,
+                            .layerBackdrop(surfaces.topBarBackdrop),
+                    topAppBarScrollBehavior = layout.scrollBehavior,
+                    contentPadding = innerPadding,
+                    refreshTexts =
+                        listOf(
+                            stringResource(R.string.github_pull_refresh_pull),
+                            stringResource(R.string.github_pull_refresh_release),
+                            stringResource(R.string.github_pull_refresh_refreshing),
+                            stringResource(R.string.github_pull_refresh_done),
+                        ),
                 ) {
-                    item(
-                        key = "github_overview_card",
-                        contentType = "github_overview",
+                    AppPageLazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
+                        state = layout.listState,
+                        innerPadding = innerPadding,
+                        bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
+                        sectionSpacing = CardLayoutRhythm.denseSectionGap,
                     ) {
-                        GitHubOverviewCard(
-                            backdrop = surfaces.contentBackdrop,
-                            isDark = surfaces.isDark,
-                            lookupConfig = overview.lookupConfig,
-                            overviewRefreshState = overview.refreshState,
-                            refreshProgress = overview.refreshProgress,
-                            lastRefreshMs = overview.lastRefreshMs,
-                            visibleEntries = overview.visibleEntries,
-                            metrics = overview.metrics,
-                            failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
-                            onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
-                            onRetryFailedTracked = actions.onRetryFailedTracked,
-                            onFailedFilterToggle = actions.onFailedFilterToggle,
-                        )
-                    }
-                    if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                         item(
-                            key = "github_pending_share_import_track",
-                            contentType = "github_share_import",
+                            key = "github_overview_card",
+                            contentType = "github_overview",
                         ) {
-                            GitHubPendingShareImportCard(
-                                pending = shareImport.pendingTrack,
-                                nowMillis = shareImport.pendingNowMillis,
-                                repoOverlapCount = shareImport.pendingRepoOverlapCount,
-                                onOpen = actions.onOpenShareImportFlow,
-                                onCancel = actions.onCancelPendingShareImportTrack,
+                            GitHubOverviewCard(
+                                backdrop = surfaces.contentBackdrop,
+                                isDark = surfaces.isDark,
+                                lookupConfig = overview.lookupConfig,
+                                overviewRefreshState = overview.refreshState,
+                                refreshProgress = overview.refreshProgress,
+                                lastRefreshMs = overview.lastRefreshMs,
+                                visibleEntries = overview.visibleEntries,
+                                metrics = overview.metrics,
+                                failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
+                                onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
+                                onRetryFailedTracked = actions.onRetryFailedTracked,
+                                onFailedFilterToggle = actions.onFailedFilterToggle,
                             )
                         }
-                    }
-                    shareImport.pendingAttachCandidate?.let { candidate ->
-                        item(
-                            key = "github_pending_share_import_attach",
-                            contentType = "github_share_import",
-                        ) {
-                            GitHubShareImportAttachCandidateCard(
-                                candidate = candidate,
-                                onOpen = actions.onOpenShareImportFlow,
-                                onCancel = actions.onCancelActiveShareImportFlow,
-                            )
-                        }
-                    }
-                    if (shareImport.pendingTrack == null && shareImport.pendingAttachCandidate == null) {
-                        shareImport.pendingPreview?.let { preview ->
+                        if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                             item(
-                                key = "github_share_import_preview",
+                                key = "github_pending_share_import_track",
                                 contentType = "github_share_import",
                             ) {
-                                GitHubShareImportPreviewCard(
-                                    preview = preview,
+                                GitHubPendingShareImportCard(
+                                    pending = shareImport.pendingTrack,
+                                    nowMillis = shareImport.pendingNowMillis,
+                                    repoOverlapCount = shareImport.pendingRepoOverlapCount,
+                                    onOpen = actions.onOpenShareImportFlow,
+                                    onCancel = actions.onCancelPendingShareImportTrack,
+                                )
+                            }
+                        }
+                        shareImport.pendingAttachCandidate?.let { candidate ->
+                            item(
+                                key = "github_pending_share_import_attach",
+                                contentType = "github_share_import",
+                            ) {
+                                GitHubShareImportAttachCandidateCard(
+                                    candidate = candidate,
                                     onOpen = actions.onOpenShareImportFlow,
                                     onCancel = actions.onCancelActiveShareImportFlow,
                                 )
                             }
                         }
-                    }
-                    if (
-                        shareImport.pendingPreview == null &&
-                        shareImport.pendingTrack == null &&
-                        shareImport.pendingAttachCandidate == null
-                    ) {
-                        shareImport.pendingResult?.let { result ->
-                            item(
-                                key = "github_share_import_result",
-                                contentType = "github_share_import",
-                            ) {
-                                GitHubShareImportResultCard(
-                                    result = result,
-                                    onOpen = actions.onOpenShareImportResult,
-                                    onDismiss = actions.onDismissShareImportResult,
-                                )
+                        if (shareImport.pendingTrack == null && shareImport.pendingAttachCandidate == null) {
+                            shareImport.pendingPreview?.let { preview ->
+                                item(
+                                    key = "github_share_import_preview",
+                                    contentType = "github_share_import",
+                                ) {
+                                    GitHubShareImportPreviewCard(
+                                        preview = preview,
+                                        onOpen = actions.onOpenShareImportFlow,
+                                        onCancel = actions.onCancelActiveShareImportFlow,
+                                    )
+                                }
                             }
                         }
+                        if (
+                            shareImport.pendingPreview == null &&
+                            shareImport.pendingTrack == null &&
+                            shareImport.pendingAttachCandidate == null
+                        ) {
+                            shareImport.pendingResult?.let { result ->
+                                item(
+                                    key = "github_share_import_result",
+                                    contentType = "github_share_import",
+                                ) {
+                                    GitHubShareImportResultCard(
+                                        result = result,
+                                        onOpen = actions.onOpenShareImportResult,
+                                        onDismiss = actions.onDismissShareImportResult,
+                                    )
+                                }
+                            }
+                        }
+                        GitHubTrackedItemsSection(
+                            content =
+                                GitHubTrackedItemsContent(
+                                    lookupConfig = overview.lookupConfig,
+                                    trackedItems = tracked.trackedItems,
+                                    filteredTracked = tracked.filteredTracked,
+                                    sortedTracked = tracked.sortedTracked,
+                                    installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
+                                    appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
+                                ),
+                            surfaces =
+                                GitHubTrackedItemsSurfaces(
+                                    contentBackdrop = surfaces.contentBackdrop,
+                                    isDark = surfaces.isDark,
+                                ),
+                            checkState =
+                                GitHubTrackedItemsCheckState(
+                                    checkStates = tracked.checkStates,
+                                    itemRefreshLoading = tracked.itemRefreshLoading,
+                                    actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
+                                ),
+                            assetState =
+                                GitHubTrackedItemsAssetState(
+                                    apkAssetBundles = tracked.apkAssetBundles,
+                                    apkAssetLoading = tracked.apkAssetLoading,
+                                    apkAssetErrors = tracked.apkAssetErrors,
+                                    apkAssetExpanded = tracked.apkAssetExpanded,
+                                    apkInfoResults = tracked.apkInfoResults,
+                                    managedInstallLoading = tracked.managedInstallLoading,
+                                ),
+                            expansionState =
+                                tracked.expansionState,
+                            runtime =
+                                GitHubTrackedItemsRuntime(
+                                    context = context,
+                                    supportedAbis = supportedAbis,
+                                    relativeTimeNowMillis = tracked.relativeTimeNowMillis,
+                                ),
+                            actions =
+                                GitHubTrackedItemsActions(
+                                    onRefreshTrackedItem = actions.onRefreshTrackedItem,
+                                    onOpenActionsSheet = actions.onOpenActionsSheet,
+                                    onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
+                                    onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
+                                    onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
+                                    onOpenFdroidDetail = actions.onOpenFdroidDetail,
+                                    onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
+                                    onCollapseTrackedCard = actions.onCollapseTrackedCard,
+                                    onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
+                                    onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
+                                    onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
+                                    onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
+                                    onLoadApkAssets = actions.onLoadApkAssets,
+                                    onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
+                                    onOpenExternalUrl = actions.onOpenExternalUrl,
+                                    onOpenApkInfo = actions.onOpenApkInfo,
+                                    onInstallApk = actions.onInstallApk,
+                                    onOpenApkInDownloader = actions.onOpenApkInDownloader,
+                                    onShareApkLink = actions.onShareApkLink,
+                                ),
+                        )
                     }
-                    GitHubTrackedItemsSection(
-                        content =
-                            GitHubTrackedItemsContent(
-                                lookupConfig = overview.lookupConfig,
-                                trackedItems = tracked.trackedItems,
-                                filteredTracked = tracked.filteredTracked,
-                                sortedTracked = tracked.sortedTracked,
-                                installedAppLabelsByPackage = tracked.installedAppLabelsByPackage,
-                                appLastUpdatedAtByTrackId = tracked.appLastUpdatedAtByTrackId,
-                            ),
-                        surfaces =
-                            GitHubTrackedItemsSurfaces(
-                                contentBackdrop = surfaces.contentBackdrop,
-                                isDark = surfaces.isDark,
-                            ),
-                        checkState =
-                            GitHubTrackedItemsCheckState(
-                                checkStates = tracked.checkStates,
-                                itemRefreshLoading = tracked.itemRefreshLoading,
-                                actionsRecommendedRunSnapshots = tracked.actionsRecommendedRunSnapshots,
-                            ),
-                        assetState =
-                            GitHubTrackedItemsAssetState(
-                                apkAssetBundles = tracked.apkAssetBundles,
-                                apkAssetLoading = tracked.apkAssetLoading,
-                                apkAssetErrors = tracked.apkAssetErrors,
-                                apkAssetExpanded = tracked.apkAssetExpanded,
-                                apkInfoResults = tracked.apkInfoResults,
-                                managedInstallLoading = tracked.managedInstallLoading,
-                            ),
-                        expansionState =
-                            tracked.expansionState,
-                        runtime =
-                            GitHubTrackedItemsRuntime(
-                                context = context,
-                                supportedAbis = supportedAbis,
-                                relativeTimeNowMillis = tracked.relativeTimeNowMillis,
-                            ),
-                        actions =
-                            GitHubTrackedItemsActions(
-                                onRefreshTrackedItem = actions.onRefreshTrackedItem,
-                                onOpenActionsSheet = actions.onOpenActionsSheet,
-                                onOpenTrackSheetForEdit = actions.onOpenTrackSheetForEdit,
-                                onIgnoreCurrentTrackedVersion = actions.onIgnoreCurrentTrackedVersion,
-                                onRequestDeleteTrackedItem = actions.onRequestDeleteTrackedItem,
-                                onOpenFdroidDetail = actions.onOpenFdroidDetail,
-                                onTrackedCardExpandedChange = actions.onTrackedCardExpandedChange,
-                                onCollapseTrackedCard = actions.onCollapseTrackedCard,
-                                onLocalVersionExpandedChange = actions.onLocalVersionExpandedChange,
-                                onStableVersionExpandedChange = actions.onStableVersionExpandedChange,
-                                onPreReleaseVersionExpandedChange = actions.onPreReleaseVersionExpandedChange,
-                                onCollapseApkAssetPanel = actions.onCollapseApkAssetPanel,
-                                onLoadApkAssets = actions.onLoadApkAssets,
-                                onOpenDecisionAssistDetail = actions.onOpenDecisionAssistDetail,
-                                onOpenExternalUrl = actions.onOpenExternalUrl,
-                                onOpenApkInfo = actions.onOpenApkInfo,
-                                onInstallApk = actions.onInstallApk,
-                                onOpenApkInDownloader = actions.onOpenApkInDownloader,
-                                onShareApkLink = actions.onShareApkLink,
-                            ),
-                    )
                 }
 
                 AppFloatingVerticalSearchActionDock(
@@ -426,6 +475,10 @@ internal fun GitHubMainContent(
 }
 
 private const val GitHubDockBadgeMaxCount = 99
+
+// Covers the installed-app reload that runs before a pulled batch flips the shared state to
+// Refreshing; a pull that never starts a batch (for example an empty checkable list) ends here.
+private const val GitHubPullRefreshStartTimeoutMs = 8_000L
 
 private fun githubDockBadgeLabel(count: Int): String? =
     when {

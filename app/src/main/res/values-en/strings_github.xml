@@ -5,6 +5,11 @@
     <string name="github_refresh_title_cancelled">GitHub project tracking refresh cancelled</string>
     <string name="github_refresh_title_completed">GitHub project tracking refresh completed</string>
     <string name="github_refresh_title_failed">GitHub project tracking refresh failed</string>
+    <string name="github_pull_refresh_pull">Pull down to refresh tracked items</string>
+    <string name="github_pull_refresh_release">Release to refresh</string>
+    <string name="github_pull_refresh_refreshing">Refreshing…</string>
+    <string name="github_pull_refresh_done">Refresh completed</string>
+    <string name="github_history_pull_refresh_pull">Pull down to refresh history</string>
     <string name="github_refresh_title_partial_failed">GitHub project tracking partially failed</string>
     <string name="github_refresh_content">Checked %1$d/%2$d · pre-release updates %3$d · stable updates %4$d</string>
     <string name="github_refresh_content_with_failed">Checked %1$d/%2$d · pre-release updates %3$d · stable updates %4$d · failed %5$d</string>
