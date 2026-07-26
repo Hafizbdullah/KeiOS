@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -36,6 +37,7 @@ import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 import android.graphics.Color as AndroidColor
 
 class GitHubShareImportActivity : ComponentActivity() {
@@ -89,6 +91,7 @@ class GitHubShareImportActivity : ComponentActivity() {
             MiuixTheme(controller = controller) {
                 ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
                     CompositionLocalProvider(
+                        LocalOverscrollFactory provides MiuixOverscrollFactory,
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                         LocalLiquidSheetEnabled provides liquidSheetEnabled,

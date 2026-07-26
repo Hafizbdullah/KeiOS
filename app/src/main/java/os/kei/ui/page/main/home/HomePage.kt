@@ -337,7 +337,6 @@ fun HomePage(
                     state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = listContentPadding,
-                    overscrollEffect = null,
                 ) {
                     item(
                         key = "logo_spacer",

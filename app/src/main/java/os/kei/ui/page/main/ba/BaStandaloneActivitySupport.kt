@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.CompositionLocalProvider
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
@@ -16,6 +17,7 @@ import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 @Composable
 internal fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
@@ -35,6 +37,7 @@ internal fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
     MiuixTheme(controller = ThemeController(colorSchemeMode)) {
         ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
             CompositionLocalProvider(
+                LocalOverscrollFactory provides MiuixOverscrollFactory,
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                 LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                 LocalLiquidControlsEnabled provides liquidControlsEnabled,

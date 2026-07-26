@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +33,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 class FeedbackIssueActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,6 +64,7 @@ class FeedbackIssueActivity : ComponentActivity() {
             MiuixTheme(controller = controller) {
                 ProvideBackNavigationRuntime(policy = initialPredictiveBackPolicy) {
                     CompositionLocalProvider(
+                        LocalOverscrollFactory provides MiuixOverscrollFactory,
                         LocalTransitionAnimationsEnabled provides initialTransitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides initialPredictiveBackPolicy.localPredictiveBackEnabled,
                     ) {

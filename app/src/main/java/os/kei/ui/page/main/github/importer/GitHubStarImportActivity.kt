@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 private const val EXTRA_CHANGED_COUNT = "os.kei.github.star_import.CHANGED_COUNT"
 private const val EXTRA_AFFECTED_TRACK_IDS = "os.kei.github.star_import.AFFECTED_TRACK_IDS"
@@ -139,6 +141,7 @@ private fun GitHubStarImportTheme(content: @Composable () -> Unit) {
     MiuixTheme(controller = ThemeController(colorSchemeMode)) {
         ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
             CompositionLocalProvider(
+                LocalOverscrollFactory provides MiuixOverscrollFactory,
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                 LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                 LocalLiquidControlsEnabled provides prefsSnapshot.liquidSwitchEnabled,

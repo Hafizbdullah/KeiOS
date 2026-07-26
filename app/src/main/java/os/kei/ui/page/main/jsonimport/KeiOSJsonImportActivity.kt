@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,6 +28,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 class KeiOSJsonImportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +54,7 @@ class KeiOSJsonImportActivity : ComponentActivity() {
             MiuixTheme(controller = controller) {
                 ProvideBackNavigationRuntime(policy = predictiveBackPolicy) {
                     CompositionLocalProvider(
+                        LocalOverscrollFactory provides MiuixOverscrollFactory,
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                         LocalLiquidControlsEnabled provides prefsSnapshot.liquidSwitchEnabled,

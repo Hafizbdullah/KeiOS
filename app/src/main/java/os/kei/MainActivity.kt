@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 private const val DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS = 2_000L
 
@@ -197,7 +198,7 @@ class MainActivity : ComponentActivity() {
             val controller = ThemeController(colorSchemeMode)
 
             MiuixTheme(controller = controller) {
-                CompositionLocalProvider(LocalOverscrollFactory provides null) {
+                CompositionLocalProvider(LocalOverscrollFactory provides MiuixOverscrollFactory) {
                     SystemBarAutoStyle(state.appThemeMode)
                     Box(Modifier.fillMaxSize()) {
                         // Capture only real app content. The FPS overlay updates at 2 Hz and is
