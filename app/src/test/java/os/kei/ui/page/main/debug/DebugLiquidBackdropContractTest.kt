@@ -28,8 +28,9 @@ class DebugLiquidBackdropContractTest {
         ).forEach { (pageName, sourcePath) ->
             val source = sourceFile(sourcePath)
             val producer = ".layerBackdrop(pageBackdrop)"
-            val provider =
-                "CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop)"
+            // Probe the provides expression itself: the catalog page passes it inside a
+            // multi-value CompositionLocalProvider (paired with the overscroll pilot local).
+            val provider = "LocalLiquidParentBackdrop provides pageBackdrop"
             val producerIndex = source.indexOf(producer)
             val providerIndex = source.indexOf(provider)
 

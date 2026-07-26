@@ -2,10 +2,12 @@
 
 package os.kei.ui.page.main.debug
 
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 @Composable
 internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
@@ -65,7 +68,13 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
                             ),
                         ).layerBackdrop(pageBackdrop),
             )
-            CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop) {
+            CompositionLocalProvider(
+                LocalLiquidParentBackdrop provides pageBackdrop,
+                // Pilot: MIUI spring overscroll on the catalog page only. Placement-translation
+                // based (no RenderEffect), so it exercises how bounce moves liquid-glass sampling
+                // before any global rollout replaces the app-wide overscroll disable.
+                LocalOverscrollFactory provides MiuixOverscrollFactory,
+            ) {
                 AppPageLazyColumn(
                     innerPadding = innerPadding,
                     state = listState,
@@ -75,6 +84,7 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                     bottomExtra = 40.dp,
                     sectionSpacing = 14.dp,
+                    overscrollEffect = rememberOverscrollEffect(),
                 ) {
                     item {
                         DebugLiquidCatalogIntroCard(accent = accent)

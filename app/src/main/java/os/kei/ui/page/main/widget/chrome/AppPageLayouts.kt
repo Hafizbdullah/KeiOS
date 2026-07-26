@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.chrome
 
+import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -168,12 +169,14 @@ fun AppPageLazyColumn(
     topExtra: Dp = AppChromeTokens.topBarToHeaderGap,
     sectionSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     userScrollEnabled: Boolean = true,
+    // Shared pages keep bounce disabled (767b191c3); pilots opt in with an explicit effect.
+    overscrollEffect: OverscrollEffect? = null,
     content: LazyListScope.() -> Unit,
 ) {
     LazyColumn(
         modifier = modifier,
         state = state,
-        overscrollEffect = null,
+        overscrollEffect = overscrollEffect,
         userScrollEnabled = userScrollEnabled,
         contentPadding =
             appPageContentPadding(
