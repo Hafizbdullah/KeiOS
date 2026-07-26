@@ -9,9 +9,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -55,6 +61,11 @@ import os.kei.ui.page.main.widget.dialog.AppWindowDialogPresentation
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.ProgressiveBlur
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlin.math.abs
 
 @Composable
@@ -133,6 +144,9 @@ internal fun GuideImageFullscreenDialog(
             lastTransformActiveAtMs = SystemClock.elapsedRealtime()
         }
     }
+    // The frosted status-bar scrim samples through a miuix layer backdrop; this dialog
+    // window hosts no kyant glass, so the two backdrop systems never mix on one surface.
+    val statusBarScrimBackdrop = rememberLayerBackdrop()
     AppWindowDialogHost(
         show = true,
         onDismissRequest = onDismiss,
@@ -157,7 +171,10 @@ internal fun GuideImageFullscreenDialog(
                     },
         ) {
             BoxWithConstraints(
-                modifier = Modifier.fillMaxSize(),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .layerBackdrop(statusBarScrimBackdrop),
                 contentAlignment = Alignment.Center,
             ) {
                 val safeRatio = ratio.coerceAtLeast(0.1f)
@@ -264,6 +281,10 @@ internal fun GuideImageFullscreenDialog(
                     )
                 }
             }
+            GuideFullscreenStatusBarBlurScrim(
+                backdrop = statusBarScrimBackdrop,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
             if (!sampledLoading && helperLoadFailed && sampledBitmap == null) {
                 GuideFullscreenImageRetryHint(
                     onRetry = { retryToken += 1 },
@@ -276,6 +297,42 @@ internal fun GuideImageFullscreenDialog(
         }
     }
 }
+
+/**
+ * Progressive status-bar protection for fullscreen image viewing: strongest blur at the
+ * very top edge, pixel-sharp where the grade ends, plus a light darkening ramp so system
+ * status icons stay readable over bright image content panned under the status bar.
+ * Letterboxed areas capture as transparent, so the scrim vanishes where no image reaches.
+ */
+@Composable
+private fun GuideFullscreenStatusBarBlurScrim(
+    backdrop: LayerBackdrop,
+    modifier: Modifier = Modifier,
+) {
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(statusBarHeight + GuideFullscreenStatusBarScrimGradeRunway)
+                .progressiveTextureBlur(
+                    backdrop = backdrop,
+                    shape = RectangleShape,
+                    blurRadius = 28f,
+                    gradient = ProgressiveBlur.Top,
+                ).background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                Color.Black.copy(alpha = 0.30f),
+                                Color.Transparent,
+                            ),
+                    ),
+                ),
+    )
+}
+
+private val GuideFullscreenStatusBarScrimGradeRunway = 20.dp
 
 @Composable
 internal fun GuideVideoFullscreenDialog(
