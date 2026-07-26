@@ -87,7 +87,9 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
-    val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, titleMotionProgress)
+    // Expanded target centers the title block between the pill's top edge and the
+    // bottom-anchored progress track (62dp pill, 18dp line, track visual ~40dp down).
+    val titleVerticalOffset = debugBgmLerpDp(21.dp, 11.dp, titleMotionProgress)
     val sideControlSlotWidth =
         debugBgmLerpDp(
             0.dp,
