@@ -373,12 +373,14 @@ object AppForegroundInfoHandler {
             return
         }
         if (runtime.targetCount > 0) {
-            val systemWillReschedule =
+            // A background tick has no user cancel affordance, so any of its cancellations
+            // is machine-driven (system stop, reschedule, service teardown); fall through
+            // to the silent progress-card dismissal instead of a terminal "cancelled".
+            val suppressCancelledTerminal =
                 outcome == GitHubRefreshHistoryOutcome.Cancelled &&
-                    runtime.source == GitHubRefreshSource.BackgroundTick &&
-                    schedulerDiagnostics.rescheduled
+                    runtime.source == GitHubRefreshSource.BackgroundTick
             val terminalPosted =
-                if (systemWillReschedule) {
+                if (suppressCancelledTerminal) {
                     false
                 } else runCatching {
                     when (outcome) {

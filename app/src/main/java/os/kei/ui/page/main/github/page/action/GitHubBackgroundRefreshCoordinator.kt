@@ -54,7 +54,7 @@ internal class GitHubBackgroundRefreshCoordinator(
     private val backgroundJobs = ConcurrentHashMap.newKeySet<Job>()
     private val refreshHistoryService = GitHubRefreshHistoryService()
 
-    fun cancel(reason: String = "explicit") {
+    fun cancel(reason: String) {
         val activeCount = backgroundJobs.count { it.isActive }
         if (activeCount > 0) {
             AppLogger.d("GitHubBackgroundRefresh") {
@@ -330,6 +330,7 @@ internal class GitHubBackgroundRefreshCoordinator(
                     failedCount = failedCount,
                     outcome = GitHubRefreshHistoryOutcome.Cancelled,
                     note = error.message.orEmpty(),
+                    cancelPresentation = GitHubRefreshCancelSignal.presentation(error.message),
                 )
                 throw error
             } catch (error: Throwable) {
@@ -386,6 +387,7 @@ internal class GitHubBackgroundRefreshCoordinator(
         failedCount: Int,
         outcome: GitHubRefreshHistoryOutcome,
         note: String,
+        cancelPresentation: GitHubRefreshCancelPresentation = GitHubRefreshCancelPresentation.Visible,
     ) {
         withContext(NonCancellable) {
             val current = GitHubRefreshRuntimeStore.state.value
@@ -425,18 +427,29 @@ internal class GitHubBackgroundRefreshCoordinator(
                         totalTrackedCount = current.totalTrackedCount,
                     )
                 } else {
-                    repository.notifyRefreshCancelled(
-                        context = context,
-                        current = completedCount,
-                        total = current.targetCount,
-                        preReleaseUpdateCount = preReleaseUpdateCount,
-                        updatableCount = updatableCount,
-                        failedCount = failedCount,
-                        sessionId = runtimeSessionId,
-                        scope = current.scope,
-                        source = current.source,
-                        totalTrackedCount = current.totalTrackedCount,
-                    )
+                    when (cancelPresentation) {
+                        GitHubRefreshCancelPresentation.Visible ->
+                            repository.notifyRefreshCancelled(
+                                context = context,
+                                current = completedCount,
+                                total = current.targetCount,
+                                preReleaseUpdateCount = preReleaseUpdateCount,
+                                updatableCount = updatableCount,
+                                failedCount = failedCount,
+                                sessionId = runtimeSessionId,
+                                scope = current.scope,
+                                source = current.source,
+                                totalTrackedCount = current.totalTrackedCount,
+                            )
+
+                        GitHubRefreshCancelPresentation.SilentTakeover -> Unit
+
+                        GitHubRefreshCancelPresentation.SilentDismiss ->
+                            repository.cancelRefreshNotification(
+                                context = context,
+                                sessionId = runtimeSessionId,
+                            )
+                    }
                 }
             }.onFailure { error ->
                 AppLogger.w(

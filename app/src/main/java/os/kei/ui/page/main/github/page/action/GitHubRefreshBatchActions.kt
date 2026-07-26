@@ -68,9 +68,13 @@ internal class GitHubRefreshBatchActions(
             }
             return
         }
-        backgroundRefreshCoordinator.cancel(reason = "superseded_by_page_batch")
+        backgroundRefreshCoordinator.cancel(
+            reason = GitHubRefreshCancelSignal.SUPERSEDED_BY_PAGE_BATCH_REASON,
+        )
         actionsRunRefreshCoordinator.cancel()
-        state.refreshAllJob?.cancel(CancellationException("superseded_by_page_batch"))
+        state.refreshAllJob?.cancel(
+            CancellationException(GitHubRefreshCancelSignal.SUPERSEDED_BY_PAGE_BATCH_REASON),
+        )
         AppLogger.d("GitHubRefreshActions") {
             "enqueue page refresh scope=${refreshPlan.refreshScope} target=${snapshot.size}/${state.trackedItems.size} " +
                 "force=$forceRefresh clearAll=$clearAllCheckCache updateGlobal=$updateGlobalRefreshTimestamp"
@@ -356,18 +360,29 @@ internal class GitHubRefreshBatchActions(
                             preReleaseUpdateCount = preReleaseUpdateCount,
                             failedCount = failedCount,
                         )
-                        repository.notifyRefreshCancelled(
-                            context = context,
-                            current = completedCount,
-                            total = totalCount,
-                            preReleaseUpdateCount = preReleaseUpdateCount,
-                            updatableCount = updatableCount,
-                            failedCount = failedCount,
-                            sessionId = runtimeSession.id,
-                            scope = runtimeSession.scope,
-                            source = runtimeSession.source,
-                            totalTrackedCount = state.trackedItems.size,
-                        )
+                        when (GitHubRefreshCancelSignal.presentation(error.message)) {
+                            GitHubRefreshCancelPresentation.Visible ->
+                                repository.notifyRefreshCancelled(
+                                    context = context,
+                                    current = completedCount,
+                                    total = totalCount,
+                                    preReleaseUpdateCount = preReleaseUpdateCount,
+                                    updatableCount = updatableCount,
+                                    failedCount = failedCount,
+                                    sessionId = runtimeSession.id,
+                                    scope = runtimeSession.scope,
+                                    source = runtimeSession.source,
+                                    totalTrackedCount = state.trackedItems.size,
+                                )
+
+                            GitHubRefreshCancelPresentation.SilentTakeover -> Unit
+
+                            GitHubRefreshCancelPresentation.SilentDismiss ->
+                                repository.cancelRefreshNotification(
+                                    context = context,
+                                    sessionId = runtimeSession.id,
+                                )
+                        }
                     }
                     throw error
                 } catch (error: Throwable) {

@@ -87,10 +87,10 @@ internal class GitHubRefreshActions(
     }
 
     fun cancelRefreshAll(reason: String? = null) {
-        backgroundRefreshCoordinator.cancel(reason = "cancelRefreshAll")
+        backgroundRefreshCoordinator.cancel(reason = GitHubRefreshCancelSignal.EXPLICIT_REASON)
         actionsRunRefreshCoordinator.cancel()
         if (state.refreshAllJob?.isActive != true) return
-        state.refreshAllJob?.cancel(CancellationException("cancelRefreshAll"))
+        state.refreshAllJob?.cancel(CancellationException(GitHubRefreshCancelSignal.EXPLICIT_REASON))
         state.refreshAllJob = null
         val activeRefreshIds =
             state.refreshTargetIds.takeIf { it.isNotEmpty() }
