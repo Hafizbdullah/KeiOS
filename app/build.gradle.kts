@@ -608,7 +608,7 @@ dependencies {
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
 
     // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
     testImplementation("androidx.test.ext:junit:$androidTestExtJunitVersion")
