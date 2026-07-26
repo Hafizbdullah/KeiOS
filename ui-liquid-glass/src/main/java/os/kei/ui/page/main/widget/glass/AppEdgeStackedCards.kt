@@ -66,14 +66,16 @@ fun AppEdgeStackExempt(content: @Composable () -> Unit) {
 }
 
 /**
- * Card-side transform. Layout position feeds the draw-phase layer lambda through
- * snapshot state, so scrolling only invalidates draw, never composition. Cards
- * resting below the stack line collapse to a sentinel: they take one snapshot write
- * when leaving the zone and then skip both writes and transform math entirely, so a
- * steadily scrolling list only pays for the few cards at the pile.
+ * Card-side transform, applied by page-card containers (AppSurfaceCard and friends)
+ * when a host page provides [LocalAppEdgeStackCards]. Layout position feeds the
+ * draw-phase layer lambda through snapshot state, so scrolling only invalidates draw,
+ * never composition. Cards resting below the stack line collapse to a sentinel: they
+ * take one snapshot write when leaving the zone and then skip both writes and
+ * transform math entirely, so a steadily scrolling list only pays for the few cards
+ * at the pile.
  */
 @Composable
-internal fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
+fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
     val itemTopInContainerY = remember { mutableFloatStateOf(APP_EDGE_STACK_RESTING) }
     val itemHeightPx = remember { mutableIntStateOf(0) }
     val tuckRisePx = with(LocalDensity.current) { AppEdgeStackTuckRise.toPx() }

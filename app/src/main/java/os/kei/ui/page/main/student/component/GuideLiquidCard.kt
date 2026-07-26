@@ -2,6 +2,7 @@ package os.kei.ui.page.main.student.component
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -11,7 +12,9 @@ import os.kei.ui.page.main.widget.core.AppSurfaceBox
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 
 @Composable
@@ -35,9 +38,16 @@ internal fun GuideLiquidCard(
     } else {
         0.dp
     }
+    val edgeStack = LocalAppEdgeStackCards.current
+    val edgeStackModifier =
+        if (edgeStack != null) {
+            Modifier.appEdgeStackedCard(edgeStack)
+        } else {
+            Modifier
+        }
 
     AppSurfaceBox(
-        modifier = modifier,
+        modifier = edgeStackModifier.then(modifier),
         surfaceColor = surfaceColor,
         shape = RoundedRectangle(cornerRadius),
         contentColor = LocalContentColor.current,
@@ -52,6 +62,11 @@ internal fun GuideLiquidCard(
         lensRadius = lensRadius,
         effectVariant = effectVariant,
         onClick = onClick,
-        content = content,
+        content = {
+            // Only the outermost page card stacks; nested surfaces stay untransformed.
+            CompositionLocalProvider(LocalAppEdgeStackCards provides null) {
+                content()
+            }
+        },
     )
 }

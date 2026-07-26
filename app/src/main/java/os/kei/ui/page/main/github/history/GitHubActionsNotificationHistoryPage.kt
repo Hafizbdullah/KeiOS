@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +69,10 @@ import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageContentSwitchState
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentItemModifier
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppFeatureCard
@@ -345,6 +351,31 @@ internal fun GitHubActionsNotificationHistoryPage(
             )
         },
     ) { innerPadding ->
+        val showPinnedHistoryHub = !uiState.loading && uiState.errorMessage.isBlank()
+        val listTopPadding =
+            if (showPinnedHistoryHub) {
+                AppEdgeStackListTopInset
+            } else {
+                innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap
+            }
+        val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
+        Column(modifier = Modifier.fillMaxSize()) {
+        if (showPinnedHistoryHub) {
+            // The history summary hub stays pinned above every category list; record
+            // cards stack beneath it while the pull gesture runs in the list region.
+            GitHubHistoryOverviewCard(
+                uiState = uiState,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = AppChromeTokens.pageHorizontalPadding,
+                            end = AppChromeTokens.pageHorizontalPadding,
+                            top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                        ),
+            )
+        }
+        CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
         PullToRefresh(
             isRefreshing = pullRefreshSessionActive,
             onRefresh = {
@@ -353,11 +384,12 @@ internal fun GitHubActionsNotificationHistoryPage(
             },
             modifier =
                 Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .weight(1f)
                     .layerBackdrop(pageBackdrop)
                     .layerBackdrop(bottomBarBackdrop),
             topAppBarScrollBehavior = scrollBehavior,
-            contentPadding = innerPadding,
+            contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             refreshTexts =
                 listOf(
                     stringResource(R.string.github_history_pull_refresh_pull),
@@ -367,16 +399,18 @@ internal fun GitHubActionsNotificationHistoryPage(
                 ),
         ) {
             AppPageLazyColumn(
-                innerPadding = innerPadding,
+                innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                 state = listState,
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .nestedScroll(pageNestedScrollConnection),
+                        .nestedScroll(pageNestedScrollConnection)
+                        .appEdgeStackContainer(edgeStackState),
                 bottomExtra =
                     appPageBottomPaddingWithFloatingOverlay(
                         AppChromeTokens.floatingBottomBarOuterHeight,
                     ),
+                topExtra = listTopPadding,
                 sectionSpacing = CardLayoutRhythm.denseSectionGap,
             ) {
                 when {
@@ -420,19 +454,6 @@ internal fun GitHubActionsNotificationHistoryPage(
 
                     currentTotalRecordCount == 0 -> {
                         item(
-                            key = "github-history-empty-summary",
-                            contentType = "github-actions-history-summary",
-                        ) {
-                            GitHubHistoryOverviewCard(
-                                uiState = uiState,
-                                modifier =
-                                    tabbedPageContentItemModifier(
-                                        switchState = historyContentSwitchState,
-                                        itemIndex = 0,
-                                    ),
-                            )
-                        }
-                        item(
                             key = "github-actions-history-empty",
                             contentType = "github-actions-history-state",
                         ) {
@@ -463,19 +484,6 @@ internal fun GitHubActionsNotificationHistoryPage(
                     }
 
                     else -> {
-                        item(
-                            key = "github-actions-history-summary",
-                            contentType = "github-actions-history-summary",
-                        ) {
-                            GitHubHistoryOverviewCard(
-                                uiState = uiState,
-                                modifier =
-                                    tabbedPageContentItemModifier(
-                                        switchState = historyContentSwitchState,
-                                        itemIndex = 0,
-                                    ),
-                            )
-                        }
                         if (currentDisplayRecordCount == 0) {
                             item(
                                 key = "github-actions-history-filtered-empty",
@@ -620,6 +628,8 @@ internal fun GitHubActionsNotificationHistoryPage(
                     }
                 }
             }
+        }
+        }
         }
     }
 }

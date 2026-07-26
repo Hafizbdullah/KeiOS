@@ -3,6 +3,8 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,8 +42,12 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListSt
 import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -207,15 +214,57 @@ internal fun BaGuideMemoryLobbyTabContent(
             }
     }
     val entryListGap = rememberBaGuideCatalogEntryListGap()
+    val showPinnedLobbyHeader = !showLoading
+    val listTopPadding =
+        if (showPinnedLobbyHeader) {
+            AppEdgeStackListTopInset
+        } else {
+            innerPadding.calculateTopPadding()
+        }
+    val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
+    Column(modifier = Modifier.fillMaxSize()) {
+    if (showPinnedLobbyHeader) {
+        // The lobby summary is this tab's status hub: pinned above the list so the
+        // memorial-lobby pile always forms beneath it.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        top = innerPadding.calculateTopPadding(),
+                    ),
+        ) {
+            BaGuideMemoryLobbyHeader(
+                totalCount = allStudentEntries.size,
+                displayedCount = visibleFilteredEntries.size,
+                readyCount = headerCounts.readyCount,
+                favoriteCount = headerCounts.favoriteCount,
+                cachedCount = headerCounts.cachedCount,
+                searchActive = searchQuery.isNotBlank(),
+                favoritesHidden = favoritesHidden,
+                accent = accent,
+                onToggleFavoritesHidden = {
+                    if (favoriteContentIds.isNotEmpty()) {
+                        favoritesHidden = !favoritesHidden
+                    }
+                },
+            )
+        }
+    }
+    CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
     LazyColumn(
         state = listState,
         modifier =
             Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
+                .fillMaxWidth()
+                .weight(1f)
+                .nestedScroll(nestedScrollConnection)
+                .appEdgeStackContainer(edgeStackState),
         contentPadding =
             PaddingValues(
-                top = innerPadding.calculateTopPadding(),
+                top = listTopPadding,
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
@@ -242,27 +291,6 @@ internal fun BaGuideMemoryLobbyTabContent(
                 contentType = "memory_lobby_status",
             ) {
                 AppAronaLoadingPanel(accent = accent)
-            }
-        } else {
-            item(
-                key = "memory-lobby-header",
-                contentType = "memory_lobby_header",
-            ) {
-                BaGuideMemoryLobbyHeader(
-                    totalCount = allStudentEntries.size,
-                    displayedCount = visibleFilteredEntries.size,
-                    readyCount = headerCounts.readyCount,
-                    favoriteCount = headerCounts.favoriteCount,
-                    cachedCount = headerCounts.cachedCount,
-                    searchActive = searchQuery.isNotBlank(),
-                    favoritesHidden = favoritesHidden,
-                    accent = accent,
-                    onToggleFavoritesHidden = {
-                        if (favoriteContentIds.isNotEmpty()) {
-                            favoritesHidden = !favoritesHidden
-                        }
-                    },
-                )
             }
         }
 
@@ -333,6 +361,8 @@ internal fun BaGuideMemoryLobbyTabContent(
                 }
             }
         }
+    }
+    }
     }
 }
 

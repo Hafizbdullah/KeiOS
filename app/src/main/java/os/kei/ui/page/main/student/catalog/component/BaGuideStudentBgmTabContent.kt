@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +53,9 @@ import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFav
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 
@@ -341,14 +345,18 @@ internal fun BaGuideStudentBgmTabContent(
     val showEmptyStatus = !effectiveLoading && visibleFilteredEntries.isEmpty()
     val entryListGap = rememberBaGuideCatalogEntryListGap()
 
+    val edgeStackState =
+        rememberAppEdgeStackState(stackLine = innerPadding.calculateTopPadding())
     Box(modifier = Modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
         LazyColumn(
             state = listState,
             userScrollEnabled = !sliderInteractionActive,
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
+                    .nestedScroll(nestedScrollConnection)
+                    .appEdgeStackContainer(edgeStackState),
             contentPadding =
                 PaddingValues(
                     top = innerPadding.calculateTopPadding(),
@@ -427,6 +435,7 @@ internal fun BaGuideStudentBgmTabContent(
                     )
                 }
             }
+        }
         }
 
         AnimatedVisibility(
