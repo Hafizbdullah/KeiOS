@@ -1,7 +1,7 @@
 package os.kei.ui.navigation
 
-import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import top.yukonga.miuix.kmp.nav.core.NavKey
 
 /**
  * Type-safe navigation keys for KeiOS.

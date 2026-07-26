@@ -71,7 +71,6 @@ class GitHubWorkflowContractTest {
             "feature-mcp/**",
             "feature-os/**",
             "feature-webdav/**",
-            "miuix-navigation3-ui/**",
             "ui-liquid-glass/**",
             "ui-pip/**",
             "baselineprofile/**",

@@ -230,8 +230,6 @@ val activityComposeVersion = "1.13.0"
 val materialVersion = "1.14.0"
 val composeVersion = "1.11.4"
 val constraintLayoutComposeVersion = "1.1.1"
-val navigation3Version = "1.1.4"
-val miuixNavigation3UiVersion = "source-b09d5deb+nav3-$navigation3Version"
 val navigationEventVersion = "1.1.2"
 val backdropVersion = "2.0.0"
 val capsuleVersion = "2.1.3"
@@ -333,7 +331,7 @@ android {
         buildConfigField("String", "ACTIVITY_COMPOSE_VERSION", "\"$activityComposeVersion\"")
         buildConfigField("String", "MATERIAL_VERSION", "\"$materialVersion\"")
         buildConfigField("String", "MIUIX_VERSION", "\"$miuixVersion\"")
-        buildConfigField("String", "MIUIX_NAV_VERSION", "\"$miuixNavigation3UiVersion\"")
+        buildConfigField("String", "MIUIX_NAV_VERSION", "\"miuix-nav $miuixVersion\"")
         buildConfigField("String", "COMPOSE_VERSION", "\"$composeVersion\"")
         buildConfigField("String", "CONSTRAINT_LAYOUT_COMPOSE_VERSION", "\"$constraintLayoutComposeVersion\"")
         buildConfigField("String", "NAVIGATION_EVENT_VERSION", "\"$navigationEventVersion\"")
@@ -543,6 +541,8 @@ configurations.configureEach {
             .using(module("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion"))
         substitute(module("top.yukonga.miuix.kmp:miuix-blur"))
             .using(module("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion"))
+        substitute(module("top.yukonga.miuix.kmp:miuix-nav"))
+            .using(module("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion"))
     }
 }
 
@@ -559,7 +559,6 @@ dependencies {
     implementation(project(":core-system"))
     implementation(project(":ui-pip"))
     implementation(project(":ui-liquid-glass"))
-    implementation(project(":miuix-navigation3-ui"))
     implementation(project(":feature-mcp"))
     implementation(project(":feature-keepalive"))
     implementation(project(":feature-home"))
@@ -576,7 +575,6 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:$composeVersion")
     implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
     implementation("androidx.constraintlayout:constraintlayout-compose:$constraintLayoutComposeVersion")
-    implementation("androidx.navigation3:navigation3-runtime:$navigation3Version")
     implementation("androidx.navigationevent:navigationevent:$navigationEventVersion")
     implementation("androidx.navigationevent:navigationevent-compose:$navigationEventVersion")
     debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
@@ -585,6 +583,7 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
+    implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
     implementation("io.github.kyant0:backdrop:$backdropVersion")
     implementation("io.github.kyant0:capsule:$capsuleVersion")
     implementation("io.github.kyant0:shapes:$shapesVersion")
@@ -606,7 +605,6 @@ dependencies {
     implementation("androidx.metrics:metrics-performance:$metricsPerformanceVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleViewModelComposeVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:$lifecycleViewModelComposeVersion")
     implementation("androidx.documentfile:documentfile:$documentFileVersion")
 
     // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.

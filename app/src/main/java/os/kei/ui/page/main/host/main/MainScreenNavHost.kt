@@ -2,15 +2,6 @@
 
 package os.kei.ui.page.main.host.main
 
-import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,18 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.Scene
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.NavDisplayTransitionEffects
-import androidx.navigation3.ui.defaultPopTransitionSpec
-import androidx.navigation3.ui.defaultPredictivePopTransitionSpec
-import androidx.navigation3.ui.defaultTransitionSpec
-import androidx.navigationevent.NavigationEvent
+import androidx.compose.ui.unit.LayoutDirection
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.platform.PredictiveBackOemCompat
@@ -50,7 +30,6 @@ import os.kei.ui.page.main.student.page.BaStudentGuidePage
 import os.kei.ui.page.main.sync.WebDavSyncPage
 import os.kei.ui.page.main.sync.rememberWebDavSyncDataPorts
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
-import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyle
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
@@ -58,14 +37,22 @@ import os.kei.ui.page.main.widget.glass.BindLiquidToastBridge
 import os.kei.ui.page.main.widget.glass.LiquidToastHost
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
+import top.yukonga.miuix.kmp.nav.core.NavBackStack
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.transition.NavTransition
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
+import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
+import kotlin.math.roundToInt
 
 @Composable
 internal fun MainScreenNavHost(
-    backStack: NavBackStack<NavKey>,
+    backStack: NavBackStack,
     navigator: Navigator,
     pagerCoordinator: MainScreenPagerCoordinator,
     prefsState: MainScreenUiPrefsState,
@@ -100,44 +87,28 @@ internal fun MainScreenNavHost(
         backRuntimeController.updatePolicy(predictiveBackPolicy)
     }
     val routeAnimationsEnabled = prefsState.transitionAnimationsEnabled
-    val routePredictiveBackAnimationsEnabled =
-        routeAnimationsEnabled && predictiveBackPolicy.routePredictiveBackEnabled
     val isDarkTheme = isAppInDarkTheme()
+    // miuix-nav keeps one visual contract for push/pop/predictive back (visual = f(depth)), so the
+    // former transitionSpec/popTransitionSpec/predictivePopTransitionSpec trio collapses into a
+    // single NavTransition: MiuixDefault when route animations are on, None for an instant swap.
+    val navTransition =
+        remember(routeAnimationsEnabled) {
+            if (routeAnimationsEnabled) NavTransitions.MiuixDefault else NavTransitions.None
+        }
+    val catalogTransition =
+        remember(routeAnimationsEnabled) {
+            if (routeAnimationsEnabled) baGuideCatalogNavTransition() else null
+        }
     val navEffects =
-        remember(routeAnimationsEnabled, routePredictiveBackAnimationsEnabled, isDarkTheme) {
+        remember(routeAnimationsEnabled, isDarkTheme) {
             if (routeAnimationsEnabled) {
-                NavDisplayTransitionEffects(
+                NavDisplayEffects(
                     enableCornerClip = true,
                     dimAmount = if (isDarkTheme) 0.54f else 0.34f,
                     blockInputDuringTransition = true,
-                    popDirectionFollowsSwipeEdge = routePredictiveBackAnimationsEnabled,
                 )
             } else {
-                NavDisplayTransitionEffects.None
-            }
-        }
-    val navTransitionSpec =
-        remember(routeAnimationsEnabled) {
-            if (routeAnimationsEnabled) {
-                appNavTransitionSpec()
-            } else {
-                noNavContentTransform()
-            }
-        }
-    val navPopTransitionSpec =
-        remember(routeAnimationsEnabled) {
-            if (routeAnimationsEnabled) {
-                appNavPopTransitionSpec()
-            } else {
-                noNavContentTransform()
-            }
-        }
-    val navPredictivePopTransitionSpec =
-        remember(routePredictiveBackAnimationsEnabled) {
-            if (routePredictiveBackAnimationsEnabled) {
-                defaultPredictivePopTransitionSpec<NavKey>()
-            } else {
-                noNavPredictiveContentTransform()
+                NavDisplayEffects.None
             }
         }
 
@@ -160,202 +131,193 @@ internal fun MainScreenNavHost(
         )
         Box(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.fillMaxSize().layerBackdrop(liquidToastBackdrop)) {
-                val navEntryDecorators =
-                    listOf(
-                        rememberSaveableStateHolderNavEntryDecorator<NavKey>(),
-                        rememberViewModelStoreNavEntryDecorator<NavKey>(),
-                    )
                 NavDisplay(
                     backStack = backStack,
-                    onBack = onRouteBack,
-                    entryDecorators = navEntryDecorators,
-                    transitionSpec = navTransitionSpec,
-                    popTransitionSpec = navPopTransitionSpec,
-                    predictivePopTransitionSpec = navPredictivePopTransitionSpec,
-                    transitionEffects = navEffects,
                     modifier = Modifier.fillMaxSize(),
-                    entryProvider = entryProvider<NavKey> {
-                        entry<KeiosRoute.Main> {
-                            MainPagerLayout(
-                                rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
-                                navigator = navigator,
-                                settingsReturnToken = pagerCoordinator.settingsReturnToken,
-                                liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
-                                gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
-                                homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
-                                homeDynamicFullEffectEnabled = pagerCoordinator.homeDynamicFullEffectEnabled,
-                                preloadingEnabled = pagerCoordinator.preloadingEnabled,
-                                nonHomeBackgroundEnabled = pagerCoordinator.nonHomeBackgroundEnabled,
-                                nonHomeBackgroundUri = pagerCoordinator.nonHomeBackgroundUri,
-                                nonHomeBackgroundOpacity = pagerCoordinator.nonHomeBackgroundOpacity,
-                                nonHomeBackgroundContentScale = pagerCoordinator.nonHomeBackgroundContentScale,
-                                nonHomeBackgroundAlignment = pagerCoordinator.nonHomeBackgroundAlignment,
-                                nonHomeBackgroundPageStyle = pagerCoordinator.nonHomeBackgroundPageStyle,
-                                nonHomeBackgroundScrim = pagerCoordinator.nonHomeBackgroundScrim,
-                                nonHomeBackgroundDepthEnabled = pagerCoordinator.nonHomeBackgroundDepthEnabled,
-                                nonHomeBackgroundSaturation = pagerCoordinator.nonHomeBackgroundSaturation,
-                                visibleBottomPageNames = pagerCoordinator.visibleBottomPageNames,
-                                onVisibleBottomPageNamesChange = pagerCoordinator.onVisibleBottomPageNamesChange,
-                                shizukuStatus = pagerCoordinator.shizukuStatus,
-                                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                                mcpServerManager = pagerCoordinator.mcpServerManager,
-                                onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
-                                onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
-                                requestedBottomPage = pagerCoordinator.requestedBottomPage,
-                                requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
-                                requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
-                                requestedGitHubActionsTrackId = pagerCoordinator.requestedGitHubActionsTrackId,
-                                requestedGitHubActionsSheetToken = pagerCoordinator.requestedGitHubActionsSheetToken,
-                                requestedBaAccountId = pagerCoordinator.requestedBaAccountId,
-                                requestedBaAccountToken = pagerCoordinator.requestedBaAccountToken,
-                                transientExternalLaunchActive = transientExternalLaunchActive,
-                                onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed,
-                            )
-                        }
-                        entry<KeiosRoute.Settings> {
-                            MainScreenRouteBackgroundHost(
-                                prefsState = prefsState,
-                                exportBackdropToContent = true,
-                            ) {
-                                SettingsPage(
-                                    notificationPermissionGranted = notificationPermissionGranted,
-                                    onRequestNotificationPermission = onRequestNotificationPermission,
-                                    liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                                    onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
-                                    liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
-                                    onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
-                                    liquidToastEnabled = prefsState.liquidToastEnabled,
-                                    onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
-                                    reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
-                                    onReduceToastInterruptionChanged = prefsState::updateReduceToastInterruptionEnabled,
-                                    liquidSheetEnabled = prefsState.liquidSheetEnabled,
-                                    onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
-                                    liquidDialogEnabled = prefsState.liquidDialogEnabled,
-                                    onLiquidDialogChanged = prefsState::updateLiquidDialogEnabled,
-                                    transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
-                                    onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
-                                    predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
-                                    onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
-                                    searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
-                                    onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
-                                    gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
-                                    onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
-                                    homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
-                                    onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
-                                    homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
-                                    onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
-                                    preloadingEnabled = prefsState.preloadingEnabled,
-                                    onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
-                                    launcherIconDesign = prefsState.launcherIconDesign,
-                                    onLauncherIconDesignChanged = prefsState::updateLauncherIconDesign,
-                                    nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
-                                    onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
-                                    nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
-                                    onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
-                                    nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
-                                    onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
-                                    nonHomeBackgroundContentScale = prefsState.nonHomeBackgroundContentScale,
-                                    onNonHomeBackgroundContentScaleChanged = prefsState::updateNonHomeBackgroundContentScale,
-                                    nonHomeBackgroundAlignment = prefsState.nonHomeBackgroundAlignment,
-                                    onNonHomeBackgroundAlignmentChanged = prefsState::updateNonHomeBackgroundAlignment,
-                                    nonHomeBackgroundPageStyle = prefsState.nonHomeBackgroundPageStyle,
-                                    onNonHomeBackgroundPageStyleChanged = prefsState::updateNonHomeBackgroundPageStyle,
-                                    nonHomeBackgroundScrim = prefsState.nonHomeBackgroundScrim,
-                                    onNonHomeBackgroundScrimChanged = prefsState::updateNonHomeBackgroundScrim,
-                                    nonHomeBackgroundDepthEnabled = prefsState.nonHomeBackgroundDepthEnabled,
-                                    onNonHomeBackgroundDepthEnabledChanged = prefsState::updateNonHomeBackgroundDepthEnabled,
-                                    nonHomeBackgroundSaturation = prefsState.nonHomeBackgroundSaturation,
-                                    onNonHomeBackgroundSaturationChanged = prefsState::updateNonHomeBackgroundSaturation,
-                                    onResetNonHomeBackgroundRendering = prefsState::resetNonHomeBackgroundRendering,
-                                    onApplyNonHomeBackgroundReadableSuggestion = prefsState::applyNonHomeBackgroundReadableSuggestion,
-                                    superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
-                                    onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
-                                    superIslandFloatBehavior = prefsState.superIslandFloatBehavior,
-                                    onSuperIslandFloatBehaviorChanged = prefsState::updateSuperIslandFloatBehavior,
-                                    superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
-                                    onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
-                                    superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
-                                    onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
-                                    logLevel = prefsState.logLevel,
-                                    onLogLevelChanged = prefsState::updateLogLevel,
-                                    textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
-                                    onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
-                                    cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
-                                    onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
-                                    shizukuStatus = pagerCoordinator.shizukuStatus,
-                                    onCheckOrRequestShizuku = onCheckOrRequestShizuku,
-                                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                                    appThemeMode = appThemeMode,
-                                    onAppThemeModeChanged = onAppThemeModeChanged,
-                                    onBack = onRouteBack,
-                                    onOpenWebDavSync = { navigator.pushSingleTop(KeiosRoute.WebDavSync) },
-                                )
-                            }
-                        }
-                        entry<KeiosRoute.McpSkill> {
-                            MainScreenRouteBackgroundHost(
-                                prefsState = prefsState,
-                                exportBackdropToContent = true,
-                            ) {
-                                McpSkillPage(
-                                    mcpServerManager = mcpServerManager,
-                                    onBack = onRouteBack,
-                                )
-                            }
-                        }
-                        entry<KeiosRoute.GitHubActionsNotificationHistory> {
-                            MainScreenRouteBackgroundHost(
-                                prefsState = prefsState,
-                                exportBackdropToContent = true,
-                            ) {
-                                GitHubActionsNotificationHistoryPage(
-                                    onBack = onRouteBack,
-                                    onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
-                                    onRetryRefreshTargets = onRetryGitHubRefreshTargetsFromHistory,
-                                )
-                            }
-                        }
-                        entry<KeiosRoute.About> {
-                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
-                                AboutPage(
-                                    appLabel = appLabel,
-                                    notificationPermissionGranted = notificationPermissionGranted,
-                                    shizukuStatus = pagerCoordinator.shizukuStatus,
-                                    shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
-                                    onCheckShizuku = onCheckOrRequestShizuku,
-                                    onBack = onRouteBack,
-                                )
-                            }
-                        }
-                        entry<KeiosRoute.BaStudentGuide> {
-                            BaStudentGuidePage(
-                                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                                preloadingEnabled = prefsState.preloadingEnabled,
-                                onBack = onRouteBack,
-                            )
-                        }
-                        entry<KeiosRoute.BaGuideCatalog> { route ->
-                            BaGuideCatalogPage(
-                                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                                preloadingEnabled = prefsState.preloadingEnabled,
+                    onBack = onRouteBack,
+                    transition = navTransition,
+                    effects = navEffects,
+                ) {
+                    entry<KeiosRoute.Main> {
+                        MainPagerLayout(
+                            rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
+                            navigator = navigator,
+                            settingsReturnToken = pagerCoordinator.settingsReturnToken,
+                            liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
+                            gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
+                            homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
+                            homeDynamicFullEffectEnabled = pagerCoordinator.homeDynamicFullEffectEnabled,
+                            preloadingEnabled = pagerCoordinator.preloadingEnabled,
+                            nonHomeBackgroundEnabled = pagerCoordinator.nonHomeBackgroundEnabled,
+                            nonHomeBackgroundUri = pagerCoordinator.nonHomeBackgroundUri,
+                            nonHomeBackgroundOpacity = pagerCoordinator.nonHomeBackgroundOpacity,
+                            nonHomeBackgroundContentScale = pagerCoordinator.nonHomeBackgroundContentScale,
+                            nonHomeBackgroundAlignment = pagerCoordinator.nonHomeBackgroundAlignment,
+                            nonHomeBackgroundPageStyle = pagerCoordinator.nonHomeBackgroundPageStyle,
+                            nonHomeBackgroundScrim = pagerCoordinator.nonHomeBackgroundScrim,
+                            nonHomeBackgroundDepthEnabled = pagerCoordinator.nonHomeBackgroundDepthEnabled,
+                            nonHomeBackgroundSaturation = pagerCoordinator.nonHomeBackgroundSaturation,
+                            visibleBottomPageNames = pagerCoordinator.visibleBottomPageNames,
+                            onVisibleBottomPageNamesChange = pagerCoordinator.onVisibleBottomPageNamesChange,
+                            shizukuStatus = pagerCoordinator.shizukuStatus,
+                            shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                            mcpServerManager = pagerCoordinator.mcpServerManager,
+                            onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
+                            onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
+                            requestedBottomPage = pagerCoordinator.requestedBottomPage,
+                            requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
+                            requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
+                            requestedGitHubActionsTrackId = pagerCoordinator.requestedGitHubActionsTrackId,
+                            requestedGitHubActionsSheetToken = pagerCoordinator.requestedGitHubActionsSheetToken,
+                            requestedBaAccountId = pagerCoordinator.requestedBaAccountId,
+                            requestedBaAccountToken = pagerCoordinator.requestedBaAccountToken,
+                            transientExternalLaunchActive = transientExternalLaunchActive,
+                            onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed,
+                        )
+                    }
+                    entry<KeiosRoute.Settings> {
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            exportBackdropToContent = true,
+                        ) {
+                            SettingsPage(
                                 notificationPermissionGranted = notificationPermissionGranted,
                                 onRequestNotificationPermission = onRequestNotificationPermission,
-                                openBgmPlaybackToken = route.openBgmPlaybackToken,
+                                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                                onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
+                                liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
+                                onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
+                                liquidToastEnabled = prefsState.liquidToastEnabled,
+                                onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
+                                reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
+                                onReduceToastInterruptionChanged = prefsState::updateReduceToastInterruptionEnabled,
+                                liquidSheetEnabled = prefsState.liquidSheetEnabled,
+                                onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
+                                liquidDialogEnabled = prefsState.liquidDialogEnabled,
+                                onLiquidDialogChanged = prefsState::updateLiquidDialogEnabled,
+                                transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
+                                onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
+                                predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
+                                onPredictiveBackAnimationsChanged = prefsState::updatePredictiveBackAnimationsEnabled,
+                                searchAutoFocusEnabled = prefsState.searchAutoFocusEnabled,
+                                onSearchAutoFocusChanged = prefsState::updateSearchAutoFocusEnabled,
+                                gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
+                                onGripAwareFloatingDockChanged = prefsState::updateGripAwareFloatingDockEnabled,
+                                homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
+                                onHomeIconHdrChanged = prefsState::updateHomeIconHdrEnabled,
+                                homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,
+                                onHomeDynamicFullEffectChanged = prefsState::updateHomeDynamicFullEffectEnabled,
+                                preloadingEnabled = prefsState.preloadingEnabled,
+                                onPreloadingEnabledChanged = prefsState::updatePreloadingEnabled,
+                                launcherIconDesign = prefsState.launcherIconDesign,
+                                onLauncherIconDesignChanged = prefsState::updateLauncherIconDesign,
+                                nonHomeBackgroundEnabled = prefsState.nonHomeBackgroundEnabled,
+                                onNonHomeBackgroundEnabledChanged = prefsState::updateNonHomeBackgroundEnabled,
+                                nonHomeBackgroundUri = prefsState.nonHomeBackgroundUri,
+                                onNonHomeBackgroundUriChanged = prefsState::updateNonHomeBackgroundUri,
+                                nonHomeBackgroundOpacity = prefsState.nonHomeBackgroundOpacity,
+                                onNonHomeBackgroundOpacityChanged = prefsState::updateNonHomeBackgroundOpacity,
+                                nonHomeBackgroundContentScale = prefsState.nonHomeBackgroundContentScale,
+                                onNonHomeBackgroundContentScaleChanged = prefsState::updateNonHomeBackgroundContentScale,
+                                nonHomeBackgroundAlignment = prefsState.nonHomeBackgroundAlignment,
+                                onNonHomeBackgroundAlignmentChanged = prefsState::updateNonHomeBackgroundAlignment,
+                                nonHomeBackgroundPageStyle = prefsState.nonHomeBackgroundPageStyle,
+                                onNonHomeBackgroundPageStyleChanged = prefsState::updateNonHomeBackgroundPageStyle,
+                                nonHomeBackgroundScrim = prefsState.nonHomeBackgroundScrim,
+                                onNonHomeBackgroundScrimChanged = prefsState::updateNonHomeBackgroundScrim,
+                                nonHomeBackgroundDepthEnabled = prefsState.nonHomeBackgroundDepthEnabled,
+                                onNonHomeBackgroundDepthEnabledChanged = prefsState::updateNonHomeBackgroundDepthEnabled,
+                                nonHomeBackgroundSaturation = prefsState.nonHomeBackgroundSaturation,
+                                onNonHomeBackgroundSaturationChanged = prefsState::updateNonHomeBackgroundSaturation,
+                                onResetNonHomeBackgroundRendering = prefsState::resetNonHomeBackgroundRendering,
+                                onApplyNonHomeBackgroundReadableSuggestion = prefsState::applyNonHomeBackgroundReadableSuggestion,
+                                superIslandNotificationEnabled = prefsState.superIslandNotificationEnabled,
+                                onSuperIslandNotificationChanged = prefsState::updateSuperIslandNotificationEnabled,
+                                superIslandFloatBehavior = prefsState.superIslandFloatBehavior,
+                                onSuperIslandFloatBehaviorChanged = prefsState::updateSuperIslandFloatBehavior,
+                                superIslandBypassRestrictionEnabled = prefsState.superIslandBypassRestrictionEnabled,
+                                onSuperIslandBypassRestrictionChanged = prefsState::updateSuperIslandBypassRestrictionEnabled,
+                                superIslandRestoreDelayMs = prefsState.superIslandRestoreDelayMs,
+                                onSuperIslandRestoreDelayMsChanged = prefsState::updateSuperIslandRestoreDelayMs,
+                                logLevel = prefsState.logLevel,
+                                onLogLevelChanged = prefsState::updateLogLevel,
+                                textCopyCapabilityExpanded = prefsState.textCopyCapabilityExpanded,
+                                onTextCopyCapabilityExpandedChanged = prefsState::updateTextCopyCapabilityExpanded,
+                                cacheDiagnosticsEnabled = prefsState.cacheDiagnosticsEnabled,
+                                onCacheDiagnosticsChanged = prefsState::updateCacheDiagnosticsEnabled,
+                                shizukuStatus = pagerCoordinator.shizukuStatus,
+                                onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+                                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                                appThemeMode = appThemeMode,
+                                onAppThemeModeChanged = onAppThemeModeChanged,
                                 onBack = onRouteBack,
-                                onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                                onOpenWebDavSync = { navigator.pushSingleTop(KeiosRoute.WebDavSync) },
                             )
                         }
-                        entry<KeiosRoute.WebDavSync> {
-                            val dataPorts = rememberWebDavSyncDataPorts()
-                            MainScreenRouteBackgroundHost(prefsState = prefsState) {
-                                WebDavSyncPage(
-                                    onBack = onRouteBack,
-                                    dataPorts = dataPorts,
-                                )
-                            }
+                    }
+                    entry<KeiosRoute.McpSkill> {
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            exportBackdropToContent = true,
+                        ) {
+                            McpSkillPage(
+                                mcpServerManager = mcpServerManager,
+                                onBack = onRouteBack,
+                            )
                         }
-                    },
-                )
+                    }
+                    entry<KeiosRoute.GitHubActionsNotificationHistory> {
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            exportBackdropToContent = true,
+                        ) {
+                            GitHubActionsNotificationHistoryPage(
+                                onBack = onRouteBack,
+                                onOpenTrackActions = onOpenGitHubActionsTrackFromHistory,
+                                onRetryRefreshTargets = onRetryGitHubRefreshTargetsFromHistory,
+                            )
+                        }
+                    }
+                    entry<KeiosRoute.About> {
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            AboutPage(
+                                appLabel = appLabel,
+                                notificationPermissionGranted = notificationPermissionGranted,
+                                shizukuStatus = pagerCoordinator.shizukuStatus,
+                                shizukuApiUtils = pagerCoordinator.shizukuApiUtils,
+                                onCheckShizuku = onCheckOrRequestShizuku,
+                                onBack = onRouteBack,
+                            )
+                        }
+                    }
+                    entry<KeiosRoute.BaStudentGuide> {
+                        BaStudentGuidePage(
+                            liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                            preloadingEnabled = prefsState.preloadingEnabled,
+                            onBack = onRouteBack,
+                        )
+                    }
+                    entry<KeiosRoute.BaGuideCatalog>(transition = catalogTransition) { route ->
+                        BaGuideCatalogPage(
+                            liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
+                            preloadingEnabled = prefsState.preloadingEnabled,
+                            notificationPermissionGranted = notificationPermissionGranted,
+                            onRequestNotificationPermission = onRequestNotificationPermission,
+                            openBgmPlaybackToken = route.openBgmPlaybackToken,
+                            onBack = onRouteBack,
+                            onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                        )
+                    }
+                    entry<KeiosRoute.WebDavSync> {
+                        val dataPorts = rememberWebDavSyncDataPorts()
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            WebDavSyncPage(
+                                onBack = onRouteBack,
+                                dataPorts = dataPorts,
+                            )
+                        }
+                    }
+                }
             }
             LiquidToastHost(
                 state = liquidToastState,
@@ -365,71 +327,27 @@ internal fun MainScreenNavHost(
     }
 }
 
-private fun <T : Any> noNavContentTransform():
-        AnimatedContentTransitionScope<Scene<T>>.() -> ContentTransform = {
-    ContentTransform(
-        targetContentEnter = EnterTransition.None,
-        initialContentExit = ExitTransition.None,
-    )
-}
-
-private fun appNavTransitionSpec():
-        AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
-    if (targetState.key is KeiosRoute.BaGuideCatalog) {
-        baGuideCatalogEnterContentTransform()
-    } else {
-        defaultTransitionSpec<NavKey>().invoke(this)
+/**
+ * Preserves the pre-migration BaGuideCatalog feel — a light fade + shallow slide instead of the
+ * full-width Miuix slide. The same depth function drives push, pop, and predictive back: the
+ * entering/leaving top fades over a width/7 offset, the covered layer parallaxes width/18.
+ */
+private fun baGuideCatalogNavTransition(): NavTransition =
+    navGraphicsTransition(opaqueDepth = 1f) { scope ->
+        val width = scope.layoutSize.width.toFloat()
+        val d = scope.relativeDepth
+        val direction = if (scope.layoutDirection == LayoutDirection.Rtl) -1f else 1f
+        if (d <= 0f) {
+            val progress = (-d).coerceIn(0f, 1f)
+            translationX =
+                (direction * progress * width / CatalogRouteTopOffsetDivisor).roundToInt().toFloat()
+            alpha = 1f - progress
+        } else {
+            val progress = d.coerceIn(0f, 1f)
+            translationX = -direction * progress * width / CatalogRouteCoverOffsetDivisor
+            alpha = 1f - CatalogRouteCoverAlphaFalloff * progress
+        }
     }
-}
-
-private fun appNavPopTransitionSpec():
-        AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
-    if (initialState.key is KeiosRoute.BaGuideCatalog) {
-        baGuideCatalogPopContentTransform()
-    } else {
-        defaultPopTransitionSpec<NavKey>().invoke(this)
-    }
-}
-
-private fun baGuideCatalogEnterContentTransform(): ContentTransform =
-    ContentTransform(
-        targetContentEnter =
-            fadeIn(animationSpec = tween(durationMillis = CatalogRouteEnterFadeMs)) +
-                slideInHorizontally(
-                    initialOffsetX = { width -> width / CatalogRouteEnterOffsetDivisor },
-                    animationSpec = tween(durationMillis = CatalogRouteEnterSlideMs),
-                ),
-        initialContentExit =
-            fadeOut(animationSpec = tween(durationMillis = CatalogRouteExitFadeMs)) +
-                slideOutHorizontally(
-                    targetOffsetX = { width -> -width / CatalogRouteExitOffsetDivisor },
-                    animationSpec = tween(durationMillis = CatalogRouteExitSlideMs),
-                ),
-    )
-
-private fun baGuideCatalogPopContentTransform(): ContentTransform =
-    ContentTransform(
-        targetContentEnter =
-            fadeIn(animationSpec = tween(durationMillis = CatalogRoutePopEnterFadeMs)) +
-                slideInHorizontally(
-                    initialOffsetX = { width -> -width / CatalogRoutePopEnterOffsetDivisor },
-                    animationSpec = tween(durationMillis = CatalogRoutePopEnterSlideMs),
-                ),
-        initialContentExit =
-            fadeOut(animationSpec = tween(durationMillis = CatalogRoutePopExitFadeMs)) +
-                slideOutHorizontally(
-                    targetOffsetX = { width -> width / CatalogRoutePopExitOffsetDivisor },
-                    animationSpec = tween(durationMillis = CatalogRoutePopExitSlideMs),
-                ),
-    )
-
-private fun <T : Any> noNavPredictiveContentTransform():
-        AnimatedContentTransitionScope<Scene<T>>.(@NavigationEvent.SwipeEdge Int) -> ContentTransform = {
-    ContentTransform(
-        targetContentEnter = EnterTransition.None,
-        initialContentExit = ExitTransition.None,
-    )
-}
 
 @Composable
 private fun MainScreenRouteBackgroundHost(
@@ -453,15 +371,6 @@ private fun MainScreenRouteBackgroundHost(
     )
 }
 
-private const val CatalogRouteEnterFadeMs = 140
-private const val CatalogRouteEnterSlideMs = 220
-private const val CatalogRouteExitFadeMs = 110
-private const val CatalogRouteExitSlideMs = 180
-private const val CatalogRoutePopEnterFadeMs = 120
-private const val CatalogRoutePopEnterSlideMs = 190
-private const val CatalogRoutePopExitFadeMs = 120
-private const val CatalogRoutePopExitSlideMs = 210
-private const val CatalogRouteEnterOffsetDivisor = 7
-private const val CatalogRouteExitOffsetDivisor = 18
-private const val CatalogRoutePopEnterOffsetDivisor = 18
-private const val CatalogRoutePopExitOffsetDivisor = 7
+private const val CatalogRouteTopOffsetDivisor = 7
+private const val CatalogRouteCoverOffsetDivisor = 18
+private const val CatalogRouteCoverAlphaFalloff = 0.1f

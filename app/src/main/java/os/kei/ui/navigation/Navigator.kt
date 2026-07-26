@@ -1,17 +1,17 @@
 package os.kei.ui.navigation
 
-import androidx.navigation3.runtime.NavBackStack
-import androidx.navigation3.runtime.NavKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import top.yukonga.miuix.kmp.nav.core.NavBackStack
+import top.yukonga.miuix.kmp.nav.core.NavKey
 
 /**
  * Simple navigation helper that owns a back stack and result channels.
  * Supports push/replace/pop/popUntil and result APIs: navigateForResult/setResult/observeResult/clearResult.
  */
 class Navigator(
-    val backStack: NavBackStack<NavKey>,
+    val backStack: NavBackStack,
 ) {
     private val resultBus = mutableMapOf<String, MutableSharedFlow<Any>>()
 

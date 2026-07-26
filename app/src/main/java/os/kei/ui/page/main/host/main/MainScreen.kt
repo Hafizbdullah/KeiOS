@@ -14,18 +14,13 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation3.runtime.NavKey
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.savedstate.serialization.SavedStateConfiguration
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 import os.kei.R
 import os.kei.core.shizuku.ShizukuApiUtils
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
 import os.kei.ui.page.main.model.BottomPage
+import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
 
 @Composable
 fun MainScreen(
@@ -35,29 +30,9 @@ fun MainScreen(
     shizukuApiUtils: ShizukuApiUtils,
     mcpServerManager: McpServerManager
 ) {
-    val navSerializersModule = remember {
-        SerializersModule {
-            polymorphic(NavKey::class) {
-                subclass(KeiosRoute.Main::class)
-                subclass(KeiosRoute.Settings::class)
-                subclass(KeiosRoute.McpSkill::class)
-                subclass(KeiosRoute.GitHubActionsNotificationHistory::class)
-                subclass(KeiosRoute.About::class)
-                subclass(KeiosRoute.BaStudentGuide::class)
-                subclass(KeiosRoute.BaGuideCatalog::class)
-                subclass(KeiosRoute.WebDavSync::class)
-            }
-        }
-    }
-    val navSavedStateConfiguration = remember(navSerializersModule) {
-        SavedStateConfiguration {
-            serializersModule = navSerializersModule
-        }
-    }
-    val backStack = rememberNavBackStack(
-        configuration = navSavedStateConfiguration,
-        KeiosRoute.Main,
-    )
+    // The reified route supertype captures the whole sealed hierarchy reflection-free, so the
+    // stack persists across configuration changes and process death without a SerializersModule.
+    val backStack = rememberNavBackStack<KeiosRoute>(KeiosRoute.Main)
     val navigator = remember(backStack) { Navigator(backStack) }
     val context = LocalContext.current
     val appContext = context.applicationContext
