@@ -2,10 +2,14 @@ package os.kei.ui.page.main.github.section
 
 import android.os.Build
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,13 +37,18 @@ import os.kei.ui.page.main.os.appLucideHistoryIcon
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
@@ -221,7 +230,37 @@ internal fun GitHubMainContent(
                 )
             },
         ) { innerPadding ->
+            val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
             Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                // The version-tracking hub stays pinned above the list; tracked cards
+                // stack beneath it and the pull gesture runs in the list region only.
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = AppChromeTokens.pageHorizontalPadding,
+                                end = AppChromeTokens.pageHorizontalPadding,
+                                top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
+                            ),
+                ) {
+                    GitHubOverviewCard(
+                        backdrop = surfaces.contentBackdrop,
+                        isDark = surfaces.isDark,
+                        lookupConfig = overview.lookupConfig,
+                        overviewRefreshState = overview.refreshState,
+                        refreshProgress = overview.refreshProgress,
+                        lastRefreshMs = overview.lastRefreshMs,
+                        visibleEntries = overview.visibleEntries,
+                        metrics = overview.metrics,
+                        failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
+                        onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
+                        onRetryFailedTracked = actions.onRetryFailedTracked,
+                        onFailedFilterToggle = actions.onFailedFilterToggle,
+                    )
+                }
+                CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
                 PullToRefresh(
                     isRefreshing = pullRefreshSessionActive,
                     onRefresh = {
@@ -232,10 +271,11 @@ internal fun GitHubMainContent(
                     },
                     modifier =
                         Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
+                            .weight(1f)
                             .layerBackdrop(surfaces.topBarBackdrop),
                     topAppBarScrollBehavior = layout.scrollBehavior,
-                    contentPadding = innerPadding,
+                    contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                     refreshTexts =
                         listOf(
                             stringResource(R.string.github_pull_refresh_pull),
@@ -248,31 +288,14 @@ internal fun GitHubMainContent(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
+                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection)
+                                .appEdgeStackContainer(edgeStackState),
                         state = layout.listState,
-                        innerPadding = innerPadding,
+                        innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                         bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
+                        topExtra = AppEdgeStackListTopInset,
                         sectionSpacing = CardLayoutRhythm.denseSectionGap,
                     ) {
-                        item(
-                            key = "github_overview_card",
-                            contentType = "github_overview",
-                        ) {
-                            GitHubOverviewCard(
-                                backdrop = surfaces.contentBackdrop,
-                                isDark = surfaces.isDark,
-                                lookupConfig = overview.lookupConfig,
-                                overviewRefreshState = overview.refreshState,
-                                refreshProgress = overview.refreshProgress,
-                                lastRefreshMs = overview.lastRefreshMs,
-                                visibleEntries = overview.visibleEntries,
-                                metrics = overview.metrics,
-                                failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
-                                onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
-                                onRetryFailedTracked = actions.onRetryFailedTracked,
-                                onFailedFilterToggle = actions.onFailedFilterToggle,
-                            )
-                        }
                         if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
                             item(
                                 key = "github_pending_share_import_track",
@@ -393,6 +416,8 @@ internal fun GitHubMainContent(
                                 ),
                         )
                     }
+                }
+                }
                 }
 
                 AppFloatingVerticalSearchActionDock(

@@ -3,6 +3,8 @@
 package os.kei.ui.page.main.student.catalog.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -39,7 +42,11 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
+import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
+import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -135,13 +142,7 @@ internal fun BaGuideCatalogV2ListContent(
         if (!isPageActive || uiState.showLoading || uiState.showEmpty || tabListState.displayedEntries.isEmpty()) {
             return@LaunchedEffect
         }
-        val entryStartIndex =
-            (if (uiState.showError) 1 else 0) +
-                if (studentFavoriteHeaderVisible && !uiState.showLoading) {
-                    1
-                } else {
-                    0
-                }
+        val entryStartIndex = if (uiState.showError) 1 else 0
         snapshotFlowManager
             .snapshotFlow {
                 val visibleItems = tabListState.listState.layoutInfo.visibleItemsInfo
@@ -163,15 +164,52 @@ internal fun BaGuideCatalogV2ListContent(
             }
     }
     val entryListGap = rememberBaGuideCatalogEntryListGap()
+    val showPinnedFavoritesHeader = studentFavoriteHeaderVisible && !uiState.showLoading
+    val listTopPadding =
+        if (showPinnedFavoritesHeader) {
+            AppEdgeStackListTopInset
+        } else {
+            innerPadding.calculateTopPadding()
+        }
+    val edgeStackState = rememberAppEdgeStackState(stackLine = listTopPadding)
+    Column(modifier = Modifier.fillMaxSize()) {
+    if (showPinnedFavoritesHeader) {
+        // The favorites summary is the catalog's status hub: pinned above the list so
+        // the entry pile always forms beneath it.
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        top = innerPadding.calculateTopPadding(),
+                    ),
+        ) {
+            BaGuideCatalogFavoriteVisibilityHeader(
+                totalCount = derivedState.filteredEntries.size,
+                favoriteCount = favoriteCount,
+                favoritesHidden = favoritesHidden,
+                onToggleFavoritesHidden = {
+                    if (favoriteCount > 0) {
+                        favoritesHidden = !favoritesHidden
+                    }
+                },
+            )
+        }
+    }
+    CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
     LazyColumn(
         state = tabListState.listState,
         modifier =
             Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
+                .fillMaxWidth()
+                .weight(1f)
+                .nestedScroll(nestedScrollConnection)
+                .appEdgeStackContainer(edgeStackState),
         contentPadding =
             PaddingValues(
-                top = innerPadding.calculateTopPadding(),
+                top = listTopPadding,
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
@@ -200,23 +238,6 @@ internal fun BaGuideCatalogV2ListContent(
                 AppAronaLoadingPanel(accent = accent)
             }
         }
-        if (studentFavoriteHeaderVisible && !uiState.showLoading) {
-            item(
-                key = "ba-guide-catalog-favorites-header-${tab.name}",
-                contentType = "ba_guide_catalog_favorites_header",
-            ) {
-                BaGuideCatalogFavoriteVisibilityHeader(
-                    totalCount = derivedState.filteredEntries.size,
-                    favoriteCount = favoriteCount,
-                    favoritesHidden = favoritesHidden,
-                    onToggleFavoritesHidden = {
-                        if (favoriteCount > 0) {
-                            favoritesHidden = !favoritesHidden
-                        }
-                    },
-                )
-            }
-        }
         if (uiState.showEmpty) {
             item(
                 key = "ba-guide-catalog-empty-${tab.name}",
@@ -240,6 +261,8 @@ internal fun BaGuideCatalogV2ListContent(
                 onToggleFavorite = onToggleFavorite,
             )
         }
+    }
+    }
     }
 }
 

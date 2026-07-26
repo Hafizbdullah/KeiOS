@@ -49,7 +49,10 @@ fun rememberAppEdgeStackState(stackLine: Dp): AppEdgeStackState {
 /** Tags the lazy container whose top edge anchors the stack line. */
 fun Modifier.appEdgeStackContainer(state: AppEdgeStackState): Modifier =
     onGloballyPositioned { coordinates ->
-        state.containerTopInRootY.floatValue = coordinates.positionInRoot().y
+        val topInRootY = coordinates.positionInRoot().y
+        if (state.containerTopInRootY.floatValue != topInRootY) {
+            state.containerTopInRootY.floatValue = topInRootY
+        }
     }
 
 /**
@@ -64,24 +67,45 @@ fun AppEdgeStackExempt(content: @Composable () -> Unit) {
 
 /**
  * Card-side transform. Layout position feeds the draw-phase layer lambda through
- * snapshot state, so scrolling only invalidates draw, never composition.
+ * snapshot state, so scrolling only invalidates draw, never composition. Cards
+ * resting below the stack line collapse to a sentinel: they take one snapshot write
+ * when leaving the zone and then skip both writes and transform math entirely, so a
+ * steadily scrolling list only pays for the few cards at the pile.
  */
 @Composable
 internal fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
-    val itemTopInRootY = remember { mutableFloatStateOf(Float.NaN) }
+    val itemTopInContainerY = remember { mutableFloatStateOf(APP_EDGE_STACK_RESTING) }
     val itemHeightPx = remember { mutableIntStateOf(0) }
     val tuckRisePx = with(LocalDensity.current) { AppEdgeStackTuckRise.toPx() }
     return this
         .onGloballyPositioned { coordinates ->
-            itemTopInRootY.floatValue = coordinates.positionInRoot().y
-            itemHeightPx.intValue = coordinates.size.height
+            val containerTop = state.containerTopInRootY.floatValue
+            val topInContainer =
+                if (containerTop.isNaN()) {
+                    APP_EDGE_STACK_RESTING
+                } else {
+                    val relative = coordinates.positionInRoot().y - containerTop
+                    if (relative >= state.stackLinePx) APP_EDGE_STACK_RESTING else relative
+                }
+            if (itemTopInContainerY.floatValue != topInContainer) {
+                itemTopInContainerY.floatValue = topInContainer
+            }
+            val heightPx = coordinates.size.height
+            if (itemHeightPx.intValue != heightPx) {
+                itemHeightPx.intValue = heightPx
+            }
         }
         .graphicsLayer {
-            val containerTop = state.containerTopInRootY.floatValue
-            val itemTop = itemTopInRootY.floatValue
-            if (containerTop.isNaN() || itemTop.isNaN()) return@graphicsLayer
+            val itemTop = itemTopInContainerY.floatValue
+            if (itemTop == APP_EDGE_STACK_RESTING) {
+                translationY = 0f
+                scaleX = 1f
+                scaleY = 1f
+                alpha = 1f
+                return@graphicsLayer
+            }
             val transform = computeAppEdgeStackTransform(
-                itemTopInContainer = itemTop - containerTop,
+                itemTopInContainer = itemTop,
                 itemHeightPx = itemHeightPx.intValue.toFloat(),
                 stackLinePx = state.stackLinePx,
                 tuckRisePx = tuckRisePx,
@@ -148,6 +172,7 @@ private val AppEdgeStackTuckRise = 18.dp
 val AppEdgeStackListTopInset = 26.dp
 
 const val APP_EDGE_STACK_MIN_SCALE = 0.90f
+internal const val APP_EDGE_STACK_RESTING = Float.MAX_VALUE
 internal const val FIRST_LEVEL_RISE_WEIGHT = 0.55f
 internal const val SECOND_LEVEL_RISE_WEIGHT = 0.45f
 internal const val APP_EDGE_STACK_FADE_START = 1.2f

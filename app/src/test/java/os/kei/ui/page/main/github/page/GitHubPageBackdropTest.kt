@@ -63,16 +63,22 @@ class GitHubPageBackdropTest {
                 ".testTag(KeiOsTestTags.GitHubPageRoot)",
                 startIndex = sceneIndex.coerceAtLeast(0),
             )
+        val overviewIndex =
+            source.indexOf("GitHubOverviewCard(", startIndex = rootTagIndex.coerceAtLeast(0))
         val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = rootTagIndex.coerceAtLeast(0))
 
         assertTrue(rootTagIndex > sceneIndex, "The page root tag must remain on the scene container")
-        assertTrue(listIndex > rootTagIndex, "The scrolling list must remain inside the page scene")
+        assertTrue(overviewIndex > rootTagIndex, "The overview hub must render inside the page scene")
+        assertTrue(
+            listIndex > overviewIndex,
+            "The overview hub stays pinned above the scrolling list instead of being a lazy item",
+        )
         assertTrue(".nestedScroll(layout.scrollBehavior.nestedScrollConnection)" in source)
+        assertTrue(".appEdgeStackContainer(edgeStackState)" in source)
         assertTrue("state = layout.listState," in source)
-        assertTrue("innerPadding = innerPadding," in source)
+        assertTrue("innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())," in source)
+        assertTrue("topExtra = AppEdgeStackListTopInset," in source)
         assertTrue("bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)" in source)
-        assertTrue("key = \"github_overview_card\"" in source)
-        assertTrue("contentType = \"github_overview\"" in source)
     }
 }
 
