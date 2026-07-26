@@ -64,7 +64,7 @@ class GitHubActionsNoticeCardSourceTest {
         assertTrue("highlightAlpha: Float? = null" in supportingSource)
         assertTrue("shadow: Boolean = false" in supportingSource)
         assertTrue("shadowAlpha: Float = 0.10f" in supportingSource)
-        assertTrue("activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingSource)
+        assertTrue("activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in supportingSource)
         assertTrue("if (activeBackdrop != null)" in supportingSource)
         assertTrue(".appSquircleBackground(backgroundColor, cornerRadius)" in supportingSource)
         assertTrue(".appSquircleBorder(borderWidth, borderColor, cornerRadius)" in supportingSource)

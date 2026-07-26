@@ -86,7 +86,7 @@ class FeedbackStatusCardSupportingBlockTest {
         assertFalse("rememberLayerBackdrop" in statusImplementation)
         assertFalse(".layerBackdrop(" in statusImplementation)
 
-        assertTrue("activeGlassBackdrop(LocalLiquidParentBackdrop.current)" in supportingSource)
+        assertTrue("activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)" in supportingSource)
         assertTrue("if (activeBackdrop != null)" in supportingSource)
         assertFalse("rememberLayerBackdrop" in supportingSource)
         assertFalse(".layerBackdrop(" in supportingSource)

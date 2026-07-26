@@ -66,31 +66,32 @@ class AppOverviewCardBackdropTest {
 
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                androidx.compose.runtime.CompositionLocalProvider(LocalLiquidControlsEnabled provides false) {
-                    val signal = remember { mutableIntStateOf(0) }
-                    recompositionSignal = signal
-                    val parent = rememberLayerBackdrop()
-                    val revision = signal.intValue
-                    SideEffect { parentBackdrop = parent }
+                // Glass effects stay enabled here: since "export card material only when
+                // active", cards re-export a child backdrop only while the liquid runtime
+                // is on; the disabled path is covered by the solid-fallback test below.
+                val signal = remember { mutableIntStateOf(0) }
+                recompositionSignal = signal
+                val parent = rememberLayerBackdrop()
+                val revision = signal.intValue
+                SideEffect { parentBackdrop = parent }
 
-                    androidx.compose.runtime.CompositionLocalProvider(LocalLiquidParentBackdrop provides parent) {
-                        AppOverviewCard(
-                            title = "Overview",
-                            contentColor = expectedContentColor,
-                            modifier =
-                                Modifier
-                                    .size(180.dp)
-                                    .testTag("overview-card"),
-                        ) {
-                            val child = LocalLiquidParentBackdrop.current
-                            val contentColor = LocalContentColor.current
-                            SideEffect {
-                                check(revision >= 0)
-                                observedChildBackdrops += child
-                                observedContentColors += contentColor
-                            }
-                            Box(modifier = Modifier.size(1.dp))
+                androidx.compose.runtime.CompositionLocalProvider(LocalLiquidParentBackdrop provides parent) {
+                    AppOverviewCard(
+                        title = "Overview",
+                        contentColor = expectedContentColor,
+                        modifier =
+                            Modifier
+                                .size(180.dp)
+                                .testTag("overview-card"),
+                    ) {
+                        val child = LocalLiquidParentBackdrop.current
+                        val contentColor = LocalContentColor.current
+                        SideEffect {
+                            check(revision >= 0)
+                            observedChildBackdrops += child
+                            observedContentColors += contentColor
                         }
+                        Box(modifier = Modifier.size(1.dp))
                     }
                 }
             }
