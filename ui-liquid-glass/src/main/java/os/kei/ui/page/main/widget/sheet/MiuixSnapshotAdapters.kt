@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -60,6 +61,7 @@ import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import androidx.navigationevent.findViewTreeNavigationEventDispatcherOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowPopup
@@ -211,7 +213,13 @@ fun SnapshotWindowListPopup(
     var popupRender by remember { mutableStateOf(show) }
     val currentOnDismissRequest = rememberUpdatedState(onDismissRequest)
     val currentOnDismissFinished = rememberUpdatedState(onDismissFinished)
-    val navigationEventDispatcherOwner = LocalNavigationEventDispatcherOwner.current
+    // The focused popup window has no back dispatcher of its own; the system falls back to
+    // the host window, so the popup's back handler must bind to the host window's view-tree
+    // owner. The composition local can't be used here: miuix-nav explicitly provides an
+    // entry-scoped owner that never receives the host window's fallback events.
+    val hostView = LocalView.current
+    val navigationEventDispatcherOwner =
+        remember(hostView) { hostView.findViewTreeNavigationEventDispatcherOwner() }
     val composePopupPositionProvider =
         remember(
             density,
@@ -314,7 +322,12 @@ fun SnapshotWindowListPopup(
             properties =
                 PopupProperties(
                     focusable = true,
-                    dismissOnBackPress = false,
+                    // A focusable popup window owns back dispatch and has no navigation-event
+                    // dispatcher, so the platform popup must handle back itself; the dismiss
+                    // request runs the normal collapse animation before removal. (Upstream
+                    // miuix hosts list popups in a Dialog window instead, which is the path
+                    // to gesture-progress predictive collapse if ever needed.)
+                    dismissOnBackPress = true,
                     dismissOnClickOutside = true,
                     clippingEnabled = false,
                 ),

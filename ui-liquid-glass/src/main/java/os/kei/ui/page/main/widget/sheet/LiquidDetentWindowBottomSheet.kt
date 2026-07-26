@@ -51,6 +51,7 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
+import top.yukonga.miuix.kmp.utils.WindowNavigationEventScope
 import top.yukonga.miuix.kmp.utils.platformDialogProperties
 import kotlin.math.roundToInt
 
@@ -121,9 +122,12 @@ internal fun LiquidDetentWindowBottomSheet(
                 ) {
                     RemovePlatformDialogDefaultEffects()
                     // ComponentDialog installs its own navigation event owner on the dialog view
-                    // tree. Keep that owner so both ordinary and predictive back are dispatched
-                    // through the dialog window that currently has focus.
-                    hostContent()
+                    // tree, but an owner explicitly provided in the host composition (miuix-nav's
+                    // entry dispatcher) is inherited across the window boundary and shadows it.
+                    // Re-resolve the dialog window's owner so back reaches this sheet's handlers.
+                    WindowNavigationEventScope {
+                        hostContent()
+                    }
                 }
             }
         },

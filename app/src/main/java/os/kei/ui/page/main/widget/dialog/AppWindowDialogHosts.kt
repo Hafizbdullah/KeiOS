@@ -17,6 +17,7 @@ import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.widget.glass.AppLiquidWindowBoundary
 import top.yukonga.miuix.kmp.layout.DialogDefaults
 import top.yukonga.miuix.kmp.utils.RemovePlatformDialogDefaultEffects
+import top.yukonga.miuix.kmp.utils.WindowNavigationEventScope
 import top.yukonga.miuix.kmp.utils.platformDialogProperties
 import top.yukonga.miuix.kmp.window.WindowDialog
 
@@ -91,10 +92,15 @@ fun AppWindowDialogHost(
             properties = platformDialogProperties(),
         ) {
             RemovePlatformDialogDefaultEffects()
-            BackHandler(enabled = dismissible) {
-                currentOnDismissRequest?.invoke()
+            // A navigation-event owner provided in the host composition (miuix-nav's
+            // entry dispatcher) is inherited across the platform-window boundary and
+            // never receives this window's back events; re-resolve the dialog's own.
+            WindowNavigationEventScope {
+                BackHandler(enabled = dismissible) {
+                    currentOnDismissRequest?.invoke()
+                }
+                content()
             }
-            content()
         }
     }
 }

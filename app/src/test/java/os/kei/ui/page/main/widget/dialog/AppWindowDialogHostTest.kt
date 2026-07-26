@@ -15,6 +15,9 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventDispatcher
+import androidx.navigationevent.NavigationEventDispatcherOwner
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
 import org.junit.Test
@@ -119,6 +122,43 @@ class AppWindowDialogHostTest {
     }
 
     @Test
+    fun fullscreenBackHandlerSurvivesHostProvidedNavigationEventOwner() {
+        // miuix-nav's NavDisplay provides an entry-scoped NavigationEventDispatcherOwner around
+        // every route; without the window scope re-resolve, dialog-content back handlers would
+        // register there and the dialog window's own dispatcher would swallow back events.
+        val hostOwner =
+            object : NavigationEventDispatcherOwner {
+                override val navigationEventDispatcher = NavigationEventDispatcher()
+            }
+        var contentBackCount = 0
+        var hostBackCount = 0
+        lateinit var dialogBackDispatcher: OnBackPressedDispatcher
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides hostOwner) {
+                    AppWindowDialogHost(
+                        show = true,
+                        presentation = AppWindowDialogPresentation.Fullscreen,
+                        onDismissRequest = { hostBackCount++ },
+                    ) {
+                        val owner = checkNotNull(LocalOnBackPressedDispatcherOwner.current)
+                        SideEffect { dialogBackDispatcher = owner.onBackPressedDispatcher }
+                        BackHandler { contentBackCount++ }
+                        Box(Modifier.fillMaxSize())
+                    }
+                }
+            }
+        }
+
+        composeRule.runOnIdle { dialogBackDispatcher.onBackPressed() }
+
+        composeRule.runOnIdle {
+            assertEquals(1, contentBackCount)
+            assertEquals(0, hostBackCount)
+        }
+    }
+
+    @Test
     fun cardBranchesForwardMetadataAndEveryWindowInstallsABackdropBoundary() {
         val source = dialogHostSource(APP_WINDOW_DIALOG_HOST_SOURCE)
         val liquidDialogCall = source.functionCallBlock("LiquidGlassDialog")
@@ -144,9 +184,12 @@ class AppWindowDialogHostTest {
         val fullscreenBoundary =
             source.indexOf("AppLiquidWindowBoundary {", legacyBoundary + 1).dialogMarkerFound()
         val fullscreenDialog = source.indexOf("\n        Dialog(", fullscreenBoundary).dialogMarkerFound()
+        val fullscreenWindowScope =
+            source.indexOf("WindowNavigationEventScope {", fullscreenDialog).dialogMarkerFound()
         assertTrue(legacyBoundary < legacyDialog)
         assertTrue(legacyDialog < fullscreenBoundary)
         assertTrue(fullscreenBoundary < fullscreenDialog)
+        assertTrue(fullscreenDialog < fullscreenWindowScope)
     }
 }
 
