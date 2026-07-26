@@ -87,9 +87,12 @@ internal fun BaGuideBgmChromeMiniPlayer(
     val titleLineHeight = debugBgmLerpSp(14f, AppTypographyTokens.Supporting.lineHeight.value, expanded)
     val playIconSize = debugBgmLerpDp(27.dp, 25.dp, expanded)
     val itemGap = debugBgmLerpDp(8.dp, 10.dp, expanded)
-    // Expanded target centers the title block between the pill's top edge and the
-    // bottom-anchored progress track (62dp pill, 18dp line, track visual ~40dp down).
-    val titleVerticalOffset = debugBgmLerpDp(21.dp, 11.dp, titleMotionProgress)
+    // The 62dp pill is fully saturated: the dragged progress thumb balloons upward to
+    // ~33dp from the pill top and the drag-clearance contract pins the expanded title
+    // to the top slot - lowering it further would put the thumb into the title
+    // (BaGuideBgmChromeMiniPlayerTest drag-clearance cases). A visibly lower title
+    // needs a taller BGM pill or a downward-biased thumb expansion first.
+    val titleVerticalOffset = debugBgmLerpDp(21.dp, 0.dp, titleMotionProgress)
     val sideControlSlotWidth =
         debugBgmLerpDp(
             0.dp,
