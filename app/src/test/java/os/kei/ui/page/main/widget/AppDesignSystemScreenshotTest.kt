@@ -27,7 +27,7 @@ import os.kei.feature.github.model.GitHubStarImportQuality
 import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.ui.page.main.about.section.AboutAppCardSection
 import os.kei.ui.page.main.about.section.AboutReleaseCardSection
-import os.kei.ui.page.main.about.model.buildAboutAppDetails
+import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.github.GitHubEnhancedInfoFixture
 import os.kei.ui.page.main.github.VersionValueRow
 import os.kei.ui.page.main.github.importer.StarImportApkVerificationUiState
@@ -84,18 +84,23 @@ import top.yukonga.miuix.kmp.theme.ThemeController
     qualifiers = "w411dp-h891dp-xxhdpi",
 )
 class AppDesignSystemScreenshotTest {
-    private fun currentAboutAppDetails() =
-        buildAboutAppDetails(
-            context = ApplicationProvider.getApplicationContext<Application>(),
+    // Fixed fixture keeps the about-card baselines free of commit-count, commit-time,
+    // and build-time drift so record/verify stay reproducible across builds.
+    private fun fixedAboutAppDetails() =
+        AboutAppDetails(
             appLabel = "KeiOS",
-            packageInfo = currentPackageInfo(),
+            packageName = "os.kei.debug",
+            versionText = "1.11.0+1.gabcdef0 (11100001)",
+            buildType = "debug",
+            commitTime = "2026-07-01 12:00:00",
+            buildTime = "2026-07-01 12:30:00",
+            updatedAt = "Unknown",
+            debugEnabledText = "Yes",
+            testOnlyEnabledText = "No",
+            apiLevel = "35",
+            securityPatch = "2024-08-05",
+            iconContentDescription = "os.kei.debug",
         )
-
-    private fun currentPackageInfo() =
-        runCatching {
-            val context = ApplicationProvider.getApplicationContext<Application>()
-            context.packageManager.getPackageInfo(context.packageName, 0)
-        }.getOrNull()
 
     @Test
     fun appCardHeaderLight() {
@@ -312,7 +317,7 @@ class AppDesignSystemScreenshotTest {
                                 .padding(16.dp),
                     ) {
                         AboutAppCardSection(
-                            details = currentAboutAppDetails(),
+                            details = fixedAboutAppDetails(),
                             cardColor = Color(0x223B82F6),
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
@@ -337,7 +342,7 @@ class AppDesignSystemScreenshotTest {
                                 .padding(16.dp),
                     ) {
                         AboutAppCardSection(
-                            details = currentAboutAppDetails(),
+                            details = fixedAboutAppDetails(),
                             cardColor = Color(0x223B82F6),
                             accent = MiuixTheme.colorScheme.primary,
                             subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
