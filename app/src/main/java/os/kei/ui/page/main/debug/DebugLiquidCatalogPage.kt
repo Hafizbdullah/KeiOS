@@ -143,6 +143,9 @@ internal fun DebugLiquidCatalogPage(onClose: () -> Unit) {
                         )
                     }
                     item {
+                        DebugMiuixTextureBlurCard(accent = accent)
+                    }
+                    item {
                         DebugLiquidParameterCard(
                             accent = accent,
                             backdrop = pageBackdrop,

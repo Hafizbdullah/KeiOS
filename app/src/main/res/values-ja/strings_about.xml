@@ -121,6 +121,10 @@
     <string name="debug_component_lab_liquid_parent_backdrop_body">外側のガラスが backdrop をエクスポートし、内部カード、ステータスピル、メトリックタイルが同じ層を再利用します</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric">親層再利用</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric_value">エクスポート済み</string>
+    <string name="debug_component_lab_miuix_texture_blur_title">Miuix テクスチャブラー試作</string>
+    <string name="debug_component_lab_miuix_texture_blur_body">miuix layerBackdrop が内部パターン層をサンプリングし、単純な半透明と異なる本物のすりガラスを表示</string>
+    <string name="debug_component_lab_miuix_texture_blur_frosted_label">textureBlur 本物のすりガラス</string>
+    <string name="debug_component_lab_miuix_progressive_blur_label">progressiveTextureBlur・下端が最も強い</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">パラメータパネルサンプル</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>

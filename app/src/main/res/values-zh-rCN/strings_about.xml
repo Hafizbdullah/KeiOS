@@ -122,6 +122,10 @@
     <string name="debug_component_lab_liquid_parent_backdrop_body">外层玻璃导出 backdrop，内部卡片、状态胶囊与指标块复用同一层</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric">父层复用</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric_value">已导出</string>
+    <string name="debug_component_lab_miuix_texture_blur_title">MIUIX 纹理磨砂样张</string>
+    <string name="debug_component_lab_miuix_texture_blur_body">miuix layerBackdrop 采样内部图案层，真实磨砂区别于纯半透明</string>
+    <string name="debug_component_lab_miuix_texture_blur_frosted_label">textureBlur 真实磨砂</string>
+    <string name="debug_component_lab_miuix_progressive_blur_label">progressiveTextureBlur · 底部最强渐进</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">参数面板样张</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>

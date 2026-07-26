@@ -122,6 +122,10 @@
     <string name="debug_component_lab_liquid_parent_backdrop_body">Outer glass exports a backdrop; inner cards, status pills, and metric tiles reuse it</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric">Parent reuse</string>
     <string name="debug_component_lab_liquid_parent_backdrop_metric_value">Exported</string>
+    <string name="debug_component_lab_miuix_texture_blur_title">Miuix texture blur proof</string>
+    <string name="debug_component_lab_miuix_texture_blur_body">miuix layerBackdrop samples the inner pattern layer; real frosting differs from plain translucency</string>
+    <string name="debug_component_lab_miuix_texture_blur_frosted_label">Real frosted textureBlur</string>
+    <string name="debug_component_lab_miuix_progressive_blur_label">progressiveTextureBlur · strongest at the bottom</string>
     <string name="debug_component_lab_liquid_parameter_panel_title">Parameter panel sample</string>
     <string name="debug_component_lab_liquid_parameter_corner">Corner radius</string>
     <string name="debug_component_lab_liquid_parameter_blur">Blur radius</string>
