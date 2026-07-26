@@ -3,6 +3,7 @@ package os.kei.core.notification.live.builder
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import androidx.core.app.NotificationCompat
@@ -112,6 +113,7 @@ class MiIslandNotificationBuilder(
             R.drawable.ic_ba_calendar_live_update
         private val ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT =
             R.drawable.ic_github_invertocat_island_blue
+        private val ISLAND_ART_RES_ID_BA_ARENA_REFRESH = R.drawable.item_icon_arenacoin
     }
 
     override fun build(payload: NotificationPayload): Notification {
@@ -265,12 +267,16 @@ class MiIslandNotificationBuilder(
             miIslandProgressColorOverride = payload.miIslandProgressColorOverride
         )
         val useSemanticIcon = isBlueArchiveNotification || isGitHubShareImport
-        val lightLogoIcon = if (useSemanticIcon) {
+        // The arena slots carry the in-game coin art. The v1.11.0 negative-inset resource
+        // wrapper rendered blank once SystemUI started rasterizing V3 pics, so the art
+        // ships as a bitmap icon, which the pic pipeline draws without drawable inflation.
+        val arenaArtIcon = if (isBlueArchiveArenaRefresh) loadArenaCoinArtIcon() else null
+        val lightLogoIcon = arenaArtIcon ?: if (useSemanticIcon) {
             Icon.createWithResource(context, islandIconResId)
         } else {
             Icon.createWithResource(context, islandIconResId).setTint(Color.BLACK)
         }
-        val darkLogoIcon = if (useSemanticIcon) {
+        val darkLogoIcon = arenaArtIcon ?: if (useSemanticIcon) {
             Icon.createWithResource(context, islandIconResId)
         } else {
             Icon.createWithResource(context, islandIconResId).setTint(Color.WHITE)
@@ -284,6 +290,7 @@ class MiIslandNotificationBuilder(
         val displayIcon =
             payload.semanticIconBitmap
                 ?.let(Icon::createWithBitmap)
+                ?: arenaArtIcon
                 ?: if (useSemanticIcon) {
                     Icon.createWithResource(context, islandIconResId)
                 } else {
@@ -500,6 +507,14 @@ class MiIslandNotificationBuilder(
     }.onFailure {
         AppLogger.e(TAG, "Build local Focus protocol extras failed", it)
     }.getOrNull()
+
+    private fun loadArenaCoinArtIcon(): Icon? =
+        runCatching {
+            BitmapFactory.decodeResource(context.resources, ISLAND_ART_RES_ID_BA_ARENA_REFRESH)
+                ?.let(Icon::createWithBitmap)
+        }.onFailure {
+            AppLogger.w(TAG) { "Decode arena coin art failed, falling back to vector icon" }
+        }.getOrNull()
 
     private fun resolvePresentation(
         state: LiveNotificationPayload,

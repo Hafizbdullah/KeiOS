@@ -378,7 +378,7 @@ class MiIslandNotificationBuilderTest {
     }
 
     @Test
-    fun `ba arena refresh registers vector semantic icon and floatable event`() {
+    fun `ba arena refresh registers game coin art bitmap and floatable event`() {
         val context = ApplicationProvider.getApplicationContext<Application>()
         val openPendingIntent = buildOpenPendingIntent(
             context = context,
@@ -415,10 +415,13 @@ class MiIslandNotificationBuilderTest {
 
         val notification = MiIslandNotificationBuilder(context).build(payload)
         val displayIcon = notification.focusPicture("key_logo_display")
+        val tickerIcon = notification.focusPicture("key_logo_light")
         val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
 
-        assertEquals(Icon.TYPE_RESOURCE, displayIcon.type)
-        assertEquals(R.drawable.ic_ba_arena_coin_island, displayIcon.resId)
+        // The island and ticker slots carry the in-game arena coin art as a bitmap; a
+        // resource icon here would regress to the drawn live-update glyph (v1.11.0 parity).
+        assertEquals(Icon.TYPE_BITMAP, displayIcon.type)
+        assertEquals(Icon.TYPE_BITMAP, tickerIcon.type)
         assertTrue(focusParam.contains("\"enableFloat\":true"))
         assertTrue(focusParam.contains("\"islandFirstFloat\":true"))
         assertTrue(focusParam.contains("bluearchive_arena_refresh"))
