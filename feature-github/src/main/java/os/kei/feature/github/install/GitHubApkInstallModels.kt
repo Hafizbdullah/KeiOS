@@ -92,6 +92,7 @@ sealed interface GitHubApkInstallResult {
 
 enum class GitHubApkInstallFailureReason {
     ShizukuUnavailable,
+    RootUnavailable,
     ShizukuPermissionMissing,
     RemoteInstallPermissionMissing,
     DownloadUrlInvalid,

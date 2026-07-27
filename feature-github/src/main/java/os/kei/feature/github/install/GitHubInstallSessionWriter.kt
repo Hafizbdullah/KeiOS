@@ -21,6 +21,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
@@ -61,7 +62,7 @@ class GitHubInstallSessionWriter(
         resolvedUrl: String,
         asset: GitHubReleaseAssetFile,
         downloadSpeedProfile: SegmentedDownloadSpeedProfile,
-        session: PackageInstaller.Session,
+        sink: GitHubInstallApkSink,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult =
@@ -73,7 +74,7 @@ class GitHubInstallSessionWriter(
                 expectedDigest = asset.digest,
                 declaredSizeBytes = asset.sizeBytes,
                 downloadSpeedProfile = downloadSpeedProfile,
-                session = session,
+                sink = sink,
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -83,7 +84,7 @@ class GitHubInstallSessionWriter(
                 resolvedUrl = resolvedUrl,
                 asset = asset,
                 downloadSpeedProfile = downloadSpeedProfile,
-                session = session,
+                sink = sink,
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -94,7 +95,7 @@ class GitHubInstallSessionWriter(
         resolvedUrl: String,
         asset: GitHubReleaseAssetFile,
         downloadSpeedProfile: SegmentedDownloadSpeedProfile,
-        session: PackageInstaller.Session,
+        sink: GitHubInstallApkSink,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult {
@@ -114,7 +115,7 @@ class GitHubInstallSessionWriter(
                 context = context,
                 apkFile = tempApkFile,
                 sessionName = asset.name.toGitHubApkSessionName(),
-                session = session,
+                sink = sink,
                 sessionId = sessionId,
                 onProgress = onProgress,
             )
@@ -130,7 +131,7 @@ class GitHubInstallSessionWriter(
         expectedDigest: String,
         declaredSizeBytes: Long,
         downloadSpeedProfile: SegmentedDownloadSpeedProfile,
-        session: PackageInstaller.Session,
+        sink: GitHubInstallApkSink,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult {
@@ -152,7 +153,7 @@ class GitHubInstallSessionWriter(
                         context = context,
                         apkFile = archiveFile,
                         sessionName = assetName.toGitHubApkSessionName(),
-                        session = session,
+                        sink = sink,
                         sessionId = sessionId,
                         onProgress = onProgress,
                     )
@@ -164,7 +165,7 @@ class GitHubInstallSessionWriter(
                     context = context,
                     zipFile = zipFile,
                     apkEntry = apkEntry,
-                    session = session,
+                    sink = sink,
                     sessionId = sessionId,
                     onProgress = onProgress,
                 )
@@ -178,7 +179,7 @@ class GitHubInstallSessionWriter(
         context: Context,
         zipFile: ZipFile,
         apkEntry: ZipEntry,
-        session: PackageInstaller.Session,
+        sink: GitHubInstallApkSink,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult {
@@ -194,7 +195,7 @@ class GitHubInstallSessionWriter(
         val tempApkFile = createGitHubTempApkFile(context, sessionName)
         try {
             zipFile.getInputStream(apkEntry).use { input ->
-                session.openWrite(sessionName, 0, entrySize).use { output ->
+                sink.openWrite(sessionName, 0, entrySize).use { output ->
                     FileOutputStream(tempApkFile).use { archiveOutput ->
                         val buffer = ByteArray(GITHUB_APK_STREAM_BUFFER_SIZE)
                         while (true) {
@@ -217,7 +218,7 @@ class GitHubInstallSessionWriter(
                         archiveInfo = archiveInfo,
                         onProgress = onProgress,
                     )
-                    session.fsync(output)
+                    sink.fsync(output)
                     return GitHubInstallSessionWriteResult(progress.totalRead, entrySize, archiveInfo)
                 }
             }
@@ -230,7 +231,7 @@ class GitHubInstallSessionWriter(
         context: Context,
         apkFile: File,
         sessionName: String,
-        session: PackageInstaller.Session,
+        sink: GitHubInstallApkSink,
         sessionId: Int,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubInstallSessionWriteResult {
@@ -243,7 +244,7 @@ class GitHubInstallSessionWriter(
             )
         progress.emit(force = true)
         FileInputStream(apkFile).use { input ->
-            session.openWrite(sessionName, 0, totalBytes).use { output ->
+            sink.openWrite(sessionName, 0, totalBytes).use { output ->
                 val buffer = ByteArray(GITHUB_APK_STREAM_BUFFER_SIZE)
                 while (true) {
                     currentCoroutineContext().ensureActive()
@@ -262,7 +263,7 @@ class GitHubInstallSessionWriter(
                     archiveInfo = archiveInfo,
                     onProgress = onProgress,
                 )
-                session.fsync(output)
+                sink.fsync(output)
                 return GitHubInstallSessionWriteResult(progress.totalRead, totalBytes, archiveInfo)
             }
         }

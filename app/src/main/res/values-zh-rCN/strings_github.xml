@@ -393,6 +393,7 @@
     <string name="github_share_import_error_missing_release_tag">分享链接缺少 release tag</string>
     <string name="github_share_import_error_no_stable_release">该仓库暂无稳定版 release</string>
     <string name="github_share_import_error_shizuku_unavailable">Shizuku 当前未启动，无法由 KeiOS 接管安装</string>
+    <string name="github_share_import_error_root_unavailable">当前未获得 root 权限，无法由 KeiOS 接管安装</string>
     <string name="github_share_import_error_shizuku_permission_missing">KeiOS 尚未获得 Shizuku 授权，无法接管安装</string>
     <string name="github_share_import_error_shizuku_install_permission_missing">Shizuku 远端缺少 INSTALL_PACKAGES 能力，无法接管安装</string>
     <string name="github_share_import_error_app_managed_install_failed">本 App 接管安装失败</string>

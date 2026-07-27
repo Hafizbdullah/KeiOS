@@ -69,6 +69,10 @@ internal fun managedInstallFailureMessage(
             context.getString(R.string.github_share_import_error_shizuku_unavailable)
         }
 
+        GitHubApkInstallFailureReason.RootUnavailable -> {
+            context.getString(R.string.github_share_import_error_root_unavailable)
+        }
+
         GitHubApkInstallFailureReason.ShizukuPermissionMissing -> {
             context.getString(R.string.github_share_import_error_shizuku_permission_missing)
         }

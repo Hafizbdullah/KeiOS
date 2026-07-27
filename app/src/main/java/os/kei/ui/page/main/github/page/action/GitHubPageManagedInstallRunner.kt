@@ -21,7 +21,7 @@ import os.kei.feature.github.install.GitHubApkInstallRequestIds
 import os.kei.feature.github.install.GitHubApkInstallResult
 import os.kei.feature.github.install.GitHubApkInstallStage
 import os.kei.feature.github.install.GitHubManagedApkInstaller
-import os.kei.feature.github.install.GitHubShizukuPackageInstaller
+import os.kei.feature.github.install.GitHubModeRoutedApkInstaller
 import os.kei.feature.github.install.managedInstallDownloadSpeedProfile
 import os.kei.feature.github.model.GitHubInstalledPackageInfo
 import os.kei.feature.github.model.InstalledAppItem
@@ -40,7 +40,7 @@ private const val GITHUB_PAGE_MANAGED_INSTALL_TAG = "GitHubPageInstall"
 internal class GitHubPageManagedInstallRunner(
     private val env: GitHubPageActionEnvironment,
     private val apkInfoRepository: GitHubApkInfoRepository,
-    private val managedApkInstaller: GitHubManagedApkInstaller = GitHubShizukuPackageInstaller()
+    private val managedApkInstaller: GitHubManagedApkInstaller = GitHubModeRoutedApkInstaller()
 ) {
     suspend fun install(item: GitHubTrackedApp, asset: GitHubReleaseAssetFile): Boolean {
         val appContext = env.context.applicationContext
@@ -365,6 +365,9 @@ internal class GitHubPageManagedInstallRunner(
         return when (result.reason) {
             GitHubApkInstallFailureReason.ShizukuUnavailable ->
                 context.getString(R.string.github_share_import_error_shizuku_unavailable)
+
+            GitHubApkInstallFailureReason.RootUnavailable ->
+                context.getString(R.string.github_share_import_error_root_unavailable)
 
             GitHubApkInstallFailureReason.ShizukuPermissionMissing ->
                 context.getString(R.string.github_share_import_error_shizuku_permission_missing)

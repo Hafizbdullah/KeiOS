@@ -100,7 +100,7 @@ class GitHubShizukuPackageInstaller(
                     message = capability.message.ifBlank { "Shizuku install capability unavailable" }
                 )
             }
-            val resolvedUrl = resolveDownloadUrl(request).trim()
+            val resolvedUrl = resolveManagedInstallDownloadUrl(request).trim()
             if (!resolvedUrl.startsWith("https://", ignoreCase = true)) {
                 return@withContext GitHubApkInstallResult.Failed(
                     reason = GitHubApkInstallFailureReason.DownloadUrlInvalid,
@@ -167,7 +167,7 @@ class GitHubShizukuPackageInstaller(
                     resolvedUrl = resolvedUrl,
                     asset = request.asset,
                     downloadSpeedProfile = request.downloadSpeedProfile,
-                    session = session,
+                    sink = GitHubSessionApkSink(session),
                     sessionId = sessionId,
                     onProgress = onProgress
                 )
@@ -434,18 +434,6 @@ class GitHubShizukuPackageInstaller(
         }
     }
 
-    private suspend fun resolveDownloadUrl(request: GitHubApkInstallRequest): String {
-        request.resolvedDownloadUrl.trim().takeIf { it.isNotBlank() }?.let { return it }
-        val token = request.lookupConfig.apiToken.trim()
-        val preferApiAsset =
-            request.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
-        return GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
-            asset = request.asset,
-            useApiAssetUrl = preferApiAsset,
-            apiToken = token
-        ).getOrElse { request.asset.downloadUrl }
-    }
-
     private fun abandonSession(packageInstaller: PackageInstaller, sessionId: Int) {
         if (sessionId <= 0) return
         runCatching {
@@ -492,4 +480,16 @@ class GitHubShizukuPackageInstaller(
             SharedHttpClient.base
         }
     }
+}
+
+internal suspend fun resolveManagedInstallDownloadUrl(request: GitHubApkInstallRequest): String {
+    request.resolvedDownloadUrl.trim().takeIf { it.isNotBlank() }?.let { return it }
+    val token = request.lookupConfig.apiToken.trim()
+    val preferApiAsset =
+        request.lookupConfig.selectedStrategy == GitHubLookupStrategyOption.GitHubApiToken
+    return GitHubReleaseAssetRepository.resolvePreferredDownloadUrl(
+        asset = request.asset,
+        useApiAssetUrl = preferApiAsset,
+        apiToken = token
+    ).getOrElse { request.asset.downloadUrl }
 }

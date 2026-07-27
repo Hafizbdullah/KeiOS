@@ -7,12 +7,12 @@ import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubShareImportFlowStore
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.install.GitHubManagedApkInstaller
-import os.kei.feature.github.install.GitHubShizukuPackageInstaller
+import os.kei.feature.github.install.GitHubModeRoutedApkInstaller
 import os.kei.feature.github.model.GitHubApkManifestInfo
 import os.kei.feature.github.model.GitHubLookupConfig
 
 internal object GitHubShareImportManagedInstallCoordinator {
-    private var managedApkInstaller: GitHubManagedApkInstaller = GitHubShizukuPackageInstaller()
+    private var managedApkInstaller: GitHubManagedApkInstaller = GitHubModeRoutedApkInstaller()
     private val progressNotifier = GitHubManagedInstallProgressNotifier()
     private val resultApplier = GitHubManagedInstallResultApplier()
     private var manifestInfoScanner:
@@ -46,7 +46,7 @@ internal object GitHubShareImportManagedInstallCoordinator {
     }
 
     fun resetTestHooks() {
-        managedApkInstaller = GitHubShizukuPackageInstaller()
+        managedApkInstaller = GitHubModeRoutedApkInstaller()
         manifestInfoScanner = { asset, config ->
             scanShareImportAssetManifestInfo(
                 asset = asset,

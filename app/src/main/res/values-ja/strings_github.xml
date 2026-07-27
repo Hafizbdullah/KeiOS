@@ -363,6 +363,7 @@
     <string name="github_share_import_error_missing_release_tag">共有リンクにリリースタグがありません</string>
     <string name="github_share_import_error_no_stable_release">このリポジトリに stable release がありません</string>
     <string name="github_share_import_error_shizuku_unavailable">Shizuku が起動していないため、KeiOS でインストールできません</string>
+    <string name="github_share_import_error_root_unavailable">root 権限を利用できないため、KeiOS でインストールできません</string>
     <string name="github_share_import_error_shizuku_permission_missing">KeiOS に Shizuku 権限がないため、インストールできません</string>
     <string name="github_share_import_error_shizuku_install_permission_missing">Shizuku 側に INSTALL_PACKAGES 権限がないため、インストールできません</string>
     <string name="github_share_import_error_app_managed_install_failed">KeiOS でのインストールに失敗しました</string>
