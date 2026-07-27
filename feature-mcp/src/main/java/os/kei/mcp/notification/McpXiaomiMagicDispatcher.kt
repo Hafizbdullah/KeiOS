@@ -21,7 +21,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.shizuku.ShizukuConnectivityBridge
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -52,7 +52,7 @@ internal object McpXiaomiMagicDispatcher {
         NONE
     }
 
-    private val shizukuApiUtils = ShizukuApiUtils()
+    private val privilegedShell = PrivilegedShell()
     private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.mcpServer)
     private val networkMutex = Mutex()
 
@@ -66,7 +66,7 @@ internal object McpXiaomiMagicDispatcher {
     private var isUidFirewallChainEnabled = false
 
     fun canUseCommand(): Boolean {
-        return shizukuApiUtils.canUseCommand()
+        return privilegedShell.canUseCommand()
     }
 
     suspend fun notify(
@@ -598,7 +598,7 @@ internal object McpXiaomiMagicDispatcher {
     }
 
     private suspend fun resolveShellCommandSet(): CommandSet {
-        val helpText = shizukuApiUtils.execCommandCancellable("cmd connectivity help")
+        val helpText = privilegedShell.execCommandCancellable("cmd connectivity help")
         if (helpText.isNullOrBlank()) {
             AppLogger.w(TAG, "resolveCommandSet skipped: connectivity help unavailable")
             return CommandSet.NONE
@@ -617,7 +617,7 @@ internal object McpXiaomiMagicDispatcher {
 
     private suspend fun execCommand(command: String): Boolean {
         val output =
-            shizukuApiUtils.execCommandCancellable("($command) >/dev/null 2>&1 && echo __OK__ || echo __FAIL__")
+            privilegedShell.execCommandCancellable("($command) >/dev/null 2>&1 && echo __OK__ || echo __FAIL__")
                 ?: return false
         val success = output.contains("__OK__")
         if (!success) {

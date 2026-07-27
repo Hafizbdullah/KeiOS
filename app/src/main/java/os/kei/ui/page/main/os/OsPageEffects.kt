@@ -253,11 +253,11 @@ internal fun BindOsInitialCacheLoad(
 }
 
 @Composable
-internal fun BindOsShizukuInvalidation(
-    shizukuReady: Boolean,
+internal fun BindOsPrivilegeInvalidation(
+    privilegeReady: Boolean,
     onInvalidate: () -> Unit,
 ) {
-    LaunchedEffect(shizukuReady) {
+    LaunchedEffect(privilegeReady) {
         onInvalidate()
     }
 }

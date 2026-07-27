@@ -24,6 +24,8 @@ import os.kei.ui.page.main.settings.section.SettingsVisualSectionState
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
 import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeMode
 
 internal data class SettingsSectionContractBundle(
     val permissionKeepAliveState: SettingsPermissionKeepAliveSectionState,
@@ -79,8 +81,9 @@ internal fun rememberSettingsSectionContractBundle(
     appListAccessMode: SettingsAppListAccessMode,
     appListDetectedCount: Int,
     appListSettingsActionAvailable: Boolean,
-    shizukuGranted: Boolean,
-    shizukuStatusText: String,
+    privilegeMode: PrivilegeMode,
+    privilegeGranted: Boolean,
+    privilegeStatus: PrivilegeStatus,
     accessibilityGuardState: SettingsAccessibilityGuardUiState,
     textCopyCapabilityExpanded: Boolean,
     pageUiState: SettingsPageUiState,
@@ -110,7 +113,8 @@ internal fun rememberSettingsSectionContractBundle(
     onOpenBatteryOptimizationSettings: () -> Unit,
     onOpenOemAutoStartSettings: () -> Unit,
     onOpenAppListPermissionSettings: () -> Unit,
-    onCheckOrRequestShizuku: () -> Unit,
+    onPrivilegeModeChanged: (PrivilegeMode) -> Unit,
+    onCheckOrRequestPrivilege: () -> Unit,
     onAccessibilityGuardDaemonChanged: (Boolean) -> Unit,
     onAccessibilityGuardBootCheckChanged: (Boolean) -> Unit,
     onAccessibilityGuardScreenOnChanged: (Boolean) -> Unit,
@@ -137,8 +141,9 @@ internal fun rememberSettingsSectionContractBundle(
             appListAccessMode,
             appListDetectedCount,
             appListSettingsActionAvailable,
-            shizukuGranted,
-            shizukuStatusText,
+            privilegeMode,
+            privilegeGranted,
+            privilegeStatus,
             accessibilityGuardState,
         ) {
             SettingsPermissionKeepAliveSectionState(
@@ -159,8 +164,9 @@ internal fun rememberSettingsSectionContractBundle(
                 appListAccessMode = appListAccessMode,
                 appListDetectedCount = appListDetectedCount,
                 appListSettingsActionAvailable = appListSettingsActionAvailable,
-                shizukuGranted = shizukuGranted,
-                shizukuStatusText = shizukuStatusText,
+                privilegeMode = privilegeMode,
+                privilegeGranted = privilegeGranted,
+                privilegeStatus = privilegeStatus,
                 accessibilityGuardState = accessibilityGuardState,
             )
         }
@@ -172,7 +178,8 @@ internal fun rememberSettingsSectionContractBundle(
             onOpenBatteryOptimizationSettings,
             onOpenOemAutoStartSettings,
             onOpenAppListPermissionSettings,
-            onCheckOrRequestShizuku,
+            onPrivilegeModeChanged,
+            onCheckOrRequestPrivilege,
             onAccessibilityGuardDaemonChanged,
             onAccessibilityGuardBootCheckChanged,
             onAccessibilityGuardScreenOnChanged,
@@ -186,7 +193,8 @@ internal fun rememberSettingsSectionContractBundle(
                 onOpenBatteryOptimizationSettings = onOpenBatteryOptimizationSettings,
                 onOpenOemAutoStartSettings = onOpenOemAutoStartSettings,
                 onOpenAppListPermissionSettings = onOpenAppListPermissionSettings,
-                onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+                onPrivilegeModeChanged = onPrivilegeModeChanged,
+                onCheckOrRequestPrivilege = onCheckOrRequestPrivilege,
                 onAccessibilityGuardDaemonChanged = onAccessibilityGuardDaemonChanged,
                 onAccessibilityGuardBootCheckChanged = onAccessibilityGuardBootCheckChanged,
                 onAccessibilityGuardScreenOnChanged = onAccessibilityGuardScreenOnChanged,

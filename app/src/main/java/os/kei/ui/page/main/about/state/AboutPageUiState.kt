@@ -4,8 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class AboutPageSectionExpansionState(
@@ -44,19 +45,19 @@ internal data class AboutPageColorPalette(
 )
 
 @Composable
-internal fun rememberAboutPageColorPalette(shizukuStatus: String): AboutPageColorPalette {
+internal fun rememberAboutPageColorPalette(privilegeStatus: PrivilegeStatus): AboutPageColorPalette {
     val accent = MiuixTheme.colorScheme.primary
     val subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f)
     val readyColor = Color(0xFF2E7D32)
     val notReadyColor = Color(0xFFC62828)
-    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
+    val privilegeReady = privilegeStatus.isCommandReady
     val runtimeCardColor =
-        if (shizukuReady) {
+        if (privilegeReady) {
             Color(0x2222C55E)
         } else {
             Color(0x22EF4444)
         }
-    return remember(shizukuStatus, accent, subtitleColor) {
+    return remember(privilegeStatus, accent, subtitleColor) {
         AboutPageColorPalette(
             accent = accent,
             subtitleColor = subtitleColor,

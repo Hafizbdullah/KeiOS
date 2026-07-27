@@ -60,6 +60,12 @@ class UiPrefsRepository(
         }
     }
 
+    suspend fun setPrivilegeModeId(value: String) {
+        updateAndPersist({ copy(privilegeModeId = value) }) {
+            UiPrefs.setPrivilegeModeId(value)
+        }
+    }
+
     suspend fun setTransitionAnimationsEnabled(value: Boolean) {
         updateAndPersist({ copy(transitionAnimationsEnabled = value) }) {
             UiPrefs.setTransitionAnimationsEnabled(value)

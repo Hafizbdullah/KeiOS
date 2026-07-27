@@ -30,7 +30,7 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
@@ -46,6 +46,7 @@ import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import os.kei.core.privilege.PrivilegeStatus
 
 @Composable
 internal fun MainPagerLayout(
@@ -68,8 +69,8 @@ internal fun MainPagerLayout(
     nonHomeBackgroundSaturation: Float,
     visibleBottomPageNames: Set<String>,
     onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     mcpServerManager: McpServerManager,
     onOpenGuideDetail: (String) -> Unit,
     onOpenBaGuideCatalog: () -> Unit,
@@ -345,7 +346,7 @@ internal fun MainPagerLayout(
                     val homePageState =
                         if (pageType == BottomPage.Home) {
                             remember(
-                                shizukuStatus,
+                                privilegeStatus,
                                 homeHdrEffectActive,
                                 homeDynamicFullEffectEnabled,
                                 coordinator.visibleTabsSnapshot,
@@ -369,7 +370,7 @@ internal fun MainPagerLayout(
                                 onOpenAbout,
                             ) {
                                 MainPagerHomePageState(
-                                    shizukuStatus = shizukuStatus,
+                                    privilegeStatus = privilegeStatus,
                                     homeIconHdrEnabled = homeHdrEffectActive,
                                     homeDynamicFullEffectEnabled = homeDynamicFullEffectEnabled,
                                     visibleBottomPages = coordinator.visibleTabsSnapshot,
@@ -398,10 +399,10 @@ internal fun MainPagerLayout(
                         }
                     val osPageState =
                         if (pageType == BottomPage.Os) {
-                            remember(shizukuStatus, shizukuApiUtils) {
+                            remember(privilegeStatus, privilegedShell) {
                                 MainPagerOsPageState(
-                                    shizukuStatus = shizukuStatus,
-                                    shizukuApiUtils = shizukuApiUtils,
+                                    privilegeStatus = privilegeStatus,
+                                    privilegedShell = privilegedShell,
                                 )
                             }
                         } else {

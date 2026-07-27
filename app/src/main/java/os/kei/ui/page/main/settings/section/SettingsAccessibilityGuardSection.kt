@@ -173,7 +173,7 @@ internal fun SettingsAccessibilityGuardHistoryCard(
 
 @Composable
 private fun accessibilityGuardPolicySubtitle(state: SettingsPermissionKeepAliveSectionState): String =
-    if (state.shizukuGranted) {
+    if (state.privilegeGranted) {
         stringResource(R.string.settings_accessibility_guard_policy_summary_ready)
     } else {
         stringResource(R.string.settings_accessibility_guard_policy_summary_need_shizuku)

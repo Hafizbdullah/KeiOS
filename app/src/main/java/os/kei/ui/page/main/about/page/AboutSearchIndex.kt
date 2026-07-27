@@ -54,7 +54,7 @@ internal data class AboutSearchUiState(
 internal fun buildAboutSearchTargets(
     context: Context,
     appLabel: String,
-    shizukuStatus: String,
+    privilegeStatus: String,
     permissionEntries: List<AboutPermissionEntry>,
     componentEntries: List<AboutComponentEntry>,
 ): List<AboutSearchTarget> =
@@ -141,7 +141,7 @@ internal fun buildAboutSearchTargets(
                 aboutTokens(
                     context.getString(R.string.about_card_runtime_title),
                     context.getString(R.string.about_card_runtime_subtitle),
-                    shizukuStatus,
+                    privilegeStatus,
                     context.getString(R.string.about_runtime_label_notification_permission),
                     context.getString(R.string.about_runtime_label_selinux),
                     context.getString(R.string.about_runtime_label_uname),

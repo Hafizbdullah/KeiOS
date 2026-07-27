@@ -7,12 +7,12 @@ import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import java.util.Locale
 
 class LocalMcpService(
     appContext: Context,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegedShell: PrivilegedShell,
     appVersionName: String,
     appVersionCode: Long,
     appPackageName: String,
@@ -36,7 +36,7 @@ class LocalMcpService(
 
     private val environment = McpToolEnvironment(
         appContext = appContext,
-        shizukuApiUtils = shizukuApiUtils,
+        privilegedShell = privilegedShell,
         appVersionName = appVersionName,
         appVersionCode = appVersionCode,
         appPackageName = appPackageName,

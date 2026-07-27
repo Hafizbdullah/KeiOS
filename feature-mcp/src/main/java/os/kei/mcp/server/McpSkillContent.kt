@@ -451,7 +451,7 @@ internal class McpSkillContent(
             appendLine("1) keios.health.ping")
             appendLine("2) keios.mcp.runtime.status")
             appendLine("3) keios.mcp.runtime.logs(limit=80)")
-            appendLine("4) keios.shizuku.status")
+            appendLine("4) keios.privilege.status")
             appendLine("5) $SKILL_DOMAIN_TEMPLATE_URI")
             appendLine("6) $SKILL_TOOL_TEMPLATE_URI")
             if (symptom.isNotBlank()) {

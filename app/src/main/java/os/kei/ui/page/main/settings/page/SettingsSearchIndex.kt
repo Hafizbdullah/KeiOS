@@ -53,6 +53,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
     val oemAutostartLabel = resolveString(R.string.settings_oem_autostart_title)
     val appListAccessLabel = resolveString(R.string.settings_app_list_access_title)
     val shizukuPermissionLabel = resolveString(R.string.settings_shizuku_permission_title)
+    val rootPermissionLabel = resolveString(R.string.settings_root_permission_title)
+    val privilegedModeLabel = resolveString(R.string.settings_privileged_mode_title)
     val appStandbyActiveLabel = resolveString(R.string.settings_app_standby_bucket_active)
     val appStandbyRareLabel = resolveString(R.string.settings_app_standby_bucket_rare)
     val appStandbyRestrictedLabel = resolveString(R.string.settings_app_standby_bucket_restricted)
@@ -157,6 +159,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     notificationPermissionLabel,
                     appListAccessLabel,
                     shizukuPermissionLabel,
+                    rootPermissionLabel,
+                    privilegedModeLabel,
                 ),
         ),
         SettingsSearchTarget(

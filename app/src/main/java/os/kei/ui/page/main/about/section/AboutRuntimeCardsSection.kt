@@ -37,25 +37,27 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.osLucideSettingsIcon
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import java.util.Locale
+import os.kei.core.privilege.PRIVILEGE_ROW_GETENFORCE
+import os.kei.core.privilege.PRIVILEGE_ROW_UNAME
 
 @Composable
 fun AboutRuntimeStatusCardSection(
     cardColor: Color,
     accent: Color,
-    shizukuReady: Boolean,
+    privilegeReady: Boolean,
     readyColor: Color,
     notReadyColor: Color,
     subtitleColor: Color,
     notificationPermissionGranted: Boolean,
-    shizukuDetailMap: Map<String, String>,
+    privilegeDetailMap: Map<String, String>,
     permissionCount: Int,
     componentCount: Int,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
-    onCheckShizuku: () -> Unit,
+    onCheckPrivilege: () -> Unit,
 ) {
-    val titleColor = if (shizukuReady) readyColor else notReadyColor
-    val selinuxRaw = shizukuDetailMap["Shizuku getenforce"] ?: stringResource(R.string.common_na)
+    val titleColor = if (privilegeReady) readyColor else notReadyColor
+    val selinuxRaw = privilegeDetailMap[PRIVILEGE_ROW_GETENFORCE] ?: stringResource(R.string.common_na)
     AboutSectionCard(
         cardColor = cardColor,
         title = stringResource(R.string.about_card_runtime_title),
@@ -90,14 +92,14 @@ fun AboutRuntimeStatusCardSection(
                 label = selinuxLabelText(selinuxRaw),
                 titleIcon = appLucideLockIcon(),
                 color = selinuxStatusColor(selinuxRaw),
-                onClick = onCheckShizuku,
+                onClick = onCheckPrivilege,
             )
             AboutCompactInfoRow(
                 title = stringResource(R.string.about_runtime_label_uname),
-                value = shizukuDetailMap["Shizuku uname"] ?: stringResource(R.string.common_na),
+                value = privilegeDetailMap[PRIVILEGE_ROW_UNAME] ?: stringResource(R.string.common_na),
                 titleIcon = appLucideNotesIcon(),
                 valueColor = accent,
-                onClick = onCheckShizuku,
+                onClick = onCheckPrivilege,
             )
             AboutCompactInfoRow(
                 title = stringResource(R.string.about_runtime_label_permission_count),

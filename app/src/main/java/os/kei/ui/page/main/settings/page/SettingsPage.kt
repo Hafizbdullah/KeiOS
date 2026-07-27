@@ -34,7 +34,7 @@ import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
 import os.kei.core.prefs.SuperIslandFloatBehavior
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.host.pager.rememberMainLoadedPagerState
 import os.kei.ui.page.main.os.appLucideBackIcon
@@ -55,6 +55,8 @@ import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeMode
 
 @Composable
 fun SettingsPage(
@@ -122,9 +124,11 @@ fun SettingsPage(
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
     cacheDiagnosticsEnabled: Boolean,
     onCacheDiagnosticsChanged: (Boolean) -> Unit,
-    shizukuStatus: String,
-    onCheckOrRequestShizuku: () -> Unit,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegeMode: PrivilegeMode,
+    onPrivilegeModeChanged: (PrivilegeMode) -> Unit,
+    onCheckOrRequestPrivilege: () -> Unit,
+    privilegedShell: PrivilegedShell,
     appThemeMode: AppThemeMode,
     onAppThemeModeChanged: (AppThemeMode) -> Unit,
     onBack: () -> Unit,
@@ -172,7 +176,7 @@ fun SettingsPage(
     val permissionKeepAliveController =
         rememberSettingsPermissionKeepAliveController(
             context = context,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegedShell = privilegedShell,
         )
     BindSettingsPageEffects(
         context = context,
@@ -181,10 +185,10 @@ fun SettingsPage(
         batteryOptimizationController = batteryOptimizationController,
         permissionKeepAliveController = permissionKeepAliveController,
         notificationPermissionGranted = notificationPermissionGranted,
-        shizukuStatus = shizukuStatus,
+        privilegeStatus = privilegeStatus,
         cacheDiagnosticsEnabled = cacheDiagnosticsEnabled,
         logLevel = logLevel,
-        shizukuRefreshToken = chromeState.shizukuRefreshToken,
+        privilegeRefreshToken = chromeState.privilegeRefreshToken,
         keepAliveActive =
             SettingsCategory.entries
                 .getOrNull(chromeState.selectedCategoryIndex) == SettingsCategory.KeepAlive,
@@ -242,9 +246,14 @@ fun SettingsPage(
             textCopyCapabilityExpanded = textCopyCapabilityExpanded,
             onTextCopyCapabilityExpandedChanged = onTextCopyCapabilityExpandedChanged,
             onRequestNotificationPermission = onRequestNotificationPermission,
-            onCheckOrRequestShizuku = {
-                settingsPageViewModel.requestShizukuRefresh()
-                onCheckOrRequestShizuku()
+            privilegeMode = privilegeMode,
+            onPrivilegeModeChanged = { mode ->
+                onPrivilegeModeChanged(mode)
+                settingsPageViewModel.requestPrivilegeRefresh()
+            },
+            onCheckOrRequestPrivilege = {
+                settingsPageViewModel.requestPrivilegeRefresh()
+                onCheckOrRequestPrivilege()
             },
         )
 

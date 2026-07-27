@@ -15,8 +15,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import kotlin.coroutines.coroutineContext
+import os.kei.core.privilege.PrivilegeStatus
 
 internal class OsPageSectionController(
     private val scope: CoroutineScope,
@@ -86,8 +87,8 @@ internal class OsPageSectionController(
         section: SectionKind,
         forceRefresh: Boolean,
         context: Context,
-        shizukuStatus: String,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegeStatus: PrivilegeStatus,
+        privilegedShell: PrivilegedShell,
     ) {
         val currentState = runtimeState.value.sectionStates[section] ?: SectionState()
         val visibleCards = persistentState.value.uiSnapshot.visibleCards
@@ -102,8 +103,8 @@ internal class OsPageSectionController(
                         forceRefresh = forceRefresh,
                         visibleCardsProvider = { persistentState.value.uiSnapshot.visibleCards },
                         context = context.applicationContext,
-                        shizukuStatus = shizukuStatus,
-                        shizukuApiUtils = shizukuApiUtils,
+                        privilegeStatus = privilegeStatus,
+                        privilegedShell = privilegedShell,
                     )
             ) {
                 OsSectionLoadResult.Joined -> Unit
@@ -121,7 +122,7 @@ internal class OsPageSectionController(
         }
     }
 
-    fun invalidateShizukuSections() {
+    fun invalidatePrivilegeSections() {
         advanceLoadGeneration(clearLoading = true)
         listOf(
             SectionKind.SYSTEM,

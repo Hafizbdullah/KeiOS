@@ -15,6 +15,8 @@ import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.McpServerManager
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeModeRuntime
 
 @Stable
 internal class MainScreenUiPrefsState(
@@ -37,6 +39,7 @@ internal class MainScreenUiPrefsState(
     val homeDynamicFullEffectEnabled: Boolean get() = snapshot.homeDynamicFullEffectEnabled
     val preloadingEnabled: Boolean get() = snapshot.preloadingEnabled
     val launcherIconDesign: LauncherIconDesign get() = snapshot.launcherIconDesign
+    val privilegeMode: PrivilegeMode get() = PrivilegeMode.fromStorageId(snapshot.privilegeModeId)
     val nonHomeBackgroundEnabled: Boolean get() = snapshot.nonHomeBackgroundEnabled
     val nonHomeBackgroundUri: String get() = snapshot.nonHomeBackgroundUri
     val nonHomeBackgroundOpacity: Float get() = snapshot.nonHomeBackgroundOpacity
@@ -106,6 +109,16 @@ internal class MainScreenUiPrefsState(
 
     fun updatePreloadingEnabled(value: Boolean) {
         viewModel.updatePreloadingEnabled(value)
+    }
+
+    /**
+     * Applies the switch to the process-wide runtime first so background privileged entry points
+     * follow the new backend even before the preference write lands.
+     */
+    fun updatePrivilegeMode(value: PrivilegeMode) {
+        if (value == privilegeMode) return
+        PrivilegeModeRuntime.set(value)
+        viewModel.updatePrivilegeMode(value)
     }
 
     fun updateLauncherIconDesign(value: LauncherIconDesign) {

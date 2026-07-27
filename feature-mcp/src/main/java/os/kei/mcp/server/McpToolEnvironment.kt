@@ -1,12 +1,12 @@
 package os.kei.mcp.server
 
 import android.content.Context
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import java.util.Locale
 
 class McpToolEnvironment(
     val appContext: Context,
-    val shizukuApiUtils: ShizukuApiUtils,
+    val privilegedShell: PrivilegedShell,
     val appVersionName: String,
     val appVersionCode: Long,
     val appPackageName: String,

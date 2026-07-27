@@ -39,7 +39,7 @@ import os.kei.core.platform.TransientExternalLaunchGuard
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
 import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
 import os.kei.mcp.notification.McpNotificationHelper
@@ -89,7 +89,7 @@ class MainActivity : ComponentActivity() {
     private var pendingMcpServerAction: String? = null
     private var pendingShortcutAction: String? = null
     private var startMcpAfterLocalNetworkPermission = false
-    private val shizukuApiUtils = ShizukuApiUtils()
+    private val privilegedShell = PrivilegedShell()
     private lateinit var localMcpService: LocalMcpService
     private lateinit var mcpServerManager: McpServerManager
     private var jankStats: JankStats? = null
@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
         localMcpService =
             LocalMcpService(
                 appContext = applicationContext,
-                shizukuApiUtils = shizukuApiUtils,
+                privilegedShell = privilegedShell,
                 appVersionName = packageInfo?.versionName ?: "unknown",
                 appVersionCode = packageInfo?.longVersionCode ?: -1L,
                 appPackageName = packageName,
@@ -169,14 +169,14 @@ class MainActivity : ComponentActivity() {
             runCatching { AppShortcuts.sync(this@MainActivity) }
         }
 
-        shizukuApiUtils.attach { status ->
-            hostUiState = hostUiState.copy(shizukuStatus = status)
+        privilegedShell.attach { status ->
+            hostUiState = hostUiState.copy(privilegeStatus = status)
         }
 
         // Stable callback bundle: created once and reused across recompositions so MainScreen does
         // not see new lambda identities every time hostUiState changes.
         val hostCallbacks = MainHostCallbacks(
-            onCheckOrRequestShizuku = { shizukuApiUtils.requestPermissionIfNeeded() },
+            onCheckOrRequestPrivilege = { privilegedShell.requestAccessIfNeeded() },
             onRequestNotificationPermission = { requestNotificationPermissionIfNeeded() },
             onAppThemeModeChanged = { mode ->
                 hostUiState = hostUiState.copy(appThemeMode = mode)
@@ -209,7 +209,7 @@ class MainActivity : ComponentActivity() {
                                 appLabel = appLabel,
                                 hostState = state,
                                 hostCallbacks = hostCallbacks,
-                                shizukuApiUtils = shizukuApiUtils,
+                                privilegedShell = privilegedShell,
                                 mcpServerManager = mcpServerManager,
                             )
                         }
@@ -261,7 +261,7 @@ class MainActivity : ComponentActivity() {
         if (isFinishing) {
             runCatching { mcpServerManager.stop() }
         }
-        shizukuApiUtils.detach()
+        privilegedShell.detach()
         super.onDestroy()
     }
 

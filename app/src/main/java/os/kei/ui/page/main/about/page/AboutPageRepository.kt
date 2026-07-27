@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.about.model.AboutAppDetails
 import os.kei.ui.page.main.about.model.AboutComponentEntry
 import os.kei.ui.page.main.about.model.AboutPermissionEntry
@@ -15,6 +15,7 @@ import os.kei.ui.page.main.about.model.buildAboutTechDetails
 import os.kei.ui.page.main.about.model.buildComponentEntries
 import os.kei.ui.page.main.about.model.buildPermissionEntries
 import os.kei.ui.page.main.about.model.loadPackageDetailInfo
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class AboutPageDetailsState(
@@ -23,7 +24,7 @@ internal data class AboutPageDetailsState(
     val componentEntries: List<AboutComponentEntry> = emptyList(),
     val techDetails: AboutTechDetails = AboutTechDetails(),
     val searchTargets: List<AboutSearchTarget> = emptyList(),
-    val shizukuDetailMap: Map<String, String> = emptyMap(),
+    val privilegeDetailMap: Map<String, String> = emptyMap(),
     val loaded: Boolean = false,
 )
 
@@ -34,9 +35,9 @@ internal class AboutPageRepository(
     suspend fun loadDetails(
         context: Context,
         appLabel: String,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
         notificationPermissionGranted: Boolean,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
     ): AboutPageDetailsState {
         val details =
             withContext(ioDispatcher) {
@@ -57,7 +58,7 @@ internal class AboutPageRepository(
                     permissionEntries = permissionEntries,
                     componentEntries = componentEntries,
                     techDetails = buildAboutTechDetails(context),
-                    shizukuDetailMap = shizukuApiUtils.detailedRows().toMap(),
+                    privilegeDetailMap = privilegedShell.detailedRows().toMap(),
                     loaded = true,
                 )
             }
@@ -66,7 +67,7 @@ internal class AboutPageRepository(
                 buildAboutSearchTargets(
                     context = context,
                     appLabel = appLabel,
-                    shizukuStatus = shizukuStatus,
+                    privilegeStatus = privilegeStatus.text,
                     permissionEntries = details.permissionEntries,
                     componentEntries = details.componentEntries,
                 )

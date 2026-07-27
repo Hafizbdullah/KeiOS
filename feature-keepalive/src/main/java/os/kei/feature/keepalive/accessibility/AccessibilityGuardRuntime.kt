@@ -2,7 +2,7 @@ package os.kei.feature.keepalive.accessibility
 
 import android.content.Context
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 
 object AccessibilityGuardRuntime {
     fun newStateStore(): AccessibilityGuardStore = AccessibilityGuardStore()
@@ -11,7 +11,7 @@ object AccessibilityGuardRuntime {
         AccessibilityGuardCoordinator(
             secureSettingsBridge =
                 ShizukuAccessibilitySecureSettingsBridge(
-                    shizukuApiUtils = ShizukuApiUtils(commandDispatcher = AppDispatchers.osOperations),
+                    privilegedShell = PrivilegedShell(commandDispatcher = AppDispatchers.osOperations),
                 ),
             stateStore = stateStore,
         )

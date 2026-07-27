@@ -9,6 +9,8 @@ import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import java.lang.reflect.Method
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeModeRuntime
 
 object ShizukuConnectivityBridge {
     private const val TAG = "ShizukuConnectivityBridge"
@@ -26,6 +28,10 @@ object ShizukuConnectivityBridge {
 
     fun canUseUidFirewall(): Boolean {
         return resolveConnectivityApi() != null
+    }
+
+    init {
+        PrivilegeModeRuntime.addListener { cachedApi = null }
     }
 
     fun setUidNetworkingEnabled(uid: Int, enabled: Boolean): Boolean {
@@ -107,7 +113,13 @@ object ShizukuConnectivityBridge {
         }
     }
 
+    /**
+     * The binder route only applies while Shizuku is the selected backend. Under root the same
+     * firewall change is issued through `cmd connectivity`, so reporting the binder as unusable
+     * keeps callers on the path that matches the user's choice.
+     */
     private fun canUseShizukuBinder(): Boolean {
+        if (PrivilegeModeRuntime.mode != PrivilegeMode.Shizuku) return false
         return runCatching {
             Shizuku.pingBinder() &&
                 !Shizuku.isPreV11() &&

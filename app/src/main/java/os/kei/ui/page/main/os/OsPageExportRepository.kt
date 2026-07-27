@@ -17,7 +17,7 @@ internal data class OsPageSectionCardExportRequest(
     val activityShortcutCards: List<OsActivityShortcutCard>,
     val googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     val context: Context,
-    val shizukuStatus: String,
+    val privilegeStatus: String,
 )
 
 internal data class OsPageExportDocument(
@@ -46,7 +46,7 @@ internal class OsPageExportRepository(
             val content =
                 buildOsCardJson(
                     generatedAt = generatedAt,
-                    shizukuStatus = request.shizukuStatus,
+                    privilegeStatus = request.privilegeStatus,
                     cardTitle = request.card.title(request.context),
                     rows = rows,
                 )

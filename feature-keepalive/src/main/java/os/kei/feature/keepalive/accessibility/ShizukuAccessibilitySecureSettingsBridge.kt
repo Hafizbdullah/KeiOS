@@ -1,6 +1,6 @@
 package os.kei.feature.keepalive.accessibility
 
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.system.AppCommandResult
 
 class ShizukuAccessibilitySecureSettingsBridge(
@@ -8,11 +8,11 @@ class ShizukuAccessibilitySecureSettingsBridge(
     private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
 ) : AccessibilitySecureSettingsBridge {
     constructor(
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
         timeoutMs: Long = DEFAULT_TIMEOUT_MS,
     ) : this(
         commandRunner = AccessibilitySecureSettingsCommandRunner { command, commandTimeoutMs ->
-            shizukuApiUtils.execCommandCancellableResult(
+            privilegedShell.execCommandCancellableResult(
                 command = command,
                 timeoutMs = commandTimeoutMs,
             )

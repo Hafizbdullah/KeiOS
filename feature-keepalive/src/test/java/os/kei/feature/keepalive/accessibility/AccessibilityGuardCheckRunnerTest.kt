@@ -119,7 +119,7 @@ class AccessibilityGuardCheckRunnerTest {
             startedAtMs = 1_000L,
             finishedAtMs = 1_100L,
             elapsedMs = 100L,
-            shizukuStatus = "ready",
+            privilegeStatus = "ready",
             failureReason = "",
         )
 }

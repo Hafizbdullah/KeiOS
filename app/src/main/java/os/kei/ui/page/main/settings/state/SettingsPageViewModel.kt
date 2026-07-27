@@ -36,6 +36,7 @@ import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
 import os.kei.ui.page.main.sync.WebDavSyncStoreSignals
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class SettingsCacheUiState(
@@ -101,7 +102,7 @@ internal data class SettingsPageChromeState(
     val showLogLevelPopup: Boolean = false,
     val logLevelPopupAnchorBounds: IntRect? = null,
     val expandedCards: Map<SettingsCardExpansionId, Boolean> = emptyMap(),
-    val shizukuRefreshToken: Int = 0,
+    val privilegeRefreshToken: Int = 0,
 ) {
     val trimmedSearchQuery: String
         get() = searchQuery.trim()
@@ -436,9 +437,9 @@ internal class SettingsPageViewModel(
         }
     }
 
-    fun requestShizukuRefresh() {
+    fun requestPrivilegeRefresh() {
         _chromeState.update { state ->
-            state.copy(shizukuRefreshToken = state.shizukuRefreshToken + 1)
+            state.copy(privilegeRefreshToken = state.privilegeRefreshToken + 1)
         }
     }
 
@@ -449,7 +450,7 @@ internal class SettingsPageViewModel(
     fun refreshPermissionKeepAlive(
         controller: SettingsPermissionKeepAliveController,
         notificationPermissionGranted: Boolean,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
     ) {
         permissionKeepAliveRefreshJob?.cancel()
         permissionKeepAliveRefreshJob =
@@ -457,7 +458,7 @@ internal class SettingsPageViewModel(
                 refreshPermissionKeepAliveNow(
                     controller = controller,
                     notificationPermissionGranted = notificationPermissionGranted,
-                    shizukuStatus = shizukuStatus,
+                    privilegeStatus = privilegeStatus,
                 )
             }
     }
@@ -465,12 +466,12 @@ internal class SettingsPageViewModel(
     suspend fun refreshPermissionKeepAliveNow(
         controller: SettingsPermissionKeepAliveController,
         notificationPermissionGranted: Boolean,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
     ) {
         val snapshot =
             controller.loadSnapshot(
                 notificationPermissionGranted = notificationPermissionGranted,
-                shizukuStatus = shizukuStatus,
+                privilegeStatus = privilegeStatus,
             )
         _permissionKeepAliveState.update { snapshot }
     }

@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.privilege.PrivilegeStatus
 
 internal fun matches(row: InfoRow, query: String): Boolean {
     if (query.isBlank()) return true
@@ -205,8 +206,8 @@ internal fun capabilityRows(context: Context): List<InfoRow> {
 internal suspend fun buildSectionRowsAsync(
     section: SectionKind,
     context: Context,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     forceRefresh: Boolean = false,
     dataSnapshot: OsPageDataSnapshot? = null,
     dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
@@ -218,7 +219,7 @@ internal suspend fun buildSectionRowsAsync(
             val snapshotRows = dataSnapshot?.settingsSections?.rowsFor(section)
             val rows = snapshotRows ?: settingsRowsForSectionAsync(
                 section = section,
-                shizukuApiUtils = shizukuApiUtils,
+                privilegedShell = privilegedShell,
                 dispatcher = dispatcher
             )
             withContext(dispatcher) {
@@ -257,7 +258,7 @@ internal suspend fun buildSectionRowsAsync(
         SectionKind.LINUX -> {
             val linuxProbe = dataSnapshot?.linuxProbe
                 ?: loadLinuxProbeSnapshotAsync(
-                    shizukuApiUtils = shizukuApiUtils,
+                    privilegedShell = privilegedShell,
                     dispatcher = dispatcher
                 )
             withContext(dispatcher) {
@@ -266,7 +267,7 @@ internal suspend fun buildSectionRowsAsync(
                     .map { InfoRow("env.${it.key}", it.value) }
                 cleanRows(
                     listOf(
-                        InfoRow("Shizuku Status", shizukuStatus),
+                        InfoRow(PRIVILEGE_STATUS_ROW_LABEL, privilegeStatus.text),
                         InfoRow(
                             "uname-a",
                             linuxProbe.preferredValue { uname }
@@ -303,12 +304,12 @@ internal data class ExportSections(
 
 internal suspend fun buildExportSectionsAsync(
     context: Context,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): ExportSections {
     val snapshot = OsPageDataSnapshot.loadForExportAsync(
-        shizukuApiUtils = shizukuApiUtils,
+        privilegedShell = privilegedShell,
         dispatcher = dispatcher
     )
     val rowsBySection =
@@ -318,8 +319,8 @@ internal suspend fun buildExportSectionsAsync(
                     buildSectionRowsAsync(
                         section = section,
                         context = context,
-                        shizukuStatus = shizukuStatus,
-                        shizukuApiUtils = shizukuApiUtils,
+                        privilegeStatus = privilegeStatus,
+                        privilegedShell = privilegedShell,
                         dataSnapshot = snapshot,
                         dispatcher = dispatcher,
                     )
@@ -368,14 +369,14 @@ internal fun appendSectionMarkdown(builder: StringBuilder, title: String, rows: 
 
 internal fun buildOsMarkdown(
     generatedAt: String,
-    shizukuStatus: String,
+    privilegeStatus: String,
     sections: ExportSections
 ): String {
     return buildString {
         appendLine("# KeiOS OS Export")
         appendLine()
         appendLine("- Generated at: $generatedAt")
-        appendLine("- Shizuku status: $shizukuStatus")
+        appendLine("- Privilege status: $privilegeStatus")
         appendLine("- Format: Markdown")
         appendLine()
         appendSectionMarkdown(this, "TopInfo", sections.topInfo)
@@ -390,7 +391,7 @@ internal fun buildOsMarkdown(
 
 internal fun buildOsCardMarkdown(
     generatedAt: String,
-    shizukuStatus: String,
+    privilegeStatus: String,
     cardTitle: String,
     rows: List<InfoRow>
 ): String {
@@ -398,7 +399,7 @@ internal fun buildOsCardMarkdown(
         appendLine("# KeiOS OS Export")
         appendLine()
         appendLine("- Generated at: $generatedAt")
-        appendLine("- Shizuku status: $shizukuStatus")
+        appendLine("- Privilege status: $privilegeStatus")
         appendLine("- Card: $cardTitle")
         appendLine("- Rows: ${rows.size}")
         appendLine("- Format: Markdown (single-card)")
@@ -409,14 +410,14 @@ internal fun buildOsCardMarkdown(
 
 internal fun buildOsCardJson(
     generatedAt: String,
-    shizukuStatus: String,
+    privilegeStatus: String,
     cardTitle: String,
     rows: List<InfoRow>
 ): String {
     return buildJsonObject {
         put("schema", "keios.os.card.v1")
         put("generatedAt", generatedAt)
-        put("shizukuStatus", shizukuStatus)
+        put("privilegeStatus", privilegeStatus)
         put("cardTitle", cardTitle)
         put("rowCount", rows.size)
         put(
@@ -434,3 +435,5 @@ internal fun buildOsCardJson(
         )
     }.encodeCompact(KeiJson.pretty)
 }
+
+internal const val PRIVILEGE_STATUS_ROW_LABEL = "Privilege Status"

@@ -19,7 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundHost
@@ -34,12 +34,12 @@ import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 
 class OsShellRunnerActivity : ComponentActivity() {
     private var canRunShellCommand by mutableStateOf(false)
-    private val shizukuApiUtils = ShizukuApiUtils()
+    private val privilegedShell = PrivilegedShell()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        shizukuApiUtils.attach { refreshShellCommandReadyState() }
+        privilegedShell.attach { refreshShellCommandReadyState() }
 
         setContent {
             val shellRunnerViewModel: OsShellRunnerViewModel = viewModel()
@@ -81,11 +81,11 @@ class OsShellRunnerActivity : ComponentActivity() {
                             OsShellRunnerPage(
                                 canRunShellCommand = canRunShellCommand,
                                 onRequestShizukuPermission = {
-                                    shizukuApiUtils.requestPermissionIfNeeded()
+                                    privilegedShell.requestAccessIfNeeded()
                                     refreshShellCommandReadyState()
                                 },
                                 onRunShellCommand = { command, timeoutMs, onOutput ->
-                                    shizukuApiUtils.execCommandCancellableStreaming(
+                                    privilegedShell.execCommandCancellableStreaming(
                                         command = command,
                                         timeoutMs = timeoutMs
                                     ) { output -> onOutput(output) }
@@ -100,12 +100,12 @@ class OsShellRunnerActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        shizukuApiUtils.detach()
+        privilegedShell.detach()
         super.onDestroy()
     }
 
     private fun refreshShellCommandReadyState() {
-        canRunShellCommand = shizukuApiUtils.canUseCommand()
+        canRunShellCommand = privilegedShell.canUseCommand()
     }
 
     companion object {

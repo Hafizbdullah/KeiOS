@@ -281,8 +281,8 @@ internal fun rememberHomePageOverviewCardState(
                     minWidth = 78.dp,
                 ),
                 HomeHeaderStatusPillState(
-                    label = content.homeStatusShizuku,
-                    color = if (content.shizukuGranted) content.runningColor else content.stoppedColor,
+                    label = content.homeStatusPrivilege,
+                    color = if (content.privilegeGranted) content.runningColor else content.stoppedColor,
                     minWidth = 70.dp,
                     contentPadding =
                         androidx.compose.foundation.layout.PaddingValues(

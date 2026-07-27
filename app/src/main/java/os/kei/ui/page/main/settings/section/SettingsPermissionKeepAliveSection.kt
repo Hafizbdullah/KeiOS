@@ -25,6 +25,15 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import java.util.Locale
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.dp
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.ui.page.main.settings.support.SettingsPickerItem
+import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 
 @Composable
 internal fun SettingsPermissionKeepAliveSection(
@@ -125,7 +134,8 @@ private fun SettingsPermissionCard(
     ) {
         NotificationPermissionItem(state = state, actions = actions)
         AppListAccessItem(state = state, actions = actions)
-        ShizukuPermissionItem(state = state, actions = actions)
+        PrivilegedModePickerItem(state = state, actions = actions)
+        PrivilegedAccessItem(state = state, actions = actions)
     }
 }
 
@@ -253,12 +263,12 @@ private fun AppListAccessItem(
                     } else {
                         stringResource(R.string.common_refresh)
                     },
-                enabled = state.appListSettingsActionAvailable || state.shizukuGranted,
+                enabled = state.appListSettingsActionAvailable || state.privilegeGranted,
                 onClick = {
                     if (state.appListSettingsActionAvailable) {
                         actions.onOpenAppListPermissionSettings()
                     } else {
-                        actions.onCheckOrRequestShizuku()
+                        actions.onCheckOrRequestPrivilege()
                     }
                 },
             )
@@ -267,25 +277,74 @@ private fun AppListAccessItem(
 }
 
 @Composable
-private fun ShizukuPermissionItem(
+private fun PrivilegedModePickerItem(
     state: SettingsPermissionKeepAliveSectionState,
     actions: SettingsPermissionKeepAliveSectionActions,
 ) {
-    SettingsButtonActionItem(
-        title = stringResource(R.string.settings_shizuku_permission_title),
+    var expanded by remember { mutableStateOf(false) }
+    var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
+    val options =
+        listOf(
+            PrivilegeMode.Shizuku to stringResource(R.string.settings_privileged_mode_shizuku),
+            PrivilegeMode.Root to stringResource(R.string.settings_privileged_mode_root),
+        )
+    val selectedIndex = options.indexOfFirst { it.first == state.privilegeMode }.coerceAtLeast(0)
+    SettingsPickerItem(
+        title = stringResource(R.string.settings_privileged_mode_title),
         summary =
-            if (state.shizukuGranted) {
-                stringResource(R.string.settings_shizuku_permission_summary_granted)
+            when (state.privilegeMode) {
+                PrivilegeMode.Shizuku -> stringResource(R.string.settings_privileged_mode_summary_shizuku)
+                PrivilegeMode.Root -> stringResource(R.string.settings_privileged_mode_summary_root)
+            },
+        infoKey = stringResource(R.string.common_scope),
+        infoValue = stringResource(R.string.settings_privileged_mode_scope),
+    ) {
+        AppDropdownSelector(
+            selectedText = options[selectedIndex].second,
+            options = options.map { it.second },
+            selectedIndex = selectedIndex,
+            expanded = expanded,
+            anchorBounds = anchorBounds,
+            onExpandedChange = { expanded = it },
+            onSelectedIndexChange = { index ->
+                options.getOrNull(index)?.first?.let(actions.onPrivilegeModeChanged)
+                expanded = false
+            },
+            onAnchorBoundsChange = { anchorBounds = it },
+            variant = GlassVariant.SheetAction,
+            popupMaxWidth = 260.dp,
+            popupMatchAnchorWidth = true,
+        )
+    }
+}
+
+@Composable
+private fun PrivilegedAccessItem(
+    state: SettingsPermissionKeepAliveSectionState,
+    actions: SettingsPermissionKeepAliveSectionActions,
+) {
+    val isRoot = state.privilegeMode == PrivilegeMode.Root
+    SettingsButtonActionItem(
+        title =
+            if (isRoot) {
+                stringResource(R.string.settings_root_permission_title)
             } else {
-                stringResource(R.string.settings_shizuku_permission_summary_restricted)
+                stringResource(R.string.settings_shizuku_permission_title)
+            },
+        summary =
+            when {
+                isRoot && state.privilegeGranted -> stringResource(R.string.settings_root_permission_summary_granted)
+                isRoot -> stringResource(R.string.settings_root_permission_summary_restricted)
+                state.privilegeGranted -> stringResource(R.string.settings_shizuku_permission_summary_granted)
+                else -> stringResource(R.string.settings_shizuku_permission_summary_restricted)
             },
         infoKey = stringResource(R.string.settings_permissions_info_status),
         infoValue =
-            localizedShizukuStatusText(
-                statusText = state.shizukuStatusText,
-                granted = state.shizukuGranted,
+            localizedPrivilegeStatusText(
+                status = state.privilegeStatus,
+                granted = state.privilegeGranted,
             ).ifBlank {
-                if (state.shizukuGranted) {
+                if (state.privilegeGranted) {
                     stringResource(R.string.settings_shizuku_permission_status_granted)
                 } else {
                     stringResource(R.string.settings_shizuku_permission_status_restricted)
@@ -295,12 +354,12 @@ private fun ShizukuPermissionItem(
             AppStandaloneLiquidTextButton(
                 variant = GlassVariant.Compact,
                 text =
-                    if (state.shizukuGranted) {
-                        stringResource(R.string.common_refresh)
-                    } else {
-                        stringResource(R.string.settings_shizuku_permission_action_request)
+                    when {
+                        state.privilegeGranted -> stringResource(R.string.common_refresh)
+                        isRoot -> stringResource(R.string.settings_root_permission_action_request)
+                        else -> stringResource(R.string.settings_shizuku_permission_action_request)
                     },
-                onClick = actions.onCheckOrRequestShizuku,
+                onClick = actions.onCheckOrRequestPrivilege,
             )
         },
     )
@@ -654,79 +713,3 @@ private fun formatBackgroundRecoveryElapsed(elapsedMs: Long): String =
     } else {
         stringResource(R.string.settings_background_recovery_elapsed_s, elapsedMs / 1000L)
     }
-
-@Composable
-private fun localizedShizukuStatusText(
-    statusText: String,
-    granted: Boolean,
-): String {
-    val trimmed = statusText.trim()
-    if (trimmed.isEmpty()) return ""
-    return when {
-        trimmed == "Shizuku service unavailable (start Shizuku app first)" -> {
-            stringResource(R.string.settings_shizuku_status_service_unavailable)
-        }
-
-        trimmed == "Shizuku service disconnected" -> {
-            stringResource(R.string.settings_shizuku_status_service_disconnected)
-        }
-
-        trimmed == "Shizuku pre-v11 is unsupported" -> {
-            stringResource(R.string.settings_shizuku_status_pre_v11_unsupported)
-        }
-
-        trimmed == "Shizuku permission: not granted" -> {
-            stringResource(R.string.settings_shizuku_status_permission_not_granted)
-        }
-
-        trimmed == "Shizuku permission: denied" -> {
-            stringResource(R.string.settings_shizuku_status_permission_denied)
-        }
-
-        trimmed == "Shizuku permission blocked; grant it in Shizuku manager" -> {
-            stringResource(R.string.settings_shizuku_status_permission_blocked)
-        }
-
-        trimmed == "Requesting Shizuku permission..." -> {
-            stringResource(R.string.settings_shizuku_status_requesting_permission)
-        }
-
-        trimmed == "Shizuku process API unavailable" -> {
-            stringResource(R.string.settings_shizuku_status_process_api_unavailable)
-        }
-
-        trimmed.startsWith("Shizuku command unavailable: unsupported service uid ") -> {
-            stringResource(
-                R.string.settings_shizuku_status_unsupported_service_uid,
-                trimmed.substringAfterLast(' ').ifBlank { "unknown" },
-            )
-        }
-
-        trimmed.startsWith("Shizuku init failed:") -> {
-            stringResource(
-                R.string.settings_shizuku_status_init_failed,
-                trimmed.substringAfter(':').trim().ifBlank { "unknown" },
-            )
-        }
-
-        trimmed.startsWith("Shizuku request failed:") -> {
-            stringResource(
-                R.string.settings_shizuku_status_request_failed,
-                trimmed.substringAfter(':').trim().ifBlank { "unknown" },
-            )
-        }
-
-        trimmed.startsWith("Shizuku permission: granted") -> {
-            stringResource(
-                R.string.settings_shizuku_status_permission_granted_identity,
-                trimmed.substringAfter('(', "").substringBefore(')').ifBlank {
-                    if (granted) "shell" else "unknown"
-                },
-            )
-        }
-
-        else -> {
-            trimmed
-        }
-    }
-}

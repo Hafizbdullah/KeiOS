@@ -12,7 +12,7 @@ import os.kei.core.background.AppForegroundInfoHandler
 import os.kei.core.background.AppShortcutGitHubRefreshResult
 import os.kei.core.log.AppLogger
 import os.kei.core.platform.LocalNetworkPermissionCompat
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.KeiOsMcpToolPlugins
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
@@ -96,7 +96,7 @@ internal object AppShortcutActionHandler {
         }.getOrNull()
         val service = LocalMcpService(
             appContext = appContext,
-            shizukuApiUtils = ShizukuApiUtils(),
+            privilegedShell = PrivilegedShell(),
             appVersionName = packageInfo?.versionName ?: "unknown",
             appVersionCode = packageInfo?.longVersionCode ?: -1L,
             appPackageName = appContext.packageName,

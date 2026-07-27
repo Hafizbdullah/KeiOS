@@ -100,7 +100,7 @@ internal open class SettingsPageRepository(
                 bootCheckEnabled = settings.bootCheckEnabled,
                 screenOnCheckEnabled = settings.screenOnCheckEnabled,
                 secureSettingsReadable = capability.canReadSecureSettings,
-                shizukuStatus = capability.shizukuStatus,
+                privilegeStatus = capability.privilegeStatus,
                 activePolicyCount = settings.activePolicyCount,
                 historyCount = history.size,
                 latestHistory = history.firstOrNull()?.toSettingsUiItem(),

@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import os.kei.R
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.navigation.KeiosRoute
 import os.kei.ui.navigation.Navigator
@@ -27,7 +27,7 @@ fun MainScreen(
     appLabel: String,
     hostState: MainHostUiState,
     hostCallbacks: MainHostCallbacks,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegedShell: PrivilegedShell,
     mcpServerManager: McpServerManager
 ) {
     // The reified route supertype captures the whole sealed hierarchy reflection-free, so the
@@ -38,9 +38,9 @@ fun MainScreen(
     val appContext = context.applicationContext
     val view = LocalView.current
     val currentAppLabel by rememberUpdatedState(appLabel)
-    val currentShizukuStatus by rememberUpdatedState(hostState.shizukuStatus)
+    val currentShizukuStatus by rememberUpdatedState(hostState.privilegeStatus)
     val currentNotificationPermissionGranted by rememberUpdatedState(hostState.notificationPermissionGranted)
-    val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestShizuku)
+    val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestPrivilege)
     val currentOnAppThemeModeChanged by rememberUpdatedState(hostCallbacks.onAppThemeModeChanged)
     val prefsViewModel: MainScreenPrefsViewModel = viewModel()
     val guideNavigationViewModel: MainScreenGuideNavigationViewModel = viewModel()
@@ -127,7 +127,7 @@ fun MainScreen(
             mainReturnState.settingsReturnToken,
             uiPrefsState,
             currentShizukuStatus,
-            shizukuApiUtils,
+            privilegedShell,
             mcpServerManager,
             openGuideDetail,
             effectiveRequestedBottomPage,
@@ -143,8 +143,8 @@ fun MainScreen(
             buildMainScreenPagerCoordinator(
                 settingsReturnToken = mainReturnState.settingsReturnToken,
                 prefsState = uiPrefsState,
-                shizukuStatus = currentShizukuStatus,
-                shizukuApiUtils = shizukuApiUtils,
+                privilegeStatus = currentShizukuStatus,
+                privilegedShell = privilegedShell,
                 mcpServerManager = mcpServerManager,
                 onOpenGuideDetail = openGuideDetail,
                 requestedBottomPage = effectiveRequestedBottomPage,
@@ -176,7 +176,7 @@ fun MainScreen(
         pagerCoordinator = pagerCoordinator,
         prefsState = uiPrefsState,
         appLabel = currentAppLabel,
-        onCheckOrRequestShizuku = currentOnCheckOrRequestShizuku,
+        onCheckOrRequestPrivilege = currentOnCheckOrRequestShizuku,
         notificationPermissionGranted = currentNotificationPermissionGranted,
         onRequestNotificationPermission = hostCallbacks.onRequestNotificationPermission,
         mcpServerManager = mcpServerManager,

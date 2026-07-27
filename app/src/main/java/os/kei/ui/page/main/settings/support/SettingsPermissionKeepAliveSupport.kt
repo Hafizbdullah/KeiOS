@@ -21,9 +21,12 @@ import os.kei.R
 import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.background.AppBackgroundRecoveryStore
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.system.findPropString
 import os.kei.feature.github.data.local.GitHubInstalledAppRepository
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeStatusCode
+import os.kei.core.privilege.PrivilegeModeRuntime
 
 internal enum class SettingsAppListAccessMode {
     Direct,
@@ -60,8 +63,8 @@ internal data class SettingsPermissionKeepAliveSnapshot(
     val appStandbyBucket: SettingsAppStandbyBucketState = SettingsAppStandbyBucketState.Unknown,
     val androidBackgroundSettingsActionAvailable: Boolean = false,
     val backgroundRecoverySnapshot: AppBackgroundRecoverySnapshot = AppBackgroundRecoverySnapshot(),
-    val shizukuGranted: Boolean = false,
-    val shizukuStatusText: String = "",
+    val privilegeGranted: Boolean = false,
+    val privilegeStatus: PrivilegeStatus = PrivilegeStatus.initializing(PrivilegeModeRuntime.mode),
     val appListAccessMode: SettingsAppListAccessMode = SettingsAppListAccessMode.Restricted,
     val appListDetectedCount: Int = 0,
     val appListSettingsActionAvailable: Boolean = false,
@@ -73,11 +76,11 @@ internal data class SettingsPermissionKeepAliveSnapshot(
 @Stable
 internal class SettingsPermissionKeepAliveController(
     private val appContext: Context,
-    private val shizukuApiUtils: ShizukuApiUtils,
+    private val privilegedShell: PrivilegedShell,
 ) {
     suspend fun loadSnapshot(
         notificationPermissionGranted: Boolean,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
     ): SettingsPermissionKeepAliveSnapshot {
         val notificationsEnabled =
             notificationPermissionGranted &&
@@ -86,15 +89,20 @@ internal class SettingsPermissionKeepAliveController(
         val androidBackgroundSnapshot = resolveAndroidBackgroundSnapshot(appContext)
         val backgroundRecoverySnapshot = AppBackgroundRecoveryStore.loadSnapshot()
 
-        val shizukuGranted = shizukuApiUtils.canUseCommand()
-        val shizukuStatusText = shizukuStatus.ifBlank { shizukuApiUtils.currentStatus() }
+        val privilegeGranted = privilegedShell.canUseCommand()
+        val resolvedStatus =
+            if (privilegeStatus.code == PrivilegeStatusCode.Initializing) {
+                privilegedShell.currentStatus()
+            } else {
+                privilegeStatus
+            }
         val oemAutoStartSnapshot = resolveOemAutoStartSnapshot(appContext)
         val appListSettingsActionAvailable =
             GitHubInstalledAppRepository.buildAppListPermissionIntent(appContext) != null
 
         val appListState =
             withContext(AppDispatchers.fileIo) {
-                resolveAppListAccessState(appContext, shizukuApiUtils)
+                resolveAppListAccessState(appContext, privilegedShell)
             }
         return SettingsPermissionKeepAliveSnapshot(
             notificationsEnabled = notificationsEnabled,
@@ -105,8 +113,8 @@ internal class SettingsPermissionKeepAliveController(
             appStandbyBucket = androidBackgroundSnapshot.appStandbyBucket,
             androidBackgroundSettingsActionAvailable = androidBackgroundSnapshot.settingsActionAvailable,
             backgroundRecoverySnapshot = backgroundRecoverySnapshot,
-            shizukuGranted = shizukuGranted,
-            shizukuStatusText = shizukuStatusText,
+            privilegeGranted = privilegeGranted,
+            privilegeStatus = resolvedStatus,
             appListAccessMode = appListState.mode,
             appListDetectedCount = appListState.detectedCount,
             appListSettingsActionAvailable = appListSettingsActionAvailable,
@@ -144,13 +152,13 @@ internal class SettingsPermissionKeepAliveController(
 @Composable
 internal fun rememberSettingsPermissionKeepAliveController(
     context: Context,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegedShell: PrivilegedShell,
 ): SettingsPermissionKeepAliveController {
     val appContext = context.applicationContext
-    return remember(appContext, shizukuApiUtils) {
+    return remember(appContext, privilegedShell) {
         SettingsPermissionKeepAliveController(
             appContext = appContext,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegedShell = privilegedShell,
         )
     }
 }
@@ -183,9 +191,9 @@ private data class SettingsOemAutoStartLaunchPlan(
 
 private suspend fun resolveAppListAccessState(
     context: Context,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegedShell: PrivilegedShell,
 ): SettingsAppListAccessState {
-    val shizukuPackageCount = queryShizukuPackageCount(shizukuApiUtils)
+    val shizukuPackageCount = queryPrivilegedPackageCount(privilegedShell)
     if (shizukuPackageCount > 0) {
         return SettingsAppListAccessState(
             mode = SettingsAppListAccessMode.Shizuku,
@@ -214,8 +222,8 @@ private suspend fun resolveAppListAccessState(
     )
 }
 
-private suspend fun queryShizukuPackageCount(shizukuApiUtils: ShizukuApiUtils): Int {
-    val output = shizukuApiUtils.execCommandCancellable("pm list packages", timeoutMs = 2500L).orEmpty()
+private suspend fun queryPrivilegedPackageCount(privilegedShell: PrivilegedShell): Int {
+    val output = privilegedShell.execCommandCancellable("pm list packages", timeoutMs = 2500L).orEmpty()
     return output
         .lineSequence()
         .count { line -> line.startsWith("package:") }

@@ -11,6 +11,8 @@ import os.kei.feature.keepalive.accessibility.AccessibilityGuardCheckStatus
 import os.kei.ui.page.main.settings.support.SettingsAppListAccessMode
 import os.kei.ui.page.main.settings.support.SettingsAppStandbyBucketState
 import os.kei.ui.page.main.settings.support.SettingsOemAutoStartState
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeMode
 
 @Immutable
 internal data class SettingsPermissionKeepAliveSectionState(
@@ -31,8 +33,9 @@ internal data class SettingsPermissionKeepAliveSectionState(
     val appListAccessMode: SettingsAppListAccessMode,
     val appListDetectedCount: Int,
     val appListSettingsActionAvailable: Boolean,
-    val shizukuGranted: Boolean,
-    val shizukuStatusText: String,
+    val privilegeMode: PrivilegeMode,
+    val privilegeGranted: Boolean,
+    val privilegeStatus: PrivilegeStatus,
     val accessibilityGuardState: SettingsAccessibilityGuardUiState,
 )
 
@@ -43,7 +46,8 @@ internal data class SettingsPermissionKeepAliveSectionActions(
     val onOpenBatteryOptimizationSettings: () -> Unit,
     val onOpenOemAutoStartSettings: () -> Unit,
     val onOpenAppListPermissionSettings: () -> Unit,
-    val onCheckOrRequestShizuku: () -> Unit,
+    val onPrivilegeModeChanged: (PrivilegeMode) -> Unit,
+    val onCheckOrRequestPrivilege: () -> Unit,
     val onAccessibilityGuardDaemonChanged: (Boolean) -> Unit,
     val onAccessibilityGuardBootCheckChanged: (Boolean) -> Unit,
     val onAccessibilityGuardScreenOnChanged: (Boolean) -> Unit,
@@ -60,7 +64,7 @@ internal data class SettingsAccessibilityGuardUiState(
     val bootCheckEnabled: Boolean = false,
     val screenOnCheckEnabled: Boolean = false,
     val secureSettingsReadable: Boolean = false,
-    val shizukuStatus: String = "",
+    val privilegeStatus: String = "",
     val activePolicyCount: Int = 0,
     val historyCount: Int = 0,
     val latestHistory: SettingsAccessibilityGuardHistoryUiItem? = null,

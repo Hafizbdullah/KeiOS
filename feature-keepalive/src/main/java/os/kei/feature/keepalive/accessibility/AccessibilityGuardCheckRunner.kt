@@ -93,7 +93,7 @@ class AccessibilityGuardCheckRunner(
             startedAtMs = startedAtMs,
             finishedAtMs = wallClockMs().coerceAtLeast(startedAtMs),
             elapsedMs = (elapsedClockMs() - startedElapsedMs).coerceAtLeast(timeoutMs.coerceAtLeast(1L)),
-            shizukuStatus = "",
+            privilegeStatus = "",
             failureReason = "timeout",
         )
 

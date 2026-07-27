@@ -17,7 +17,7 @@ object McpToolCatalog {
         "keios.health.ping",
         "keios.app.info",
         "keios.app.version",
-        "keios.shizuku.status",
+        "keios.privilege.status",
         "keios.mcp.runtime.status",
         "keios.mcp.runtime.logs",
         "keios.mcp.runtime.config",

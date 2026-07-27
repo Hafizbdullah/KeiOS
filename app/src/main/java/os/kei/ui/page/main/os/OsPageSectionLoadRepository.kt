@@ -9,7 +9,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
+import os.kei.core.privilege.PrivilegeStatus
 
 internal sealed interface OsSectionLoadResult {
     data object Joined : OsSectionLoadResult
@@ -43,8 +44,8 @@ internal class OsPageSectionLoadRepository(
         forceRefresh: Boolean,
         visibleCardsProvider: () -> Set<OsSectionCard>,
         context: Context,
-        shizukuStatus: String,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegeStatus: PrivilegeStatus,
+        privilegedShell: PrivilegedShell,
     ): OsSectionLoadResult =
         coroutineScope {
             var isLoadOwner = false
@@ -62,8 +63,8 @@ internal class OsPageSectionLoadRepository(
                             buildSectionRowsAsync(
                                 section = section,
                                 context = context,
-                                shizukuStatus = shizukuStatus,
-                                shizukuApiUtils = shizukuApiUtils,
+                                privilegeStatus = privilegeStatus,
+                                privilegedShell = privilegedShell,
                                 forceRefresh = forceRefresh,
                             )
                         }

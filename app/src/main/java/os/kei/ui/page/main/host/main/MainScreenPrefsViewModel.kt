@@ -16,6 +16,7 @@ import os.kei.core.prefs.SuperIslandFloatBehavior
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.prefs.UiPrefsRepository
 import os.kei.core.prefs.UiPrefsSnapshot
+import os.kei.core.privilege.PrivilegeMode
 
 internal class MainScreenPrefsViewModel : ViewModel() {
     private val repository =
@@ -118,6 +119,12 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updatePreloadingEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setPreloadingEnabled(value)
+        }
+    }
+
+    fun updatePrivilegeMode(value: PrivilegeMode) {
+        launchRepositoryUpdate {
+            setPrivilegeModeId(value.storageId)
         }
     }
 

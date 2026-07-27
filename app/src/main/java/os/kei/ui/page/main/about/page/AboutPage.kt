@@ -33,7 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.ui.page.main.about.state.rememberAboutPageColorPalette
 import os.kei.ui.page.main.about.util.openExternalUrl
@@ -56,20 +56,21 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
+import os.kei.core.privilege.PrivilegeStatus
 
 @Composable
 fun AboutPage(
     appLabel: String,
     notificationPermissionGranted: Boolean,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
-    onCheckShizuku: () -> Unit,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
+    onCheckPrivilege: () -> Unit,
     contentBottomPadding: Dp = 72.dp,
     scrollToTopSignal: Int = 0,
     onBack: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val palette = rememberAboutPageColorPalette(shizukuStatus = shizukuStatus)
+    val palette = rememberAboutPageColorPalette(privilegeStatus = privilegeStatus)
     val viewModel: AboutPageViewModel = viewModel()
     val detailsState by viewModel.detailsState.collectAsStateWithLifecycle()
     val chromeState by viewModel.chromeState.collectAsStateWithLifecycle()
@@ -119,19 +120,19 @@ fun AboutPage(
         }
     }
 
-    LaunchedEffect(context, appLabel, notificationPermissionGranted, shizukuStatus, shizukuApiUtils) {
+    LaunchedEffect(context, appLabel, notificationPermissionGranted, privilegeStatus, privilegedShell) {
         viewModel.refreshDetails(
             context = context,
             appLabel = appLabel,
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
             notificationPermissionGranted = notificationPermissionGranted,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegedShell = privilegedShell,
         )
     }
     val permissionEntries = detailsState.permissionEntries
     val componentEntries = detailsState.componentEntries
-    val shizukuDetailMap = detailsState.shizukuDetailMap
-    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
+    val privilegeDetailMap = detailsState.privilegeDetailMap
+    val privilegeReady = privilegeStatus.isCommandReady
     val openLinkFailed = stringResource(R.string.common_open_link_failed)
     val aboutSearchPlaceholder = stringResource(R.string.about_search_placeholder)
     val searchContentDescription = stringResource(R.string.about_search_placeholder)
@@ -267,18 +268,18 @@ fun AboutPage(
             palette = palette,
             searchActive = searchActive,
             expansionState = expansionState,
-            shizukuReady = shizukuReady,
+            privilegeReady = privilegeReady,
             notificationPermissionGranted = notificationPermissionGranted,
-            shizukuDetailMap = shizukuDetailMap,
+            privilegeDetailMap = privilegeDetailMap,
             permissionEntries = permissionEntries,
             componentEntries = componentEntries,
             techDetails = detailsState.techDetails,
         )
     val cardActions =
-        remember(context, openLinkFailed, onCheckShizuku, viewModel) {
+        remember(context, openLinkFailed, onCheckPrivilege, viewModel) {
             AboutCardActions(
                 onExpandedChange = viewModel::updateSectionExpanded,
-                onCheckShizuku = onCheckShizuku,
+                onCheckPrivilege = onCheckPrivilege,
                 onOpenExternalUrl = { url ->
                     if (!openExternalUrl(context, url)) {
                         context.showToast(openLinkFailed)

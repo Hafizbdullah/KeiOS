@@ -10,9 +10,9 @@ data class AccessibilityServiceId(
 }
 
 data class AccessibilityGuardCapability(
-    val shizukuReady: Boolean,
+    val privilegeReady: Boolean,
     val canReadSecureSettings: Boolean,
-    val shizukuStatus: String,
+    val privilegeStatus: String,
     val checkedAtMs: Long,
 )
 
@@ -43,7 +43,7 @@ data class AccessibilityGuardCheckResult(
     val startedAtMs: Long,
     val finishedAtMs: Long,
     val elapsedMs: Long,
-    val shizukuStatus: String,
+    val privilegeStatus: String,
     val failureReason: String,
 )
 
@@ -57,7 +57,7 @@ data class AccessibilityGuardHistoryEntry(
     val healthyCount: Int,
     val warningCount: Int,
     val elapsedMs: Long,
-    val shizukuStatus: String,
+    val privilegeStatus: String,
     val failureReason: String,
 ) {
     companion object

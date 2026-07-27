@@ -29,9 +29,9 @@ internal data class AboutCardRenderState(
     val palette: AboutPageColorPalette,
     val searchActive: Boolean,
     val expansionState: AboutPageSectionExpansionState,
-    val shizukuReady: Boolean,
+    val privilegeReady: Boolean,
     val notificationPermissionGranted: Boolean,
-    val shizukuDetailMap: Map<String, String>,
+    val privilegeDetailMap: Map<String, String>,
     val permissionEntries: List<AboutPermissionEntry>,
     val componentEntries: List<AboutComponentEntry>,
     val techDetails: AboutTechDetails,
@@ -39,7 +39,7 @@ internal data class AboutCardRenderState(
 
 internal data class AboutCardActions(
     val onExpandedChange: (AboutSearchCard, Boolean) -> Unit,
-    val onCheckShizuku: () -> Unit,
+    val onCheckPrivilege: () -> Unit,
     val onOpenExternalUrl: (String) -> Unit,
     val onOpenComponentLab: () -> Unit,
 )
@@ -109,17 +109,17 @@ internal fun LazyListScope.aboutCardItem(
                 AboutRuntimeStatusCardSection(
                     cardColor = palette.runtimeCardColor,
                     accent = palette.accent,
-                    shizukuReady = state.shizukuReady,
+                    privilegeReady = state.privilegeReady,
                     readyColor = palette.readyColor,
                     notReadyColor = palette.notReadyColor,
                     subtitleColor = palette.subtitleColor,
                     notificationPermissionGranted = state.notificationPermissionGranted,
-                    shizukuDetailMap = state.shizukuDetailMap,
+                    privilegeDetailMap = state.privilegeDetailMap,
                     permissionCount = state.permissionEntries.size,
                     componentCount = state.componentEntries.size,
                     expanded = aboutCardExpanded(state.searchActive, state.expansionState, AboutSearchCard.Runtime),
                     onExpandedChange = { actions.onExpandedChange(AboutSearchCard.Runtime, it) },
-                    onCheckShizuku = actions.onCheckShizuku,
+                    onCheckPrivilege = actions.onCheckPrivilege,
                 )
             }
 

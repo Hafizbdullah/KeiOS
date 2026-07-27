@@ -24,7 +24,7 @@ internal fun derivePermissionPresentation(state: SettingsPermissionKeepAliveSect
         active =
             state.notificationsEnabled ||
                 state.notificationPermissionGranted ||
-                state.shizukuGranted ||
+                state.privilegeGranted ||
                 state.appListAccessMode != SettingsAppListAccessMode.Restricted,
     )
 

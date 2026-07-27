@@ -41,7 +41,7 @@ class OsPageExportRepositoryTest {
                     activityShortcutCards = emptyList(),
                     googleSystemServiceDefaults = OsGoogleSystemServiceConfig(),
                     context = context,
-                    shizukuStatus = "granted",
+                    privilegeStatus = "granted",
                 ),
             )
 
@@ -51,7 +51,7 @@ class OsPageExportRepositoryTest {
         assertTrue(document.fileName.startsWith("keios-os-system-table-"))
         assertEquals("keios.os.card.v1", json.optString("schema"))
         assertEquals(context.getString(OsSectionCard.SYSTEM.titleRes), json.optString("cardTitle"))
-        assertEquals("granted", json.optString("shizukuStatus"))
+        assertEquals("granted", json.optString("privilegeStatus"))
         assertTrue(assertNotNull(json.optArray("rows")).size >= 1)
     }
 
@@ -79,7 +79,7 @@ class OsPageExportRepositoryTest {
                         ),
                     googleSystemServiceDefaults = defaults,
                     context = context,
-                    shizukuStatus = "granted",
+                    privilegeStatus = "granted",
                 ),
             )
         val rows = assertNotNull(

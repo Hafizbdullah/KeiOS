@@ -18,6 +18,7 @@ import os.kei.ui.page.main.os.transfer.OsCardImportException
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 import os.kei.ui.page.main.os.transfer.OsShellCardImportPayload
 import os.kei.ui.page.main.os.transfer.OsUnknownCardImportPayload
+import os.kei.core.privilege.PrivilegeStatus
 
 internal class OsPageTransferCoordinator(
     private val scope: CoroutineScope,
@@ -74,7 +75,7 @@ internal class OsPageTransferCoordinator(
         card: OsSectionCard,
         context: Context,
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     ) {
         if (runtimeState.value.exportingCard != null) return
@@ -102,7 +103,7 @@ internal class OsPageTransferCoordinator(
                             activityShortcutCards = persistentState.value.activityShortcutCards,
                             googleSystemServiceDefaults = googleSystemServiceDefaults,
                             context = context.applicationContext,
-                            shizukuStatus = shizukuStatus,
+                            privilegeStatus = privilegeStatus.text,
                         ),
                     )
                 events.emit(

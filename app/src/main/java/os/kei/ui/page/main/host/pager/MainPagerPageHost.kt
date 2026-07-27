@@ -12,7 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -30,10 +30,11 @@ import os.kei.ui.page.main.widget.chrome.LocalAppScaffoldContainerColor
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.testing.KeiOsTestTags
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class MainPagerHomePageState(
-    val shizukuStatus: String,
+    val privilegeStatus: PrivilegeStatus,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
     val visibleBottomPages: Set<BottomPage>,
@@ -59,8 +60,8 @@ internal data class MainPagerHomePageState(
 
 @Stable
 internal data class MainPagerOsPageState(
-    val shizukuStatus: String,
-    val shizukuApiUtils: ShizukuApiUtils,
+    val privilegeStatus: PrivilegeStatus,
+    val privilegedShell: PrivilegedShell,
 )
 
 @Immutable
@@ -119,7 +120,7 @@ internal fun MainPagerPageHost(
                             "Home page state is required for the Home tab"
                         }
                     HomePage(
-                        shizukuStatus = homeState.shizukuStatus,
+                        privilegeStatus = homeState.privilegeStatus,
                         homeAppOverview = homeState.homeAppOverview,
                         mcpOverview = homeState.homeMcpOverview,
                         homeGitHubOverview = homeState.homeGitHubOverview,
@@ -154,8 +155,8 @@ internal fun MainPagerPageHost(
                         }
                     OsPage(
                         runtime = runtime,
-                        shizukuStatus = osState.shizukuStatus,
-                        shizukuApiUtils = osState.shizukuApiUtils,
+                        privilegeStatus = osState.privilegeStatus,
+                        privilegedShell = osState.privilegedShell,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )

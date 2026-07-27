@@ -6,7 +6,7 @@ import os.kei.BuildConfig
 import os.kei.R
 import os.kei.core.platform.AndroidPlatformVersions
 import os.kei.core.security.AdvancedProtectionCompat
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 
 private const val BASELINE_PROFILE_ASSET = "dexopt/baseline.prof"
 private const val BASELINE_PROFILE_METADATA_ASSET = "dexopt/baseline.profm"
@@ -175,7 +175,7 @@ private fun buildAboutUiRows(context: Context): List<AboutInfoRowModel> =
             context.getString(
                 R.string.about_value_permission_bridge,
                 BuildConfig.SHIZUKU_VERSION,
-                ShizukuApiUtils.API_VERSION,
+                PrivilegedShell.SHIZUKU_API_VERSION,
             ),
             AboutInfoIcon.Lock,
         ),

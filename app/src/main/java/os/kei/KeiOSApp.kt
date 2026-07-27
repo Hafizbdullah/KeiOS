@@ -35,6 +35,8 @@ import os.kei.ui.page.main.github.share.GitHubShareImportFlowCoordinator
 import os.kei.ui.page.main.github.share.GitHubShareImportPendingScheduler
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.sync.WebDavAutoSync
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeModeRuntime
 
 private const val COIL_MEMORY_CACHE_PERCENT = 0.25
 private const val COIL_DISK_CACHE_DEFAULT_BYTES = 96L * 1024L * 1024L
@@ -116,6 +118,7 @@ class KeiOSApp : Application() {
             isDebugBuild = BuildConfig.DEBUG,
             applicationId = BuildConfig.APPLICATION_ID,
         )
+        PrivilegeModeRuntime.configure(PrivilegeMode.fromStorageId(UiPrefs.getPrivilegeModeId()))
         UiPrefs.configureRuntimeDefaults(
             buildType = BuildConfig.BUILD_TYPE,
             defaultLogLevelId = BuildConfig.DEFAULT_LOG_LEVEL_ID,

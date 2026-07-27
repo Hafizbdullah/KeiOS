@@ -2,13 +2,14 @@ package os.kei.ui.page.main.os.state
 
 import android.content.Context
 import os.kei.R
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsPageViewModel
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.SectionKind
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.state.PageActionState
+import os.kei.core.privilege.PrivilegeStatus
 
 internal data class OsPageActionState(
     val ensureLoad: suspend (SectionKind, Boolean) -> Unit,
@@ -21,8 +22,8 @@ internal data class OsPageActionState(
 
 internal fun createOsPageActionState(
     context: Context,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     osPageViewModel: OsPageViewModel,
     googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
     shellRunNoOutputText: String,
@@ -33,8 +34,8 @@ internal fun createOsPageActionState(
             section = section,
             forceRefresh = forceRefresh,
             context = context,
-            shizukuStatus = shizukuStatus,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegeStatus = privilegeStatus,
+            privilegedShell = privilegedShell,
         )
     }
 
@@ -65,7 +66,7 @@ internal fun createOsPageActionState(
     val runShellCommandCard: (OsShellCommandCard) -> Unit = { card ->
         osPageViewModel.runShellCommandCard(
             card = card,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegedShell = privilegedShell,
             shellRunNoOutputText = shellRunNoOutputText,
             shellRunFailedOutput = { reason ->
                 context.getString(R.string.os_shell_card_toast_run_failed, reason)

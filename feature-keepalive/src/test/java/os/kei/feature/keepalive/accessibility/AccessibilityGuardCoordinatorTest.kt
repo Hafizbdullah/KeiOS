@@ -15,7 +15,7 @@ class AccessibilityGuardCoordinatorTest {
         assertEquals(1, result.checkCount)
         assertEquals(1, result.healthyCount)
         assertEquals(0, result.warningCount)
-        assertEquals("ready", result.shizukuStatus)
+        assertEquals("ready", result.privilegeStatus)
     }
 
     @Test
@@ -67,8 +67,8 @@ class AccessibilityGuardCoordinatorTest {
         val snapshot = coordinator.loadSnapshot()
 
         assertEquals(false, snapshot.capability.canReadSecureSettings)
-        assertEquals(false, snapshot.capability.shizukuReady)
-        assertEquals("shizuku unavailable", snapshot.capability.shizukuStatus)
+        assertEquals(false, snapshot.capability.privilegeReady)
+        assertEquals("shizuku unavailable", snapshot.capability.privilegeStatus)
         assertEquals(20_000L, snapshot.capability.checkedAtMs)
     }
 

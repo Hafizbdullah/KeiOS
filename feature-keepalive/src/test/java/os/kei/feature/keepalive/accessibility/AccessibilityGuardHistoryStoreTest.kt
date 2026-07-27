@@ -248,7 +248,7 @@ class AccessibilityGuardHistoryStoreTest {
                 startedAtMs = 1_000L,
                 finishedAtMs = 1_200L,
                 elapsedMs = 200L,
-                shizukuStatus = "permission denied",
+                privilegeStatus = "permission denied",
                 failureReason = "permission denied",
             )
 
@@ -306,7 +306,7 @@ class AccessibilityGuardHistoryStoreTest {
             healthyCount = healthyCount,
             warningCount = warningCount,
             elapsedMs = 25L,
-            shizukuStatus = "ready",
+            privilegeStatus = "ready",
             failureReason = failureReason,
         )
 }

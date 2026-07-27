@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showLiquidToastOnly
 import os.kei.core.ext.showToast
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.components.OsPageMainList
 import os.kei.ui.page.main.os.components.OsPageMainListChromeState
@@ -35,13 +35,14 @@ import os.kei.ui.page.main.os.state.rememberOsPageUiContext
 import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import os.kei.core.privilege.PrivilegeStatus
 
 @Composable
 @Suppress("FunctionName")
 fun OsPage(
     runtime: MainPageRuntime,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -67,7 +68,7 @@ fun OsPage(
     val cachedColor = uiContext.cachedColor
     val refreshingColor = uiContext.refreshingColor
     val syncedColor = uiContext.syncedColor
-    val shizukuReady = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
+    val privilegeReady = privilegeStatus.isCommandReady
     val lifecycleOwner = LocalLifecycleOwner.current
     val osPageViewModel: OsPageViewModel = viewModel()
     LaunchedEffect(
@@ -339,8 +340,8 @@ fun OsPage(
     val actionState =
         createOsPageActionState(
             context = context,
-            shizukuStatus = shizukuStatus,
-            shizukuApiUtils = shizukuApiUtils,
+            privilegeStatus = privilegeStatus,
+            privilegedShell = privilegedShell,
             osPageViewModel = osPageViewModel,
             googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
             shellRunNoOutputText = textBundle.shellRunNoOutputText,
@@ -377,9 +378,9 @@ fun OsPage(
         },
     )
 
-    BindOsShizukuInvalidation(
-        shizukuReady = shizukuReady,
-        onInvalidate = osPageViewModel::invalidateShizukuSections,
+    BindOsPrivilegeInvalidation(
+        privilegeReady = privilegeReady,
+        onInvalidate = osPageViewModel::invalidatePrivilegeSections,
     )
 
     BindOsExpandedStatePersistence(
@@ -441,7 +442,7 @@ fun OsPage(
         rememberOsPageDerivedState(
             context = context,
             rowsDerivedState = rowsDerivedState,
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
             shellSavedCountLabel = textBundle.shellSavedCountLabel,
             shellCommandCards = routeState.shellCommandCards,
             sectionStates = routeState.sectionStates,
@@ -472,7 +473,7 @@ fun OsPage(
             textBundle,
             actionState,
             routeState,
-            shizukuStatus,
+            privilegeStatus,
             osPageViewModel,
         ) {
             createOsPageMainListActions(
@@ -480,7 +481,7 @@ fun OsPage(
                 textBundle = textBundle,
                 actionState = actionState,
                 routeState = routeState,
-                shizukuStatus = shizukuStatus,
+                privilegeStatus = privilegeStatus,
                 osPageViewModel = osPageViewModel,
             )
         }

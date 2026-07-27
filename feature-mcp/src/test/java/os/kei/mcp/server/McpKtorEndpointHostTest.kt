@@ -25,6 +25,7 @@ import java.net.ServerSocket
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import os.kei.core.privilege.PrivilegedShell
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = McpServerTestApp::class, sdk = [35])
@@ -307,7 +308,7 @@ class McpKtorEndpointHostTest {
     private fun testEnvironment(): McpToolEnvironment {
         return McpToolEnvironment(
             appContext = androidx.test.core.app.ApplicationProvider.getApplicationContext(),
-            shizukuApiUtils = os.kei.core.shizuku.ShizukuApiUtils(),
+            privilegedShell = PrivilegedShell(),
             appVersionName = "test",
             appVersionCode = 1L,
             appPackageName = "os.kei.test",

@@ -2,6 +2,8 @@ package os.kei.ui.page.main.host.main
 
 import androidx.compose.runtime.Immutable
 import os.kei.core.prefs.AppThemeMode
+import os.kei.core.privilege.PrivilegeModeRuntime
+import os.kei.core.privilege.PrivilegeStatus
 
 /**
  * Single immutable snapshot of all `MainActivity`-owned UI state that flows into [MainScreen].
@@ -19,7 +21,7 @@ import os.kei.core.prefs.AppThemeMode
  */
 @Immutable
 data class MainHostUiState(
-    val shizukuStatus: String,
+    val privilegeStatus: PrivilegeStatus,
     val appThemeMode: AppThemeMode,
     val notificationPermissionGranted: Boolean,
     val transientExternalLaunchActive: Boolean,
@@ -35,7 +37,7 @@ data class MainHostUiState(
 ) {
     companion object {
         val Initial: MainHostUiState = MainHostUiState(
-            shizukuStatus = "Shizuku status: initializing...",
+            privilegeStatus = PrivilegeStatus.initializing(PrivilegeModeRuntime.mode),
             appThemeMode = AppThemeMode.FOLLOW_SYSTEM,
             notificationPermissionGranted = true,
             transientExternalLaunchActive = false,
@@ -59,7 +61,7 @@ data class MainHostUiState(
  */
 @Immutable
 class MainHostCallbacks(
-    val onCheckOrRequestShizuku: () -> Unit,
+    val onCheckOrRequestPrivilege: () -> Unit,
     val onRequestNotificationPermission: () -> Unit,
     val onAppThemeModeChanged: (AppThemeMode) -> Unit,
     val onRequestedBottomPageConsumed: () -> Unit

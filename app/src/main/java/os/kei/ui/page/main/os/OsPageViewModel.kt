@@ -24,13 +24,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionField
 import os.kei.ui.page.main.os.state.OsCardImportTarget
 import os.kei.ui.page.main.os.transfer.OsCardImportPreview
+import os.kei.core.privilege.PrivilegeStatus
 
 @OptIn(FlowPreview::class)
 internal class OsPageViewModel : ViewModel() {
@@ -472,18 +473,18 @@ internal class OsPageViewModel : ViewModel() {
         section: SectionKind,
         forceRefresh: Boolean,
         context: Context,
-        shizukuStatus: String,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegeStatus: PrivilegeStatus,
+        privilegedShell: PrivilegedShell,
     ) = sectionController.ensureSectionLoaded(
         section = section,
         forceRefresh = forceRefresh,
         context = context,
-        shizukuStatus = shizukuStatus,
-        shizukuApiUtils = shizukuApiUtils,
+        privilegeStatus = privilegeStatus,
+        privilegedShell = privilegedShell,
     )
 
-    fun invalidateShizukuSections() {
-        sectionController.invalidateShizukuSections()
+    fun invalidatePrivilegeSections() {
+        sectionController.invalidatePrivilegeSections()
     }
 
     fun applySectionCardVisibility(
@@ -518,13 +519,13 @@ internal class OsPageViewModel : ViewModel() {
 
     fun runShellCommandCard(
         card: OsShellCommandCard,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
         shellRunNoOutputText: String,
         shellRunFailedOutput: (String) -> String,
         builtInShellCommandCards: List<OsShellCommandCard>,
     ) = cardCoordinator.runShellCommandCard(
         card = card,
-        shizukuApiUtils = shizukuApiUtils,
+        privilegedShell = privilegedShell,
         shellRunNoOutputText = shellRunNoOutputText,
         shellRunFailedOutput = shellRunFailedOutput,
         builtInShellCommandCards = builtInShellCommandCards,
@@ -542,13 +543,13 @@ internal class OsPageViewModel : ViewModel() {
         card: OsSectionCard,
         context: Context,
         googleSystemServiceDefaults: OsGoogleSystemServiceConfig,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
         ensureLoad: suspend (SectionKind, Boolean) -> Unit,
     ) = transferCoordinator.prepareSectionCardExport(
         card = card,
         context = context,
         googleSystemServiceDefaults = googleSystemServiceDefaults,
-        shizukuStatus = shizukuStatus,
+        privilegeStatus = privilegeStatus,
         ensureLoad = ensureLoad,
     )
 

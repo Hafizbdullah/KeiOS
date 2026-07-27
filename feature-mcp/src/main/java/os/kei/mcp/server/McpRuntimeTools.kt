@@ -1,7 +1,7 @@
 package os.kei.mcp.server
 
 import io.modelcontextprotocol.kotlin.sdk.server.Server
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 
 internal class McpRuntimeTools(
     private val environment: McpToolEnvironment
@@ -22,7 +22,7 @@ internal class McpRuntimeTools(
                 appendLine("package=$appPackageName")
                 appendLine("versionName=$appVersionName")
                 appendLine("versionCode=$appVersionCode")
-                appendLine("shizukuApi=${ShizukuApiUtils.API_VERSION}")
+                appendLine("shizukuApi=${PrivilegedShell.SHIZUKU_API_VERSION}")
             }.trim()
         }
 
@@ -30,8 +30,9 @@ internal class McpRuntimeTools(
             "versionName=$appVersionName\nversionCode=$appVersionCode"
         }
 
-        server.addMcpTextTool(environment, name = "keios.shizuku.status") { _ ->
-            environment.shizukuApiUtils.currentStatus()
+        server.addMcpTextTool(environment, name = "keios.privilege.status") { _ ->
+            val status = environment.privilegedShell.currentStatus()
+            "mode=${status.mode.storageId}\nready=${status.isCommandReady}\nstatus=${status.text}"
         }
 
         server.addMcpTextTool(environment, name = "keios.mcp.runtime.status") { _ ->

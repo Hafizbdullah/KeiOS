@@ -16,6 +16,7 @@ import os.kei.ui.page.main.settings.state.SettingsPageViewModel
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
 import kotlin.time.Duration.Companion.milliseconds
+import os.kei.core.privilege.PrivilegeStatus
 
 @Composable
 internal fun BindSettingsPageEffects(
@@ -25,15 +26,15 @@ internal fun BindSettingsPageEffects(
     batteryOptimizationController: SettingsBatteryOptimizationController,
     permissionKeepAliveController: SettingsPermissionKeepAliveController,
     notificationPermissionGranted: Boolean,
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     cacheDiagnosticsEnabled: Boolean,
     logLevel: AppLogLevel,
-    shizukuRefreshToken: Int,
+    privilegeRefreshToken: Int,
     keepAliveActive: Boolean,
 ) {
     val latestContext = rememberUpdatedState(context)
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
-    val latestShizukuStatus = rememberUpdatedState(shizukuStatus)
+    val latestShizukuStatus = rememberUpdatedState(privilegeStatus)
     val latestCacheDiagnosticsEnabled = rememberUpdatedState(cacheDiagnosticsEnabled)
     val latestLogLevel = rememberUpdatedState(logLevel)
 
@@ -53,7 +54,7 @@ internal fun BindSettingsPageEffects(
             settingsPageViewModel.refreshPermissionKeepAlive(
                 controller = permissionKeepAliveController,
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                shizukuStatus = latestShizukuStatus.value,
+                privilegeStatus = latestShizukuStatus.value,
             )
             if (keepAliveActive) {
                 settingsPageViewModel.refreshAccessibilityGuard(latestContext.value)
@@ -109,14 +110,14 @@ internal fun BindSettingsPageEffects(
             logLevel = logLevel,
         )
     }
-    LaunchedEffect(context, notificationPermissionGranted, shizukuStatus, keepAliveActive) {
+    LaunchedEffect(context, notificationPermissionGranted, privilegeStatus, keepAliveActive) {
         if (!lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             return@LaunchedEffect
         }
         settingsPageViewModel.refreshPermissionKeepAliveNow(
             controller = permissionKeepAliveController,
             notificationPermissionGranted = notificationPermissionGranted,
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
         )
         if (keepAliveActive) {
             settingsPageViewModel.refreshAccessibilityGuardNow(context)
@@ -129,13 +130,13 @@ internal fun BindSettingsPageEffects(
         }
         settingsPageViewModel.refreshAccessibilityGuardNow(context)
     }
-    LaunchedEffect(shizukuRefreshToken) {
-        if (shizukuRefreshToken <= 0) return@LaunchedEffect
+    LaunchedEffect(privilegeRefreshToken) {
+        if (privilegeRefreshToken <= 0) return@LaunchedEffect
         repeat(8) {
             settingsPageViewModel.refreshPermissionKeepAliveNow(
                 controller = permissionKeepAliveController,
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                shizukuStatus = latestShizukuStatus.value,
+                privilegeStatus = latestShizukuStatus.value,
             )
             if (keepAliveActive) {
                 settingsPageViewModel.refreshAccessibilityGuardNow(latestContext.value)

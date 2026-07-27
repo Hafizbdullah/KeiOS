@@ -5,7 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -125,7 +125,7 @@ class McpToolRegistrationTest {
     private fun createService(): LocalMcpService {
         return LocalMcpService(
             appContext = ApplicationProvider.getApplicationContext(),
-            shizukuApiUtils = ShizukuApiUtils(),
+            privilegedShell = PrivilegedShell(),
             appVersionName = "test",
             appVersionCode = 1L,
             appPackageName = "os.kei.test",

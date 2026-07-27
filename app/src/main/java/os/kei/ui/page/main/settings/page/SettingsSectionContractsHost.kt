@@ -17,6 +17,7 @@ import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationControlle
 import os.kei.ui.page.main.settings.support.SettingsBatteryOptimizationSnapshot
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveController
 import os.kei.ui.page.main.settings.support.SettingsPermissionKeepAliveSnapshot
+import os.kei.core.privilege.PrivilegeMode
 
 @Composable
 internal fun rememberSettingsPageSectionContracts(
@@ -71,7 +72,9 @@ internal fun rememberSettingsPageSectionContracts(
     textCopyCapabilityExpanded: Boolean,
     onTextCopyCapabilityExpandedChanged: (Boolean) -> Unit,
     onRequestNotificationPermission: () -> Unit,
-    onCheckOrRequestShizuku: () -> Unit,
+    privilegeMode: PrivilegeMode,
+    onPrivilegeModeChanged: (PrivilegeMode) -> Unit,
+    onCheckOrRequestPrivilege: () -> Unit,
 ): SettingsSectionContractBundle =
     rememberSettingsSectionContractBundle(
         notificationPermissionGranted = notificationPermissionGranted,
@@ -112,8 +115,9 @@ internal fun rememberSettingsPageSectionContracts(
         appListAccessMode = permissionKeepAliveState.appListAccessMode,
         appListDetectedCount = permissionKeepAliveState.appListDetectedCount,
         appListSettingsActionAvailable = permissionKeepAliveState.appListSettingsActionAvailable,
-        shizukuGranted = permissionKeepAliveState.shizukuGranted,
-        shizukuStatusText = permissionKeepAliveState.shizukuStatusText,
+        privilegeMode = privilegeMode,
+        privilegeGranted = permissionKeepAliveState.privilegeGranted,
+        privilegeStatus = permissionKeepAliveState.privilegeStatus,
         accessibilityGuardState = accessibilityGuardState,
         textCopyCapabilityExpanded = textCopyCapabilityExpanded,
         pageUiState = pageUiState,
@@ -179,7 +183,8 @@ internal fun rememberSettingsPageSectionContracts(
                 messageRes = R.string.settings_app_list_access_toast_open_failed,
             )
         },
-        onCheckOrRequestShizuku = onCheckOrRequestShizuku,
+        onPrivilegeModeChanged = onPrivilegeModeChanged,
+        onCheckOrRequestPrivilege = onCheckOrRequestPrivilege,
         onAccessibilityGuardDaemonChanged = { enabled ->
             settingsPageViewModel.updateAccessibilityGuardDaemonEnabled(
                 context = context,

@@ -11,6 +11,7 @@ import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class HomePageContentState(
@@ -20,12 +21,12 @@ internal data class HomePageContentState(
     val homeStatusMcp: String,
     val homeStatusGitHub: String,
     val homeStatusWebDav: String,
-    val homeStatusShizuku: String,
+    val homeStatusPrivilege: String,
     val homeCardMcp: String,
     val homeCardGitHub: String,
     val homeCardWebDav: String,
     val homeCardBa: String,
-    val shizukuGranted: Boolean,
+    val privilegeGranted: Boolean,
     val runningColor: Color,
     val stoppedColor: Color,
     val inactiveColor: Color,
@@ -84,7 +85,7 @@ internal data class HomePageContentColors(
 
 @Composable
 internal fun rememberHomePageContentState(
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
@@ -104,7 +105,7 @@ internal fun rememberHomePageContentState(
             )
         }
     return remember(
-        shizukuStatus,
+        privilegeStatus,
         appOverview,
         mcpOverview,
         githubOverview,
@@ -115,7 +116,7 @@ internal fun rememberHomePageContentState(
         colors,
     ) {
         deriveHomePageContentState(
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
             appOverview = appOverview,
             mcpOverview = mcpOverview,
             githubOverview = githubOverview,

@@ -20,7 +20,8 @@ private const val HISTORY_EXPORT_SCHEMA_VERSION = 2
 private const val DEFAULT_MAX_ENTRIES = 500
 private const val DEFAULT_MAX_BYTES = 1L * 1024L * 1024L
 private const val MAX_TRIGGER_ACTION_LENGTH = 80
-private const val MAX_SHIZUKU_STATUS_LENGTH = 160
+private const val LEGACY_PRIVILEGE_STATUS_KEY = "shizukuStatus"
+private const val MAX_PRIVILEGE_STATUS_LENGTH = 160
 private const val MAX_FAILURE_REASON_LENGTH = 512
 private const val STARTUP_HEALTHY_DEDUP_WINDOW_MS = 3_000L
 
@@ -156,7 +157,7 @@ class AccessibilityGuardHistoryStore(
                 put("healthyCount", normalized.healthyCount)
                 put("warningCount", normalized.warningCount)
                 put("elapsedMs", normalized.elapsedMs)
-                put("shizukuStatus", normalized.shizukuStatus)
+                put("privilegeStatus", normalized.privilegeStatus)
                 put("failureReason", normalized.failureReason)
             }
 
@@ -199,7 +200,11 @@ class AccessibilityGuardHistoryStore(
                             ),
                         ),
                     elapsedMs = obj.optLong("elapsedMs", 0L),
-                    shizukuStatus = obj.optString("shizukuStatus").trim(),
+                    privilegeStatus =
+                        obj
+                            .optString("privilegeStatus")
+                            .ifBlank { obj.optString(LEGACY_PRIVILEGE_STATUS_KEY) }
+                            .trim(),
                     failureReason = obj.optString("failureReason").trim(),
                 ).normalizedForHistory()
             }.getOrNull()
@@ -222,7 +227,7 @@ fun AccessibilityGuardHistoryEntry.Companion.fromResult(
         healthyCount = result.healthyCount,
         warningCount = result.warningCount,
         elapsedMs = result.elapsedMs,
-        shizukuStatus = result.shizukuStatus,
+        privilegeStatus = result.privilegeStatus,
         failureReason = result.failureReason,
     ).normalizedForHistory()
 
@@ -277,7 +282,7 @@ private fun AccessibilityGuardHistoryEntry.normalizedForHistory(): Accessibility
         healthyCount = healthyCount.coerceIn(0, normalizedCheckCount),
         warningCount = warningCount.coerceAtLeast(0),
         elapsedMs = elapsedMs.coerceAtLeast(0L),
-        shizukuStatus = shizukuStatus.compactHistoryText(MAX_SHIZUKU_STATUS_LENGTH),
+        privilegeStatus = privilegeStatus.compactHistoryText(MAX_PRIVILEGE_STATUS_LENGTH),
         failureReason = failureReason.compactHistoryText(MAX_FAILURE_REASON_LENGTH),
     )
 }
@@ -306,7 +311,7 @@ private fun AccessibilityGuardHistoryEntry.isSameStartupHealthyBurst(
     return checkCount == other.checkCount &&
         healthyCount == other.healthyCount &&
         warningCount == other.warningCount &&
-        shizukuStatus == other.shizukuStatus
+        privilegeStatus == other.privilegeStatus
 }
 
 private fun AccessibilityGuardHistoryEntry.isStartupHealthySnapshot(): Boolean =

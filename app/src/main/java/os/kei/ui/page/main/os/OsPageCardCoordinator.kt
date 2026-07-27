@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityCardEditMode
 
@@ -67,7 +67,7 @@ internal class OsPageCardCoordinator(
 
     fun runShellCommandCard(
         card: OsShellCommandCard,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
         shellRunNoOutputText: String,
         shellRunFailedOutput: (String) -> String,
         builtInShellCommandCards: List<OsShellCommandCard>,
@@ -78,8 +78,8 @@ internal class OsPageCardCoordinator(
             return
         }
         if (runtimeState.value.runningShellCommandCardIds.contains(card.id)) return
-        if (!shizukuApiUtils.canUseCommand()) {
-            shizukuApiUtils.requestPermissionIfNeeded()
+        if (!privilegedShell.canUseCommand()) {
+            privilegedShell.requestAccessIfNeeded()
             events.tryEmit(OsPageEvent.ShellCommandCardNoPermission)
             return
         }
@@ -91,7 +91,7 @@ internal class OsPageCardCoordinator(
                 val output =
                     shellCommandRepository
                         .runCommand(
-                            shizukuApiUtils = shizukuApiUtils,
+                            privilegedShell = privilegedShell,
                             command = command,
                         ).orEmpty()
                         .trim()

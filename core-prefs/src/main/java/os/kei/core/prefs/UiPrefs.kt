@@ -17,6 +17,7 @@ data class UiPrefsSnapshot(
     val homeDynamicFullEffectEnabled: Boolean,
     val preloadingEnabled: Boolean,
     val launcherIconDesign: LauncherIconDesign,
+    val privilegeModeId: String,
     val nonHomeBackgroundEnabled: Boolean,
     val nonHomeBackgroundUri: String,
     val nonHomeBackgroundOpacity: Float,
@@ -119,6 +120,8 @@ object UiPrefs {
     private const val KEY_HOME_DYNAMIC_FULL_EFFECT = "home_dynamic_full_effect"
     private const val KEY_PRELOADING_ENABLED = "preloading_enabled"
     private const val KEY_LAUNCHER_ICON_DESIGN = "launcher_icon_design"
+    private const val KEY_PRIVILEGE_MODE = "privilege_mode"
+    const val PRIVILEGE_MODE_DEFAULT_ID = "shizuku"
     private const val KEY_NON_HOME_BACKGROUND_ENABLED = "non_home_background_enabled"
     private const val KEY_NON_HOME_BACKGROUND_URI = "non_home_background_uri"
     private const val KEY_NON_HOME_BACKGROUND_OPACITY = "non_home_background_opacity"
@@ -243,6 +246,19 @@ object UiPrefs {
 
     fun setLauncherIconDesign(value: LauncherIconDesign) {
         kv().encode(KEY_LAUNCHER_ICON_DESIGN, value.storageId)
+    }
+
+    /**
+     * Storage id of the selected privileged backend.
+     *
+     * The id stays opaque here because the [os.kei.core.privilege.PrivilegeMode] enum lives in
+     * core-system, which this module deliberately does not depend on.
+     */
+    fun getPrivilegeModeId(defaultValue: String = PRIVILEGE_MODE_DEFAULT_ID): String =
+        kv().decodeString(KEY_PRIVILEGE_MODE, defaultValue).orEmpty().trim().ifBlank { defaultValue }
+
+    fun setPrivilegeModeId(value: String) {
+        kv().encode(KEY_PRIVILEGE_MODE, value.trim())
     }
 
     fun isNonHomeBackgroundEnabled(defaultValue: Boolean = false): Boolean = kv().decodeBool(KEY_NON_HOME_BACKGROUND_ENABLED, defaultValue)
@@ -563,6 +579,7 @@ object UiPrefs {
             homeDynamicFullEffectEnabled = true,
             preloadingEnabled = true,
             launcherIconDesign = LauncherIconDesign.Android,
+            privilegeModeId = PRIVILEGE_MODE_DEFAULT_ID,
             nonHomeBackgroundEnabled = false,
             nonHomeBackgroundUri = "",
             nonHomeBackgroundOpacity = NON_HOME_BACKGROUND_OPACITY_DEFAULT,
@@ -602,6 +619,7 @@ object UiPrefs {
             homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, true),
             preloadingEnabled = store.decodeBool(KEY_PRELOADING_ENABLED, true),
             launcherIconDesign = getLauncherIconDesign(),
+            privilegeModeId = getPrivilegeModeId(),
             nonHomeBackgroundEnabled = store.decodeBool(KEY_NON_HOME_BACKGROUND_ENABLED, false),
             nonHomeBackgroundUri = store.decodeString(KEY_NON_HOME_BACKGROUND_URI, "").orEmpty().trim(),
             nonHomeBackgroundOpacity =

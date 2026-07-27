@@ -9,6 +9,7 @@ import os.kei.R
 import os.kei.ui.page.main.os.components.OsOverviewMetric
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class OsPageDerivedState(
@@ -36,7 +37,7 @@ internal data class OsPageDerivedState(
 internal fun rememberOsPageDerivedState(
     context: Context,
     rowsDerivedState: OsPageRowsUiDerivedState,
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     shellSavedCountLabel: String,
     shellCommandCards: List<OsShellCommandCard>,
     sectionStates: Map<SectionKind, SectionState>,
@@ -56,7 +57,7 @@ internal fun rememberOsPageDerivedState(
     val groupedTopInfoRows = rowsDerivedState.groupedTopInfoRows
     val shellRunnerRows =
         remember(
-            shizukuStatus,
+            privilegeStatus,
             context,
             shellSavedCountLabel,
             shellCommandCards,
@@ -64,7 +65,7 @@ internal fun rememberOsPageDerivedState(
             listOf(
                 InfoRow(
                     key = context.getString(R.string.os_shell_card_status_label),
-                    value = shizukuStatus,
+                    value = privilegeStatus.text,
                 ),
                 InfoRow(
                     key = shellSavedCountLabel,

@@ -16,8 +16,9 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class AboutPageChromeState(
@@ -63,15 +64,15 @@ internal class AboutPageViewModel : ViewModel() {
     fun refreshDetails(
         context: Context,
         appLabel: String,
-        shizukuStatus: String,
+        privilegeStatus: PrivilegeStatus,
         notificationPermissionGranted: Boolean,
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
     ) {
         val appContext = context.applicationContext
         val request =
             AboutPageDetailsRequest(
                 appLabel = appLabel,
-                shizukuStatus = shizukuStatus,
+                privilegeStatus = privilegeStatus,
                 notificationPermissionGranted = notificationPermissionGranted,
             )
         if (_detailsState.value.loaded && lastDetailsRequest == request) {
@@ -85,9 +86,9 @@ internal class AboutPageViewModel : ViewModel() {
                     repository.loadDetails(
                         context = appContext,
                         appLabel = appLabel,
-                        shizukuStatus = shizukuStatus,
+                        privilegeStatus = privilegeStatus,
                         notificationPermissionGranted = notificationPermissionGranted,
-                        shizukuApiUtils = shizukuApiUtils,
+                        privilegedShell = privilegedShell,
                     )
             }
     }
@@ -131,7 +132,7 @@ internal class AboutPageViewModel : ViewModel() {
 
 private data class AboutPageDetailsRequest(
     val appLabel: String,
-    val shizukuStatus: String,
+    val privilegeStatus: PrivilegeStatus,
     val notificationPermissionGranted: Boolean,
 )
 

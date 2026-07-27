@@ -57,6 +57,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
+import os.kei.core.privilege.PrivilegeStatus
 
 internal val HomePageCompactLandscapeHeightMax: Dp = 480.dp
 private val HOME_PAGE_HERO_TOP_EXTRA = 24.dp
@@ -81,7 +82,7 @@ internal fun homePageLogoTopPadding(
 
 @Composable
 fun HomePage(
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     homeAppOverview: HomeAppOverview = HomeAppOverview(),
     mcpOverview: HomeMcpOverview = HomeMcpOverview(),
     homeGitHubOverview: HomeGitHubOverview = HomeGitHubOverview(),
@@ -159,7 +160,7 @@ fun HomePage(
         }
     val contentState =
         rememberHomePageContentState(
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
             appOverview = homeAppOverview,
             mcpOverview = mcpOverview,
             githubOverview = homeGitHubOverview,

@@ -4,8 +4,9 @@ import androidx.compose.runtime.Stable
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.McpServerManager
+import os.kei.core.privilege.PrivilegeStatus
 
 @Stable
 internal data class MainScreenPagerCoordinator(
@@ -26,8 +27,8 @@ internal data class MainScreenPagerCoordinator(
     val nonHomeBackgroundSaturation: Float,
     val visibleBottomPageNames: Set<String>,
     val onVisibleBottomPageNamesChange: (Set<String>) -> Unit,
-    val shizukuStatus: String,
-    val shizukuApiUtils: ShizukuApiUtils,
+    val privilegeStatus: PrivilegeStatus,
+    val privilegedShell: PrivilegedShell,
     val mcpServerManager: McpServerManager,
     val onOpenGuideDetail: (String) -> Unit,
     val requestedBottomPage: String?,
@@ -45,8 +46,8 @@ internal data class MainScreenPagerCoordinator(
 internal fun buildMainScreenPagerCoordinator(
     settingsReturnToken: Int,
     prefsState: MainScreenUiPrefsState,
-    shizukuStatus: String,
-    shizukuApiUtils: ShizukuApiUtils,
+    privilegeStatus: PrivilegeStatus,
+    privilegedShell: PrivilegedShell,
     mcpServerManager: McpServerManager,
     onOpenGuideDetail: (String) -> Unit,
     requestedBottomPage: String?,
@@ -78,8 +79,8 @@ internal fun buildMainScreenPagerCoordinator(
         nonHomeBackgroundSaturation = prefsState.nonHomeBackgroundSaturation,
         visibleBottomPageNames = prefsState.visibleBottomPageNames,
         onVisibleBottomPageNamesChange = prefsState::updateVisibleBottomPageNames,
-        shizukuStatus = shizukuStatus,
-        shizukuApiUtils = shizukuApiUtils,
+        privilegeStatus = privilegeStatus,
+        privilegedShell = privilegedShell,
         mcpServerManager = mcpServerManager,
         onOpenGuideDetail = onOpenGuideDetail,
         requestedBottomPage = requestedBottomPage,

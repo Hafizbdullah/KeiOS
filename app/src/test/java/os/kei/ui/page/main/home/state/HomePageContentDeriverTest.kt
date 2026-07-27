@@ -9,13 +9,21 @@ import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeWebDavOverview
 import kotlin.test.assertEquals
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeStatusCode
 
 class HomePageContentDeriverTest {
     @Test
     fun mcpRuntimeUsesProvidedRuntimeClock() {
         val state =
             deriveHomePageContentState(
-                shizukuStatus = "granted",
+                privilegeStatus =
+                    PrivilegeStatus(
+                        mode = PrivilegeMode.Shizuku,
+                        code = PrivilegeStatusCode.Ready,
+                        detail = "shell",
+                    ),
                 appOverview =
                     HomeAppOverview(
                         versionName = "1.8.0",
@@ -95,7 +103,12 @@ class HomePageContentDeriverTest {
     fun webDavAutoSyncIssuesOverrideNormalAutoSyncStatus() {
         val state =
             deriveHomePageContentState(
-                shizukuStatus = "granted",
+                privilegeStatus =
+                    PrivilegeStatus(
+                        mode = PrivilegeMode.Shizuku,
+                        code = PrivilegeStatusCode.Ready,
+                        detail = "shell",
+                    ),
                 appOverview = HomeAppOverview(loaded = true),
                 mcpOverview = HomeMcpOverview(),
                 githubOverview = HomeGitHubOverview(loaded = true),
@@ -127,7 +140,12 @@ class HomePageContentDeriverTest {
     fun githubRuntimeRefreshOverridesCachedHomeLines() {
         val state =
             deriveHomePageContentState(
-                shizukuStatus = "granted",
+                privilegeStatus =
+                    PrivilegeStatus(
+                        mode = PrivilegeMode.Shizuku,
+                        code = PrivilegeStatusCode.Ready,
+                        detail = "shell",
+                    ),
                 appOverview = HomeAppOverview(loaded = true),
                 mcpOverview = HomeMcpOverview(),
                 githubOverview =
@@ -165,7 +183,12 @@ class HomePageContentDeriverTest {
     fun githubCacheAgeUsesRuntimeClock() {
         val state =
             deriveHomePageContentState(
-                shizukuStatus = "granted",
+                privilegeStatus =
+                    PrivilegeStatus(
+                        mode = PrivilegeMode.Shizuku,
+                        code = PrivilegeStatusCode.Ready,
+                        detail = "shell",
+                    ),
                 appOverview = HomeAppOverview(loaded = true),
                 mcpOverview = HomeMcpOverview(),
                 githubOverview =
@@ -221,7 +244,7 @@ class HomePageContentDeriverTest {
             mcpTitle = "MCP",
             githubTitle = "GitHub",
             webDavTitle = "WebDAV",
-            shizukuTitle = "Shizuku",
+            privilegeTitle = "Shizuku",
             mcpCardTitle = "MCP card",
             githubCardTitle = "GitHub card",
             webDavCardTitle = "WebDAV card",

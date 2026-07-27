@@ -1,7 +1,7 @@
 package os.kei.ui.page.main.home.state
 
 import os.kei.core.prefs.CacheFreshnessSnapshot
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
@@ -13,9 +13,10 @@ import os.kei.ui.page.main.widget.status.AppStatusColors
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import os.kei.core.privilege.PrivilegeStatus
 
 internal fun deriveHomePageContentState(
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     appOverview: HomeAppOverview,
     mcpOverview: HomeMcpOverview,
     githubOverview: HomeGitHubOverview,
@@ -177,7 +178,7 @@ internal fun deriveHomePageContentState(
         } else {
             text.loading
         }
-    val shizukuGranted = ShizukuApiUtils.isCommandReadyStatusText(shizukuStatus)
+    val privilegeGranted = privilegeStatus.isCommandReady
     return HomePageContentState(
         homeNa = text.commonNa,
         homeAppName = text.appName,
@@ -185,12 +186,12 @@ internal fun deriveHomePageContentState(
         homeStatusMcp = text.mcpTitle,
         homeStatusGitHub = text.githubTitle,
         homeStatusWebDav = text.webDavTitle,
-        homeStatusShizuku = text.shizukuTitle,
+        homeStatusPrivilege = text.privilegeTitle,
         homeCardMcp = text.mcpCardTitle,
         homeCardGitHub = text.githubCardTitle,
         homeCardWebDav = text.webDavCardTitle,
         homeCardBa = text.baCardTitle,
-        shizukuGranted = shizukuGranted,
+        privilegeGranted = privilegeGranted,
         runningColor = colors.runningColor,
         stoppedColor = colors.stoppedColor,
         inactiveColor = colors.inactiveColor,

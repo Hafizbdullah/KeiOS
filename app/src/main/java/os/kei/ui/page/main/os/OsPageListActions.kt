@@ -9,6 +9,7 @@ import os.kei.ui.page.main.os.shell.OsShellRunnerActivity
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.state.OsPageActionState
 import os.kei.ui.page.main.os.state.OsPageTextBundle
+import os.kei.core.privilege.PrivilegeStatus
 
 @Immutable
 internal data class OsPageMainListActions(
@@ -31,7 +32,7 @@ internal fun createOsPageMainListActions(
     textBundle: OsPageTextBundle,
     actionState: OsPageActionState,
     routeState: OsPageRouteState,
-    shizukuStatus: String,
+    privilegeStatus: PrivilegeStatus,
     osPageViewModel: OsPageViewModel,
 ): OsPageMainListActions =
     OsPageMainListActions(
@@ -68,7 +69,7 @@ internal fun createOsPageMainListActions(
                 card = card,
                 context = context,
                 googleSystemServiceDefaults = textBundle.googleSystemServiceDefaults,
-                shizukuStatus = shizukuStatus,
+                privilegeStatus = privilegeStatus,
                 ensureLoad = actionState.ensureLoad,
             )
         },

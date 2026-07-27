@@ -3,7 +3,7 @@ package os.kei.ui.page.main.os
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
 import os.kei.ui.page.main.os.shell.OsShellCommandCardDataSource
 import os.kei.ui.page.main.os.shell.OsShellCommandCardStoreDataSource
@@ -13,12 +13,12 @@ internal class OsPageShellCommandRepository(
     private val shellCommandCards: OsShellCommandCardDataSource = OsShellCommandCardStoreDataSource,
 ) {
     suspend fun runCommand(
-        shizukuApiUtils: ShizukuApiUtils,
+        privilegedShell: PrivilegedShell,
         command: String,
         timeoutMs: Long = 300_000L,
     ): String? =
         withContext(ioDispatcher) {
-            shizukuApiUtils.execCommandCancellable(
+            privilegedShell.execCommandCancellable(
                 command = command,
                 timeoutMs = timeoutMs,
             )

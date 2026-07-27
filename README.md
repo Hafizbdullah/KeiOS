@@ -38,7 +38,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | Android baseline  | Android 15+ (`minSdk 35`)                            |
 | Target SDK        | Android 17 / API 37                                  |
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
-| Runtime stack     | Kotlin, Java 21, Shizuku, Media3, MMKV, Ktor, OkHttp |
+| Runtime stack     | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
 | Latest stable tag | `v1.11.0`                                            |
 
@@ -57,7 +57,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 
 - Home dashboard with compact status pills and MCP, GitHub, and BA summary cards.
 - OS tools for system tables, Android/Java/Linux properties, built-in activity shortcuts,
-  searchable activity/shell card sheets, Shizuku shell cards, and card import/export.
+  searchable activity/shell card sheets, privileged shell cards, and card import/export.
 - Local MCP server controls with config copy, runtime logs, foreground service support, Claw
   onboarding, localized SKILL.md output, workflow blueprints, structured tool metadata, and 45 tools
   across runtime, Home, OS, GitHub discovery/tracking, and BA cache inspection.
@@ -67,7 +67,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 - GitHub Star import activity for authenticated stars, public user stars, and public Star List URLs,
   with list discovery, quality filters, multi-select import, APK verification, and exit
   confirmation.
-- GitHub managed install and share-import handoff paths for Shizuku-backed APK delivery, with
+- GitHub managed install and share-import handoff paths for privileged APK delivery, with
   notification/Super Island progress, manifest inspection, versionCode display, and install
   confirmation surfaces.
 - GitHub Actions update notifications with tracked-app icons, deep links into the Actions sheet,

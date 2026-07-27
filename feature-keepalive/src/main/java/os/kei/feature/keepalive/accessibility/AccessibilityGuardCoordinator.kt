@@ -43,7 +43,7 @@ class AccessibilityGuardCoordinator(
                 warningCount = SELF_CAPABILITY_CHECK_COUNT,
                 startedAtMs = startedAtMs,
                 startedElapsedMs = startedElapsedMs,
-                shizukuStatus = read.reason,
+                privilegeStatus = read.reason,
                 failureReason = read.reason,
             )
         }
@@ -61,7 +61,7 @@ class AccessibilityGuardCoordinator(
             warningCount = 0,
             startedAtMs = startedAtMs,
             startedElapsedMs = startedElapsedMs,
-            shizukuStatus = SHIZUKU_STATUS_READY,
+            privilegeStatus = PRIVILEGE_STATUS_READY,
         )
     }
 
@@ -81,7 +81,7 @@ class AccessibilityGuardCoordinator(
         warningCount: Int,
         startedAtMs: Long,
         startedElapsedMs: Long,
-        shizukuStatus: String = "",
+        privilegeStatus: String = "",
         failureReason: String = "",
     ): AccessibilityGuardCheckResult {
         val normalizedCheckCount = checkCount.coerceAtLeast(0)
@@ -95,14 +95,14 @@ class AccessibilityGuardCoordinator(
             startedAtMs = startedAtMs,
             finishedAtMs = finishedAtMs,
             elapsedMs = (elapsedClockMs() - startedElapsedMs).coerceAtLeast(0L),
-            shizukuStatus = shizukuStatus,
+            privilegeStatus = privilegeStatus,
             failureReason = failureReason,
         )
     }
 
     companion object {
         const val SELF_CAPABILITY_CHECK_COUNT = 1
-        const val SHIZUKU_STATUS_READY = "ready"
+        const val PRIVILEGE_STATUS_READY = "ready"
     }
 }
 
@@ -116,11 +116,11 @@ private val AccessibilityGuardSettings.enabledPolicyCount: Int
 
 private fun AccessibilitySecureSettingRead.toCapability(checkedAtMs: Long): AccessibilityGuardCapability =
     AccessibilityGuardCapability(
-        shizukuReady = success,
+        privilegeReady = success,
         canReadSecureSettings = success,
-        shizukuStatus =
+        privilegeStatus =
             if (success) {
-                AccessibilityGuardCoordinator.SHIZUKU_STATUS_READY
+                AccessibilityGuardCoordinator.PRIVILEGE_STATUS_READY
             } else {
                 reason
             },

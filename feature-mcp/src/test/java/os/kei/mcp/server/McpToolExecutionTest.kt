@@ -10,7 +10,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import os.kei.core.shizuku.ShizukuApiUtils
+import os.kei.core.privilege.PrivilegedShell
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -65,7 +65,7 @@ class McpToolExecutionTest {
     private fun testEnvironment(logs: MutableList<String>): McpToolEnvironment {
         return McpToolEnvironment(
             appContext = ApplicationProvider.getApplicationContext(),
-            shizukuApiUtils = ShizukuApiUtils(),
+            privilegedShell = PrivilegedShell(),
             appVersionName = "test",
             appVersionCode = 1L,
             appPackageName = "os.kei.test",
