@@ -16,8 +16,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.ui.page.main.student.BaGuideBgmMediaButtonPreferences
-import os.kei.ui.page.main.student.BaGuideBgmMediaSessionService
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
+import os.kei.ui.page.main.student.media.BaGuideBgmMediaSessionService
 import os.kei.ui.page.main.student.normalizeGuideMediaSource
 
 internal class BaGuideBgmNativeMediaController(

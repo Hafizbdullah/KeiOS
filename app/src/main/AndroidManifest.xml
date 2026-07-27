@@ -234,7 +234,7 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <service
-            android:name=".ui.page.main.student.BaGuideBgmMediaSessionService"
+            android:name=".ui.page.main.student.media.BaGuideBgmMediaSessionService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback">

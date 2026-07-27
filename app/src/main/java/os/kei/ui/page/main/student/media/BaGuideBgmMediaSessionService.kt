@@ -1,4 +1,4 @@
-package os.kei.ui.page.main.student
+package os.kei.ui.page.main.student.media
 
 import android.app.PendingIntent
 import android.os.Bundle
@@ -10,6 +10,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
@@ -19,7 +20,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.ui.page.main.student.media.BaGuideBgmMediaNotificationProviderFactory
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_COMMAND_STOP_PLAYBACK
+import os.kei.ui.page.main.student.BA_GUIDE_BGM_COMMAND_TOGGLE_REPEAT
+import os.kei.ui.page.main.student.BaGuideBgmMediaButtonPreferences
+import os.kei.ui.page.main.student.BaGuideBgmPlaybackRepository
+import os.kei.ui.page.main.student.BaGuideBgmPlaybackRouteIntentFactory
+import os.kei.ui.page.main.student.configureGuideMediaAudioBehavior
+import os.kei.ui.page.main.student.createGameKeeMediaSourceFactory
 
 internal const val BA_GUIDE_BGM_MEDIA_SESSION_ID = "ba_guide_bgm_media_session"
 
@@ -125,7 +132,7 @@ class BaGuideBgmMediaSessionService : MediaSessionService() {
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
-            customCommand: androidx.media3.session.SessionCommand,
+            customCommand: SessionCommand,
             args: Bundle,
         ): ListenableFuture<SessionResult> =
             when (customCommand.customAction) {

@@ -27,7 +27,7 @@ dependencies {
     implementation(project(":core-system"))
 
     implementation("androidx.core:core-ktx:1.19.0")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
