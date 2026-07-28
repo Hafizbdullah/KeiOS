@@ -1,22 +1,19 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.plugin.serialization")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.serialization)
 }
-
-val okhttpVersion = "5.4.0"
-val ktorVersion = "3.5.1"
 
 android {
     namespace = "os.kei.feature.mcp"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 
     testOptions {
@@ -36,21 +33,21 @@ dependencies {
     implementation(project(":core-prefs"))
     implementation(project(":core-system"))
 
-    implementation("androidx.core:core-ktx:1.19.0")
-    implementation("com.tencent:mmkv:2.4.0")
-    implementation("dev.rikka.shizuku:api:13.1.5")
-    implementation("dev.rikka.shizuku:provider:13.1.5")
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
-    api("io.modelcontextprotocol:kotlin-sdk:0.14.0")
-    implementation(platform("io.ktor:ktor-bom:$ktorVersion"))
-    implementation("io.ktor:ktor-server-cio")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.mmkv)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
+    implementation(libs.hidden.api.bypass)
+    api(libs.mcp.kotlin.sdk)
+    implementation(platform(libs.ktor.bom))
+    implementation(libs.ktor.server.cio)
+    implementation(libs.kotlinx.serialization.json)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test:core:1.7.0")
-    testImplementation("androidx.test.ext:junit:1.3.0")
-    testImplementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
-    testImplementation("org.robolectric:robolectric:4.16.1")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.okhttp)
+    testImplementation(libs.robolectric)
 }

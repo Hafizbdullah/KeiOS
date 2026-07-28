@@ -1,36 +1,36 @@
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
 
 android {
     namespace = "os.kei.core.system"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     buildFeatures {
         aidl = true
     }
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
         consumerProguardFiles("src/main/keepRules/core-system-rules.keep")
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 }
 
 dependencies {
     implementation(project(":core-concurrency"))
     implementation(project(":core-log"))
-    implementation("androidx.core:core-ktx:1.19.0")
-    implementation("dev.rikka.shizuku:api:13.1.5")
-    implementation("dev.rikka.shizuku:provider:13.1.5")
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:6.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
+    implementation(libs.hidden.api.bypass)
+    implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

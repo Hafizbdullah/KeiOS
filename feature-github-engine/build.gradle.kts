@@ -1,18 +1,18 @@
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
 
 android {
     namespace = "os.kei.feature.github.engine"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 }
 
@@ -23,13 +23,13 @@ dependencies {
     implementation(project(":core-json"))
     implementation(project(":core-versioning"))
 
-    implementation("com.squareup.okhttp3:okhttp:5.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.4.0")
-    testImplementation("xmlpull:xmlpull:1.1.3.4d_b4_min")
-    testImplementation("net.sf.kxml:kxml2:2.3.0")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.xmlpull)
+    testImplementation(libs.kxml2)
 }

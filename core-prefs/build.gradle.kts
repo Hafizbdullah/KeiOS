@@ -1,18 +1,18 @@
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
 
 android {
     namespace = "os.kei.core.prefs"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 }
 
@@ -20,9 +20,9 @@ dependencies {
     implementation(project(":core-concurrency"))
     implementation(project(":core-log"))
 
-    api("com.tencent:mmkv:2.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    api(libs.mmkv)
+    implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit4)
 }

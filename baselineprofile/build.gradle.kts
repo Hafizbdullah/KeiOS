@@ -1,20 +1,20 @@
 plugins {
-    id("com.android.test")
-    id("androidx.baselineprofile")
+    alias(libs.plugins.android.test)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
     namespace = "os.kei.baselineprofile"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 
     defaultConfig {
-        minSdk = 35
-        targetSdk = 37
+        minSdk = libs.versions.min.sdk.get().toInt()
+        targetSdk = libs.versions.target.sdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -30,10 +30,10 @@ baselineProfile {
 }
 
 dependencies {
-    implementation("androidx.benchmark:benchmark-macro-junit4:1.4.1")
-    implementation("androidx.test.espresso:espresso-core:3.7.0")
-    implementation("androidx.test.ext:junit:1.3.0")
-    implementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    implementation(libs.androidx.benchmark.macro.junit4)
+    implementation(libs.androidx.test.espresso.core)
+    implementation(libs.androidx.test.ext.junit)
+    implementation(libs.androidx.test.uiautomator)
 }
 
 androidComponents {

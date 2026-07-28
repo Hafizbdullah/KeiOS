@@ -1,18 +1,18 @@
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
 
 android {
     namespace = "os.kei.feature.webdav"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 }
 
@@ -22,21 +22,21 @@ dependencies {
     implementation(project(":core-io"))
     implementation(project(":core-prefs"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation(platform("io.ktor:ktor-bom:3.5.1"))
-    implementation("io.ktor:ktor-client-auth")
-    implementation("io.ktor:ktor-client-cio")
-    implementation("io.ktor:ktor-client-encoding")
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(platform(libs.ktor.bom))
+    implementation(libs.ktor.client.auth)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.ktor.client.encoding)
 
-    testImplementation(kotlin("test"))
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("io.ktor:ktor-client-mock")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.ktor.client.mock)
 
     // WebDAV client (used by DAVx⁵, production-grade).
     // The Ktor API currently lives on upstream main; pin its verified revision so API changes
     // are introduced through an explicit dependency upgrade and matching client migration.
     // Exclude xpp3 — Android has built-in XmlPullParser.
-    implementation("com.github.bitfireAT:dav4jvm:6bed720c12") {
+    implementation(libs.dav4jvm) {
         exclude(group = "org.ogce", module = "xpp3")
     }
 }

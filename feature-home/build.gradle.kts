@@ -1,20 +1,18 @@
 plugins {
-    id("com.android.library")
+    alias(libs.plugins.android.library)
 }
-
-val composeVersion = "1.11.4"
 
 android {
     namespace = "os.kei.feature.home"
-    compileSdk = 37
+    compileSdk = libs.versions.compile.sdk.get().toInt()
 
     defaultConfig {
-        minSdk = 35
+        minSdk = libs.versions.min.sdk.get().toInt()
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.java.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.java.get())
     }
 
     testOptions {
@@ -28,9 +26,9 @@ dependencies {
     implementation(project(":feature-mcp"))
     implementation(project(":feature-github"))
 
-    implementation("androidx.compose.runtime:runtime:$composeVersion")
-    implementation("com.tencent:mmkv:2.4.0")
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.mmkv)
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.0")
-    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit4)
 }

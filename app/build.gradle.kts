@@ -224,16 +224,16 @@ val preReleaseVersionCode =
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
-        ?: "0.9.2"
-val coreKtxVersion = "1.19.0"
-val activityComposeVersion = "1.13.0"
-val materialVersion = "1.14.0"
-val composeVersion = "1.11.4"
-val constraintLayoutComposeVersion = "1.1.1"
-val navigationEventVersion = "1.1.2"
-val backdropVersion = "2.0.0"
-val capsuleVersion = "2.1.3"
-val shapesVersion = "1.2.0"
+        ?: libs.versions.miuix.get()
+val coreKtxVersion = libs.versions.androidx.core.get()
+val activityComposeVersion = libs.versions.activity.compose.get()
+val materialVersion = libs.versions.material.get()
+val composeVersion = libs.versions.compose.get()
+val constraintLayoutComposeVersion = libs.versions.constraintlayout.compose.get()
+val navigationEventVersion = libs.versions.navigation.event.get()
+val backdropVersion = libs.versions.backdrop.get()
+val capsuleVersion = libs.versions.capsule.get()
+val shapesVersion = libs.versions.shapes.get()
 val releaseSigningStoreFile = readGradleOrLocalPropertyOrNull("keios.release.storeFile")?.trim().orEmpty()
 val releaseSigningStorePassword = readGradleOrLocalPropertyOrNull("keios.release.storePassword")?.trim().orEmpty()
 val releaseSigningKeyAlias = readGradleOrLocalPropertyOrNull("keios.release.keyAlias")?.trim().orEmpty()
@@ -243,35 +243,28 @@ val releaseSigningConfigured =
         releaseSigningStorePassword.isNotBlank() &&
         releaseSigningKeyAlias.isNotBlank() &&
         releaseSigningKeyPassword.isNotBlank()
-val shizukuVersion = "13.1.5"
-val hiddenApiBypassVersion = "6.1"
-val mmkvVersion = "2.4.0"
-val mcpKotlinSdkVersion = "0.14.0"
-val ktorVersion = "3.5.1"
-val okhttpVersion = "5.4.0"
-val kotlinxSerializationJsonVersion = "1.11.0"
-val jsonVersion = "20260719"
-val xmlPullVersion = "1.1.3.4d_b4_min"
-val kxml2Version = "2.3.0"
-val media3Version = "1.11.0-rc01"
-val coil3Version = "3.5.0"
-val zoomImageVersion = "1.6.0"
-val lucideIconsVersion = "2.2.1"
-val documentFileVersion = "1.1.0"
-val uCropVersion = "2.2.11"
-val focusApiVersion = "1.4"
-val metricsPerformanceVersion = "1.0.0"
-val profileInstallerVersion = "1.4.1"
-val lifecycleViewModelComposeVersion = "2.11.0"
-val robolectricVersion = "4.16.1"
-val androidTestExtJunitVersion = "1.3.0"
-val roborazziVersion = "1.70.0"
-val projectCompileSdk = 37
-val projectMinSdk = 35
-val projectTargetSdk = 37
+val shizukuVersion = libs.versions.shizuku.get()
+val hiddenApiBypassVersion = libs.versions.hidden.api.bypass.get()
+val mmkvVersion = libs.versions.mmkv.get()
+val mcpKotlinSdkVersion = libs.versions.mcp.kotlin.sdk.get()
+val ktorVersion = libs.versions.ktor.get()
+val okhttpVersion = libs.versions.okhttp.get()
+val media3Version = libs.versions.media3.get()
+val coil3Version = libs.versions.coil3.get()
+val zoomImageVersion = libs.versions.zoomimage.get()
+val lucideIconsVersion = libs.versions.lucide.icons.get()
+val documentFileVersion = libs.versions.documentfile.get()
+val uCropVersion = libs.versions.ucrop.get()
+val focusApiVersion = libs.versions.focus.api.get()
+val metricsPerformanceVersion = libs.versions.metrics.performance.get()
+val profileInstallerVersion = libs.versions.profileinstaller.get()
+val lifecycleViewModelComposeVersion = libs.versions.lifecycle.get()
+val projectCompileSdk = libs.versions.compile.sdk.get().toInt()
+val projectMinSdk = libs.versions.min.sdk.get().toInt()
+val projectTargetSdk = libs.versions.target.sdk.get().toInt()
 val projectGradleVersion = gradle.gradleVersion
-val projectJavaVersion = JavaVersion.VERSION_21
-val projectJvmTarget = JvmTarget.JVM_21
+val projectJavaVersion = JavaVersion.toVersion(libs.versions.java.get())
+val projectJvmTarget = JvmTarget.fromTarget(libs.versions.java.get())
 val r8DexStartupOptimizationProperty = "android.experimental.r8.dex-startup-optimization"
 
 fun countGeneratedProfileRules(fileName: String): Int {
@@ -289,11 +282,11 @@ val baselineProfileRuleCount = countGeneratedProfileRules("baseline-prof.txt")
 val startupProfileRuleCount = countGeneratedProfileRules("startup-prof.txt")
 
 plugins {
-    id("com.android.application")
-    id("androidx.baselineprofile")
-    id("io.github.takahirom.roborazzi")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.kotlin.plugin.serialization")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.roborazzi)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -566,58 +559,58 @@ dependencies {
     implementation(project(":feature-ba"))
     implementation(project(":feature-github"))
     implementation(project(":feature-webdav"))
-    implementation("androidx.core:core-ktx:$coreKtxVersion")
-    implementation("androidx.activity:activity-compose:$activityComposeVersion")
-    implementation("androidx.profileinstaller:profileinstaller:$profileInstallerVersion")
-    implementation("com.google.android.material:material:$materialVersion")
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.profileinstaller)
+    implementation(libs.google.material)
 
-    implementation("androidx.compose.ui:ui:$composeVersion")
-    implementation("androidx.compose.foundation:foundation:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    implementation("androidx.constraintlayout:constraintlayout-compose:$constraintLayoutComposeVersion")
-    implementation("androidx.navigationevent:navigationevent:$navigationEventVersion")
-    implementation("androidx.navigationevent:navigationevent-compose:$navigationEventVersion")
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.constraintlayout.compose)
+    implementation(libs.androidx.navigation.event)
+    implementation(libs.androidx.navigation.event.compose)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:$miuixVersion")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:$miuixVersion")
-    implementation("io.github.kyant0:backdrop:$backdropVersion")
-    implementation("io.github.kyant0:capsule:$capsuleVersion")
-    implementation("io.github.kyant0:shapes:$shapesVersion")
+    implementation(libs.kyant.backdrop)
+    implementation(libs.kyant.capsule)
+    implementation(libs.kyant.shapes)
 
-    implementation("dev.rikka.shizuku:api:$shizukuVersion")
-    implementation("dev.rikka.shizuku:provider:$shizukuVersion")
-    implementation("org.lsposed.hiddenapibypass:hiddenapibypass:$hiddenApiBypassVersion")
-    implementation("com.tencent:mmkv:$mmkvVersion")
-    implementation("com.squareup.okhttp3:okhttp:$okhttpVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationJsonVersion")
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-session:$media3Version")
-    implementation("androidx.media3:media3-ui:$media3Version")
-    implementation("io.github.panpf.zoomimage:zoomimage-compose-coil3:$zoomImageVersion")
-    implementation("io.coil-kt.coil3:coil-compose:$coil3Version")
-    implementation("io.coil-kt.coil3:coil-gif:$coil3Version")
-    implementation("com.composables:icons-lucide-android:$lucideIconsVersion")
-    implementation("com.github.yalantis:ucrop:$uCropVersion")
-    implementation("androidx.metrics:metrics-performance:$metricsPerformanceVersion")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleViewModelComposeVersion")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleViewModelComposeVersion")
-    implementation("androidx.documentfile:documentfile:$documentFileVersion")
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
+    implementation(libs.hidden.api.bypass)
+    implementation(libs.mmkv)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
+    implementation(libs.media3.ui)
+    implementation(libs.zoomimage.compose.coil3)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
+    implementation(libs.lucide.icons)
+    implementation(libs.ucrop)
+    implementation(libs.androidx.metrics.performance)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.documentfile)
 
     // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
-    testImplementation("org.jetbrains.kotlin:kotlin-test:2.4.10")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
-    testImplementation("androidx.test.ext:junit:$androidTestExtJunitVersion")
-    testImplementation("org.json:json:$jsonVersion")
-    testImplementation("org.robolectric:robolectric:$robolectricVersion")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi:$roborazziVersion")
-    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:$roborazziVersion")
-    testImplementation("com.squareup.okhttp3:mockwebserver:$okhttpVersion")
-    testImplementation("xmlpull:xmlpull:$xmlPullVersion")
-    testImplementation("net.sf.kxml:kxml2:$kxml2Version")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.junit4)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.org.json)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.xmlpull)
+    testImplementation(libs.kxml2)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
