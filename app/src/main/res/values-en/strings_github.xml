@@ -362,6 +362,7 @@
     <string name="github_share_import_error_no_release">This repository has no usable release</string>
     <string name="github_share_import_error_missing_release_tag">The shared link is missing a release tag</string>
     <string name="github_share_import_error_no_stable_release">This repository has no stable release</string>
+    <string name="github_share_import_error_privilege_mode_disabled">Privilege mode is off, so KeiOS cannot manage this install</string>
     <string name="github_share_import_error_shizuku_unavailable">Shizuku is not running, so KeiOS cannot manage this install</string>
     <string name="github_share_import_error_root_unavailable">Root access is unavailable, so KeiOS cannot manage this install</string>
     <string name="github_share_import_error_shizuku_permission_missing">KeiOS has no Shizuku permission, so it cannot manage this install</string>

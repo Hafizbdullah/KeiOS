@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.delay
 import os.kei.R
 import os.kei.core.log.AppLogger
+import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.core.system.AppPackageChangedEvents
 import os.kei.feature.github.domain.GitHubRefreshRuntimeStore
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
@@ -128,7 +129,14 @@ internal fun BindGitHubPageLifecycleCoordinator(
     )
 
     LaunchedEffect(state.appListLoaded, state.appList) {
-        if (state.appListLoaded && state.appList.isEmpty() && !state.hasAutoRequestedPermission) {
+        if (
+            shouldAutoRequestAppListPermission(
+                appListLoaded = state.appListLoaded,
+                appListEmpty = state.appList.isEmpty(),
+                hasAutoRequestedPermission = state.hasAutoRequestedPermission,
+                isHyperOs3Device = HyperOsSettingsIntents.isHyperOs3Device(),
+            )
+        ) {
             state.hasAutoRequestedPermission = true
             val intent = actions.buildAppListPermissionIntent()
             if (intent != null) {
@@ -147,3 +155,14 @@ internal fun BindGitHubPageLifecycleCoordinator(
         }
     }
 }
+
+internal fun shouldAutoRequestAppListPermission(
+    appListLoaded: Boolean,
+    appListEmpty: Boolean,
+    hasAutoRequestedPermission: Boolean,
+    isHyperOs3Device: Boolean,
+): Boolean =
+    appListLoaded &&
+        appListEmpty &&
+        !hasAutoRequestedPermission &&
+        isHyperOs3Device

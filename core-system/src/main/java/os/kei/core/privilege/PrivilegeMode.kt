@@ -5,11 +5,13 @@ import java.util.concurrent.CopyOnWriteArrayList
 /**
  * Privileged execution backend selected by the user.
  *
+ * [Disabled] keeps privileged entry points inactive while ordinary app features continue to work.
  * [Shizuku] proxies work through the Shizuku server, which runs as `shell` (uid 2000) or `root`.
  * [Root] spawns `su` directly from the app process and needs a superuser manager such as Magisk,
  * KernelSU, or APatch.
  */
 enum class PrivilegeMode(val storageId: String) {
+    Disabled("disabled"),
     Shizuku("shizuku"),
     Root("root"),
     ;

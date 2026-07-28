@@ -29,6 +29,7 @@ class PrivilegeModeTest {
     @Test
     fun `storage id tolerates surrounding whitespace`() {
         assertEquals(PrivilegeMode.Root, PrivilegeMode.fromStorageId("  root "))
+        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("  disabled "))
     }
 
     @Test

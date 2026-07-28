@@ -38,7 +38,7 @@
     <string name="settings_group_visual_summary">主题模式、性能预取与主页高光能力配置。</string>
     <string name="settings_group_permissions_header">权限</string>
     <string name="settings_group_permissions_title">权限</string>
-    <string name="settings_group_permissions_summary">通知权限、App 列表访问与 Shizuku 授权。</string>
+    <string name="settings_group_permissions_summary">通知权限、App 列表访问与特权模式。</string>
     <string name="settings_group_keep_alive_header">保活</string>
     <string name="settings_group_keep_alive_title">后台保活</string>
     <string name="settings_group_keep_alive_summary">后台限制、后台调度、电池优化与自启动状态。</string>
@@ -276,8 +276,10 @@
     <string name="settings_app_list_access_toast_open_failed">无法打开应用列表相关设置，请手动到应用详情页检查权限</string>
     <string name="settings_privilege_status_initializing">正在检测…</string>
     <string name="settings_privileged_mode_title">特权模式</string>
+    <string name="settings_privileged_mode_disabled">关闭</string>
     <string name="settings_privileged_mode_shizuku">Shizuku</string>
     <string name="settings_privileged_mode_root">Root</string>
+    <string name="settings_privileged_mode_summary_disabled">特权模式已关闭，不会连接 Shizuku、请求 Root 或执行特权命令。</string>
     <string name="settings_privileged_mode_summary_shizuku">通过 Shizuku 服务执行特权命令，需要先启动 Shizuku 并授权。</string>
     <string name="settings_privileged_mode_summary_root">通过 su 直接执行特权命令，需要 Magisk、KernelSU 或 APatch 等超级用户管理器。</string>
     <string name="settings_privileged_mode_scope">影响 OS 页命令、应用列表检测与 MCP 特权工具</string>

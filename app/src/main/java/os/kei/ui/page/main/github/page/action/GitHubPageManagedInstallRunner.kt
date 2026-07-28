@@ -363,6 +363,9 @@ internal class GitHubPageManagedInstallRunner(
         result: GitHubApkInstallResult.Failed
     ): String {
         return when (result.reason) {
+            GitHubApkInstallFailureReason.PrivilegeModeDisabled ->
+                context.getString(R.string.github_share_import_error_privilege_mode_disabled)
+
             GitHubApkInstallFailureReason.ShizukuUnavailable ->
                 context.getString(R.string.github_share_import_error_shizuku_unavailable)
 

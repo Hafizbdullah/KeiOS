@@ -8,6 +8,7 @@ package os.kei.core.privilege
  * the OS page info rows.
  */
 enum class PrivilegeStatusCode {
+    Disabled,
     Initializing,
     Ready,
     ServiceUnavailable,
@@ -33,11 +34,13 @@ data class PrivilegeStatus(
 
     val text: String
         get() = when (mode) {
+            PrivilegeMode.Disabled -> "Privilege mode: disabled"
             PrivilegeMode.Shizuku -> shizukuText()
             PrivilegeMode.Root -> rootText()
         }
 
     private fun shizukuText(): String = when (code) {
+        PrivilegeStatusCode.Disabled -> "Privilege mode: disabled"
         PrivilegeStatusCode.Initializing -> "Shizuku status: initializing..."
         PrivilegeStatusCode.Ready -> "Shizuku permission: granted ($detail)"
         PrivilegeStatusCode.ServiceUnavailable -> "Shizuku service unavailable (start Shizuku app first)"
@@ -54,6 +57,7 @@ data class PrivilegeStatus(
     }
 
     private fun rootText(): String = when (code) {
+        PrivilegeStatusCode.Disabled -> "Privilege mode: disabled"
         PrivilegeStatusCode.Initializing -> "Root status: initializing..."
         PrivilegeStatusCode.Ready -> "Root permission: granted ($detail)"
         PrivilegeStatusCode.ServiceUnavailable -> "Root unavailable (no su binary found)"

@@ -91,6 +91,7 @@ sealed interface GitHubApkInstallResult {
 }
 
 enum class GitHubApkInstallFailureReason {
+    PrivilegeModeDisabled,
     ShizukuUnavailable,
     RootUnavailable,
     ShizukuPermissionMissing,

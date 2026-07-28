@@ -38,7 +38,7 @@
     <string name="settings_group_visual_summary">主题模式、性能预取与主页高光能力配置。</string>
     <string name="settings_group_permissions_header">权限</string>
     <string name="settings_group_permissions_title">权限</string>
-    <string name="settings_group_permissions_summary">通知权限、App 列表访问与 Shizuku 授权。</string>
+    <string name="settings_group_permissions_summary">通知权限、App 列表访问与特权模式。</string>
     <string name="settings_group_keep_alive_header">保活</string>
     <string name="settings_group_keep_alive_title">后台保活</string>
     <string name="settings_group_keep_alive_summary">后台限制、后台调度、电池优化与自启动状态。</string>

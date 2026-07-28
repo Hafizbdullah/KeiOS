@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.common.applicationViewModel
@@ -158,8 +159,15 @@ fun GitHubPage(
             actions.refreshInstalledAppsAfterPermissionChange()
         }
     val launchAppListPermission: (Intent) -> Unit =
-        remember(appListPermissionLauncher) {
-            { intent: Intent -> appListPermissionLauncher.launch(intent) }
+        remember(context, appListPermissionLauncher) {
+            { intent: Intent ->
+                runCatching { appListPermissionLauncher.launch(intent) }
+                    .onFailure {
+                        context.showToast(
+                            context.getString(R.string.github_toast_open_permission_page_failed),
+                        )
+                    }
+            }
         }
     val starImportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->

@@ -18,6 +18,7 @@ internal fun localizedPrivilegeStatusText(
     status: PrivilegeStatus,
     granted: Boolean,
 ): String = when (status.mode) {
+    PrivilegeMode.Disabled -> stringResource(R.string.settings_privileged_mode_summary_disabled)
     PrivilegeMode.Shizuku -> shizukuStatusText(status, granted)
     PrivilegeMode.Root -> rootStatusText(status, granted)
 }
@@ -27,6 +28,7 @@ private fun shizukuStatusText(
     status: PrivilegeStatus,
     granted: Boolean,
 ): String = when (status.code) {
+    PrivilegeStatusCode.Disabled -> stringResource(R.string.settings_privileged_mode_summary_disabled)
     PrivilegeStatusCode.Initializing -> stringResource(R.string.settings_privilege_status_initializing)
     PrivilegeStatusCode.Ready ->
         stringResource(
@@ -61,6 +63,7 @@ private fun rootStatusText(
     status: PrivilegeStatus,
     granted: Boolean,
 ): String = when (status.code) {
+    PrivilegeStatusCode.Disabled -> stringResource(R.string.settings_privileged_mode_summary_disabled)
     PrivilegeStatusCode.Initializing -> stringResource(R.string.settings_privilege_status_initializing)
     PrivilegeStatusCode.Ready ->
         stringResource(

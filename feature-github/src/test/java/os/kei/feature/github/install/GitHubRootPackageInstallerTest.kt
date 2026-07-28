@@ -114,6 +114,27 @@ class GitHubRootPackageInstallerTest {
         assertTrue(root.calls.isEmpty())
     }
 
+    @Test
+    fun `disabled mode rejects managed install without touching a privileged backend`() = runTest {
+        val shizuku = RecordingInstaller(sessionId = 11)
+        val root = RecordingInstaller(sessionId = 22)
+        val router =
+            GitHubModeRoutedApkInstaller(
+                shizukuInstaller = shizuku,
+                rootInstaller = root,
+                activeMode = { PrivilegeMode.Disabled },
+            )
+
+        val result = router.stage(context, REQUEST) {}
+
+        assertEquals(
+            GitHubApkInstallFailureReason.PrivilegeModeDisabled,
+            (result as GitHubApkInstallResult.Failed).reason,
+        )
+        assertTrue(shizuku.calls.isEmpty())
+        assertTrue(root.calls.isEmpty())
+    }
+
     private class RecordingInstaller(
         private val sessionId: Int,
     ) : GitHubManagedApkInstaller {

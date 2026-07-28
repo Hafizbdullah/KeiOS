@@ -38,7 +38,7 @@
     <string name="settings_group_visual_summary">Theme mode, performance prefetching, and Home highlight options.</string>
     <string name="settings_group_permissions_header">Permissions</string>
     <string name="settings_group_permissions_title">Permissions</string>
-    <string name="settings_group_permissions_summary">Notification access, app-list access, and Shizuku authorization.</string>
+    <string name="settings_group_permissions_summary">Notification access, app-list access, and privilege mode.</string>
     <string name="settings_group_keep_alive_header">Keepalive</string>
     <string name="settings_group_keep_alive_title">Background keepalive</string>
     <string name="settings_group_keep_alive_summary">Background limits, recovery jobs, battery optimization, and autostart status.</string>
@@ -272,8 +272,10 @@
     <string name="settings_app_list_access_toast_open_failed">Unable to open app-list related settings. Check permissions on the app info page manually.</string>
     <string name="settings_privilege_status_initializing">Checking…</string>
     <string name="settings_privileged_mode_title">Privileged mode</string>
+    <string name="settings_privileged_mode_disabled">Off</string>
     <string name="settings_privileged_mode_shizuku">Shizuku</string>
     <string name="settings_privileged_mode_root">Root</string>
+    <string name="settings_privileged_mode_summary_disabled">Privilege mode is off. KeiOS will not connect to Shizuku, request root, or run privileged commands.</string>
     <string name="settings_privileged_mode_summary_shizuku">Privileged commands run through the Shizuku service. Start Shizuku and grant access first.</string>
     <string name="settings_privileged_mode_summary_root">Privileged commands run through su. Requires a superuser manager such as Magisk, KernelSU, or APatch.</string>
     <string name="settings_privileged_mode_scope">Applies to OS page commands, app-list detection, and MCP privileged tools</string>

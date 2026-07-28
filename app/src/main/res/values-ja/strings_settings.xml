@@ -38,7 +38,7 @@
     <string name="settings_group_visual_summary">テーマモード、パフォーマンス先読み、Home ハイライトを管理します。</string>
     <string name="settings_group_permissions_header">権限</string>
     <string name="settings_group_permissions_title">権限</string>
-    <string name="settings_group_permissions_summary">通知権限、アプリ一覧アクセス、Shizuku 認可を管理します。</string>
+    <string name="settings_group_permissions_summary">通知権限、アプリ一覧アクセス、特権モードを管理します。</string>
     <string name="settings_group_keep_alive_header">常駐</string>
     <string name="settings_group_keep_alive_title">バックグラウンド常駐</string>
     <string name="settings_group_keep_alive_summary">バックグラウンド制限、復旧ジョブ、電池最適化、自動起動状態を管理します。</string>
@@ -272,8 +272,10 @@
     <string name="settings_app_list_access_toast_open_failed">アプリ一覧関連設定を開けません。アプリ情報ページで手動確認してください。</string>
     <string name="settings_privilege_status_initializing">確認中…</string>
     <string name="settings_privileged_mode_title">特権モード</string>
+    <string name="settings_privileged_mode_disabled">オフ</string>
     <string name="settings_privileged_mode_shizuku">Shizuku</string>
     <string name="settings_privileged_mode_root">Root</string>
+    <string name="settings_privileged_mode_summary_disabled">特権モードはオフです。Shizuku への接続、Root の要求、特権コマンドの実行を行いません。</string>
     <string name="settings_privileged_mode_summary_shizuku">特権コマンドは Shizuku サービス経由で実行します。先に Shizuku を起動して認可してください。</string>
     <string name="settings_privileged_mode_summary_root">特権コマンドは su 経由で実行します。Magisk、KernelSU、APatch などのスーパーユーザーマネージャーが必要です。</string>
     <string name="settings_privileged_mode_scope">OS ページのコマンド、アプリ一覧検出、MCP 特権ツールに適用</string>

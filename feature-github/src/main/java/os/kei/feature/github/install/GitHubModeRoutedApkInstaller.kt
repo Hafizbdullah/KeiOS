@@ -25,6 +25,7 @@ class GitHubModeRoutedApkInstaller(
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubApkInstallResult {
         val mode = activeMode()
+        if (mode == PrivilegeMode.Disabled) return disabledFailure()
         val result = installerFor(mode).stage(context, request, onProgress)
         if (result is GitHubApkInstallResult.Staged && result.sessionId > 0) {
             sessionOwners[result.sessionId] = mode
@@ -40,8 +41,10 @@ class GitHubModeRoutedApkInstaller(
         totalBytes: Long,
         onProgress: suspend (GitHubApkInstallProgress) -> Unit,
     ): GitHubApkInstallResult {
+        val owner = ownerOf(sessionId)
+        if (owner == PrivilegeMode.Disabled) return disabledFailure(sessionId)
         val result =
-            installerFor(ownerOf(sessionId)).commit(
+            installerFor(owner).commit(
                 context = context,
                 request = request,
                 sessionId = sessionId,
@@ -54,14 +57,25 @@ class GitHubModeRoutedApkInstaller(
     }
 
     override suspend fun cancel(context: Context, sessionId: Int) {
-        installerFor(ownerOf(sessionId)).cancel(context, sessionId)
+        val owner = ownerOf(sessionId)
+        if (owner != PrivilegeMode.Disabled) {
+            installerFor(owner).cancel(context, sessionId)
+        }
         sessionOwners.remove(sessionId)
     }
 
     private fun ownerOf(sessionId: Int): PrivilegeMode = sessionOwners[sessionId] ?: activeMode()
 
     private fun installerFor(mode: PrivilegeMode): GitHubManagedApkInstaller = when (mode) {
+        PrivilegeMode.Disabled -> error("Disabled privilege mode has no managed installer")
         PrivilegeMode.Shizuku -> shizukuInstaller
         PrivilegeMode.Root -> rootInstaller
     }
+
+    private fun disabledFailure(sessionId: Int = -1): GitHubApkInstallResult.Failed =
+        GitHubApkInstallResult.Failed(
+            reason = GitHubApkInstallFailureReason.PrivilegeModeDisabled,
+            message = "Privilege mode is disabled",
+            sessionId = sessionId,
+        )
 }

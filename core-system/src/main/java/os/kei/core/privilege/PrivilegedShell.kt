@@ -163,6 +163,8 @@ class PrivilegedShell(
 
     private fun backend(): PrivilegeBackend =
         when (PrivilegeModeRuntime.mode) {
+            PrivilegeMode.Disabled -> DisabledPrivilegeBackend
+
             PrivilegeMode.Shizuku -> synchronized(backendLock) {
                 shizukuBackend ?: ShizukuPrivilegeBackend(
                     requestCode = requestCode,

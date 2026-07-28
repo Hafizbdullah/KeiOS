@@ -135,7 +135,9 @@ private fun SettingsPermissionCard(
         NotificationPermissionItem(state = state, actions = actions)
         AppListAccessItem(state = state, actions = actions)
         PrivilegedModePickerItem(state = state, actions = actions)
-        PrivilegedAccessItem(state = state, actions = actions)
+        if (state.privilegeMode != PrivilegeMode.Disabled) {
+            PrivilegedAccessItem(state = state, actions = actions)
+        }
     }
 }
 
@@ -285,6 +287,7 @@ private fun PrivilegedModePickerItem(
     var anchorBounds by remember { mutableStateOf<IntRect?>(null) }
     val options =
         listOf(
+            PrivilegeMode.Disabled to stringResource(R.string.settings_privileged_mode_disabled),
             PrivilegeMode.Shizuku to stringResource(R.string.settings_privileged_mode_shizuku),
             PrivilegeMode.Root to stringResource(R.string.settings_privileged_mode_root),
         )
@@ -293,6 +296,7 @@ private fun PrivilegedModePickerItem(
         title = stringResource(R.string.settings_privileged_mode_title),
         summary =
             when (state.privilegeMode) {
+                PrivilegeMode.Disabled -> stringResource(R.string.settings_privileged_mode_summary_disabled)
                 PrivilegeMode.Shizuku -> stringResource(R.string.settings_privileged_mode_summary_shizuku)
                 PrivilegeMode.Root -> stringResource(R.string.settings_privileged_mode_summary_root)
             },
