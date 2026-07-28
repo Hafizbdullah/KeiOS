@@ -4,6 +4,8 @@ package os.kei.ui.page.main.github.page
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidRepositoryPresets
@@ -60,9 +62,11 @@ internal fun GitHubPageSheetHost(
     onClearManagedInstallConfirmSheetState: () -> Unit,
     onConfirmTrackImport: () -> Unit,
 ) {
-    val trackedPackageNames =
-        remember(state.trackedItems) {
-            state.trackedItems.map { item -> item.packageName }.toSet()
+    val trackedPackageNames by
+        remember(state) {
+            derivedStateOf {
+                state.trackedItems.map { item -> item.packageName }.toSet()
+            }
         }
     val enabledFdroidCommonRepos =
         remember(state.lookupConfig.normalizedFdroidCommonRepoIds) {
