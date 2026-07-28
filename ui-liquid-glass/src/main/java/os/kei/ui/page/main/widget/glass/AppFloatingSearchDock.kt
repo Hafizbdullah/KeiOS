@@ -242,6 +242,7 @@ fun AppFloatingVerticalSearchActionDock(
     extraActions: List<AppFloatingDockAction> = emptyList(),
     dockSide: AppFloatingDockSide = AppFloatingDockSide.End,
     showAddAction: Boolean = true,
+    showRefreshAction: Boolean = true,
     refreshEnabled: Boolean = true,
     refreshStatus: AppFloatingRefreshStatus = AppFloatingRefreshStatus.Idle,
     refreshBadgeLabel: String? = null,
@@ -275,7 +276,11 @@ fun AppFloatingVerticalSearchActionDock(
             keyboardLift = keyboardLift,
             focusedLift = focusedLift,
         )
-    val visibleActionCount = (if (showAddAction) 1 else 0) + extraActions.size + 2
+    val visibleActionCount =
+        (if (showAddAction) 1 else 0) +
+            extraActions.size +
+            (if (showRefreshAction) 1 else 0) +
+            1
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
     val dockMode =
         when {
@@ -387,20 +392,22 @@ fun AppFloatingVerticalSearchActionDock(
                         tooltipText = action.tooltipText,
                     )
                 }
-                AppFloatingVerticalDockAction(
-                    icon = refreshIcon,
-                    contentDescription = refreshContentDescription,
-                    onClick = onRefreshClick,
-                    size = size,
-                    iconSize = iconSize,
-                    iconTint = refreshTint,
-                    enabled = refreshEnabled && refreshStatus != AppFloatingRefreshStatus.Refreshing,
-                    rotating = refreshStatus == AppFloatingRefreshStatus.Refreshing,
-                    badgeLabel = refreshBadgeLabel,
-                    badgeColor = refreshBadgeColor,
-                    badgeContentColor = refreshBadgeContentColor,
-                    tooltipText = refreshTooltipText,
-                )
+                if (showRefreshAction) {
+                    AppFloatingVerticalDockAction(
+                        icon = refreshIcon,
+                        contentDescription = refreshContentDescription,
+                        onClick = onRefreshClick,
+                        size = size,
+                        iconSize = iconSize,
+                        iconTint = refreshTint,
+                        enabled = refreshEnabled && refreshStatus != AppFloatingRefreshStatus.Refreshing,
+                        rotating = refreshStatus == AppFloatingRefreshStatus.Refreshing,
+                        badgeLabel = refreshBadgeLabel,
+                        badgeColor = refreshBadgeColor,
+                        badgeContentColor = refreshBadgeContentColor,
+                        tooltipText = refreshTooltipText,
+                    )
+                }
                 AppFloatingVerticalDockAction(
                     icon = searchIcon,
                     contentDescription = searchContentDescription,

@@ -80,6 +80,25 @@ class GitHubPageBackdropTest {
         assertTrue("topExtra = AppEdgeStackListTopInset," in source)
         assertTrue("bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)" in source)
     }
+
+    @Test
+    fun pullToRefreshReplacesTheVisibleDockRefreshAction() {
+        val source = sourceFile(GITHUB_MAIN_CONTENT_SOURCE)
+        val pullToRefreshIndex = source.indexOf("PullToRefresh(")
+        val pullRefreshCallbackIndex =
+            source.indexOf("actions.onRefreshVisibleTracked()", startIndex = pullToRefreshIndex.coerceAtLeast(0))
+        val dockIndex = source.indexOf("AppFloatingVerticalSearchActionDock(")
+        val hiddenRefreshActionIndex =
+            source.indexOf("showRefreshAction = false,", startIndex = dockIndex.coerceAtLeast(0))
+
+        assertTrue(pullToRefreshIndex >= 0, "GitHub content must keep pull-to-refresh")
+        assertTrue(
+            pullRefreshCallbackIndex > pullToRefreshIndex,
+            "Pull-to-refresh must refresh the visible tracked items",
+        )
+        assertTrue(dockIndex > pullRefreshCallbackIndex, "The floating dock must remain after pull-to-refresh content")
+        assertTrue(hiddenRefreshActionIndex > dockIndex, "The GitHub dock must hide its redundant refresh action")
+    }
 }
 
 private fun sourceFile(relativePath: String): String {

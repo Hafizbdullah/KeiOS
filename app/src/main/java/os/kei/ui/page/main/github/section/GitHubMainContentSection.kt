@@ -436,6 +436,7 @@ internal fun GitHubMainContent(
                     refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
                     onRefreshClick = actions.onRefreshVisibleTracked,
                     showAddAction = true,
+                    showRefreshAction = false,
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,
                     refreshBadgeLabel = refreshBadgeLabel,
