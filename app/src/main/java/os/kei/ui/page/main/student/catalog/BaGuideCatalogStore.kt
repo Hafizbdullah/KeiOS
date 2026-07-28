@@ -301,10 +301,12 @@ internal object BaGuideCatalogStore {
         }.getOrDefault(emptyMap())
     }
 
-    fun saveFavorites(favorites: Map<Long, Long>) =
+    fun saveFavorites(favorites: Map<Long, Long>) {
         synchronized(favoritesLock) {
             saveFavoritesLocked(kv(), favorites)
         }
+        BaGuideCatalogFavoritesStoreSignals.notifyChanged()
+    }
 
     private fun saveFavoritesLocked(
         store: MMKV,
@@ -340,17 +342,22 @@ internal object BaGuideCatalogStore {
         nowMs: Long = System.currentTimeMillis(),
     ): Map<Long, Long> {
         val store = kv()
-        return synchronized(favoritesLock) {
-            if (contentId <= 0L) return@synchronized loadFavoritesLocked(store)
-            val current = loadFavoritesLocked(store).toMutableMap()
-            if (current.containsKey(contentId)) {
-                current.remove(contentId)
-            } else {
-                current[contentId] = nowMs.coerceAtLeast(1L)
+        val updated =
+            synchronized(favoritesLock) {
+                if (contentId <= 0L) return@synchronized loadFavoritesLocked(store)
+                val current = loadFavoritesLocked(store).toMutableMap()
+                if (current.containsKey(contentId)) {
+                    current.remove(contentId)
+                } else {
+                    current[contentId] = nowMs.coerceAtLeast(1L)
+                }
+                saveFavoritesLocked(store, current)
+                current.toMap()
             }
-            saveFavoritesLocked(store, current)
-            current.toMap()
+        if (contentId > 0L) {
+            BaGuideCatalogFavoritesStoreSignals.notifyChanged()
         }
+        return updated
     }
 }
 

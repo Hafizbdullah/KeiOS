@@ -29,4 +29,23 @@ class BASettingsStoreSignalsTest {
         assertEquals(targetVersion, BASettingsStoreSignals.version.value)
         assertEquals(targetVersion, BASettingsStoreSignals.homeOverviewVersion.value)
     }
+
+    @Test
+    fun `repeated timestamp still advances both signals`() {
+        val repeatedTimestamp = BASettingsStoreSignals.version.value
+        val versionBefore = BASettingsStoreSignals.version.value
+        val homeBefore = BASettingsStoreSignals.homeOverviewVersion.value
+
+        BASettingsStoreSignals.notifyChanged(
+            atMillis = repeatedTimestamp,
+            notifyHomeOverview = true,
+        )
+        BASettingsStoreSignals.notifyChanged(
+            atMillis = repeatedTimestamp,
+            notifyHomeOverview = true,
+        )
+
+        assertEquals(versionBefore + 2L, BASettingsStoreSignals.version.value)
+        assertEquals(homeBefore + 2L, BASettingsStoreSignals.homeOverviewVersion.value)
+    }
 }

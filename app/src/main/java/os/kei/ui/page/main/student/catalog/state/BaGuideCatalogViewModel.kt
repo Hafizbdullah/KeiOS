@@ -22,8 +22,9 @@ import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.GuideMediaImageLoader
 import os.kei.ui.page.main.student.GuideMediaImageRequest
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
-import os.kei.ui.page.main.student.catalog.resolvedBaGuideCatalogIncrementalRefreshIntervalHours
+import os.kei.ui.page.main.student.catalog.BaGuideCatalogFavoritesStoreSignals
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
+import os.kei.ui.page.main.student.catalog.resolvedBaGuideCatalogIncrementalRefreshIntervalHours
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportKind
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogImportPreviewState
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogJsonExportRequest
@@ -158,8 +159,10 @@ internal class BaGuideCatalogViewModel(
 
     init {
         viewModelScope.launch {
-            _catalogFavoriteEntries.value = repository.loadCatalogFavorites()
-            scheduleStudentDetailValidation(_dataState.value.catalog)
+            BaGuideCatalogFavoritesStoreSignals.version.collect {
+                _catalogFavoriteEntries.value = repository.loadCatalogFavorites()
+                scheduleStudentDetailValidation(_dataState.value.catalog)
+            }
         }
         viewModelScope.launch {
             repository.hydrateBgmFavorites()

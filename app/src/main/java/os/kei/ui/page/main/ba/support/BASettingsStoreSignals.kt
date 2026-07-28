@@ -3,6 +3,7 @@ package os.kei.ui.page.main.ba.support
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 internal object BASettingsStoreSignals {
     private val _version = MutableStateFlow(0L)
@@ -15,9 +16,13 @@ internal object BASettingsStoreSignals {
         atMillis: Long = System.currentTimeMillis(),
         notifyHomeOverview: Boolean = true,
     ) {
-        _version.value = atMillis
+        _version.update { previous ->
+            atMillis.coerceAtLeast(previous + 1L)
+        }
         if (notifyHomeOverview) {
-            _homeOverviewVersion.value = atMillis
+            _homeOverviewVersion.update { previous ->
+                atMillis.coerceAtLeast(previous + 1L)
+            }
         }
     }
 }
