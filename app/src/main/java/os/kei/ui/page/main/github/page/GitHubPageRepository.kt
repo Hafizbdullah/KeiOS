@@ -300,6 +300,8 @@ internal class GitHubPageRepository(
 
     suspend fun loadHistoryUnreadCount(): Int = historyUnreadService.loadCounts().totalCount
 
+    fun historyUnreadSignalVersions(): StateFlow<Long> = historyUnreadService.signalVersions()
+
     suspend fun saveTrackedItems(
         context: Context,
         items: List<GitHubTrackedApp>,

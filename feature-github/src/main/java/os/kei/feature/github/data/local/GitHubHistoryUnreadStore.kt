@@ -43,11 +43,14 @@ object GitHubHistoryUnreadStore {
                 GitHubHistoryUnreadBucket.Apps ->
                     previous.copy(appsReadAtMillis = maxOf(previous.appsReadAtMillis, latestSeenAtMillis))
             }
+        if (next == previous) return previous
         saveWatermarks(next)
+        GitHubHistoryUnreadStoreSignals.notifyChanged()
         return next
     }
 
     fun clear() {
+        val previous = loadWatermarks()
         val kv = kv()
         kv.removeValuesForKeys(
             arrayOf(
@@ -58,6 +61,9 @@ object GitHubHistoryUnreadStore {
             ),
         )
         kv.trim()
+        if (previous != GitHubHistoryUnreadWatermarks()) {
+            GitHubHistoryUnreadStoreSignals.notifyChanged()
+        }
     }
 
     private fun saveWatermarks(watermarks: GitHubHistoryUnreadWatermarks) {

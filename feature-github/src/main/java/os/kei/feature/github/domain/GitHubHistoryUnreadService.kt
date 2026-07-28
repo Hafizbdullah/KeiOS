@@ -1,11 +1,13 @@
 package os.kei.feature.github.domain
 
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubActionsNotificationHistoryStore
 import os.kei.feature.github.data.local.GitHubAppInstallHistoryStore
 import os.kei.feature.github.data.local.GitHubHistoryUnreadStore
+import os.kei.feature.github.data.local.GitHubHistoryUnreadStoreSignals
 import os.kei.feature.github.data.local.GitHubRefreshHistoryStore
 import os.kei.feature.github.data.local.GitHubTrackChangeHistoryStore
 
@@ -113,6 +115,8 @@ class GitHubHistoryUnreadService(
                 watermarks = watermarks,
             )
         }
+
+    fun signalVersions(): StateFlow<Long> = GitHubHistoryUnreadStoreSignals.version
 
     private fun loadEventTimes(): GitHubHistoryUnreadEventTimes =
         GitHubHistoryUnreadEventTimes(

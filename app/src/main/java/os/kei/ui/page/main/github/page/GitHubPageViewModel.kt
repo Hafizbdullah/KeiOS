@@ -251,7 +251,11 @@ internal class GitHubPageViewModel(
         viewModelScope.launch {
             _appPickerPreferences.value = repository.loadAppPickerPreferences()
         }
-        refreshHistoryUnreadCount()
+        viewModelScope.launch {
+            repository.historyUnreadSignalVersions().collect {
+                refreshHistoryUnreadCount()
+            }
+        }
     }
 
     fun pageState(): GitHubPageState {
