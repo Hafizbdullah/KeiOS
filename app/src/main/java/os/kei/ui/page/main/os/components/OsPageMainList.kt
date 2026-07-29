@@ -46,6 +46,7 @@ import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
+import os.kei.ui.page.main.widget.core.AppOverviewPillItem
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
@@ -156,6 +157,20 @@ internal fun OsPageMainList(
     val overviewCardColor = overviewState.overviewCardColor
     val overviewBorderColor = overviewState.overviewBorderColor
     val overviewMetrics = overviewState.overviewMetrics
+    val overviewPills =
+        overviewMetrics.map { metric ->
+            AppOverviewPill(
+                label =
+                    stringResource(
+                        R.string.os_overview_metric_pill,
+                        metric.label,
+                        metric.value,
+                    ),
+                color = metric.valueColor ?: MiuixTheme.colorScheme.primary,
+            )
+        }
+    val topOverviewPill = overviewPills.firstOrNull()
+    val bodyOverviewPills = overviewPills.drop(1)
     val noMatchedResultsText = contentState.noMatchedResultsText
     val derivedState = contentState.derivedState
     val query = derivedState.query
@@ -280,6 +295,11 @@ internal fun OsPageMainList(
                 if (refreshing) return@AppOverviewCard
                 onRefreshAll()
             },
+            titleAccessory = {
+                topOverviewPill?.let { pill ->
+                    AppOverviewPillItem(pill = pill)
+                }
+            },
             headerEndActions = {
                 if (systemOverviewState != SystemOverviewState.Idle) {
                     LiquidCircularProgressBar(
@@ -300,16 +320,7 @@ internal fun OsPageMainList(
             },
         ) {
             AppOverviewPillFlow(
-                pills = overviewMetrics.map { metric ->
-                    AppOverviewPill(
-                        label = stringResource(
-                            R.string.os_overview_metric_pill,
-                            metric.label,
-                            metric.value,
-                        ),
-                        color = metric.valueColor ?: MiuixTheme.colorScheme.primary,
-                    )
-                },
+                pills = bodyOverviewPills,
             )
         }
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {

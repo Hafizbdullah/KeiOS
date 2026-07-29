@@ -56,6 +56,48 @@ class AppOverviewPillLayoutTest {
         )
     }
 
+    @Test
+    fun osTopPillSharesTheTitleRowWhileOtherMetricsStayBelow() {
+        val title = "OS 总览"
+        val topPill = AppOverviewPill(label = "Top 2/22", color = Color(0xFF2563EB))
+        val bodyLabels = listOf("参数 1/7", "活动 9/9", "Shell 4/4")
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    AppOverviewCard(
+                        title = title,
+                        titleAccessory = {
+                            AppOverviewPillItem(pill = topPill)
+                        },
+                    ) {
+                        AppOverviewPillFlow(
+                            pills =
+                                bodyLabels.map { label ->
+                                    AppOverviewPill(label = label, color = Color(0xFF2563EB))
+                                },
+                        )
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        val titleBounds = boundsFor(title)
+        val topPillBounds = boundsFor(topPill.label)
+        val firstBodyPillBounds = boundsFor(bodyLabels.first())
+        val sameRowTolerancePx = with(composeRule.density) { 2.dp.toPx() }
+
+        assertTrue(
+            actual = abs(titleBounds.center.y - topPillBounds.center.y) <= sameRowTolerancePx,
+            message = "Expected title and Top pill to share a baseline row: title=$titleBounds, top=$topPillBounds",
+        )
+        assertTrue(
+            actual = firstBodyPillBounds.top > titleBounds.bottom,
+            message = "Expected the remaining metrics below the title row: title=$titleBounds, body=$firstBodyPillBounds",
+        )
+    }
+
     private fun setPills(labels: List<String>) {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {

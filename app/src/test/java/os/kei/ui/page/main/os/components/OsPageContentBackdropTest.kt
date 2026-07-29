@@ -38,6 +38,17 @@ class OsPageContentBackdropTest {
             "Floating dock must sample the scrolling-content identity",
         )
     }
+
+    @Test
+    fun overviewMovesTopMetricIntoTheTitleRow() {
+        val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
+
+        assertTrue("val topOverviewPill = overviewPills.firstOrNull()" in source)
+        assertTrue("val bodyOverviewPills = overviewPills.drop(1)" in source)
+        assertTrue("titleAccessory = {" in source)
+        assertTrue("AppOverviewPillItem(pill = pill)" in source)
+        assertTrue("pills = bodyOverviewPills" in source)
+    }
 }
 
 private fun sourceFile(relativePath: String): String {
