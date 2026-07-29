@@ -13,6 +13,8 @@ import os.kei.ui.page.main.widget.core.AppCardBodyColumn
 import os.kei.ui.page.main.widget.core.AppCardHeader
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.core.rememberExpandableCardVisibilityState
+import os.kei.ui.page.main.widget.core.shouldApplyEdgeStackToExpandableCard
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -118,6 +120,7 @@ private fun AppLiquidExpandableCardFrame(
     content: @Composable () -> Unit,
 ) {
     val sectionSurface = containerColor ?: MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.4f)
+    val contentVisibilityState = rememberExpandableCardVisibilityState(expanded)
 
     AppSurfaceCard(
         backdrop = backdrop,
@@ -126,6 +129,11 @@ private fun AppLiquidExpandableCardFrame(
         showIndication = false,
         exportBackdropToContent = true,
         clipContent = clipContent,
+        edgeStackEnabled =
+            shouldApplyEdgeStackToExpandableCard(
+                currentState = contentVisibilityState.currentState,
+                targetState = contentVisibilityState.targetState,
+            ),
     ) {
         AppCardHeader(
             title = title,
@@ -148,7 +156,7 @@ private fun AppLiquidExpandableCardFrame(
             onLongClick = onHeaderLongClick,
         )
         AnimatedVisibility(
-            visible = expanded,
+            visibleState = contentVisibilityState,
             enter = appExpandIn(),
             exit = appExpandOut(),
         ) {

@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.widget.core
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -46,6 +48,7 @@ fun AppSurfaceCard(
     showIndication: Boolean = true,
     exportBackdropToContent: Boolean = false,
     clipContent: Boolean = true,
+    edgeStackEnabled: Boolean = true,
     pressSafePadding: Dp = Dp.Unspecified,
     blurRadius: Dp = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Content),
     lensRadius: Dp = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Content),
@@ -59,7 +62,7 @@ fun AppSurfaceCard(
 ) {
     val edgeStack = LocalAppEdgeStackCards.current
     val edgeStackModifier =
-        if (edgeStack != null) {
+        if (edgeStackEnabled && edgeStack != null) {
             Modifier.appEdgeStackedCard(edgeStack)
         } else {
             Modifier
@@ -138,6 +141,10 @@ fun AppFeatureCard(
     collapseOnSurfaceClick: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val contentVisibilityState =
+        rememberExpandableCardVisibilityState(
+            expanded = !collapsible || expanded,
+        )
     val toggleExpanded: () -> Unit = { onExpandedChange(!expanded) }
     val headerClick =
         when {
@@ -159,6 +166,12 @@ fun AppFeatureCard(
         borderColor = borderColor,
         contentColor = contentColor,
         showIndication = showIndication,
+        edgeStackEnabled =
+            !collapsible ||
+                shouldApplyEdgeStackToExpandableCard(
+                    currentState = contentVisibilityState.currentState,
+                    targetState = contentVisibilityState.targetState,
+                ),
         onClick = surfaceClick,
         onLongClick = onLongClick,
     ) {
@@ -193,7 +206,7 @@ fun AppFeatureCard(
             onLongClick = onLongClick,
         )
         AnimatedVisibility(
-            visible = !collapsible || expanded,
+            visibleState = contentVisibilityState,
             enter = appExpandIn(),
             exit = appExpandOut(),
         ) {
@@ -205,3 +218,17 @@ fun AppFeatureCard(
         }
     }
 }
+
+@Composable
+internal fun rememberExpandableCardVisibilityState(
+    expanded: Boolean,
+): MutableTransitionState<Boolean> {
+    val state = remember { MutableTransitionState(expanded) }
+    state.targetState = expanded
+    return state
+}
+
+internal fun shouldApplyEdgeStackToExpandableCard(
+    currentState: Boolean,
+    targetState: Boolean,
+): Boolean = !currentState && !targetState
