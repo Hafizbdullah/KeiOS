@@ -18,25 +18,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideDatabaseIcon
+import os.kei.ui.page.main.os.appLucideFolderIcon
+import os.kei.ui.page.main.os.appLucideInfoIcon
+import os.kei.ui.page.main.os.appLucideRefreshIcon
+import os.kei.ui.page.main.os.appLucideTrashIcon
 import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.settings.support.SettingsInfoItem
-import os.kei.ui.page.main.settings.support.SettingsNavigationItem
 import os.kei.ui.page.main.settings.support.SettingsPickerItem
 import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppDualActionRow
+import os.kei.ui.page.main.widget.core.AppFeatureCard
+import os.kei.ui.page.main.widget.core.AppOverviewCard
+import os.kei.ui.page.main.widget.core.AppOverviewPill
+import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
+import os.kei.ui.page.main.widget.core.AppSupportingBlock
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.status.AppStatusColors
+import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
@@ -44,216 +52,100 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-internal fun WebDavConnectionCard(
-    state: WebDavSyncUiState,
-    cardColor: Color,
-    providerExpanded: Boolean,
-    providerAnchorBounds: IntRect?,
-    onProviderExpandedChange: (Boolean) -> Unit,
-    onProviderAnchorBoundsChange: (IntRect?) -> Unit,
-    onSelectProvider: (WebDavProvider) -> Unit,
-    onUpdateServerUrl: (String) -> Unit,
-    onUpdateUsername: (String) -> Unit,
-    onUpdateAppPassword: (String) -> Unit,
-    onUpdateRemoteDir: (String) -> Unit,
-    onTogglePasswordVisible: () -> Unit,
-    onTestConnection: () -> Unit,
-    onSave: () -> Unit,
-    onOpenJianguoyunHelp: () -> Unit,
-) {
-    val providerEntries = remember { WebDavProvider.entries.toList() }
-    val providerLabels = providerEntries.map { provider ->
-        when (provider) {
-            WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun)
-            WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom)
-        }
-    }
-    val selectedProviderIndex = providerEntries.indexOf(state.provider).coerceAtLeast(0)
-    val providerSummary = when (state.provider) {
-        WebDavProvider.Jianguoyun -> stringResource(R.string.webdav_sync_provider_jianguoyun_desc)
-        WebDavProvider.Custom -> stringResource(R.string.webdav_sync_provider_custom_desc)
-    }
-
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
-        title = stringResource(R.string.webdav_sync_connection),
-        sectionIcon = appLucideDatabaseIcon(),
-        containerColor = cardColor,
-    ) {
-        SettingsPickerItem(
-            title = stringResource(R.string.webdav_sync_provider_label),
-            summary = providerSummary,
-            onClick = { onProviderExpandedChange(true) },
-            trailing = {
-                AppDropdownSelector(
-                    selectedText = providerLabels.getOrElse(selectedProviderIndex) { state.provider.name },
-                    options = providerLabels,
-                    selectedIndex = selectedProviderIndex,
-                    expanded = providerExpanded,
-                    anchorBounds = providerAnchorBounds,
-                    onExpandedChange = onProviderExpandedChange,
-                    onSelectedIndexChange = { index ->
-                        providerEntries.getOrNull(index)?.let(onSelectProvider)
-                        onProviderExpandedChange(false)
-                    },
-                    onAnchorBoundsChange = onProviderAnchorBoundsChange,
-                    popupMaxWidth = 220.dp,
-                    popupMatchAnchorWidth = true,
-                )
-            },
-        )
-
-        if (state.provider.serverUrlLocked) {
-            SettingsInfoItem(
-                key = stringResource(R.string.webdav_sync_jianguoyun_server_label),
-                value = state.provider.presetServerUrl.orEmpty(),
-            )
-        } else {
-            WebDavFieldLabel(stringResource(R.string.webdav_sync_server_url))
-            WebDavLiquidTextField(
-                value = state.serverUrl,
-                onValueChange = onUpdateServerUrl,
-                label = stringResource(R.string.webdav_sync_server_url_placeholder),
-            )
-            urlErrorText(state.urlError)?.let { text ->
-                Text(
-                    text = text,
-                    color = MiuixTheme.colorScheme.error,
-                    fontSize = AppTypographyTokens.Caption.fontSize,
-                    lineHeight = AppTypographyTokens.Caption.lineHeight,
-                )
-            }
-        }
-
-        WebDavFieldLabel(stringResource(R.string.webdav_sync_username))
-        WebDavLiquidTextField(
-            value = state.username,
-            onValueChange = onUpdateUsername,
-            label = stringResource(R.string.webdav_sync_username_placeholder),
-        )
-
-        WebDavFieldLabel(stringResource(R.string.webdav_sync_app_password))
-        WebDavLiquidTextField(
-            value = state.appPassword,
-            onValueChange = onUpdateAppPassword,
-            label = stringResource(R.string.webdav_sync_password_placeholder),
-            visualTransformation = if (state.passwordVisible) {
-                VisualTransformation.None
-            } else {
-                PasswordVisualTransformation()
-            },
-        )
-        AppControlRow(
-            title = stringResource(
-                if (state.passwordVisible) {
-                    R.string.webdav_sync_password_hide
-                } else {
-                    R.string.webdav_sync_password_show
-                },
-            ),
-            summary = if (state.provider == WebDavProvider.Jianguoyun) {
-                stringResource(R.string.webdav_sync_jianguoyun_password_hint)
-            } else {
-                null
-            },
-            onClick = onTogglePasswordVisible,
-            minHeight = 36.dp,
-        )
-
-        WebDavFieldLabel(stringResource(R.string.webdav_sync_remote_dir))
-        WebDavLiquidTextField(
-            value = state.remoteDir,
-            onValueChange = onUpdateRemoteDir,
-            label = WebDavSyncStore.DEFAULT_REMOTE_DIR,
-        )
-
-        if (state.provider == WebDavProvider.Jianguoyun) {
-            Spacer(Modifier.height(CardLayoutRhythm.compactSectionGap))
-            Text(
-                text = stringResource(R.string.webdav_sync_jianguoyun_hint),
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-            Text(
-                text = stringResource(R.string.webdav_sync_jianguoyun_quota_hint),
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
-                fontSize = AppTypographyTokens.Caption.fontSize,
-                lineHeight = AppTypographyTokens.Caption.lineHeight,
-            )
-            SettingsNavigationItem(
-                title = stringResource(R.string.webdav_sync_jianguoyun_help_label),
-                summary = stringResource(R.string.webdav_sync_jianguoyun_help_summary),
-                onClick = onOpenJianguoyunHelp,
-            )
-        }
-
-        state.connectionResult?.let { outcome ->
-            val text = connectionStatusText(outcome)
-            val color = if (outcome.isSuccess) {
-                Color(0xFF22C55E)
-            } else {
-                MiuixTheme.colorScheme.error
-            }
-            Text(
-                text = text,
-                color = color,
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-        }
-
-        AppDualActionRow(
-            first = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetPrimaryAction,
-                    text = if (state.testing) {
-                        stringResource(R.string.webdav_sync_testing)
-                    } else {
-                        stringResource(R.string.webdav_sync_test_connection)
-                    },
-                    modifier = modifier,
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.primary,
-                    enabled = !state.interactionLocked && state.canConnect,
-                    onClick = onTestConnection,
-                )
-            },
-            second = { modifier ->
-                AppStandaloneLiquidTextButton(
-                    variant = GlassVariant.SheetAction,
-                    text = stringResource(R.string.webdav_sync_save),
-                    modifier = modifier,
-                    buttonModifier = Modifier.fillMaxWidth(),
-                    textColor = MiuixTheme.colorScheme.primary,
-                    enabled = !state.interactionLocked && state.canConnect,
-                    onClick = onSave,
-                )
-            },
-        )
-    }
-}
-
-@Composable
 internal fun WebDavSyncOverviewCard(
     state: WebDavSyncUiState,
     cardColor: Color,
 ) {
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
-        title = stringResource(R.string.webdav_sync_overview_card_title),
-        sectionIcon = appLucideDatabaseIcon(),
-        containerColor = cardColor,
-    ) {
-        WebDavSyncTotalsHeader(state = state)
-        stateSummaryMessage(state)?.let { summary ->
-            Text(
-                text = summary,
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.84f),
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
+    val totals = webDavSyncTotals(state)
+    val statusColor =
+        when {
+            state.interactionLocked -> AppStatusColors.Refreshing
+            state.isConfigured -> AppStatusColors.Fresh
+            else -> MiuixTheme.colorScheme.onBackgroundVariant
         }
+    AppOverviewCard(
+        title = stringResource(R.string.webdav_sync_overview_card_title),
+        subtitle = stateSummaryMessage(state).orEmpty(),
+        containerColor = cardColor,
+        startAction = {
+            top.yukonga.miuix.kmp.basic.Icon(
+                imageVector = appLucideDatabaseIcon(),
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onBackground,
+            )
+        },
+        headerEndActions = {
+            StatusPill(
+                label =
+                    stringResource(
+                        when {
+                            state.interactionLocked -> R.string.webdav_sync_status_running
+                            state.isConfigured -> R.string.webdav_sync_status_active
+                            else -> R.string.webdav_sync_status_setup_required
+                        },
+                    ),
+                color = statusColor,
+            )
+        },
+        contentVerticalSpacing = CardLayoutRhythm.compactSectionGap,
+    ) {
+        AppOverviewPillFlow(
+            pills =
+                buildList {
+                    add(
+                        AppOverviewPill(
+                            label =
+                                stringResource(
+                                    R.string.webdav_sync_metric_local,
+                                    totals.localItems,
+                                ),
+                            color = MiuixTheme.colorScheme.primary,
+                        ),
+                    )
+                    add(
+                        AppOverviewPill(
+                            label =
+                                stringResource(
+                                    R.string.webdav_sync_metric_enabled,
+                                    totals.enabledTypes,
+                                    state.itemStates.size,
+                                ),
+                            color =
+                                if (totals.enabledTypes > 0) {
+                                    AppStatusColors.Fresh
+                                } else {
+                                    MiuixTheme.colorScheme.onBackgroundVariant
+                                },
+                        ),
+                    )
+                    if (totals.anyRemoteKnown) {
+                        add(
+                            AppOverviewPill(
+                                label =
+                                    stringResource(
+                                        R.string.webdav_sync_metric_remote,
+                                        totals.remoteItems,
+                                    ),
+                                color = AppStatusColors.Cached,
+                            ),
+                        )
+                    }
+                },
+        )
+        AppSupportingBlock(
+            text =
+                if (totals.anyRemoteKnown) {
+                    stringResource(
+                        R.string.webdav_sync_totals_remote_format,
+                        totals.remoteItems,
+                        formatBytes(totals.remoteBytes),
+                    )
+                } else {
+                    stringResource(R.string.webdav_sync_totals_remote_unknown)
+                },
+            accentColor = AppStatusColors.Cached,
+            fillWidth = true,
+        )
         if (state.lastFullSyncTimeMs > 0) {
             SettingsInfoItem(
                 key = stringResource(R.string.webdav_sync_last_sync_label),
@@ -285,9 +177,10 @@ internal fun WebDavSyncAutoSyncCard(
     var intervalExpanded by remember { mutableStateOf(false) }
     var intervalAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+        header = stringResource(R.string.webdav_sync_section_data),
         title = stringResource(R.string.webdav_sync_auto_card_title),
-        sectionIcon = appLucideDatabaseIcon(),
+        subtitle = stringResource(R.string.webdav_sync_auto_sync_summary),
+        sectionIcon = appLucideRefreshIcon(),
         containerColor = cardColor,
     ) {
         SettingsToggleItem(
@@ -383,9 +276,10 @@ internal fun WebDavSyncRemoteSnapshotCard(
     val enabledActionTextColor = MiuixTheme.colorScheme.primary
     val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
     SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+        header = stringResource(R.string.webdav_sync_section_data),
         title = stringResource(R.string.webdav_sync_remote_card_title),
-        sectionIcon = appLucideDatabaseIcon(),
+        subtitle = stringResource(R.string.webdav_sync_remote_never_probed),
+        sectionIcon = appLucideFolderIcon(),
         containerColor = cardColor,
     ) {
         AppStandaloneLiquidTextButton(
@@ -436,18 +330,12 @@ internal fun WebDavSyncBatchActionsCard(
     val enabledActionTextColor = MiuixTheme.colorScheme.primary
     val disabledActionTextColor = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.52f)
     SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+        header = stringResource(R.string.webdav_sync_section_data),
         title = stringResource(R.string.webdav_sync_batch_card_title),
-        sectionIcon = appLucideDatabaseIcon(),
+        subtitle = stringResource(R.string.webdav_sync_actions_contract_summary),
+        sectionIcon = appLucideRefreshIcon(),
         containerColor = cardColor,
     ) {
-        Text(
-            text = stringResource(R.string.webdav_sync_actions_contract_summary),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.78f),
-            fontSize = AppTypographyTokens.Caption.fontSize,
-            lineHeight = AppTypographyTokens.Caption.lineHeight,
-        )
-        Spacer(Modifier.height(CardLayoutRhythm.denseSectionGap))
         AppDualActionRow(
             first = { modifier ->
                 AppStandaloneLiquidTextButton(
@@ -510,7 +398,7 @@ internal fun WebDavSyncItemListCard(
     onRunItem: (WebDavSyncItem, WebDavBatchKind) -> Unit,
 ) {
     SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+        header = stringResource(R.string.webdav_sync_items_title),
         title = stringResource(titleRes),
         sectionIcon = appLucideDatabaseIcon(),
         containerColor = cardColor,
@@ -531,18 +419,14 @@ internal fun WebDavClearCard(
     cardColor: Color,
     onClear: () -> Unit,
 ) {
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+    AppFeatureCard(
         title = stringResource(R.string.webdav_sync_clear_label),
-        sectionIcon = appLucideDatabaseIcon(),
+        subtitle = stringResource(R.string.webdav_sync_clear_summary),
+        eyebrow = stringResource(R.string.webdav_sync_section_advanced),
+        sectionIcon = appLucideTrashIcon(),
         containerColor = cardColor,
+        showIndication = false,
     ) {
-        Text(
-            text = stringResource(R.string.webdav_sync_clear_summary),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
         AppStandaloneLiquidTextButton(
             variant = GlassVariant.SheetDangerAction,
             text = stringResource(R.string.webdav_sync_clear_button),
@@ -556,23 +440,26 @@ internal fun WebDavClearCard(
 
 @Composable
 internal fun WebDavAdvancedInfoCard(cardColor: Color) {
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
-        title = stringResource(R.string.webdav_sync_section_advanced),
-        sectionIcon = appLucideDatabaseIcon(),
+    AppFeatureCard(
+        title = stringResource(R.string.webdav_sync_connection),
+        subtitle = stringResource(R.string.webdav_sync_missing_config_summary),
+        eyebrow = stringResource(R.string.webdav_sync_section_advanced),
+        sectionIcon = appLucideInfoIcon(),
         containerColor = cardColor,
-    ) {
-        Text(
-            text = stringResource(R.string.webdav_sync_missing_config_summary),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
-    }
+        showIndication = false,
+        content = {},
+    )
 }
 
-@Composable
-private fun WebDavSyncTotalsHeader(state: WebDavSyncUiState) {
+private data class WebDavSyncTotals(
+    val localItems: Int,
+    val enabledTypes: Int,
+    val remoteItems: Int,
+    val remoteBytes: Long,
+    val anyRemoteKnown: Boolean,
+)
+
+private fun webDavSyncTotals(state: WebDavSyncUiState): WebDavSyncTotals {
     var localItems = 0
     var enabledTypes = 0
     var remoteItems = 0
@@ -593,50 +480,13 @@ private fun WebDavSyncTotalsHeader(state: WebDavSyncUiState) {
         }
         if (remote.byteSize >= 0) remoteBytes += remote.byteSize
     }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
-    ) {
-        Text(
-            text = stringResource(R.string.webdav_sync_totals_header),
-            color = MiuixTheme.colorScheme.onBackground,
-            fontSize = AppTypographyTokens.CompactTitle.fontSize,
-            lineHeight = AppTypographyTokens.CompactTitle.lineHeight,
-            fontWeight = AppTypographyTokens.CompactTitle.fontWeight,
-        )
-        Text(
-            text = stringResource(R.string.webdav_sync_totals_local_format, localItems, enabledTypes),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
-        Text(
-            text = stringResource(R.string.webdav_sync_totals_contract_note),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
-            fontSize = AppTypographyTokens.Caption.fontSize,
-            lineHeight = AppTypographyTokens.Caption.lineHeight,
-        )
-        if (anyRemoteKnown) {
-            Text(
-                text = stringResource(
-                    R.string.webdav_sync_totals_remote_format,
-                    remoteItems,
-                    formatBytes(remoteBytes),
-                ),
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-        } else {
-            Text(
-                text = stringResource(R.string.webdav_sync_totals_remote_unknown),
-                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.74f),
-                fontSize = AppTypographyTokens.Supporting.fontSize,
-                lineHeight = AppTypographyTokens.Supporting.lineHeight,
-            )
-        }
-    }
+    return WebDavSyncTotals(
+        localItems = localItems,
+        enabledTypes = enabledTypes,
+        remoteItems = remoteItems,
+        remoteBytes = remoteBytes,
+        anyRemoteKnown = anyRemoteKnown,
+    )
 }
 
 @Composable
@@ -778,7 +628,7 @@ private fun WebDavSyncItemRow(
 }
 
 @Composable
-private fun WebDavFieldLabel(text: String) {
+internal fun WebDavFieldLabel(text: String) {
     Spacer(Modifier.height(CardLayoutRhythm.denseSectionGap))
     Text(
         text = text,

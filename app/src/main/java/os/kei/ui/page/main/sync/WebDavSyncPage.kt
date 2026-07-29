@@ -303,10 +303,10 @@ private fun LazyListScope.webDavCategoryItems(
 ) {
     when (category) {
         WebDavSyncCategory.Connection -> {
-            item(key = "webdav-connection", contentType = "webdav_card") {
+            item(key = "webdav-connection-overview", contentType = "webdav_overview_card") {
                 var providerExpanded by remember { mutableStateOf(false) }
                 var providerAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
-                WebDavConnectionCard(
+                WebDavConnectionOverviewCard(
                     state = state,
                     cardColor = cardColor,
                     providerExpanded = providerExpanded,
@@ -314,18 +314,36 @@ private fun LazyListScope.webDavCategoryItems(
                     onProviderExpandedChange = { providerExpanded = it },
                     onProviderAnchorBoundsChange = { providerAnchorBounds = it },
                     onSelectProvider = viewModel::selectProvider,
-                    onUpdateServerUrl = viewModel::updateServerUrl,
+                )
+            }
+            item(key = "webdav-connection-credentials", contentType = "webdav_form_card") {
+                WebDavCredentialsCard(
+                    state = state,
+                    cardColor = cardColor,
                     onUpdateUsername = viewModel::updateUsername,
                     onUpdateAppPassword = viewModel::updateAppPassword,
-                    onUpdateRemoteDir = viewModel::updateRemoteDir,
                     onTogglePasswordVisible = viewModel::togglePasswordVisible,
+                )
+            }
+            item(key = "webdav-connection-workspace", contentType = "webdav_form_card") {
+                WebDavRemoteWorkspaceCard(
+                    state = state,
+                    cardColor = cardColor,
+                    onUpdateServerUrl = viewModel::updateServerUrl,
+                    onUpdateRemoteDir = viewModel::updateRemoteDir,
+                    onOpenJianguoyunHelp = onOpenJianguoyunHelp,
+                )
+            }
+            item(key = "webdav-connection-actions", contentType = "webdav_action_card") {
+                WebDavConnectionActionsCard(
+                    state = state,
+                    cardColor = cardColor,
                     onTestConnection = viewModel::testConnection,
                     onSave = {
                         viewModel.saveConfig {
                             AppBackgroundScheduler.scheduleWebDavAutoSync(appContext)
                         }
                     },
-                    onOpenJianguoyunHelp = onOpenJianguoyunHelp,
                 )
             }
         }

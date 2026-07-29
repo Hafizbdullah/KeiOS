@@ -15,10 +15,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideHistoryIcon
-import os.kei.ui.page.main.settings.support.SettingsGroupCard
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppInfoRow
+import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
@@ -41,21 +41,36 @@ internal fun WebDavSyncHistorySummaryCard(
 ) {
     val issueCount = history.count { it.hasIssues }
     val latest = history.firstOrNull()?.finishedAtMs?.takeIf { it > 0L }?.let(::formatHistoryTime)
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+    AppOverviewCard(
         title = stringResource(R.string.webdav_sync_history_summary_title),
-        sectionIcon = appLucideHistoryIcon(),
+        subtitle = stringResource(R.string.webdav_sync_history_summary_desc),
         containerColor = cardColor,
+        startAction = {
+            top.yukonga.miuix.kmp.basic.Icon(
+                imageVector = appLucideHistoryIcon(),
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onBackground,
+            )
+        },
+        headerEndActions = {
+            StatusPill(
+                label = stringResource(R.string.webdav_sync_history_total_format, history.size),
+                color =
+                    if (issueCount > 0) {
+                        MiuixTheme.colorScheme.error
+                    } else {
+                        AppStatusColors.Cached
+                    },
+                size = AppStatusPillSize.Compact,
+            )
+        },
+        contentVerticalSpacing = CardLayoutRhythm.compactSectionGap,
     ) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap),
         ) {
-            WebDavSyncHistoryPill(
-                label = stringResource(R.string.webdav_sync_history_total_format, history.size),
-                color = MiuixTheme.colorScheme.primary,
-            )
             latest?.let { time ->
                 WebDavSyncHistoryPill(
                     label = stringResource(R.string.webdav_sync_history_latest_format, time),
@@ -69,12 +84,6 @@ internal fun WebDavSyncHistorySummaryCard(
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.webdav_sync_history_summary_desc),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.82f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
         if (history.isNotEmpty()) {
             AppStandaloneLiquidTextButton(
                 variant = GlassVariant.SheetDangerAction,
@@ -90,19 +99,15 @@ internal fun WebDavSyncHistorySummaryCard(
 
 @Composable
 internal fun WebDavSyncHistoryEmptyCard(cardColor: Color) {
-    SettingsGroupCard(
-        header = stringResource(R.string.webdav_sync_title),
+    AppFeatureCard(
         title = stringResource(R.string.webdav_sync_history_empty_title),
+        subtitle = stringResource(R.string.webdav_sync_history_empty_summary),
+        eyebrow = stringResource(R.string.webdav_sync_section_history),
         sectionIcon = appLucideHistoryIcon(),
         containerColor = cardColor,
-    ) {
-        Text(
-            text = stringResource(R.string.webdav_sync_history_empty_summary),
-            color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f),
-            fontSize = AppTypographyTokens.Supporting.fontSize,
-            lineHeight = AppTypographyTokens.Supporting.lineHeight,
-        )
-    }
+        showIndication = false,
+        content = {},
+    )
 }
 
 @Composable
