@@ -320,8 +320,6 @@
     <string name="about_label_security_patch">セキュリティパッチ</string>
     <string name="about_release_row_version">バージョンライン</string>
     <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_focus">リリース重点</string>
-    <string name="about_release_value_focus">v1.12.0 では特権モード、GitHub/F-Droid 追跡、分割ダウンロード、WebDAV、BA、MCP、Liquid Glass を全面更新</string>
     <string name="about_release_row_github">特権とインストール</string>
     <string name="about_release_value_github">特権モードは無効、Shizuku、Root から選択可能。GitHub 管理インストールは Shizuku / Root でダウンロード、検証、導入、キャンセルに対応</string>
     <string name="about_release_row_ba_guide">GitHub / F-Droid</string>

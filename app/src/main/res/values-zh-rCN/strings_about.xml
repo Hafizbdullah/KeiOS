@@ -315,8 +315,6 @@
 
     <string name="about_release_row_version">版本线</string>
     <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">v1.12.0 系统升级特权模式、GitHub/F-Droid 追踪、分段下载、WebDAV、BA、MCP 与 Liquid Glass 体验</string>
     <string name="about_release_row_github">特权与安装</string>
     <string name="about_release_value_github">特权模式支持关闭、Shizuku 与 Root；GitHub 托管安装可通过 Shizuku 或 Root 完成下载、校验、安装与取消</string>
     <string name="about_release_row_ba_guide">GitHub / F-Droid</string>

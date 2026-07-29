@@ -20,7 +20,6 @@ import os.kei.ui.page.main.os.appLucideAppWindowIcon
 import os.kei.ui.page.main.os.appLucideBranchIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
 import os.kei.ui.page.main.os.appLucideGridIcon
-import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.appLucidePackageIcon
 import os.kei.ui.page.main.os.appLucideVersionIcon
@@ -54,11 +53,6 @@ fun AboutReleaseCardSection(
                 title = stringResource(R.string.about_release_row_version),
                 value = stringResource(R.string.about_release_value_version),
                 icon = appLucideVersionIcon(),
-            )
-            AboutReleaseHighlightBlock(
-                title = stringResource(R.string.about_release_row_focus),
-                value = stringResource(R.string.about_release_value_focus),
-                icon = appLucideInfoIcon(),
             )
             AboutReleaseHighlightBlock(
                 title = stringResource(R.string.about_release_row_github),

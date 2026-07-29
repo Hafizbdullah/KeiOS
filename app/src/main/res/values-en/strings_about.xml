@@ -327,8 +327,6 @@
 
     <string name="about_release_row_version">Version line</string>
     <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_focus">Release focus</string>
-    <string name="about_release_value_focus">v1.12.0 upgrades privilege modes, GitHub/F-Droid tracking, segmented downloads, WebDAV, BA, MCP, and the Liquid Glass experience</string>
     <string name="about_release_row_github">Privilege &amp; install</string>
     <string name="about_release_value_github">Privilege mode can be disabled or use Shizuku or Root; managed GitHub installs support download, verification, install, and cancellation through Shizuku or Root</string>
     <string name="about_release_row_ba_guide">GitHub / F-Droid</string>
