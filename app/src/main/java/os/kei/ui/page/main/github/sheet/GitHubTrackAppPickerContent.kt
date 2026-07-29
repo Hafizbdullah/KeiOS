@@ -3,12 +3,15 @@ package os.kei.ui.page.main.github.sheet
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -47,6 +50,7 @@ import os.kei.ui.page.main.github.picker.showsInstallSourcePill
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.appWindowHeightDp
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
+import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
 import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
@@ -95,21 +99,18 @@ internal fun GitHubTrackAppPickerControls(
                 text = stringResource(R.string.github_track_sheet_app_filter_user_apps),
                 checked = includeUserApps,
                 onCheckedChange = onIncludeUserAppsChange,
-                modifier = Modifier.weight(1f)
             )
             GitHubTrackAppTypeCheckbox(
                 backdrop = backdrop,
                 text = stringResource(R.string.github_track_sheet_app_filter_system_apps),
                 checked = includeSystemApps,
                 onCheckedChange = onIncludeSystemAppsChange,
-                modifier = Modifier.weight(1f)
             )
             GitHubTrackAppTypeCheckbox(
                 backdrop = backdrop,
                 text = stringResource(R.string.github_track_sheet_app_filter_tracked_apps),
                 checked = includeTrackedApps,
                 onCheckedChange = onIncludeTrackedAppsChange,
-                modifier = Modifier.weight(1f)
             )
         }
         GitHubTrackAppPickerSortRow(
@@ -192,7 +193,8 @@ internal fun GitHubTrackAppTypeCheckbox(
     val interactionSource = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
-            .heightIn(min = 34.dp)
+            .widthIn(min = 88.dp)
+            .heightIn(min = AppInteractiveTokens.compactControlRowMinHeight)
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
@@ -212,8 +214,7 @@ internal fun GitHubTrackAppTypeCheckbox(
         Text(
             text = text,
             color = MiuixTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            maxLines = 1
         )
     }
 }
@@ -221,14 +222,14 @@ internal fun GitHubTrackAppTypeCheckbox(
 @Composable
 internal fun GitHubTrackAppPickerButtonRow(
     label: String,
-    content: @Composable RowScope.() -> Unit
+    content: @Composable FlowRowScope.() -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SheetInputTitle(label)
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
             content = content
         )
     }

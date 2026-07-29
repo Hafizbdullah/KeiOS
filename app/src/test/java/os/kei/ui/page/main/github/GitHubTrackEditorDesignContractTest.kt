@@ -23,13 +23,33 @@ class GitHubTrackEditorDesignContractTest {
     fun appPickerKeepsSearchPrimaryAndFiltersProgressive() {
         val source = sourceFile(TRACK_APP_PICKER_SOURCE)
 
-        assertTrue("modifier = Modifier.weight(1f)" in source)
         assertTrue("filtersExpanded" in source)
         assertTrue("AppLiquidExpandableSection(" in source)
         assertFalse(
             "MiuixInfoItem(" in source,
             "The result count belongs in the picker hierarchy instead of another nested info row",
         )
+    }
+
+    @Test
+    fun appTypeFiltersWrapWithoutTruncatingTheirLabels() {
+        val source = sourceFile(TRACK_APP_PICKER_SOURCE)
+        val filterCallSite =
+            source.substring(
+                startIndex = source.indexOf("GitHubTrackAppPickerButtonRow("),
+                endIndex = source.indexOf("GitHubTrackAppPickerSortRow("),
+            )
+        val checkbox =
+            source.substring(
+                startIndex = source.indexOf("internal fun GitHubTrackAppTypeCheckbox("),
+                endIndex = source.indexOf("internal fun GitHubTrackAppPickerButtonRow("),
+            )
+
+        assertTrue("FlowRow(" in source)
+        assertFalse("Modifier.weight(" in filterCallSite)
+        assertTrue("AppInteractiveTokens.compactControlRowMinHeight" in checkbox)
+        assertTrue(".widthIn(min =" in checkbox)
+        assertFalse("TextOverflow.Ellipsis" in checkbox)
     }
 }
 
