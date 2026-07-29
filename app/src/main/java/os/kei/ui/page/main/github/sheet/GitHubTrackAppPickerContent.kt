@@ -46,9 +46,9 @@ import os.kei.ui.page.main.github.picker.isTimeSort
 import os.kei.ui.page.main.github.picker.showsInstallSourcePill
 import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.widget.chrome.appWindowHeightDp
-import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
+import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -57,7 +57,7 @@ import os.kei.ui.page.main.widget.glass.LiquidInfoBlockDensity
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -279,6 +279,7 @@ internal fun GitHubTrackAppPickerContent(
             GitHubTrackAppPickerSortDirection.fromStorageId(appPickerPreferences.sortDirectionId)
         )
     }
+    var filtersExpanded by remember { mutableStateOf(false) }
     var initialAppFocusApplied by remember(selectedApp?.packageName) {
         mutableStateOf(false)
     }
@@ -387,18 +388,34 @@ internal fun GitHubTrackAppPickerContent(
 
     SheetContentColumn(
         scrollable = false,
-        verticalSpacing = 10.dp
+        verticalSpacing = 14.dp
     ) {
-        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_app_candidates))
+        SheetSectionHeader(
+            text = stringResource(R.string.github_track_sheet_section_app_candidates),
+            summary =
+                stringResource(
+                    R.string.github_track_sheet_app_result_count_format,
+                    filteredApps.size,
+                    appList.size,
+                ),
+        )
         SheetSectionCard(verticalSpacing = 8.dp) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SheetInputTitle(
-                    text = stringResource(R.string.github_track_sheet_input_app_filter_title),
-                    modifier = Modifier.weight(1f)
+                AppLiquidSearchField(
+                    value = appSearch,
+                    onValueChange = { value ->
+                        onAppSearchChange(value)
+                        scrollAppListToTop()
+                    },
+                    label = stringResource(R.string.github_track_sheet_input_app_filter),
+                    backdrop = backdrop,
+                    modifier = Modifier.weight(1f),
+                    variant = GlassVariant.SheetInput,
+                    singleLine = true
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -434,17 +451,19 @@ internal fun GitHubTrackAppPickerContent(
                     )
                 }
             }
-            AppLiquidSearchField(
-                value = appSearch,
-                onValueChange = { value ->
-                    onAppSearchChange(value)
-                    scrollAppListToTop()
-                },
-                label = stringResource(R.string.github_track_sheet_input_app_filter),
-                backdrop = backdrop,
-                variant = GlassVariant.SheetInput,
-                singleLine = true
-            )
+        }
+        AppLiquidExpandableSection(
+            backdrop = backdrop,
+            title = stringResource(R.string.github_track_sheet_app_filter_scope_label),
+            subtitle =
+                stringResource(
+                    R.string.github_track_sheet_app_filter_summary,
+                    stringResource(sortMode.labelRes),
+                    stringResource(sortDirection.labelRes),
+                ),
+            expanded = filtersExpanded,
+            onExpandedChange = { filtersExpanded = it },
+        ) {
             GitHubTrackAppPickerControls(
                 backdrop = backdrop,
                 includeUserApps = includeUserApps,
@@ -478,61 +497,53 @@ internal fun GitHubTrackAppPickerContent(
                     scrollAppListToTop()
                 }
             )
-            MiuixInfoItem(
-                stringResource(R.string.github_track_sheet_label_app_list),
-                stringResource(
-                    R.string.github_track_sheet_app_result_count_format,
-                    filteredApps.size,
-                    appList.size
-                )
+        }
+        selectedApp?.let { app ->
+            GitHubSelectedAppCard(
+                selectedApp = app,
+                showInstallSource = showInstallSourcePill
             )
-            selectedApp?.let { app ->
-                GitHubSelectedAppCard(
-                    selectedApp = app,
-                    showInstallSource = showInstallSourcePill
-                )
-            }
-            if (!appFilterReady) {
-                LiquidInfoBlock(
-                    backdrop = backdrop,
-                    title = stringResource(R.string.github_track_sheet_label_app_list),
-                    subtitle = stringResource(R.string.common_loading),
-                    accent = MiuixTheme.colorScheme.primary,
-                    density = LiquidInfoBlockDensity.Compact,
-                )
-            } else if (filteredApps.isEmpty()) {
-                LiquidInfoBlock(
-                    backdrop = backdrop,
-                    title = stringResource(R.string.github_track_sheet_label_app_list),
-                    subtitle = stringResource(R.string.github_track_sheet_msg_app_no_match),
-                    accent = MiuixTheme.colorScheme.primary,
-                    density = LiquidInfoBlockDensity.Compact,
-                )
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = listMinHeight, max = listMaxHeight)
-                        .selectableGroup(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 2.dp)
-                ) {
-                    items(
-                        items = filteredApps,
-                        key = { it.packageName },
-                        contentType = { "github_app_candidate" }
-                    ) { app ->
-                        GitHubAppCandidateRow(
-                            app = app,
-                            selected = selectedApp?.packageName == app.packageName,
-                            showInstallSource = showInstallSourcePill,
-                            onClick = {
-                                onSelectedAppChange(app)
-                                onPickerExpandedChange(false)
-                            }
-                        )
-                    }
+        }
+        if (!appFilterReady) {
+            LiquidInfoBlock(
+                backdrop = backdrop,
+                title = stringResource(R.string.github_track_sheet_label_app_list),
+                subtitle = stringResource(R.string.common_loading),
+                accent = MiuixTheme.colorScheme.primary,
+                density = LiquidInfoBlockDensity.Compact,
+            )
+        } else if (filteredApps.isEmpty()) {
+            LiquidInfoBlock(
+                backdrop = backdrop,
+                title = stringResource(R.string.github_track_sheet_label_app_list),
+                subtitle = stringResource(R.string.github_track_sheet_msg_app_no_match),
+                accent = MiuixTheme.colorScheme.primary,
+                density = LiquidInfoBlockDensity.Compact,
+            )
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = listMinHeight, max = listMaxHeight)
+                    .selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 2.dp)
+            ) {
+                items(
+                    items = filteredApps,
+                    key = { it.packageName },
+                    contentType = { "github_app_candidate" }
+                ) { app ->
+                    GitHubAppCandidateRow(
+                        app = app,
+                        selected = selectedApp?.packageName == app.packageName,
+                        showInstallSource = showInstallSourcePill,
+                        onClick = {
+                            onSelectedAppChange(app)
+                            onPickerExpandedChange(false)
+                        }
+                    )
                 }
             }
         }

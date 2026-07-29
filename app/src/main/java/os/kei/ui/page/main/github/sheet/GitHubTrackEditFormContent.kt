@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,6 +34,7 @@ import os.kei.feature.github.model.GitHubTrackedUpdateIntervalMode
 import os.kei.feature.github.model.InstalledAppItem
 import os.kei.ui.page.main.github.GitHubSelectedAppCard
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
+import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
@@ -37,9 +42,8 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
-import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -141,6 +145,7 @@ internal fun GitHubTrackEditFormContent(
     onFdroidRepoScopeDropdownExpandedChange: (Boolean) -> Unit,
     onFdroidRepoScopeDropdownAnchorBoundsChange: (IntRect?) -> Unit,
 ) {
+    var checkOptionsExpanded by rememberSaveable { mutableStateOf(false) }
     val sourceModes = GitHubTrackedSourceMode.entries
     val sourceModeOptions = sourceModes.map { mode -> trackedSourceModeLabel(mode) }
     val sourceModeIndex = sourceModes.indexOf(sourceModeInput).coerceAtLeast(0)
@@ -282,34 +287,35 @@ internal fun GitHubTrackEditFormContent(
             },
         )
 
-    SheetContentColumn(verticalSpacing = 10.dp) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SheetSectionTitle(
-                text = stringResource(R.string.github_track_sheet_section_repository),
-                modifier = Modifier.weight(1f),
-            )
-            AppDropdownSelector(
-                selectedText =
-                    sourceModeOptions.getOrElse(sourceModeIndex) {
-                        stringResource(R.string.github_track_sheet_source_mode_github)
-                    },
-                options = sourceModeOptions,
-                selectedIndex = sourceModeIndex,
-                expanded = sourceModeDropdownExpanded,
-                anchorBounds = sourceModeDropdownAnchorBounds,
-                onExpandedChange = onSourceModeDropdownExpandedChange,
-                onSelectedIndexChange = { index ->
-                    sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
-                },
-                onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
-                backdrop = backdrop,
-            )
-        }
+    SheetContentColumn(verticalSpacing = 14.dp) {
+        SheetSectionHeader(
+            text = stringResource(R.string.github_track_sheet_section_repo_app),
+            summary = stringResource(R.string.github_track_sheet_summary_repo_app),
+        )
         if (fdroidRepositoryMode) {
+            SheetSectionCard {
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_section_repository),
+                    summary = repoSummary,
+                ) {
+                    AppDropdownSelector(
+                        selectedText =
+                            sourceModeOptions.getOrElse(sourceModeIndex) {
+                                stringResource(R.string.github_track_sheet_source_mode_github)
+                            },
+                        options = sourceModeOptions,
+                        selectedIndex = sourceModeIndex,
+                        expanded = sourceModeDropdownExpanded,
+                        anchorBounds = sourceModeDropdownAnchorBounds,
+                        onExpandedChange = onSourceModeDropdownExpandedChange,
+                        onSelectedIndexChange = { index ->
+                            sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
+                        },
+                        onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
+                        backdrop = backdrop,
+                    )
+                }
+            }
             GitHubTrackEditFdroidDiscoverySection(
                 backdrop = backdrop,
                 repoUrlInput = repoUrlInput,
@@ -341,12 +347,41 @@ internal fun GitHubTrackEditFormContent(
             )
         } else {
             SheetSectionCard {
+                SheetControlRow(
+                    label = stringResource(R.string.github_track_sheet_section_repository),
+                    summary = repoSummary,
+                ) {
+                    AppDropdownSelector(
+                        selectedText =
+                            sourceModeOptions.getOrElse(sourceModeIndex) {
+                                stringResource(R.string.github_track_sheet_source_mode_github)
+                            },
+                        options = sourceModeOptions,
+                        selectedIndex = sourceModeIndex,
+                        expanded = sourceModeDropdownExpanded,
+                        anchorBounds = sourceModeDropdownAnchorBounds,
+                        onExpandedChange = onSourceModeDropdownExpandedChange,
+                        onSelectedIndexChange = { index ->
+                            sourceModes.getOrNull(index)?.let(onSourceModeInputChange)
+                        },
+                        onAnchorBoundsChange = onSourceModeDropdownAnchorBoundsChange,
+                        backdrop = backdrop,
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SheetInputTitle(repoInputLabel)
+                    AppLiquidSearchField(
+                        value = repoUrlInput,
+                        onValueChange = onRepoUrlInputChange,
+                        label = repoInputLabel,
+                        backdrop = backdrop,
+                        modifier = Modifier.weight(1f),
+                        variant = GlassVariant.SheetInput,
+                        singleLine = true,
+                    )
                     if (githubRepositoryMode) {
                         AppLiquidTextButton(
                             backdrop = backdrop,
@@ -366,17 +401,6 @@ internal fun GitHubTrackEditFormContent(
                         )
                     }
                 }
-                AppLiquidSearchField(
-                    value = repoUrlInput,
-                    onValueChange = onRepoUrlInputChange,
-                    label = repoInputLabel,
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true,
-                )
-                SheetDescriptionText(
-                    text = repoSummary,
-                )
                 if (!directApkMode && repoScanCandidates.isNotEmpty()) {
                     RepositoryScanCandidateList(
                         candidates = repoScanCandidates,
@@ -386,14 +410,25 @@ internal fun GitHubTrackEditFormContent(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.github_track_sheet_section_package_app))
+            SheetSectionHeader(
+                text = stringResource(R.string.github_track_sheet_section_package_app),
+                summary = packageSummary,
+            )
             SheetSectionCard {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SheetInputTitle(stringResource(R.string.github_track_sheet_input_package_title))
+                    AppLiquidSearchField(
+                        value = packageNameInput,
+                        onValueChange = onPackageNameInputChange,
+                        label = stringResource(R.string.github_track_sheet_input_package),
+                        backdrop = backdrop,
+                        modifier = Modifier.weight(1f),
+                        variant = GlassVariant.SheetInput,
+                        singleLine = true,
+                    )
                     if (!gitRepositoryMode) {
                         AppLiquidTextButton(
                             backdrop = backdrop,
@@ -413,17 +448,6 @@ internal fun GitHubTrackEditFormContent(
                         )
                     }
                 }
-                AppLiquidSearchField(
-                    value = packageNameInput,
-                    onValueChange = onPackageNameInputChange,
-                    label = stringResource(R.string.github_track_sheet_input_package),
-                    backdrop = backdrop,
-                    variant = GlassVariant.SheetInput,
-                    singleLine = true,
-                )
-                SheetDescriptionText(
-                    text = packageSummary,
-                )
                 SheetControlRow(
                     label = stringResource(R.string.github_track_sheet_label_selected_app),
                     summary =
@@ -479,8 +503,22 @@ internal fun GitHubTrackEditFormContent(
             )
         }
 
-        SheetSectionTitle(stringResource(R.string.github_track_sheet_section_check_option))
-        SheetSectionCard {
+        AppLiquidExpandableSection(
+            backdrop = backdrop,
+            title = stringResource(R.string.github_track_sheet_section_check_option),
+            subtitle =
+                stringResource(
+                    R.string.github_track_sheet_summary_check_option_overview,
+                    updateIntervalOptions.getOrElse(updateIntervalIndex) {
+                        stringResource(R.string.github_track_sheet_update_interval_follow_global)
+                    },
+                    ignoreModeOptions.getOrElse(ignoreModeIndex) {
+                        stringResource(R.string.github_track_sheet_ignore_none)
+                    },
+                ),
+            expanded = checkOptionsExpanded,
+            onExpandedChange = { checkOptionsExpanded = it },
+        ) {
             SheetControlRow(
                 label = stringResource(R.string.github_track_sheet_label_update_interval),
                 summary = updateIntervalSummary,
