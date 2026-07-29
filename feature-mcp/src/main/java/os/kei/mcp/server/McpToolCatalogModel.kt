@@ -64,5 +64,6 @@ object McpToolDomains {
     const val OS = "os"
     const val GITHUB = "github"
     const val BA = "ba"
+    const val WEBDAV = "webdav"
     const val DEV = "dev"
 }

@@ -6,11 +6,15 @@ import os.kei.mcp.server.McpToolCatalog
 import os.kei.mcp.server.McpToolEnvironment
 
 object McpHomeToolPlugins {
-    fun create(baSnapshotProvider: McpHomeBaSnapshotProvider): List<McpServerToolPlugin> =
-        listOf(HomePlugin(baSnapshotProvider))
+    fun create(
+        baSnapshotProvider: McpHomeBaSnapshotProvider,
+        webDavSnapshotProvider: McpHomeWebDavSnapshotProvider,
+    ): List<McpServerToolPlugin> =
+        listOf(HomePlugin(baSnapshotProvider, webDavSnapshotProvider))
 
     private data class HomePlugin(
         private val baSnapshotProvider: McpHomeBaSnapshotProvider,
+        private val webDavSnapshotProvider: McpHomeWebDavSnapshotProvider,
     ) : McpServerToolPlugin {
         override val toolNames: List<String> = McpToolCatalog.homeToolNames
 
@@ -21,6 +25,7 @@ object McpHomeToolPlugins {
             McpHomeTools(
                 environment = environment,
                 baSnapshotProvider = baSnapshotProvider,
+                webDavSnapshotProvider = webDavSnapshotProvider,
             ).register(server)
         }
     }

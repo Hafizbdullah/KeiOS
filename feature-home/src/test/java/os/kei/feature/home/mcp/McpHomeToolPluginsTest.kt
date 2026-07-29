@@ -20,6 +20,16 @@ class McpHomeToolPluginsTest {
                             cafeCap = 740,
                         )
                     },
+                webDavSnapshotProvider =
+                    McpHomeWebDavSnapshotProvider {
+                        McpHomeWebDavSnapshot(
+                            configured = false,
+                            autoSyncEnabled = false,
+                            enabledItemCount = 0,
+                            totalItemCount = 6,
+                            lastFullSyncMs = 0L,
+                        )
+                    },
             )
 
         assertEquals(McpToolCatalog.homeToolNames, plugins.flatMap { it.toolNames })

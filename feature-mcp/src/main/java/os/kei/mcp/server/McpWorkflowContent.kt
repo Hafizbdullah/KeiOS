@@ -489,6 +489,40 @@ internal class McpWorkflowContent(
                 outputEn = listOf("backup JSON", "card counts", "restore note"),
                 outputZh = listOf("备份 JSON", "卡片数量", "恢复说明"),
                 outputJa = listOf("backup JSON", "card counts", "restore note")
+            ),
+            WorkflowBlueprint(
+                id = "webdav-sync-diagnostics",
+                titleEn = "WebDAV sync diagnostics",
+                titleZh = "WebDAV 同步诊断",
+                titleJa = "WebDAV sync diagnostics",
+                cadenceHintEn = "Daily, or after a failed or review-required sync.",
+                cadenceHintZh = "每天一次，或在同步失败、需要处理时执行。",
+                cadenceHintJa = "Daily, or after a failed or review-required sync.",
+                summaryEn = "Inspect credential-safe WebDAV state and recent sync history without triggering a transfer.",
+                summaryZh = "读取不含凭据的 WebDAV 状态与近期同步历史，诊断过程不会触发传输。",
+                summaryJa = "Inspect credential-safe WebDAV state and recent sync history without triggering a transfer.",
+                tools = listOf(
+                    "keios.webdav.status",
+                    "keios.webdav.history"
+                ),
+                stepsEn = listOf(
+                    "Read status and check configuration, pending review items, and the latest auto-sync summary.",
+                    "Read history with mode=summary and issuesOnly=true.",
+                    "Read mode=detail for the newest issue id, then report runtime restrictions and affected items."
+                ),
+                stepsZh = listOf(
+                    "读取状态，检查配置、待处理同步项与最近一次自动同步摘要。",
+                    "用 mode=summary、issuesOnly=true 读取历史概览。",
+                    "对最新异常 id 使用 mode=detail，输出运行限制与受影响同步项。"
+                ),
+                stepsJa = listOf(
+                    "Read status and check configuration, pending review items, and the latest auto-sync summary.",
+                    "Read history with mode=summary and issuesOnly=true.",
+                    "Read mode=detail for the newest issue id, then report runtime restrictions and affected items."
+                ),
+                outputEn = listOf("sync health", "affected items", "credential-safe next action"),
+                outputZh = listOf("同步健康度", "受影响同步项", "不涉及凭据的下一步建议"),
+                outputJa = listOf("sync health", "affected items", "credential-safe next action")
             )
         )
 

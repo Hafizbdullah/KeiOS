@@ -10,12 +10,15 @@ import os.kei.feature.os.mcp.McpSystemOsToolDelegateFactory
 import os.kei.feature.os.mcp.McpSystemOsToolPlugins
 import os.kei.mcp.bridge.AppMcpBaToolDelegate
 import os.kei.mcp.bridge.AppMcpHomeBaSnapshotProvider
+import os.kei.mcp.bridge.AppMcpHomeWebDavSnapshotProvider
 import os.kei.mcp.bridge.AppMcpSystemOsToolDelegate
+import os.kei.mcp.bridge.AppMcpWebDavToolPlugin
 
 object KeiOsMcpToolPlugins {
     fun create(): List<McpServerToolPlugin> =
         McpHomeToolPlugins.create(
             baSnapshotProvider = AppMcpHomeBaSnapshotProvider,
+            webDavSnapshotProvider = AppMcpHomeWebDavSnapshotProvider,
         ) +
             McpSystemOsToolPlugins.create(
                 delegateFactory = McpSystemOsToolDelegateFactory { environment ->
@@ -31,5 +34,6 @@ object KeiOsMcpToolPlugins {
                 delegateFactory = McpBaToolDelegateFactory { environment ->
                     AppMcpBaToolDelegate(environment)
                 },
-            )
+            ) +
+            listOf(AppMcpWebDavToolPlugin)
 }

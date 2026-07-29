@@ -98,6 +98,7 @@ internal object McpToolCatalogDefinitions {
             name.startsWith("keios.github.actions") -> listOf("github-actions-watch")
             name.startsWith("keios.github") -> listOf("github-update-watch")
             name.startsWith("keios.ba") -> listOf("ba-daily-brief")
+            name.startsWith("keios.webdav") -> listOf("webdav-sync-diagnostics")
             name.startsWith("keios.os") -> listOf("os-card-backup")
             name.startsWith("keios.dev") -> listOf("codex-development")
             name.startsWith("keios.mcp") || name == "keios.health.ping" -> listOf("runtime-diagnostics")
@@ -127,6 +128,9 @@ internal object McpToolCatalogDefinitions {
             "keios.ba.snapshot",
             "keios.ba.calendar.cache",
             "keios.ba.pool.cache" -> listOf("ba_daily_brief")
+
+            "keios.webdav.status",
+            "keios.webdav.history" -> listOf("backup_status", "sync_diagnostics")
 
             "keios.os.cards.export",
             "keios.os.cards.import" -> listOf("os_card_backup")

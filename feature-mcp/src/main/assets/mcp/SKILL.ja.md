@@ -53,6 +53,7 @@ a task fires.
 - GitHub: `keios://skill/domain/github`
 - OS: `keios://skill/domain/os`
 - BA: `keios://skill/domain/ba`
+- WebDAV: `keios://skill/domain/webdav`
 - Dev/Codex: `keios://skill/domain/dev`
 - Single tool help: `{{RESOURCE_TOOL_TEMPLATE_URI}}`
 
@@ -70,6 +71,8 @@ a task fires.
 6. BA daily brief: `keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
 7. Codex development: `keios.dev.codex.config(mode=local)` ->
    `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
+8. WebDAV sync diagnostics: `keios.webdav.status` ->
+   `keios.webdav.history(mode=summary, issuesOnly=true)` -> `keios.webdav.history(mode=detail, id=...)`
 
 ## Full Tool Index
 
@@ -84,6 +87,8 @@ a task fires.
 - Network and deep-scan tools have timeouts and limit arguments; scheduled audits should start with
   20 to 80 rows.
 - Dev/Codex tools are read-only and return onboarding or validation text for local development.
+- WebDAV tools are read-only and omit usernames, app passwords, and authorization headers.
+- `keios.privilege.status` reports disabled, Shizuku, or Root mode.
 - `repoFilter` accepts owner/repo, package name, or app label.
 - `sourceMode` accepts `github_repository`, `git_repository`, `direct_apk`, or blank for all tracked sources.
 - `filterMode` accepts `all`, `github_repository`, `git_repository`, `direct_apk`, `pre_release_tracked`,

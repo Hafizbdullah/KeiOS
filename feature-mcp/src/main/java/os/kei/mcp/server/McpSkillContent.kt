@@ -341,9 +341,10 @@ internal class McpSkillContent(
             appendLine("osTools=${McpToolCatalog.osToolNames.joinToString(",")}")
             appendLine("githubTools=${McpToolCatalog.githubToolNames.joinToString(",")}")
             appendLine("baTools=${McpToolCatalog.baToolNames.joinToString(",")}")
+            appendLine("webDavTools=${McpToolCatalog.webDavToolNames.joinToString(",")}")
             appendLine("devTools=${McpToolCatalog.devToolNames.joinToString(",")}")
             appendLine("entrypointTools=${McpToolCatalog.entrypointToolNames.joinToString(",")}")
-            appendLine("domainGuides=${listOf("runtime", "github", "os", "ba", "dev").joinToString(",")}")
+            appendLine("domainGuides=${listOf("runtime", "github", "os", "ba", "webdav", "dev").joinToString(",")}")
             appendLine("toolCount=${McpToolCatalog.all.size}")
             appendLine("tools=${McpToolCatalog.all.joinToString(",") { it.name }}")
         }.trim()
@@ -612,15 +613,21 @@ internal class McpSkillContent(
                 ),
                 localText(
                     locale,
-                    "用户需要 OS Activity、Shell 卡片、Shizuku 状态、系统 TopInfo 或卡片导入导出。",
-                    "ユーザーが OS Activity、Shell cards、Shizuku status、system TopInfo、card import/export を求めたとき。",
-                    "The user needs OS Activity, shell cards, Shizuku state, system TopInfo, or card import/export."
+                    "用户需要 OS Activity、Shell 卡片、特权模式状态、系统 TopInfo 或卡片导入导出。",
+                    "ユーザーが OS Activity、Shell cards、privilege mode status、system TopInfo、card import/export を求めたとき。",
+                    "The user needs OS Activity, shell cards, privilege mode state, system TopInfo, or card import/export."
                 ),
                 localText(
                     locale,
                     "用户需要 Blue Archive AP、咖啡厅、活动日历、卡池、图鉴缓存或 BGM 收藏信息。",
                     "ユーザーが Blue Archive AP、Cafe、calendar、pool、guide cache、BGM favorites を求めたとき。",
                     "The user needs Blue Archive AP, Cafe, calendar, pool, guide cache, or BGM favorites."
+                ),
+                localText(
+                    locale,
+                    "用户需要 WebDAV 配置状态、自动同步健康度、待处理冲突或历史诊断。",
+                    "ユーザーが WebDAV configuration、auto-sync health、pending conflicts、history diagnostics を求めたとき。",
+                    "The user needs WebDAV configuration state, auto-sync health, pending conflicts, or history diagnostics."
                 )
             ).forEach { item -> appendLine("- $item") }
             appendLine()
@@ -672,9 +679,9 @@ internal class McpSkillContent(
             listOf(
                 localText(
                     locale,
-                    "需要用户授权 Shizuku、本地网络权限、Token 重配或 Claw 重新添加服务器。",
-                    "Shizuku permission、local network permission、Token reconfiguration、Claw server re-add が必要なとき。",
-                    "User action is required for Shizuku permission, local network permission, token reconfiguration, or Claw server re-add."
+                    "需要用户选择或授权特权模式、本地网络权限、Token 重配或 Claw 重新添加服务器。",
+                    "privilege mode selection or permission、local network permission、Token reconfiguration、Claw server re-add が必要なとき。",
+                    "User action is required for privilege mode selection or permission, local network permission, token reconfiguration, or Claw server re-add."
                 ),
                 localText(
                     locale,

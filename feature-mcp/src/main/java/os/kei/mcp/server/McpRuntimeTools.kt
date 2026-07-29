@@ -17,11 +17,14 @@ internal class McpRuntimeTools(
         }
 
         server.addMcpTextTool(environment, name = "keios.app.info") { _ ->
+            val privilegeStatus = environment.privilegedShell.currentStatus()
             buildString {
                 appendLine("label=$appLabel")
                 appendLine("package=$appPackageName")
                 appendLine("versionName=$appVersionName")
                 appendLine("versionCode=$appVersionCode")
+                appendLine("privilegeMode=${privilegeStatus.mode.storageId}")
+                appendLine("privilegeReady=${privilegeStatus.isCommandReady}")
                 appendLine("shizukuApi=${PrivilegedShell.SHIZUKU_API_VERSION}")
             }.trim()
         }

@@ -10,6 +10,7 @@ import os.kei.mcp.server.addMcpTextTool
 internal class McpHomeTools(
     private val environment: McpToolEnvironment,
     private val baSnapshotProvider: McpHomeBaSnapshotProvider,
+    private val webDavSnapshotProvider: McpHomeWebDavSnapshotProvider,
 ) {
     private val githubTrackService = GitHubTrackService()
 
@@ -32,6 +33,7 @@ internal class McpHomeTools(
         }
         val cacheHitCount = matchedCacheByTrackId.count { it.value != null }
         val baSnapshot = baSnapshotProvider.loadSnapshot()
+        val webDavSnapshot = webDavSnapshotProvider.loadSnapshot()
 
         return buildString {
             appendLine(
@@ -61,6 +63,11 @@ internal class McpHomeTools(
             appendLine("ba.cafeLevel=${baSnapshot.cafeLevel}")
             appendLine("ba.cafeStored=${baSnapshot.cafeStored}")
             appendLine("ba.cafeCap=${baSnapshot.cafeCap}")
+            appendLine("webdav.configured=${webDavSnapshot.configured}")
+            appendLine("webdav.autoSyncEnabled=${webDavSnapshot.autoSyncEnabled}")
+            appendLine("webdav.enabledItemCount=${webDavSnapshot.enabledItemCount}")
+            appendLine("webdav.totalItemCount=${webDavSnapshot.totalItemCount}")
+            appendLine("webdav.lastFullSyncMs=${webDavSnapshot.lastFullSyncMs}")
         }.trim()
     }
 }

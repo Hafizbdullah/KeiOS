@@ -41,9 +41,25 @@ internal object McpToolCatalogArguments {
                     "github-update-watch",
                     "github-actions-watch",
                     "ba-daily-brief",
-                    "os-card-backup"
+                    "os-card-backup",
+                    "webdav-sync-diagnostics"
                 )
             )
+        ),
+        "keios.webdav.history" to listOf(
+            McpSchema.string(
+                name = "mode",
+                description = "History output mode.",
+                enumValues = listOf("summary", "list", "detail"),
+                defaultValue = "summary"
+            ),
+            McpSchema.integer("limit"),
+            McpSchema.boolean(
+                name = "issuesOnly",
+                description = "Only include entries that need review or failed.",
+                defaultValue = "false"
+            ),
+            McpSchema.string("id", description = "History entry id for detail mode.")
         ),
         "keios.system.topinfo.query" to listOf(McpSchema.string("query"), McpSchema.integer("limit")),
         "keios.os.activity.cards" to listOf(

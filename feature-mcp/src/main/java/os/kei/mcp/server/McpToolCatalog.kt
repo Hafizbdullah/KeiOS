@@ -10,6 +10,7 @@ object McpToolCatalog {
         "keios.mcp.workflow.blueprints",
         "keios.github.config.snapshot",
         "keios.ba.snapshot",
+        "keios.webdav.status",
         "keios.dev.codex.config"
     )
 
@@ -78,6 +79,11 @@ object McpToolCatalog {
         "keios.ba.cache.clear"
     )
 
+    val webDavToolNames = listOf(
+        "keios.webdav.status",
+        "keios.webdav.history"
+    )
+
     val devToolNames = listOf(
         "keios.dev.codex.config",
         "keios.dev.project.snapshot",
@@ -124,6 +130,7 @@ object McpToolCatalog {
             osToolNames +
             githubToolNames +
             baToolNames +
+            webDavToolNames +
             devToolNames
 
     val coreToolNames: List<String> = runtimeToolNames + devToolNames
@@ -190,6 +197,7 @@ object McpToolCatalog {
             in osToolNames -> McpToolDomains.OS
             in githubToolNames -> McpToolDomains.GITHUB
             in baToolNames -> McpToolDomains.BA
+            in webDavToolNames -> McpToolDomains.WEBDAV
             in devToolNames -> McpToolDomains.DEV
             else -> "unknown"
         }

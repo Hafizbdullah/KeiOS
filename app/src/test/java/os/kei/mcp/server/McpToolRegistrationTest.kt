@@ -84,6 +84,17 @@ class McpToolRegistrationTest {
         assertTrue(workflowTool.meta.toString().contains("workflow"))
         assertTrue(workflowTool.meta.toString().contains("true"))
 
+        val webDavStatusTool = server.tools.getValue("keios.webdav.status").tool
+        assertTrue(webDavStatusTool.annotations?.readOnlyHint ?: false)
+        assertFalse(webDavStatusTool.annotations?.openWorldHint ?: true)
+        assertTrue(webDavStatusTool.meta.toString().contains("webdav-sync-diagnostics"))
+
+        val webDavHistoryTool = server.tools.getValue("keios.webdav.history").tool
+        val webDavHistoryProperties = webDavHistoryTool.inputSchema.properties.orEmpty()
+        assertTrue("mode" in webDavHistoryProperties)
+        assertTrue("issuesOnly" in webDavHistoryProperties)
+        assertTrue("id" in webDavHistoryProperties)
+
         val pingTool = server.tools.getValue("keios.health.ping").tool
         assertEquals(listOf("format", "text"), pingTool.outputSchema?.required?.sorted())
 
@@ -118,6 +129,9 @@ class McpToolRegistrationTest {
         assertTrue(markdown.contains("delete the old KeiOS MCP server in Claw"))
         assertTrue(markdown.contains("keios.mcp.workflow.blueprints"))
         assertTrue(markdown.contains("keios.dev.codex.config"))
+        assertTrue(markdown.contains("keios.webdav.status"))
+        assertTrue(markdown.contains("keios.webdav.history"))
+        assertTrue(markdown.contains("disabled, Shizuku, or Root"))
         assertTrue(markdown.contains("keios://skill/domain/dev"))
         assertTrue(markdown.indexOf("Recommended Entry Points") < markdown.indexOf("Full Tool Index"))
     }

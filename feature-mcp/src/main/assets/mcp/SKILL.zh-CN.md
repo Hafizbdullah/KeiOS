@@ -52,6 +52,7 @@
 - GitHub：`keios://skill/domain/github`
 - OS：`keios://skill/domain/os`
 - BA：`keios://skill/domain/ba`
+- WebDAV：`keios://skill/domain/webdav`
 - Dev/Codex：`keios://skill/domain/dev`
 - 单工具帮助：`{{RESOURCE_TOOL_TEMPLATE_URI}}`
 
@@ -68,6 +69,8 @@
 6. BA 每日简报：`keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
 7. Codex 开发辅助：`keios.dev.codex.config(mode=local)` ->
    `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
+8. WebDAV 同步诊断：`keios.webdav.status` ->
+   `keios.webdav.history(mode=summary, issuesOnly=true)` -> `keios.webdav.history(mode=detail, id=...)`
 
 ## 完整工具索引
 
@@ -80,6 +83,8 @@
 - 导入类工具默认预览，写入必须显式传 `apply=true`。
 - 网络和深扫工具有超时与 limit，定时任务建议从 20 到 80 条开始。
 - Dev/Codex 工具保持只读，只返回本地开发接入、工程快照与验证计划文本。
+- WebDAV 工具保持只读，输出会排除用户名、应用密码与认证头。
+- `keios.privilege.status` 的 mode 支持关闭特权、Shizuku 与 Root 三种状态。
 - `repoFilter` 支持 owner/repo、包名或应用名。
 - `sourceMode` 支持 `github_repository`、`git_repository`、`direct_apk`，留空表示全部追踪来源。
 - `filterMode` 支持 `all`、`github_repository`、`git_repository`、`direct_apk`、`pre_release_tracked`、`update_available`、
