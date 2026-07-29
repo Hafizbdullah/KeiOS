@@ -28,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
@@ -46,7 +45,6 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
-import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -342,33 +340,21 @@ private fun BaActivityCalendarListContent(
                 nowMs = nowMs,
             )
         }
-    AppPageLazyColumn(
+    BaCalendarPoolStackedLayout(
         innerPadding = innerPadding,
-        state = listState,
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollConnection),
-        bottomExtra = 40.dp,
-        sectionSpacing = 14.dp,
+        listState = listState,
+        nestedScrollConnection = nestedScrollConnection,
+        backdrop = backdrop,
+        serverOptions = serverOptions,
+        serverIndex = serverIndex,
+        syncText = syncText,
+        syncTextColor = syncTextColor,
+        showServerPopup = showServerPopup,
+        serverPopupAnchorBounds = serverPopupAnchorBounds,
+        onServerPopupChange = onServerPopupChange,
+        onServerPopupAnchorBoundsChange = onServerPopupAnchorBoundsChange,
+        onServerSelected = onServerSelected,
     ) {
-        item(
-            key = "ba-calendar-server-panel",
-            contentType = "ba_calendar_server_panel",
-        ) {
-            BaCalendarPoolServerPanel(
-                backdrop = backdrop,
-                serverOptions = serverOptions,
-                serverIndex = serverIndex,
-                syncText = syncText,
-                syncTextColor = syncTextColor,
-                expanded = showServerPopup,
-                anchorBounds = serverPopupAnchorBounds,
-                onExpandedChange = onServerPopupChange,
-                onAnchorBoundsChange = onServerPopupAnchorBoundsChange,
-                onServerSelected = onServerSelected,
-            )
-        }
         baActivityCalendarEntryItems(
             backdrop = backdrop,
             serverIndex = serverIndex,

@@ -181,11 +181,19 @@ class BaLiquidSurfacesBackdropTest {
         assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, source.occurrencesOf("AppSurfaceBox("))
         assertTrue("activeGlassBackdrop(inheritedBackdrop)" in source)
+        assertTrue("effectsEnabled && edgeStack == null" in source)
         assertFalse("LiquidSurface(" in source)
         assertFalse("rememberLayerBackdrop" in source)
-        assertFalse("CompositionLocalProvider(" in source)
+        assertFalse("LocalLiquidParentBackdrop provides" in source)
         assertFalse(".layerBackdrop(" in source)
         assertFalse("localBackdrop" in source)
+        assertTrue("Modifier.appEdgeStackedCard(edgeStack).then(modifier)" in source)
+        assertEquals(
+            2,
+            source.occurrencesOf(
+                "CompositionLocalProvider(LocalAppEdgeStackCards provides null)",
+            ),
+        )
     }
 }
 

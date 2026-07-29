@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,10 +29,12 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.core.AppSurfaceBox
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
+import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -81,8 +84,9 @@ private fun BaLiquidSurfaceColumn(
         } else {
             backdrop ?: parentBackdrop
         }
+    val edgeStack = LocalAppEdgeStackCards.current
     val activeBackdrop =
-        if (effectsEnabled) {
+        if (effectsEnabled && edgeStack == null) {
             activeGlassBackdrop(inheritedBackdrop)
         } else {
             null
@@ -93,10 +97,16 @@ private fun BaLiquidSurfaceColumn(
     } else {
         0.dp
     }
+    val stackedModifier =
+        if (edgeStack != null) {
+            Modifier.appEdgeStackedCard(edgeStack).then(modifier)
+        } else {
+            modifier
+        }
 
     if (activeBackdrop != null) {
         AppSurfaceBox(
-            modifier = modifier,
+            modifier = stackedModifier,
             backdrop = activeBackdrop,
             surfaceColor =
                 accentTint
@@ -114,14 +124,16 @@ private fun BaLiquidSurfaceColumn(
             onClick = onClick,
             onLongClick = onLongClick,
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(contentPadding),
-                verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-                content = content,
-            )
+            CompositionLocalProvider(LocalAppEdgeStackCards provides null) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(contentPadding),
+                    verticalArrangement = Arrangement.spacedBy(verticalSpacing),
+                    content = content,
+                )
+            }
         }
     } else {
         val interactionSource = remember { MutableInteractionSource() }
@@ -138,7 +150,7 @@ private fun BaLiquidSurfaceColumn(
                 Modifier
             }
         Column(
-            modifier = modifier
+            modifier = stackedModifier
                 .padding(pressSafePadding)
                 .appSquircleBackground(fallbackSurface, cornerRadius)
                 .then(
@@ -155,8 +167,11 @@ private fun BaLiquidSurfaceColumn(
                 .then(fallbackClickModifier)
                 .padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
-            content = content,
-        )
+        ) {
+            CompositionLocalProvider(LocalAppEdgeStackCards provides null) {
+                content()
+            }
+        }
     }
 }
 
