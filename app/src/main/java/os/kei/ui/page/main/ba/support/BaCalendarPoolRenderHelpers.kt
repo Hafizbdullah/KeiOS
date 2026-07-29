@@ -27,17 +27,47 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-private const val GAMEKEE_COVER_MEMORY_CACHE_COUNT = 24
-private val gameKeeCoverBitmapCache = object : LruCache<String, Bitmap>(GAMEKEE_COVER_MEMORY_CACHE_COUNT) {}
+private const val GAMEKEE_COVER_MEMORY_CACHE_KIB = 64 * 1024
+private const val GAMEKEE_COVER_DEFAULT_DECODE_DIMENSION = 960
+private const val GAMEKEE_COVER_MIN_DECODE_DIMENSION = 128
+private const val GAMEKEE_COVER_MAX_DECODE_DIMENSION = 2048
 
-private fun cachedGameKeeCoverBitmap(url: String): Bitmap? {
-    val key = url.trim()
+private val gameKeeCoverBitmapCache =
+    object : LruCache<String, Bitmap>(GAMEKEE_COVER_MEMORY_CACHE_KIB) {
+        override fun sizeOf(key: String, value: Bitmap): Int =
+            (value.allocationByteCount / 1024).coerceAtLeast(1)
+    }
+
+internal fun normalizeGameKeeCoverDecodeDimension(requested: Int): Int =
+    requested.coerceIn(
+        GAMEKEE_COVER_MIN_DECODE_DIMENSION,
+        GAMEKEE_COVER_MAX_DECODE_DIMENSION,
+    )
+
+internal fun gameKeeCoverBitmapCacheKey(
+    url: String,
+    maxDecodeDimension: Int,
+): String {
+    val normalizedUrl = url.trim()
+    if (normalizedUrl.isBlank()) return ""
+    return "${normalizeGameKeeCoverDecodeDimension(maxDecodeDimension)}:$normalizedUrl"
+}
+
+private fun cachedGameKeeCoverBitmap(
+    url: String,
+    maxDecodeDimension: Int,
+): Bitmap? {
+    val key = gameKeeCoverBitmapCacheKey(url, maxDecodeDimension)
     if (key.isBlank()) return null
     return synchronized(gameKeeCoverBitmapCache) { gameKeeCoverBitmapCache.get(key) }
 }
 
-private fun cacheGameKeeCoverBitmap(url: String, bitmap: Bitmap) {
-    val key = url.trim()
+private fun cacheGameKeeCoverBitmap(
+    url: String,
+    maxDecodeDimension: Int,
+    bitmap: Bitmap,
+) {
+    val key = gameKeeCoverBitmapCacheKey(url, maxDecodeDimension)
     if (key.isBlank()) return
     synchronized(gameKeeCoverBitmapCache) { gameKeeCoverBitmapCache.put(key, bitmap) }
 }
@@ -74,17 +104,27 @@ internal fun GameKeeCoverImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     aspectRatioRange: ClosedFloatingPointRange<Float> = 1.0f..2.4f,
-    loadEnabled: Boolean = true
+    loadEnabled: Boolean = true,
+    maxDecodeDimension: Int = GAMEKEE_COVER_DEFAULT_DECODE_DIMENSION,
 ) {
     if (!enabled) return
     val normalizedUrl = remember(imageUrl) { normalizeGameKeeImageLink(imageUrl) }
     if (normalizedUrl.isBlank()) return
+    val resolvedDecodeDimension =
+        remember(maxDecodeDimension) {
+            normalizeGameKeeCoverDecodeDimension(maxDecodeDimension)
+        }
 
-    var bitmap by remember(normalizedUrl) {
-        mutableStateOf(cachedGameKeeCoverBitmap(normalizedUrl))
+    var bitmap by remember(normalizedUrl, resolvedDecodeDimension) {
+        mutableStateOf(
+            cachedGameKeeCoverBitmap(
+                url = normalizedUrl,
+                maxDecodeDimension = resolvedDecodeDimension,
+            ),
+        )
     }
-    LaunchedEffect(normalizedUrl, loadEnabled) {
-        cachedGameKeeCoverBitmap(normalizedUrl)?.let { cached ->
+    LaunchedEffect(normalizedUrl, loadEnabled, resolvedDecodeDimension) {
+        cachedGameKeeCoverBitmap(normalizedUrl, resolvedDecodeDimension)?.let { cached ->
             bitmap = cached
             return@LaunchedEffect
         }
@@ -94,27 +134,24 @@ internal fun GameKeeCoverImage(
             if (localPath.isBlank()) {
                 return@LaunchedEffect
             }
-            val low = withContext(AppDispatchers.media) { decodeSampledLocalBitmap(localPath, 720) }
-            if (low != null) {
-                bitmap = low
-                cacheGameKeeCoverBitmap(normalizedUrl, low)
-            }
-            val high = withContext(AppDispatchers.media) { decodeSampledLocalBitmap(localPath, 1280) }
-            if (high != null) {
-                val current = bitmap
-                val shouldUpgrade = current == null ||
-                    (high.width * high.height) > (current.width * current.height)
-                if (shouldUpgrade) {
-                    bitmap = high
-                    cacheGameKeeCoverBitmap(normalizedUrl, high)
+            val decoded =
+                withContext(AppDispatchers.media) {
+                    decodeSampledLocalBitmap(localPath, resolvedDecodeDimension)
                 }
+            if (decoded != null) {
+                bitmap = decoded
+                cacheGameKeeCoverBitmap(
+                    url = normalizedUrl,
+                    maxDecodeDimension = resolvedDecodeDimension,
+                    bitmap = decoded,
+                )
             }
             return@LaunchedEffect
         }
         val loaded = withContext(AppDispatchers.media) {
             when (val result = GameKeeNetworkClient.fetchImage(
                 imageUrl = normalizedUrl,
-                maxDecodeDimension = 720
+                maxDecodeDimension = resolvedDecodeDimension,
             )) {
                 is GameKeeNetworkResult.Success -> result.value
                 is GameKeeNetworkResult.Failure -> null
@@ -122,11 +159,16 @@ internal fun GameKeeCoverImage(
         }
         if (loaded != null) {
             bitmap = loaded
-            cacheGameKeeCoverBitmap(normalizedUrl, loaded)
+            cacheGameKeeCoverBitmap(
+                url = normalizedUrl,
+                maxDecodeDimension = resolvedDecodeDimension,
+                bitmap = loaded,
+            )
         }
     }
 
     val rendered = bitmap ?: return
+    val imageBitmap = remember(rendered) { rendered.asImageBitmap() }
     val minRatio = aspectRatioRange.start.coerceAtLeast(0.2f)
     val maxRatio = aspectRatioRange.endInclusive.coerceAtLeast(minRatio + 0.01f)
     val aspectRatioValue = remember(rendered.width, rendered.height, minRatio, maxRatio) {
@@ -135,7 +177,7 @@ internal fun GameKeeCoverImage(
         (w.toFloat() / h.toFloat()).coerceIn(minRatio, maxRatio)
     }
     Image(
-        bitmap = rendered.asImageBitmap(),
+        bitmap = imageBitmap,
         contentDescription = null,
         contentScale = contentScale,
         modifier = modifier

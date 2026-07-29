@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -595,6 +596,10 @@ internal fun BaPoolEntryPanel(
     }
     val showPoolCoverImage = showCalendarPoolImages && pool.imageUrl.isNotBlank()
     val tagLabel = baPoolTagLabel(pool.tagId, pool.tagName)
+    val poolCoverDecodeDimension =
+        with(LocalDensity.current) {
+            106.dp.roundToPx()
+        }.coerceIn(256, 640)
 
     BaLiquidPanel(
         backdrop = backdrop,
@@ -620,7 +625,8 @@ internal fun BaPoolEntryPanel(
                         modifier = Modifier.fillMaxWidth(),
                         contentScale = ContentScale.Fit,
                         aspectRatioRange = 0.66f..1.34f,
-                        loadEnabled = isPageActive && effectsEnabled
+                        loadEnabled = isPageActive && effectsEnabled,
+                        maxDecodeDimension = poolCoverDecodeDimension,
                     )
                 }
             }
