@@ -15,9 +15,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 
 @Composable
@@ -56,9 +55,11 @@ internal fun GitHubDebugSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetDescriptionText(stringResource(R.string.github_debug_sheet_desc))
-            SheetSectionTitle(stringResource(R.string.github_debug_sheet_section_refresh))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(
+                text = stringResource(R.string.github_debug_sheet_section_refresh),
+                summary = stringResource(R.string.github_debug_sheet_desc),
+            )
             SheetSectionCard {
                 SheetControlRow(
                     label = stringResource(R.string.github_debug_sheet_label_background_full_refresh),
@@ -151,7 +152,7 @@ internal fun GitHubDebugSheet(
                     )
                 }
             }
-            SheetSectionTitle(stringResource(R.string.github_debug_sheet_section_notification))
+            SheetSectionHeader(stringResource(R.string.github_debug_sheet_section_notification))
             SheetSectionCard {
                 SheetControlRow(
                     label = stringResource(R.string.github_check_sheet_label_debug_actions_update_notification),

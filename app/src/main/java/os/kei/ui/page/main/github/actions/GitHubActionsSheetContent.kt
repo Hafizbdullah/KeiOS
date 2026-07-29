@@ -43,7 +43,7 @@ internal fun GitHubActionsSheetContent(
     val isDark = isAppInDarkTheme()
     val workflows = state.actionsWorkflows
 
-    SheetContentColumn(verticalSpacing = 10.dp) {
+    SheetContentColumn(verticalSpacing = 14.dp) {
         GitHubActionsSummaryCard(
             state = state,
             canResolveArtifacts = derivedState.canResolveArtifacts,

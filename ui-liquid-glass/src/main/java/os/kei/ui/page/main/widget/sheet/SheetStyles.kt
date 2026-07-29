@@ -119,6 +119,36 @@ fun SheetSectionTitle(
 }
 
 @Composable
+fun SheetSectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    danger: Boolean = false,
+    summaryMaxLines: Int = Int.MAX_VALUE,
+    summaryOverflow: TextOverflow = TextOverflow.Clip,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        SheetSectionTitle(
+            text = text,
+            danger = danger,
+        )
+        if (!summary.isNullOrBlank()) {
+            Text(
+                text = summary,
+                color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.90f),
+                fontSize = AppTypographyTokens.Supporting.fontSize,
+                lineHeight = AppTypographyTokens.Supporting.lineHeight,
+                maxLines = summaryMaxLines,
+                overflow = summaryOverflow,
+            )
+        }
+    }
+}
+
+@Composable
 fun SheetDescriptionText(
     text: String,
     modifier: Modifier = Modifier,

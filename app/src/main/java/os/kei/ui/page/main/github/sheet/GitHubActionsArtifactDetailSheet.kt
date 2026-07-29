@@ -36,7 +36,7 @@ import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 
@@ -109,7 +109,7 @@ internal fun GitHubActionsArtifactDetailSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             SheetSummaryCard(
                 title = artifact.name,
                 badgeLabel = stringResource(trustSignal.level.labelRes()),
@@ -239,7 +239,7 @@ private fun TrustReasonSection(
     reasons: List<GitHubApkTrustReason>,
     context: Context,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_apk_trust_detail_reason_title))
+    SheetSectionHeader(stringResource(R.string.github_apk_trust_detail_reason_title))
     SheetSectionCard {
         if (reasons.isEmpty()) {
             GitHubDecisionDetailTextLine(stringResource(R.string.github_apk_trust_detail_reason_empty))
@@ -253,7 +253,7 @@ private fun TrustReasonSection(
 
 @Composable
 private fun ArtifactSelectorReasonSection(reasons: List<String>) {
-    SheetSectionTitle(stringResource(R.string.github_actions_artifact_detail_selector_title))
+    SheetSectionHeader(stringResource(R.string.github_actions_artifact_detail_selector_title))
     SheetSectionCard {
         if (reasons.isEmpty()) {
             GitHubDecisionDetailTextLine(stringResource(R.string.github_actions_artifact_detail_selector_empty))

@@ -50,7 +50,7 @@ import os.kei.ui.page.main.widget.markdown.AppMarkdownBlocksContent
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
@@ -238,7 +238,7 @@ private fun GitHubReleaseNotesDetailContent(
                 )
             }
         }
-    SheetContentColumn(verticalSpacing = 10.dp) {
+    SheetContentColumn(verticalSpacing = 14.dp) {
         SheetSummaryCard(
             title =
                 selectedTarget?.releaseName?.takeIf { it.isNotBlank() }
@@ -346,7 +346,7 @@ private fun GitHubReleaseNotesDetailContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SheetSectionTitle(
+            SheetSectionHeader(
                 text = stringResource(R.string.github_release_notes_detail_body_title),
                 modifier = Modifier.weight(1f),
             )

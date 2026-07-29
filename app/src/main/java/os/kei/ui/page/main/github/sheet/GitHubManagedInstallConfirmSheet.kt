@@ -38,7 +38,7 @@ import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -87,7 +87,7 @@ internal fun GitHubManagedInstallConfirmSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             SheetSummaryCard(
                 title = derivedState.title.ifBlank { request.item.appLabel.ifBlank { asset.name } },
                 badgeLabel = stringResource(trustSignal.level.labelRes()),
@@ -139,7 +139,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_compare))
+            SheetSectionHeader(stringResource(R.string.github_page_install_confirm_section_compare))
             SheetSectionCard {
                 ConfirmInfoRow(
                     label = stringResource(R.string.github_share_import_dialog_label_project),
@@ -196,7 +196,7 @@ internal fun GitHubManagedInstallConfirmSheet(
                     trustSignal.level != GitHubDecisionLevel.Good ||
                         reasons.any { it != GitHubApkTrustReason.ApkLike }
                 }?.let { reasons ->
-                    SheetSectionTitle(stringResource(R.string.github_page_install_confirm_section_review))
+                    SheetSectionHeader(stringResource(R.string.github_page_install_confirm_section_review))
                     SheetSectionCard {
                         ConfirmHintText(
                             text =

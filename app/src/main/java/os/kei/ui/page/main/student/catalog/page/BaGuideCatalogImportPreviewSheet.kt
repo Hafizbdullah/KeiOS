@@ -18,7 +18,7 @@ import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -59,7 +59,7 @@ internal fun BaGuideCatalogImportPreviewSheet(
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalSpacing = 12.dp
         ) {
-            SheetSectionTitle(stringResource(preview.kind.titleRes))
+            SheetSectionHeader(stringResource(preview.kind.titleRes))
             SheetSectionCard(verticalSpacing = 12.dp) {
                 Text(
                     text = stringResource(

@@ -21,7 +21,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
-import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -56,7 +56,7 @@ internal fun BaStudentGuideCacheStatusSheet(
         },
     ) {
         val nowMs = remember(show, cacheStatus) { System.currentTimeMillis() }
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             BaStudentGuideCacheStatusSummary(
                 cacheStatus = cacheStatus,
                 nowMs = nowMs,
@@ -172,14 +172,10 @@ private fun BaStudentGuideCacheStatusActions(
 
 @Composable
 private fun BaStudentGuideCacheStatusPolicy() {
-    SheetSectionCard(verticalSpacing = 8.dp) {
-        Text(
-            text = stringResource(R.string.guide_cache_status_policy_title),
-            color = MiuixTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-        )
-        SheetDescriptionText(stringResource(R.string.guide_cache_status_policy_summary))
-    }
+    SheetSectionHeader(
+        text = stringResource(R.string.guide_cache_status_policy_title),
+        summary = stringResource(R.string.guide_cache_status_policy_summary),
+    )
 }
 
 @Composable

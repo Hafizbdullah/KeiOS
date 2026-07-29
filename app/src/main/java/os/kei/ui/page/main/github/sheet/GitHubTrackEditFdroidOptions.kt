@@ -18,7 +18,7 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 
 @Composable
 internal fun GitHubTrackEditFdroidOptions(
@@ -65,7 +65,7 @@ internal fun GitHubTrackEditFdroidOptions(
     val antiFeaturePolicyIndex =
         antiFeaturePolicies.indexOf(antiFeaturePolicy).coerceAtLeast(0)
 
-    SheetSectionTitle(stringResource(R.string.github_track_sheet_section_fdroid_options))
+    SheetSectionHeader(stringResource(R.string.github_track_sheet_section_fdroid_options))
     SheetSectionCard {
         SheetDescriptionText(
             text = stringResource(R.string.github_track_sheet_summary_fdroid_probe),

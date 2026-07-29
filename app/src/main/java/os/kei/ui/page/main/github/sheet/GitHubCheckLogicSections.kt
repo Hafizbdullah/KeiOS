@@ -31,7 +31,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -168,7 +168,7 @@ internal fun GitHubCheckStrategySection(
     onScanSystemAppsByDefaultInputChange: (Boolean) -> Unit,
     onProfileDepthInputChange: (GitHubProfileDepth) -> Unit,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_checks))
+    SheetSectionHeader(stringResource(R.string.github_check_sheet_section_checks))
     SheetSectionCard {
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_github_prerelease_check),
@@ -272,7 +272,7 @@ internal fun GitHubCheckTransferSection(
         flowModeOptions
             .indexOf(shareImportFlowModeInput)
             .coerceAtLeast(0)
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_transfer))
+    SheetSectionHeader(stringResource(R.string.github_check_sheet_section_transfer))
     SheetDescriptionText(
         text = stringResource(R.string.github_check_sheet_section_transfer_summary),
     )
@@ -420,7 +420,7 @@ internal fun GitHubCheckEnhancementSection(
     onRepositoryHealthCardEnabledInputChange: (Boolean) -> Unit,
     onApkTrustCheckEnabledInputChange: (Boolean) -> Unit,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_enhancements))
+    SheetSectionHeader(stringResource(R.string.github_check_sheet_section_enhancements))
     SheetSectionCard {
         SheetControlRow(
             label = stringResource(R.string.github_check_sheet_label_decision_assist),
@@ -462,7 +462,7 @@ internal fun GitHubCheckTracksSection(
     importInProgress: Boolean,
     onEnsureKeiOsSelfTrack: () -> Unit,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_tracks))
+    SheetSectionHeader(stringResource(R.string.github_check_sheet_section_tracks))
     SheetDescriptionText(
         text = stringResource(R.string.github_check_sheet_section_tracks_summary),
     )
@@ -500,7 +500,7 @@ internal fun GitHubShareImportFlowMode.labelRes(): Int =
 
 @Composable
 internal fun GitHubCheckNotesSection() {
-    SheetSectionTitle(stringResource(R.string.github_check_sheet_section_notes))
+    SheetSectionHeader(stringResource(R.string.github_check_sheet_section_notes))
     SheetSectionCard {
         SheetDescriptionText(
             text = stringResource(R.string.github_check_sheet_note_transfer),

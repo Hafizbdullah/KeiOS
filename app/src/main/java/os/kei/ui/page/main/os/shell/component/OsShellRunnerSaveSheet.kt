@@ -18,7 +18,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -77,7 +77,7 @@ internal fun OsShellRunnerSaveSheet(
             )
         }
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             val commandPreview = commandInput.trim()
             val previewEntry = latestOutputEntry?.takeIf { it.command == commandPreview }
             val previewResult = previewEntry?.result
@@ -87,7 +87,7 @@ internal fun OsShellRunnerSaveSheet(
                 ?.takeIf { it.isNotBlank() }
                 ?: saveSheetTimePlaceholder
             SheetSectionCard(verticalSpacing = 10.dp) {
-                SheetSectionTitle(text = saveSheetCommandLabel)
+                SheetSectionHeader(text = saveSheetCommandLabel)
                 Text(
                     text = "$ $commandPreview",
                     color = shellCommandAccentColor,

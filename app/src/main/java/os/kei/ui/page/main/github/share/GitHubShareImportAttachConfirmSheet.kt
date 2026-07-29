@@ -23,8 +23,8 @@ import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
@@ -53,14 +53,18 @@ internal fun GitHubShareImportAttachConfirmSheet(
         val attachCandidate = candidate ?: return@SnapshotWindowBottomSheet
         SheetContentColumn(
             modifier = Modifier.shareImportSheetTags(),
-            verticalSpacing = 10.dp,
+            verticalSpacing = 14.dp,
         ) {
+            SheetSectionHeader(
+                text = stringResource(R.string.github_share_import_pending_label_target),
+                summary =
+                    if (duplicateExists) {
+                        stringResource(R.string.github_share_import_attach_dialog_duplicate_hint)
+                    } else {
+                        null
+                    },
+            )
             GitHubShareImportAttachInfoCard(attachCandidate)
-            if (duplicateExists) {
-                SheetDescriptionText(
-                    text = stringResource(R.string.github_share_import_attach_dialog_duplicate_hint),
-                )
-            }
             if (submitting) {
                 GitHubShareImportAttachSubmittingRow(submittingAndOpen)
             }

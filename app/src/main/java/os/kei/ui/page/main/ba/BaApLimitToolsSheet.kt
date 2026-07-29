@@ -25,8 +25,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.Text
@@ -58,19 +58,16 @@ internal fun BaApLimitToolsSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionCard(verticalSpacing = 10.dp) {
-                Text(
-                    text = stringResource(R.string.ba_ap_limit_tools_section_title),
-                    color = accentGreen,
-                    fontWeight = FontWeight.Bold,
-                )
-                SheetDescriptionText(
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(
+                text = stringResource(R.string.ba_ap_limit_tools_section_title),
+                summary =
                     stringResource(
                         R.string.ba_ap_limit_tools_summary,
                         BA_AP_LIMIT_MAX,
                     ),
-                )
+            )
+            SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetControlRow(label = stringResource(R.string.ba_ap_limit_tools_limit_label)) {
                     AppLiquidSearchField(
                         modifier = Modifier.width(116.dp),

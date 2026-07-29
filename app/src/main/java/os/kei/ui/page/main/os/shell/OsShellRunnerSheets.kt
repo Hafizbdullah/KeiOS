@@ -21,7 +21,7 @@ import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 
 @Composable
@@ -45,8 +45,8 @@ internal fun OsShellBehaviorSettingsSheet(
         title = stringResource(R.string.os_shell_behavior_settings_sheet_title),
         onDismissRequest = onDismissRequest,
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(text = stringResource(R.string.os_shell_settings_section_general))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(text = stringResource(R.string.os_shell_settings_section_general))
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetControlRow(
                     label = stringResource(R.string.os_shell_settings_persist_input_label),
@@ -106,7 +106,7 @@ internal fun OsShellBehaviorSettingsSheet(
                 }
             }
 
-            SheetSectionTitle(text = stringResource(R.string.os_shell_settings_startup_behavior_title))
+            SheetSectionHeader(text = stringResource(R.string.os_shell_settings_startup_behavior_title))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,
@@ -125,7 +125,7 @@ internal fun OsShellBehaviorSettingsSheet(
                 )
             }
 
-            SheetSectionTitle(text = stringResource(R.string.os_shell_settings_exit_cleanup_title))
+            SheetSectionHeader(text = stringResource(R.string.os_shell_settings_exit_cleanup_title))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,
@@ -174,8 +174,8 @@ internal fun OsShellOutputSettingsSheet(
         title = stringResource(R.string.os_shell_output_settings_sheet_title),
         onDismissRequest = onDismissRequest,
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(text = stringResource(R.string.os_shell_output_settings_section_display))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(text = stringResource(R.string.os_shell_output_settings_section_display))
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetControlRow(
                     label = stringResource(R.string.os_shell_settings_persist_output_label),
@@ -235,7 +235,7 @@ internal fun OsShellOutputSettingsSheet(
                 }
             }
 
-            SheetSectionTitle(text = stringResource(R.string.os_shell_settings_output_save_mode_title))
+            SheetSectionHeader(text = stringResource(R.string.os_shell_settings_output_save_mode_title))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,
@@ -254,7 +254,7 @@ internal fun OsShellOutputSettingsSheet(
                 )
             }
 
-            SheetSectionTitle(text = stringResource(R.string.os_shell_settings_copy_mode_title))
+            SheetSectionHeader(text = stringResource(R.string.os_shell_settings_copy_mode_title))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,

@@ -4,6 +4,7 @@
     <string name="os_action_refresh_params">Refresh OS parameters</string>
     <string name="os_search_label">Search OS parameters and activities</string>
     <string name="os_sheet_visible_cards_title">Parameter cards</string>
+    <string name="os_visibility_group_cards">Visible cards</string>
     <string name="os_sheet_visible_cards_desc">Hiding a card clears its matching cache. Showing it again reloads and caches it immediately.</string>
     <string name="os_sheet_visible_activities_title">Activity cards</string>
     <string name="os_sheet_visible_activities_desc">Turn off an activity to hide its shortcut card. Turn it on again to show it immediately.</string>

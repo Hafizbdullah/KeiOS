@@ -21,9 +21,8 @@ import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -54,9 +53,11 @@ internal fun GitHubOverviewEntrySheet(
             )
         }
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetDescriptionText(stringResource(R.string.github_overview_entry_sheet_desc))
-            SheetSectionTitle(stringResource(R.string.github_overview_entry_sheet_section))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(
+                text = stringResource(R.string.github_overview_entry_sheet_section),
+                summary = stringResource(R.string.github_overview_entry_sheet_desc),
+            )
             SheetSectionCard(verticalSpacing = 4.dp) {
                 GitHubOverviewEntry.entries.forEach { entry ->
                     GitHubOverviewEntryRow(

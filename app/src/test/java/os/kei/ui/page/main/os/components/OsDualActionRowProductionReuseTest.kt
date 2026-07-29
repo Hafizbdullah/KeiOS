@@ -21,8 +21,7 @@ class OsDualActionRowProductionReuseTest {
                 TransferActionContract(
                     path = OS_PAGE_SECTIONS_SOURCE,
                     sectionStart = "text = stringResource(R.string.os_activity_sheet_transfer_title)",
-                    sectionEnd =
-                        "SheetDescriptionText(text = stringResource(R.string.os_activity_sheet_transfer_desc))",
+                    sectionEnd = "@Composable\nprivate fun ActivityVisibilityGroup",
                     exportText = "R.string.os_activity_sheet_action_export_backup",
                     importText = "R.string.os_activity_sheet_action_import_backup",
                 ),

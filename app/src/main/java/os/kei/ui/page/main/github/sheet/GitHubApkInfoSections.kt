@@ -39,7 +39,7 @@ import os.kei.ui.page.main.widget.core.AppSurfaceCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -65,7 +65,7 @@ internal fun ApkDifferenceSection(
             strings = apkDifferenceStrings(),
         )
     if (signals.isEmpty()) return
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_diff))
+    SheetSectionHeader(stringResource(R.string.github_apk_info_section_diff))
     SheetSectionCard(verticalSpacing = 6.dp) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -155,7 +155,7 @@ internal fun ApkTrustReportSection(
                 )
             }
         }
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_trust))
+    SheetSectionHeader(stringResource(R.string.github_apk_info_section_trust))
     SheetSectionCard(verticalSpacing = 6.dp) {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -174,7 +174,7 @@ internal fun InstalledPackageSection(
     info: GitHubApkManifestInfo,
     installedInfo: GitHubInstalledPackageInfo?,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_installed))
+    SheetSectionHeader(stringResource(R.string.github_apk_info_section_installed))
     SheetSectionCard(verticalSpacing = 6.dp) {
         if (installedInfo?.appLabel?.isNotBlank() == true) {
             InfoRow(
@@ -300,7 +300,7 @@ internal fun SignatureSection(
         ) {
             return
         }
-        SheetSectionTitle(stringResource(R.string.github_apk_info_section_signature))
+        SheetSectionHeader(stringResource(R.string.github_apk_info_section_signature))
         SheetSectionCard { SheetDescriptionText(stringResource(R.string.github_apk_info_signature_empty)) }
         return
     }
@@ -323,7 +323,7 @@ internal fun SignatureSection(
             ),
         ).filterStringsByQuery(query)
     if (lines.isEmpty()) return
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_signature))
+    SheetSectionHeader(stringResource(R.string.github_apk_info_section_signature))
     SheetSectionCard(verticalSpacing = 6.dp) {
         lines.forEach { DetailLine(it, maxLines = 3) }
     }
@@ -336,7 +336,7 @@ internal fun ManifestTreeSection(
 ) {
     if (nodeGroups.isEmpty()) {
         if (query.isBlank()) {
-            SheetSectionTitle(stringResource(R.string.github_apk_info_section_manifest_tree))
+            SheetSectionHeader(stringResource(R.string.github_apk_info_section_manifest_tree))
             SheetSectionCard { SheetDescriptionText(stringResource(R.string.github_apk_info_manifest_tree_empty)) }
         }
         return
@@ -347,7 +347,7 @@ internal fun ManifestTreeSection(
                 nodeGroups.keys.forEach { key -> put(key, key == R.string.github_apk_info_group_exported) }
             }
         }
-    SheetSectionTitle(stringResource(R.string.github_apk_info_section_manifest_tree))
+    SheetSectionHeader(stringResource(R.string.github_apk_info_section_manifest_tree))
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         nodeGroups.forEach { (titleRes, groupNodes) ->
             ManifestNodeGroupCard(
@@ -445,7 +445,7 @@ internal fun InfoListSection(
     values: List<String>,
     colors: Map<String, Color> = emptyMap(),
 ) {
-    SheetSectionTitle(title)
+    SheetSectionHeader(title)
     SheetSectionCard(verticalSpacing = 6.dp) {
         if (values.isEmpty()) {
             SheetDescriptionText(empty)

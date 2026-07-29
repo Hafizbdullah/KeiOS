@@ -23,7 +23,7 @@ import os.kei.ui.page.main.widget.sheet.SheetCardSurfaceTone
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -62,8 +62,8 @@ internal fun BaCalendarPoolDataSettingsSheet(
         },
         surfaceTone = LiquidSheetSurfaceTone.Readable,
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_sync))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(stringResource(R.string.ba_settings_section_sync))
             SheetSectionCard(surfaceTone = SheetCardSurfaceTone.Readable) {
                 Text(
                     text = stringResource(R.string.ba_settings_card_sync_title),
@@ -85,7 +85,7 @@ internal fun BaCalendarPoolDataSettingsSheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_content))
+            SheetSectionHeader(stringResource(R.string.ba_settings_section_content))
             SheetSectionCard(surfaceTone = SheetCardSurfaceTone.Readable) {
                 when (pageKind) {
                     BaCalendarPoolPageKind.Calendar -> {

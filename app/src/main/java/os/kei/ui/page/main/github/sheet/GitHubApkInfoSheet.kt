@@ -64,7 +64,7 @@ internal fun GitHubApkInfoSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             SheetSummaryCard(
                 title = asset.name,
                 badgeLabel = stringResource(R.string.github_apk_info_badge_manifest),

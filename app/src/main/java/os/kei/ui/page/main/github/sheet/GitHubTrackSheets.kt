@@ -164,7 +164,7 @@ internal fun GitHubCheckLogicSheet(
                 selectedOnlineShareTargetLabel
             }
 
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             GitHubCheckOverviewSection(
                 backdrop = backdrop,
                 logicChanged = logicChanged,

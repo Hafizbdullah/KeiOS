@@ -11,7 +11,7 @@ import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.status.StatusPill
 
 @Composable
@@ -33,7 +33,7 @@ internal fun GitHubShareImportAssetPickerContent(
             phase = phase,
             managedInstallProgress = managedInstallProgress,
         )
-        SheetSectionTitle(stringResource(R.string.github_share_import_dialog_label_assets))
+        SheetSectionHeader(stringResource(R.string.github_share_import_dialog_label_assets))
         SheetSectionCard(
             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
             verticalSpacing = 6.dp,

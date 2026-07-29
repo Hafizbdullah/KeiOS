@@ -19,7 +19,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -72,8 +72,8 @@ internal fun GitHubDroidSourcesSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.github_droid_sources_section_common))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(stringResource(R.string.github_droid_sources_section_common))
             SheetSectionCard {
                 SheetDescriptionText(
                     text =

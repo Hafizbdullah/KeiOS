@@ -45,7 +45,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
@@ -87,7 +87,7 @@ internal fun GitHubFdroidDetailSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             when {
                 detail.loading -> {
                     FdroidLoadingDetail(item)
@@ -240,7 +240,7 @@ private fun FdroidTrackingConfigSection(
     val packagePageUrl =
         config.packagePageUrl
             .ifBlank { identity?.packagePageUrl.orEmpty() }
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_tracking))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_tracking))
     SheetSectionCard(verticalSpacing = 6.dp) {
         FdroidInfoRow(
             label = stringResource(R.string.github_fdroid_detail_label_source_scope),
@@ -332,7 +332,7 @@ private fun FdroidPackageSection(
             packageInfo.webSiteUrl.isNotBlank() ||
             packageInfo.issueTrackerUrl.isNotBlank() ||
             packageInfo.changelogUrl.isNotBlank()
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_package))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_package))
     SheetSectionCard(verticalSpacing = 6.dp) {
         if (hasPackageDetails) {
             FdroidInfoRow(
@@ -391,7 +391,7 @@ private fun FdroidVersionSection(
     selectedVersion: FdroidVersionMetadataSummary?,
 ) {
     val context = LocalContext.current
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_version))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_version))
     SheetSectionCard(verticalSpacing = 6.dp) {
         if (selectedVersion == null) {
             SheetDescriptionText(stringResource(R.string.github_fdroid_detail_version_empty))
@@ -470,7 +470,7 @@ private fun FdroidRepositorySection(
     backdrop: LayerBackdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_repository))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_repository))
     SheetSectionCard(verticalSpacing = 6.dp) {
         FdroidInfoRow(
             label = stringResource(R.string.github_fdroid_detail_label_repo_name),
@@ -516,7 +516,7 @@ private fun FdroidRepositorySection(
 
 @Composable
 private fun FdroidTrustSection(sidecar: FdroidMetadataSidecar) {
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_trust))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_trust))
     SheetSectionCard(verticalSpacing = 6.dp) {
         FdroidInfoRow(
             label = stringResource(R.string.github_fdroid_detail_label_trust_policy),
@@ -565,7 +565,7 @@ private fun FdroidTrustSection(sidecar: FdroidMetadataSidecar) {
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun FdroidAntiFeaturesSection(sidecar: FdroidMetadataSidecar) {
-    SheetSectionTitle(stringResource(R.string.github_fdroid_detail_section_anti_features))
+    SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_anti_features))
     SheetSectionCard(verticalSpacing = 6.dp) {
         if (sidecar.antiFeatures.isEmpty()) {
             SheetDescriptionText(stringResource(R.string.github_fdroid_detail_antifeatures_empty))

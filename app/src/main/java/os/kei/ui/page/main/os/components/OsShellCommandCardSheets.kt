@@ -43,7 +43,7 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -201,7 +201,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                 )
             }
             if (presentationState.showShellRunner) {
-                SheetSectionTitle(
+                SheetSectionHeader(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_shell_runner),
@@ -217,7 +217,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                 }
             }
             if (presentationState.builtInCards.isNotEmpty()) {
-                SheetSectionTitle(
+                SheetSectionHeader(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_built_in),
@@ -235,7 +235,7 @@ internal fun OsShellCommandVisibilityManagerSheet(
                 }
             }
             if (presentationState.customCards.isNotEmpty()) {
-                SheetSectionTitle(
+                SheetSectionHeader(
                     text =
                         visibilityGroupTitle(
                             title = stringResource(R.string.os_visibility_group_custom),
@@ -417,7 +417,7 @@ internal fun OsShellCommandCardEditorSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetFieldBlock(title = stringResource(R.string.os_shell_card_field_title)) {
                     AppLiquidSearchField(
@@ -454,7 +454,7 @@ internal fun OsShellCommandCardEditorSheet(
                 }
             }
             if (showDeleteAction) {
-                SheetSectionTitle(
+                SheetSectionHeader(
                     text = stringResource(R.string.os_shell_card_danger_title),
                     danger = true,
                 )

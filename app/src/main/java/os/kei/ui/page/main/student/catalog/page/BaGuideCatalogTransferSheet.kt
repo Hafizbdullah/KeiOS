@@ -11,7 +11,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import os.kei.R
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -57,7 +57,7 @@ internal fun BaGuideCatalogTransferSheet(
                 onExport = onExportAllFavorites,
                 onImport = onImportAllFavorites,
             )
-            SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_settings_section))
+            SheetSectionHeader(stringResource(R.string.ba_catalog_transfer_settings_section))
             BaGuideCatalogTransferSaveLocationGroup(
                 mediaSaveCustomEnabled = mediaSaveCustomEnabled,
                 mediaSaveFixedTreeUri = mediaSaveFixedTreeUri,
@@ -65,7 +65,7 @@ internal fun BaGuideCatalogTransferSheet(
                 onPickMediaSaveLocation = onPickMediaSaveLocation,
             )
             BaGuideCatalogPlaybackSettingsGroup(playbackSettingsState)
-            SheetSectionTitle(stringResource(R.string.ba_catalog_transfer_parts_section))
+            SheetSectionHeader(stringResource(R.string.ba_catalog_transfer_parts_section))
             BaGuideCatalogTransferGroup(
                 title = stringResource(R.string.ba_catalog_transfer_student_favorites),
                 summary = stringResource(R.string.ba_catalog_transfer_student_favorites_summary),

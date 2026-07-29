@@ -45,7 +45,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetExpandableCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SheetSummaryCard
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Text
@@ -61,7 +61,7 @@ internal fun GitHubHealthDetailContent(
     val health = remember(item, state) { buildGitHubRepositoryHealth(item, state) }
     val profileUi = remember(state.repositoryProfile) { GitHubRepositoryProfileUiMapper.build(state.repositoryProfile) }
     var rulesExpanded by rememberSaveable(item.id) { mutableStateOf(false) }
-    SheetContentColumn(verticalSpacing = 10.dp) {
+    SheetContentColumn(verticalSpacing = 14.dp) {
         RepositoryProfileOverviewCard(
             item = item,
             state = state,
@@ -69,9 +69,9 @@ internal fun GitHubHealthDetailContent(
             profileUi = profileUi,
             refreshing = refreshing,
         )
-        SheetSectionTitle(stringResource(R.string.github_health_detail_diagnosis_title))
+        SheetSectionHeader(stringResource(R.string.github_health_detail_diagnosis_title))
         GitHubHealthDiagnosisCard(health = health, context = context)
-        SheetSectionTitle(stringResource(R.string.github_health_detail_profile_title))
+        SheetSectionHeader(stringResource(R.string.github_health_detail_profile_title))
         if (profileUi == null) {
             SheetSectionCard {
                 SheetDescriptionText(stringResource(R.string.github_health_detail_profile_empty))
@@ -176,7 +176,7 @@ internal fun RepositoryProfileOverviewCard(
 
 @Composable
 internal fun ProfileSignalSection(section: GitHubRepositoryProfileUiSection) {
-    SheetSectionTitle(stringResource(section.titleRes))
+    SheetSectionHeader(stringResource(section.titleRes))
     SheetSectionCard(
         verticalSpacing = 8.dp,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
@@ -263,7 +263,7 @@ private fun ProfileMetaLine(
 
 @Composable
 internal fun SourceAvailabilitySection(rows: List<GitHubRepositoryProfileSourceUiRow>) {
-    SheetSectionTitle(stringResource(R.string.github_profile_section_sources))
+    SheetSectionHeader(stringResource(R.string.github_profile_section_sources))
     SheetSectionCard(
         verticalSpacing = 8.dp,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),

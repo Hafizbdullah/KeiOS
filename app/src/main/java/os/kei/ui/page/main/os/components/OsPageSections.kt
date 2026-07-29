@@ -34,9 +34,8 @@ import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
 import top.yukonga.miuix.kmp.basic.Icon
@@ -69,7 +68,7 @@ internal fun OsCardVisibilityManagerSheet(
         },
     ) {
         SheetContentColumn(
-            verticalSpacing = 10.dp,
+            verticalSpacing = 14.dp,
         ) {
             @Composable
             fun CardLabel(
@@ -97,6 +96,10 @@ internal fun OsCardVisibilityManagerSheet(
                 }
             }
 
+            SheetSectionHeader(
+                text = stringResource(R.string.os_visibility_group_cards),
+                summary = cardsHintText,
+            )
             SheetSectionCard(verticalSpacing = 10.dp) {
                 OsSectionCard.entries
                     .filter { card ->
@@ -116,7 +119,6 @@ internal fun OsCardVisibilityManagerSheet(
                     }
             }
 
-            SheetDescriptionText(text = cardsHintText)
         }
     }
 }
@@ -155,7 +157,7 @@ internal fun OsActivityVisibilityManagerSheet(
         },
     ) {
         SheetContentColumn(
-            verticalSpacing = 10.dp,
+            verticalSpacing = 14.dp,
         ) {
             val presentationState =
                 remember(cards, defaultCardTitle, query) {
@@ -165,6 +167,10 @@ internal fun OsActivityVisibilityManagerSheet(
                         query = query,
                     )
                 }
+            SheetSectionHeader(
+                text = stringResource(R.string.os_action_manage_activities),
+                summary = activityHintText,
+            )
             SheetSectionCard(verticalSpacing = 8.dp) {
                 AppLiquidSearchField(
                     value = query,
@@ -194,11 +200,11 @@ internal fun OsActivityVisibilityManagerSheet(
                 noMatchedResultsText = stringResource(R.string.common_no_matched_results),
                 onCardVisibilityChange = onCardVisibilityChange,
             )
+            SheetSectionHeader(
+                text = stringResource(R.string.os_activity_sheet_transfer_title),
+                summary = stringResource(R.string.os_activity_sheet_transfer_desc),
+            )
             SheetSectionCard(verticalSpacing = 8.dp) {
-                Text(
-                    text = stringResource(R.string.os_activity_sheet_transfer_title),
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
                 AppDualActionRow(
                     spacing = 8.dp,
                     first = { modifier ->
@@ -225,8 +231,6 @@ internal fun OsActivityVisibilityManagerSheet(
                     },
                 )
             }
-            SheetDescriptionText(text = stringResource(R.string.os_activity_sheet_transfer_desc))
-            SheetDescriptionText(text = activityHintText)
         }
     }
 }
@@ -242,7 +246,7 @@ private fun ActivityVisibilityGroup(
     onCardVisibilityChange: (String, Boolean) -> Unit,
 ) {
     if (items.isEmpty() && !emptySearchActive) return
-    SheetSectionTitle(
+    SheetSectionHeader(
         text = visibilityGroupTitle(title, items.size),
     )
     SheetSectionCard(verticalSpacing = 10.dp) {

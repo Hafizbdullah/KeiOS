@@ -29,7 +29,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -88,7 +88,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
             )
         }
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
             if (showBuiltInBadge) {
                 SheetSectionCard {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -104,7 +104,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
                     }
                 }
             }
-            SheetSectionTitle(stringResource(R.string.os_google_system_service_sheet_section_card))
+            SheetSectionHeader(stringResource(R.string.os_google_system_service_sheet_section_card))
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetFieldBlock(
                     title = stringResource(R.string.os_google_system_service_field_title)
@@ -136,7 +136,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.os_google_system_service_sheet_section_target))
+            SheetSectionHeader(stringResource(R.string.os_google_system_service_sheet_section_target))
             SheetSectionCard(verticalSpacing = 10.dp) {
                 SheetFieldBlock(
                     title = stringResource(R.string.os_google_system_service_field_app_name)
@@ -396,7 +396,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
                 text = stringResource(R.string.os_google_system_service_sheet_desc)
             )
             if (showDeleteAction) {
-                SheetSectionTitle(
+                SheetSectionHeader(
                     text = stringResource(R.string.os_activity_card_danger_title),
                     danger = true
                 )

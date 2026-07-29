@@ -33,7 +33,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -122,8 +122,8 @@ internal fun BaNotificationSettingsSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_settings_section_notifications))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(stringResource(R.string.ba_settings_section_notifications))
             SheetSectionCard {
                 Text(
                     text = stringResource(R.string.ba_settings_card_ap_title),

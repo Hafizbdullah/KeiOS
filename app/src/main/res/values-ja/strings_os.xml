@@ -4,6 +4,7 @@
     <string name="os_action_refresh_params">OS パラメータを更新</string>
     <string name="os_search_label">OS パラメータと Activity を検索</string>
     <string name="os_sheet_visible_cards_title">パラメータカード</string>
+    <string name="os_visibility_group_cards">表示するカード</string>
     <string name="os_sheet_visible_cards_desc">カードを非表示にすると対応キャッシュをクリアします。再表示するとすぐ再読み込みしてキャッシュします。</string>
     <string name="os_sheet_visible_activities_title">Activity カード</string>
     <string name="os_sheet_visible_activities_desc">Activity をオフにするとショートカットカードを非表示にします。オンに戻すとすぐ表示します。</string>

@@ -18,8 +18,8 @@ import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
-import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
@@ -43,10 +43,11 @@ internal fun GitHubShareImportPendingSheet(
         val remainingMinutes = shareImportRemainingMinutes(pendingTrack.armedAtMillis)
         SheetContentColumn(
             modifier = Modifier.shareImportSheetTags(),
-            verticalSpacing = 10.dp,
+            verticalSpacing = 14.dp,
         ) {
-            SheetDescriptionText(
-                text =
+            SheetSectionHeader(
+                text = stringResource(R.string.github_share_import_pending_label_target),
+                summary =
                     stringResource(
                         if (pendingTrack.packageName.isNotBlank()) {
                             R.string.github_share_import_pending_dialog_summary_exact

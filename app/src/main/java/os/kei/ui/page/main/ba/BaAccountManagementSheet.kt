@@ -49,7 +49,7 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -151,8 +151,8 @@ internal fun BaAccountManagementSheet(
             )
         },
     ) {
-        SheetContentColumn(verticalSpacing = 10.dp) {
-            SheetSectionTitle(stringResource(R.string.ba_account_management_section_global))
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(stringResource(R.string.ba_account_management_section_global))
             SheetSectionCard {
                 SheetControlRow(
                     label = stringResource(R.string.ba_account_management_follow_global),
@@ -165,7 +165,7 @@ internal fun BaAccountManagementSheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.ba_account_management_section_accounts))
+            SheetSectionHeader(stringResource(R.string.ba_account_management_section_accounts))
             SheetSectionCard {
                 SheetControlRow(
                     label = stringResource(R.string.ba_account_management_add_title),

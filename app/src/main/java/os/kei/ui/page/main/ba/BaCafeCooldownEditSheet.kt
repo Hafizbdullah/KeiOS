@@ -35,6 +35,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -124,14 +125,12 @@ internal fun BaCafeCooldownEditSheet(
         },
     ) {
         if (editTarget == null) return@SnapshotWindowBottomSheet
-        SheetContentColumn(verticalSpacing = 10.dp) {
+        SheetContentColumn(verticalSpacing = 14.dp) {
+            SheetSectionHeader(
+                text = stringResource(R.string.ba_cafe_cooldown_edit_section_title),
+                summary = stringResource(R.string.ba_cafe_cooldown_edit_summary),
+            )
             SheetSectionCard(verticalSpacing = 10.dp) {
-                Text(
-                    text = stringResource(R.string.ba_cafe_cooldown_edit_section_title),
-                    color = accentPink,
-                    fontWeight = FontWeight.Bold,
-                )
-                SheetDescriptionText(stringResource(R.string.ba_cafe_cooldown_edit_summary))
                 if (editTarget == BaCafeCooldownEditTarget.Headpat) {
                     SheetDescriptionText(stringResource(R.string.ba_cafe_cooldown_edit_headpat_summary))
                 }

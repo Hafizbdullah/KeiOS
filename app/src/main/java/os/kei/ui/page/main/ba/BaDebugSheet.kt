@@ -15,7 +15,7 @@ import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 
 @Composable
 internal fun BaDebugControlsContent(
@@ -33,9 +33,9 @@ internal fun BaDebugControlsContent(
     onUseRealCalendarPoolDataChange: (Boolean) -> Unit,
     onTestCafePlus3Hours: () -> Unit,
 ) {
-    SheetSectionTitle(stringResource(R.string.ba_debug_title))
+    SheetSectionHeader(stringResource(R.string.ba_debug_title))
     SheetSectionCard {
-        SheetSectionTitle(stringResource(R.string.ba_debug_section_daily))
+        SheetSectionHeader(stringResource(R.string.ba_debug_section_daily))
         BaDebugActionGrid(
             backdrop = backdrop,
             actions =
@@ -47,7 +47,7 @@ internal fun BaDebugControlsContent(
                     stringResource(R.string.ba_debug_action_cafe_plus_3h_ap) to onTestCafePlus3Hours,
                 )
         )
-        SheetSectionTitle(stringResource(R.string.ba_debug_section_calendar_pool))
+        SheetSectionHeader(stringResource(R.string.ba_debug_section_calendar_pool))
         SheetControlRow(
             label = stringResource(R.string.ba_debug_label_use_real_calendar_pool_data),
             summary = stringResource(R.string.ba_debug_summary_use_real_calendar_pool_data),

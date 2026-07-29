@@ -36,7 +36,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -119,7 +119,7 @@ internal fun DebugLiquidSheetCard(
         useLiquidGlassSheet = true,
     ) {
         SheetContentColumn(verticalSpacing = 12.dp) {
-            SheetSectionTitle(stringResource(R.string.debug_component_lab_liquid_sheet_ime_section))
+            SheetSectionHeader(stringResource(R.string.debug_component_lab_liquid_sheet_ime_section))
             SheetSectionCard {
                 val fieldDescription = stringResource(R.string.debug_component_lab_liquid_sheet_input)
                 AppLiquidInputField(
@@ -140,7 +140,7 @@ internal fun DebugLiquidSheetCard(
                 )
                 SheetDescriptionText(stringResource(R.string.debug_component_lab_liquid_sheet_ime_desc))
             }
-            SheetSectionTitle(stringResource(R.string.debug_component_lab_liquid_sheet_scroll_section))
+            SheetSectionHeader(stringResource(R.string.debug_component_lab_liquid_sheet_scroll_section))
             repeat(12) { index ->
                 SheetSectionCard {
                     Text(

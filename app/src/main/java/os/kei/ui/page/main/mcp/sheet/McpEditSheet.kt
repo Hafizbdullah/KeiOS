@@ -22,7 +22,7 @@ import os.kei.ui.page.main.widget.sheet.SheetChoiceCard
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -76,7 +76,7 @@ internal fun McpEditServiceSheet(
         }
     ) {
         SheetContentColumn {
-            SheetSectionTitle(stringResource(R.string.mcp_sheet_section_basic))
+            SheetSectionHeader(stringResource(R.string.mcp_sheet_section_basic))
             SheetSectionCard {
                 SheetControlRow(label = stringResource(R.string.mcp_overview_label_service_name)) {
                     AppLiquidSearchField(
@@ -103,7 +103,7 @@ internal fun McpEditServiceSheet(
                     )
                 }
             }
-            SheetSectionTitle(stringResource(R.string.mcp_sheet_section_network_access))
+            SheetSectionHeader(stringResource(R.string.mcp_sheet_section_network_access))
             SheetActionGroup(modifier = Modifier.selectableGroup()) {
                 McpNetworkModeOption(
                     title = stringResource(R.string.mcp_network_mode_local_only_short),
@@ -118,7 +118,7 @@ internal fun McpEditServiceSheet(
                     onClick = { onAllowExternalChange(true) }
                 )
             }
-            SheetSectionTitle(
+            SheetSectionHeader(
                 text = stringResource(R.string.common_danger_zone),
                 danger = true
             )

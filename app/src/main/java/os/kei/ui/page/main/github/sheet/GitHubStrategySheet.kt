@@ -47,7 +47,7 @@ import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetFieldBlock
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
+import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.sheet.UnsavedSheetDismissConfirmDialog
 import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
@@ -146,7 +146,7 @@ internal fun GitHubStrategySheet(
         }
 
         SheetContentColumn(verticalSpacing = 8.dp) {
-            SheetSectionTitle(stringResource(R.string.github_strategy_section_draft_summary))
+            SheetSectionHeader(stringResource(R.string.github_strategy_section_draft_summary))
             GitHubStrategyDraftSummaryCard(
                 selectedStrategy = selectedStrategyInput,
                 selectedActionsStrategy = selectedActionsStrategyInput,
@@ -155,7 +155,7 @@ internal fun GitHubStrategySheet(
                 changed = draftChanged
             )
 
-            SheetSectionTitle(stringResource(R.string.github_strategy_section_strategy))
+            SheetSectionHeader(stringResource(R.string.github_strategy_section_strategy))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,
@@ -169,7 +169,7 @@ internal fun GitHubStrategySheet(
                 }
             }
 
-            SheetSectionTitle(stringResource(R.string.github_strategy_section_actions_strategy))
+            SheetSectionHeader(stringResource(R.string.github_strategy_section_actions_strategy))
             SheetActionGroup(
                 modifier = Modifier.selectableGroup(),
                 verticalSpacing = 8.dp,
@@ -184,7 +184,7 @@ internal fun GitHubStrategySheet(
             }
 
             if (tokenUsedByDraft) {
-                SheetSectionTitle(stringResource(R.string.github_strategy_section_credential))
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_credential))
                 SheetSectionCard {
                     SheetControlRow(label = stringResource(R.string.github_strategy_label_token_status)) {
                         StatusPill(
@@ -237,7 +237,7 @@ internal fun GitHubStrategySheet(
                         )
                     }
                 }
-                SheetSectionTitle(stringResource(R.string.github_strategy_section_verify_now))
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_verify_now))
                 SheetSectionCard {
                     SheetActionGroup {
                         AppLiquidTextButton(
@@ -286,7 +286,7 @@ internal fun GitHubStrategySheet(
                 SheetDescriptionText(
                     text = stringResource(R.string.github_strategy_desc_api_actions_recommendation)
                 )
-                SheetSectionTitle(stringResource(R.string.github_strategy_section_recommended_create))
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_recommended_create))
                 GitHubRecommendedTokenGuideCard(
                     guide = tokenGuide,
                     expanded = recommendedTokenGuideExpanded,
@@ -322,7 +322,7 @@ internal fun GitHubStrategySheet(
                     text = stringResource(R.string.github_strategy_desc_dedicated_token)
                 )
             } else {
-                SheetSectionTitle(stringResource(R.string.github_strategy_section_strategy_note))
+                SheetSectionHeader(stringResource(R.string.github_strategy_section_strategy_note))
                 SheetSectionCard {
                     SheetDescriptionText(
                         text = stringResource(R.string.github_strategy_desc_atom_note)
@@ -355,7 +355,7 @@ private fun GitHubStrategyBenchmarkSection(
     strategyBenchmarkReport: GitHubStrategyBenchmarkReport?,
     onRunStrategyBenchmark: () -> Unit
 ) {
-    SheetSectionTitle(stringResource(R.string.github_strategy_section_local_benchmark))
+    SheetSectionHeader(stringResource(R.string.github_strategy_section_local_benchmark))
     SheetSectionCard {
         SheetDescriptionText(
             text = if (trackedCount == 0) {
