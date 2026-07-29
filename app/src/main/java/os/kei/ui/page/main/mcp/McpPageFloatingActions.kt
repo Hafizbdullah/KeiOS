@@ -18,7 +18,6 @@ import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
 import os.kei.ui.page.main.os.appLucideMoreIcon
 import os.kei.ui.page.main.os.appLucidePauseIcon
-import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.osLucideCopyIcon
 import os.kei.ui.page.main.os.osLucideRunIcon
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
@@ -32,7 +31,6 @@ internal fun BoxScope.McpPageFloatingActionDock(
     backdrop: LayerBackdrop,
     uiState: McpServerUiState,
     runtime: MainPageRuntime,
-    refreshRunning: Boolean,
     actions: McpPageActions,
 ) {
     val dockAlignment =
@@ -50,13 +48,11 @@ internal fun BoxScope.McpPageFloatingActionDock(
             label = "mcp_floating_action_dock_bottom",
         )
     val copyIcon = osLucideCopyIcon()
-    val refreshIcon = appLucideRefreshIcon()
     val toggleIcon = if (uiState.running) appLucidePauseIcon() else osLucideRunIcon()
     val moreIcon = appLucideMoreIcon()
     val primaryColor = MiuixTheme.colorScheme.primary
     val errorColor = MiuixTheme.colorScheme.error
     val copyClawSetupContentDescription = stringResource(R.string.mcp_action_copy_claw_setup_prompt)
-    val refreshContentDescription = stringResource(R.string.common_refresh)
     val expandDescription = stringResource(R.string.common_expand)
     val toggleContentDescription =
         if (uiState.running) {
@@ -67,12 +63,9 @@ internal fun BoxScope.McpPageFloatingActionDock(
     val dockActions =
         remember(
             copyIcon,
-            refreshIcon,
             toggleIcon,
             uiState.running,
-            refreshRunning,
             copyClawSetupContentDescription,
-            refreshContentDescription,
             toggleContentDescription,
             primaryColor,
             errorColor,
@@ -84,14 +77,6 @@ internal fun BoxScope.McpPageFloatingActionDock(
                     contentDescription = copyClawSetupContentDescription,
                     iconTint = primaryColor,
                     onClick = actions.onCopyClawSetupPrompt,
-                ),
-                AppFloatingDockAction(
-                    icon = refreshIcon,
-                    contentDescription = refreshContentDescription,
-                    iconTint = primaryColor,
-                    enabled = !refreshRunning,
-                    rotating = refreshRunning,
-                    onClick = actions.onRefreshNow,
                 ),
                 AppFloatingDockAction(
                     icon = toggleIcon,

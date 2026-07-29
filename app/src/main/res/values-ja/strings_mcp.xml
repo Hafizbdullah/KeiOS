@@ -1,4 +1,8 @@
 <resources>
+    <string name="mcp_pull_refresh_pull">引き下げて MCP 状態を更新</string>
+    <string name="mcp_pull_refresh_release">指を離して更新</string>
+    <string name="mcp_pull_refresh_refreshing">更新中…</string>
+    <string name="mcp_pull_refresh_done">更新完了</string>
     <string name="mcp_skill_page_title">MCP Skill</string>
     <string name="mcp_skill_markdown_empty"># MCP Skill
 

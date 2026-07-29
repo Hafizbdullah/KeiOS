@@ -356,7 +356,7 @@ fun McpPage(
                 runtime = runtime,
                 innerPadding = innerPadding,
                 listState = listState,
-                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                scrollBehavior = scrollBehavior,
                 backdrops = backdrops,
                 titleColor = titleColor,
                 subtitleColor = subtitleColor,

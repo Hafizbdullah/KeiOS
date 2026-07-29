@@ -16,7 +16,7 @@ class McpPageBackdropTest {
     }
 
     @Test
-    fun contentProducerPrecedesListAndFloatingDockConsumers() {
+    fun contentProducerPrecedesPullRefreshListAndFloatingDockConsumers() {
         val source = sourceFile(MCP_PAGE_CONTENT_SOURCE)
         val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
         val contentIdentityIndex =
@@ -29,11 +29,17 @@ class McpPageBackdropTest {
                 "AppPageLazyColumn(",
                 startIndex = contentIdentityIndex.coerceAtLeast(0),
             )
+        val pullRefreshIndex =
+            source.indexOf(
+                "PullToRefresh(",
+                startIndex = contentIdentityIndex.coerceAtLeast(0),
+            )
         val dockIndex = source.indexOf("McpPageFloatingActionDock(", startIndex = listIndex.coerceAtLeast(0))
 
         assertTrue(sceneIndex >= 0, "MCP page must host the shared content Backdrop scene")
         assertTrue(contentIdentityIndex > sceneIndex, "The scene producer must receive the MCP content identity")
-        assertTrue(listIndex > contentIdentityIndex, "The page list must be composed after the content producer")
+        assertTrue(pullRefreshIndex > contentIdentityIndex, "Pull refresh must use the produced content scene")
+        assertTrue(listIndex > pullRefreshIndex, "The page list must be composed inside pull refresh")
         assertTrue(dockIndex > listIndex, "The floating dock must be composed after the page list")
         assertTrue(
             source.indexOf("backdrop = backdrops.topBar", startIndex = dockIndex) > dockIndex,
@@ -41,6 +47,18 @@ class McpPageBackdropTest {
         )
         assertEquals(1, source.occurrencesOf("MainPageContentBackdropScene("))
         assertEquals(1, source.occurrencesOf("contentBackdrop = backdrops.content,"))
+    }
+
+    @Test
+    fun refreshLivesInPullGestureAndLeavesTheFloatingDock() {
+        val contentSource = sourceFile(MCP_PAGE_CONTENT_SOURCE)
+        val dockSource = sourceFile(MCP_PAGE_FLOATING_ACTIONS_SOURCE)
+
+        assertEquals(1, contentSource.occurrencesOf("PullToRefresh("))
+        assertEquals(1, contentSource.occurrencesOf("onRefresh = actions.onRefreshNow"))
+        assertFalse("appLucideRefreshIcon" in dockSource)
+        assertFalse("actions.onRefreshNow" in dockSource)
+        assertFalse("refreshRunning" in dockSource)
     }
 
     @Test
@@ -91,3 +109,6 @@ private const val MCP_PAGE_CONTENT_SOURCE =
 
 private const val MCP_PAGE_SHEETS_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/mcp/McpPageSheets.kt"
+
+private const val MCP_PAGE_FLOATING_ACTIONS_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/mcp/McpPageFloatingActions.kt"

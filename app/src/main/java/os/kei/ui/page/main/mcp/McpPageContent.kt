@@ -13,10 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
+import os.kei.R
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
@@ -42,6 +43,8 @@ import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
 internal fun McpPageContent(
@@ -52,7 +55,7 @@ internal fun McpPageContent(
     runtime: MainPageRuntime,
     innerPadding: PaddingValues,
     listState: LazyListState,
-    nestedScrollConnection: NestedScrollConnection,
+    scrollBehavior: ScrollBehavior,
     backdrops: MainPageBackdropSet,
     titleColor: Color,
     subtitleColor: Color,
@@ -93,15 +96,31 @@ internal fun McpPageContent(
             )
         }
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
+        PullToRefresh(
+            isRefreshing = refreshRunning,
+            onRefresh = actions.onRefreshNow,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .layerBackdrop(backdrops.topBar),
+            topAppBarScrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+            refreshTexts =
+                listOf(
+                    stringResource(R.string.mcp_pull_refresh_pull),
+                    stringResource(R.string.mcp_pull_refresh_release),
+                    stringResource(R.string.mcp_pull_refresh_refreshing),
+                    stringResource(R.string.mcp_pull_refresh_done),
+                ),
+        ) {
         AppPageLazyColumn(
             innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             state = listState,
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .layerBackdrop(backdrops.topBar)
-                    .nestedScroll(nestedScrollConnection)
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .appEdgeStackContainer(edgeStackState),
             bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
             topExtra = AppEdgeStackListTopInset,
@@ -220,12 +239,12 @@ internal fun McpPageContent(
         }
         }
         }
+        }
 
         McpPageFloatingActionDock(
             backdrop = backdrops.topBar,
             uiState = uiState,
             runtime = runtime,
-            refreshRunning = refreshRunning,
             actions = actions,
         )
     }
