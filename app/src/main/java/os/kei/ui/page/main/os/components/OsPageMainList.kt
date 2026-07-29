@@ -11,14 +11,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -26,6 +31,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.R
 import os.kei.ui.page.main.host.pager.MainPageContentBackdropScene
 import os.kei.ui.page.main.os.OsPageCardListDerivedState
@@ -59,6 +66,8 @@ import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.status.StatusPill
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Immutable
@@ -132,7 +141,7 @@ internal fun OsPageMainList(
     context: Context,
     listState: LazyListState,
     innerPadding: PaddingValues,
-    scrollBehaviorConnection: NestedScrollConnection,
+    scrollBehavior: ScrollBehavior,
     topBarBackdrop: LayerBackdrop,
     contentBackdrop: LayerBackdrop,
     sheetBackdrop: LayerBackdrop,
@@ -265,6 +274,19 @@ internal fun OsPageMainList(
             SystemOverviewState.Cached -> AppFloatingRefreshStatus.Cached
             SystemOverviewState.Idle -> AppFloatingRefreshStatus.Idle
         }
+    var pullRefreshSessionActive by remember { mutableStateOf(false) }
+    val refreshingNow by rememberUpdatedState(refreshing)
+    LaunchedEffect(pullRefreshSessionActive) {
+        if (!pullRefreshSessionActive) return@LaunchedEffect
+        val refreshStarted =
+            withTimeoutOrNull(OsPullRefreshStartTimeoutMs) {
+                snapshotFlow { refreshingNow }.first { it }
+            } != null
+        if (refreshStarted) {
+            snapshotFlow { refreshingNow }.first { !it }
+        }
+        pullRefreshSessionActive = false
+    }
     val moreIcon = appLucideMoreIcon()
     val expandDockDescription = stringResource(R.string.common_expand)
 
@@ -324,13 +346,34 @@ internal fun OsPageMainList(
             )
         }
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
-        AppPageLazyColumn(
+        PullToRefresh(
+            isRefreshing = pullRefreshSessionActive,
+            onRefresh = {
+                if (!refreshing) {
+                    pullRefreshSessionActive = true
+                    onRefreshAll()
+                }
+            },
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .layerBackdrop(topBarBackdrop)
-                    .nestedScroll(scrollBehaviorConnection)
+                    .layerBackdrop(topBarBackdrop),
+            topAppBarScrollBehavior = scrollBehavior,
+            contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+            refreshTexts =
+                listOf(
+                    stringResource(R.string.os_pull_refresh_pull),
+                    stringResource(R.string.os_pull_refresh_release),
+                    stringResource(R.string.os_pull_refresh_refreshing),
+                    stringResource(R.string.os_pull_refresh_done),
+                ),
+        ) {
+        AppPageLazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .appEdgeStackContainer(edgeStackState),
             state = listState,
             innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
@@ -535,6 +578,7 @@ internal fun OsPageMainList(
         }
         }
         }
+        }
 
         AppFloatingVerticalSearchActionDock(
             backdrop = topBarBackdrop,
@@ -552,6 +596,7 @@ internal fun OsPageMainList(
             refreshContentDescription = stringResource(R.string.common_refresh),
             onRefreshClick = onRefreshAll,
             showAddAction = showFloatingAddButton,
+            showRefreshAction = false,
             refreshEnabled = !refreshing,
             refreshStatus = refreshStatus,
             compact = !bottomBarVisible,
@@ -568,3 +613,5 @@ internal fun OsPageMainList(
         )
     }
 }
+
+private const val OsPullRefreshStartTimeoutMs = 4_000L

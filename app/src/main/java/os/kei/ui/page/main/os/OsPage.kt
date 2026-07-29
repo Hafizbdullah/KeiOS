@@ -660,7 +660,7 @@ fun OsPage(
                 context = context,
                 listState = listState,
                 innerPadding = innerPadding,
-                scrollBehaviorConnection = scrollBehavior.nestedScrollConnection,
+                scrollBehavior = scrollBehavior,
                 topBarBackdrop = backdrops.topBar,
                 contentBackdrop = backdrops.content,
                 sheetBackdrop = backdrops.sheet,

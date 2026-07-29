@@ -11,6 +11,10 @@
     <string name="os_activity_sheet_transfer_title">Activity カードバックアップ</string>
     <string name="os_activity_sheet_transfer_desc">現在の Activity カードバックアップ JSON をエクスポートします。インポート時は認識結果をプレビューし、変更をマージしてから書き込みます。</string>
     <string name="os_overview_title">OS 概要</string>
+    <string name="os_pull_refresh_pull">引き下げて OS パラメータを更新</string>
+    <string name="os_pull_refresh_release">指を離して更新</string>
+    <string name="os_pull_refresh_refreshing">更新中…</string>
+    <string name="os_pull_refresh_done">更新完了</string>
     <string name="os_overview_metric_rows_compact">パラメータ</string>
     <string name="os_overview_metric_rows_compact_value">%1$d/%2$d</string>
     <string name="os_overview_metric_top_info">Top</string>

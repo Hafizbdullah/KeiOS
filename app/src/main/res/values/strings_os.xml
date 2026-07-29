@@ -11,6 +11,10 @@
     <string name="os_activity_sheet_transfer_title">活动卡片备份</string>
     <string name="os_activity_sheet_transfer_desc">导出当前活动卡片备份 JSON；导入活动备份前会先预览识别结果与合并变化。</string>
     <string name="os_overview_title">OS 总览</string>
+    <string name="os_pull_refresh_pull">下拉刷新 OS 参数</string>
+    <string name="os_pull_refresh_release">松开立即刷新</string>
+    <string name="os_pull_refresh_refreshing">正在刷新…</string>
+    <string name="os_pull_refresh_done">刷新完成</string>
     <string name="os_overview_metric_rows_compact">参数</string>
     <string name="os_overview_metric_rows_compact_value">%1$d/%2$d</string>
     <string name="os_overview_metric_top_info">Top</string>

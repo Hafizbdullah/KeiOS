@@ -11,6 +11,10 @@
     <string name="os_activity_sheet_transfer_title">Activity card backup</string>
     <string name="os_activity_sheet_transfer_desc">Export current activity card backup JSON. Import previews recognized results and merge changes before writing.</string>
     <string name="os_overview_title">OS overview</string>
+    <string name="os_pull_refresh_pull">Pull down to refresh OS parameters</string>
+    <string name="os_pull_refresh_release">Release to refresh</string>
+    <string name="os_pull_refresh_refreshing">Refreshing…</string>
+    <string name="os_pull_refresh_done">Refresh completed</string>
     <string name="os_overview_metric_rows_compact">Params</string>
     <string name="os_overview_metric_rows_compact_value">%1$d/%2$d</string>
     <string name="os_overview_metric_top_info">Top</string>

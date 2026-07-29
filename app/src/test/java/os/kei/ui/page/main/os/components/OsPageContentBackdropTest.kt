@@ -49,6 +49,27 @@ class OsPageContentBackdropTest {
         assertTrue("AppOverviewPillItem(pill = pill)" in source)
         assertTrue("pills = bodyOverviewPills" in source)
     }
+
+    @Test
+    fun pullToRefreshReplacesTheVisibleDockRefreshAction() {
+        val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
+        val pullToRefreshIndex = source.indexOf("PullToRefresh(")
+        val pullRefreshCallbackIndex =
+            source.indexOf("onRefreshAll()", startIndex = pullToRefreshIndex.coerceAtLeast(0))
+        val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = pullToRefreshIndex.coerceAtLeast(0))
+        val dockIndex = source.indexOf("AppFloatingVerticalSearchActionDock(")
+        val hiddenRefreshActionIndex =
+            source.indexOf("showRefreshAction = false,", startIndex = dockIndex.coerceAtLeast(0))
+
+        assertTrue(pullToRefreshIndex >= 0, "OS content must provide pull-to-refresh")
+        assertTrue(
+            pullRefreshCallbackIndex > pullToRefreshIndex,
+            "Pull-to-refresh must trigger the full OS parameter refresh",
+        )
+        assertTrue(listIndex > pullRefreshCallbackIndex, "The parameter list must be inside pull-to-refresh")
+        assertTrue(dockIndex > listIndex, "The floating dock must remain after pull-to-refresh content")
+        assertTrue(hiddenRefreshActionIndex > dockIndex, "The OS dock must hide its redundant refresh action")
+    }
 }
 
 private fun sourceFile(relativePath: String): String {
