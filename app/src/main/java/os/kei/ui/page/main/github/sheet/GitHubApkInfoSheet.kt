@@ -110,6 +110,13 @@ internal fun GitHubApkInfoSheet(
                         )
                     }
                 }
+                assetSha256Value(asset.digest)?.let { sha256 ->
+                    InfoRow(
+                        label = stringResource(R.string.github_apk_info_label_asset_sha256),
+                        value = sha256,
+                        valueMaxLines = 4,
+                    )
+                }
             }
             if (info != null) {
                 ApkInfoActionRow(
@@ -174,6 +181,14 @@ internal fun GitHubApkInfoSheet(
         }
     }
 }
+
+internal fun assetSha256Value(digest: String): String? {
+    val normalized = digest.trim()
+    if (!normalized.startsWith(SHA256_DIGEST_PREFIX, ignoreCase = true)) return null
+    return normalized.substring(SHA256_DIGEST_PREFIX.length).trim().ifBlank { null }
+}
+
+private const val SHA256_DIGEST_PREFIX = "sha256:"
 
 @Composable
 private fun ApkInfoActionRow(

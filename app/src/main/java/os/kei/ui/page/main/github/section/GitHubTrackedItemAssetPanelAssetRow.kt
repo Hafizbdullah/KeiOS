@@ -138,12 +138,6 @@ internal fun GitHubTrackedItemAssetRow(
                     color = GitHubStatusPalette.PreRelease,
                 )
             }
-            if (asset.digest.startsWith("sha256:", ignoreCase = true)) {
-                AssetStatusPill(
-                    label = "SHA-256",
-                    color = GitHubStatusPalette.Active,
-                )
-            }
             if (asset.signerSha256.isNotEmpty()) {
                 AssetStatusPill(
                     label = stringResource(R.string.github_asset_badge_signer),

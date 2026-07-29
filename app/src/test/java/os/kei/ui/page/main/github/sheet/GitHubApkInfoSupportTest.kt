@@ -12,6 +12,16 @@ import kotlin.test.assertTrue
 
 class GitHubApkInfoSupportTest {
     @Test
+    fun assetSha256ValueAcceptsOnlyNamedSha256Digests() {
+        val hash = "abcdef1234567890"
+
+        assertEquals(hash, assetSha256Value("sha256:$hash"))
+        assertEquals(hash, assetSha256Value("  SHA256: $hash  "))
+        assertEquals(null, assetSha256Value(hash))
+        assertEquals(null, assetSha256Value("sha256:"))
+    }
+
+    @Test
     fun `difference signals prefer remote version and target api when newer`() {
         val signals =
             buildApkDifferenceSignals(

@@ -1600,6 +1600,7 @@
     <string name="github_apk_info_label_version">版本</string>
     <string name="github_apk_info_label_api">API</string>
     <string name="github_apk_info_label_source">来源</string>
+    <string name="github_apk_info_label_asset_sha256">APK SHA-256</string>
     <string name="github_apk_info_label_app">应用</string>
     <string name="github_apk_info_label_installed_status">本机</string>
     <string name="github_apk_info_label_local_version">本机版本</string>

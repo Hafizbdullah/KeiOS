@@ -1593,6 +1593,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_apk_info_label_version">バージョン</string>
     <string name="github_apk_info_label_api">API</string>
     <string name="github_apk_info_label_source">ソース</string>
+    <string name="github_apk_info_label_asset_sha256">APK SHA-256</string>
     <string name="github_apk_info_label_app">アプリ</string>
     <string name="github_apk_info_label_installed_status">ローカル</string>
     <string name="github_apk_info_label_local_version">ローカルバージョン</string>

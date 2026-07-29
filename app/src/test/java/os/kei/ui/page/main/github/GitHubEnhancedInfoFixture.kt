@@ -33,6 +33,7 @@ internal object GitHubEnhancedInfoFixture {
         sizeBytes = 4_700_000L,
         downloadCount = 120,
         contentType = "application/vnd.android.package-archive",
+        digest = "sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
         updatedAtMillis = nowMillis - 58L * 24L * 60L * 60L * 1000L
     )
 

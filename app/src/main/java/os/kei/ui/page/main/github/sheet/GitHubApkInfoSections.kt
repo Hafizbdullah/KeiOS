@@ -479,6 +479,7 @@ internal fun InfoListSection(
 internal fun InfoRow(
     label: String,
     value: String,
+    valueMaxLines: Int = 2,
 ) {
     if (value.isBlank()) return
     AppInfoRow(
@@ -491,7 +492,7 @@ internal fun InfoRow(
         verticalAlignment = Alignment.Top,
         valueTextAlign = TextAlign.Start,
         labelMaxLines = 1,
-        valueMaxLines = 2,
+        valueMaxLines = valueMaxLines,
         labelOverflow = TextOverflow.Ellipsis,
         valueOverflow = TextOverflow.Ellipsis,
         labelFontSize = AppTypographyTokens.Supporting.fontSize,

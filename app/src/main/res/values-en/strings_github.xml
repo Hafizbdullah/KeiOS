@@ -1464,6 +1464,7 @@
     <string name="github_apk_info_label_version">Version</string>
     <string name="github_apk_info_label_api">API</string>
     <string name="github_apk_info_label_source">Source</string>
+    <string name="github_apk_info_label_asset_sha256">APK SHA-256</string>
     <string name="github_apk_info_label_app">App</string>
     <string name="github_apk_info_label_installed_status">Local</string>
     <string name="github_apk_info_label_local_version">Local version</string>
