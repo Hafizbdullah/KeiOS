@@ -481,7 +481,12 @@ internal fun rememberHomePageOverviewCardState(
                     HomeCardPillItem(
                         label = content.homeCardBa,
                         value = content.baActiveAccountLine,
-                        color = if (baOverview.activated) infoColor else content.stoppedColor,
+                        color = homeBaActiveAccountColor(
+                            overview = baOverview,
+                            enabledColor = AppStatusColors.Fresh,
+                            inactiveColor = content.inactiveColor,
+                            disabledColor = content.stoppedColor,
+                        ),
                     ),
                 )
                 add(
@@ -523,3 +528,15 @@ internal fun rememberHomePageOverviewCardState(
         )
     }
 }
+
+internal fun homeBaActiveAccountColor(
+    overview: HomeBaOverview,
+    enabledColor: Color,
+    inactiveColor: Color,
+    disabledColor: Color,
+): Color =
+    when {
+        overview.activeAccountName.isBlank() -> inactiveColor
+        overview.activeAccountEnabled -> enabledColor
+        else -> disabledColor
+    }

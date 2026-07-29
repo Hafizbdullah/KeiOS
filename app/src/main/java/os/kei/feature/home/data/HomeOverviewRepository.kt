@@ -361,7 +361,7 @@ internal fun loadHomeGitHubOverview(
     )
 }
 
-private fun loadHomeBaOverview(
+internal fun loadHomeBaOverview(
     snapshot: BaPageSnapshot,
     accountState: BaAccountStoreSnapshot,
     cacheFreshness: CacheFreshnessSnapshot,
@@ -369,10 +369,12 @@ private fun loadHomeBaOverview(
     val activated = isHomeBaActivated(snapshot.idFriendCode, snapshot.serverIndex)
     var enabledAccountCount = 0
     var activeAccountName = ""
+    var activeAccountEnabled = false
     accountState.accounts.forEach { account ->
         if (account.profile.enabled) enabledAccountCount += 1
         if (account.profile.id == accountState.activeAccountId) {
             activeAccountName = account.profile.displayName
+            activeAccountEnabled = account.profile.enabled
         }
     }
     val apCurrent = snapshot.apCurrent.coerceIn(0.0, HOME_BA_AP_MAX.toDouble()).toInt()
@@ -389,6 +391,7 @@ private fun loadHomeBaOverview(
         accountCount = accountState.accounts.size,
         enabledAccountCount = enabledAccountCount,
         activeAccountName = activeAccountName,
+        activeAccountEnabled = activeAccountEnabled,
         serverIndex = snapshot.serverIndex,
         apCurrent = apCurrent,
         apLimit = snapshot.apLimit,

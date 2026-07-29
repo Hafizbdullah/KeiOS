@@ -60,6 +60,7 @@ data class HomeBaOverview(
     val accountCount: Int = 0,
     val enabledAccountCount: Int = 0,
     val activeAccountName: String = "",
+    val activeAccountEnabled: Boolean = false,
     val serverIndex: Int = 2,
     val apCurrent: Int = 0,
     val apLimit: Int = HOME_BA_AP_LIMIT_MAX,

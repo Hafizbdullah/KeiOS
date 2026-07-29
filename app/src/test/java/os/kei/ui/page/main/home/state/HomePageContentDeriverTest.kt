@@ -15,6 +15,29 @@ import os.kei.core.privilege.PrivilegeStatusCode
 
 class HomePageContentDeriverTest {
     @Test
+    fun enabledBaAccountUsesEnabledColorEvenWithoutLegacyActivation() {
+        val enabledColor = Color.Green
+        val inactiveColor = Color.Gray
+        val disabledColor = Color.Red
+
+        val color =
+            homeBaActiveAccountColor(
+                overview =
+                    HomeBaOverview(
+                        loaded = true,
+                        activated = false,
+                        activeAccountName = "Kei",
+                        activeAccountEnabled = true,
+                    ),
+                enabledColor = enabledColor,
+                inactiveColor = inactiveColor,
+                disabledColor = disabledColor,
+            )
+
+        assertEquals(enabledColor, color)
+    }
+
+    @Test
     fun mcpRuntimeUsesProvidedRuntimeClock() {
         val state =
             deriveHomePageContentState(

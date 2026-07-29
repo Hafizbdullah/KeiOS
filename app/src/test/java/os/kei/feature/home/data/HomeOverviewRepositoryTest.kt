@@ -17,11 +17,51 @@ import os.kei.feature.github.model.GitHubTrackedSourceMode
 import os.kei.feature.github.model.checkSourceSignature
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.ba.support.BaCacheSnapshot
+import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaAccountProfile
+import os.kei.ui.page.main.ba.support.BaAccountRecord
+import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaGlobalReminderSettings
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HomeOverviewRepositoryTest {
+    @Test
+    fun baOverviewTracksWhetherTheActiveAccountIsEnabled() {
+        val accountId = BaAccountId("kei")
+        val overview =
+            loadHomeBaOverview(
+                snapshot = BaPageSnapshot(idFriendCode = "ARISUKEI"),
+                accountState =
+                    BaAccountStoreSnapshot(
+                        accounts =
+                            listOf(
+                                BaAccountRecord(
+                                    profile =
+                                        BaAccountProfile(
+                                            id = accountId,
+                                            serverIndex = 2,
+                                            displayName = "Kei",
+                                            nickname = "Sensei",
+                                            friendCode = "GLOBALAB",
+                                            enabled = true,
+                                        ),
+                                ),
+                            ),
+                        activeAccountId = accountId,
+                        allAccountsFollowGlobalNotificationSettings = true,
+                        globalReminderSettings = BaGlobalReminderSettings(),
+                    ),
+                cacheFreshness = CacheFreshnessSnapshot.Empty,
+            )
+
+        assertFalse(overview.activated)
+        assertTrue(overview.activeAccountEnabled)
+        assertEquals("Kei", overview.activeAccountName)
+    }
+
     @Test
     fun `store refresh flow emits manual github ba and webdav reasons`() = runBlocking {
         val reasons = buildHomeOverviewStoreRefreshFlow(
