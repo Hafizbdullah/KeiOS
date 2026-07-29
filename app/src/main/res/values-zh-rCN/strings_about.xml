@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.11.0</string>
-    <string name="about_card_release_subtitle">GitHub 刷新、WebDAV 自动同步与 BA 咖啡厅冷却精修</string>
+    <string name="about_card_release_title">Release v1.12.0</string>
+    <string name="about_card_release_subtitle">特权模式、追踪下载、后台同步与 Liquid Glass 全面升级</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -314,23 +314,23 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.11.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">发布重点</string>
-    <string name="about_release_value_focus">v1.11.0 聚焦 GitHub 全量/增量刷新速度、Live Updates 会话、WebDAV 自动同步和 BA 咖啡厅冷却编辑</string>
-    <string name="about_release_row_github">GitHub / F-Droid</string>
-    <string name="about_release_value_github">刷新调度复用仓库与 APK 元数据缓存，降低 70+ 追踪项全量刷新耗时，并补齐长列表 App 图标加载</string>
-    <string name="about_release_row_ba_guide">历史与诊断</string>
-    <string name="about_release_value_ba_guide">刷新历史加入更完整的耗时、目的、失败原因和慢项诊断，方便定位自动刷新和后台刷新问题</string>
-    <string name="about_release_row_navigation">BA / 图鉴</string>
-    <string name="about_release_value_navigation">BA 咖啡厅摸摸头与邀请券支持长按精确编辑剩余冷却时间，保留短按使用动作</string>
-    <string name="about_release_row_icon">同步与数据</string>
-    <string name="about_release_value_icon">WebDAV 自动同步减少启动抢占与旧摘要误判，支持跨设备按账号合并 BA 数据，并记录同步历史</string>
-    <string name="about_release_row_release_gate">导航与体验</string>
-    <string name="about_release_value_release_gate">GitHub 刷新通知、Live Updates 和超级岛会话生命周期继续收敛，失败或超时后会正确结束刷新状态</string>
-    <string name="about_release_row_performance">性能与构建</string>
-    <string name="about_release_value_performance">GitHub 刷新 UI 派发、APK profile 复用、WebDAV 请求链路和 BA sheet 状态流做了针对性性能整理</string>
+    <string name="about_release_value_focus">v1.12.0 系统升级特权模式、GitHub/F-Droid 追踪、分段下载、WebDAV、BA、MCP 与 Liquid Glass 体验</string>
+    <string name="about_release_row_github">特权与安装</string>
+    <string name="about_release_value_github">特权模式支持关闭、Shizuku 与 Root；GitHub 托管安装可通过 Shizuku 或 Root 完成下载、校验、安装与取消</string>
+    <string name="about_release_row_ba_guide">GitHub / F-Droid</string>
+    <string name="about_release_value_ba_guide">刷新历史加入失败诊断与重试，已读数字即时同步；增强预发布、Actions、嵌套 APK、未发布仓库和 F-Droid 源追踪</string>
+    <string name="about_release_row_navigation">WebDAV 与后台</string>
+    <string name="about_release_value_navigation">自动同步支持自定义间隔、系统调度恢复、冲突处理与历史诊断；新增后台限制检查和可选无障碍自守护</string>
+    <string name="about_release_row_icon">BA</string>
+    <string name="about_release_value_icon">修复账号状态与 AP 已读提醒，活动日历和卡池升级堆叠卡片，并优化学生图鉴、相册及 BGM 播放体验</string>
+    <string name="about_release_row_release_gate">Liquid Glass 与导航</string>
+    <string name="about_release_value_release_gate">统一卡片、Sheet、Dialog、Popup 与表单设计，完善侧滑返回、下拉刷新及窄屏、高 DPI、大字体和横屏适配</string>
+    <string name="about_release_row_performance">MCP、通知与性能</string>
+    <string name="about_release_value_performance">MCP 扩展 WebDAV、Home 与特权状态能力；完善超级岛任务状态，并提升分段下载、长列表和堆叠卡片性能</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有 v1.10.x 用户升级；重度使用 GitHub/F-Droid 追踪、WebDAV 自动同步和 BA 多账号的用户优先升级</string>
+    <string name="about_release_value_next">建议所有旧版本用户升级；使用 Root/Shizuku、GitHub/F-Droid 追踪、WebDAV、BA 或 MCP 的用户优先升级</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>

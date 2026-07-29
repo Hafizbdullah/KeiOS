@@ -19,8 +19,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">App identity and runtime information</string>
-    <string name="about_card_release_title">Release v1.10.0</string>
-    <string name="about_card_release_subtitle">F-Droid, History Hub, BA Memorial Lobby, PiP, and sync performance</string>
+    <string name="about_card_release_title">Release v1.12.0</string>
+    <string name="about_card_release_subtitle">Privilege modes, tracked downloads, background sync, and Liquid Glass</string>
     <string name="about_card_runtime_title">Runtime status</string>
     <string name="about_card_runtime_subtitle">Quick checks for notifications, Shizuku, and system state</string>
     <string name="about_card_permission_title">Permission list</string>
@@ -326,23 +326,23 @@
     <string name="about_label_security_patch">Security patch</string>
 
     <string name="about_release_row_version">Version line</string>
-    <string name="about_release_value_version">v1.10.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
     <string name="about_release_row_focus">Release focus</string>
-    <string name="about_release_value_focus">Collects F-Droid sources, History Hub, safer WebDAV sync, BA guide caching, and Memorial Lobby video playback since v1.9.0</string>
-    <string name="about_release_row_github">GitHub / F-Droid</string>
-    <string name="about_release_value_github">F-Droid now has common source management, app-name search, installed-app reverse scan, detail sheets, index cache, and fair refresh scheduling</string>
-    <string name="about_release_row_ba_guide">History &amp; diagnostics</string>
-    <string name="about_release_value_ba_guide">History now covers refreshes, Actions, tracking edits, and installed-app changes, with unread badges, export, and MCP queries</string>
-    <string name="about_release_row_navigation">BA / Guide</string>
-    <string name="about_release_value_navigation">Student sections are merged with remembered filters; implemented student details use long-lived cache; Memorial Lobby adds favorites and PiP video playback</string>
-    <string name="about_release_row_icon">Sync &amp; data</string>
-    <string name="about_release_value_icon">WebDAV refreshes remote data before showing a change plan, supports F-Droid v4 data, and merges BA multi-account data more safely</string>
-    <string name="about_release_row_release_gate">Navigation &amp; UX</string>
-    <string name="about_release_value_release_gate">Main navigation moved to Miuix Nav, with tighter bottom bar, ActionBar, predictive back, custom background, and sheet behavior</string>
-    <string name="about_release_row_performance">Performance &amp; build</string>
-    <string name="about_release_value_performance">Catalog, F-Droid search/refresh, PiP, MCP server, and refresh history paths received async scheduling, cache reuse, and dependency updates</string>
+    <string name="about_release_value_focus">v1.12.0 upgrades privilege modes, GitHub/F-Droid tracking, segmented downloads, WebDAV, BA, MCP, and the Liquid Glass experience</string>
+    <string name="about_release_row_github">Privilege &amp; install</string>
+    <string name="about_release_value_github">Privilege mode can be disabled or use Shizuku or Root; managed GitHub installs support download, verification, install, and cancellation through Shizuku or Root</string>
+    <string name="about_release_row_ba_guide">GitHub / F-Droid</string>
+    <string name="about_release_value_ba_guide">History adds failure diagnostics and retry with live unread counts; tracking improves for prereleases, Actions, nested APKs, unreleased repositories, and F-Droid sources</string>
+    <string name="about_release_row_navigation">WebDAV &amp; background</string>
+    <string name="about_release_value_navigation">Automatic sync adds custom intervals, system schedule recovery, conflict handling, and history diagnostics, plus background restriction checks and an optional accessibility guard</string>
+    <string name="about_release_row_icon">BA</string>
+    <string name="about_release_value_icon">Fixes account status and AP read/reminder state; Calendar and Pools gain stacked cards, while Students, Gallery, and BGM playback receive broader refinements</string>
+    <string name="about_release_row_release_gate">Liquid Glass &amp; navigation</string>
+    <string name="about_release_value_release_gate">Unifies cards, sheets, dialogs, popups, and forms, with swipe back, pull to refresh, and improved narrow-screen, high-DPI, large-text, and landscape layouts</string>
+    <string name="about_release_row_performance">MCP, notifications &amp; performance</string>
+    <string name="about_release_value_performance">MCP adds WebDAV, Home, and privilege-state coverage; Super Island task states improve alongside segmented-download, long-list, and stacked-card performance</string>
     <string name="about_release_row_next">Upgrade advice</string>
-    <string name="about_release_value_next">All v1.9.x users should upgrade, especially heavy GitHub/F-Droid tracking, WebDAV, BA guide, and MCP/Claw users</string>
+    <string name="about_release_value_next">Recommended for every earlier version, with priority for Root/Shizuku, GitHub/F-Droid tracking, WebDAV, BA, and MCP users</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>
