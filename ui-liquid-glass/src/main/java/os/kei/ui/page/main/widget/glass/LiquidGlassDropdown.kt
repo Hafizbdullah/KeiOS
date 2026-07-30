@@ -101,48 +101,48 @@ private val LiquidGlassDropdownMetricsDefault =
     LiquidGlassDropdownMetrics(
         containerRadius = LiquidGlassDropdownContainerRadius,
         contentPadding = LiquidGlassDropdownContentPadding,
-        blurRadius = 4.dp,
-        lensStart = 16.dp,
-        lensEnd = 28.dp,
-        shadowElevation = 14.dp,
-        innerShadowRadius = 8.dp,
+        blurRadius = 12.dp,
+        lensStart = 28.dp,
+        lensEnd = 44.dp,
+        shadowElevation = 24.dp,
+        innerShadowRadius = 16.dp,
         vibrancy = true,
         chromaticAberration = false,
-        depthEffect = false,
-        lightHighlightAlpha = 0.64f,
-        darkHighlightAlpha = 0.46f,
-        lightOuterShadowAlpha = 0.09f,
-        darkOuterShadowAlpha = 0.18f,
-        lightSpotShadowAlpha = 0.07f,
-        darkSpotShadowAlpha = 0.14f,
-        lightShadowAlpha = 0.10f,
-        darkShadowAlpha = 0.18f,
-        lightInnerShadowAlpha = 0.08f,
-        darkInnerShadowAlpha = 0.14f,
+        depthEffect = true,
+        lightHighlightAlpha = 0.66f,
+        darkHighlightAlpha = 0.48f,
+        lightOuterShadowAlpha = 0.18f,
+        darkOuterShadowAlpha = 0.30f,
+        lightSpotShadowAlpha = 0.16f,
+        darkSpotShadowAlpha = 0.26f,
+        lightShadowAlpha = 0.20f,
+        darkShadowAlpha = 0.30f,
+        lightInnerShadowAlpha = 0.10f,
+        darkInnerShadowAlpha = 0.16f,
     )
 
 private val LiquidGlassDropdownMetricsActionMenu =
     LiquidGlassDropdownMetrics(
         containerRadius = 30.dp,
         contentPadding = 5.dp,
-        blurRadius = 6.dp,
-        lensStart = 16.dp,
-        lensEnd = 32.dp,
-        shadowElevation = 18.dp,
-        innerShadowRadius = 10.dp,
+        blurRadius = 16.dp,
+        lensStart = 32.dp,
+        lensEnd = 54.dp,
+        shadowElevation = 30.dp,
+        innerShadowRadius = 18.dp,
         vibrancy = true,
         chromaticAberration = false,
-        depthEffect = false,
-        lightHighlightAlpha = 0.62f,
-        darkHighlightAlpha = 0.44f,
-        lightOuterShadowAlpha = 0.10f,
-        darkOuterShadowAlpha = 0.18f,
-        lightSpotShadowAlpha = 0.08f,
-        darkSpotShadowAlpha = 0.14f,
-        lightShadowAlpha = 0.10f,
-        darkShadowAlpha = 0.18f,
-        lightInnerShadowAlpha = 0.08f,
-        darkInnerShadowAlpha = 0.14f,
+        depthEffect = true,
+        lightHighlightAlpha = 0.70f,
+        darkHighlightAlpha = 0.52f,
+        lightOuterShadowAlpha = 0.22f,
+        darkOuterShadowAlpha = 0.36f,
+        lightSpotShadowAlpha = 0.20f,
+        darkSpotShadowAlpha = 0.32f,
+        lightShadowAlpha = 0.24f,
+        darkShadowAlpha = 0.36f,
+        lightInnerShadowAlpha = 0.12f,
+        darkInnerShadowAlpha = 0.18f,
     )
 
 @Composable
@@ -233,7 +233,8 @@ fun LiquidGlassDropdownColumn(
                             },
                             onDrawSurface = {
                                 drawRect(colors.surfaceColor)
-                                drawRect(colors.topSheen)
+                                drawRect(colors.surfaceGradientBrush)
+                                drawRect(colors.surfaceCausticBrush)
                             },
                         )
                     } else {
@@ -374,7 +375,8 @@ fun AppLiquidGlassDropdownColumn(
 
 internal data class LiquidGlassDropdownContainerColors(
     val surfaceColor: Color,
-    val topSheen: Color,
+    val surfaceGradientBrush: Brush,
+    val surfaceCausticBrush: Brush,
     val borderColor: Color,
     val fallbackBaseColor: Color,
     val fallbackMiddleBrush: Brush,
@@ -412,60 +414,97 @@ internal fun buildLiquidGlassDropdownContainerColors(
         LiquidGlassDropdownMaterial.ActionMenu -> {
             if (isDark) {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = surfaceContainer.copy(alpha = 0.38f),
-                    topSheen = Color.White.copy(alpha = 0.05f),
-                    borderColor = Color.White.copy(alpha = 0.14f),
-                    fallbackBaseColor = Color(0xFF101113).copy(alpha = 0.76f),
+                    surfaceColor = Color(0xFF1D1E22).copy(alpha = 0.56f),
+                    surfaceGradientBrush =
+                        Brush.linearGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.07f),
+                                    accentColor.copy(alpha = 0.04f),
+                                    Color.Black.copy(alpha = 0.03f),
+                                ),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                    surfaceCausticBrush =
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.18f to Color.White.copy(alpha = 0.18f),
+                            0.36f to Color.Transparent,
+                            0.72f to accentColor.copy(alpha = 0.05f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
+                        ),
+                    borderColor = Color.White.copy(alpha = 0.20f),
+                    fallbackBaseColor = Color(0xFF14161A).copy(alpha = 0.94f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.10f),
-                                    Color.White.copy(alpha = 0.06f),
-                                    Color.White.copy(alpha = 0.03f),
+                                    Color.White.copy(alpha = 0.12f),
+                                    accentColor.copy(alpha = 0.06f),
+                                    Color.White.copy(alpha = 0.04f),
                                 ),
                             start = Offset.Zero,
-                            end = Offset(360f, 460f),
+                            end = Offset.Infinite,
                         ),
                     fallbackSheenBrush =
-                        Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    Color.White.copy(alpha = 0.08f),
-                                    Color.White.copy(alpha = 0.03f),
-                                    Color.Transparent,
-                                ),
-                            center = Offset(112f, 20f),
-                            radius = 280f,
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.12f),
+                            0.40f to Color.Transparent,
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
                         ),
                 )
             } else {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color.White.copy(alpha = 0.52f),
-                    topSheen = Color.White.copy(alpha = 0.08f),
-                    borderColor = Color.White.copy(alpha = 0.58f),
-                    fallbackBaseColor = Color.White.copy(alpha = 0.68f),
+                    surfaceColor = Color.White.copy(alpha = 0.64f),
+                    surfaceGradientBrush =
+                        Brush.linearGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.16f),
+                                    accentColor.copy(alpha = 0.04f),
+                                    Color(0xFFEEF6FF).copy(alpha = 0.03f),
+                                ),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                    surfaceCausticBrush =
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.18f to Color.White.copy(alpha = 0.26f),
+                            0.36f to Color.Transparent,
+                            0.72f to accentColor.copy(alpha = 0.05f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
+                        ),
+                    borderColor = Color.Black.copy(alpha = 0.13f),
+                    fallbackBaseColor = Color(0xFFF8FAFD).copy(alpha = 0.96f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.34f),
-                                    Color(0xFFF4F8FF).copy(alpha = 0.20f),
-                                    Color.White.copy(alpha = 0.10f),
+                                    Color.White.copy(alpha = 0.38f),
+                                    accentColor.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.12f),
                                 ),
                             start = Offset.Zero,
-                            end = Offset(360f, 460f),
+                            end = Offset.Infinite,
                         ),
                     fallbackSheenBrush =
-                        Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    Color.White.copy(alpha = 0.28f),
-                                    Color(0xFFEAF4FF).copy(alpha = 0.10f),
-                                    Color.Transparent,
-                                ),
-                            center = Offset(112f, 20f),
-                            radius = 300f,
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.30f),
+                            0.40f to Color.Transparent,
+                            0.74f to accentColor.copy(alpha = 0.06f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
                         ),
                 )
             }
@@ -474,60 +513,97 @@ internal fun buildLiquidGlassDropdownContainerColors(
         LiquidGlassDropdownMaterial.Default -> {
             if (isDark) {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = surfaceContainer.copy(alpha = 0.34f),
-                    topSheen = Color.White.copy(alpha = 0.05f),
-                    borderColor = Color.White.copy(alpha = 0.20f),
-                    fallbackBaseColor = surfaceContainer.copy(alpha = 0.78f),
+                    surfaceColor = Color(0xFF1D1E22).copy(alpha = 0.52f),
+                    surfaceGradientBrush =
+                        Brush.linearGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.07f),
+                                    accentColor.copy(alpha = 0.04f),
+                                    Color.Black.copy(alpha = 0.03f),
+                                ),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                    surfaceCausticBrush =
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.17f),
+                            0.38f to Color.Transparent,
+                            0.74f to accentColor.copy(alpha = 0.04f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
+                        ),
+                    borderColor = Color.White.copy(alpha = 0.19f),
+                    fallbackBaseColor = surfaceContainer.copy(alpha = 0.92f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.14f),
-                                    Color.White.copy(alpha = 0.08f),
-                                    Color.White.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.13f),
+                                    accentColor.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.04f),
                                 ),
                             start = Offset.Zero,
-                            end = Offset(320f, 420f),
+                            end = Offset.Infinite,
                         ),
                     fallbackSheenBrush =
-                        Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    Color.White.copy(alpha = 0.10f),
-                                    Color.White.copy(alpha = 0.04f),
-                                    Color.Transparent,
-                                ),
-                            center = Offset(96f, 24f),
-                            radius = 260f,
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.12f),
+                            0.40f to Color.Transparent,
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
                         ),
                 )
             } else {
                 LiquidGlassDropdownContainerColors(
-                    surfaceColor = Color.White.copy(alpha = 0.46f),
-                    topSheen = Color.White.copy(alpha = 0.08f),
-                    borderColor = Color.White.copy(alpha = 0.54f),
-                    fallbackBaseColor = Color.White.copy(alpha = 0.72f),
+                    surfaceColor = Color.White.copy(alpha = 0.58f),
+                    surfaceGradientBrush =
+                        Brush.linearGradient(
+                            colors =
+                                listOf(
+                                    Color.White.copy(alpha = 0.14f),
+                                    accentColor.copy(alpha = 0.04f),
+                                    Color(0xFFF0F7FF).copy(alpha = 0.03f),
+                                ),
+                            start = Offset.Zero,
+                            end = Offset.Infinite,
+                        ),
+                    surfaceCausticBrush =
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.24f),
+                            0.38f to Color.Transparent,
+                            0.74f to accentColor.copy(alpha = 0.05f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
+                        ),
+                    borderColor = Color.Black.copy(alpha = 0.12f),
+                    fallbackBaseColor = Color(0xFFFAFBFD).copy(alpha = 0.94f),
                     fallbackMiddleBrush =
                         Brush.linearGradient(
                             colors =
                                 listOf(
-                                    Color.White.copy(alpha = 0.38f),
-                                    Color(0xFFEAF3FF).copy(alpha = 0.24f),
-                                    Color.White.copy(alpha = 0.12f),
+                                    Color.White.copy(alpha = 0.34f),
+                                    accentColor.copy(alpha = 0.05f),
+                                    Color.White.copy(alpha = 0.10f),
                                 ),
                             start = Offset.Zero,
-                            end = Offset(320f, 420f),
+                            end = Offset.Infinite,
                         ),
                     fallbackSheenBrush =
-                        Brush.radialGradient(
-                            colors =
-                                listOf(
-                                    Color.White.copy(alpha = 0.30f),
-                                    Color(0xFFE1EFFF).copy(alpha = 0.12f),
-                                    Color.Transparent,
-                                ),
-                            center = Offset(96f, 24f),
-                            radius = 260f,
+                        Brush.linearGradient(
+                            0.00f to Color.Transparent,
+                            0.20f to Color.White.copy(alpha = 0.28f),
+                            0.40f to Color.Transparent,
+                            0.74f to accentColor.copy(alpha = 0.06f),
+                            1.00f to Color.Transparent,
+                            start = Offset(0f, Float.POSITIVE_INFINITY),
+                            end = Offset(Float.POSITIVE_INFINITY, 0f),
                         ),
                 )
             }
@@ -537,6 +613,7 @@ internal fun buildLiquidGlassDropdownContainerColors(
 internal fun liquidGlassDropdownSelectedSurfaceColor(
     isDark: Boolean,
     material: LiquidGlassDropdownMaterial = LiquidGlassDropdownMaterial.Default,
+    accentColor: Color = Color(0xFF3B82F6),
 ): Color =
     when (material) {
         LiquidGlassDropdownMaterial.ActionMenu -> {
@@ -548,11 +625,7 @@ internal fun liquidGlassDropdownSelectedSurfaceColor(
         }
 
         LiquidGlassDropdownMaterial.Default -> {
-            if (isDark) {
-                Color.White.copy(alpha = 0.14f)
-            } else {
-                Color(0xFFEFF4FB).copy(alpha = 0.34f)
-            }
+            accentColor.copy(alpha = if (isDark) 0.20f else 0.13f)
         }
     }
 
@@ -581,6 +654,7 @@ internal fun liquidGlassDropdownPressedSurfaceColor(
 internal fun liquidGlassDropdownSelectedBorderColor(
     isDark: Boolean,
     material: LiquidGlassDropdownMaterial = LiquidGlassDropdownMaterial.Default,
+    accentColor: Color = Color(0xFF3B82F6),
 ): Color =
     when (material) {
         LiquidGlassDropdownMaterial.ActionMenu -> {
@@ -592,11 +666,7 @@ internal fun liquidGlassDropdownSelectedBorderColor(
         }
 
         LiquidGlassDropdownMaterial.Default -> {
-            if (isDark) {
-                Color.White.copy(alpha = 0.14f)
-            } else {
-                Color.White.copy(alpha = 0.44f)
-            }
+            accentColor.copy(alpha = if (isDark) 0.34f else 0.24f)
         }
     }
 
