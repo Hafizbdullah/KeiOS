@@ -1,0 +1,488 @@
+@file:Suppress("FunctionName")
+
+package os.kei.ui.page.main.widget.core
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.selection.DisableSelection
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.BackdropEffectScope
+import com.kyant.backdrop.RuntimeShader
+import com.kyant.backdrop.RuntimeShaderCache
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.runtimeShaderEffect
+import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.highlight.HighlightStyle
+import com.kyant.backdrop.isRuntimeShaderSupported
+import org.intellij.lang.annotations.Language
+import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
+import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
+import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
+import os.kei.ui.page.main.widget.isAppInDarkTheme
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.max
+
+internal const val MaxBatchedOverviewPillCount = 24
+
+private val BatchedOverviewPillHeight = 28.dp
+private val BatchedOverviewPillHorizontalPadding = 10.dp
+private val BatchedOverviewPillHorizontalGap = 10.dp
+private val BatchedOverviewPillVerticalGap = 8.dp
+private val BatchedOverviewPillBorderWidth = 0.8.dp
+
+@Composable
+internal fun AppOverviewBatchedLiquidPillFlow(
+    pills: List<AppOverviewPill>,
+    modifier: Modifier,
+    backdrop: Backdrop?,
+) {
+    val activeBackdrop = activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
+    if (activeBackdrop == null || pills.isEmpty()) {
+        AppOverviewLegacyPillFlow(
+            pills = pills,
+            modifier = modifier,
+            backdrop = backdrop,
+        )
+        return
+    }
+
+    val isDark = isAppInDarkTheme()
+    val geometry = remember { OverviewPillBatchGeometry() }
+    val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact)
+    val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact)
+    val backgroundAlpha = if (isDark) 0.18f else 0.24f
+    val borderAlpha = if (isDark) 0.35f else 0.42f
+    val highlightAlpha = if (isDark) 0.42f else 0.62f
+    val batchShape: () -> Shape = {
+        OverviewPillBatchShape(geometry.bounds)
+    }
+
+    Layout(
+        modifier =
+            modifier.drawBackdrop(
+                backdrop = activeBackdrop,
+                shape = batchShape,
+                effects = {
+                    vibrancy()
+                    blur(blurRadius.toPx())
+                    overviewPillBatchLens(
+                        bounds = geometry.bounds,
+                        refractionHeight = lensRadius.toPx(),
+                        refractionAmount = lensRadius.toPx(),
+                    )
+                },
+                highlight = {
+                    Highlight.Default.copy(
+                        alpha = highlightAlpha,
+                        style = OverviewPillBatchHighlightStyle(geometry.bounds),
+                    )
+                },
+                shadow = null,
+                innerShadow = null,
+                onDrawSurface = {
+                    geometry.bounds.forEachIndexed { index, bounds ->
+                        drawRoundRect(
+                            color = pills[index].color.copy(alpha = backgroundAlpha),
+                            topLeft = bounds.topLeft,
+                            size = bounds.size,
+                            cornerRadius = CornerRadius(bounds.height / 2f),
+                        )
+                    }
+                },
+                onDrawFront = {
+                    val strokeWidth = BatchedOverviewPillBorderWidth.toPx()
+                    geometry.bounds.forEachIndexed { index, bounds ->
+                        val halfStroke = strokeWidth / 2f
+                        drawRoundRect(
+                            color = pills[index].color.copy(alpha = borderAlpha),
+                            topLeft = bounds.topLeft + Offset(halfStroke, halfStroke),
+                            size = Size(bounds.width - strokeWidth, bounds.height - strokeWidth),
+                            cornerRadius = CornerRadius((bounds.height - strokeWidth) / 2f),
+                            style = Stroke(strokeWidth),
+                        )
+                    }
+                },
+            ),
+        content = {
+            pills.forEach { pill ->
+                OverviewPillBatchLabel(
+                    pill = pill,
+                    isDark = isDark,
+                )
+            }
+        },
+    ) { measurables, constraints ->
+        val childConstraints =
+            constraints.copy(
+                minWidth = 0,
+                minHeight = 0,
+            )
+        val placeables = measurables.map { measurable -> measurable.measure(childConstraints) }
+        val flowLayout =
+            calculateOverviewPillFlowLayout(
+                childSizes = placeables.map { IntSize(it.width, it.height) },
+                maxWidth = constraints.maxWidth,
+                horizontalGap = BatchedOverviewPillHorizontalGap.roundToPx(),
+                verticalGap = BatchedOverviewPillVerticalGap.roundToPx(),
+            )
+        val width = flowLayout.width.coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height = flowLayout.height.coerceIn(constraints.minHeight, constraints.maxHeight)
+        geometry.bounds =
+            flowLayout.placements.mapIndexed { index, placement ->
+                val childSize = flowLayout.childSizes[index]
+                val physicalX =
+                    if (layoutDirection == LayoutDirection.Ltr) {
+                        placement.x
+                    } else {
+                        width - placement.x - childSize.width
+                    }
+                Rect(
+                    left = physicalX.toFloat(),
+                    top = placement.y.toFloat(),
+                    right = (physicalX + childSize.width).toFloat(),
+                    bottom = (placement.y + childSize.height).toFloat(),
+                )
+            }
+        layout(width, height) {
+            placeables.forEachIndexed { index, placeable ->
+                val placement = flowLayout.placements[index]
+                placeable.placeRelative(placement.x, placement.y)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OverviewPillBatchLabel(
+    pill: AppOverviewPill,
+    isDark: Boolean,
+) {
+    val metrics = rememberAppStatusPillMetrics(AppStatusPillSize.Compact)
+    val typography =
+        MiuixTheme.textStyles.main.merge(
+            TextStyle(
+                fontSize = metrics.typography.fontSize,
+                lineHeight = metrics.typography.lineHeight,
+                fontWeight = metrics.typography.fontWeight,
+            ),
+        )
+    val contentColor = if (isDark) pill.color else pill.color.copy(alpha = 0.96f)
+    Box(
+        modifier =
+            Modifier
+                .height(BatchedOverviewPillHeight)
+                .padding(horizontal = BatchedOverviewPillHorizontalPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        DisableSelection {
+            Text(
+                text = pill.label,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = typography,
+            )
+        }
+    }
+}
+
+internal data class OverviewPillFlowLayout(
+    val width: Int,
+    val height: Int,
+    val childSizes: List<IntSize>,
+    val placements: List<IntOffset>,
+)
+
+internal fun calculateOverviewPillFlowLayout(
+    childSizes: List<IntSize>,
+    maxWidth: Int,
+    horizontalGap: Int,
+    verticalGap: Int,
+): OverviewPillFlowLayout {
+    if (childSizes.isEmpty()) {
+        return OverviewPillFlowLayout(0, 0, emptyList(), emptyList())
+    }
+    val boundedMaxWidth = maxWidth.takeUnless { it == Constraints.Infinity } ?: Int.MAX_VALUE
+    val placements = ArrayList<IntOffset>(childSizes.size)
+    var x = 0
+    var y = 0
+    var rowHeight = 0
+    var contentWidth = 0
+    childSizes.forEach { childSize ->
+        if (x > 0 && x + childSize.width > boundedMaxWidth) {
+            x = 0
+            y += rowHeight + verticalGap
+            rowHeight = 0
+        }
+        placements += IntOffset(x, y)
+        x += childSize.width + horizontalGap
+        rowHeight = max(rowHeight, childSize.height)
+        contentWidth = max(contentWidth, (x - horizontalGap).coerceAtLeast(0))
+    }
+    val contentHeight = y + rowHeight
+    return OverviewPillFlowLayout(
+        width = contentWidth.coerceAtMost(boundedMaxWidth),
+        height = contentHeight,
+        childSizes = childSizes,
+        placements = placements,
+    )
+}
+
+private class OverviewPillBatchGeometry {
+    var bounds: List<Rect> = emptyList()
+}
+
+private data class OverviewPillBatchShape(
+    val bounds: List<Rect>,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val path = Path()
+        bounds.forEach { bounds ->
+            val radius = bounds.height / 2f
+            path.addRoundRect(
+                RoundRect(
+                    rect = bounds,
+                    cornerRadius = CornerRadius(radius),
+                ),
+            )
+        }
+        return Outline.Generic(path)
+    }
+}
+
+private fun BackdropEffectScope.overviewPillBatchLens(
+    bounds: List<Rect>,
+    refractionHeight: Float,
+    refractionAmount: Float,
+) {
+    val uniforms =
+        resolveOverviewPillBatchUniforms(
+            bounds = bounds,
+            refractionHeight = refractionHeight,
+            refractionAmount = refractionAmount,
+        ) ?: return
+    if (padding > 0f) {
+        padding = (padding - uniforms.refractionHeight).coerceAtLeast(0f)
+    }
+    runtimeShaderEffect(
+        key = "OverviewPillBatchLens",
+        shaderString = OverviewPillBatchLensShader,
+        uniformShaderName = "content",
+    ) {
+        setIntUniform("pillCount", uniforms.pillCount)
+        setFloatUniform("pillBounds", uniforms.bounds)
+        setFloatUniform("offset", -padding, -padding)
+        setFloatUniform("pillRadius", uniforms.pillRadius)
+        setFloatUniform("refractionHeight", uniforms.refractionHeight)
+        setFloatUniform("refractionAmount", -uniforms.refractionAmount)
+        setFloatUniform("depthEffect", 1f)
+    }
+}
+
+private data class OverviewPillBatchUniforms(
+    val pillCount: Int,
+    val bounds: FloatArray,
+    val pillRadius: Float,
+    val refractionHeight: Float,
+    val refractionAmount: Float,
+)
+
+private fun resolveOverviewPillBatchUniforms(
+    bounds: List<Rect>,
+    refractionHeight: Float,
+    refractionAmount: Float,
+): OverviewPillBatchUniforms? {
+    val validBounds = bounds.take(MaxBatchedOverviewPillCount).filter { it.width > 0f && it.height > 0f }
+    val pillRadius = validBounds.minOfOrNull { it.height / 2f } ?: return null
+    if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return null
+    val uniformBounds = FloatArray(MaxBatchedOverviewPillCount * 4)
+    validBounds.forEachIndexed { index, rect ->
+        val offset = index * 4
+        uniformBounds[offset] = rect.left
+        uniformBounds[offset + 1] = rect.top
+        uniformBounds[offset + 2] = rect.right
+        uniformBounds[offset + 3] = rect.bottom
+    }
+    return OverviewPillBatchUniforms(
+        pillCount = validBounds.size,
+        bounds = uniformBounds,
+        pillRadius = pillRadius,
+        refractionHeight = refractionHeight.coerceIn(0f, pillRadius),
+        refractionAmount = refractionAmount.coerceIn(0f, validBounds.minOf { it.height }),
+    ).takeIf { it.refractionHeight > 0f && it.refractionAmount > 0f }
+}
+
+private data class OverviewPillBatchHighlightStyle(
+    val bounds: List<Rect>,
+) : HighlightStyle {
+    override val color: Color = Color.White.copy(alpha = 0.5f)
+    override val blendMode: BlendMode = BlendMode.Plus
+
+    override fun DrawScope.createShader(
+        shape: Shape,
+        runtimeShaderCache: RuntimeShaderCache,
+    ): RuntimeShader? {
+        if (!isRuntimeShaderSupported()) return null
+        val uniforms =
+            resolveOverviewPillBatchUniforms(
+                bounds = bounds,
+                refractionHeight = 1f,
+                refractionAmount = 1f,
+            ) ?: return null
+        return runtimeShaderCache.obtainRuntimeShader(
+            "OverviewPillBatchHighlight",
+            OverviewPillBatchHighlightShader,
+        ).apply {
+            setIntUniform("pillCount", uniforms.pillCount)
+            setFloatUniform("pillBounds", uniforms.bounds)
+            setFloatUniform("pillRadius", uniforms.pillRadius)
+            setColorUniform("color", color.copy(alpha = 1f))
+            setFloatUniform("angle", Math.toRadians(45.0).toFloat())
+            setFloatUniform("falloff", 1f)
+        }
+    }
+}
+
+@Language("AGSL")
+private val OverviewPillBatchGeometryShader =
+    """
+float sdRoundedRect(float2 coord, float2 halfSize, float radius) {
+    float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
+    float outside = length(max(cornerCoord, 0.0)) - radius;
+    float inside = min(max(cornerCoord.x, cornerCoord.y), 0.0);
+    return outside + inside;
+}
+
+float2 gradSdRoundedRect(float2 coord, float2 halfSize, float radius) {
+    float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
+    if (cornerCoord.x >= 0.0 || cornerCoord.y >= 0.0) {
+        return sign(coord) * normalize(max(cornerCoord, 0.0));
+    }
+    float gradX = step(cornerCoord.y, cornerCoord.x);
+    return sign(coord) * float2(gradX, 1.0 - gradX);
+}
+
+float4 findPillBounds(float2 coord, float expansion) {
+    float4 selectedBounds = float4(0.0);
+    for (int index = 0; index < $MaxBatchedOverviewPillCount; index++) {
+        if (index < pillCount) {
+            float4 candidate = pillBounds[index];
+            bool contains = coord.x >= candidate.x - expansion &&
+                coord.x <= candidate.z + expansion &&
+                coord.y >= candidate.y - expansion &&
+                coord.y <= candidate.w + expansion;
+            if (contains) {
+                selectedBounds = candidate;
+            }
+        }
+    }
+    return selectedBounds;
+}
+    """.trimIndent()
+
+@Language("AGSL")
+private val OverviewPillBatchLensShader =
+    """
+uniform shader content;
+uniform int pillCount;
+uniform float4 pillBounds[$MaxBatchedOverviewPillCount];
+uniform float2 offset;
+uniform float pillRadius;
+uniform float refractionHeight;
+uniform float refractionAmount;
+uniform float depthEffect;
+
+$OverviewPillBatchGeometryShader
+
+float circleMap(float x) {
+    return 1.0 - sqrt(1.0 - x * x);
+}
+
+half4 main(float2 coord) {
+    float2 componentCoord = coord + offset;
+    float4 bounds = findPillBounds(componentCoord, 0.0);
+    if (bounds.z <= bounds.x || bounds.w <= bounds.y) {
+        return content.eval(coord);
+    }
+    float2 halfSize = (bounds.zw - bounds.xy) * 0.5;
+    float2 centeredCoord = componentCoord - (bounds.xy + halfSize);
+    float sd = sdRoundedRect(centeredCoord, halfSize, pillRadius);
+    if (-sd >= refractionHeight) {
+        return content.eval(coord);
+    }
+    sd = min(sd, 0.0);
+    float normalizedDistance = clamp(1.0 - -sd / refractionHeight, 0.0, 1.0);
+    float displacement = circleMap(normalizedDistance) * refractionAmount;
+    float gradRadius = min(pillRadius * 1.5, min(halfSize.x, halfSize.y));
+    float2 gradient = normalize(
+        gradSdRoundedRect(centeredCoord, halfSize, gradRadius) +
+        depthEffect * normalize(centeredCoord)
+    );
+    return content.eval(coord + displacement * gradient);
+}
+    """.trimIndent()
+
+@Language("AGSL")
+private val OverviewPillBatchHighlightShader =
+    """
+uniform int pillCount;
+uniform float4 pillBounds[$MaxBatchedOverviewPillCount];
+uniform float pillRadius;
+layout(color) uniform half4 color;
+uniform float angle;
+uniform float falloff;
+
+$OverviewPillBatchGeometryShader
+
+half4 main(float2 coord) {
+    float4 bounds = findPillBounds(coord, 2.0);
+    if (bounds.z <= bounds.x || bounds.w <= bounds.y) {
+        return half4(0.0);
+    }
+    float2 halfSize = (bounds.zw - bounds.xy) * 0.5;
+    float2 centeredCoord = coord - (bounds.xy + halfSize);
+    float gradRadius = min(pillRadius * 1.5, min(halfSize.x, halfSize.y));
+    float2 gradient = gradSdRoundedRect(centeredCoord, halfSize, gradRadius);
+    float2 normal = float2(cos(angle), sin(angle));
+    float intensity = pow(abs(dot(gradient, normal)), falloff);
+    return color * intensity;
+}
+    """.trimIndent()

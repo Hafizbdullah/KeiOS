@@ -345,6 +345,7 @@ internal fun OsPageMainList(
         ) {
             AppOverviewPillFlow(
                 pills = bodyOverviewPills,
+                batchLiquidBackdrop = true,
             )
         }
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {

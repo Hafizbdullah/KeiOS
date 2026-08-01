@@ -31,6 +31,29 @@ fun AppOverviewPillFlow(
     pills: List<AppOverviewPill>,
     modifier: Modifier = Modifier,
     backdrop: Backdrop? = null,
+    batchLiquidBackdrop: Boolean = false,
+) {
+    if (batchLiquidBackdrop && pills.size <= MaxBatchedOverviewPillCount) {
+        AppOverviewBatchedLiquidPillFlow(
+            pills = pills,
+            modifier = modifier,
+            backdrop = backdrop,
+        )
+        return
+    }
+    AppOverviewLegacyPillFlow(
+        pills = pills,
+        modifier = modifier,
+        backdrop = backdrop,
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun AppOverviewLegacyPillFlow(
+    pills: List<AppOverviewPill>,
+    modifier: Modifier = Modifier,
+    backdrop: Backdrop? = null,
 ) {
     FlowRow(
         modifier = modifier.fillMaxWidth(),

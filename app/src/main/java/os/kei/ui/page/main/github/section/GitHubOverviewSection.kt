@@ -227,6 +227,7 @@ private fun GitHubOverviewExpandedContent(
     ) {
         AppOverviewPillFlow(
             pills = pills,
+            batchLiquidBackdrop = true,
         )
         if (metrics.failedCount > 0) {
             if (failedFilterActive) {

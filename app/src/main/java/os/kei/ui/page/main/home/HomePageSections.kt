@@ -247,6 +247,7 @@ internal fun HomeInfoPillCard(
                     color = pill.color,
                 )
             },
+        batchLiquidBackdrop = true,
     )
 }
 
