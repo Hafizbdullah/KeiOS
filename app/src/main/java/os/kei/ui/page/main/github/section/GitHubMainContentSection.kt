@@ -214,6 +214,7 @@ internal fun GitHubMainContent(
     MainPageContentBackdropScene(
         contentBackdrop = surfaces.contentBackdrop,
         sheetBackdrop = surfaces.sheetBackdrop,
+        producerActive = surfaces.backdropProducerActive,
         modifier =
             Modifier
                 .fillMaxSize()

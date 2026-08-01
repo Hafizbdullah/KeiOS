@@ -38,6 +38,7 @@ internal data class GitHubMainContentSurfaces(
     val topBarBackdrop: LayerBackdrop,
     val contentBackdrop: LayerBackdrop,
     val sheetBackdrop: LayerBackdrop,
+    val backdropProducerActive: Boolean,
     val topBarColor: Color,
     val liquidActionBarLayeredStyleEnabled: Boolean,
     val isDark: Boolean,

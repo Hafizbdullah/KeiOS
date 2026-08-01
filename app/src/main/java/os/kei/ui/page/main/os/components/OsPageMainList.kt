@@ -74,6 +74,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal data class OsPageMainListChromeState(
     val isDark: Boolean,
     val titleColor: Color,
+    val backdropProducerActive: Boolean,
     val contentBottomPadding: Dp,
     val bottomBarVisible: Boolean,
     val floatingDockSide: AppFloatingDockSide,
@@ -294,6 +295,7 @@ internal fun OsPageMainList(
     MainPageContentBackdropScene(
         contentBackdrop = contentBackdrop,
         sheetBackdrop = sheetBackdrop,
+        producerActive = chromeState.backdropProducerActive,
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

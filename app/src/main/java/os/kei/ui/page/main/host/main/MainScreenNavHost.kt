@@ -145,7 +145,13 @@ internal fun MainScreenNavHost(
             reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
         )
         Box(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize().layerBackdrop(liquidToastBackdrop)) {
+            val toastBackdropProducer =
+                if (liquidToastState.isVisible) {
+                    Modifier.layerBackdrop(liquidToastBackdrop)
+                } else {
+                    Modifier
+                }
+            Box(modifier = Modifier.fillMaxSize().then(toastBackdropProducer)) {
                 NavDisplay(
                     backStack = backStack,
                     modifier = Modifier.fillMaxSize(),

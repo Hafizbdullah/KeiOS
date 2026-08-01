@@ -489,6 +489,7 @@ fun OsPage(
         remember(
             isDark,
             titleColor,
+            runtime.isPageActive,
             runtime.contentBottomPadding,
             runtime.bottomBarVisible,
             runtime.floatingDockSide,
@@ -497,6 +498,7 @@ fun OsPage(
             OsPageMainListChromeState(
                 isDark = isDark,
                 titleColor = titleColor,
+                backdropProducerActive = runtime.isPageActive,
                 contentBottomPadding = runtime.contentBottomPadding,
                 bottomBarVisible = runtime.bottomBarVisible,
                 floatingDockSide = runtime.floatingDockSide,

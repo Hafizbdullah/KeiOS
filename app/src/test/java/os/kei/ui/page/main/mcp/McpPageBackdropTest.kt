@@ -77,7 +77,9 @@ class McpPageBackdropTest {
         val sheetSource = sourceFile(MCP_PAGE_SHEETS_SOURCE)
 
         assertTrue("rememberMainPageBackdropSet(" in pageSource)
-        assertTrue("distinctLayers = pageBackdropEffectsEnabled" in pageSource)
+        assertTrue(
+            "distinctLayers = pageBackdropEffectsEnabled && pageUiState.showEditSheet" in pageSource,
+        )
         assertTrue("titleBackdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrops = backdrops" in pageSource)

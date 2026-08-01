@@ -36,16 +36,19 @@ internal fun MainPageContentBackdropScene(
     contentBackdrop: LayerBackdrop,
     sheetBackdrop: LayerBackdrop? = null,
     modifier: Modifier = Modifier,
+    producerActive: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(modifier = modifier) {
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .layerBackdrop(contentBackdrop),
-        )
-        if (sheetBackdrop != null && sheetBackdrop !== contentBackdrop) {
+        if (producerActive) {
+            Box(
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .layerBackdrop(contentBackdrop),
+            )
+        }
+        if (producerActive && sheetBackdrop != null && sheetBackdrop !== contentBackdrop) {
             Box(
                 modifier =
                     Modifier

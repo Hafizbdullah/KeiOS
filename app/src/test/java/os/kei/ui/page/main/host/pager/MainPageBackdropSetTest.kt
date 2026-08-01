@@ -40,8 +40,8 @@ class MainPageBackdropSetTest {
         assertTrue(consumerIndex > sheetProducerIndex, "Content consumers must follow both producer siblings")
         assertTrue(".matchParentSize()" in source, "The producer must cover the complete page scene")
         assertTrue(
-            "sheetBackdrop != null && sheetBackdrop !== contentBackdrop" in source,
-            "Collapsed content and sheet identities must avoid duplicate producers",
+            "producerActive && sheetBackdrop != null && sheetBackdrop !== contentBackdrop" in source,
+            "Inactive pages and collapsed sheet identities must avoid duplicate producers",
         )
         assertTrue(
             "Box(modifier = modifier)" in source,

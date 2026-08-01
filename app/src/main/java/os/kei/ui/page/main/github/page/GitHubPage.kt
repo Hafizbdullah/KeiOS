@@ -77,17 +77,30 @@ fun GitHubPage(
     val topBarBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
+    val state = rememberGitHubPageState(githubPageViewModel)
+    val sheetBackdropVisible =
+        state.showOverviewEntrySheet ||
+            state.showStrategySheet ||
+            state.showCheckLogicSheet ||
+            state.showDroidSourcesSheet ||
+            state.showDebugSheet ||
+            state.showActionsSheet ||
+            state.showAddSheet ||
+            state.decisionAssistDetailRequest != null ||
+            state.fdroidDetailRequest != null ||
+            state.actionsArtifactDetailRequest != null ||
+            state.apkInfoDetailRequest != null ||
+            state.managedInstallConfirmRequest != null
     val backdrops =
         rememberMainPageBackdropSet(
             keyPrefix = "github",
-            distinctLayers = fullBackdropEffectsEnabled,
+            distinctLayers = fullBackdropEffectsEnabled && sheetBackdropVisible,
         )
     val topBarColor =
         rememberAppTopBarColor(
             enableBackdropEffects = topBarBackdropEffectsEnabled,
         )
 
-    val state = rememberGitHubPageState(githubPageViewModel)
     var consumedExternalActionsSheetToken by rememberSaveable { mutableIntStateOf(0) }
     val pageUiState by githubPageViewModel.uiState.collectAsStateWithLifecycle()
     val appIconState by githubPageViewModel.appIconState.collectAsStateWithLifecycle()
@@ -320,6 +333,7 @@ fun GitHubPage(
                     topBarBackdrop = backdrops.topBar,
                     contentBackdrop = backdrops.content,
                     sheetBackdrop = backdrops.sheet,
+                    backdropProducerActive = runtime.isPageActive,
                     topBarColor = topBarColor,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     isDark = isDark,

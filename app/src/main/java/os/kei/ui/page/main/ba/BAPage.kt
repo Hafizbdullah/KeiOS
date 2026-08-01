@@ -344,6 +344,7 @@ fun BAPage(
         MainPageContentBackdropScene(
             contentBackdrop = backdrops.content,
             sheetBackdrop = backdrops.sheet,
+            producerActive = runtime.isPageActive,
             modifier = Modifier.fillMaxSize(),
         ) {
             AppScaffold(

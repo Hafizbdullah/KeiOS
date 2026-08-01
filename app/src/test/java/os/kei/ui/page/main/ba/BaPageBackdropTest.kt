@@ -100,6 +100,7 @@ class BaPageBackdropTest {
         assertTrue(topBarProducerIndex >= 0, "BA scrolling content must keep the dedicated top-bar producer")
         assertEquals(1, pageSource.occurrencesOf("MainPageContentBackdropScene("))
         assertEquals(1, contentSource.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
+        assertEquals(1, pageSource.occurrencesOf("contentBackdrop = backdrops.content"))
         assertEquals(0, pageSource.occurrencesOf(".layerBackdrop(backdrops.content)"))
         assertEquals(0, contentSource.occurrencesOf(".layerBackdrop(backdrop)"))
     }

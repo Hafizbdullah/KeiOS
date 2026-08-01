@@ -43,6 +43,15 @@ class MainScreenRouteLiquidBackdropContractTest {
     }
 
     @Test
+    fun toastBackdropProducerLivesOnlyWithAVisibleToast() {
+        val source = sourceFile(MAIN_SCREEN_NAV_HOST_SOURCE)
+
+        assertTrue("if (liquidToastState.isVisible)" in source)
+        assertEquals(1, source.occurrencesOf("Modifier.layerBackdrop(liquidToastBackdrop)"))
+        assertTrue("Modifier.fillMaxSize().then(toastBackdropProducer)" in source)
+    }
+
+    @Test
     fun mcpCardsExportMaterialOnlyWhenLiquidChildrenConsumeIt() {
         val source = sourceFile(MCP_SKILL_ACTION_CARDS_SOURCE)
 
