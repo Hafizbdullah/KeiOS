@@ -30,7 +30,6 @@ internal data class MainPagerTabJumpControllerState(
     val selectedPageIndex: Int,
     val navigationActive: Boolean,
     val nestedScrollConnection: NestedScrollConnection,
-    val farJumpAlpha: Float,
     val onActionBarInteractingChanged: (Boolean) -> Unit,
     val onPageSelected: (Int) -> Unit,
     val onShowBottomBar: () -> Unit,
@@ -116,11 +115,12 @@ internal fun rememberMainPagerTabJumpController(
             coroutineScope.launch(start = CoroutineStart.LAZY) {
                 val runningJob = coroutineContext.job
                 try {
-                    val distance = kotlin.math.abs(targetPageIndex - pagerState.currentPage).coerceAtLeast(2)
+                    val rawDistance = kotlin.math.abs(targetPageIndex - pagerState.currentPage)
+                    val durationMillis = mainPagerTabSwitchDurationMillis(rawDistance)
                     pagerState.animateToPage(
                         target = targetPageIndex,
                         animationsEnabled = transitionAnimationsEnabled,
-                        durationMillis = 100 * distance + 100,
+                        durationMillis = durationMillis,
                     )
                 } finally {
                     if (tabJumpJobHolder.job == runningJob) {
@@ -181,13 +181,15 @@ internal fun rememberMainPagerTabJumpController(
             selectedPageIndex = selectedPageIndex,
             navigationActive = navigationActive,
             nestedScrollConnection = nestedScrollConnection,
-            farJumpAlpha = 1f,
             onActionBarInteractingChanged = onActionBarInteractingChanged,
             onPageSelected = onPageSelected,
             onShowBottomBar = onShowBottomBar,
         )
     }
 }
+
+internal fun mainPagerTabSwitchDurationMillis(distance: Int): Int =
+    100 * distance.coerceAtLeast(2) + 100
 
 private class MainPagerTabJumpJobHolder {
     var job: Job? = null

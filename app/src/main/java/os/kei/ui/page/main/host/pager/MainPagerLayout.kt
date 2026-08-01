@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import os.kei.core.privilege.PrivilegeStatus
 
@@ -261,6 +263,11 @@ internal fun MainPagerLayout(
             val pagerModifier =
                 Modifier
                     .fillMaxSize()
+                    .testTag(
+                        coordinator.tabs
+                            .getOrElse(coordinator.pagerState.settledPage) { BottomPage.Home }
+                            .mainPagerSettledTestTag(),
+                    )
                     .onSizeChanged { size ->
                         mainPagerBackGestureState.onContainerSizeChanged(size.width, size.height)
                     }.graphicsLayer {
@@ -269,7 +276,7 @@ internal fun MainPagerLayout(
                         translationX = backMotion.translationX
                         scaleX = backMotion.scale
                         scaleY = backMotion.scale
-                        alpha = coordinator.farJumpAlpha * backMotion.contentAlpha
+                        alpha = backMotion.contentAlpha
                     }.layerBackdrop(coordinator.backdrop)
             val activationState =
                 rememberMainPageActivationState(
@@ -551,6 +558,15 @@ internal fun shouldActivateHomeHdrEffect(
         settledPage == homeIndex &&
         !pagerScrollInProgress &&
         !navigationActive
+
+private fun BottomPage.mainPagerSettledTestTag(): String =
+    when (this) {
+        BottomPage.Home -> KeiOsTestTags.MainPagerSettledHome
+        BottomPage.Os -> KeiOsTestTags.MainPagerSettledOs
+        BottomPage.Mcp -> KeiOsTestTags.MainPagerSettledMcp
+        BottomPage.GitHub -> KeiOsTestTags.MainPagerSettledGitHub
+        BottomPage.Ba -> KeiOsTestTags.MainPagerSettledBa
+    }
 
 private tailrec fun Context.findActivity(): Activity? =
     when (this) {
