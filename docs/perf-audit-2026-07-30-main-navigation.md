@@ -6,10 +6,12 @@ This audit investigates the HWUI regression observed after the 1.11.0 release,
 with emphasis on Liquid Glass, Backdrop, the retained main pager, miuix-nav route
 transitions, and edge-stacked cards.
 
-The physical Xiaomi device supplies the problem baseline. Iteration, builds,
-traces, frame benchmarks, and visual checks run on the single visible Android 17
-AVD (`KeiOS_API37_Validation`, `emulator-5554`). A final physical-device
-`benchRelease` pass remains the release acceptance gate.
+The physical Xiaomi device supplies the problem baseline. Initial iteration ran
+on the single visible Android 17 AVD `KeiOS_API37_Validation` at
+`emulator-5554`. The final v1.11.8 comparison and page-switch refinement use the
+same persistent AVD profile at `emulator-5556`: 6 CPU cores, 6 GB RAM, host GPU,
+1280 × 2856, and 480 dpi. A final physical-device `benchRelease` pass remains
+the release acceptance gate.
 
 Visual fidelity is a hard constraint. The fixes preserve blur, refraction,
 highlight, shadow, animation duration, page-switch semantics, sheet detents, and
@@ -308,6 +310,18 @@ Six additional single-variable experiments were measured and reverted:
   17 to 15 and `FillRectOp` from 208.0 to 192.0 per frame, while Drawing stayed
   at 16.420 ms and `dequeueBuffer` increased to 11.170 ms.
 
+A final MCP-only experiment marked the adjacent target active for two frames
+before starting the unchanged 300 ms GitHub → MCP motion. Against the
+fade-through candidate it reduced frames above 50 ms only from 9–10 to 8–9,
+while the complete route moved from
+22.12/64.66/73.32/98.16 ms to 24.90/43.60/77.60/95.20 ms CPU
+P50/P90/P95/P99 and from 8.46/74.78/86.90/100.32 ms to
+13.20/54.10/93.00/111.90 ms Overrun P50/P90/P95/P99. One marker also expanded
+to 1084.62 ms. The higher P50/P95 and Overrun P95/P99 place the narrow local
+gain below the acceptance threshold, so target preparation was fully reverted.
+Evidence remains at
+`artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-mcp-target-prewarm/`.
+
 Each revert restores the accepted visual result and keeps the optimized source
 at an independently measurable checkpoint.
 
@@ -316,6 +330,74 @@ target scheduling or effect-pass fusion with the complete Liquid Glass output
 held constant. Small structural count reductions no longer justify additional
 source complexity. The audit therefore stops this AVD iteration at the retained
 two-consumer Home batch and proceeds to physical-device acceptance.
+
+### Retained page-switch refinement
+
+The final main pager keeps one cancellable `pagePosition` owner across
+programmatic tab switches, horizontal gestures, page placement, drawing, and
+Bottom Bar interpolation. Programmatic jumps preserve the complete spatial
+distance, so only the two pages around the current fractional position draw at
+any instant. Original 300/400/500 ms durations remain in effect for distances
+two/three/four. Adjacent gestures retain their established settle path.
+
+The local Apache-2.0 Miuix sample at `.tmp/miuix` revision `d5c03cca` drives its
+complete-distance pager with Compose `animate`, `tween`, and `EaseInOut`. The
+v1.11.8 tree also uses that combination in its Foundation and Miuix pager
+variants. The retained pager now applies the same driver and curve. This removes
+its hand-written frame loop and the more front-loaded `FastOutSlowIn` curve while
+preserving the same state, geometry, effects, cancellation, and duration
+contracts.
+
+Five settled page tags make the benchmark wait for real animation completion.
+The target page root becomes visible earlier in the spatial transition, so page
+root visibility alone produces an incomplete measurement window. Duration
+selection is now a named pure function with JVM coverage for its 300/400/500 ms
+contract. The constant `farJumpAlpha = 1f` relay left by the rejected fade
+candidate has also been removed from the controller, coordinator, and pager
+layer.
+
+Three distant-jump presentation candidates were measured and rejected:
+
+- Fade-through held aggregate frame timing near the full-distance source, then
+  produced a visible black flash when the scene reached alpha zero. Evidence:
+  `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-far-jump-fade-through-settled/`.
+- Virtual-adjacent endpoints removed intermediate-page travel and kept both
+  endpoint pages drawing for the full animation. CPU P50/P90/P95/P99 reached
+  34.62/74.39/77.43/95.52 ms and Overrun reached
+  27.91/89.06/95.85/105.31 ms. MCP → Home produced 9–10 frames above 50 ms in
+  every run. Evidence:
+  `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-virtual-adjacent/`.
+- Moving virtual endpoint translation into draw phase improved CPU P50 by about
+  1.13 ms, while two GitHub → MCP markers exceeded 1.1 seconds. The gain stayed
+  below the experiment threshold. Evidence:
+  `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-virtual-adjacent-draw-phase/`.
+
+Five same-device `benchmarkRelease` iterations on `emulator-5556`, with R8 and
+`CompilationMode.Partial(BaselineProfileMode.Require)`, measured:
+
+| Build | Frame count median / CV | CPU P50 / P90 / P95 / P99 | Overrun P50 / P90 / P95 / P99 |
+| --- | ---: | ---: | ---: |
+| Full distance, manual `FastOutSlowIn` loop | 72 / 19.44% | 28.4 / 66.0 / 74.2 / 96.0 ms | 19.5 / 73.0 / 88.5 / 104.7 ms |
+| Full distance, Compose `EaseInOut` driver | 73 / 5.43% | 23.5 / 62.3 / 74.0 / 97.1 ms | 10.9 / 72.1 / 88.6 / 102.2 ms |
+
+The retained driver lowers CPU P50 by 4.9 ms and P90 by 3.7 ms, holds P95,
+keeps P99 within a 1.1 ms AVD range, and reduces five-run frame-count variance.
+Marker-scoped Perfetto analysis records zero frames above 50 ms for every Home →
+GitHub run. MCP → Home records zero or one frame above 50 ms and has consistent
+completion markers. GitHub → MCP continues to record 9–10 frames above 50 ms as
+MCP's first full Backdrop draw enters the transition. The measured two-frame MCP
+preparation experiment above already established the low-return boundary for
+that path.
+
+Clean and HWUI-bar recordings cover Home → GitHub → MCP → Home, Home ↔ BA,
+rapid retargeting, and horizontal gesture input. They show continuous direction,
+stable endpoints, complete intermediate-page motion, and continuously rendered
+content. The AVD remains available with `debug.hwui.profile=visual_bars`.
+
+Raw retained evidence:
+
+- `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-full-distance-settled/`
+- `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-full-distance-ease-in-out/`
 
 ## Backdrop tooling boundary
 
