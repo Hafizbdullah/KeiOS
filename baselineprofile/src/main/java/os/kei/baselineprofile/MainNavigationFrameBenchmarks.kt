@@ -41,6 +41,7 @@ class MainNavigationFrameBenchmarks {
                 grantRuntimePermissions(targetAppId)
                 startActivityAndWait()
                 waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
             },
             measureBlock = {
                 traceSection("benchmark:home_resting_dynamic_background") {
@@ -63,6 +64,7 @@ class MainNavigationFrameBenchmarks {
                 grantRuntimePermissions(targetAppId)
                 startActivityAndWait()
                 waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
             },
             measureBlock = {
                 traceSection("benchmark:home_scroll_full_effects") {
@@ -91,16 +93,29 @@ class MainNavigationFrameBenchmarks {
                 grantRuntimePermissions(targetAppId)
                 startActivityAndWait()
                 waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
             },
             measureBlock = {
                 traceSection("benchmark:home_to_github") {
-                    clickAndWait(MAIN_BOTTOM_TAB_GITHUB, GITHUB_PAGE_ROOT)
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                        pageTag = GITHUB_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_GITHUB,
+                    )
                 }
                 traceSection("benchmark:github_to_mcp") {
-                    clickAndWait(MAIN_BOTTOM_TAB_MCP, MCP_PAGE_ROOT)
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_MCP,
+                        pageTag = MCP_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_MCP,
+                    )
                 }
                 traceSection("benchmark:mcp_to_home") {
-                    clickAndWait(MAIN_BOTTOM_TAB_HOME, HOME_PAGE_ROOT)
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_HOME,
+                        pageTag = HOME_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_HOME,
+                    )
                 }
             },
         )
@@ -119,7 +134,12 @@ class MainNavigationFrameBenchmarks {
                 grantRuntimePermissions(targetAppId)
                 startActivityAndWait()
                 waitForTag(HOME_PAGE_ROOT)
-                clickAndWait(MAIN_BOTTOM_TAB_MCP, MCP_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_MCP,
+                    pageTag = MCP_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_MCP,
+                )
             },
             measureBlock = {
                 repeat(MCP_SCROLL_FLING_COUNT) {
@@ -135,11 +155,13 @@ class MainNavigationFrameBenchmarks {
     private fun androidx.benchmark.macro.MacrobenchmarkScope.clickAndWait(
         tabTag: String,
         pageTag: String,
+        settledTag: String,
     ) {
         val tab = device.findObject(By.res(tabTag))
             ?: error("Unable to find tab testTag=$tabTag")
         tab.click()
         waitForTag(pageTag)
+        waitForTag(settledTag)
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.waitForTag(tag: String) {
@@ -188,6 +210,9 @@ private inline fun <T> traceSection(
 private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
 private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
 private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
+private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
+private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
+private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
