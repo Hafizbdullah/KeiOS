@@ -7,7 +7,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -23,6 +32,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,8 +65,9 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.max
+import kotlin.math.min
 
-internal const val MaxBatchedOverviewPillCount = 24
+internal const val MaxBatchedOverviewPillCount = 40
 
 private val BatchedOverviewPillHeight = 28.dp
 private val BatchedOverviewPillHorizontalPadding = 10.dp
@@ -63,14 +75,260 @@ private val BatchedOverviewPillHorizontalGap = 10.dp
 private val BatchedOverviewPillVerticalGap = 8.dp
 private val BatchedOverviewPillBorderWidth = 0.8.dp
 
+private val LocalOverviewPillBatchHost = compositionLocalOf<OverviewPillBatchHostState?> { null }
+
+internal val LocalOverviewPillBatchTransformProvider =
+    compositionLocalOf<(() -> OverviewPillBatchTransform?)?> { null }
+
+internal data class OverviewPillBatchTransform(
+    val pivot: Offset,
+    val translation: Offset,
+    val scaleX: Float,
+    val scaleY: Float,
+)
+
+private data class OverviewPillBatchGroup(
+    val coordinatesState: OverviewPillBatchCoordinatesState,
+    val positionState: OverviewPillBatchPositionState,
+    val boundsState: OverviewPillBatchBoundsState,
+    val pillsState: OverviewPillBatchPillsState,
+    val transformProviderState: OverviewPillBatchTransformProviderState,
+)
+
+private class OverviewPillBatchCoordinatesState(coordinates: LayoutCoordinates) {
+    var coordinates by mutableStateOf(coordinates)
+}
+
+private class OverviewPillBatchPositionState(position: Offset) {
+    var position by mutableStateOf(position)
+}
+
+private class OverviewPillBatchBoundsState(bounds: List<Rect>) {
+    var bounds by mutableStateOf(bounds)
+}
+
+private class OverviewPillBatchPillsState(pills: List<AppOverviewPill>) {
+    var pills by mutableStateOf(pills)
+}
+
+private class OverviewPillBatchTransformProviderState(
+    provider: (() -> OverviewPillBatchTransform?)?,
+) {
+    var provider by mutableStateOf(provider)
+}
+
+private data class ResolvedOverviewPill(
+    val bounds: Rect,
+    val pill: AppOverviewPill,
+)
+
+private class OverviewPillBatchHostState {
+    private var rootCoordinates by mutableStateOf<LayoutCoordinates?>(null)
+    private val groups = mutableStateMapOf<Any, OverviewPillBatchGroup>()
+    private var outlineVersionState by mutableIntStateOf(0)
+
+    val outlineVersion: Int
+        get() = outlineVersionState
+
+    fun updateRootCoordinates(coordinates: LayoutCoordinates) {
+        val rootChanged = rootCoordinates !== coordinates
+        rootCoordinates = coordinates
+        var geometryChanged = rootChanged
+        groups.values.forEach { group ->
+            val position = resolvePosition(group.coordinatesState.coordinates) ?: return@forEach
+            if (group.positionState.position != position) {
+                group.positionState.position = position
+                geometryChanged = true
+            }
+        }
+        if (geometryChanged) outlineVersionState++
+    }
+
+    fun register(
+        key: Any,
+        coordinates: LayoutCoordinates,
+        geometry: OverviewPillBatchGeometry,
+        pills: List<AppOverviewPill>,
+        transformProvider: (() -> OverviewPillBatchTransform?)?,
+    ) {
+        val group = groups[key]
+        val position = resolvePosition(coordinates) ?: Offset.Zero
+        if (group == null) {
+            groups[key] =
+                OverviewPillBatchGroup(
+                    coordinatesState = OverviewPillBatchCoordinatesState(coordinates),
+                    positionState = OverviewPillBatchPositionState(position),
+                    boundsState = OverviewPillBatchBoundsState(geometry.bounds),
+                    pillsState = OverviewPillBatchPillsState(pills),
+                    transformProviderState = OverviewPillBatchTransformProviderState(transformProvider),
+                )
+            outlineVersionState++
+        } else {
+            val coordinatesChanged = group.coordinatesState.coordinates !== coordinates
+            val positionChanged = group.positionState.position != position
+            val geometryChanged = group.boundsState.bounds != geometry.bounds
+            if (coordinatesChanged) {
+                group.coordinatesState.coordinates = coordinates
+            }
+            if (positionChanged) {
+                group.positionState.position = position
+            }
+            if (geometryChanged) {
+                group.boundsState.bounds = geometry.bounds
+            }
+            group.pillsState.pills = pills
+            group.transformProviderState.provider = transformProvider
+            if (coordinatesChanged || positionChanged || geometryChanged) {
+                outlineVersionState++
+            }
+        }
+    }
+
+    fun updatePills(key: Any, pills: List<AppOverviewPill>) {
+        groups[key]?.pillsState?.pills = pills
+    }
+
+    fun updateTransformProvider(
+        key: Any,
+        transformProvider: (() -> OverviewPillBatchTransform?)?,
+    ) {
+        groups[key]?.transformProviderState?.provider = transformProvider
+    }
+
+    fun unregister(key: Any) {
+        if (groups.remove(key) != null) {
+            outlineVersionState++
+        }
+    }
+
+    private fun resolvePosition(coordinates: LayoutCoordinates): Offset? {
+        val root = rootCoordinates?.takeIf(LayoutCoordinates::isAttached) ?: return null
+        if (!coordinates.isAttached) return null
+        return root.localPositionOf(coordinates, Offset.Zero)
+    }
+
+    fun resolvedPills(): List<ResolvedOverviewPill> {
+        rootCoordinates?.takeIf(LayoutCoordinates::isAttached) ?: return emptyList()
+        val resolved = ArrayList<ResolvedOverviewPill>(MaxBatchedOverviewPillCount)
+        val groupSnapshot = groups.values.toList()
+        for (group in groupSnapshot) {
+            if (resolved.size >= MaxBatchedOverviewPillCount) break
+            if (!group.coordinatesState.coordinates.isAttached) continue
+            val pills = group.pillsState.pills
+            val transform = group.transformProviderState.provider?.invoke()
+            for ((index, localBounds) in group.boundsState.bounds.withIndex()) {
+                val pill = pills.getOrNull(index) ?: continue
+                if (resolved.size >= MaxBatchedOverviewPillCount) break
+                val topLeft = group.positionState.position + localBounds.topLeft
+                val baseBounds = Rect(topLeft, localBounds.size)
+                resolved +=
+                    ResolvedOverviewPill(
+                        bounds =
+                            transform?.let(baseBounds::transformedBy) ?: baseBounds,
+                        pill = pill,
+                    )
+            }
+        }
+        return resolved
+    }
+}
+
+@Composable
+internal fun AppOverviewLiquidPillBatchHost(
+    backdrop: Backdrop?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val activeBackdrop = activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
+    if (activeBackdrop == null) {
+        Box(modifier = modifier) { content() }
+        return
+    }
+
+    val hostState = remember { OverviewPillBatchHostState() }
+    val outlineVersion = hostState.outlineVersion
+    val isDark = isAppInDarkTheme()
+    val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact)
+    val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact)
+    val backgroundAlpha = if (isDark) 0.18f else 0.24f
+    val borderAlpha = if (isDark) 0.35f else 0.42f
+    val highlightAlpha = if (isDark) 0.42f else 0.62f
+
+    Box(
+        modifier =
+            modifier
+                .onGloballyPositioned(hostState::updateRootCoordinates)
+                .drawBackdrop(
+                    backdrop = activeBackdrop,
+                    shape = {
+                        OverviewPillBatchShape(
+                            hostState.resolvedPills().map(ResolvedOverviewPill::bounds),
+                            version = outlineVersion,
+                        )
+                    },
+                    effects = {
+                        vibrancy()
+                        blur(blurRadius.toPx())
+                        overviewPillBatchLens(
+                            bounds = hostState.resolvedPills().map(ResolvedOverviewPill::bounds),
+                            refractionHeight = lensRadius.toPx(),
+                            refractionAmount = lensRadius.toPx(),
+                        )
+                    },
+                    highlight = {
+                        Highlight.Default.copy(
+                            alpha = highlightAlpha,
+                            style =
+                                OverviewPillBatchHighlightStyle(
+                                    bounds = hostState.resolvedPills().map(ResolvedOverviewPill::bounds),
+                                ),
+                        )
+                    },
+                    shadow = null,
+                    innerShadow = null,
+                    onDrawSurface = {
+                        hostState.resolvedPills().forEach { entry ->
+                            val bounds = entry.bounds
+                            drawRoundRect(
+                                color = entry.pill.color.copy(alpha = backgroundAlpha),
+                                topLeft = bounds.topLeft,
+                                size = bounds.size,
+                                cornerRadius = CornerRadius(bounds.height / 2f),
+                            )
+                        }
+                    },
+                    onDrawFront = {
+                        val strokeWidth = BatchedOverviewPillBorderWidth.toPx()
+                        val halfStroke = strokeWidth / 2f
+                        hostState.resolvedPills().forEach { entry ->
+                            val bounds = entry.bounds
+                            drawRoundRect(
+                                color = entry.pill.color.copy(alpha = borderAlpha),
+                                topLeft = bounds.topLeft + Offset(halfStroke, halfStroke),
+                                size = Size(bounds.width - strokeWidth, bounds.height - strokeWidth),
+                                cornerRadius = CornerRadius((bounds.height - strokeWidth) / 2f),
+                                style = Stroke(strokeWidth),
+                            )
+                        }
+                    },
+                ),
+    ) {
+        CompositionLocalProvider(LocalOverviewPillBatchHost provides hostState) {
+            content()
+        }
+    }
+}
+
 @Composable
 internal fun AppOverviewBatchedLiquidPillFlow(
     pills: List<AppOverviewPill>,
     modifier: Modifier,
     backdrop: Backdrop?,
 ) {
+    val batchHost = LocalOverviewPillBatchHost.current
+    val transformProvider = LocalOverviewPillBatchTransformProvider.current
     val activeBackdrop = activeGlassBackdrop(backdrop ?: LocalLiquidParentBackdrop.current)
-    if (activeBackdrop == null || pills.isEmpty()) {
+    if ((activeBackdrop == null && batchHost == null) || pills.isEmpty()) {
         AppOverviewLegacyPillFlow(
             pills = pills,
             modifier = modifier,
@@ -81,6 +339,14 @@ internal fun AppOverviewBatchedLiquidPillFlow(
 
     val isDark = isAppInDarkTheme()
     val geometry = remember { OverviewPillBatchGeometry() }
+    val batchGroupKey = remember { Any() }
+    DisposableEffect(batchHost, batchGroupKey) {
+        onDispose { batchHost?.unregister(batchGroupKey) }
+    }
+    SideEffect {
+        batchHost?.updatePills(batchGroupKey, pills)
+        batchHost?.updateTransformProvider(batchGroupKey, transformProvider)
+    }
     val blurRadius = resolvedGlassBlurDp(UiPerformanceBudget.backdropBlur, GlassVariant.Compact)
     val lensRadius = resolvedGlassLensDp(UiPerformanceBudget.backdropLens, GlassVariant.Compact)
     val backgroundAlpha = if (isDark) 0.18f else 0.24f
@@ -90,9 +356,23 @@ internal fun AppOverviewBatchedLiquidPillFlow(
         OverviewPillBatchShape(geometry.bounds)
     }
 
-    Layout(
-        modifier =
-            modifier.drawBackdrop(
+    val batchRegistrationModifier =
+        if (batchHost != null) {
+            Modifier.onGloballyPositioned { coordinates ->
+                batchHost.register(
+                    key = batchGroupKey,
+                    coordinates = coordinates,
+                    geometry = geometry,
+                    pills = pills,
+                    transformProvider = transformProvider,
+                )
+            }
+        } else {
+            Modifier
+        }
+    val liquidMaterialModifier =
+        if (batchHost == null && activeBackdrop != null) {
+            Modifier.drawBackdrop(
                 backdrop = activeBackdrop,
                 shape = batchShape,
                 effects = {
@@ -107,7 +387,7 @@ internal fun AppOverviewBatchedLiquidPillFlow(
                 highlight = {
                     Highlight.Default.copy(
                         alpha = highlightAlpha,
-                        style = OverviewPillBatchHighlightStyle(geometry.bounds),
+                        style = OverviewPillBatchHighlightStyle(bounds = geometry.bounds),
                     )
                 },
                 shadow = null,
@@ -135,7 +415,16 @@ internal fun AppOverviewBatchedLiquidPillFlow(
                         )
                     }
                 },
-            ),
+            )
+        } else {
+            Modifier
+        }
+
+    Layout(
+        modifier =
+            modifier
+                .then(batchRegistrationModifier)
+                .then(liquidMaterialModifier),
         content = {
             pills.forEach { pill ->
                 OverviewPillBatchLabel(
@@ -183,6 +472,25 @@ internal fun AppOverviewBatchedLiquidPillFlow(
             }
         }
     }
+}
+
+private fun Rect.transformedBy(transform: OverviewPillBatchTransform): Rect {
+    val centerRelativeToPivot = center - transform.pivot
+    val transformedCenter =
+        transform.pivot +
+            transform.translation +
+            Offset(
+                x = centerRelativeToPivot.x * transform.scaleX,
+                y = centerRelativeToPivot.y * transform.scaleY,
+            )
+    val halfWidth = width * transform.scaleX / 2f
+    val halfHeight = height * transform.scaleY / 2f
+    return Rect(
+        left = transformedCenter.x - halfWidth,
+        top = transformedCenter.y - halfHeight,
+        right = transformedCenter.x + halfWidth,
+        bottom = transformedCenter.y + halfHeight,
+    )
 }
 
 @Composable
@@ -263,11 +571,12 @@ internal fun calculateOverviewPillFlowLayout(
 }
 
 private class OverviewPillBatchGeometry {
-    var bounds: List<Rect> = emptyList()
+    var bounds by mutableStateOf<List<Rect>>(emptyList())
 }
 
 private data class OverviewPillBatchShape(
     val bounds: List<Rect>,
+    val version: Int = 0,
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -303,11 +612,10 @@ private fun BackdropEffectScope.overviewPillBatchLens(
         padding = (padding - uniforms.refractionHeight).coerceAtLeast(0f)
     }
     runtimeShaderEffect(
-        key = "OverviewPillBatchLens",
-        shaderString = OverviewPillBatchLensShader,
+        key = "OverviewPillBatchLens-${uniforms.pillCount}",
+        shaderString = overviewPillBatchLensShader(uniforms.pillCount),
         uniformShaderName = "content",
     ) {
-        setIntUniform("pillCount", uniforms.pillCount)
         setFloatUniform("pillBounds", uniforms.bounds)
         setFloatUniform("offset", -padding, -padding)
         setFloatUniform("pillRadius", uniforms.pillRadius)
@@ -317,7 +625,7 @@ private fun BackdropEffectScope.overviewPillBatchLens(
     }
 }
 
-private data class OverviewPillBatchUniforms(
+internal data class OverviewPillBatchUniforms(
     val pillCount: Int,
     val bounds: FloatArray,
     val pillRadius: Float,
@@ -325,15 +633,20 @@ private data class OverviewPillBatchUniforms(
     val refractionAmount: Float,
 )
 
-private fun resolveOverviewPillBatchUniforms(
+internal fun resolveOverviewPillBatchUniforms(
     bounds: List<Rect>,
     refractionHeight: Float,
     refractionAmount: Float,
 ): OverviewPillBatchUniforms? {
-    val validBounds = bounds.take(MaxBatchedOverviewPillCount).filter { it.width > 0f && it.height > 0f }
+    val validBounds =
+        bounds
+            .asSequence()
+            .filter { pillBounds -> pillBounds.width > 0f && pillBounds.height > 0f }
+            .take(MaxBatchedOverviewPillCount)
+            .toList()
     val pillRadius = validBounds.minOfOrNull { it.height / 2f } ?: return null
     if (!refractionHeight.isFinite() || !refractionAmount.isFinite()) return null
-    val uniformBounds = FloatArray(MaxBatchedOverviewPillCount * 4)
+    val uniformBounds = FloatArray(validBounds.size * 4)
     validBounds.forEachIndexed { index, rect ->
         val offset = index * 4
         uniformBounds[offset] = rect.left
@@ -368,10 +681,9 @@ private data class OverviewPillBatchHighlightStyle(
                 refractionAmount = 1f,
             ) ?: return null
         return runtimeShaderCache.obtainRuntimeShader(
-            "OverviewPillBatchHighlight",
-            OverviewPillBatchHighlightShader,
+            "OverviewPillBatchHighlight-${uniforms.pillCount}",
+            overviewPillBatchHighlightShader(uniforms.pillCount),
         ).apply {
-            setIntUniform("pillCount", uniforms.pillCount)
             setFloatUniform("pillBounds", uniforms.bounds)
             setFloatUniform("pillRadius", uniforms.pillRadius)
             setColorUniform("color", color.copy(alpha = 1f))
@@ -381,8 +693,13 @@ private data class OverviewPillBatchHighlightStyle(
     }
 }
 
+private val OverviewPillBatchLensShaderCache =
+    arrayOfNulls<String>(MaxBatchedOverviewPillCount + 1)
+private val OverviewPillBatchHighlightShaderCache =
+    arrayOfNulls<String>(MaxBatchedOverviewPillCount + 1)
+
 @Language("AGSL")
-private val OverviewPillBatchGeometryShader =
+private fun overviewPillBatchGeometryShader(pillCount: Int) =
     """
 float sdRoundedRect(float2 coord, float2 halfSize, float radius) {
     float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
@@ -402,16 +719,14 @@ float2 gradSdRoundedRect(float2 coord, float2 halfSize, float radius) {
 
 float4 findPillBounds(float2 coord, float expansion) {
     float4 selectedBounds = float4(0.0);
-    for (int index = 0; index < $MaxBatchedOverviewPillCount; index++) {
-        if (index < pillCount) {
-            float4 candidate = pillBounds[index];
-            bool contains = coord.x >= candidate.x - expansion &&
-                coord.x <= candidate.z + expansion &&
-                coord.y >= candidate.y - expansion &&
-                coord.y <= candidate.w + expansion;
-            if (contains) {
-                selectedBounds = candidate;
-            }
+    for (int index = 0; index < $pillCount; index++) {
+        float4 candidate = pillBounds[index];
+        bool contains = coord.x >= candidate.x - expansion &&
+            coord.x <= candidate.z + expansion &&
+            coord.y >= candidate.y - expansion &&
+            coord.y <= candidate.w + expansion;
+        if (contains) {
+            selectedBounds = candidate;
         }
     }
     return selectedBounds;
@@ -419,18 +734,20 @@ float4 findPillBounds(float2 coord, float expansion) {
     """.trimIndent()
 
 @Language("AGSL")
-private val OverviewPillBatchLensShader =
-    """
+private fun overviewPillBatchLensShader(pillCount: Int): String {
+    require(pillCount in 1..MaxBatchedOverviewPillCount)
+    OverviewPillBatchLensShaderCache[pillCount]?.let { return it }
+    val shader =
+        """
 uniform shader content;
-uniform int pillCount;
-uniform float4 pillBounds[$MaxBatchedOverviewPillCount];
+uniform float4 pillBounds[$pillCount];
 uniform float2 offset;
 uniform float pillRadius;
 uniform float refractionHeight;
 uniform float refractionAmount;
 uniform float depthEffect;
 
-$OverviewPillBatchGeometryShader
+${overviewPillBatchGeometryShader(pillCount)}
 
 float circleMap(float x) {
     return 1.0 - sqrt(1.0 - x * x);
@@ -458,19 +775,24 @@ half4 main(float2 coord) {
     );
     return content.eval(coord + displacement * gradient);
 }
-    """.trimIndent()
+        """.trimIndent()
+    OverviewPillBatchLensShaderCache[pillCount] = shader
+    return shader
+}
 
 @Language("AGSL")
-private val OverviewPillBatchHighlightShader =
-    """
-uniform int pillCount;
-uniform float4 pillBounds[$MaxBatchedOverviewPillCount];
+private fun overviewPillBatchHighlightShader(pillCount: Int): String {
+    require(pillCount in 1..MaxBatchedOverviewPillCount)
+    OverviewPillBatchHighlightShaderCache[pillCount]?.let { return it }
+    val shader =
+        """
+uniform float4 pillBounds[$pillCount];
 uniform float pillRadius;
 layout(color) uniform half4 color;
 uniform float angle;
 uniform float falloff;
 
-$OverviewPillBatchGeometryShader
+${overviewPillBatchGeometryShader(pillCount)}
 
 half4 main(float2 coord) {
     float4 bounds = findPillBounds(coord, 2.0);
@@ -485,4 +807,7 @@ half4 main(float2 coord) {
     float intensity = pow(abs(dot(gradient, normal)), falloff);
     return color * intensity;
 }
-    """.trimIndent()
+        """.trimIndent()
+    OverviewPillBatchHighlightShaderCache[pillCount] = shader
+    return shader
+}

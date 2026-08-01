@@ -728,58 +728,64 @@ internal fun HomePageOverviewCards(
     webDavPills: List<HomeCardPillItem>,
     baPills: List<HomeCardPillItem>,
 ) {
-    Column(
+    HomeOverviewGlassBatchHost(
+        backdrop = homeCardBackdrop,
+        blurEnabled = blurEnabled,
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.Top,
     ) {
-        if (visibleOverviewCards.contains(HomeOverviewCard.MCP)) {
-            HomeInfoCard(
-                backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled,
-            ) {
-                HomeInfoPillCard(
-                    naText = homeNa,
-                    pills = mcpPills,
-                )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.Top,
+        ) {
+            if (visibleOverviewCards.contains(HomeOverviewCard.MCP)) {
+                HomeInfoCard(
+                    backdrop = homeCardBackdrop,
+                    blurEnabled = blurEnabled,
+                ) {
+                    HomeInfoPillCard(
+                        naText = homeNa,
+                        pills = mcpPills,
+                    )
+                }
             }
-        }
 
-        if (visibleOverviewCards.contains(HomeOverviewCard.GITHUB)) {
-            HomeInfoCard(
-                backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled,
-            ) {
-                HomeInfoPillCard(
-                    naText = homeNa,
-                    pills = githubPills,
-                )
+            if (visibleOverviewCards.contains(HomeOverviewCard.GITHUB)) {
+                HomeInfoCard(
+                    backdrop = homeCardBackdrop,
+                    blurEnabled = blurEnabled,
+                ) {
+                    HomeInfoPillCard(
+                        naText = homeNa,
+                        pills = githubPills,
+                    )
+                }
             }
-        }
 
-        if (visibleOverviewCards.contains(HomeOverviewCard.WEBDAV)) {
-            HomeInfoCard(
-                backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled,
-                onClick = onOpenWebDavSync,
-            ) {
-                HomeInfoPillCard(
-                    naText = homeNa,
-                    pills = webDavPills,
-                )
+            if (visibleOverviewCards.contains(HomeOverviewCard.WEBDAV)) {
+                HomeInfoCard(
+                    backdrop = homeCardBackdrop,
+                    blurEnabled = blurEnabled,
+                    onClick = onOpenWebDavSync,
+                ) {
+                    HomeInfoPillCard(
+                        naText = homeNa,
+                        pills = webDavPills,
+                    )
+                }
             }
-        }
 
-        if (visibleOverviewCards.contains(HomeOverviewCard.BA)) {
-            HomeInfoCard(
-                backdrop = homeCardBackdrop,
-                blurEnabled = blurEnabled,
-            ) {
-                HomeInfoPillCard(
-                    naText = homeNa,
-                    pills = baPills,
-                )
+            if (visibleOverviewCards.contains(HomeOverviewCard.BA)) {
+                HomeInfoCard(
+                    backdrop = homeCardBackdrop,
+                    blurEnabled = blurEnabled,
+                ) {
+                    HomeInfoPillCard(
+                        naText = homeNa,
+                        pills = baPills,
+                    )
+                }
             }
+            Spacer(modifier = Modifier.height(2.dp))
         }
-        Spacer(modifier = Modifier.height(2.dp))
     }
 }

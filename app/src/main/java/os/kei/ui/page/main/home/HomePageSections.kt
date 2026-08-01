@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private const val HOME_CARD_HORIZONTAL_PADDING_DP = 12
+internal const val HOME_CARD_HORIZONTAL_PADDING_DP = 12
 
 internal fun Modifier.homeKeiHdrAccent(
     enabled: Boolean,
@@ -138,6 +138,16 @@ internal fun HomeInfoCard(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
+    val batchState = LocalHomeOverviewCardBatchState.current
+    if (batchState != null) {
+        HomeOverviewBatchedCard(
+            state = batchState,
+            onClick = onClick,
+            content = content,
+        )
+        return
+    }
+
     val blurRadius = resolvedGlassBlurDp(8.dp, GlassVariant.Content)
     val lensRadius = resolvedGlassLensDp(24.dp, GlassVariant.Content)
     val activeBackdrop = backdrop.takeIf { blurEnabled }
@@ -155,7 +165,7 @@ internal fun HomeInfoCard(
         backdrop = activeBackdrop,
         containerColor = containerColor,
         shape = RoundedRectangle(20.dp),
-        exportBackdropToContent = true,
+        exportBackdropToContent = false,
         pressSafePadding = 0.dp,
         blurRadius = blurRadius,
         lensRadius = lensRadius,
@@ -231,6 +241,7 @@ internal fun HomeBottomPageLabel(
 internal fun HomeInfoPillCard(
     pills: List<HomeCardPillItem>,
     naText: String,
+    backdrop: Backdrop? = null,
 ) {
     AppOverviewPillFlow(
         pills =
@@ -248,6 +259,7 @@ internal fun HomeInfoPillCard(
                 )
             },
         batchLiquidBackdrop = true,
+        backdrop = backdrop,
     )
 }
 

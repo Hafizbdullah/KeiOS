@@ -6,9 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kyant.backdrop.Backdrop
@@ -24,7 +23,7 @@ import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -38,7 +37,7 @@ class HomeInfoCardBackdropTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun exportsIndependentBackdropToOverviewPills() {
+    fun batchesCardAndPillMaterialWithoutNestedBackdropExport() {
         var sceneBackdrop: Backdrop? = null
         var cardContentBackdrop: Backdrop? = null
 
@@ -54,27 +53,35 @@ class HomeInfoCardBackdropTest {
                                 .background(Color.White)
                                 .layerBackdrop(backdrop),
                     )
-                    HomeInfoCard(
+                    HomeOverviewGlassBatchHost(
                         backdrop = backdrop,
                         blurEnabled = true,
                     ) {
-                        cardContentBackdrop = LocalLiquidParentBackdrop.current
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(24.dp)
-                                    .testTag("home-overview-card-content"),
-                        )
+                        HomeInfoCard(
+                            backdrop = backdrop,
+                            blurEnabled = true,
+                        ) {
+                            cardContentBackdrop = LocalLiquidParentBackdrop.current
+                            HomeInfoPillCard(
+                                pills =
+                                    listOf(
+                                        HomeCardPillItem(
+                                            value = "运行中",
+                                            color = Color(0xFF2563EB),
+                                        ),
+                                    ),
+                                naText = "N/A",
+                            )
+                        }
                     }
                 }
             }
         }
 
-        composeRule.onNodeWithTag("home-overview-card-content").assertExists()
+        composeRule.onNodeWithText("运行中").assertExists()
         composeRule.runOnIdle {
             assertNotNull(sceneBackdrop)
-            assertNotNull(cardContentBackdrop)
-            assertNotSame(sceneBackdrop, cardContentBackdrop)
+            assertNull(cardContentBackdrop)
         }
     }
 }

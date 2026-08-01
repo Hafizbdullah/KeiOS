@@ -1,8 +1,10 @@
 package os.kei.ui.page.main.widget.core
 
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import org.junit.Test
 
 class AppOverviewPillBatchLayoutTest {
@@ -35,4 +37,27 @@ class AppOverviewPillBatchLayoutTest {
         assertEquals(210, layout.width)
         assertEquals(64, layout.height)
     }
+
+    @Test
+    fun batchUniformsMatchActivePillCount() {
+        val uniforms =
+            resolveOverviewPillBatchUniforms(
+                bounds =
+                    listOf(
+                        Rect(0f, 0f, 120f, 56f),
+                        Rect(140f, 0f, 300f, 56f),
+                        Rect(0f, 72f, 180f, 128f),
+                    ),
+                refractionHeight = 48f,
+                refractionAmount = 80f,
+            )
+
+        assertNotNull(uniforms)
+        assertEquals(3, uniforms.pillCount)
+        assertEquals(12, uniforms.bounds.size)
+        assertEquals(28f, uniforms.pillRadius)
+        assertEquals(28f, uniforms.refractionHeight)
+        assertEquals(56f, uniforms.refractionAmount)
+    }
+
 }
