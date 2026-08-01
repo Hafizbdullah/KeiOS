@@ -137,14 +137,14 @@ private fun MacrobenchmarkScope.resolveLauncherComponent(): String {
         ?: error("Unable to resolve launcher activity for ${targetAppId()}: $output")
 }
 
-private fun MacrobenchmarkScope.grantRuntimePermissions() {
+internal fun MacrobenchmarkScope.grantRuntimePermissions(packageName: String = targetAppId()) {
     listOf(
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.POST_PROMOTED_NOTIFICATIONS",
         "android.permission.ACCESS_LOCAL_NETWORK",
         "android.permission.USE_LOOPBACK_INTERFACE",
     ).forEach { permission ->
-        device.executeShellCommand("pm grant ${targetAppId()} $permission >/dev/null 2>&1 || true")
+        device.executeShellCommand("pm grant $packageName $permission >/dev/null 2>&1 || true")
     }
 }
 

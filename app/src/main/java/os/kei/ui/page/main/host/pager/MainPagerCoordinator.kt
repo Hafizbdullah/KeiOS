@@ -195,11 +195,29 @@ internal fun rememberMainPagerCoordinator(
             )
         }
 
+    val pageBackdropProducerCount =
+        tabs.indices.count { pageIndex ->
+            tabs[pageIndex] != BottomPage.Home && pagerRuntime.isWarmActive(pageIndex)
+        }
+    val pageFullBackdropEffectCount =
+        if (pagerState.isScrollInProgress) {
+            0
+        } else {
+            pageBackdropProducerCount
+        }
+
     ReportPagerPerformanceState(
         scope = "main_pager",
         currentPage = tabs.getOrElse(pagerState.currentPage) { BottomPage.Home }.name,
         targetPage = tabs.getOrElse(pagerState.targetPage) { BottomPage.Home }.name,
         scrolling = pagerState.isScrollInProgress,
+        currentPageIndex = pagerState.currentPage,
+        targetPageIndex = pagerState.targetPage,
+        settledPageIndex = pagerState.settledPage,
+        programmaticNavigation = pagerState.isProgrammaticNavigationInProgress,
+        navigationActive = tabJumpController.navigationActive,
+        pageBackdropProducerCount = pageBackdropProducerCount,
+        pageFullBackdropEffectCount = pageFullBackdropEffectCount,
     )
 
     return remember(
