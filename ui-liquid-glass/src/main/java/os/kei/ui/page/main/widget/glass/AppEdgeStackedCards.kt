@@ -11,7 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -68,11 +68,9 @@ fun AppEdgeStackExempt(content: @Composable () -> Unit) {
 /**
  * Card-side transform, applied by page-card containers (AppSurfaceCard and friends)
  * when a host page provides [LocalAppEdgeStackCards]. Layout position feeds the
- * draw-phase layer lambda through snapshot state, so scrolling only invalidates draw,
- * never composition. Cards resting below the stack line collapse to a sentinel: they
- * take one snapshot write when leaving the zone and then skip both writes and
- * transform math entirely, so a steadily scrolling list only pays for the few cards
- * at the pile.
+ * placement-phase layer lambda through snapshot state, so scrolling never invalidates
+ * composition. Cards resting below the stack line use plain placement and allocate no
+ * graphics layer; only the few cards actively entering the pile use `placeWithLayer`.
  */
 @Composable
 fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
@@ -97,26 +95,29 @@ fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
                 itemHeightPx.intValue = heightPx
             }
         }
-        .graphicsLayer {
-            val itemTop = itemTopInContainerY.floatValue
-            if (itemTop == APP_EDGE_STACK_RESTING) {
-                translationY = 0f
-                scaleX = 1f
-                scaleY = 1f
-                alpha = 1f
-                return@graphicsLayer
+        .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            layout(placeable.width, placeable.height) {
+                val itemTop = itemTopInContainerY.floatValue
+                if (itemTop == APP_EDGE_STACK_RESTING) {
+                    placeable.placeRelative(0, 0)
+                } else {
+                    val transform =
+                        computeAppEdgeStackTransform(
+                            itemTopInContainer = itemTop,
+                            itemHeightPx = itemHeightPx.intValue.toFloat(),
+                            stackLinePx = state.stackLinePx,
+                            tuckRisePx = tuckRisePx,
+                        )
+                    placeable.placeRelativeWithLayer(0, 0) {
+                        translationY = transform.translationY
+                        scaleX = transform.scale
+                        scaleY = transform.scale
+                        alpha = transform.alpha
+                        transformOrigin = TransformOrigin(0.5f, 0f)
+                    }
+                }
             }
-            val transform = computeAppEdgeStackTransform(
-                itemTopInContainer = itemTop,
-                itemHeightPx = itemHeightPx.intValue.toFloat(),
-                stackLinePx = state.stackLinePx,
-                tuckRisePx = tuckRisePx,
-            )
-            translationY = transform.translationY
-            scaleX = transform.scale
-            scaleY = transform.scale
-            alpha = transform.alpha
-            transformOrigin = TransformOrigin(0.5f, 0f)
         }
 }
 

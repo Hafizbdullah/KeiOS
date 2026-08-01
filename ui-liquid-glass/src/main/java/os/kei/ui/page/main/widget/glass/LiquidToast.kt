@@ -157,6 +157,10 @@ class LiquidToastState {
     internal var visibleSlots by mutableStateOf<List<LiquidToastSlot>>(emptyList())
         private set
 
+    /** Whether the host currently needs a live backdrop capture for a visible toast. */
+    val isVisible: Boolean
+        get() = visibleSlots.isNotEmpty()
+
     private val queue = ArrayDeque<LiquidToastSlot>()
     private var tokenSeq = 0L
 

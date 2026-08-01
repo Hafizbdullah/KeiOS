@@ -18,6 +18,18 @@ class LiquidToastStateTest {
     private fun LiquidToastState.messages(): List<String> = visibleSlots.map { it.data.message }
 
     @Test
+    fun visibilityTracksTheLiveToastStack() {
+        val state = LiquidToastState()
+
+        assertFalse(state.isVisible)
+        state.show("Visible")
+        assertTrue(state.isVisible)
+
+        state.dismissAll()
+        assertFalse(state.isVisible)
+    }
+
+    @Test
     fun showThenDismissClearsTheToast() {
         val state = LiquidToastState()
         state.show("A")

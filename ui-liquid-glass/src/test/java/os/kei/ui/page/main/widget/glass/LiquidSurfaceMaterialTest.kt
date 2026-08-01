@@ -1,10 +1,51 @@
 package os.kei.ui.page.main.widget.glass
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LiquidSurfaceMaterialTest {
+    @Test
+    fun passiveSurfaceOmitsZeroContributionShadowLayers() {
+        assertNull(
+            liquidSurfaceOuterShadowOrNull(
+                enabled = false,
+                alpha = 0.10f,
+            ),
+        )
+        assertNull(
+            liquidSurfaceOuterShadowOrNull(
+                enabled = true,
+                alpha = 0f,
+            ),
+        )
+        assertFalse(
+            liquidSurfaceNeedsInteractiveInnerShadow(
+                isInteractive = false,
+                enabled = true,
+            ),
+        )
+    }
+
+    @Test
+    fun interactiveSurfaceKeepsVisibleShadowLayers() {
+        assertNotNull(
+            liquidSurfaceOuterShadowOrNull(
+                enabled = true,
+                alpha = 0.10f,
+            ),
+        )
+        assertTrue(
+            liquidSurfaceNeedsInteractiveInnerShadow(
+                isInteractive = true,
+                enabled = true,
+            ),
+        )
+    }
+
     @Test
     fun idleHighlightStaysQuietInBothThemes() {
         assertEquals(

@@ -167,6 +167,20 @@ fun LiquidSurface(
         } else {
             Modifier
         }
+    val outerShadow: (() -> Shadow?)? =
+        liquidSurfaceOuterShadowOrNull(
+            enabled = shadow,
+            alpha = shadowAlpha,
+        )
+    val innerShadow: (() -> InnerShadow?)? =
+        if (liquidSurfaceNeedsInteractiveInnerShadow(isInteractive = isInteractive, enabled = enabled)) {
+            {
+                val progress = interactiveHighlight.pressProgress
+                InnerShadow(radius = 6.dp * progress, alpha = 0.55f * progress)
+            }
+        } else {
+            null
+        }
     val surfaceModifier =
         if (activeBackdrop != null) {
             Modifier.drawBackdrop(
@@ -203,18 +217,8 @@ fun LiquidSurface(
                             ),
                     )
                 },
-                shadow = {
-                    val resolvedShadowAlpha = if (shadow) shadowAlpha.coerceIn(0f, 1f) else 0f
-                    if (resolvedShadowAlpha > 0f) {
-                        Shadow.Default.copy(color = Color.Black.copy(alpha = resolvedShadowAlpha))
-                    } else {
-                        Shadow(alpha = 0f)
-                    }
-                },
-                innerShadow = {
-                    val progress = if (isInteractive && enabled) interactiveHighlight.pressProgress else 0f
-                    InnerShadow(radius = 6.dp * progress, alpha = 0.55f * progress)
-                },
+                shadow = outerShadow,
+                innerShadow = innerShadow,
                 layerBlock = interactiveLayerBlock,
                 exportedBackdrop = exportedBackdrop,
                 onDrawSurface = {
@@ -234,7 +238,6 @@ fun LiquidSurface(
                 color = fallbackSurfaceColor,
             )
         }
-
     if (clipContent) {
         Box(
             modifier =
@@ -284,6 +287,22 @@ fun LiquidSurface(
         }
     }
 }
+
+internal fun liquidSurfaceOuterShadowOrNull(
+    enabled: Boolean,
+    alpha: Float,
+): (() -> Shadow?)? {
+    val resolvedAlpha = alpha.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
+    if (!enabled || resolvedAlpha <= 0f) return null
+    return {
+        Shadow.Default.copy(color = Color.Black.copy(alpha = resolvedAlpha))
+    }
+}
+
+internal fun liquidSurfaceNeedsInteractiveInnerShadow(
+    isInteractive: Boolean,
+    enabled: Boolean,
+): Boolean = isInteractive && enabled
 
 internal fun liquidSurfaceHighlightAlpha(
     isDark: Boolean,
