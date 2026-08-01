@@ -158,7 +158,7 @@ enabled-state composition boundary keep their existing formulas and timing.
 Home, GitHub, and OS overview pills opt into a batched Liquid Glass renderer.
 The custom flow layout preserves the 28 dp height, horizontal and vertical
 rhythm, RTL placement, typography, color, border, blur, vibrancy, lens
-refraction, and highlight. Up to 24 pill bounds are supplied to one lens and
+refraction, and highlight. Up to 40 pill bounds are supplied to one lens and
 highlight shader, replacing one Backdrop consumer per pill with one consumer
 for the complete flow. Empty, unsupported, and oversized cases fall back to the
 original `FlowRow` implementation.
@@ -226,42 +226,49 @@ while the tail difference remains too small for a standalone performance claim.
 The reference APK was verified as version `1.11.8` (`11108999`) with certificate
 SHA-256 `c5c4c43ba6d03268773122bc99d1e870908609ae5251c7c8ad4b6029b573c82a`.
 Both builds were measured with R8, required Baseline Profiles, the same AVD
-profile, and five iterations before the later AVD resource change.
+profile (6 CPU cores, 6 GB RAM, host GPU, 1280 × 2856 at 480 dpi), and five
+iterations. `v1.11.8` resolves to commit
+`9fef081dd5cb01c706bf6ebc4ff2d14a6a24a1eb` and is the retained reference.
 
 Home dynamic resting:
 
 | Build | CPU P50 / P90 / P95 / P99 | Overrun P50 / P90 / P95 / P99 |
 | --- | ---: | ---: |
-| v1.11.8 | 20.4 / 33.7 / 34.2 / 40.6 ms | 4.9 / 20.5 / 21.0 / 29.7 ms |
-| Current stable source | 19.7 / 32.5 / 33.2 / 34.7 ms | 4.3 / 21.0 / 21.8 / 22.8 ms |
+| v1.11.8 | 6.05 / 20.21 / 21.29 / 23.10 ms | -1.16 / 5.60 / 6.62 / 7.89 ms |
+| Current retained Home batch | 19.46 / 22.26 / 23.06 / 25.02 ms | 4.06 / 7.23 / 7.91 / 9.61 ms |
 
 Home → GitHub → MCP → Home:
 
 | Build | CPU P50 / P90 / P95 / P99 | Overrun P50 / P90 / P95 / P99 |
 | --- | ---: | ---: |
-| v1.11.8 | 32.4 / 60.0 / 77.7 / 111.0 ms | 22.6 / 59.9 / 74.5 / 102.7 ms |
-| Current stable source | 21.0 / 60.8 / 79.1 / 92.2 ms | 5.3 / 56.4 / 90.3 / 106.5 ms |
+| v1.11.8 | 32.43 / 65.22 / 84.86 / 104.97 ms | 23.60 / 61.04 / 84.01 / 101.22 ms |
+| Current retained source | 22.94 / 66.07 / 75.45 / 96.83 ms | 8.17 / 75.30 / 84.35 / 101.45 ms |
 
-The current build improves Home and the transition median while preserving all
-visual material and animation paths. Transition-tail values still vary enough
-to require the Xiaomi acceptance pass.
+The current navigation median and CPU P95/P99 are close to or better than the
+reference. Home resting CPU P90/P95/P99 are within 1.8–2.1 ms, an accepted small
+range for this visual revision. The Home median and RenderThread workload retain
+a material AVD gap. AVD results remain a screening signal; the Xiaomi acceptance
+pass owns the release decision.
 
-RenderThread decomposition explains the structural tradeoff:
+RenderThread decomposition from the representative Home iteration:
 
-| Build | Drawing | `eglSwapBuffers` | `flush commands` | `flush layers` | `drawLayer` calls/frame |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| v1.11.8 | 16.380 ms/frame | 13.760 ms/frame | 1.449 ms/frame | 0.541 ms/frame | 8 |
-| Current stable source | 16.234 ms/frame | 9.412 ms/frame | 3.738 ms/frame | 1.768 ms/frame | 29 |
+| Build | Drawing | `eglSwapBuffers` | `dequeueBuffer` | `FillRectOp` / frame | `OpsTask prepare` / frame | `drawLayer` / frame |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| v1.11.8 | 4.736 ms | 1.424 ms | 0.005 ms | 122.0 | 23.0 | 8.0 |
+| Current retained Home batch | 16.427 ms | 12.294 ms | 9.239 ms | 208.0 | 49.0 | 17.0 |
 
-The newer material system performs more layer and flush work while spending
-less time waiting in buffer swap; total Drawing is slightly lower. Layer count
-alone therefore remains an insufficient retention criterion.
+The retained Home batch reduced `FillRectOp` from 404.1 to 208.0, `OpsTask
+prepare` from 108.6 to 49.0, and `drawLayer` from 29.1 to 17.0 per frame. The
+remaining gap is concentrated in GPU completion and BufferQueue wait time:
+`waitForBufferRelease` is 9.231 ms per frame. The modern Liquid Glass renderer
+therefore remains visually complete and structurally leaner, while its AVD GPU
+path has not reached the `v1.11.8` resting cost.
 
-With the permanent 6-core / 6-GB / host-GPU AVD profile, the current batched
-build measured Home CPU P50/P90/P95/P99 of
-`19.9/33.5/35.7/38.4 ms` and overrun P50/P90/P95/P99 of
-`4.5/20.9/23.8/27.1 ms`. This establishes the new configuration baseline rather
-than a cross-configuration performance claim.
+The retained implementation keeps four Home overview cards in one Backdrop
+consumer and all overview pills in a second consumer. Its shaders scan the
+actual active card and pill counts, preserving blur, vibrancy, lens/refraction,
+highlight, inner/outer shadow, card deformation, touch-centered radial
+refraction, labels, borders, and click behavior.
 
 ## Rejected experiment
 
@@ -286,7 +293,7 @@ Gating the four retained-page `topBarBackdrop` producers by
 also reverted; top-bar sampling remains continuously available for the active
 composition contract.
 
-Four additional single-variable experiments were measured and reverted:
+Six additional single-variable experiments were measured and reverted:
 
 - A local HDR transparent-period `saveLayer` did not reduce the retained
   RenderThread layer work.
@@ -295,9 +302,20 @@ Four additional single-variable experiments were measured and reverted:
 - Removing the Home producer's two fallback fills did not improve tail latency.
 - Merging the Hero transform layer with the HDR offscreen layer changed layer
   ownership without a measurable RenderThread gain.
+- Spatially indexing pills by their parent cards left Drawing effectively flat
+  at 16.409 ms and raised CPU P90/P99 to 32.14/36.04 ms.
+- Combining the Home card and pill Backdrop consumers reduced `drawLayer` from
+  17 to 15 and `FillRectOp` from 208.0 to 192.0 per frame, while Drawing stayed
+  at 16.420 ms and `dequeueBuffer` increased to 11.170 ms.
 
 Each revert restores the accepted visual result and keeps the optimized source
 at an independently measurable checkpoint.
+
+Further Home experiments now require a renderer-level reduction in GPU render
+target scheduling or effect-pass fusion with the complete Liquid Glass output
+held constant. Small structural count reductions no longer justify additional
+source complexity. The audit therefore stops this AVD iteration at the retained
+two-consumer Home batch and proceeds to physical-device acceptance.
 
 ## Backdrop tooling boundary
 
@@ -322,10 +340,10 @@ acceptance measurement.
 ## Visual validation
 
 The optimized `benchmarkRelease` was validated on the visible
-`KeiOS_API37_Validation` AVD and installed on Xiaomi `25098PN5AC` at source
-commit `ca4cb236d`. The physical package is R8-minified, profileable,
-`debuggable=false`, and signed with the same release certificate as the
-previously installed build.
+`KeiOS_API37_Validation` AVD. The earlier navigation checkpoint at source commit
+`ca4cb236d` was also installed on Xiaomi `25098PN5AC`; that physical package is
+R8-minified, profileable, `debuggable=false`, and signed with the release
+certificate.
 
 Validated in dark mode:
 
@@ -335,6 +353,15 @@ Validated in dark mode:
 - MCP edit-service Sheet.
 - Liquid Toast first visible frame, glass material, and completed exit.
 - Bottom dock, page overview anchors, card shape, shadow, alpha, and stack order.
+
+The retained two-consumer Home batch received an additional API 37 acceptance
+pass with HWUI bars enabled. All four overview cards and their pills preserved
+blur, vibrancy, lens/refraction, highlight, border, inner/outer shadow, labels,
+and dynamic-background sampling. The WebDAV card preserved synchronized card,
+pill, and text deformation during a held press, then opened WebDAV Sync on tap.
+The Home → GitHub → MCP → Home route completed with the same process alive. The
+process-local log stayed clear of RuntimeShader, SkSL, AGSL, concurrent
+modification, and fatal exception entries.
 
 The physical-device smoke check used the user's enabled Apple launcher alias,
 confirmed `os.kei/.LauncherAppleDesigns` as the resumed activity, and showed the
@@ -346,7 +373,9 @@ interactive acceptance.
 Saved local evidence lives under
 `artifacts/performance-audit-2026-07-30/`,
 `artifacts/performance-audit-2026-08-01-home-segmented/`, and
-`artifacts/performance-physical-2026-08-01/`.
+`artifacts/performance-physical-2026-08-01/`. The final retained Home evidence is
+under
+`artifacts/performance-2026-08-01-v1.11.8-baseline/final-acceptance/`.
 
 ## Remaining acceptance work
 
@@ -354,8 +383,8 @@ Saved local evidence lives under
    still contains the pre-existing `GitHubDetailInfoRowReuseTest` contract
    failure, and `lintDebug` still reports the project backlog; neither was
    expanded by this performance patch.
-2. The signed `benchmarkRelease` is installed on Xiaomi `25098PN5AC` for user
+2. Install the retained Home batch on Xiaomi `25098PN5AC` for the next user
    review. Repeat the five-loop navigation scenario and capture frame timing,
    Perfetto, GPU memory, HWUI bars, and a visual recording.
 3. Treat the physical-device run as the release decision. The fixed AVD remains
-   the fast, reproducible diagnostic loop for the next single-variable change.
+   the fast, reproducible diagnostic loop for the next high-leverage change.
