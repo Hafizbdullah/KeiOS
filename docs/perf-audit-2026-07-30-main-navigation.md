@@ -399,6 +399,130 @@ Raw retained evidence:
 - `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-full-distance-settled/`
 - `artifacts/performance-2026-08-01-v1.11.8-baseline/experiments/retained-full-distance-ease-in-out/`
 
+### Production pager and state-pipeline audit
+
+The production bottom-page path resolves through
+`rememberMainLoadedPagerState` and `MainLoadedPager`. `MainMiuixPager` and
+`MainFoundationPager` remain source-level alternatives. The measured Home →
+GitHub → MCP → Home journey exclusively uses the loaded pager. Miuix Navigation
+3 owns the outer route stack; the retained five-page surface uses the custom
+loaded pager.
+
+`MainLoadedPager` keeps all page compositions and state alive. The settled draw
+window includes only the settled page, and the moving window includes pages
+within `pagePosition ± 1.05`. Fractional position reaches layout through the
+lambda form of `Modifier.offset`, while `drawWithContent` clips drawing to the
+visible page intersection. Bottom-page switches therefore have one animation
+and gesture owner.
+
+The benchmark-release Compose Compiler report contains 2,218 skippable and
+2,851 restartable composables. `HomePage`, `HomeOverviewGlassBatchHost`,
+`MainLoadedPager`, `MainPagerPageHost`, and
+`MainPageContentBackdropScene` are all restartable and skippable. Their pager
+and runtime inputs are compiler-stable.
+
+Home observes repository state through lifecycle-aware `StateFlow` collection.
+Its runtime clock starts only while the page and data are active and while a
+time-sensitive value is visible; the interval is 30 seconds. MCP also uses
+lifecycle-aware collection and disconnects its runtime-clock Flow while the
+page is inactive. In the representative Home trace, the UI thread ran for
+70.70 ms across the three-second marker, approximately 0.39 ms per frame. In
+the representative GitHub → MCP marker, the UI thread ran for 53.25 ms while
+RenderThread ran for 377.03 ms. The main traversal included 342.15 ms in
+`postAndWait`, showing that the UI thread primarily waited for RenderThread.
+
+These results place the current ViewModel, Flow, ticker, Compose stability, and
+miuix-nav ownership paths below the render-topology optimization threshold.
+
+### Solid content material Backdrop refinement
+
+GitHub and MCP previously created an empty page-sized `LayerBackdrop` producer
+for content cards. Backdrop 2.0.0 records the producer surface fill and child
+content into a full-screen `GraphicsLayer`; this producer's child content was
+empty, so every content consumer sampled an equivalent solid surface through an
+additional page-sized layer.
+
+Their card material now uses `rememberCanvasBackdrop { drawRect(surfaceColor) }`.
+The top bar keeps its real scrolling-content `LayerBackdrop`, and an open Sheet
+keeps an independent page-sized `LayerBackdrop`. Closed Sheets and solid content
+materials therefore leave the top bar as the only persistent layer producer.
+OS and BA retain their existing layer-backed content contracts, and Home keeps
+its dedicated two-batch Backdrop topology.
+
+The same-device five-iteration navigation comparison is:
+
+| Metric | Empty content producer | Canvas content material | Change |
+| --- | ---: | ---: | ---: |
+| Frame count median | 73 | 76 | +3 |
+| CPU P50 | 21.8 ms | 23.1 ms | +1.3 ms |
+| CPU P90 | 58.3 ms | 55.1 ms | -3.2 ms |
+| CPU P95 | 77.5 ms | 65.2 ms | -12.3 ms |
+| CPU P99 | 109.4 ms | 102.5 ms | -6.9 ms |
+| Overrun P50 | 6.7 ms | 9.3 ms | +2.6 ms |
+| Overrun P90 | 75.5 ms | 65.8 ms | -9.7 ms |
+| Overrun P95 | 95.4 ms | 81.6 ms | -13.8 ms |
+| Overrun P99 | 121.0 ms | 99.7 ms | -21.3 ms |
+
+The higher median remains inside the AVD variation band. The tail improvement
+is supported by the GitHub → MCP RenderThread decomposition:
+
+| Operation | Empty producer | Canvas material | Change |
+| --- | ---: | ---: | ---: |
+| `Drawing` | 445.011 ms | 382.466 ms | -14.1% |
+| `flush layers` | 192.708 ms | 179.924 ms | -6.6% |
+| `flush commands` | 169.901 ms | 128.600 ms | -24.3% |
+| Ganesh execute calls | 3,353 | 2,597 | -22.6% |
+| `FillRectOp` | 9,878 | 7,308 | -26.0% |
+| `TextureOp` | 2,510 | 2,272 | -9.5% |
+| `dequeueBuffer` | 24.234 ms | 16.833 ms | -30.5% |
+| `waitForBufferRelease` | 24.161 ms | 16.482 ms | -31.8% |
+| Texture uploads | 361 | 337 | -6.6% |
+| Uploaded pixels | 46.36 M | 43.64 M | -5.9% |
+
+The representative marker contains 13 frame-timeline-backed GitHub → MCP
+frames, including 11 jank-classified frames. Their average/maximum CPU duration
+is 58.85/103.89 ms. Home → GitHub contains zero frames above 50 ms, and MCP →
+Home also contains zero frames above 50 ms. The remaining hotspot is MCP's first
+complete Liquid Glass layer build during its incoming transition.
+
+Static screenshots and a transition recording confirm the GitHub and MCP card
+materials, top-bar sampling, independent Sheet background sampling, scrim,
+surface hierarchy, dynamic background, refraction, highlights, and shadows.
+The Home → GitHub motion contains continuous page surfaces and continuous color.
+
+### Final Home static check and rejected draw-state cache
+
+A single-variable Home experiment cached card geometry, registration reads, and
+shader uniform arrays once per draw frame. It reduced representative UI
+traversal and median actual-frame cost, while Macrobenchmark P90–P99 regressed
+after a refreshed Baseline Profile. The code experiment was fully reverted.
+
+Two final five-iteration static runs after the revert measured:
+
+| Run | CPU P50 / P90 / P95 / P99 | Overrun P50 / P90 / P95 / P99 |
+| --- | ---: | ---: |
+| Original Home renderer | 19.8 / 20.5 / 20.9 / 21.8 ms | 4.1 / 4.9 / 5.4 / 5.9 ms |
+| Final run 1 | 20.7 / 21.6 / 22.2 / 24.1 ms | 5.3 / 6.4 / 7.6 / 9.1 ms |
+| Final run 2 | 19.3 / 21.2 / 22.1 / 24.9 ms | 4.1 / 6.7 / 7.8 / 11.7 ms |
+
+The representative three-second traces place RenderThread running time at
+1249.57 ms before and 1276.16 ms after, a 2.1% AVD-range difference. Total
+`Drawing` time is 2954.47 versus 2952.76 ms. `dequeueBuffer` and
+`waitForBufferRelease` each decrease by approximately 32.9 ms in the final
+trace. Home static rendering therefore remains in the same performance band,
+and the remaining P99 spread supports holding the current visual pipeline.
+
+The release Baseline Profile was regenerated after the cache revert. The final
+files contain 42,024 baseline rules and 23,868 startup rules. All reverted
+`HomeOverviewCardDrawSnapshot`, `HomeOverviewCardRegistrationDrawState`, and
+`drawSnapshot` rules are gone; the Canvas Backdrop and real retained-pager
+journeys remain captured.
+
+Final AVD traces and benchmark messages are stored under
+`build/perfetto-analysis/final-canvas-content/`. The Android 17 AVD result is a
+controlled relative comparison. Physical-device review remains the acceptance
+gate for touch feel, thermals, and final HWUI bars.
+
 ## Backdrop tooling boundary
 
 The Backdrop MCP server was requested during this audit and was not exposed in
