@@ -21,6 +21,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.log.AppLogger
 import os.kei.core.prefs.UiPrefs
+import os.kei.core.privilege.PrivilegeCapability
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.shizuku.ShizukuConnectivityBridge
 import kotlin.time.Duration.Companion.milliseconds
@@ -399,7 +400,7 @@ internal object McpXiaomiMagicDispatcher {
             canPostNotifications = { McpNotificationHelper.canPostNotifications(context) },
             resolveTargetUid = { targetUid },
             canUseCommand = ::canUseCommand,
-            shouldExecute = { targetUid?.let { uid -> shouldExecuteLocked(uid) } ?: false },
+            shouldExecute = { targetUid != null && shouldExecuteLocked() },
             healNetworking = { targetUid?.let { healXmsfNetworkingLocked(it) } },
             blockNetworking = {
                 targetUid?.let { uid ->
@@ -415,12 +416,11 @@ internal object McpXiaomiMagicDispatcher {
     }
 
     fun restoreNetworkIfNeeded(context: Context) {
-        val xmsfUid = resolveXmsfUid(context)
+        if (!privilegedShell.supports(PrivilegeCapability.ShellCommand)) return
+        val xmsfUid = resolveXmsfUid(context) ?: return
         scope.launch {
             networkMutex.withLock {
-                if (xmsfUid != null && canUseCommand()) {
-                    healXmsfNetworkingLocked(xmsfUid)
-                }
+                healXmsfNetworkingLocked(xmsfUid)
             }
         }
     }
@@ -431,14 +431,10 @@ internal object McpXiaomiMagicDispatcher {
         }.getOrNull()?.takeIf { it > 0 }
     }
 
-    private suspend fun shouldExecuteLocked(xmsfUid: Int): Boolean {
-        if (!canUseCommand()) {
-            AppLogger.w(TAG, "shouldExecute=false: Shizuku command unavailable")
-            return false
-        }
+    private suspend fun shouldExecuteLocked(): Boolean {
         val mode = resolveCommandSet()
         val canUseMode = mode != CommandSet.NONE
-        AppLogger.i(TAG, "Shizuku mode=$mode, allowMagic=$canUseMode")
+        AppLogger.i(TAG, "privileged command set=$mode, allowMagic=$canUseMode")
         return canUseMode
     }
 

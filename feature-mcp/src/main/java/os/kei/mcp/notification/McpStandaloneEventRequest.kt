@@ -75,9 +75,7 @@ internal suspend fun dispatchStandaloneEventAwaitingDelivery(
             )
         } else {
             val notificationManager = NotificationManagerCompat.from(context)
-            if (McpXiaomiMagicDispatcher.canUseCommand()) {
-                McpNotificationHelper.restoreXiaomiNetworkIfNeeded(context)
-            }
+            McpNotificationHelper.restoreXiaomiNetworkIfNeeded(context)
             currentCoroutineContext().ensureActive()
             withContext(NonCancellable) {
                 val delivered =

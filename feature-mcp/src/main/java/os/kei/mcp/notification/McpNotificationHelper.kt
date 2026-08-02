@@ -915,9 +915,7 @@ object McpNotificationHelper {
             )
         } else {
             val notificationManager = NotificationManagerCompat.from(context)
-            if (McpXiaomiMagicDispatcher.canUseCommand()) {
-                restoreXiaomiNetworkIfNeeded(context)
-            }
+            restoreXiaomiNetworkIfNeeded(context)
             notifySafely(context, notificationManager, notificationId, notification)
         }
         if (dispatched) {
@@ -948,9 +946,7 @@ object McpNotificationHelper {
         notificationId: Int
     ) {
         invalidateNotificationRuntimeState(notificationId)
-        if (McpXiaomiMagicDispatcher.canUseCommand()) {
-            restoreXiaomiNetworkIfNeeded(context)
-        }
+        restoreXiaomiNetworkIfNeeded(context)
         NotificationManagerCompat.from(context).cancel(notificationId)
     }
 
