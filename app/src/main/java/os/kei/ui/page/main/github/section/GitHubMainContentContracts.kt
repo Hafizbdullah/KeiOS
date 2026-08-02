@@ -4,6 +4,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -36,7 +37,7 @@ internal data class GitHubMainContentLayout(
 
 internal data class GitHubMainContentSurfaces(
     val topBarBackdrop: LayerBackdrop,
-    val contentBackdrop: LayerBackdrop,
+    val contentBackdrop: Backdrop,
     val sheetBackdrop: LayerBackdrop,
     val backdropProducerActive: Boolean,
     val topBarColor: Color,

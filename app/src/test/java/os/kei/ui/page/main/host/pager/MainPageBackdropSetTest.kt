@@ -29,10 +29,10 @@ class MainPageBackdropSetTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun contentSceneKeepsFullSizeProducersBeforeConsumerSlot() {
+    fun contentSceneKeepsLayerProducersBeforeConsumerSlot() {
         val source = sourceFile(MAIN_PAGE_BACKDROP_SET_SOURCE)
-        val contentProducerIndex = source.indexOf(".layerBackdrop(contentBackdrop)")
-        val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetBackdrop)")
+        val contentProducerIndex = source.indexOf(".layerBackdrop(contentLayerBackdrop)")
+        val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetLayerBackdrop)")
         val consumerIndex = source.indexOf("content()", startIndex = sheetProducerIndex + 1)
 
         assertTrue(contentProducerIndex >= 0, "Expected a content Backdrop producer")
@@ -40,13 +40,36 @@ class MainPageBackdropSetTest {
         assertTrue(consumerIndex > sheetProducerIndex, "Content consumers must follow both producer siblings")
         assertTrue(".matchParentSize()" in source, "The producer must cover the complete page scene")
         assertTrue(
-            "producerActive && sheetBackdrop != null && sheetBackdrop !== contentBackdrop" in source,
-            "Inactive pages and collapsed sheet identities must avoid duplicate producers",
+            "contentBackdrop as? LayerBackdrop" in source && "sheetBackdrop as? LayerBackdrop" in source,
+            "Canvas materials must bypass page-sized LayerBackdrop producers",
         )
         assertTrue(
             "Box(modifier = modifier)" in source,
             "The scene modifier must remain on the neutral parent rather than the Backdrop producer",
         )
+    }
+
+    @Test
+    fun solidContentMaterialSharesOnlyTheTopBarLayerIdentity() {
+        var backdrops: MainPageBackdropSet? = null
+
+        composeRule.setContent {
+            TestTheme {
+                backdrops =
+                    rememberMainPageBackdropSet(
+                        keyPrefix = "solid",
+                        distinctLayers = true,
+                        useSolidSurfaceBackdrops = true,
+                    )
+            }
+        }
+
+        composeRule.runOnIdle {
+            val result = requireNotNull(backdrops)
+            assertSame(result.topBar, result.content)
+            assertNotSame(result.topBar, result.sheet)
+            assertNotSame(result.topBar, result.contentMaterial)
+        }
     }
 
     @Test

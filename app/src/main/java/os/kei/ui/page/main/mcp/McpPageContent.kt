@@ -65,9 +65,9 @@ internal fun McpPageContent(
 ) {
     val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
     MainPageContentBackdropScene(
-        contentBackdrop = backdrops.content,
+        contentBackdrop = backdrops.contentMaterial,
         sheetBackdrop = backdrops.sheet,
-        producerActive = runtime.isPageActive,
+        producerActive = backdrops.sheet !== backdrops.content,
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -83,7 +83,7 @@ internal fun McpPageContent(
                     ),
         ) {
             McpOverviewCardSection(
-                backdrop = backdrops.content,
+                backdrop = backdrops.contentMaterial,
                 titleColor = titleColor,
                 overviewCardColor = overviewState.overviewCardColor,
                 overviewBorderColor = overviewState.overviewBorderColor,
@@ -129,7 +129,7 @@ internal fun McpPageContent(
         ) {
             item(key = "mcp-onboarding-guide", contentType = "mcp_onboarding_guide_section") {
                 McpOnboardingGuideSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     expanded = pageUiState.onboardingExpanded,
                     onExpandedChange = actions.onOnboardingExpandedChange,
                     onCopyCurrentConfig = actions.onCopyCurrentConfig,
@@ -140,7 +140,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-service-control", contentType = "mcp_service_control_section") {
                 McpServiceControlSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     expanded = pageUiState.controlExpanded,
                     contentVisible = true,
                     onExpandedChange = actions.onControlExpandedChange,
@@ -152,7 +152,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-entrypoints", contentType = "mcp_tool_entrypoints_section") {
                 McpToolEntrypointsSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     buckets = toolBuckets,
                     searchQuery = pageUiState.toolsSearchQuery,
                     onSearchQueryChange = actions.onToolsSearchQueryChange,
@@ -162,7 +162,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-runtime", contentType = "mcp_tool_runtime_section") {
                 McpToolRuntimeSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.runtimeTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.runtimeToolsExpanded,
@@ -171,7 +171,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-system", contentType = "mcp_tool_system_section") {
                 McpToolSystemSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.systemTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.systemToolsExpanded,
@@ -180,7 +180,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-github", contentType = "mcp_tool_github_section") {
                 McpToolGithubSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.githubTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.githubToolsExpanded,
@@ -189,7 +189,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-ba", contentType = "mcp_tool_ba_section") {
                 McpToolBaSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.baTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.baToolsExpanded,
@@ -198,7 +198,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-codex", contentType = "mcp_tool_codex_section") {
                 McpToolCodexSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.codexTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.codexToolsExpanded,
@@ -207,7 +207,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-tool-workflows", contentType = "mcp_tool_workflows_section") {
                 McpToolWorkflowSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     tools = toolBuckets.workflowTools,
                     searchQuery = pageUiState.toolsSearchQuery,
                     expanded = pageUiState.workflowToolsExpanded,
@@ -217,7 +217,7 @@ internal fun McpPageContent(
             if (toolBuckets.advancedTools.isNotEmpty()) {
                 item(key = "mcp-tool-advanced", contentType = "mcp_tool_advanced_section") {
                     McpToolAdvancedSection(
-                        backdrop = backdrops.content,
+                        backdrop = backdrops.contentMaterial,
                         tools = toolBuckets.advancedTools,
                         searchQuery = pageUiState.toolsSearchQuery,
                         expanded = pageUiState.advancedToolsExpanded,
@@ -227,7 +227,7 @@ internal fun McpPageContent(
             }
             item(key = "mcp-logs", contentType = "mcp_logs_section") {
                 McpLogsSection(
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     expanded = pageUiState.logsExpanded,
                     onExpandedChange = actions.onLogsExpandedChange,
                     uiState = uiState,

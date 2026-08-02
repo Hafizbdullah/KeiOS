@@ -95,6 +95,7 @@ fun GitHubPage(
         rememberMainPageBackdropSet(
             keyPrefix = "github",
             distinctLayers = fullBackdropEffectsEnabled && sheetBackdropVisible,
+            useSolidSurfaceBackdrops = true,
         )
     val topBarColor =
         rememberAppTopBarColor(
@@ -331,9 +332,9 @@ fun GitHubPage(
             surfaces =
                 GitHubMainContentSurfaces(
                     topBarBackdrop = backdrops.topBar,
-                    contentBackdrop = backdrops.content,
+                    contentBackdrop = backdrops.contentMaterial,
                     sheetBackdrop = backdrops.sheet,
-                    backdropProducerActive = runtime.isPageActive,
+                    backdropProducerActive = backdrops.sheet !== backdrops.content,
                     topBarColor = topBarColor,
                     liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     isDark = isDark,

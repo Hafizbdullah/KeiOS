@@ -21,7 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.mcp.server.McpLogEntry
 import os.kei.mcp.server.McpServerUiState
@@ -48,7 +48,7 @@ private const val MCP_LOG_INLINE_LIMIT = 12
 
 @Composable
 internal fun McpOnboardingGuideSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onCopyCurrentConfig: () -> Unit,
@@ -145,7 +145,7 @@ private fun McpOnboardingActionRow(
 
 @Composable
 internal fun McpServiceControlSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     expanded: Boolean,
     contentVisible: Boolean = true,
     onExpandedChange: (Boolean) -> Unit,
@@ -256,7 +256,7 @@ private fun McpServiceControlHint(
 
 @Composable
 internal fun McpLogsSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     uiState: McpServerUiState,

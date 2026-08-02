@@ -3,7 +3,7 @@ package os.kei.ui.page.main.github.section
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.feature.github.data.remote.GitHubReleaseAssetBundle
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubActionsRecommendedRunSnapshot
@@ -23,7 +23,7 @@ internal data class GitHubTrackedItemsContent(
 )
 
 internal data class GitHubTrackedItemsSurfaces(
-    val contentBackdrop: LayerBackdrop,
+    val contentBackdrop: Backdrop,
     val isDark: Boolean,
 )
 

@@ -11,8 +11,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -21,39 +23,42 @@ data class MainPageBackdropSet(
     val topBar: LayerBackdrop,
     val content: LayerBackdrop,
     val sheet: LayerBackdrop,
+    val contentMaterial: Backdrop,
 )
 
 /**
- * Hosts a page scene whose first sibling produces [contentBackdrop] and whose later siblings may
- * safely consume it. Keeping the producer out of [content] avoids the recursive glass-on-glass
- * path caused by wrapping consumers in `Modifier.layerBackdrop(contentBackdrop)`.
- *
- * [rememberMainPageBackdropSet] paints the current page surface before the producer's content, so
- * the full scene remains available even where the page content itself has transparent pixels.
+ * Hosts LayerBackdrop producers before the consumer slot. Canvas-backed materials draw directly
+ * inside each consumer and pass through this host without allocating a page-sized producer.
  */
 @Composable
 internal fun MainPageContentBackdropScene(
-    contentBackdrop: LayerBackdrop,
-    sheetBackdrop: LayerBackdrop? = null,
+    contentBackdrop: Backdrop,
+    sheetBackdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
     producerActive: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(modifier = modifier) {
-        if (producerActive) {
+        val contentLayerBackdrop = contentBackdrop as? LayerBackdrop
+        if (producerActive && contentLayerBackdrop != null) {
             Box(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .layerBackdrop(contentBackdrop),
+                        .layerBackdrop(contentLayerBackdrop),
             )
         }
-        if (producerActive && sheetBackdrop != null && sheetBackdrop !== contentBackdrop) {
+        val sheetLayerBackdrop = sheetBackdrop as? LayerBackdrop
+        if (
+            producerActive &&
+                sheetLayerBackdrop != null &&
+                sheetLayerBackdrop !== contentLayerBackdrop
+        ) {
             Box(
                 modifier =
                     Modifier
                         .matchParentSize()
-                        .layerBackdrop(sheetBackdrop),
+                        .layerBackdrop(sheetLayerBackdrop),
             )
         }
         content()
@@ -65,6 +70,7 @@ fun rememberMainPageBackdropSet(
     keyPrefix: String,
     refreshOnCompositionEnter: Boolean = false,
     distinctLayers: Boolean = true,
+    useSolidSurfaceBackdrops: Boolean = false,
 ): MainPageBackdropSet {
     val surfaceColor = MiuixTheme.colorScheme.surface
     val instanceKeySuffix = if (refreshOnCompositionEnter) {
@@ -86,19 +92,29 @@ fun rememberMainPageBackdropSet(
         }
     }
 
-    // The top bar captures scrolling content whose descendants consume contentBackdrop.
-    // A dedicated identity keeps the capture producer outside that descendant consumer path.
+    // The top bar captures scrolling content from its dedicated list producer. Page cards sample
+    // either their legacy surface-color layer or the equivalent direct canvas material.
     val topBarBackdrop = rememberPageBackdrop("topbar")
-    val contentBackdrop = rememberPageBackdrop("content")
+    val contentBackdrop =
+        if (useSolidSurfaceBackdrops) {
+            topBarBackdrop
+        } else {
+            rememberPageBackdrop("content")
+        }
     val sheetBackdrop =
         if (distinctLayers) {
             rememberPageBackdrop("sheet")
         } else {
             contentBackdrop
         }
+    val contentMaterial =
+        key("$keyPrefix-content-material$instanceKeySuffix") {
+            rememberCanvasBackdrop { drawRect(surfaceColor) }
+        }
     return MainPageBackdropSet(
         topBar = topBarBackdrop,
         content = contentBackdrop,
         sheet = sheetBackdrop,
+        contentMaterial = contentMaterial,
     )
 }

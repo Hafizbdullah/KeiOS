@@ -16,7 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.mcp.server.McpToolMeta
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
@@ -38,7 +38,7 @@ private const val MCP_TOOL_INLINE_LIMIT = 10
 
 @Composable
 internal fun McpToolEntrypointsSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     buckets: McpToolBuckets,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -76,7 +76,7 @@ internal fun McpToolEntrypointsSection(
 
 @Composable
 internal fun McpToolRuntimeSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -100,7 +100,7 @@ internal fun McpToolRuntimeSection(
 
 @Composable
 internal fun McpToolSystemSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -124,7 +124,7 @@ internal fun McpToolSystemSection(
 
 @Composable
 internal fun McpToolGithubSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -148,7 +148,7 @@ internal fun McpToolGithubSection(
 
 @Composable
 internal fun McpToolBaSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -172,7 +172,7 @@ internal fun McpToolBaSection(
 
 @Composable
 internal fun McpToolCodexSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -196,7 +196,7 @@ internal fun McpToolCodexSection(
 
 @Composable
 internal fun McpToolWorkflowSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -220,7 +220,7 @@ internal fun McpToolWorkflowSection(
 
 @Composable
 internal fun McpToolAdvancedSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     tools: List<McpToolMeta>,
     searchQuery: String,
     expanded: Boolean,
@@ -255,7 +255,7 @@ private enum class McpToolCardIcon {
 
 @Composable
 private fun McpToolCard(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     title: String,
     subtitle: String,
     expanded: Boolean,
