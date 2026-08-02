@@ -37,13 +37,12 @@ class BaselineProfileGenerator {
             launchHomeFromColdStart()
 
             flingVisibleScrollable(times = 2)
-
-            if (tryClickTestTag(MAIN_BOTTOM_TAB_GITHUB)) {
-                waitForAnyTestTag(listOf(GITHUB_PAGE_ROOT), timeoutMs = 15_000)
-                flingVisibleScrollable(times = 2)
-            } else {
-                flingVisibleScrollable(times = 2)
-            }
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+            flingVisibleScrollable(times = 2)
         }
     }
 
@@ -55,12 +54,12 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            if (tryClickTestTag(MAIN_BOTTOM_TAB_OS)) {
-                waitForAnyTestTag(listOf(OS_PAGE_ROOT), timeoutMs = 15_000)
-                flingVisibleScrollable(times = 3)
-            } else {
-                flingVisibleScrollable(times = 1)
-            }
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_OS,
+                pageTag = OS_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_OS,
+            )
+            flingVisibleScrollable(times = 3)
         }
     }
 
@@ -72,7 +71,27 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            flingVisibleScrollable(times = 2)
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_MCP,
+                pageTag = MCP_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_MCP,
+            )
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_HOME,
+                pageTag = HOME_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_HOME,
+            )
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_MCP,
+                pageTag = MCP_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_MCP,
+            )
+            flingVisibleScrollable(times = 3)
         }
     }
 
@@ -84,12 +103,12 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            if (tryClickTestTag(MAIN_BOTTOM_TAB_BA)) {
-                waitForAnyTestTag(listOf(BA_PAGE_ROOT), timeoutMs = 15_000)
-                flingVisibleScrollable(times = 3)
-            } else {
-                flingVisibleScrollable(times = 1)
-            }
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+            flingVisibleScrollable(times = 3)
         }
     }
 }
@@ -102,11 +121,19 @@ private fun MacrobenchmarkScope.waitForHome() {
     device.waitForIdle()
 }
 
+private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
 private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
+private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
 private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
 private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
+private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
+private const val MAIN_PAGER_SETTLED_OS = "main_pager_settled_os"
+private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
+private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
+private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val OS_PAGE_ROOT = "os_page_root"
+private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
 
@@ -160,31 +187,21 @@ private fun MacrobenchmarkScope.waitForTestTag(
     device.waitForIdle()
 }
 
-private fun MacrobenchmarkScope.waitForAnyTestTag(
-    tags: List<String>,
-    timeoutMs: Long = 5_000,
-): Boolean {
-    val deadline = System.currentTimeMillis() + timeoutMs
-    while (System.currentTimeMillis() < deadline) {
-        if (tags.any { tag -> device.hasObject(testTagSelector(tag)) }) {
-            device.waitForIdle()
-            return true
-        }
-        Thread.sleep(100)
+private fun MacrobenchmarkScope.clickAndWaitForPage(
+    tabTag: String,
+    pageTag: String,
+    settledTag: String,
+    timeoutMs: Long = 15_000,
+) {
+    check(device.wait(Until.hasObject(testTagSelector(tabTag)), timeoutMs)) {
+        "Timed out waiting for tab testTag=$tabTag in ${targetAppId()}"
     }
-    device.waitForIdle()
-    return false
-}
-
-private fun MacrobenchmarkScope.tryClickTestTag(
-    tag: String,
-    timeoutMs: Long = 5_000,
-): Boolean {
-    if (!device.wait(Until.hasObject(testTagSelector(tag)), timeoutMs)) return false
-    val node = device.findObject(testTagSelector(tag)) ?: return false
+    val node = device.findObject(testTagSelector(tabTag))
+        ?: error("Unable to find tab testTag=$tabTag in ${targetAppId()}")
     node.click()
+    waitForTestTag(pageTag, timeoutMs)
+    waitForTestTag(settledTag, timeoutMs)
     device.waitForIdle()
-    return true
 }
 
 private fun MacrobenchmarkScope.flingVisibleScrollable(times: Int) {
