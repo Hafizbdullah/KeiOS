@@ -8,6 +8,7 @@ import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.concurrency.AppDispatchers
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
@@ -359,6 +360,7 @@ internal class GitHubPageRepository(
 
     suspend fun queryInstalledLaunchableApps(
         context: Context,
+        privilegedShell: PrivilegedShell,
         forceRefresh: Boolean,
         includeSystemApps: Boolean = true,
         pinnedSystemPackageNames: Set<String> = emptySet(),
@@ -366,6 +368,7 @@ internal class GitHubPageRepository(
     ): List<InstalledAppItem> =
         installedAppRepository.queryInstalledLaunchableApps(
             context = context,
+            privilegedShell = privilegedShell,
             forceRefresh = forceRefresh,
             includeSystemApps = includeSystemApps,
             pinnedSystemPackageNames = pinnedSystemPackageNames,

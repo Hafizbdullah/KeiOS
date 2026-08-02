@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import os.kei.core.ext.showToast
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.github.domain.GitHubActionsService
 import os.kei.feature.github.domain.GitHubTrackChangeSemanticUpdate
 import os.kei.feature.github.model.GitHubTrackChangeHistorySource
@@ -20,6 +21,7 @@ internal class GitHubPageActionEnvironment(
     val state: GitHubPageState,
     val viewModel: GitHubPageViewModel,
     val repository: GitHubPageRepository,
+    val privilegedShell: PrivilegedShell,
     val actionsRepository: GitHubActionsService = GitHubActionsService(),
     val systemDmOption: DownloaderOption,
     val openLinkFailureMessage: String,

@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.system.AppPackageChangedEvent
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.data.remote.GitHubReleaseNotesTarget
 import os.kei.feature.github.domain.GitHubRefreshRuntimeState
@@ -51,6 +52,7 @@ internal class GitHubPageActions(
     state: GitHubPageState,
     viewModel: GitHubPageViewModel,
     repository: GitHubPageRepository,
+    privilegedShell: PrivilegedShell,
     systemDmOption: DownloaderOption,
     openLinkFailureMessage: String,
 ) {
@@ -62,6 +64,7 @@ internal class GitHubPageActions(
             state = state,
             viewModel = viewModel,
             repository = repository,
+            privilegedShell = privilegedShell,
             systemDmOption = systemDmOption,
             openLinkFailureMessage = openLinkFailureMessage,
         )

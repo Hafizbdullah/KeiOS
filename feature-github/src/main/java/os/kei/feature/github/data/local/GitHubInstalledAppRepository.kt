@@ -6,6 +6,12 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import java.util.Locale
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import os.kei.core.privilege.PrivilegeCapability
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegedShell
+import os.kei.core.system.AppCommandResult
 import os.kei.core.system.HyperOsSettingsIntents
 import os.kei.core.system.getInstalledPackageInfosSafely
 import os.kei.feature.github.model.GitHubLocalVersionInfo
@@ -13,9 +19,15 @@ import os.kei.feature.github.model.InstalledAppItem
 
 object GitHubInstalledAppRepository {
     private const val INSTALLED_APPS_CACHE_TTL_MS = 5L * 60L * 1000L
+    private const val PRIVILEGED_PACKAGE_QUERY_TIMEOUT_MS = 5_000L
+    private const val PRIVILEGED_USER_PACKAGES_MARKER = "__keios_user_packages__"
+    private const val PRIVILEGED_SYSTEM_PACKAGES_MARKER = "__keios_system_packages__"
 
     @Volatile
     private var installedAppsCache: CachedInstalledApps? = null
+
+    @Volatile
+    private var privilegedPackageCache: CachedPrivilegedPackages? = null
 
     fun buildAppListPermissionIntent(context: Context): Intent? {
         return HyperOsSettingsIntents.buildAppListPermissionIntent(context)
@@ -107,6 +119,52 @@ object GitHubInstalledAppRepository {
         return apps
     }
 
+    suspend fun queryInstalledLaunchableAppsWithPrivilege(
+        context: Context,
+        privilegedShell: PrivilegedShell,
+        forceRefresh: Boolean = false,
+        ttlMs: Long = INSTALLED_APPS_CACHE_TTL_MS,
+        includeSystemApps: Boolean = true,
+        pinnedSystemPackageNames: Set<String> = emptySet(),
+        requiredPackageNames: Set<String> = emptySet(),
+    ): List<InstalledAppItem> {
+        val directApps =
+            queryInstalledLaunchableApps(
+                context = context,
+                forceRefresh = forceRefresh,
+                ttlMs = ttlMs,
+                includeSystemApps = includeSystemApps,
+                pinnedSystemPackageNames = pinnedSystemPackageNames,
+                requiredPackageNames = requiredPackageNames,
+            )
+        val activeMode = privilegedShell.activeMode
+        if (
+            !shouldQueryGitHubPrivilegedPackageInventory(
+                mode = activeMode,
+                supportsShellCommand = privilegedShell.supports(PrivilegeCapability.ShellCommand),
+            )
+        ) {
+            return directApps
+        }
+        val inventory =
+            queryPrivilegedPackageInventory(
+                privilegedShell = privilegedShell,
+                mode = activeMode,
+                forceRefresh = forceRefresh,
+                ttlMs = ttlMs,
+            ) ?: return directApps
+        currentCoroutineContext().ensureActive()
+        if (privilegedShell.activeMode != activeMode) return directApps
+        return mergePrivilegedPackageInventory(
+            context = context,
+            directApps = directApps,
+            inventory = inventory,
+            includeSystemApps = includeSystemApps,
+            pinnedSystemPackageNames = pinnedSystemPackageNames,
+            requiredPackageNames = requiredPackageNames,
+        )
+    }
+
     internal fun filterByScanScope(
         apps: List<InstalledAppItem>,
         includeSystemApps: Boolean,
@@ -122,6 +180,7 @@ object GitHubInstalledAppRepository {
 
     fun invalidateCache() {
         installedAppsCache = null
+        privilegedPackageCache = null
     }
 
     fun localVersionName(context: Context, packageName: String): String {
@@ -184,11 +243,111 @@ object GitHubInstalledAppRepository {
         }
     }
 
+    private data class CachedPrivilegedPackages(
+        val updatedAtMs: Long,
+        val mode: PrivilegeMode,
+        val inventory: GitHubPrivilegedPackageInventory,
+    )
+
     private data class InstalledAppSortEntry(
         val item: InstalledAppItem,
         val labelSortKey: String,
         val packageSortKey: String,
     )
+
+    private suspend fun queryPrivilegedPackageInventory(
+        privilegedShell: PrivilegedShell,
+        mode: PrivilegeMode,
+        forceRefresh: Boolean,
+        ttlMs: Long,
+    ): GitHubPrivilegedPackageInventory? {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh) {
+            privilegedPackageCache
+                ?.takeIf { cache ->
+                    cache.mode == mode &&
+                        (now - cache.updatedAtMs).coerceAtLeast(0L) < ttlMs.coerceAtLeast(0L)
+                }?.let { cache -> return cache.inventory }
+        }
+        val result =
+            privilegedShell.execCommandCancellableResult(
+                command = PRIVILEGED_PACKAGE_QUERY_COMMAND,
+                timeoutMs = PRIVILEGED_PACKAGE_QUERY_TIMEOUT_MS,
+            )
+        currentCoroutineContext().ensureActive()
+        if (privilegedShell.activeMode != mode) return null
+        val inventory = resolveGitHubPrivilegedPackageInventory(result) ?: return null
+        privilegedPackageCache =
+            CachedPrivilegedPackages(
+                updatedAtMs = now,
+                mode = mode,
+                inventory = inventory,
+            )
+        return inventory
+    }
+
+    private suspend fun mergePrivilegedPackageInventory(
+        context: Context,
+        directApps: List<InstalledAppItem>,
+        inventory: GitHubPrivilegedPackageInventory,
+        includeSystemApps: Boolean,
+        pinnedSystemPackageNames: Set<String>,
+        requiredPackageNames: Set<String>,
+    ): List<InstalledAppItem> {
+        val packageManager = context.packageManager
+        val overlayFlagMask = installedAppResourceOverlayFlagMask()
+        val installSourceLabelCache = mutableMapOf<String, String>()
+        val normalizedPinnedSystemPackages = pinnedSystemPackageNames.normalizedPackageNameSet()
+        val normalizedRequiredPackages = requiredPackageNames.normalizedPackageNameSet()
+        val merged = directApps.toMutableList()
+        val knownPackages =
+            directApps.mapTo(HashSet()) { app -> app.packageName.lowercase(Locale.ROOT) }
+        inventory.allPackages.forEachIndexed { index, packageName ->
+            if (index % 32 == 0) currentCoroutineContext().ensureActive()
+            val normalizedPackageName = packageName.lowercase(Locale.ROOT)
+            if (normalizedPackageName in knownPackages) return@forEachIndexed
+            val isSystemApp = inventory.isSystemPackage(normalizedPackageName)
+            if (
+                isSystemApp &&
+                !includeSystemApps &&
+                normalizedPackageName !in normalizedPinnedSystemPackages &&
+                normalizedPackageName !in normalizedRequiredPackages
+            ) {
+                return@forEachIndexed
+            }
+            val item =
+                packageManager.installedAppItemOrNull(
+                    packageName = packageName,
+                    overlayFlagMask = overlayFlagMask,
+                    installSourceLabelCache = installSourceLabelCache,
+                ) ?: InstalledAppItem(
+                    label = packageName,
+                    packageName = packageName,
+                    isSystemApp = isSystemApp,
+                )
+            merged += item
+            knownPackages += normalizedPackageName
+        }
+        val labelSortLocale = Locale.getDefault()
+        return merged
+            .asSequence()
+            .filter { app ->
+                includeSystemApps ||
+                    !app.isSystemApp ||
+                    app.packageName.lowercase(Locale.ROOT) in normalizedPinnedSystemPackages
+            }.map { item ->
+                InstalledAppSortEntry(
+                    item = item,
+                    labelSortKey = item.label.lowercase(labelSortLocale),
+                    packageSortKey = item.packageName.lowercase(Locale.ROOT),
+                )
+            }.distinctBy { entry -> entry.packageSortKey }
+            .sortedWith(
+                compareBy<InstalledAppSortEntry> { entry -> entry.labelSortKey }
+                    .thenBy { entry -> entry.packageSortKey },
+            ).map { entry -> entry.item }
+            .toList()
+    }
 
     private fun PackageManager.installedAppItemOrNull(
         packageName: String,
@@ -232,7 +391,93 @@ object GitHubInstalledAppRepository {
             installSourceLabel = installSource.label,
         )
     }
+
+    private val PRIVILEGED_PACKAGE_QUERY_COMMAND =
+        listOf(
+            "set -e",
+            "printf '$PRIVILEGED_USER_PACKAGES_MARKER\\n'",
+            "pm list packages -3",
+            "printf '$PRIVILEGED_SYSTEM_PACKAGES_MARKER\\n'",
+            "pm list packages -s",
+        ).joinToString(separator = "; ")
 }
+
+internal data class GitHubPrivilegedPackageInventory(
+    val userPackages: Set<String>,
+    val systemPackages: Set<String>,
+) {
+    private val normalizedSystemPackages =
+        systemPackages.mapTo(HashSet(systemPackages.size)) { packageName ->
+            packageName.lowercase(Locale.ROOT)
+        }
+
+    val allPackages: Set<String>
+        get() = LinkedHashSet<String>(userPackages.size + systemPackages.size).apply {
+            addAll(userPackages)
+            addAll(systemPackages)
+        }
+
+    val isEmpty: Boolean
+        get() = userPackages.isEmpty() && systemPackages.isEmpty()
+
+    fun isSystemPackage(packageName: String): Boolean {
+        val normalizedPackageName = packageName.trim().lowercase(Locale.ROOT)
+        return normalizedPackageName in normalizedSystemPackages
+    }
+}
+
+internal fun shouldQueryGitHubPrivilegedPackageInventory(
+    mode: PrivilegeMode,
+    supportsShellCommand: Boolean,
+): Boolean = mode != PrivilegeMode.Disabled && supportsShellCommand
+
+internal fun resolveGitHubPrivilegedPackageInventory(
+    result: AppCommandResult,
+): GitHubPrivilegedPackageInventory? {
+    if (!result.succeeded || result.stdoutTruncated) return null
+    return parseGitHubPrivilegedPackageInventory(result.stdout).takeUnless { inventory ->
+        inventory.isEmpty
+    }
+}
+
+internal fun parseGitHubPrivilegedPackageInventory(output: String): GitHubPrivilegedPackageInventory {
+    val userPackages = LinkedHashSet<String>()
+    val systemPackages = LinkedHashSet<String>()
+    var target: MutableSet<String>? = null
+    output.lineSequence().forEach { rawLine ->
+        val line = rawLine.trim()
+        when (line) {
+            "__keios_user_packages__" -> target = userPackages
+            "__keios_system_packages__" -> target = systemPackages
+            else -> {
+                val packageName =
+                    line
+                        .takeIf { value -> value.startsWith("package:") }
+                        ?.removePrefix("package:")
+                        ?.substringBefore(' ')
+                        ?.trim()
+                        ?.takeIf(::isValidGitHubPackageName)
+                if (packageName != null) target?.add(packageName)
+            }
+        }
+    }
+    val normalizedSystemPackages =
+        systemPackages.mapTo(HashSet(systemPackages.size)) { packageName ->
+            packageName.lowercase(Locale.ROOT)
+        }
+    userPackages.removeAll { packageName ->
+        packageName.lowercase(Locale.ROOT) in normalizedSystemPackages
+    }
+    return GitHubPrivilegedPackageInventory(
+        userPackages = userPackages,
+        systemPackages = systemPackages,
+    )
+}
+
+private fun isValidGitHubPackageName(value: String): Boolean =
+    value.isNotBlank() && PACKAGE_NAME_PATTERN.matches(value)
+
+private val PACKAGE_NAME_PATTERN = Regex("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*")
 
 private fun PackageManager.getApplicationInfoCompat(packageName: String): ApplicationInfo? {
     return runCatching {

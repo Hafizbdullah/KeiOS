@@ -79,8 +79,9 @@ internal data class MainPagerMcpPageState(
     val onOpenMcpSkill: () -> Unit,
 )
 
-@Immutable
+@Stable
 internal data class MainPagerGitHubPageState(
+    val privilegedShell: PrivilegedShell,
     val requestedGitHubRefreshToken: Int,
     val requestedGitHubActionsTrackId: String?,
     val requestedGitHubActionsSheetToken: Int,
@@ -199,6 +200,7 @@ internal fun MainPagerPageHost(
                             "GitHub page state is required for the GitHub tab"
                         }
                     GitHubPage(
+                        privilegedShell = githubState.privilegedShell,
                         runtime = runtime,
                         externalRefreshTriggerToken = githubState.requestedGitHubRefreshToken,
                         externalActionsTrackId = githubState.requestedGitHubActionsTrackId,

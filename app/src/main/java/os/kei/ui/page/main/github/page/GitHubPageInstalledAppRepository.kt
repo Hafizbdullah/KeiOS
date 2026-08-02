@@ -5,6 +5,7 @@ import android.content.Intent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.github.data.local.AppIconCache
 import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.model.GitHubLocalVersionInfo
@@ -40,14 +41,16 @@ internal class GitHubPageInstalledAppRepository(
 
     suspend fun queryInstalledLaunchableApps(
         context: Context,
+        privilegedShell: PrivilegedShell,
         forceRefresh: Boolean,
         includeSystemApps: Boolean = true,
         pinnedSystemPackageNames: Set<String> = emptySet(),
         requiredPackageNames: Set<String> = emptySet(),
     ): List<InstalledAppItem> {
         return withContext(ioDispatcher) {
-            GitHubInstalledAppRepository.queryInstalledLaunchableApps(
+            GitHubInstalledAppRepository.queryInstalledLaunchableAppsWithPrivilege(
                 context = context,
+                privilegedShell = privilegedShell,
                 forceRefresh = forceRefresh,
                 includeSystemApps = includeSystemApps,
                 pinnedSystemPackageNames = pinnedSystemPackageNames,

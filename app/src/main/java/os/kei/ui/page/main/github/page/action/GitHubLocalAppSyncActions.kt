@@ -26,6 +26,7 @@ internal class GitHubLocalAppSyncActions(
                 state.appList =
                     repository.queryInstalledLaunchableApps(
                         context = context,
+                        privilegedShell = env.privilegedShell,
                         forceRefresh = forceRefresh,
                         includeSystemApps = includeSystemApps,
                         pinnedSystemPackageNames = trackedSystemPackageNames(),

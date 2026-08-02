@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.feature.github.data.local.GitHubTrackSnapshot
 import os.kei.feature.github.domain.GitHubRepositoryDiscoverySource
@@ -48,6 +49,7 @@ internal class GitHubStarImportPageRepository(
     private val starImportService: GitHubStarImportService = GitHubStarImportService(),
     private val defaultDispatcher: CoroutineDispatcher = AppDispatchers.uiDerivation,
     private val ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
+    private val privilegedShell: PrivilegedShell = PrivilegedShell(),
 ) {
     internal constructor(
         ioDispatcher: CoroutineDispatcher = AppDispatchers.githubNetwork,
@@ -249,8 +251,9 @@ internal class GitHubStarImportPageRepository(
                     .filter { packageName -> packageName.isNotBlank() }
                     .toSet()
             val installedApps =
-                GitHubInstalledAppRepository.queryInstalledLaunchableApps(
+                GitHubInstalledAppRepository.queryInstalledLaunchableAppsWithPrivilege(
                     context = context,
+                    privilegedShell = privilegedShell,
                     forceRefresh = true,
                     includeSystemApps = true,
                     requiredPackageNames = packageNames,

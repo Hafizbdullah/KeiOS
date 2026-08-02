@@ -449,12 +449,14 @@ internal fun MainPagerLayout(
                     val githubPageState =
                         if (pageType == BottomPage.GitHub) {
                             remember(
+                                privilegedShell,
                                 requestedGitHubRefreshToken,
                                 requestedGitHubActionsTrackId,
                                 requestedGitHubActionsSheetToken,
                                 onOpenGitHubActionsNotificationHistory,
                             ) {
                                 MainPagerGitHubPageState(
+                                    privilegedShell = privilegedShell,
                                     requestedGitHubRefreshToken = requestedGitHubRefreshToken,
                                     requestedGitHubActionsTrackId = requestedGitHubActionsTrackId,
                                     requestedGitHubActionsSheetToken = requestedGitHubActionsSheetToken,

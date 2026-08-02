@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
 import os.kei.core.ext.showToast
+import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.ui.effect.rememberAppTopBarColor
 import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.common.applicationViewModel
@@ -50,6 +51,7 @@ import kotlin.math.abs
 
 @Composable
 fun GitHubPage(
+    privilegedShell: PrivilegedShell,
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     externalRefreshTriggerToken: Int = 0,
     externalActionsTrackId: String? = null,
@@ -151,6 +153,7 @@ fun GitHubPage(
             state,
             githubPageViewModel,
             githubPageViewModel.repository,
+            privilegedShell,
             systemDmOption,
             openLinkFailureMessage,
         ) {
@@ -161,6 +164,7 @@ fun GitHubPage(
                 state = state,
                 viewModel = githubPageViewModel,
                 repository = githubPageViewModel.repository,
+                privilegedShell = privilegedShell,
                 systemDmOption = systemDmOption,
                 openLinkFailureMessage = openLinkFailureMessage,
             )
