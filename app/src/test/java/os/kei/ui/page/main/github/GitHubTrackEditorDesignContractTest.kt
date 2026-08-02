@@ -32,6 +32,26 @@ class GitHubTrackEditorDesignContractTest {
     }
 
     @Test
+    fun appPickerUsesIconOnlyRefreshAndShortCollapseAction() {
+        val source = sourceFile(TRACK_APP_PICKER_SOURCE)
+        val actionRow =
+            source
+                .substringAfter("val refreshContentDescription =")
+                .substringBefore("AppLiquidExpandableSection(")
+
+        assertTrue("AppLiquidIconButton(" in actionRow)
+        assertTrue("icon = appLucideRefreshIcon()" in actionRow)
+        assertTrue("contentDescription = refreshContentDescription" in actionRow)
+        assertFalse("leadingIcon = appLucideRefreshIcon()" in actionRow)
+        assertTrue("text = stringResource(R.string.github_track_sheet_btn_collapse)" in actionRow)
+
+        val defaultStrings = sourceFile(GITHUB_STRINGS_SOURCE)
+        val simplifiedCollapseLabel =
+            "<string name=\"github_track_sheet_btn_collapse\">收起</string>"
+        assertTrue(simplifiedCollapseLabel in defaultStrings)
+    }
+
+    @Test
     fun appTypeFiltersWrapWithoutTruncatingTheirLabels() {
         val source = sourceFile(TRACK_APP_PICKER_SOURCE)
         val filterCallSite =
@@ -68,3 +88,5 @@ private const val TRACK_EDITOR_FORM_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackEditFormContent.kt"
 private const val TRACK_APP_PICKER_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubTrackAppPickerContent.kt"
+private const val GITHUB_STRINGS_SOURCE =
+    "app/src/main/res/values/strings_github.xml"

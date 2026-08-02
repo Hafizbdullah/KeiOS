@@ -489,6 +489,7 @@ fun GitHubPage(
             tracksExporting = transferState.tracksExporting,
             tracksImporting = transferState.tracksImporting,
             onEnsureKeiOsSelfTrack = actions::ensureKeiOsSelfTrack,
+            onRequestAppIcons = githubPageViewModel::requestAppIcons,
             onRequestAppPickerState = githubPageViewModel::requestAppPickerState,
             onAppPickerPreferencesChange = githubPageViewModel::saveAppPickerPreferences,
             onRequestApkInfoSheetState = githubPageViewModel::requestApkInfoSheetState,

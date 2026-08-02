@@ -32,9 +32,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.feature.github.model.InstalledAppItem
+import os.kei.ui.page.main.github.sheet.GitHubTrackAppPickerHeader
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.math.abs
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -77,6 +79,52 @@ class GitHubAppCandidateRowTest {
         composeRule.onAllNodes(radioButton, useUnmergedTree = true).assertCountEquals(1)
         composeRule.onNode(radioButton).performClick()
         composeRule.runOnIdle { assertEquals(1, clickCount) }
+    }
+
+    @Test
+    fun appPickerHeaderKeepsResultCountRightAlignedAtLargeFont() {
+        val title = "App 候选"
+        val resultCount = "显示 138 / 157 个"
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(density = density.density, fontScale = 1.5f),
+                ) {
+                    GitHubTrackAppPickerHeader(
+                        title = title,
+                        resultCount = resultCount,
+                        modifier =
+                            Modifier
+                                .width(360.dp)
+                                .testTag("app-picker-header"),
+                    )
+                }
+            }
+        }
+
+        val headerBounds =
+            composeRule
+                .onNodeWithTag("app-picker-header")
+                .assertWidthIsEqualTo(360.dp)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val titleBounds =
+            composeRule
+                .onNodeWithText(title, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val resultCountBounds =
+            composeRule
+                .onNodeWithText(resultCount, useUnmergedTree = true)
+                .fetchSemanticsNode()
+                .boundsInRoot
+
+        assertTrue(titleBounds.right <= resultCountBounds.left)
+        assertTrue(resultCountBounds.right <= headerBounds.right)
+        with(composeRule.density) {
+            assertTrue(abs(titleBounds.center.y - resultCountBounds.center.y).toDp() <= 1.dp)
+        }
     }
 
     @Test

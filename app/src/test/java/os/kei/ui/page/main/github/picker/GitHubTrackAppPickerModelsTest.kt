@@ -141,6 +141,54 @@ class GitHubTrackAppPickerModelsTest {
         )
     }
 
+    @Test
+    fun `viewport icon packages include visible rows and nearby prefetch rows`() {
+        val candidates =
+            (0 until 40).map { index ->
+                InstalledAppItem(
+                    label = "App $index",
+                    packageName = "com.demo.$index",
+                )
+            }
+
+        val packages =
+            gitHubTrackAppPickerViewportIconPackages(
+                apps = candidates,
+                visibleItemIndices = listOf(18, 19, 20, 21),
+            )
+
+        assertEquals(
+            (10..29).map { index -> "com.demo.$index" },
+            packages,
+        )
+    }
+
+    @Test
+    fun `viewport icon packages clamp restored indices to candidate bounds`() {
+        val candidates =
+            (0 until 12).map { index ->
+                InstalledAppItem(
+                    label = "App $index",
+                    packageName = "com.demo.$index",
+                )
+            }
+
+        assertEquals(
+            (3 until 12).map { index -> "com.demo.$index" },
+            gitHubTrackAppPickerViewportIconPackages(
+                apps = candidates,
+                visibleItemIndices = listOf(11, 99),
+            ),
+        )
+        assertEquals(
+            emptyList(),
+            gitHubTrackAppPickerViewportIconPackages(
+                apps = candidates,
+                visibleItemIndices = listOf(99),
+            ),
+        )
+    }
+
     private companion object {
         private val apps = listOf(
             InstalledAppItem(

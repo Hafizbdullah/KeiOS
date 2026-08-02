@@ -1054,7 +1054,7 @@ nightly.link は公開リポジトリ、成功した実行、保持期限内の�
     <string name="github_track_sheet_label_selected_app">選択したアプリ</string>
     <string name="github_track_sheet_selected_none">未選択</string>
     <string name="github_track_sheet_summary_app_binding_none">任意。ローカルアプリを紐づけると、インストール済みバージョン比較とインストール後の更新に使えます。</string>
-    <string name="github_track_sheet_btn_collapse">リストを折りたたむ</string>
+    <string name="github_track_sheet_btn_collapse">折りたたむ</string>
     <string name="github_track_sheet_btn_select_app">アプリを選択</string>
     <string name="github_track_badge_current_app">このアプリ</string>
     <string name="github_track_badge_archived">アーカイブ</string>

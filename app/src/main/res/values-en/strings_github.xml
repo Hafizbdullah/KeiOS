@@ -1075,7 +1075,7 @@
     <string name="github_track_sheet_label_selected_app">Selected app</string>
     <string name="github_track_sheet_selected_none">None selected</string>
     <string name="github_track_sheet_summary_app_binding_none">Optional. Binding a local app enables installed-version comparison and install-time refresh.</string>
-    <string name="github_track_sheet_btn_collapse">Collapse list</string>
+    <string name="github_track_sheet_btn_collapse">Collapse</string>
     <string name="github_track_sheet_btn_select_app">Select app</string>
     <string name="github_track_badge_current_app">This app</string>
     <string name="github_track_badge_archived">Archived</string>

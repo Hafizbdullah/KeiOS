@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -45,6 +46,7 @@ import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerInput
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortDirection
 import os.kei.ui.page.main.github.picker.GitHubTrackAppPickerSortMode
 import os.kei.ui.page.main.github.picker.gitHubTrackAppCandidateInitialScrollIndex
+import os.kei.ui.page.main.github.picker.gitHubTrackAppPickerViewportIconPackages
 import os.kei.ui.page.main.github.picker.isTimeSort
 import os.kei.ui.page.main.github.picker.showsInstallSourcePill
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -53,6 +55,7 @@ import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
 import os.kei.ui.page.main.widget.glass.AppLiquidExpandableSection
+import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -61,7 +64,7 @@ import os.kei.ui.page.main.widget.glass.LiquidInfoBlockDensity
 import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 import os.kei.ui.page.main.widget.sheet.SheetInputTitle
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
-import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
+import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -236,6 +239,25 @@ internal fun GitHubTrackAppPickerButtonRow(
 }
 
 @Composable
+internal fun GitHubTrackAppPickerHeader(
+    title: String,
+    resultCount: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SheetSectionTitle(
+            text = title,
+            modifier = Modifier.weight(1f),
+        )
+        SheetInputTitle(text = resultCount)
+    }
+}
+
+@Composable
 internal fun GitHubTrackAppPickerContent(
     backdrop: LayerBackdrop,
     active: Boolean,
@@ -253,6 +275,7 @@ internal fun GitHubTrackAppPickerContent(
     onAppSearchChange: (String) -> Unit,
     onPickerExpandedChange: (Boolean) -> Unit,
     onRefreshAppList: () -> Unit,
+    onRequestAppIcons: (List<String>) -> Unit,
     onRequestAppPickerState: (GitHubTrackAppPickerInput) -> Unit,
     onAppPickerPreferencesChange: (GitHubAppPickerPreferences) -> Unit,
     onAddAppPickerScrollPositionChange: (Int, Int) -> Unit,
@@ -263,6 +286,7 @@ internal fun GitHubTrackAppPickerContent(
     val listMaxHeight = (windowHeight * 0.60f).coerceIn(340.dp, 680.dp)
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val currentOnRequestAppIcons by rememberUpdatedState(onRequestAppIcons)
     var includeUserApps by remember(appPickerPreferences) {
         mutableStateOf(appPickerPreferences.includeUserApps)
     }
@@ -387,13 +411,30 @@ internal fun GitHubTrackAppPickerContent(
             }
     }
 
+    LaunchedEffect(active, filteredApps, listState) {
+        if (!active || filteredApps.isEmpty()) return@LaunchedEffect
+        snapshotFlow {
+            gitHubTrackAppPickerViewportIconPackages(
+                apps = filteredApps,
+                visibleItemIndices =
+                    listState.layoutInfo.visibleItemsInfo.map { itemInfo -> itemInfo.index },
+            )
+        }
+            .distinctUntilChanged()
+            .collect { packageNames ->
+                if (packageNames.isNotEmpty()) {
+                    currentOnRequestAppIcons(packageNames)
+                }
+            }
+    }
+
     SheetContentColumn(
         scrollable = false,
         verticalSpacing = 14.dp
     ) {
-        SheetSectionHeader(
-            text = stringResource(R.string.github_track_sheet_section_app_candidates),
-            summary =
+        GitHubTrackAppPickerHeader(
+            title = stringResource(R.string.github_track_sheet_section_app_candidates),
+            resultCount =
                 stringResource(
                     R.string.github_track_sheet_app_result_count_format,
                     filteredApps.size,
@@ -422,22 +463,21 @@ internal fun GitHubTrackAppPickerContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AppLiquidTextButton(
-                        backdrop = backdrop,
-                        variant = GlassVariant.SheetAction,
-                        text = if (appListRefreshing) {
+                    val refreshContentDescription =
+                        if (appListRefreshing) {
                             stringResource(R.string.common_loading)
                         } else {
                             stringResource(R.string.common_refresh)
-                        },
-                        leadingIcon = appLucideRefreshIcon(),
+                        }
+                    AppLiquidIconButton(
+                        backdrop = backdrop,
+                        variant = GlassVariant.SheetAction,
+                        icon = appLucideRefreshIcon(),
+                        contentDescription = refreshContentDescription,
                         enabled = !appListRefreshing,
                         onClick = onRefreshAppList,
-                        minHeight = 30.dp,
-                        horizontalPadding = 10.dp,
-                        verticalPadding = 4.dp,
-                        textMaxLines = 1,
-                        textOverflow = TextOverflow.Ellipsis
+                        width = 30.dp,
+                        height = 30.dp,
                     )
                     AppLiquidTextButton(
                         backdrop = backdrop,

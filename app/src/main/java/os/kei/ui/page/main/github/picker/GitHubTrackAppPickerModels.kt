@@ -156,6 +156,27 @@ internal fun gitHubTrackAppPickerIconPreloadPackages(
         .distinct()
         .toList()
 
+private const val GITHUB_TRACK_APP_PICKER_ICON_PREFETCH_DISTANCE = 8
+
+internal fun gitHubTrackAppPickerViewportIconPackages(
+    apps: List<InstalledAppItem>,
+    visibleItemIndices: List<Int>,
+): List<String> {
+    if (apps.isEmpty()) return emptyList()
+    val validVisibleIndices = visibleItemIndices.filter { index -> index in apps.indices }
+    val firstVisibleIndex = validVisibleIndices.minOrNull() ?: return emptyList()
+    val lastVisibleIndex = validVisibleIndices.maxOrNull() ?: return emptyList()
+    val preloadStart =
+        (firstVisibleIndex - GITHUB_TRACK_APP_PICKER_ICON_PREFETCH_DISTANCE)
+            .coerceAtLeast(0)
+    val preloadEndExclusive =
+        (lastVisibleIndex + GITHUB_TRACK_APP_PICKER_ICON_PREFETCH_DISTANCE + 1)
+            .coerceAtMost(apps.size)
+    return gitHubTrackAppPickerIconPreloadPackages(
+        apps = apps.subList(preloadStart, preloadEndExclusive),
+    )
+}
+
 internal fun String.normalizedGitHubTrackAppPackageNameOrNull(): String? {
     val normalized = trim().lowercase(Locale.ROOT)
     return normalized.ifBlank { null }
