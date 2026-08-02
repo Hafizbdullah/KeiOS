@@ -315,13 +315,13 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku 認可済み（%1$s）</string>
     <string name="settings_accessibility_guard_header">KeiOS セルフガード</string>
     <string name="settings_accessibility_guard_policy_title">セルフガードポリシー</string>
-    <string name="settings_accessibility_guard_policy_summary_ready">Shizuku は準備完了です。安全設定を読み取り、KeiOS 自身のセルフチェック状態を記録できます。</string>
-    <string name="settings_accessibility_guard_policy_summary_need_shizuku">Shizuku を認可すると、安全設定チャンネルを確認し、セルフガード診断を強化できます。</string>
+    <string name="settings_accessibility_guard_policy_summary_ready">特権チャンネルの準備が完了し、安全設定を読み取り、KeiOS 自身のセルフチェック状態を記録できます。</string>
+    <string name="settings_accessibility_guard_policy_summary_need_privilege">利用可能な Shizuku または Root モードを有効にすると、安全設定チャンネルを確認し、セルフガード診断を強化できます。</string>
     <string name="settings_accessibility_guard_capability_title">セルフガード状態</string>
-    <string name="settings_accessibility_guard_capability_summary">KeiOS の Shizuku チャンネル、前景サービス、起動/更新後確認、画面オン確認の状態を確認します。</string>
+    <string name="settings_accessibility_guard_capability_summary">KeiOS の特権チャンネル、前景サービス、起動/更新後確認、画面オン確認の状態を確認します。</string>
     <string name="settings_accessibility_guard_info_capability">機能</string>
     <string name="settings_accessibility_guard_capability_ready">安全設定を読み取り可能</string>
-    <string name="settings_accessibility_guard_capability_need_shizuku">Shizuku 待ち</string>
+    <string name="settings_accessibility_guard_capability_need_privilege">特権アクセス待ち</string>
     <string name="settings_accessibility_guard_daemon_title">前景サービス</string>
     <string name="settings_accessibility_guard_daemon_summary">低優先度の常駐サービスを実行し、KeiOS のバックグラウンド確認能力を保ちます。</string>
     <string name="settings_accessibility_guard_boot_check_title">起動後と更新後に確認</string>

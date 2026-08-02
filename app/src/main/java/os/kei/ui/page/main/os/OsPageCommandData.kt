@@ -35,10 +35,10 @@ internal suspend fun commandRowsAsync(
     privilegedShell: PrivilegedShell,
     dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): List<InfoRow> {
-    val shizuku = privilegedShell.execCommandCancellable(command)
-    val runtime = if (shizuku.isNullOrBlank()) execRuntimeCommandAsync(command) else null
+    val privilegedOutput = privilegedShell.execCommandCancellable(command)
+    val runtime = if (privilegedOutput.isNullOrBlank()) execRuntimeCommandAsync(command) else null
     return withContext(dispatcher) {
-        parseKeyValueLines(shizuku ?: runtime)
+        parseKeyValueLines(privilegedOutput ?: runtime)
     }
 }
 
@@ -60,7 +60,7 @@ internal data class OsLinuxCommandSnapshot(
 
 internal data class OsLinuxProbeSnapshot(
     val runtime: OsLinuxCommandSnapshot,
-    val shizuku: OsLinuxCommandSnapshot
+    val privileged: OsLinuxCommandSnapshot
 )
 
 internal data class OsPageDataSnapshot(
@@ -108,14 +108,14 @@ internal suspend fun loadSettingsSectionSnapshotAsync(
     privilegedShell: PrivilegedShell,
     dispatcher: CoroutineDispatcher = AppDispatchers.osOperations
 ): OsSettingsSectionSnapshot {
-    val shizuku = privilegedShell.execCommandCancellable(
+    val privilegedOutput = privilegedShell.execCommandCancellable(
         command = settingsProbeCommand,
         timeoutMs = SETTINGS_PROBE_TIMEOUT_MS
     )
-    val shizukuSnapshot = withContext(dispatcher) {
-        parseSettingsSectionSnapshot(shizuku)
+    val privilegedSnapshot = withContext(dispatcher) {
+        parseSettingsSectionSnapshot(privilegedOutput)
     }
-    if (shizukuSnapshot.hasRows) return shizukuSnapshot
+    if (privilegedSnapshot.hasRows) return privilegedSnapshot
     val runtime = execRuntimeCommandAsync(settingsProbeCommand)
     return withContext(dispatcher) {
         parseSettingsSectionSnapshot(runtime)
@@ -164,13 +164,13 @@ internal suspend fun loadLinuxProbeSnapshotAsync(
     val runtime = async {
         execRuntimeCommandAsync(linuxProbeCommand)
     }
-    val shizuku = async {
+    val privilegedOutput = async {
         privilegedShell.execCommandCancellable(linuxProbeCommand)
     }
     withContext(dispatcher) {
         OsLinuxProbeSnapshot(
             runtime = parseLinuxCommandSnapshot(runtime.await()),
-            shizuku = parseLinuxCommandSnapshot(shizuku.await())
+            privileged = parseLinuxCommandSnapshot(privilegedOutput.await())
         )
     }
 }
@@ -178,7 +178,7 @@ internal suspend fun loadLinuxProbeSnapshotAsync(
 internal fun OsLinuxProbeSnapshot.preferredValue(
     selector: OsLinuxCommandSnapshot.() -> String
 ): String {
-    return shizuku.selector().ifBlank { runtime.selector() }
+    return privileged.selector().ifBlank { runtime.selector() }
 }
 
 private val settingsSectionCommands = linkedMapOf(

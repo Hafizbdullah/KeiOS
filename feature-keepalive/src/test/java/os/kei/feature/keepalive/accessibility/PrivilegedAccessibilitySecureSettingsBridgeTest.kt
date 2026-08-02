@@ -9,14 +9,14 @@ import os.kei.core.system.AppCommandResult
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
-class ShizukuAccessibilitySecureSettingsBridgeTest {
+class PrivilegedAccessibilitySecureSettingsBridgeTest {
     @Test
     fun `read enabled services parses successful settings output`() = kotlinx.coroutines.test.runTest {
         val runner =
             RecordingCommandRunner(
                 result = commandResult(stdout = "com.example/.First:com.other/com.other.Second"),
             )
-        val bridge = ShizukuAccessibilitySecureSettingsBridge(runner, timeoutMs = 1234L)
+        val bridge = PrivilegedAccessibilitySecureSettingsBridge(runner, timeoutMs = 1234L)
 
         val read = bridge.readEnabledServiceIds()
 
@@ -34,7 +34,7 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
     @Test
     fun `read enabled services treats null output as empty success`() = kotlinx.coroutines.test.runTest {
         val runner = RecordingCommandRunner(result = commandResult(stdout = "null"))
-        val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
+        val bridge = PrivilegedAccessibilitySecureSettingsBridge(runner)
 
         val read = bridge.readEnabledServiceIds()
 
@@ -47,12 +47,13 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
     fun `timeout maps to read failure reason`() = kotlinx.coroutines.test.runTest {
         val runner =
             RecordingCommandRunner(
-                result = commandResult(
-                    exitCode = null,
-                    timedOut = true,
-                ),
+                result =
+                    commandResult(
+                        exitCode = null,
+                        timedOut = true,
+                    ),
             )
-        val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
+        val bridge = PrivilegedAccessibilitySecureSettingsBridge(runner)
 
         val read = bridge.readEnabledServiceIds()
 
@@ -64,12 +65,13 @@ class ShizukuAccessibilitySecureSettingsBridgeTest {
     fun `permission denied maps stderr to read failure reason`() = kotlinx.coroutines.test.runTest {
         val runner =
             RecordingCommandRunner(
-                result = commandResult(
-                    stderr = "Permission denial",
-                    exitCode = 1,
-                ),
+                result =
+                    commandResult(
+                        stderr = "Permission denial",
+                        exitCode = 1,
+                    ),
             )
-        val bridge = ShizukuAccessibilitySecureSettingsBridge(runner)
+        val bridge = PrivilegedAccessibilitySecureSettingsBridge(runner)
 
         val read = bridge.readEnabledServiceIds()
 

@@ -26,7 +26,7 @@
     <string name="os_overview_metric_pill">%1$s %2$s</string>
     <string name="os_shell_card_title">Shell console</string>
     <string name="os_shell_card_subtitle">Enter and run Shell commands</string>
-    <string name="os_shell_card_status_label">Shizuku status</string>
+    <string name="os_shell_card_status_label">Privilege status</string>
     <string name="os_shell_card_saved_count_label">Command cards</string>
     <string name="os_shell_card_saved_command_label">Saved command</string>
     <string name="os_shell_card_run_output_label">Run output</string>
@@ -76,7 +76,7 @@
     <string name="os_shell_output_block_input">shell input</string>
     <string name="os_shell_output_block_result">Output result</string>
     <string name="os_shell_output_block_time">Time</string>
-    <string name="os_shell_run_requires_permission">Shizuku has not been authorized yet. Allow the authorization request first.</string>
+    <string name="os_shell_run_requires_permission">The selected privilege mode has not been authorized yet. Complete authorization first.</string>
     <string name="os_shell_run_empty_output">Command completed with no output.</string>
     <string name="os_shell_run_empty_command">Enter a command before running.</string>
     <string name="os_shell_run_stopped">Command stopped.</string>

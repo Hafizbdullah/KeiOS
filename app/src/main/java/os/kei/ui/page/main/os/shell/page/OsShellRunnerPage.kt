@@ -33,7 +33,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun OsShellRunnerPage(
     canRunShellCommand: Boolean,
-    onRequestShizukuPermission: () -> Unit,
+    onRequestPrivilegeAccess: () -> Unit,
     onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ) {
@@ -107,7 +107,7 @@ fun OsShellRunnerPage(
             currentOutputSnapshot = currentOutputSnapshot,
             textBundle = textBundle,
             canRunShellCommand = canRunShellCommand,
-            onRequestShizukuPermission = onRequestShizukuPermission,
+            onRequestPrivilegeAccess = onRequestPrivilegeAccess,
             onRunShellCommand = onRunShellCommand,
             onClose = onClose,
         )

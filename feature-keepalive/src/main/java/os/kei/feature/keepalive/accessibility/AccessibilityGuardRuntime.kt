@@ -10,7 +10,7 @@ object AccessibilityGuardRuntime {
     fun coordinator(stateStore: AccessibilityGuardStateStore = newStateStore()): AccessibilityGuardCoordinator =
         AccessibilityGuardCoordinator(
             secureSettingsBridge =
-                ShizukuAccessibilitySecureSettingsBridge(
+                PrivilegedAccessibilitySecureSettingsBridge(
                     privilegedShell = PrivilegedShell(commandDispatcher = AppDispatchers.osOperations),
                 ),
             stateStore = stateStore,

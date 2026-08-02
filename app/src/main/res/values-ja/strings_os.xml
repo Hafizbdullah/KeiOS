@@ -26,7 +26,7 @@
     <string name="os_overview_metric_pill">%1$s %2$s</string>
     <string name="os_shell_card_title">Shell コンソール</string>
     <string name="os_shell_card_subtitle">Shell コマンドを入力して実行</string>
-    <string name="os_shell_card_status_label">Shizuku 状態</string>
+    <string name="os_shell_card_status_label">特権状態</string>
     <string name="os_shell_card_saved_count_label">コマンドカード</string>
     <string name="os_shell_card_saved_command_label">保存コマンド</string>
     <string name="os_shell_card_run_output_label">実行出力</string>
@@ -76,7 +76,7 @@
     <string name="os_shell_output_block_input">Shell 入力</string>
     <string name="os_shell_output_block_result">出力結果</string>
     <string name="os_shell_output_block_time">時刻</string>
-    <string name="os_shell_run_requires_permission">Shizuku はまだ認可されていません。先に認可リクエストを許可してください。</string>
+    <string name="os_shell_run_requires_permission">選択中の特権モードはまだ認可されていません。先に認可を完了してください。</string>
     <string name="os_shell_run_empty_output">コマンドは出力なしで完了しました。</string>
     <string name="os_shell_run_empty_command">実行前にコマンドを入力してください。</string>
     <string name="os_shell_run_stopped">コマンドを停止しました。</string>

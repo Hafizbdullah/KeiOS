@@ -80,7 +80,7 @@ class OsShellRunnerActivity : ComponentActivity() {
                         ) {
                             OsShellRunnerPage(
                                 canRunShellCommand = canRunShellCommand,
-                                onRequestShizukuPermission = {
+                                onRequestPrivilegeAccess = {
                                     privilegedShell.requestAccessIfNeeded()
                                     refreshShellCommandReadyState()
                                 },

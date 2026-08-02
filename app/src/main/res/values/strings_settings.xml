@@ -319,13 +319,13 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku 已授权（%1$s）</string>
     <string name="settings_accessibility_guard_header">KeiOS 自保</string>
     <string name="settings_accessibility_guard_policy_title">自保策略</string>
-    <string name="settings_accessibility_guard_policy_summary_ready">Shizuku 已就绪，可以读取系统安全设置并记录 KeiOS 自身自检状态。</string>
-    <string name="settings_accessibility_guard_policy_summary_need_shizuku">授权 Shizuku 后，可以检查系统安全设置通道并完善自保诊断。</string>
+    <string name="settings_accessibility_guard_policy_summary_ready">特权通道已就绪，可以读取系统安全设置并记录 KeiOS 自身自检状态。</string>
+    <string name="settings_accessibility_guard_policy_summary_need_privilege">启用可用的 Shizuku 或 Root 模式后，可以检查系统安全设置通道并完善自保诊断。</string>
     <string name="settings_accessibility_guard_capability_title">自保状态</string>
-    <string name="settings_accessibility_guard_capability_summary">检查 KeiOS 的 Shizuku 通道、前台服务、开机/更新检查和亮屏检查状态。</string>
+    <string name="settings_accessibility_guard_capability_summary">检查 KeiOS 的特权通道、前台服务、开机/更新检查和亮屏检查状态。</string>
     <string name="settings_accessibility_guard_info_capability">能力</string>
     <string name="settings_accessibility_guard_capability_ready">安全设置可读</string>
-    <string name="settings_accessibility_guard_capability_need_shizuku">等待 Shizuku</string>
+    <string name="settings_accessibility_guard_capability_need_privilege">等待特权通道</string>
     <string name="settings_accessibility_guard_daemon_title">前台服务</string>
     <string name="settings_accessibility_guard_daemon_summary">启用低优先级常驻服务，帮助 KeiOS 保持后台检查能力。</string>
     <string name="settings_accessibility_guard_boot_check_title">开机与更新后检查</string>

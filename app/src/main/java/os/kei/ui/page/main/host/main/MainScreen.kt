@@ -38,9 +38,9 @@ fun MainScreen(
     val appContext = context.applicationContext
     val view = LocalView.current
     val currentAppLabel by rememberUpdatedState(appLabel)
-    val currentShizukuStatus by rememberUpdatedState(hostState.privilegeStatus)
+    val currentPrivilegeStatus by rememberUpdatedState(hostState.privilegeStatus)
     val currentNotificationPermissionGranted by rememberUpdatedState(hostState.notificationPermissionGranted)
-    val currentOnCheckOrRequestShizuku by rememberUpdatedState(hostCallbacks.onCheckOrRequestPrivilege)
+    val currentOnCheckOrRequestPrivilege by rememberUpdatedState(hostCallbacks.onCheckOrRequestPrivilege)
     val currentOnAppThemeModeChanged by rememberUpdatedState(hostCallbacks.onAppThemeModeChanged)
     val prefsViewModel: MainScreenPrefsViewModel = viewModel()
     val guideNavigationViewModel: MainScreenGuideNavigationViewModel = viewModel()
@@ -126,7 +126,7 @@ fun MainScreen(
         remember(
             mainReturnState.settingsReturnToken,
             uiPrefsState,
-            currentShizukuStatus,
+            currentPrivilegeStatus,
             privilegedShell,
             mcpServerManager,
             openGuideDetail,
@@ -143,7 +143,7 @@ fun MainScreen(
             buildMainScreenPagerCoordinator(
                 settingsReturnToken = mainReturnState.settingsReturnToken,
                 prefsState = uiPrefsState,
-                privilegeStatus = currentShizukuStatus,
+                privilegeStatus = currentPrivilegeStatus,
                 privilegedShell = privilegedShell,
                 mcpServerManager = mcpServerManager,
                 onOpenGuideDetail = openGuideDetail,
@@ -176,7 +176,7 @@ fun MainScreen(
         pagerCoordinator = pagerCoordinator,
         prefsState = uiPrefsState,
         appLabel = currentAppLabel,
-        onCheckOrRequestPrivilege = currentOnCheckOrRequestShizuku,
+        onCheckOrRequestPrivilege = currentOnCheckOrRequestPrivilege,
         notificationPermissionGranted = currentNotificationPermissionGranted,
         onRequestNotificationPermission = hostCallbacks.onRequestNotificationPermission,
         mcpServerManager = mcpServerManager,

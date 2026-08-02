@@ -58,7 +58,7 @@ internal fun rememberOsShellRunnerPageActions(
     currentOutputSnapshot: () -> OsShellRunnerOutputSnapshot,
     textBundle: OsShellRunnerTextBundle,
     canRunShellCommand: Boolean,
-    onRequestShizukuPermission: () -> Unit,
+    onRequestPrivilegeAccess: () -> Unit,
     onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ): OsShellRunnerPageActions =
@@ -71,7 +71,7 @@ internal fun rememberOsShellRunnerPageActions(
         latestOutputSnapshotProvider = rememberUpdatedState(currentOutputSnapshot),
         textBundle = textBundle,
         latestCanRunShellCommand = rememberUpdatedState(canRunShellCommand),
-        onRequestShizukuPermission = onRequestShizukuPermission,
+        onRequestPrivilegeAccess = onRequestPrivilegeAccess,
         onRunShellCommand = onRunShellCommand,
         onClose = onClose,
     )
@@ -86,7 +86,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
     latestOutputSnapshotProvider: androidx.compose.runtime.State<() -> OsShellRunnerOutputSnapshot>,
     textBundle: OsShellRunnerTextBundle,
     latestCanRunShellCommand: androidx.compose.runtime.State<Boolean>,
-    onRequestShizukuPermission: () -> Unit,
+    onRequestPrivilegeAccess: () -> Unit,
     onRunShellCommand: OsShellRunnerCommandExecutor,
     onClose: () -> Unit,
 ): OsShellRunnerPageActions =
@@ -99,7 +99,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
         latestOutputSnapshotProvider,
         textBundle,
         latestCanRunShellCommand,
-        onRequestShizukuPermission,
+        onRequestPrivilegeAccess,
         onRunShellCommand,
         onClose,
     ) {
@@ -148,7 +148,7 @@ private fun rememberOsShellRunnerPageActionsInternal(
                             }
 
                             !latestCanRunShellCommand.value -> {
-                                onRequestShizukuPermission()
+                                onRequestPrivilegeAccess()
                                 shellRunnerViewModel.replaceOutputMessage(textBundle.missingPermissionText)
                                 context.showToast(textBundle.missingPermissionText)
                             }

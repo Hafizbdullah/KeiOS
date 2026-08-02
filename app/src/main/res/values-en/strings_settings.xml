@@ -315,13 +315,13 @@
     <string name="settings_shizuku_status_permission_granted_identity">Shizuku authorized (%1$s)</string>
     <string name="settings_accessibility_guard_header">KeiOS self guard</string>
     <string name="settings_accessibility_guard_policy_title">Self guard policy</string>
-    <string name="settings_accessibility_guard_policy_summary_ready">Shizuku is ready. KeiOS can read secure settings and record its own self-check state.</string>
-    <string name="settings_accessibility_guard_policy_summary_need_shizuku">Authorize Shizuku to check the secure-settings channel and improve self-guard diagnostics.</string>
+    <string name="settings_accessibility_guard_policy_summary_ready">The privileged channel is ready. KeiOS can read secure settings and record its own self-check state.</string>
+    <string name="settings_accessibility_guard_policy_summary_need_privilege">Enable an available Shizuku or Root mode to check the secure-settings channel and improve self-guard diagnostics.</string>
     <string name="settings_accessibility_guard_capability_title">Self guard state</string>
-    <string name="settings_accessibility_guard_capability_summary">Checks KeiOS Shizuku channel, foreground service, boot/update check, and screen-on check state.</string>
+    <string name="settings_accessibility_guard_capability_summary">Checks the KeiOS privileged channel, foreground service, boot/update check, and screen-on check state.</string>
     <string name="settings_accessibility_guard_info_capability">Capability</string>
     <string name="settings_accessibility_guard_capability_ready">Secure settings readable</string>
-    <string name="settings_accessibility_guard_capability_need_shizuku">Waiting for Shizuku</string>
+    <string name="settings_accessibility_guard_capability_need_privilege">Waiting for privileged access</string>
     <string name="settings_accessibility_guard_daemon_title">Foreground service</string>
     <string name="settings_accessibility_guard_daemon_summary">Runs a low-priority persistent service to help KeiOS keep background check capability.</string>
     <string name="settings_accessibility_guard_boot_check_title">Check after boot and update</string>

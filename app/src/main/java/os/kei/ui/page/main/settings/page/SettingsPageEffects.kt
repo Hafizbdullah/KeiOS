@@ -34,7 +34,7 @@ internal fun BindSettingsPageEffects(
 ) {
     val latestContext = rememberUpdatedState(context)
     val latestNotificationPermissionGranted = rememberUpdatedState(notificationPermissionGranted)
-    val latestShizukuStatus = rememberUpdatedState(privilegeStatus)
+    val latestPrivilegeStatus = rememberUpdatedState(privilegeStatus)
     val latestCacheDiagnosticsEnabled = rememberUpdatedState(cacheDiagnosticsEnabled)
     val latestLogLevel = rememberUpdatedState(logLevel)
 
@@ -54,7 +54,7 @@ internal fun BindSettingsPageEffects(
             settingsPageViewModel.refreshPermissionKeepAlive(
                 controller = permissionKeepAliveController,
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                privilegeStatus = latestShizukuStatus.value,
+                privilegeStatus = latestPrivilegeStatus.value,
             )
             if (keepAliveActive) {
                 settingsPageViewModel.refreshAccessibilityGuard(latestContext.value)
@@ -136,7 +136,7 @@ internal fun BindSettingsPageEffects(
             settingsPageViewModel.refreshPermissionKeepAliveNow(
                 controller = permissionKeepAliveController,
                 notificationPermissionGranted = latestNotificationPermissionGranted.value,
-                privilegeStatus = latestShizukuStatus.value,
+                privilegeStatus = latestPrivilegeStatus.value,
             )
             if (keepAliveActive) {
                 settingsPageViewModel.refreshAccessibilityGuardNow(latestContext.value)

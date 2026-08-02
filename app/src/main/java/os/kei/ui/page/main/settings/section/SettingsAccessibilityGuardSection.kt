@@ -176,7 +176,7 @@ private fun accessibilityGuardPolicySubtitle(state: SettingsPermissionKeepAliveS
     if (state.privilegeGranted) {
         stringResource(R.string.settings_accessibility_guard_policy_summary_ready)
     } else {
-        stringResource(R.string.settings_accessibility_guard_policy_summary_need_shizuku)
+        stringResource(R.string.settings_accessibility_guard_policy_summary_need_privilege)
     }
 
 @Composable
@@ -192,7 +192,7 @@ private fun accessibilityGuardCapabilityLabel(state: SettingsAccessibilityGuardU
     if (state.secureSettingsReadable) {
         stringResource(R.string.settings_accessibility_guard_capability_ready)
     } else {
-        stringResource(R.string.settings_accessibility_guard_capability_need_shizuku)
+        stringResource(R.string.settings_accessibility_guard_capability_need_privilege)
     }
 
 @Composable

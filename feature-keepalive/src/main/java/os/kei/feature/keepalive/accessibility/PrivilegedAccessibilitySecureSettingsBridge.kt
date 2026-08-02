@@ -3,7 +3,7 @@ package os.kei.feature.keepalive.accessibility
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.core.system.AppCommandResult
 
-class ShizukuAccessibilitySecureSettingsBridge(
+class PrivilegedAccessibilitySecureSettingsBridge(
     private val commandRunner: AccessibilitySecureSettingsCommandRunner,
     private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
 ) : AccessibilitySecureSettingsBridge {
