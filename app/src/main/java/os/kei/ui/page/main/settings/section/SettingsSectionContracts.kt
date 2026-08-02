@@ -31,6 +31,7 @@ internal data class SettingsPermissionKeepAliveSectionState(
     val oemAutoStartVendorLabel: String,
     val oemAutoStartActionAvailable: Boolean,
     val appListAccessMode: SettingsAppListAccessMode,
+    val appListPrivilegeMode: PrivilegeMode?,
     val appListDetectedCount: Int,
     val appListSettingsActionAvailable: Boolean,
     val privilegeMode: PrivilegeMode,

@@ -266,11 +266,11 @@
     <string name="settings_notification_permission_action_request">申请授权</string>
     <string name="settings_notification_permission_toast_open_failed">无法打开通知设置，请手动到系统设置调整</string>
     <string name="settings_app_list_access_title">应用列表访问</string>
-    <string name="settings_app_list_access_summary_shizuku">当前优先使用 Shizuku 模式读取应用列表，可覆盖更完整的安装包可见范围。</string>
+    <string name="settings_app_list_access_summary_privileged">当前通过 %1$s 特权通道读取应用列表，可覆盖更完整的安装包可见范围。</string>
     <string name="settings_app_list_access_summary_direct">当前使用系统直连模式读取应用列表，适合常规本机应用识别场景。</string>
     <string name="settings_app_list_access_summary_restricted">当前应用列表访问能力较弱，导入或比对本机应用时可见范围会更窄。</string>
     <string name="settings_app_list_access_info_mode">模式</string>
-    <string name="settings_app_list_access_mode_shizuku">Shizuku / %1$d 项</string>
+    <string name="settings_app_list_access_mode_privileged">%1$s / %2$d 项</string>
     <string name="settings_app_list_access_mode_direct">系统直连 / %1$d 项</string>
     <string name="settings_app_list_access_mode_restricted">受限</string>
     <string name="settings_app_list_access_toast_open_failed">无法打开应用列表相关设置，请手动到应用详情页检查权限</string>

@@ -262,11 +262,11 @@
     <string name="settings_notification_permission_action_request">Request permission</string>
     <string name="settings_notification_permission_toast_open_failed">Unable to open notification settings. Adjust it manually in system settings.</string>
     <string name="settings_app_list_access_title">App list access</string>
-    <string name="settings_app_list_access_summary_shizuku">Currently preferring Shizuku mode for app-list reading, covering a wider installed-package scope.</string>
+    <string name="settings_app_list_access_summary_privileged">Currently reading the app list through the %1$s privileged channel, covering a wider installed-package scope.</string>
     <string name="settings_app_list_access_summary_direct">Currently using direct system app-list reading, suitable for normal local app matching.</string>
     <string name="settings_app_list_access_summary_restricted">App-list access is limited, so imported or matched local apps may have a narrower visible scope.</string>
     <string name="settings_app_list_access_info_mode">Mode</string>
-    <string name="settings_app_list_access_mode_shizuku">Shizuku / %1$d items</string>
+    <string name="settings_app_list_access_mode_privileged">%1$s / %2$d items</string>
     <string name="settings_app_list_access_mode_direct">System direct / %1$d items</string>
     <string name="settings_app_list_access_mode_restricted">Restricted</string>
     <string name="settings_app_list_access_toast_open_failed">Unable to open app-list related settings. Check permissions on the app info page manually.</string>

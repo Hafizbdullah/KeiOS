@@ -113,6 +113,7 @@ internal fun rememberSettingsPageSectionContracts(
         oemAutoStartVendorLabel = permissionKeepAliveState.oemAutoStartVendorLabel,
         oemAutoStartActionAvailable = permissionKeepAliveState.oemAutoStartActionAvailable,
         appListAccessMode = permissionKeepAliveState.appListAccessMode,
+        appListPrivilegeMode = permissionKeepAliveState.appListPrivilegeMode,
         appListDetectedCount = permissionKeepAliveState.appListDetectedCount,
         appListSettingsActionAvailable = permissionKeepAliveState.appListSettingsActionAvailable,
         privilegeMode = privilegeMode,

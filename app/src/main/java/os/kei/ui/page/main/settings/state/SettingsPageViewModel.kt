@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 import os.kei.R
 import os.kei.core.log.AppLogLevel
 import os.kei.core.log.AppLogStore
@@ -145,6 +146,7 @@ internal class SettingsPageViewModel(
     initialWebDavSyncState: SettingsWebDavSyncUiState = repository.buildWebDavSyncState(),
 ) : ViewModel() {
     private var permissionKeepAliveRefreshJob: Job? = null
+    private val permissionKeepAliveRefreshGeneration = AtomicLong(0L)
     private var accessibilityGuardRefreshJob: Job? = null
     private var batteryOptimizationRefreshJob: Job? = null
     private var searchTargetsJob: Job? = null
@@ -468,11 +470,13 @@ internal class SettingsPageViewModel(
         notificationPermissionGranted: Boolean,
         privilegeStatus: PrivilegeStatus,
     ) {
+        val generation = permissionKeepAliveRefreshGeneration.incrementAndGet()
         val snapshot =
             controller.loadSnapshot(
                 notificationPermissionGranted = notificationPermissionGranted,
                 privilegeStatus = privilegeStatus,
             )
+        if (permissionKeepAliveRefreshGeneration.get() != generation) return
         _permissionKeepAliveState.update { snapshot }
     }
 

@@ -21,16 +21,18 @@ import os.kei.R
 import os.kei.core.background.AppBackgroundRecoverySnapshot
 import os.kei.core.background.AppBackgroundRecoveryStore
 import os.kei.core.concurrency.AppDispatchers
+import os.kei.core.privilege.PrivilegeCapability
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeModeRuntime
 import os.kei.core.privilege.PrivilegedShell
-import os.kei.core.system.findPropString
-import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 import os.kei.core.privilege.PrivilegeStatus
 import os.kei.core.privilege.PrivilegeStatusCode
-import os.kei.core.privilege.PrivilegeModeRuntime
+import os.kei.core.system.findPropString
+import os.kei.feature.github.data.local.GitHubInstalledAppRepository
 
 internal enum class SettingsAppListAccessMode {
     Direct,
-    Shizuku,
+    Privileged,
     Restricted,
 }
 
@@ -66,6 +68,7 @@ internal data class SettingsPermissionKeepAliveSnapshot(
     val privilegeGranted: Boolean = false,
     val privilegeStatus: PrivilegeStatus = PrivilegeStatus.initializing(PrivilegeModeRuntime.mode),
     val appListAccessMode: SettingsAppListAccessMode = SettingsAppListAccessMode.Restricted,
+    val appListPrivilegeMode: PrivilegeMode? = null,
     val appListDetectedCount: Int = 0,
     val appListSettingsActionAvailable: Boolean = false,
     val oemAutoStartState: SettingsOemAutoStartState = SettingsOemAutoStartState.Unsupported,
@@ -116,6 +119,7 @@ internal class SettingsPermissionKeepAliveController(
             privilegeGranted = privilegeGranted,
             privilegeStatus = resolvedStatus,
             appListAccessMode = appListState.mode,
+            appListPrivilegeMode = appListState.privilegeMode,
             appListDetectedCount = appListState.detectedCount,
             appListSettingsActionAvailable = appListSettingsActionAvailable,
             oemAutoStartState = oemAutoStartSnapshot.state,
@@ -163,8 +167,9 @@ internal fun rememberSettingsPermissionKeepAliveController(
     }
 }
 
-private data class SettingsAppListAccessState(
+internal data class SettingsAppListAccessState(
     val mode: SettingsAppListAccessMode,
+    val privilegeMode: PrivilegeMode? = null,
     val detectedCount: Int,
 )
 
@@ -193,13 +198,17 @@ private suspend fun resolveAppListAccessState(
     context: Context,
     privilegedShell: PrivilegedShell,
 ): SettingsAppListAccessState {
-    val shizukuPackageCount = queryPrivilegedPackageCount(privilegedShell)
-    if (shizukuPackageCount > 0) {
-        return SettingsAppListAccessState(
-            mode = SettingsAppListAccessMode.Shizuku,
-            detectedCount = shizukuPackageCount,
-        )
-    }
+    val activeMode = privilegedShell.activeMode
+    val privilegedPackageCount =
+        if (
+            activeMode != PrivilegeMode.Disabled &&
+            privilegedShell.supports(PrivilegeCapability.ShellCommand)
+        ) {
+            queryPrivilegedPackageCount(privilegedShell)
+        } else {
+            null
+        }
+    resolvePrivilegedAppListAccessState(activeMode, privilegedPackageCount)?.let { return it }
 
     val directApps =
         runCatching {
@@ -222,9 +231,26 @@ private suspend fun resolveAppListAccessState(
     )
 }
 
-private suspend fun queryPrivilegedPackageCount(privilegedShell: PrivilegedShell): Int {
-    val output = privilegedShell.execCommandCancellable("pm list packages", timeoutMs = 2500L).orEmpty()
-    return output
+internal fun resolvePrivilegedAppListAccessState(
+    mode: PrivilegeMode,
+    detectedCount: Int?,
+): SettingsAppListAccessState? {
+    if (mode == PrivilegeMode.Disabled || detectedCount == null || detectedCount <= 0) return null
+    return SettingsAppListAccessState(
+        mode = SettingsAppListAccessMode.Privileged,
+        privilegeMode = mode,
+        detectedCount = detectedCount,
+    )
+}
+
+private suspend fun queryPrivilegedPackageCount(privilegedShell: PrivilegedShell): Int? {
+    val result =
+        privilegedShell.execCommandCancellableResult(
+            command = "pm list packages",
+            timeoutMs = 2_500L,
+        )
+    if (!result.succeeded) return null
+    return result.stdout
         .lineSequence()
         .count { line -> line.startsWith("package:") }
         .coerceAtLeast(0)

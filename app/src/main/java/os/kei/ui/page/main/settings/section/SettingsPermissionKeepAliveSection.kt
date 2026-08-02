@@ -223,8 +223,11 @@ private fun AppListAccessItem(
         title = stringResource(R.string.settings_app_list_access_title),
         summary =
             when (state.appListAccessMode) {
-                SettingsAppListAccessMode.Shizuku -> {
-                    stringResource(R.string.settings_app_list_access_summary_shizuku)
+                SettingsAppListAccessMode.Privileged -> {
+                    stringResource(
+                        R.string.settings_app_list_access_summary_privileged,
+                        appListPrivilegeModeLabel(state.appListPrivilegeMode ?: state.privilegeMode),
+                    )
                 }
 
                 SettingsAppListAccessMode.Direct -> {
@@ -238,9 +241,10 @@ private fun AppListAccessItem(
         infoKey = stringResource(R.string.settings_app_list_access_info_mode),
         infoValue =
             when (state.appListAccessMode) {
-                SettingsAppListAccessMode.Shizuku -> {
+                SettingsAppListAccessMode.Privileged -> {
                     stringResource(
-                        R.string.settings_app_list_access_mode_shizuku,
+                        R.string.settings_app_list_access_mode_privileged,
+                        appListPrivilegeModeLabel(state.appListPrivilegeMode ?: state.privilegeMode),
                         state.appListDetectedCount,
                     )
                 }
@@ -277,6 +281,14 @@ private fun AppListAccessItem(
         },
     )
 }
+
+@Composable
+private fun appListPrivilegeModeLabel(mode: PrivilegeMode): String =
+    when (mode) {
+        PrivilegeMode.Disabled -> stringResource(R.string.settings_privileged_mode_disabled)
+        PrivilegeMode.Shizuku -> stringResource(R.string.settings_privileged_mode_shizuku)
+        PrivilegeMode.Root -> stringResource(R.string.settings_privileged_mode_root)
+    }
 
 @Composable
 private fun PrivilegedModePickerItem(
