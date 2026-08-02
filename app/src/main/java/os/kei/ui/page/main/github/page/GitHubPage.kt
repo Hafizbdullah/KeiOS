@@ -81,8 +81,7 @@ fun GitHubPage(
             !runtime.isPagerScrollInProgress
     val state = rememberGitHubPageState(githubPageViewModel)
     val sheetBackdropVisible =
-        state.showOverviewEntrySheet ||
-            state.showStrategySheet ||
+        state.showStrategySheet ||
             state.showCheckLogicSheet ||
             state.showDroidSourcesSheet ||
             state.showDebugSheet ||
@@ -363,7 +362,6 @@ fun GitHubPage(
                     refreshProgress = state.refreshProgress,
                     lastRefreshMs = state.lastRefreshMs,
                     lookupConfig = state.lookupConfig,
-                    visibleEntries = state.overviewVisibleEntries,
                     metrics = contentDerivedState.trackedUi.overviewMetrics,
                 ),
             tracked =
@@ -418,7 +416,6 @@ fun GitHubPage(
                     onLocalVersionExpandedChange = actions::setTrackedLocalVersionExpanded,
                     onStableVersionExpandedChange = actions::setTrackedStableVersionExpanded,
                     onPreReleaseVersionExpandedChange = actions::setTrackedPreReleaseVersionExpanded,
-                    onOpenOverviewEntrySheet = actions::openOverviewEntrySheet,
                     onRefreshVisibleTracked = {
                         actions.refreshVisibleTracked(
                             items = contentDerivedState.trackedUi.sortedTracked,

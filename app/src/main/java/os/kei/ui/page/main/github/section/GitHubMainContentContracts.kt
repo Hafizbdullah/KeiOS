@@ -64,7 +64,6 @@ internal data class GitHubMainContentOverview(
     val refreshProgress: Float,
     val lastRefreshMs: Long,
     val lookupConfig: GitHubLookupConfig,
-    val visibleEntries: Set<GitHubOverviewEntry>,
     val metrics: GitHubOverviewMetrics,
 )
 
@@ -117,7 +116,6 @@ internal data class GitHubMainContentActions(
     val onLocalVersionExpandedChange: (String, Boolean) -> Unit,
     val onStableVersionExpandedChange: (String, Boolean) -> Unit,
     val onPreReleaseVersionExpandedChange: (String, Boolean) -> Unit,
-    val onOpenOverviewEntrySheet: () -> Unit,
     val onRefreshVisibleTracked: () -> Unit,
     val onRetryFailedTracked: () -> Unit,
     val onFailedFilterToggle: (Boolean) -> Unit,

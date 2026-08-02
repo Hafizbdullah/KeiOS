@@ -89,7 +89,6 @@ class GitHubOverviewLayoutTest {
                         overviewRefreshState = refreshState,
                         refreshProgress = 1f,
                         lastRefreshMs = lastRefreshMs,
-                        visibleEntries = defaultGitHubOverviewEntries(),
                         metrics =
                             GitHubOverviewMetrics(
                                 trackedCount = 77,
@@ -102,7 +101,6 @@ class GitHubOverviewLayoutTest {
                                 latestCheckedAtMillis = incrementalRefreshMs,
                             ),
                         failedFilterActive = false,
-                        onEditVisibleEntries = {},
                         onRetryFailedTracked = {},
                         onFailedFilterToggle = {},
                     )

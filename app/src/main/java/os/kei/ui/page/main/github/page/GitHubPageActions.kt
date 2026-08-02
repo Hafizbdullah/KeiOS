@@ -43,7 +43,6 @@ import os.kei.ui.page.main.github.page.action.GitHubRefreshActions
 import os.kei.ui.page.main.github.page.action.GitHubTrackActions
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.section.GitHubOverviewEntry
 
 internal class GitHubPageActions(
     context: Context,
@@ -74,7 +73,6 @@ internal class GitHubPageActions(
     private val configActions = GitHubConfigActions(env, refreshActions, assetActions)
     private val trackActions = GitHubTrackActions(env, refreshActions, assetActions)
     private val debugNotificationActions = GitHubDebugNotificationActionFacade(env)
-    private val overviewActions = GitHubOverviewActionFacade(env)
     private val shareImportActions = GitHubShareImportActionFacade(env)
     private val packageChangedActions = GitHubPackageChangedActionFacade(env, refreshActions, assetActions)
     private val trackedRefreshActions = GitHubTrackedRefreshActionFacade(env, refreshActions, assetActions)
@@ -253,17 +251,6 @@ internal class GitHubPageActions(
             },
         )
     }
-
-    fun openOverviewEntrySheet() = overviewActions.openOverviewEntrySheet()
-
-    fun closeOverviewEntrySheet() = overviewActions.closeOverviewEntrySheet()
-
-    fun setOverviewEntryVisible(
-        entry: GitHubOverviewEntry,
-        visible: Boolean,
-    ) = overviewActions.setOverviewEntryVisible(entry, visible)
-
-    fun resetOverviewEntries() = overviewActions.resetOverviewEntries()
 
     fun refreshActionsRunStatus(runId: Long) = actionsActions.refreshActionsRunStatus(runId)
 

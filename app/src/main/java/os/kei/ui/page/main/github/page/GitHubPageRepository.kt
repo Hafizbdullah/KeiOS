@@ -65,9 +65,6 @@ import os.kei.ui.page.main.github.picker.filterAndSortGitHubTrackAppCandidates
 import os.kei.ui.page.main.github.picker.gitHubTrackAppPickerIconPreloadPackages
 import os.kei.ui.page.main.github.query.DownloaderOption
 import os.kei.ui.page.main.github.query.OnlineShareTargetOption
-import os.kei.ui.page.main.github.section.GitHubOverviewEntry
-import os.kei.ui.page.main.github.section.GitHubOverviewUiState
-import os.kei.ui.page.main.github.section.GitHubOverviewUiStateStore
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseUiStateStore
 import os.kei.ui.page.main.github.share.GitHubPendingShareImportAttachCandidate
@@ -132,7 +129,6 @@ internal data class GitHubActiveShareImportFlow(
 internal data class GitHubPagePersistedUiState(
     val pageUiState: GitHubPageUiState = GitHubPageUiState(),
     val actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
-    val overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
     val trackedReleaseExpansionState: GitHubTrackedReleaseExpansionState = GitHubTrackedReleaseExpansionState(),
 )
 
@@ -217,7 +213,6 @@ internal class GitHubPageRepository(
             GitHubPagePersistedUiState(
                 pageUiState = GitHubPageUiStateStore.load(),
                 actionsSectionExpansionState = GitHubActionsUiStateStore.loadSectionExpansionState(),
-                overviewUiState = GitHubOverviewUiStateStore.load(),
                 trackedReleaseExpansionState = GitHubTrackedReleaseUiStateStore.load(),
             )
         }
@@ -225,12 +220,6 @@ internal class GitHubPageRepository(
     suspend fun saveTrackedFilterMode(value: GitHubTrackedFilterMode) {
         withContext(localDispatcher) {
             GitHubPageUiStateStore.setTrackedFilterMode(value)
-        }
-    }
-
-    suspend fun saveOverviewVisibleEntries(entries: Set<GitHubOverviewEntry>) {
-        withContext(localDispatcher) {
-            GitHubOverviewUiStateStore.setVisibleEntries(entries)
         }
     }
 

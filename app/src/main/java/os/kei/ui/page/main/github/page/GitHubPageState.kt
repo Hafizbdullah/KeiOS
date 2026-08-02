@@ -24,21 +24,19 @@ import os.kei.feature.github.model.GitHubTrackedApp
 import os.kei.feature.github.model.githubAssetSourceSignature
 import os.kei.ui.page.main.github.VersionCheckUi
 import os.kei.ui.page.main.github.actions.GitHubActionsSectionExpansionState
-import os.kei.ui.page.main.github.section.GitHubOverviewUiState
 import os.kei.ui.page.main.github.section.GitHubTrackedReleaseExpansionState
 
 @Stable
 internal class GitHubPageState(
     pageUiState: GitHubPageUiState = GitHubPageUiState(),
     actionsSectionExpansionState: GitHubActionsSectionExpansionState = GitHubActionsSectionExpansionState(),
-    overviewUiState: GitHubOverviewUiState = GitHubOverviewUiState(),
 ) {
     private val sheetState = GitHubPageSheetStateHolder()
     private val actionsState = GitHubActionsPageStateHolder(actionsSectionExpansionState)
     private val assetState = GitHubAssetPageStateHolder()
     private val trackEditorState = GitHubTrackEditorPageStateHolder()
     private val strategyState = GitHubStrategyPageStateHolder()
-    private val overviewState = GitHubOverviewPageStateHolder(overviewUiState)
+    private val overviewState = GitHubOverviewPageStateHolder()
 
     var trackedSearch by mutableStateOf("")
     var trackedFilterMode by mutableStateOf(pageUiState.trackedFilterMode)
@@ -55,7 +53,6 @@ internal class GitHubPageState(
     var showDroidSourcesSheet by sheetState::showDroidSourcesSheet
     var showDebugSheet by sheetState::showDebugSheet
     var showActionsSheet by sheetState::showActionsSheet
-    var showOverviewEntrySheet by sheetState::showOverviewEntrySheet
     var showDownloaderPopup by sheetState::showDownloaderPopup
     var editingTrackedItem by sheetState::editingTrackedItem
     var actionsTargetItem by sheetState::actionsTargetItem
@@ -164,7 +161,6 @@ internal class GitHubPageState(
     var shareImportResolving by mutableStateOf(false)
     var sortMode by mutableStateOf(pageUiState.sortMode)
     var sortDirection by mutableStateOf(pageUiState.sortDirection)
-    var overviewVisibleEntries by overviewState::overviewVisibleEntries
     var pendingDeleteItem by sheetState::pendingDeleteItem
     var overviewRefreshState by overviewState::overviewRefreshState
     var lastRefreshMs by overviewState::lastRefreshMs
@@ -237,7 +233,6 @@ internal class GitHubPageState(
     fun applyPersistedUiState(snapshot: GitHubPagePersistedUiState) {
         val defaultPageUiState = GitHubPageUiState()
         val defaultActionsState = GitHubActionsSectionExpansionState()
-        val defaultOverviewState = GitHubOverviewUiState()
         if (trackedFilterMode == defaultPageUiState.trackedFilterMode) {
             trackedFilterMode = snapshot.pageUiState.trackedFilterMode
         }
@@ -255,9 +250,6 @@ internal class GitHubPageState(
         }
         if (actionsRunsExpanded == defaultActionsState.runsExpanded) {
             actionsRunsExpanded = snapshot.actionsSectionExpansionState.runsExpanded
-        }
-        if (overviewVisibleEntries == defaultOverviewState.visibleEntries) {
-            overviewVisibleEntries = snapshot.overviewUiState.visibleEntries
         }
     }
 

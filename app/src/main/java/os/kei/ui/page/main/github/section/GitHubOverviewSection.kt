@@ -71,10 +71,8 @@ internal fun GitHubOverviewCard(
     overviewRefreshState: OverviewRefreshState,
     refreshProgress: Float,
     lastRefreshMs: Long,
-    visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
     failedFilterActive: Boolean,
-    onEditVisibleEntries: () -> Unit,
     onRetryFailedTracked: () -> Unit,
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
@@ -96,7 +94,6 @@ internal fun GitHubOverviewCard(
     } else {
         overviewRefreshState
     }
-    val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     AppOverviewCard(
         title = stringResource(R.string.github_overview_title),
         backdrop = backdrop,
@@ -111,16 +108,11 @@ internal fun GitHubOverviewCard(
             neutralColor = MiuixTheme.colorScheme.onBackgroundVariant
         ),
         contentColor = MiuixTheme.colorScheme.onBackground,
-        onLongClick = onEditVisibleEntries,
         titleAccessory = {
-            val showLookupMode =
-                GitHubOverviewEntry.Strategy in entries || GitHubOverviewEntry.Api in entries
-            if (showLookupMode) {
-                GitHubOverviewLookupModePill(
-                    label = lookupValue,
-                    color = lookupColor,
-                )
-            }
+            GitHubOverviewLookupModePill(
+                label = lookupValue,
+                color = lookupColor,
+            )
         },
         headerEndActions = {
             if (displayRefreshState != OverviewRefreshState.Idle) {
@@ -179,7 +171,6 @@ internal fun GitHubOverviewCard(
     ) {
         GitHubOverviewExpandedContent(
             isDark = isDark,
-            visibleEntries = entries,
             metrics = metrics,
             failedFilterActive = failedFilterActive,
             onRetryFailedTracked = onRetryFailedTracked,
@@ -191,36 +182,29 @@ internal fun GitHubOverviewCard(
 @Composable
 private fun GitHubOverviewExpandedContent(
     isDark: Boolean,
-    visibleEntries: Set<GitHubOverviewEntry>,
     metrics: GitHubOverviewMetrics,
     failedFilterActive: Boolean,
     onRetryFailedTracked: () -> Unit,
     onFailedFilterToggle: (Boolean) -> Unit
 ) {
-    val entries = visibleEntries.orDefaultGitHubOverviewEntries()
     val metricPills =
-        buildGitHubOverviewExpandedPillPlan(entries).map { pill ->
+        buildGitHubOverviewExpandedPillPlan().map { pill ->
             pill.toDisplayPill(
                 isDark = isDark,
                 metrics = metrics
             )
         }
     val pills =
-        buildList {
-            if (GitHubOverviewEntry.Tracked in entries) {
-                add(
-                    AppOverviewPill(
-                        label = metrics.trackedCount.toString(),
-                        color = overviewMetricColor(
-                            color = GitHubStatusPalette.Stable,
-                            emphasized = metrics.trackedCount > 0,
-                            isDark = isDark,
-                        ),
-                    )
-                )
-            }
-            addAll(metricPills)
-        }
+        listOf(
+            AppOverviewPill(
+                label = metrics.trackedCount.toString(),
+                color = overviewMetricColor(
+                    color = GitHubStatusPalette.Stable,
+                    emphasized = metrics.trackedCount > 0,
+                    isDark = isDark,
+                ),
+            )
+        ) + metricPills
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(CardLayoutRhythm.denseSectionGap)
@@ -266,11 +250,7 @@ private fun GitHubOverviewExpandedContent(
 
 internal enum class GitHubOverviewExpandedPillKind {
     Stable,
-    StableUpdate,
-    StableLatest,
     PreRelease,
-    PreReleaseTracked,
-    PreReleaseUpdate,
     CheckFailed
 }
 
@@ -278,38 +258,12 @@ internal data class GitHubOverviewExpandedPillPlan(
     val kind: GitHubOverviewExpandedPillKind
 )
 
-internal fun buildGitHubOverviewExpandedPillPlan(
-    visibleEntries: Set<GitHubOverviewEntry>
-): List<GitHubOverviewExpandedPillPlan> {
-    val entries = visibleEntries.orDefaultGitHubOverviewEntries()
-    return buildList {
-        when {
-            GitHubOverviewEntry.StableUpdate in entries &&
-                    GitHubOverviewEntry.StableLatest in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.Stable))
-
-            GitHubOverviewEntry.StableUpdate in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.StableUpdate))
-
-            GitHubOverviewEntry.StableLatest in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.StableLatest))
-        }
-        when {
-            GitHubOverviewEntry.PreReleaseTracked in entries &&
-                    GitHubOverviewEntry.PreReleaseUpdate in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreRelease))
-
-            GitHubOverviewEntry.PreReleaseTracked in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreReleaseTracked))
-
-            GitHubOverviewEntry.PreReleaseUpdate in entries ->
-                add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreReleaseUpdate))
-        }
-        if (GitHubOverviewEntry.CheckFailed in entries) {
-            add(GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.CheckFailed))
-        }
-    }
-}
+internal fun buildGitHubOverviewExpandedPillPlan(): List<GitHubOverviewExpandedPillPlan> =
+    listOf(
+        GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.Stable),
+        GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.PreRelease),
+        GitHubOverviewExpandedPillPlan(GitHubOverviewExpandedPillKind.CheckFailed),
+    )
 
 @Composable
 private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
@@ -325,12 +279,6 @@ private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
                 stableTotal
             )
 
-        GitHubOverviewExpandedPillKind.StableUpdate ->
-            stringResource(R.string.github_overview_pill_stable_update, metrics.stableUpdateCount)
-
-        GitHubOverviewExpandedPillKind.StableLatest ->
-            stringResource(R.string.github_overview_pill_stable_latest, metrics.stableLatestCount)
-
         GitHubOverviewExpandedPillKind.PreRelease ->
             stringResource(
                 R.string.github_overview_pill_prerelease_pair,
@@ -338,37 +286,18 @@ private fun GitHubOverviewExpandedPillPlan.toDisplayPill(
                 metrics.preReleaseCount
             )
 
-        GitHubOverviewExpandedPillKind.PreReleaseTracked ->
-            stringResource(R.string.github_overview_pill_prerelease_tracked, metrics.preReleaseCount)
-
-        GitHubOverviewExpandedPillKind.PreReleaseUpdate ->
-            stringResource(
-                R.string.github_overview_pill_prerelease_update,
-                metrics.preReleaseUpdateCount
-            )
-
         GitHubOverviewExpandedPillKind.CheckFailed ->
             stringResource(R.string.github_overview_pill_failed, metrics.failedCount)
     }
     val color = when (kind) {
-        GitHubOverviewExpandedPillKind.Stable,
-        GitHubOverviewExpandedPillKind.StableUpdate ->
+        GitHubOverviewExpandedPillKind.Stable ->
             overviewMetricColor(
                 color = GitHubStatusPalette.Update,
                 emphasized = metrics.stableUpdateCount > 0,
                 isDark = isDark
             )
 
-        GitHubOverviewExpandedPillKind.StableLatest ->
-            overviewMetricColor(
-                color = GitHubStatusPalette.Stable,
-                emphasized = metrics.stableLatestCount > 0,
-                isDark = isDark
-            )
-
-        GitHubOverviewExpandedPillKind.PreRelease,
-        GitHubOverviewExpandedPillKind.PreReleaseTracked,
-        GitHubOverviewExpandedPillKind.PreReleaseUpdate ->
+        GitHubOverviewExpandedPillKind.PreRelease ->
             overviewMetricColor(
                 color = GitHubStatusPalette.PreRelease,
                 emphasized = metrics.preReleaseCount > 0 || metrics.preReleaseUpdateCount > 0,
@@ -411,7 +340,6 @@ private fun GitHubOverviewCardPreview() {
             overviewRefreshState = OverviewRefreshState.Completed,
             refreshProgress = 1f,
             lastRefreshMs = System.currentTimeMillis() - 180_000L,
-            visibleEntries = defaultGitHubOverviewEntries(),
             metrics = GitHubOverviewMetrics(
                 trackedCount = 18,
                 stableUpdateCount = 4,
@@ -424,7 +352,6 @@ private fun GitHubOverviewCardPreview() {
                 latestCheckedAtMillis = System.currentTimeMillis() - 180_000L
             ),
             failedFilterActive = false,
-            onEditVisibleEntries = {},
             onRetryFailedTracked = {},
             onFailedFilterToggle = {}
         )

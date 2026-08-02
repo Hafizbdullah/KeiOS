@@ -63,7 +63,6 @@ private val REPRESENTATIVE_SHEET_SOURCES =
     listOf(
         "app/src/main/java/os/kei/ui/page/main/ba/BaApLimitToolsSheet.kt",
         "app/src/main/java/os/kei/ui/page/main/ba/BaCafeApToolsSheet.kt",
-        "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubOverviewEntrySheet.kt",
         "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubDebugSheet.kt",
         "app/src/main/java/os/kei/ui/page/main/mcp/sheet/McpEditSheet.kt",
         "app/src/main/java/os/kei/ui/page/main/os/shell/OsShellRunnerSheets.kt",
@@ -76,6 +75,5 @@ private val LEGACY_DESCRIPTION_FREE_SOURCES =
         "app/src/main/java/os/kei/ui/page/main/ba/BaCafeApToolsSheet.kt",
         "app/src/main/java/os/kei/ui/page/main/github/share/GitHubShareImportPendingSheet.kt",
         "app/src/main/java/os/kei/ui/page/main/github/share/GitHubShareImportAttachConfirmSheet.kt",
-        "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubOverviewEntrySheet.kt",
         "app/src/main/java/os/kei/ui/page/main/github/sheet/GitHubDebugSheet.kt",
     )

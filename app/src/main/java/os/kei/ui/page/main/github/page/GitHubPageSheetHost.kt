@@ -24,7 +24,6 @@ import os.kei.ui.page.main.github.sheet.GitHubDroidSourcesSheet
 import os.kei.ui.page.main.github.sheet.GitHubFdroidDetailSheet
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
-import os.kei.ui.page.main.github.sheet.GitHubOverviewEntrySheet
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailInput
 import os.kei.ui.page.main.github.sheet.GitHubReleaseNotesDetailUiState
 import os.kei.ui.page.main.github.sheet.GitHubStrategySheet
@@ -75,15 +74,6 @@ internal fun GitHubPageSheetHost(
                 state.lookupConfig.normalizedFdroidCommonRepoIds
             )
         }
-
-    GitHubOverviewEntrySheet(
-        show = state.showOverviewEntrySheet,
-        backdrop = backdrops.sheet,
-        visibleEntries = state.overviewVisibleEntries,
-        onEntryVisibleChange = actions::setOverviewEntryVisible,
-        onReset = actions::resetOverviewEntries,
-        onDismissRequest = actions::closeOverviewEntrySheet,
-    )
 
     GitHubStrategySheet(
         show = state.showStrategySheet,

@@ -253,10 +253,8 @@ internal fun GitHubMainContent(
                         overviewRefreshState = overview.refreshState,
                         refreshProgress = overview.refreshProgress,
                         lastRefreshMs = overview.lastRefreshMs,
-                        visibleEntries = overview.visibleEntries,
                         metrics = overview.metrics,
                         failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
-                        onEditVisibleEntries = actions.onOpenOverviewEntrySheet,
                         onRetryFailedTracked = actions.onRetryFailedTracked,
                         onFailedFilterToggle = actions.onFailedFilterToggle,
                     )

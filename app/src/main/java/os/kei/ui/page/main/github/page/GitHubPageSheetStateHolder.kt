@@ -18,7 +18,6 @@ internal class GitHubPageSheetStateHolder {
     var showDroidSourcesSheet by mutableStateOf(false)
     var showDebugSheet by mutableStateOf(false)
     var showActionsSheet by mutableStateOf(false)
-    var showOverviewEntrySheet by mutableStateOf(false)
     var showDownloaderPopup by mutableStateOf(false)
     var editingTrackedItem by mutableStateOf<GitHubTrackedApp?>(null)
     var actionsTargetItem by mutableStateOf<GitHubTrackedApp?>(null)
