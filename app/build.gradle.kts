@@ -524,6 +524,14 @@ kotlin {
     }
 }
 
+composeCompiler {
+    val reportsEnabled = providers.gradleProperty("composeCompilerReports").orNull == "true"
+    if (reportsEnabled) {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
+}
+
 configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
         substitute(module("top.yukonga.miuix.kmp:miuix-ui"))
