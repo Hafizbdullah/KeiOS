@@ -19,26 +19,26 @@ class McpPageBackdropTest {
     fun contentProducerPrecedesPullRefreshListAndFloatingDockConsumers() {
         val source = sourceFile(MCP_PAGE_CONTENT_SOURCE)
         val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
-        val contentIdentityIndex =
+        val contentMaterialIndex =
             source.indexOf(
-                "contentBackdrop = backdrops.content,",
+                "contentBackdrop = backdrops.contentMaterial,",
                 startIndex = sceneIndex.coerceAtLeast(0),
             )
         val listIndex =
             source.indexOf(
                 "AppPageLazyColumn(",
-                startIndex = contentIdentityIndex.coerceAtLeast(0),
+                startIndex = contentMaterialIndex.coerceAtLeast(0),
             )
         val pullRefreshIndex =
             source.indexOf(
                 "PullToRefresh(",
-                startIndex = contentIdentityIndex.coerceAtLeast(0),
+                startIndex = contentMaterialIndex.coerceAtLeast(0),
             )
         val dockIndex = source.indexOf("McpPageFloatingActionDock(", startIndex = listIndex.coerceAtLeast(0))
 
         assertTrue(sceneIndex >= 0, "MCP page must host the shared content Backdrop scene")
-        assertTrue(contentIdentityIndex > sceneIndex, "The scene producer must receive the MCP content identity")
-        assertTrue(pullRefreshIndex > contentIdentityIndex, "Pull refresh must use the produced content scene")
+        assertTrue(contentMaterialIndex > sceneIndex, "The scene producer must receive the MCP content material")
+        assertTrue(pullRefreshIndex > contentMaterialIndex, "Pull refresh must use the produced content scene")
         assertTrue(listIndex > pullRefreshIndex, "The page list must be composed inside pull refresh")
         assertTrue(dockIndex > listIndex, "The floating dock must be composed after the page list")
         assertTrue(
@@ -46,7 +46,7 @@ class McpPageBackdropTest {
             "The floating dock must sample scrolling content",
         )
         assertEquals(1, source.occurrencesOf("MainPageContentBackdropScene("))
-        assertEquals(1, source.occurrencesOf("contentBackdrop = backdrops.content,"))
+        assertEquals(1, source.occurrencesOf("contentBackdrop = backdrops.contentMaterial,"))
     }
 
     @Test

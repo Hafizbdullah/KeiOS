@@ -80,7 +80,7 @@ private val wrapperSpecs =
             labelWeight = "0.36f",
             valueWeight = "0.64f",
             labelMaxLines = "1",
-            valueMaxLines = "2",
+            valueMaxLines = "valueMaxLines",
             skipsBlankValue = true,
         ),
         WrapperSpec(
