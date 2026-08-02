@@ -186,7 +186,7 @@ internal fun deriveHomePageContentState(
         homeStatusMcp = text.mcpTitle,
         homeStatusGitHub = text.githubTitle,
         homeStatusWebDav = text.webDavTitle,
-        homeStatusPrivilege = text.privilegeTitle,
+        homeStatusPrivilege = text.privilegeTitle(privilegeStatus.mode),
         homeCardMcp = text.mcpCardTitle,
         homeCardGitHub = text.githubCardTitle,
         homeCardWebDav = text.webDavCardTitle,

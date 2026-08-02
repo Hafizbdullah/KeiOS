@@ -21,7 +21,7 @@ internal data class HomePageContentState(
     val homeStatusMcp: String,
     val homeStatusGitHub: String,
     val homeStatusWebDav: String,
-    val homeStatusPrivilege: String,
+    val homeStatusPrivilege: String?,
     val homeCardMcp: String,
     val homeCardGitHub: String,
     val homeCardWebDav: String,

@@ -1,19 +1,73 @@
 package os.kei.ui.page.main.home.state
 
 import androidx.compose.ui.graphics.Color
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import org.junit.Test
 import os.kei.core.prefs.CacheFreshnessSnapshot
+import os.kei.core.privilege.PrivilegeMode
+import os.kei.core.privilege.PrivilegeStatus
+import os.kei.core.privilege.PrivilegeStatusCode
 import os.kei.feature.home.model.HomeAppOverview
 import os.kei.feature.home.model.HomeBaOverview
 import os.kei.feature.home.model.HomeGitHubOverview
 import os.kei.feature.home.model.HomeMcpOverview
 import os.kei.feature.home.model.HomeWebDavOverview
-import kotlin.test.assertEquals
-import os.kei.core.privilege.PrivilegeMode
-import os.kei.core.privilege.PrivilegeStatus
-import os.kei.core.privilege.PrivilegeStatusCode
 
 class HomePageContentDeriverTest {
+    @Test
+    fun disabledPrivilegeModeHidesHomeStatusPill() {
+        val content = privilegeContentState(PrivilegeMode.Disabled, PrivilegeStatusCode.Disabled)
+
+        assertNull(content.homeStatusPrivilege)
+        assertNull(
+            homePrivilegeStatusPill(
+                label = content.homeStatusPrivilege,
+                privilegeGranted = content.privilegeGranted,
+                runningColor = content.runningColor,
+                stoppedColor = content.stoppedColor,
+            ),
+        )
+    }
+
+    @Test
+    fun rootPrivilegeModeShowsRootReadiness() {
+        val content = privilegeContentState(PrivilegeMode.Root, PrivilegeStatusCode.Ready)
+        val pill =
+            requireNotNull(
+                homePrivilegeStatusPill(
+                    label = content.homeStatusPrivilege,
+                    privilegeGranted = content.privilegeGranted,
+                    runningColor = content.runningColor,
+                    stoppedColor = content.stoppedColor,
+                ),
+            )
+
+        assertEquals("Root", pill.label)
+        assertEquals(Color.Green, pill.color)
+    }
+
+    @Test
+    fun shizukuPrivilegeModeKeepsShizukuFailureState() {
+        val content =
+            privilegeContentState(
+                PrivilegeMode.Shizuku,
+                PrivilegeStatusCode.PermissionNotGranted,
+            )
+        val pill =
+            requireNotNull(
+                homePrivilegeStatusPill(
+                    label = content.homeStatusPrivilege,
+                    privilegeGranted = content.privilegeGranted,
+                    runningColor = content.runningColor,
+                    stoppedColor = content.stoppedColor,
+                ),
+            )
+
+        assertEquals("Shizuku", pill.label)
+        assertEquals(Color.Red, pill.color)
+    }
+
     @Test
     fun enabledBaAccountUsesEnabledColorEvenWithoutLegacyActivation() {
         val enabledColor = Color.Green
@@ -259,6 +313,28 @@ class HomePageContentDeriverTest {
             rebuildable = true,
         )
 
+    private fun privilegeContentState(
+        mode: PrivilegeMode,
+        code: PrivilegeStatusCode,
+    ): HomePageContentState =
+        deriveHomePageContentState(
+            privilegeStatus = PrivilegeStatus(mode = mode, code = code),
+            appOverview = HomeAppOverview(),
+            mcpOverview = HomeMcpOverview(),
+            githubOverview = HomeGitHubOverview(),
+            webDavOverview = HomeWebDavOverview(),
+            baOverview = HomeBaOverview(),
+            runtimeNowMs = 0L,
+            text = testTextBundle(),
+            colors =
+                HomePageContentColors(
+                    runningColor = Color.Green,
+                    stoppedColor = Color.Red,
+                    inactiveColor = Color.Gray,
+                    githubCacheColor = Color.Yellow,
+                ),
+        )
+
     private fun testTextBundle(): HomePageContentTextBundle =
         HomePageContentTextBundle(
             commonNa = "N/A",
@@ -267,7 +343,8 @@ class HomePageContentDeriverTest {
             mcpTitle = "MCP",
             githubTitle = "GitHub",
             webDavTitle = "WebDAV",
-            privilegeTitle = "Shizuku",
+            shizukuPrivilegeTitle = "Shizuku",
+            rootPrivilegeTitle = "Root",
             mcpCardTitle = "MCP card",
             githubCardTitle = "GitHub card",
             webDavCardTitle = "WebDAV card",

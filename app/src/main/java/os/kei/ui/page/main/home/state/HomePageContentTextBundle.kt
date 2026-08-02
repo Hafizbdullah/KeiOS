@@ -5,8 +5,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import os.kei.R
 import java.util.Locale
+import os.kei.R
+import os.kei.core.privilege.PrivilegeMode
 
 @Immutable
 internal data class HomePageContentTextBundle(
@@ -16,7 +17,8 @@ internal data class HomePageContentTextBundle(
     val mcpTitle: String,
     val githubTitle: String,
     val webDavTitle: String,
-    val privilegeTitle: String,
+    val shizukuPrivilegeTitle: String,
+    val rootPrivilegeTitle: String,
     val mcpCardTitle: String,
     val githubCardTitle: String,
     val webDavCardTitle: String,
@@ -101,6 +103,13 @@ internal data class HomePageContentTextBundle(
     private val cafeFractionPattern: String,
     private val thresholdPlusPattern: String,
 ) {
+    fun privilegeTitle(mode: PrivilegeMode): String? =
+        when (mode) {
+            PrivilegeMode.Disabled -> null
+            PrivilegeMode.Shizuku -> shizukuPrivilegeTitle
+            PrivilegeMode.Root -> rootPrivilegeTitle
+        }
+
     fun githubCount(count: Int): String = githubCountPattern.formatLocalized(count)
 
     fun shortHours(hours: Int): String = shortHoursPattern.formatLocalized(hours)
@@ -166,7 +175,8 @@ internal fun rememberHomePageContentTextBundle(): HomePageContentTextBundle {
             mcpTitle = context.getString(R.string.page_mcp_title),
             githubTitle = context.getString(R.string.github_page_title),
             webDavTitle = context.getString(R.string.home_status_webdav),
-            privilegeTitle = context.getString(R.string.home_status_shizuku),
+            shizukuPrivilegeTitle = context.getString(R.string.home_status_shizuku),
+            rootPrivilegeTitle = context.getString(R.string.home_status_root),
             mcpCardTitle = context.getString(R.string.home_card_title_mcp),
             githubCardTitle = context.getString(R.string.home_card_title_github_cache),
             webDavCardTitle = context.getString(R.string.home_card_title_webdav),

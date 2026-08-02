@@ -264,33 +264,35 @@ internal fun rememberHomePageOverviewCardState(
         warningColor,
     ) {
         val homeHeaderStatusPills =
-            listOf(
-                HomeHeaderStatusPillState(
-                    label = content.homeStatusMcp,
-                    color = if (mcpOverview.running) content.runningColor else content.stoppedColor,
-                    minWidth = 62.dp,
-                ),
-                HomeHeaderStatusPillState(
-                    label = content.homeStatusGitHub,
-                    color = content.cacheStateColor,
-                    minWidth = 72.dp,
-                ),
-                HomeHeaderStatusPillState(
-                    label = content.homeStatusWebDav,
-                    color = if (webDavOverview.configured) content.runningColor else content.stoppedColor,
-                    minWidth = 78.dp,
-                ),
-                HomeHeaderStatusPillState(
+            buildList {
+                add(
+                    HomeHeaderStatusPillState(
+                        label = content.homeStatusMcp,
+                        color = if (mcpOverview.running) content.runningColor else content.stoppedColor,
+                        minWidth = 62.dp,
+                    ),
+                )
+                add(
+                    HomeHeaderStatusPillState(
+                        label = content.homeStatusGitHub,
+                        color = content.cacheStateColor,
+                        minWidth = 72.dp,
+                    ),
+                )
+                add(
+                    HomeHeaderStatusPillState(
+                        label = content.homeStatusWebDav,
+                        color = if (webDavOverview.configured) content.runningColor else content.stoppedColor,
+                        minWidth = 78.dp,
+                    ),
+                )
+                homePrivilegeStatusPill(
                     label = content.homeStatusPrivilege,
-                    color = if (content.privilegeGranted) content.runningColor else content.stoppedColor,
-                    minWidth = 70.dp,
-                    contentPadding =
-                        androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 8.dp,
-                            vertical = 5.dp,
-                        ),
-                ),
-            )
+                    privilegeGranted = content.privilegeGranted,
+                    runningColor = content.runningColor,
+                    stoppedColor = content.stoppedColor,
+                )?.let(::add)
+            }
 
         val mcpEndpoint =
             mcpOverview.port
@@ -528,6 +530,25 @@ internal fun rememberHomePageOverviewCardState(
         )
     }
 }
+
+internal fun homePrivilegeStatusPill(
+    label: String?,
+    privilegeGranted: Boolean,
+    runningColor: Color,
+    stoppedColor: Color,
+): HomeHeaderStatusPillState? =
+    label?.let {
+        HomeHeaderStatusPillState(
+            label = it,
+            color = if (privilegeGranted) runningColor else stoppedColor,
+            minWidth = 70.dp,
+            contentPadding =
+                androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 8.dp,
+                    vertical = 5.dp,
+                ),
+        )
+    }
 
 internal fun homeBaActiveAccountColor(
     overview: HomeBaOverview,
