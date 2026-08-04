@@ -2,8 +2,62 @@ package os.kei.ui.page.main.host.pager
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MainLoadedPagerStateTest {
+    @Test
+    fun `gesture settle preserves velocity toward its target`() {
+        assertEquals(
+            2f,
+            resolveLoadedPagerSettleInitialVelocity(
+                start = 0.35f,
+                target = 1f,
+                gestureVelocityPagesPerSecond = 2f,
+            ),
+        )
+        assertEquals(
+            -2f,
+            resolveLoadedPagerSettleInitialVelocity(
+                start = 0.65f,
+                target = 0f,
+                gestureVelocityPagesPerSecond = -2f,
+            ),
+        )
+    }
+
+    @Test
+    fun `gesture settle discards velocity moving away from its target`() {
+        assertEquals(
+            0f,
+            resolveLoadedPagerSettleInitialVelocity(
+                start = 0.35f,
+                target = 1f,
+                gestureVelocityPagesPerSecond = -2f,
+            ),
+        )
+        assertEquals(
+            0f,
+            resolveLoadedPagerSettleInitialVelocity(
+                start = 0.65f,
+                target = 0f,
+                gestureVelocityPagesPerSecond = 2f,
+            ),
+        )
+    }
+
+    @Test
+    fun `gesture settle limits high velocity near its target`() {
+        val resolvedVelocity =
+            resolveLoadedPagerSettleInitialVelocity(
+                start = 0.97f,
+                target = 1f,
+                gestureVelocityPagesPerSecond = 20f,
+            )
+
+        assertTrue(resolvedVelocity > 0f)
+        assertTrue(resolvedVelocity < 2f)
+    }
+
     @Test
     fun `initial page resolver keeps saved page identity after page list shrinks`() {
         val resolved = resolveMainLoadedPagerInitialPage(

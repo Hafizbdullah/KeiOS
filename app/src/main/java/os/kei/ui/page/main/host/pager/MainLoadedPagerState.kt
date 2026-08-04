@@ -114,7 +114,7 @@ internal class MainLoadedPagerState internal constructor(
         animateToPageInternal(
             target = velocityTarget.coerceIn(minTarget, maxTarget),
             animationsEnabled = animationsEnabled,
-            durationMillis = MainLoadedPagerSettleDurationMillis,
+            motion = MainLoadedPagerMotion.GestureSettle(velocityPagesPerSecond),
             epoch = navigationEpoch
         )
     }
@@ -127,7 +127,7 @@ internal class MainLoadedPagerState internal constructor(
         animateToPageInternal(
             target = target,
             animationsEnabled = animationsEnabled,
-            durationMillis = durationMillis,
+            motion = MainLoadedPagerMotion.Timed(durationMillis),
             epoch = nextNavigationEpoch()
         )
     }
@@ -148,7 +148,7 @@ internal class MainLoadedPagerState internal constructor(
             animateToPageInternal(
                 target = coercedTarget,
                 animationsEnabled = true,
-                durationMillis = durationMillis,
+                motion = MainLoadedPagerMotion.Timed(durationMillis),
                 epoch = epoch
             )
             return
@@ -168,7 +168,7 @@ internal class MainLoadedPagerState internal constructor(
         animateToPageInternal(
             target = coercedTarget,
             animationsEnabled = true,
-            durationMillis = durationMillis,
+            motion = MainLoadedPagerMotion.Timed(durationMillis),
             epoch = epoch
         )
     }
@@ -176,7 +176,7 @@ internal class MainLoadedPagerState internal constructor(
     private suspend fun animateToPageInternal(
         target: Int,
         animationsEnabled: Boolean,
-        durationMillis: Int,
+        motion: MainLoadedPagerMotion,
         epoch: Int = nextNavigationEpoch()
     ) {
         val coercedTarget = coercePage(target)
@@ -192,16 +192,28 @@ internal class MainLoadedPagerState internal constructor(
         isScrollInProgress = true
         targetPage = coercedTarget
         try {
-            animateLoadedPagerPosition(
-                start = startPosition,
-                target = coercedTarget.toFloat(),
-                durationMillis = durationMillis,
-                onFrame = { value ->
-                    if (isNavigationCurrent(epoch)) {
-                        updatePosition(value, target = coercedTarget, scrolling = true, settle = false)
-                    }
+            val onFrame: (Float) -> Unit = { value ->
+                if (isNavigationCurrent(epoch)) {
+                    updatePosition(value, target = coercedTarget, scrolling = true, settle = false)
                 }
-            )
+            }
+            when (motion) {
+                is MainLoadedPagerMotion.GestureSettle ->
+                    animateLoadedPagerSettlePosition(
+                        start = startPosition,
+                        target = coercedTarget.toFloat(),
+                        gestureVelocityPagesPerSecond = motion.initialVelocityPagesPerSecond,
+                        onFrame = onFrame,
+                    )
+
+                is MainLoadedPagerMotion.Timed ->
+                    animateLoadedPagerPosition(
+                        start = startPosition,
+                        target = coercedTarget.toFloat(),
+                        durationMillis = motion.durationMillis,
+                        onFrame = onFrame,
+                    )
+            }
             snapToPage(coercedTarget, epoch)
         } finally {
             if (isNavigationCurrent(epoch) && isScrollInProgress) {
@@ -261,6 +273,12 @@ internal class MainLoadedPagerState internal constructor(
     private fun lastIndex(): Int = pageCount - 1
 }
 
+private sealed interface MainLoadedPagerMotion {
+    data class Timed(val durationMillis: Int) : MainLoadedPagerMotion
+
+    data class GestureSettle(val initialVelocityPagesPerSecond: Float) : MainLoadedPagerMotion
+}
+
 @Composable
 internal fun rememberMainLoadedPagerState(
     initialPage: Int,
@@ -290,7 +308,6 @@ internal fun rememberMainLoadedPagerState(
 }
 
 private const val MainLoadedPagerVelocityThreshold = 0.55f
-private const val MainLoadedPagerSettleDurationMillis = 220
 
 internal fun resolveMainLoadedPagerInitialPage(
     pageKeys: List<String>,
