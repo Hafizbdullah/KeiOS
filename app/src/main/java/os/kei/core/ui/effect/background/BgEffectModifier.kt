@@ -14,9 +14,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-private const val BG_EFFECT_HIGH_FPS = 60L
-private const val BG_EFFECT_LOW_FPS = 30L
-private const val BG_EFFECT_LOW_ALPHA_THRESHOLD = 0.5f
 private const val BG_EFFECT_TIME_WRAP_SECONDS = 62.831852f
 private const val BG_EFFECT_VISIBLE_ALPHA_THRESHOLD = 0.001f
 
@@ -150,14 +147,10 @@ private class BgEffectNode(
         startOffset = animTime
         animationJob = coroutineScope.launch {
             val origin = withFrameNanos { it }
-            var lastEmit = origin
             while (isActive) {
                 val now = withFrameNanos { it }
-                val currentAlpha = alpha()
-                val targetFps = if (currentAlpha < BG_EFFECT_LOW_ALPHA_THRESHOLD) BG_EFFECT_LOW_FPS else BG_EFFECT_HIGH_FPS
-                val minDeltaNanos = 1_000_000_000L / targetFps
-                if (now - lastEmit < minDeltaNanos) continue
-                lastEmit = now
+                // Choreographer already follows the display's ARR/LTPO cadence. Update on every
+                // delivered VSYNC so 120/90/60 Hz and thermal transitions keep a single phase.
                 animTime = (startOffset + (now - origin) / 1_000_000_000f) % BG_EFFECT_TIME_WRAP_SECONDS
                 invalidateDraw()
             }
