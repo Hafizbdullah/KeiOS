@@ -313,8 +313,9 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.BaStudentGuide> {
+                    entry<KeiosRoute.BaStudentGuide> { route ->
                         BaStudentGuidePage(
+                            warmStartId = route.nonce,
                             liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                             preloadingEnabled = prefsState.preloadingEnabled,
                             onBack = onRouteBack,

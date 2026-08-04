@@ -73,11 +73,18 @@ private data class BaStudentGuideAuxUiState(
     val requestedInitialBottomTab: GuideBottomTab? = null,
 )
 
+internal fun shouldShowBaStudentGuideBlockingLoading(
+    currentInfo: BaStudentGuideInfo?,
+    manualRefresh: Boolean,
+): Boolean = currentInfo == null || manualRefresh
+
 internal class BaStudentGuideViewModel(
     application: Application,
+    warmStartId: Long = 0L,
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaStudentGuideRepository()
+    private val navigationWarmStart = BaStudentGuideNavigationWarmStartStore.consume(warmStartId)
     private val mediaImageLoader =
         GuideMediaImageLoader(
             appContext = appContext,
@@ -94,7 +101,11 @@ internal class BaStudentGuideViewModel(
     private var pendingFixedMediaSaveRequest: GuideMediaSaveRequest? = null
     private var pendingCustomMediaPackSaveRequest: GuideMediaPackSaveRequest? = null
     private var pendingFixedMediaPackSaveRequest: GuideMediaPackSaveRequest? = null
-    private var lastLoadedSourceUrl: String = ""
+    private var lastLoadedSourceUrl: String =
+        navigationWarmStart
+            ?.takeIf { warmStart -> warmStart.info != null }
+            ?.sourceUrl
+            .orEmpty()
     private val mediaSaveCoordinator =
         BaStudentGuideMediaSaveCoordinator(
             appContext = appContext,
@@ -108,7 +119,16 @@ internal class BaStudentGuideViewModel(
             repository = repository,
         )
 
-    private val _dataState = MutableStateFlow(BaStudentGuideDataUiState())
+    private val _dataState =
+        MutableStateFlow(
+            navigationWarmStart?.let { warmStart ->
+                BaStudentGuideDataUiState(
+                    sourceUrl = warmStart.sourceUrl,
+                    info = warmStart.info,
+                    loading = warmStart.info == null,
+                )
+            } ?: BaStudentGuideDataUiState(),
+        )
     val dataState: StateFlow<BaStudentGuideDataUiState> = _dataState.asStateFlow()
 
     val prefetchState: StateFlow<BaStudentGuidePrefetchUiState> = prefetchController.state
@@ -128,7 +148,8 @@ internal class BaStudentGuideViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptySet(),
             )
-    private val _isNpcSatelliteGuide = MutableStateFlow(false)
+    private val _isNpcSatelliteGuide =
+        MutableStateFlow(navigationWarmStart?.isNpcSatelliteGuide ?: false)
     private val _mediaSettings = MutableStateFlow(BaStudentGuideMediaSettings())
     private val _requestedInitialBottomTab = MutableStateFlow<GuideBottomTab?>(null)
     private val auxState: StateFlow<BaStudentGuideAuxUiState> =
@@ -196,10 +217,18 @@ internal class BaStudentGuideViewModel(
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = BaStudentGuideContentPresentationState(),
+            initialValue =
+                navigationWarmStart?.contentPresentationState
+                    ?: BaStudentGuideContentPresentationState(),
         )
 
     init {
+        navigationWarmStart?.let { warmStart ->
+            prefetchController.resetForSource(
+                sourceUrl = warmStart.sourceUrl,
+                guideSyncToken = warmStart.info?.syncedAtMs ?: -1L,
+            )
+        }
         viewModelScope.launch {
             _mediaSettings.value = repository.loadMediaSettings()
         }
@@ -512,7 +541,13 @@ internal class BaStudentGuideViewModel(
                 }
                 _dataState.update { state ->
                     if (state.sourceUrl == sourceUrl) {
-                        state.copy(loading = true, error = null)
+                        state.copy(
+                            loading = shouldShowBaStudentGuideBlockingLoading(
+                                currentInfo = state.info,
+                                manualRefresh = manualRefresh,
+                            ),
+                            error = null,
+                        )
                     } else {
                         state
                     }

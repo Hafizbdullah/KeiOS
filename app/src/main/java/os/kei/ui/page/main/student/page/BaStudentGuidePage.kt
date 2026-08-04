@@ -78,6 +78,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun BaStudentGuidePage(
+    warmStartId: Long = 0L,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     onBack: () -> Unit,
@@ -126,7 +127,13 @@ fun BaStudentGuidePage(
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
-    val guideViewModel: BaStudentGuideViewModel = applicationViewModel(create = ::BaStudentGuideViewModel)
+    val guideViewModel: BaStudentGuideViewModel =
+        applicationViewModel { application ->
+            BaStudentGuideViewModel(
+                application = application,
+                warmStartId = warmStartId,
+            )
+        }
     val guideUiState by guideViewModel.uiState.collectAsStateWithLifecycle()
     val guideMediaImageState by guideViewModel.mediaImageState.collectAsStateWithLifecycle()
     val profileLinkTitleState by guideViewModel.profileLinkTitleState.collectAsStateWithLifecycle()
