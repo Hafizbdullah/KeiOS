@@ -2,9 +2,169 @@ package os.kei.ui.page.main.host.pager
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class MainLoadedPagerStateTest {
+    @Test
+    fun `far tab jump renders the outgoing and target pages as one visual pair`() {
+        assertTrue(shouldUseLoadedPagerVisualPair(startPage = 0, targetPage = 4))
+        assertFalse(shouldUseLoadedPagerVisualPair(startPage = 3, targetPage = 4))
+        assertTrue(
+            isLoadedPagerVisualPairPage(
+                pageIndex = 0,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertTrue(
+            isLoadedPagerVisualPairPage(
+                pageIndex = 4,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertFalse(
+            isLoadedPagerVisualPairPage(
+                pageIndex = 2,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+
+        assertEquals(
+            0f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 0,
+                pagePosition = 0f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            0.08f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 4,
+                pagePosition = 0f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            2f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 3,
+                pagePosition = 0f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            -0.08f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 0,
+                pagePosition = 2f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            0.08f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 4,
+                pagePosition = 2f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+    }
+
+    @Test
+    fun `reverse far tab jump keeps the outgoing page moving right`() {
+        assertEquals(
+            0.08f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 4,
+                pagePosition = 2f,
+                visualFromPage = 4,
+                visualTargetPage = 0,
+            ),
+        )
+        assertEquals(
+            -0.08f,
+            resolveLoadedPagerVisualRelativePosition(
+                pageIndex = 0,
+                pagePosition = 2f,
+                visualFromPage = 4,
+                visualTargetPage = 0,
+            ),
+        )
+    }
+
+    @Test
+    fun `far tab jump draws one fading page on each side of the handoff`() {
+        assertTrue(
+            shouldDrawLoadedPagerVisualPairPage(
+                pageIndex = 0,
+                pagePosition = 1f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertFalse(
+            shouldDrawLoadedPagerVisualPairPage(
+                pageIndex = 4,
+                pagePosition = 1f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertFalse(
+            shouldDrawLoadedPagerVisualPairPage(
+                pageIndex = 0,
+                pagePosition = 2f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertTrue(
+            shouldDrawLoadedPagerVisualPairPage(
+                pageIndex = 4,
+                pagePosition = 2f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+
+        assertEquals(
+            0.43f,
+            resolveLoadedPagerVisualPairVeilAlpha(
+                pageIndex = 0,
+                pagePosition = 1f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            0.86f,
+            resolveLoadedPagerVisualPairVeilAlpha(
+                pageIndex = 4,
+                pagePosition = 2f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+        assertEquals(
+            0.43f,
+            resolveLoadedPagerVisualPairVeilAlpha(
+                pageIndex = 4,
+                pagePosition = 3f,
+                visualFromPage = 0,
+                visualTargetPage = 4,
+            ),
+        )
+    }
+
     @Test
     fun `gesture settle preserves velocity toward its target`() {
         assertEquals(

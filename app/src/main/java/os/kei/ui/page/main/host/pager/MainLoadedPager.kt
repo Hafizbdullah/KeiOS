@@ -13,9 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -43,6 +45,7 @@ internal fun MainLoadedPager(
                 .clipToBounds(),
     ) {
         val pageWidthPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+        val visualPairVeilColor = MiuixTheme.colorScheme.background
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -65,6 +68,7 @@ internal fun MainLoadedPager(
                 )
         ) {
             repeat(state.pageCount) { pageIndex ->
+                val flattenVisualPairPage = state.isVisualPairPage(pageIndex)
                 val semanticsModifier = if (pageIndex == state.accessibilityPage) {
                     Modifier
                 } else {
@@ -73,8 +77,20 @@ internal fun MainLoadedPager(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .loadedPagerPageOffset(pageIndex, state, pageWidthPx)
-                        .drawLoadedPagerPage(pageIndex, state)
+                        .loadedPagerPageMotion(
+                            pageIndex = pageIndex,
+                            state = state,
+                            pageWidthPx = pageWidthPx,
+                            flattenVisualPairPage = flattenVisualPairPage,
+                            visualPairVeilColor = visualPairVeilColor,
+                        )
+                        .then(
+                            if (flattenVisualPairPage) {
+                                Modifier
+                            } else {
+                                Modifier.drawLoadedPagerPage(pageIndex, state)
+                            },
+                        )
                         .then(semanticsModifier)
                 ) {
                     pageContent(pageIndex)
@@ -84,16 +100,35 @@ internal fun MainLoadedPager(
     }
 }
 
-private fun Modifier.loadedPagerPageOffset(
+private fun Modifier.loadedPagerPageMotion(
     pageIndex: Int,
     state: MainLoadedPagerState,
-    pageWidthPx: Float
-): Modifier = offset {
-    IntOffset(
-        x = ((pageIndex - state.pagePosition) * pageWidthPx).roundToInt(),
-        y = 0
-    )
-}
+    pageWidthPx: Float,
+    flattenVisualPairPage: Boolean,
+    visualPairVeilColor: androidx.compose.ui.graphics.Color,
+): Modifier =
+    if (flattenVisualPairPage) {
+        drawWithContent {
+            if (state.shouldDrawVisualPairPage(pageIndex)) {
+                translate(
+                    left = state.relativePositionFor(pageIndex) * pageWidthPx,
+                ) {
+                    this@drawWithContent.drawContent()
+                }
+                drawRect(
+                    color = visualPairVeilColor,
+                    alpha = state.visualPairVeilAlphaFor(pageIndex),
+                )
+            }
+        }
+    } else {
+        offset {
+            IntOffset(
+                x = (state.relativePositionFor(pageIndex) * pageWidthPx).roundToInt(),
+                y = 0,
+            )
+        }
+    }
 
 private fun Modifier.drawLoadedPagerPage(
     pageIndex: Int,
@@ -104,7 +139,7 @@ private fun Modifier.drawLoadedPagerPage(
     } else {
         MainLoadedPagerSettledDrawDistance
     }
-    val relativePosition = pageIndex - state.pagePosition
+    val relativePosition = state.relativePositionFor(pageIndex)
     if (abs(relativePosition) <= drawDistance) {
         val pageOffsetPx = relativePosition * size.width
         val clipLeft = max(0f, -pageOffsetPx)

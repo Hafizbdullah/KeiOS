@@ -43,6 +43,12 @@ internal class MainLoadedPagerState internal constructor(
 
     private var navigationEpoch by mutableIntStateOf(0)
 
+    private var visualJumpEpoch by mutableIntStateOf(0)
+
+    private var visualJumpFromPage by mutableIntStateOf(NoLoadedPagerVisualJumpPage)
+
+    private var visualJumpTargetPage by mutableIntStateOf(NoLoadedPagerVisualJumpPage)
+
     private var userScrollStartPage: Int = initialPage
 
     val accessibilityPage: Int
@@ -124,13 +130,87 @@ internal class MainLoadedPagerState internal constructor(
         animationsEnabled: Boolean,
         durationMillis: Int
     ) {
-        animateToPageInternal(
-            target = target,
-            animationsEnabled = animationsEnabled,
-            motion = MainLoadedPagerMotion.Timed(durationMillis),
-            epoch = nextNavigationEpoch()
-        )
+        val epoch = nextNavigationEpoch()
+        val coercedTarget = coercePage(target)
+        val visualFromPage = pagePosition.roundToInt().coerceIn(0, lastIndex().coerceAtLeast(0))
+        if (
+            animationsEnabled &&
+                shouldUseLoadedPagerVisualPair(
+                    startPage = visualFromPage,
+                    targetPage = coercedTarget,
+                )
+        ) {
+            animateToPageAsVisualPair(
+                visualFromPage = visualFromPage,
+                target = coercedTarget,
+                durationMillis = durationMillis,
+                epoch = epoch,
+            )
+        } else {
+            animateToPageInternal(
+                target = coercedTarget,
+                animationsEnabled = animationsEnabled,
+                motion = MainLoadedPagerMotion.Timed(durationMillis),
+                epoch = epoch,
+            )
+        }
     }
+
+    private suspend fun animateToPageAsVisualPair(
+        visualFromPage: Int,
+        target: Int,
+        durationMillis: Int,
+        epoch: Int,
+    ) {
+        visualJumpEpoch = epoch
+        visualJumpFromPage = visualFromPage
+        visualJumpTargetPage = target
+        try {
+            animateToPageInternal(
+                target = target,
+                animationsEnabled = true,
+                motion = MainLoadedPagerMotion.Timed(durationMillis),
+                epoch = epoch,
+            )
+        } finally {
+            if (visualJumpEpoch == epoch) {
+                visualJumpEpoch = 0
+                visualJumpFromPage = NoLoadedPagerVisualJumpPage
+                visualJumpTargetPage = NoLoadedPagerVisualJumpPage
+            }
+        }
+    }
+
+    internal fun relativePositionFor(pageIndex: Int): Float =
+        resolveLoadedPagerVisualRelativePosition(
+            pageIndex = pageIndex,
+            pagePosition = pagePosition,
+            visualFromPage = visualJumpFromPage,
+            visualTargetPage = visualJumpTargetPage,
+        )
+
+    internal fun isVisualPairPage(pageIndex: Int): Boolean =
+        isLoadedPagerVisualPairPage(
+            pageIndex = pageIndex,
+            visualFromPage = visualJumpFromPage,
+            visualTargetPage = visualJumpTargetPage,
+        )
+
+    internal fun shouldDrawVisualPairPage(pageIndex: Int): Boolean =
+        shouldDrawLoadedPagerVisualPairPage(
+            pageIndex = pageIndex,
+            pagePosition = pagePosition,
+            visualFromPage = visualJumpFromPage,
+            visualTargetPage = visualJumpTargetPage,
+        )
+
+    internal fun visualPairVeilAlphaFor(pageIndex: Int): Float =
+        resolveLoadedPagerVisualPairVeilAlpha(
+            pageIndex = pageIndex,
+            pagePosition = pagePosition,
+            visualFromPage = visualJumpFromPage,
+            visualTargetPage = visualJumpTargetPage,
+        )
 
     internal suspend fun animateToPageViaAdjacent(
         target: Int,
@@ -308,6 +388,152 @@ internal fun rememberMainLoadedPagerState(
 }
 
 private const val MainLoadedPagerVelocityThreshold = 0.55f
+
+private const val NoLoadedPagerVisualJumpPage = -1
+
+private const val LoadedPagerHiddenPageRelativePosition = 2f
+
+private const val LoadedPagerVisualPairHandoffProgress = 0.5f
+
+private const val LoadedPagerVisualPairParallaxDistance = 0.08f
+
+private const val LoadedPagerVisualPairMaximumVeilAlpha = 0.86f
+
+internal fun shouldUseLoadedPagerVisualPair(
+    startPage: Int,
+    targetPage: Int,
+): Boolean = abs(targetPage - startPage) > 1
+
+internal fun isLoadedPagerVisualPairPage(
+    pageIndex: Int,
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Boolean =
+    visualFromPage != NoLoadedPagerVisualJumpPage &&
+        visualTargetPage != NoLoadedPagerVisualJumpPage &&
+        visualFromPage != visualTargetPage &&
+        (pageIndex == visualFromPage || pageIndex == visualTargetPage)
+
+internal fun resolveLoadedPagerVisualRelativePosition(
+    pageIndex: Int,
+    pagePosition: Float,
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Float {
+    if (
+        visualFromPage == NoLoadedPagerVisualJumpPage ||
+            visualTargetPage == NoLoadedPagerVisualJumpPage ||
+            visualFromPage == visualTargetPage
+    ) {
+        return pageIndex - pagePosition
+    }
+    val direction = loadedPagerVisualPairDirection(visualFromPage, visualTargetPage)
+    val progress = resolveLoadedPagerVisualPairProgress(
+        pagePosition = pagePosition,
+        visualFromPage = visualFromPage,
+        visualTargetPage = visualTargetPage,
+    )
+    return when (pageIndex) {
+        visualFromPage -> {
+            val outgoingProgress =
+                (progress / LoadedPagerVisualPairHandoffProgress).coerceIn(0f, 1f)
+            if (outgoingProgress == 0f) {
+                0f
+            } else {
+                -direction * outgoingProgress * LoadedPagerVisualPairParallaxDistance
+            }
+        }
+        visualTargetPage -> {
+            val incomingProgress =
+                (
+                    (progress - LoadedPagerVisualPairHandoffProgress) /
+                        (1f - LoadedPagerVisualPairHandoffProgress)
+                ).coerceIn(0f, 1f)
+            val remaining = 1f - incomingProgress
+            if (remaining == 0f) {
+                0f
+            } else {
+                direction * remaining * LoadedPagerVisualPairParallaxDistance
+            }
+        }
+        else -> LoadedPagerHiddenPageRelativePosition
+    }
+}
+
+internal fun shouldDrawLoadedPagerVisualPairPage(
+    pageIndex: Int,
+    pagePosition: Float,
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Boolean {
+    if (
+        !isLoadedPagerVisualPairPage(
+            pageIndex = pageIndex,
+            visualFromPage = visualFromPage,
+            visualTargetPage = visualTargetPage,
+        )
+    ) {
+        return false
+    }
+    val progress = resolveLoadedPagerVisualPairProgress(
+        pagePosition = pagePosition,
+        visualFromPage = visualFromPage,
+        visualTargetPage = visualTargetPage,
+    )
+    return if (pageIndex == visualFromPage) {
+        progress < LoadedPagerVisualPairHandoffProgress
+    } else {
+        progress >= LoadedPagerVisualPairHandoffProgress
+    }
+}
+
+internal fun resolveLoadedPagerVisualPairVeilAlpha(
+    pageIndex: Int,
+    pagePosition: Float,
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Float {
+    if (
+        !isLoadedPagerVisualPairPage(
+            pageIndex = pageIndex,
+            visualFromPage = visualFromPage,
+            visualTargetPage = visualTargetPage,
+        )
+    ) {
+        return 1f
+    }
+    val progress = resolveLoadedPagerVisualPairProgress(
+        pagePosition = pagePosition,
+        visualFromPage = visualFromPage,
+        visualTargetPage = visualTargetPage,
+    )
+    val phaseProgress = if (pageIndex == visualFromPage) {
+        (1f - progress / LoadedPagerVisualPairHandoffProgress).coerceIn(0f, 1f)
+    } else {
+        (
+            (progress - LoadedPagerVisualPairHandoffProgress) /
+                (1f - LoadedPagerVisualPairHandoffProgress)
+        ).coerceIn(0f, 1f)
+    }
+    return (1f - phaseProgress) * LoadedPagerVisualPairMaximumVeilAlpha
+}
+
+private fun resolveLoadedPagerVisualPairProgress(
+    pagePosition: Float,
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Float {
+    val direction = loadedPagerVisualPairDirection(visualFromPage, visualTargetPage)
+    val visualDistance = abs(visualTargetPage - visualFromPage).toFloat().coerceAtLeast(1f)
+    return (
+        (pagePosition - visualFromPage) * direction / visualDistance
+    ).coerceIn(0f, 1f)
+}
+
+private fun loadedPagerVisualPairDirection(
+    visualFromPage: Int,
+    visualTargetPage: Int,
+): Float = if (visualTargetPage > visualFromPage) 1f else -1f
 
 internal fun resolveMainLoadedPagerInitialPage(
     pageKeys: List<String>,
