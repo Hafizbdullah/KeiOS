@@ -223,9 +223,10 @@ class MainActivity : ComponentActivity() {
         jankStats =
             AppJankMonitor.attach(
                 window = window,
-                // Enable for debug and benchmark variants so Macrobenchmark runs collect jank
-                // data for comparison. Disabled in release to avoid any frame-callback overhead.
-                enabled = BuildConfig.BUILD_TYPE != "release",
+                // Perfetto supplies benchmark frame metrics without an in-process callback.
+                // Keep JankStats as a debug diagnostic so benchmark and release share the same
+                // frame-delivery path, especially on 120 Hz and ARR displays.
+                enabled = BuildConfig.DEBUG,
             )
     }
 
