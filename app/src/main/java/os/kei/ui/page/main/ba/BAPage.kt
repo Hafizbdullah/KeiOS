@@ -101,7 +101,6 @@ fun BAPage(
     val baClockState = ui.clockState()
     val pagePresentationState =
         remember(
-            runtime.isPageActive,
             officeState,
             calendarUiState,
             poolUiState,
@@ -111,7 +110,6 @@ fun BAPage(
             cafeLevelOptions,
         ) {
             buildBaPagePresentationState(
-                isPageActive = runtime.isPageActive,
                 officeState = officeState,
                 calendarUiState = calendarUiState,
                 poolUiState = poolUiState,

@@ -71,7 +71,6 @@ class BaCalendarPoolContentStateTest {
 
         val contentState =
             buildBaPageContentState(
-                isPageActive = true,
                 officeState = BaOfficeController(BaPageSnapshot()).state(),
                 routeState = routeState,
                 clockState =

@@ -28,7 +28,6 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 
 @Immutable
 internal data class BaPageContentState(
-    val isPageActive: Boolean,
     val officeState: BaOfficeState,
     val clockState: BaPageClockState,
     val accountUiState: BaOfficeAccountUiState,

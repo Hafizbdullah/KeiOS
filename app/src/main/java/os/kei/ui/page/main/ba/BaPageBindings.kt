@@ -33,7 +33,6 @@ internal fun buildBaNotificationSettingsSheetState(draft: BaPageNotificationDraf
     )
 
 internal fun buildBaPageContentState(
-    isPageActive: Boolean,
     officeState: BaOfficeState,
     routeState: BaPageRouteState,
     clockState: BaPageClockState,
@@ -42,7 +41,6 @@ internal fun buildBaPageContentState(
 ): BaPageContentState {
     val popupState = routeState.popupState
     return BaPageContentState(
-        isPageActive = isPageActive,
         officeState = officeState,
         clockState = clockState,
         accountUiState = routeState.accountUiState,

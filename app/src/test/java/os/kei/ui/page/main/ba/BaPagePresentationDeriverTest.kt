@@ -85,7 +85,6 @@ class BaPagePresentationDeriverTest {
 
     private fun buildNotificationPresentation(snapshot: BaPageSnapshot): BaPagePresentationState =
         buildBaPagePresentationState(
-            isPageActive = true,
             officeState = BaOfficeController(snapshot).state(),
             calendarUiState = BaCalendarUiState(),
             poolUiState = BaPoolUiState(),
