@@ -7,10 +7,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.student.page.state.BaStudentGuideNavigationWarmStart
+import os.kei.ui.page.main.student.page.state.BaStudentGuideNavigationWarmStartStore
 import os.kei.ui.page.main.student.page.state.BaStudentGuideRepository
 
 internal sealed interface MainScreenGuideNavigationEvent {
-    data object OpenStudentGuide : MainScreenGuideNavigationEvent
+    data class OpenStudentGuide(
+        val warmStartId: Long,
+    ) : MainScreenGuideNavigationEvent
 }
 
 internal class MainScreenGuideNavigationViewModel : ViewModel() {
@@ -29,11 +33,17 @@ internal class MainScreenGuideNavigationViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.saveCurrentUrlAsync(normalizedUrl)
-                mutableEvents.emit(MainScreenGuideNavigationEvent.OpenStudentGuide)
+                val warmStart = repository.prepareNavigationWarmStart(normalizedUrl)
+                val warmStartId = BaStudentGuideNavigationWarmStartStore.publish(warmStart)
+                mutableEvents.emit(MainScreenGuideNavigationEvent.OpenStudentGuide(warmStartId))
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Throwable) {
-                mutableEvents.emit(MainScreenGuideNavigationEvent.OpenStudentGuide)
+                val warmStartId =
+                    BaStudentGuideNavigationWarmStartStore.publish(
+                        BaStudentGuideNavigationWarmStart(sourceUrl = normalizedUrl),
+                    )
+                mutableEvents.emit(MainScreenGuideNavigationEvent.OpenStudentGuide(warmStartId))
             }
         }
     }

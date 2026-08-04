@@ -101,8 +101,8 @@ fun MainScreen(
     LaunchedEffect(guideNavigationViewModel, navigator) {
         guideNavigationViewModel.events.collect { event ->
             when (event) {
-                MainScreenGuideNavigationEvent.OpenStudentGuide -> {
-                    navigator.push(KeiosRoute.BaStudentGuide(nonce = System.nanoTime()))
+                is MainScreenGuideNavigationEvent.OpenStudentGuide -> {
+                    navigator.push(KeiosRoute.BaStudentGuide(nonce = event.warmStartId))
                 }
             }
         }

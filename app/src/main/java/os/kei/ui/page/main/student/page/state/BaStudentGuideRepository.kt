@@ -128,6 +128,35 @@ internal class BaStudentGuideRepository(
         }
     }
 
+    suspend fun prepareNavigationWarmStart(sourceUrl: String): BaStudentGuideNavigationWarmStart {
+        val requestUrl = normalizeStudentGuideSourceUrl(sourceUrl)
+        if (requestUrl.isBlank()) return BaStudentGuideNavigationWarmStart(sourceUrl = "")
+        val snapshot =
+            withContext(ioDispatcher) {
+                cacheSnapshotLoader(requestUrl)
+            }
+        val info = snapshot.info.takeIf { snapshot.isComplete }
+        val isNpcSatelliteGuide =
+            if (info != null) {
+                resolveNpcSatelliteGuide(
+                    sourceUrl = requestUrl,
+                    info = info,
+                )
+            } else {
+                false
+            }
+        return BaStudentGuideNavigationWarmStart(
+            sourceUrl = requestUrl,
+            info = info,
+            isNpcSatelliteGuide = isNpcSatelliteGuide,
+            contentPresentationState =
+                deriveBaStudentGuideContentPresentationState(
+                    info = info,
+                    isNpcSatelliteGuide = isNpcSatelliteGuide,
+                ),
+        )
+    }
+
     fun bgmFavoritesFlow(): StateFlow<List<GuideBgmFavoriteItem>> = bgmFavoriteRepository.favoritesFlow()
 
     suspend fun hydrateBgmFavorites(): List<GuideBgmFavoriteItem> = bgmFavoriteRepository.hydrateFavorites()
