@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsSectionCard
@@ -30,7 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal fun LazyListScope.addTopInfoCard(
     visible: Boolean,
-    contentBackdrop: LayerBackdrop,
+    contentBackdrop: Backdrop,
     displayedTopInfoRows: List<InfoRow>,
     groupedTopInfoRows: List<TopInfoRowsGroup>,
     query: String,

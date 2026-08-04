@@ -7,8 +7,10 @@ import org.junit.Test
 
 class OsPageContentBackdropTest {
     @Test
-    fun pageSceneProducesContentBackdropBeforeListAndFloatingDockConsumers() {
+    fun pageSceneUsesDirectContentMaterialBeforeListAndFloatingDockConsumers() {
         val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
+        val pageSource = sourceFile(OS_PAGE_SOURCE)
+        val uiContextSource = sourceFile(OS_PAGE_UI_CONTEXT_SOURCE)
         val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
         val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = sceneIndex.coerceAtLeast(0))
         val dockIndex = source.indexOf("AppFloatingVerticalSearchActionDock(", startIndex = listIndex.coerceAtLeast(0))
@@ -24,6 +26,10 @@ class OsPageContentBackdropTest {
         producerActive = chromeState.backdropProducerActive,
         modifier = Modifier.fillMaxSize(),""" in source,
         )
+        assertTrue("contentBackdrop: Backdrop" in source)
+        assertTrue("contentBackdrop = backdrops.contentMaterial" in pageSource)
+        assertTrue("backdropProducerActive = pageBackdropEffectsEnabled && overlaySheetVisible" in pageSource)
+        assertTrue("useSolidSurfaceBackdrops = true" in uiContextSource)
         assertEquals(0, source.occurrencesOf(".layerBackdrop(contentBackdrop)"))
     }
 
@@ -88,3 +94,7 @@ private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).
 
 private const val OS_PAGE_MAIN_LIST_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/os/components/OsPageMainList.kt"
+private const val OS_PAGE_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/os/OsPage.kt"
+private const val OS_PAGE_UI_CONTEXT_SOURCE =
+    "app/src/main/java/os/kei/ui/page/main/os/state/OsPageUiContext.kt"

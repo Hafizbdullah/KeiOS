@@ -29,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import kotlinx.coroutines.flow.first
@@ -144,7 +145,7 @@ internal fun OsPageMainList(
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
     topBarBackdrop: LayerBackdrop,
-    contentBackdrop: LayerBackdrop,
+    contentBackdrop: Backdrop,
     sheetBackdrop: LayerBackdrop,
     chromeState: OsPageMainListChromeState,
     overviewState: OsPageMainListOverviewState,

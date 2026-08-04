@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -54,7 +55,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal fun LazyListScope.addShellCommandCards(
     cards: List<OsShellCommandCard>,
-    contentBackdrop: LayerBackdrop,
+    contentBackdrop: Backdrop,
     expandedStates: Map<String, Boolean>,
     runningCardIds: Set<String>,
     onExpandedChange: (String, Boolean) -> Unit,

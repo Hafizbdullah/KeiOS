@@ -489,7 +489,8 @@ fun OsPage(
         remember(
             isDark,
             titleColor,
-            runtime.isPageActive,
+            pageBackdropEffectsEnabled,
+            overlaySheetVisible,
             runtime.contentBottomPadding,
             runtime.bottomBarVisible,
             runtime.floatingDockSide,
@@ -498,7 +499,7 @@ fun OsPage(
             OsPageMainListChromeState(
                 isDark = isDark,
                 titleColor = titleColor,
-                backdropProducerActive = runtime.isPageActive,
+                backdropProducerActive = pageBackdropEffectsEnabled && overlaySheetVisible,
                 contentBottomPadding = runtime.contentBottomPadding,
                 bottomBarVisible = runtime.bottomBarVisible,
                 floatingDockSide = runtime.floatingDockSide,
@@ -664,7 +665,7 @@ fun OsPage(
                 innerPadding = innerPadding,
                 scrollBehavior = scrollBehavior,
                 topBarBackdrop = backdrops.topBar,
-                contentBackdrop = backdrops.content,
+                contentBackdrop = backdrops.contentMaterial,
                 sheetBackdrop = backdrops.sheet,
                 chromeState = mainListChromeState,
                 overviewState = mainListOverviewState,

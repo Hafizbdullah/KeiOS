@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.os.InfoRow
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.widget.glass.AppLiquidAccordionCard
@@ -27,7 +27,7 @@ internal const val SMALL_INFO_ROW_COUNT = 24
 internal fun LazyListScope.addKeyValueSectionCard(
     visible: Boolean,
     card: OsSectionCard,
-    contentBackdrop: LayerBackdrop,
+    contentBackdrop: Backdrop,
     title: String,
     subtitle: String,
     expanded: Boolean,

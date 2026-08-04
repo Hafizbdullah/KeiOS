@@ -44,6 +44,7 @@ internal fun rememberOsPageUiContext(
             keyPrefix = "os",
             refreshOnCompositionEnter = true,
             distinctLayers = enableFullBackdropEffects,
+            useSolidSurfaceBackdrops = true,
         )
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = enableTopBarBackdropEffects)
     val searchBarHideThresholdPx = with(density) { 28.dp.toPx() }
