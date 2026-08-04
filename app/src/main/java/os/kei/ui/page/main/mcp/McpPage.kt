@@ -359,6 +359,7 @@ fun McpPage(
                 listState = listState,
                 scrollBehavior = scrollBehavior,
                 backdrops = backdrops,
+                backdropProducerActive = pageBackdropEffectsEnabled && pageUiState.showEditSheet,
                 titleColor = titleColor,
                 subtitleColor = subtitleColor,
                 isDark = isDark,

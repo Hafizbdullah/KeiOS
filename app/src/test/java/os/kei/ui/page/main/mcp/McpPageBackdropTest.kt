@@ -80,10 +80,15 @@ class McpPageBackdropTest {
         assertTrue(
             "distinctLayers = pageBackdropEffectsEnabled && pageUiState.showEditSheet" in pageSource,
         )
+        assertTrue(
+            "backdropProducerActive = pageBackdropEffectsEnabled && pageUiState.showEditSheet" in pageSource,
+        )
         assertTrue("titleBackdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrops = backdrops" in pageSource)
         assertTrue("contentBackdrop = backdrops.content" in contentSource)
+        assertTrue("producerActive = backdropProducerActive" in contentSource)
+        assertFalse("producerActive = backdrops.sheet !== backdrops.content" in contentSource)
         assertEquals(1, sheetSource.occurrencesOf("backdrop = backdrops.sheet"))
         assertEquals(0, sheetSource.occurrencesOf("backdrop = backdrops.content"))
         assertEquals(0, sheetSource.occurrencesOf("backdrop = backdrops.topBar"))

@@ -57,6 +57,7 @@ internal fun McpPageContent(
     listState: LazyListState,
     scrollBehavior: ScrollBehavior,
     backdrops: MainPageBackdropSet,
+    backdropProducerActive: Boolean,
     titleColor: Color,
     subtitleColor: Color,
     isDark: Boolean,
@@ -67,7 +68,7 @@ internal fun McpPageContent(
     MainPageContentBackdropScene(
         contentBackdrop = backdrops.contentMaterial,
         sheetBackdrop = backdrops.sheet,
-        producerActive = backdrops.sheet !== backdrops.content,
+        producerActive = backdropProducerActive,
         modifier = Modifier.fillMaxSize(),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
