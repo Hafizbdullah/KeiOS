@@ -11,9 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.page.main.host.pager.MainPageBackdropSet
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -37,19 +38,23 @@ class BaPageBackdropTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun baPageBackdropIdentitiesStayIndependentAndStableAfterEntry() {
+    fun baPageUsesStableCanvasContentAndIndependentVisibleSheetAfterEntry() {
         lateinit var recompositionSignal: MutableIntState
-        var observedBackdrops: Triple<LayerBackdrop, LayerBackdrop, LayerBackdrop>? = null
+        var observedBackdrops: MainPageBackdropSet? = null
 
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val signal = remember { mutableIntStateOf(0) }
                 recompositionSignal = signal
-                val backdrops = rememberBaPageBackdropSet(pageBackdropEffectsEnabled = true)
+                val backdrops =
+                    rememberBaPageBackdropSet(
+                        pageBackdropEffectsEnabled = true,
+                        sheetBackdropVisible = true,
+                    )
                 val revision = signal.intValue
 
                 SideEffect {
-                    observedBackdrops = Triple(backdrops.topBar, backdrops.content, backdrops.sheet)
+                    observedBackdrops = backdrops
                     check(revision >= 0)
                 }
                 Box(modifier = Modifier.size(1.dp))
@@ -57,41 +62,82 @@ class BaPageBackdropTest {
         }
 
         composeRule.waitForIdle()
-        lateinit var settledBackdrops: Triple<LayerBackdrop, LayerBackdrop, LayerBackdrop>
+        lateinit var settledBackdrops: MainPageBackdropSet
         composeRule.runOnIdle {
             settledBackdrops = requireNotNull(observedBackdrops)
-            assertNotSame(settledBackdrops.first, settledBackdrops.second)
-            assertNotSame(settledBackdrops.first, settledBackdrops.third)
-            assertNotSame(settledBackdrops.second, settledBackdrops.third)
+            assertSame(settledBackdrops.topBar, settledBackdrops.content)
+            assertNotSame(settledBackdrops.content, settledBackdrops.contentMaterial)
+            assertNotSame(settledBackdrops.topBar, settledBackdrops.sheet)
             recompositionSignal.intValue += 1
         }
         composeRule.waitForIdle()
         composeRule.runOnIdle {
             val recomposedBackdrops = requireNotNull(observedBackdrops)
-            assertSame(settledBackdrops.first, recomposedBackdrops.first)
-            assertSame(settledBackdrops.second, recomposedBackdrops.second)
-            assertSame(settledBackdrops.third, recomposedBackdrops.third)
+            assertSame(settledBackdrops.topBar, recomposedBackdrops.topBar)
+            assertSame(settledBackdrops.content, recomposedBackdrops.content)
+            assertSame(settledBackdrops.contentMaterial, recomposedBackdrops.contentMaterial)
+            assertSame(settledBackdrops.sheet, recomposedBackdrops.sheet)
         }
     }
 
     @Test
-    fun contentProducerPrecedesBaConsumersAndTopBarKeepsItsOwnProducer() {
+    fun baPageReusesTopBarBackdropWhileEverySheetIsHidden() {
+        var observedBackdrops: MainPageBackdropSet? = null
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrops =
+                    rememberBaPageBackdropSet(
+                        pageBackdropEffectsEnabled = true,
+                        sheetBackdropVisible = false,
+                    )
+                SideEffect { observedBackdrops = backdrops }
+                Box(modifier = Modifier.size(1.dp))
+            }
+        }
+
+        composeRule.waitForIdle()
+        composeRule.runOnIdle {
+            val backdrops = requireNotNull(observedBackdrops)
+            assertSame(backdrops.topBar, backdrops.content)
+            assertSame(backdrops.content, backdrops.sheet)
+            assertNotSame(backdrops.content, backdrops.contentMaterial)
+        }
+    }
+
+    @Test
+    fun sheetBackdropVisibilityIncludesEveryBaPageSheet() {
+        assertFalse(BaOfficeChromeUiState().hasVisiblePageSheet)
+        listOf(
+            BaOfficeChromeUiState(showSettingsSheet = true),
+            BaOfficeChromeUiState(showAccountManagementSheet = true),
+            BaOfficeChromeUiState(showNotificationSettingsSheet = true),
+            BaOfficeChromeUiState(showApLimitToolsSheet = true),
+            BaOfficeChromeUiState(showCafeApToolsSheet = true),
+            BaOfficeChromeUiState(cafeCooldownEditTarget = BaCafeCooldownEditTarget.Headpat),
+        ).forEach { state ->
+            assertTrue(state.hasVisiblePageSheet)
+        }
+    }
+
+    @Test
+    fun canvasContentPrecedesBaConsumersAndTopBarKeepsItsOwnProducer() {
         val pageSource = sourceFile(BA_PAGE_SOURCE)
         val contentSource = sourceFile(BA_PAGE_CONTENT_SOURCE)
         val sceneIndex = pageSource.indexOf("MainPageContentBackdropScene(")
         val sceneBackdropIndex =
-            pageSource.indexOf("contentBackdrop = backdrops.content", startIndex = sceneIndex.coerceAtLeast(0))
+            pageSource.indexOf("contentBackdrop = backdrops.contentMaterial", startIndex = sceneIndex.coerceAtLeast(0))
         val scaffoldIndex = pageSource.indexOf("AppScaffold(", startIndex = sceneBackdropIndex.coerceAtLeast(0))
         val contentConsumerIndex =
-            pageSource.indexOf("backdrop = backdrops.content", startIndex = scaffoldIndex.coerceAtLeast(0))
+            pageSource.indexOf("backdrop = backdrops.contentMaterial", startIndex = scaffoldIndex.coerceAtLeast(0))
         val dockConsumerIndex =
             pageSource.indexOf("BaPageFloatingDock(", startIndex = contentConsumerIndex.coerceAtLeast(0))
         val topBarProducerIndex = contentSource.indexOf(".layerBackdrop(topBarBackdrop)")
 
         assertTrue(sceneIndex >= 0, "BA page must host one content Backdrop scene")
-        assertTrue(sceneBackdropIndex > sceneIndex, "BA scene must produce the content identity")
-        assertTrue(scaffoldIndex > sceneBackdropIndex, "Content producer must precede the Scaffold consumer tree")
-        assertTrue(contentConsumerIndex > scaffoldIndex, "BA cards must consume the produced content identity")
+        assertTrue(sceneBackdropIndex > sceneIndex, "BA scene must receive the direct content material")
+        assertTrue(scaffoldIndex > sceneBackdropIndex, "Content material must precede the Scaffold consumer tree")
+        assertTrue(contentConsumerIndex > scaffoldIndex, "BA cards must consume the direct content material")
         assertTrue(dockConsumerIndex > contentConsumerIndex, "Floating dock must be composed after page consumers")
         assertTrue(
             pageSource.indexOf("backdrop = backdrops.topBar", startIndex = dockConsumerIndex) > dockConsumerIndex,
@@ -100,7 +146,18 @@ class BaPageBackdropTest {
         assertTrue(topBarProducerIndex >= 0, "BA scrolling content must keep the dedicated top-bar producer")
         assertEquals(1, pageSource.occurrencesOf("MainPageContentBackdropScene("))
         assertEquals(1, contentSource.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
-        assertEquals(1, pageSource.occurrencesOf("contentBackdrop = backdrops.content"))
+        assertEquals(1, pageSource.occurrencesOf("contentBackdrop = backdrops.contentMaterial"))
+        assertEquals(1, pageSource.occurrencesOf("backdrop = backdrops.contentMaterial"))
+        assertEquals(
+            1,
+            pageSource.occurrencesOf("producerActive = pageBackdropEffectsEnabled && sheetBackdropVisible"),
+        )
+        assertEquals(
+            1,
+            pageSource.occurrencesOf("distinctLayers = pageBackdropEffectsEnabled && sheetBackdropVisible"),
+        )
+        assertEquals(0, pageSource.occurrencesOf("producerActive = backdrops.sheet !== backdrops.content"))
+        assertEquals(1, pageSource.occurrencesOf("useSolidSurfaceBackdrops = true"))
         assertEquals(0, pageSource.occurrencesOf(".layerBackdrop(backdrops.content)"))
         assertEquals(0, contentSource.occurrencesOf(".layerBackdrop(backdrop)"))
     }

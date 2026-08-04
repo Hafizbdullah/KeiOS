@@ -58,7 +58,6 @@ fun BAPage(
     val pageBackdropEffectsEnabled =
         runtime.isPageActive &&
             !runtime.isPagerScrollInProgress
-    val backdrops = rememberBaPageBackdropSet(pageBackdropEffectsEnabled)
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = pageBackdropEffectsEnabled)
     val baServerCn = stringResource(R.string.ba_server_cn)
     val baServerGlobal = stringResource(R.string.ba_server_global)
@@ -85,6 +84,12 @@ fun BAPage(
 
     val officePageUiState by officeViewModel.pageUiState.collectAsStateWithLifecycle()
     val officeChromeUiState = officePageUiState.chromeUiState
+    val sheetBackdropVisible = officeChromeUiState.hasVisiblePageSheet
+    val backdrops =
+        rememberBaPageBackdropSet(
+            pageBackdropEffectsEnabled = pageBackdropEffectsEnabled,
+            sheetBackdropVisible = sheetBackdropVisible,
+        )
     val office = officeViewModel.office
     val officeState = office.state()
     val ui = rememberBaPageUiController()
@@ -342,9 +347,9 @@ fun BAPage(
     }
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         MainPageContentBackdropScene(
-            contentBackdrop = backdrops.content,
+            contentBackdrop = backdrops.contentMaterial,
             sheetBackdrop = backdrops.sheet,
-            producerActive = runtime.isPageActive,
+            producerActive = pageBackdropEffectsEnabled && sheetBackdropVisible,
             modifier = Modifier.fillMaxSize(),
         ) {
             AppScaffold(
@@ -364,7 +369,7 @@ fun BAPage(
             ) { innerPadding ->
                 BaPageContent(
                     topBarBackdrop = backdrops.topBar,
-                    backdrop = backdrops.content,
+                    backdrop = backdrops.contentMaterial,
                     innerPadding = innerPadding,
                     contentBottomPadding = runtime.contentBottomPadding,
                     listState = listState,
@@ -436,9 +441,13 @@ fun BAPage(
 }
 
 @Composable
-internal fun rememberBaPageBackdropSet(pageBackdropEffectsEnabled: Boolean): MainPageBackdropSet =
+internal fun rememberBaPageBackdropSet(
+    pageBackdropEffectsEnabled: Boolean,
+    sheetBackdropVisible: Boolean,
+): MainPageBackdropSet =
     rememberMainPageBackdropSet(
         keyPrefix = "ba",
         refreshOnCompositionEnter = true,
-        distinctLayers = pageBackdropEffectsEnabled,
+        distinctLayers = pageBackdropEffectsEnabled && sheetBackdropVisible,
+        useSolidSurfaceBackdrops = true,
     )

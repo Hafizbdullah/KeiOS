@@ -50,6 +50,15 @@ internal data class BaOfficeChromeUiState(
     val debugUseRealCalendarPoolData: Boolean = true,
 )
 
+internal val BaOfficeChromeUiState.hasVisiblePageSheet: Boolean
+    get() =
+        showSettingsSheet ||
+            showAccountManagementSheet ||
+            showNotificationSettingsSheet ||
+            showApLimitToolsSheet ||
+            showCafeApToolsSheet ||
+            cafeCooldownEditTarget != null
+
 internal data class BaOfficeSyncUiState(
     val calendarReloadSignal: Int = 0,
     val poolReloadSignal: Int = 0,
