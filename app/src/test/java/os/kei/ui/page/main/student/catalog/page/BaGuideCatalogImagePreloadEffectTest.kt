@@ -61,7 +61,7 @@ class BaGuideCatalogImagePreloadEffectTest {
     }
 
     @Test
-    fun `student catalog warmup keeps first screen first then alternates student and npc`() {
+    fun `student catalog preload stays within the active first batch`() {
         val studentEntries = (0 until 24).map { index -> catalogEntry("student-$index", BaGuideCatalogTab.Student) }
         val npcEntries = (0 until 3).map { index -> catalogEntry("npc-$index", BaGuideCatalogTab.NpcSatellite) }
 
@@ -81,16 +81,28 @@ class BaGuideCatalogImagePreloadEffectTest {
             )
 
         assertEquals(
-            (0 until 20).map { index -> "student-$index" } +
-                listOf(
-                    "student-20",
-                    "npc-0",
-                    "student-21",
-                    "npc-1",
-                    "student-22",
-                    "npc-2",
-                    "student-23",
-                ),
+            (0 until 20).map { index -> "student-$index" },
+            urls,
+        )
+    }
+
+    @Test
+    fun `student bgm preload stays within the first visible batch`() {
+        val entries = (0 until 28).map { index -> catalogEntry("bgm-$index") }
+
+        val urls =
+            buildBaGuideCatalogImagePreloadUrls(
+                activeTab = BaGuideCatalogPageTab.StudentBgm,
+                activeCatalogTab = null,
+                catalogListDerivedStates = emptyMap(),
+                studentBgmEntries = entries,
+                favoriteBgms = emptyList(),
+                artworkImageUrl = "artwork",
+                playbackFavorite = null,
+            )
+
+        assertEquals(
+            (0 until 20).map { index -> "bgm-$index" } + "artwork",
             urls,
         )
     }
