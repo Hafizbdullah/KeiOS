@@ -511,6 +511,7 @@ internal fun MainPagerLayout(
                         state = pagerState,
                         userScrollEnabled = coordinator.pagerScrollEnabled,
                         animationsEnabled = transitionAnimationsEnabled,
+                        additionalMotionInProgress = mainPagerBackGestureState.inProgress,
                         modifier = pagerModifier,
                         pageContent = pageContent,
                     )

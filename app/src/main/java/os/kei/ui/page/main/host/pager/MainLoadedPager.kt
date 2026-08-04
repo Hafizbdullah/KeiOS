@@ -26,11 +26,22 @@ internal fun MainLoadedPager(
     state: MainLoadedPagerState,
     userScrollEnabled: Boolean,
     animationsEnabled: Boolean,
+    additionalMotionInProgress: Boolean = false,
     modifier: Modifier = Modifier,
     pageContent: @Composable (pageIndex: Int) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
-    BoxWithConstraints(modifier = modifier.clipToBounds()) {
+    val highFrameRateMotionActive =
+        shouldPreferHighFrameRateForPagerMotion(
+            pagerScrollInProgress = state.isScrollInProgress,
+            additionalMotionInProgress = additionalMotionInProgress,
+        )
+    BoxWithConstraints(
+        modifier =
+            modifier
+                .preferHighFrameRateForPagerMotion(highFrameRateMotionActive)
+                .clipToBounds(),
+    ) {
         val pageWidthPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
         Box(
             modifier = Modifier
