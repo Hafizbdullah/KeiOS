@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,15 @@ object AppInteractiveTokens {
     const val pressedOverlayAlphaDark: Float = 0.10f
     const val disabledContentAlpha: Float = 0.56f
 }
+
+private val DisabledContentAlphaModifier =
+    Modifier.graphicsLayer { alpha = AppInteractiveTokens.disabledContentAlpha }
+
+/**
+ * Enabled controls get no layer; only the disabled state pays for a RenderNode.
+ */
+internal fun disabledContentAlphaModifier(enabled: Boolean): Modifier =
+    if (enabled) Modifier else DisabledContentAlphaModifier
 
 internal fun defaultAppLiquidIconButtonSize(variant: GlassVariant): Dp {
     return when (variant) {

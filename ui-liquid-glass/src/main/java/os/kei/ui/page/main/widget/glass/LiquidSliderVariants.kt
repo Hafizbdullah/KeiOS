@@ -320,9 +320,8 @@ private fun LiquidTrackSlider(
                 .liquidSliderInteractionLock(
                     enabled = enabled,
                     onInteractionChanged = onInteractionChangedState.value,
-                ).graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                }.semantics(mergeDescendants = true) {
+                ).then(disabledContentAlphaModifier(enabled))
+                .semantics(mergeDescendants = true) {
                     val currentValue = valueResolver.resolve(value(), safeValueRange)
                     contentDescription
                         ?.takeIf(String::isNotBlank)

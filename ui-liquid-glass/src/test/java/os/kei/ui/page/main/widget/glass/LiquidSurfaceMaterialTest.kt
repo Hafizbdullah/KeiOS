@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.ui.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -8,6 +9,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LiquidSurfaceMaterialTest {
+    @Test
+    fun enabledSurfaceOmitsIdentityContentLayer() {
+        assertEquals(0, liquidSurfaceContentAlphaModifier(enabled = true).elementCount())
+        assertEquals(1, liquidSurfaceContentAlphaModifier(enabled = false).elementCount())
+    }
+
     @Test
     fun passiveSurfaceOmitsZeroContributionShadowLayers() {
         assertNull(
@@ -169,3 +176,5 @@ class LiquidSurfaceMaterialTest {
         )
     }
 }
+
+private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }

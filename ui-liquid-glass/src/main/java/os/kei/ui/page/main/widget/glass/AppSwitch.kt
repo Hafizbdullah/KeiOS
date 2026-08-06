@@ -145,9 +145,7 @@ private fun AppFallbackSwitchToggle(
                     interactionSource = interactionSource,
                     indication = null,
                     onValueChange = onCheckedChange,
-                ).graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                },
+                ).then(disabledContentAlphaModifier(enabled)),
         contentAlignment = Alignment.Center,
     ) {
         Box(
@@ -315,9 +313,7 @@ private fun LiquidSwitchToggle(
                         disabled()
                     }
                 }.then(if (enabled) dampedDragAnimation.modifier else Modifier)
-                .graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                },
+                .then(disabledContentAlphaModifier(enabled)),
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(

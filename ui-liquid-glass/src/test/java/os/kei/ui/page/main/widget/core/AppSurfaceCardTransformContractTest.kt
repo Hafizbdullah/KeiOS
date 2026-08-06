@@ -41,6 +41,8 @@ class AppSurfaceCardTransformContractTest {
 
         assertTrue("{ applyLiquidSurfaceInteractiveTransform(interactiveHighlight) }" in liquidSurfaceSource)
         assertTrue("layerBlock = interactiveLayerBlock" in liquidSurfaceSource)
+        assertEquals(2, liquidSurfaceSource.occurrencesOf(".then(contentAlphaModifier)"))
+        assertTrue("if (enabled) Modifier else LiquidSurfaceDisabledContentAlphaModifier" in liquidSurfaceSource)
     }
 }
 

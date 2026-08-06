@@ -723,9 +723,8 @@ private fun AppFloatingVerticalDockAction(
                         } else {
                             Modifier.testTag(testTag)
                         },
-                    ).graphicsLayer {
-                        alpha = if (enabled || rotating) 1f else AppInteractiveTokens.disabledContentAlpha
-                    }.clickable(
+                    ).then(disabledContentAlphaModifier(enabled = enabled || rotating))
+                    .clickable(
                         interactionSource = interactionSource,
                         indication = null,
                         enabled = enabled,

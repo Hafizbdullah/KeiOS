@@ -167,6 +167,7 @@ fun LiquidSurface(
         } else {
             Modifier
         }
+    val contentAlphaModifier = liquidSurfaceContentAlphaModifier(enabled)
     val outerShadow: (() -> Shadow?)? =
         liquidSurfaceOuterShadowOrNull(
             enabled = shadow,
@@ -247,10 +248,7 @@ fun LiquidSurface(
                     .then(clickableModifier)
                     .then(stateSemanticsModifier)
                     .then(interactionModifier)
-                    .graphicsLayer {
-                        alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                        clip = false
-                    },
+                    .then(contentAlphaModifier),
             contentAlignment = contentAlignment,
             content = content,
         )
@@ -261,10 +259,7 @@ fun LiquidSurface(
                     .then(clickableModifier)
                     .then(stateSemanticsModifier)
                     .then(interactionModifier)
-                    .graphicsLayer {
-                        alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                        clip = false
-                    },
+                    .then(contentAlphaModifier),
             contentAlignment = contentAlignment,
         ) {
             Box(
@@ -287,6 +282,15 @@ fun LiquidSurface(
         }
     }
 }
+
+private val LiquidSurfaceDisabledContentAlphaModifier =
+    Modifier.graphicsLayer {
+        alpha = AppInteractiveTokens.disabledContentAlpha
+        clip = false
+    }
+
+internal fun liquidSurfaceContentAlphaModifier(enabled: Boolean): Modifier =
+    if (enabled) Modifier else LiquidSurfaceDisabledContentAlphaModifier
 
 internal fun liquidSurfaceOuterShadowOrNull(
     enabled: Boolean,

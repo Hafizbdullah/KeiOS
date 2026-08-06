@@ -453,11 +453,9 @@ private fun AppLiquidIconButtonContainer(
                             .then(interactiveHighlight.modifier)
                             .then(interactiveHighlight.gestureModifier)
                     } else {
-                        Modifier
+                        disabledContentAlphaModifier(enabled = false)
                     },
-                ).graphicsLayer {
-                    alpha = if (enabled) 1f else AppInteractiveTokens.disabledContentAlpha
-                },
+                ),
         contentAlignment = Alignment.Center,
     ) {
         if (showBorder) {
