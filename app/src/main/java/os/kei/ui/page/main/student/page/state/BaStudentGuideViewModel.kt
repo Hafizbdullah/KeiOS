@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.student.page.state
 
 import android.app.Application
+import android.os.Trace
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -84,7 +85,16 @@ internal class BaStudentGuideViewModel(
 ) : AndroidViewModel(application) {
     private val appContext = application.applicationContext
     private val repository = BaStudentGuideRepository()
-    private val navigationWarmStart = BaStudentGuideNavigationWarmStartStore.consume(warmStartId)
+    private val navigationWarmStart =
+        BaStudentGuideNavigationWarmStartStore.consume(warmStartId).also { snapshot ->
+            // The snapshot is prepared concurrently with navigation, so this destination can be
+            // reached before it lands. These counters make that race observable. `usable` is the
+            // one that matters: a snapshot without info leaves us on the normal load path anyway.
+            if (Trace.isEnabled()) {
+                Trace.setCounter("keios.ba.guide_warm_start_present", if (snapshot != null) 1L else 0L)
+                Trace.setCounter("keios.ba.guide_warm_start_usable", if (snapshot?.info != null) 1L else 0L)
+            }
+        }
     private val mediaImageLoader =
         GuideMediaImageLoader(
             appContext = appContext,
