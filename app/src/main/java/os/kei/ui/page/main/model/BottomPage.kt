@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.model
 
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import os.kei.R
 
@@ -17,3 +19,16 @@ enum class BottomPage(
     GitHub("GitHub", iconRes = R.drawable.ic_github_invertocat),
     Ba("BA", iconRes = R.drawable.ic_ba_schale, iconScale = 1.16f)
 }
+
+/**
+ * Pages at the default 1f scale get no layer at all; only Home and Ba pay for a RenderNode.
+ */
+fun Modifier.bottomPageIconScale(page: BottomPage): Modifier =
+    if (page.iconScale == 1f) {
+        this
+    } else {
+        graphicsLayer {
+            scaleX = page.iconScale
+            scaleY = page.iconScale
+        }
+    }

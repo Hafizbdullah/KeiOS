@@ -330,13 +330,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
                     imageVector = ImageVector.vectorResource(category.iconRes),
                     contentDescription = null,
                     tint = tabColor,
-                    modifier =
-                        Modifier
-                            .size(20.dp)
-                            .graphicsLayer {
-                                scaleX = 1f
-                                scaleY = 1f
-                            },
+                    modifier = Modifier.size(20.dp),
                 )
                 Text(
                     text = tabLabel,

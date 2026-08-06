@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -63,13 +62,7 @@ internal fun BaStudentGuideBottomBar(
                         val tabColor = liquidGlassBottomBarItemContentColor(index)
                         val tabLabel = stringResource(tab.labelRes)
                         val tabContent: @Composable ColumnScope.() -> Unit = {
-                            val tabIconModifier =
-                                Modifier
-                                    .size(20.dp)
-                                    .graphicsLayer {
-                                        scaleX = 1f
-                                        scaleY = 1f
-                                    }
+                            val tabIconModifier = Modifier.size(20.dp)
                             if (tab.localLogoRes != null) {
                                 val useThemeTintForLocalLogo =
                                     tab == GuideBottomTab.Skills ||

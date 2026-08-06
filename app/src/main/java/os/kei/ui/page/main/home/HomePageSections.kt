@@ -32,6 +32,7 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.R
 import os.kei.core.ui.effect.background.blend.ColorBlendToken
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
@@ -209,10 +210,7 @@ internal fun HomeBottomPageLabel(
         val iconModifier =
             Modifier
                 .size(18.dp)
-                .graphicsLayer {
-                    scaleX = page.iconScale
-                    scaleY = page.iconScale
-                }
+                .bottomPageIconScale(page)
         if (page.iconRes != null) {
             Icon(
                 painter = painterResource(id = page.iconRes),

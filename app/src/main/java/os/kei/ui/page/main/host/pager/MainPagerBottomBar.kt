@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
@@ -64,10 +64,7 @@ internal fun MainPagerBottomBar(
                             val tabIconModifier =
                                 Modifier
                                     .size(20.dp)
-                                    .graphicsLayer {
-                                        scaleX = page.iconScale
-                                        scaleY = page.iconScale
-                                    }
+                                    .bottomPageIconScale(page)
                             if (page.iconRes != null) {
                                 Icon(
                                     painter = painterResource(id = page.iconRes),
@@ -171,10 +168,7 @@ internal fun MainPagerBottomBar(
                     val iconModifier =
                         Modifier
                             .size(27.dp)
-                            .graphicsLayer {
-                                scaleX = page.iconScale
-                                scaleY = page.iconScale
-                            }
+                            .bottomPageIconScale(page)
                     if (page.iconRes != null) {
                         Icon(
                             painter = painterResource(id = page.iconRes),
