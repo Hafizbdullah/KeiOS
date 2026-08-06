@@ -121,7 +121,7 @@ object UiPrefs {
     private const val KEY_PRELOADING_ENABLED = "preloading_enabled"
     private const val KEY_LAUNCHER_ICON_DESIGN = "launcher_icon_design"
     private const val KEY_PRIVILEGE_MODE = "privilege_mode"
-    const val PRIVILEGE_MODE_DEFAULT_ID = "shizuku"
+    const val PRIVILEGE_MODE_DEFAULT_ID = "disabled"
     private const val KEY_NON_HOME_BACKGROUND_ENABLED = "non_home_background_enabled"
     private const val KEY_NON_HOME_BACKGROUND_URI = "non_home_background_uri"
     private const val KEY_NON_HOME_BACKGROUND_OPACITY = "non_home_background_opacity"

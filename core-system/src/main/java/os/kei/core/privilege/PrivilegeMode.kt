@@ -17,7 +17,7 @@ enum class PrivilegeMode(val storageId: String) {
     ;
 
     companion object {
-        val Default: PrivilegeMode = Shizuku
+        val Default: PrivilegeMode = Disabled
 
         fun fromStorageId(raw: String?): PrivilegeMode {
             val normalized = raw.orEmpty().trim()

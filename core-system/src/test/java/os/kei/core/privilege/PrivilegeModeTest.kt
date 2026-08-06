@@ -19,11 +19,11 @@ class PrivilegeModeTest {
     }
 
     @Test
-    fun `unknown storage id falls back to shizuku`() {
-        assertEquals(PrivilegeMode.Shizuku, PrivilegeMode.Default)
-        assertEquals(PrivilegeMode.Shizuku, PrivilegeMode.fromStorageId("magisk"))
-        assertEquals(PrivilegeMode.Shizuku, PrivilegeMode.fromStorageId(null))
-        assertEquals(PrivilegeMode.Shizuku, PrivilegeMode.fromStorageId("  "))
+    fun `unknown storage id falls back to disabled`() {
+        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.Default)
+        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("magisk"))
+        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId(null))
+        assertEquals(PrivilegeMode.Disabled, PrivilegeMode.fromStorageId("  "))
     }
 
     @Test
