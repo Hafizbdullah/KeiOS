@@ -33,6 +33,32 @@ internal object BaStudentGuideNavigationWarmStartStore {
         return id
     }
 
+    /**
+     * Claim an id before the snapshot exists, so navigation can start immediately and the snapshot
+     * can land afterwards via [fulfil].
+     *
+     * Waiting for the snapshot before navigating costs 34-46 ms on the first navigation of a
+     * process (measured on 5eea1f50 with a real full cache), which breaks the plan's rule that
+     * click to animation start must not grow by more than one 120 Hz frame. A timeout cannot fix
+     * that: the underlying cache read is a blocking call with no cancellation points, so
+     * `withTimeoutOrNull` does not actually cap the wall time.
+     */
+    fun reserve(): Long = nextId.getAndIncrement()
+
+    /**
+     * Attach a snapshot to a reserved id. Ignored if a newer navigation has since claimed the slot,
+     * so a slow read from an abandoned navigation can never overwrite a newer one.
+     */
+    fun fulfil(
+        id: Long,
+        snapshot: BaStudentGuideNavigationWarmStart,
+    ) {
+        if (id <= 0L) return
+        val current = latest.get()
+        if (current != null && current.id > id) return
+        latest.set(Entry(id = id, snapshot = snapshot))
+    }
+
     fun consume(id: Long): BaStudentGuideNavigationWarmStart? {
         if (id <= 0L) return null
         while (true) {

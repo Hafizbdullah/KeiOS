@@ -16,6 +16,39 @@ class BaStudentGuideNavigationWarmStartTest {
     }
 
     @Test
+    fun `reserved id yields nothing until fulfilled`() {
+        val id = BaStudentGuideNavigationWarmStartStore.reserve()
+
+        // Navigation starts immediately, so the destination may consume before the snapshot lands.
+        assertNull(BaStudentGuideNavigationWarmStartStore.consume(id))
+
+        val snapshot =
+            BaStudentGuideNavigationWarmStart(
+                sourceUrl = "https://www.gamekee.com/ba/tj/10001.html",
+                info = guideInfo(),
+            )
+        BaStudentGuideNavigationWarmStartStore.fulfil(id, snapshot)
+
+        assertEquals(snapshot, BaStudentGuideNavigationWarmStartStore.consume(id))
+    }
+
+    @Test
+    fun `a slow abandoned navigation cannot overwrite a newer one`() {
+        val stale = BaStudentGuideNavigationWarmStartStore.reserve()
+        val fresh = BaStudentGuideNavigationWarmStartStore.reserve()
+        val freshSnapshot = BaStudentGuideNavigationWarmStart(sourceUrl = "fresh", info = guideInfo())
+
+        BaStudentGuideNavigationWarmStartStore.fulfil(fresh, freshSnapshot)
+        BaStudentGuideNavigationWarmStartStore.fulfil(
+            stale,
+            BaStudentGuideNavigationWarmStart(sourceUrl = "stale", info = guideInfo()),
+        )
+
+        assertNull(BaStudentGuideNavigationWarmStartStore.consume(stale))
+        assertEquals(freshSnapshot, BaStudentGuideNavigationWarmStartStore.consume(fresh))
+    }
+
+    @Test
     fun `warm start handoff is consumed once by its route id`() {
         val snapshot =
             BaStudentGuideNavigationWarmStart(
