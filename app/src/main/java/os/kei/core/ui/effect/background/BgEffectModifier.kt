@@ -14,6 +14,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+private const val BG_EFFECT_HIGH_FPS = 60L
+private const val BG_EFFECT_LOW_FPS = 30L
+private const val BG_EFFECT_LOW_ALPHA_THRESHOLD = 0.5f
 private const val BG_EFFECT_TIME_WRAP_SECONDS = 62.831852f
 private const val BG_EFFECT_VISIBLE_ALPHA_THRESHOLD = 0.001f
 
@@ -147,10 +150,36 @@ private class BgEffectNode(
         startOffset = animTime
         animationJob = coroutineScope.launch {
             val origin = withFrameNanos { it }
+            var lastEmit = origin
+            var lastFrame = origin
             while (isActive) {
                 val now = withFrameNanos { it }
-                // Choreographer already follows the display's ARR/LTPO cadence. Update on every
-                // delivered VSYNC so 120/90/60 Hz and thermal transitions keep a single phase.
+                // Keep waking on every delivered VSYNC so 120/90/60 Hz and thermal transitions
+                // still share a single phase -- that is why this loop follows Choreographer.
+                // But only invalidate at the capped cadence. Measured on a 120 Hz panel
+                // (5eea1f50): an untouched Home held a flat 120 fps indefinitely, redrawing the
+                // whole Liquid Glass page twice as often as the drift needs.
+                //
+                // animTime derives from real elapsed time, so the drift runs at exactly the same
+                // speed whatever the update rate -- only how often it is sampled changes. On a
+                // 60 Hz display (and the AVD, which has no LTPO) the cap matches VSYNC, so
+                // behaviour there is unchanged.
+                val currentAlpha = alpha()
+                val targetFps =
+                    if (currentAlpha < BG_EFFECT_LOW_ALPHA_THRESHOLD) {
+                        BG_EFFECT_LOW_FPS
+                    } else {
+                        BG_EFFECT_HIGH_FPS
+                    }
+                val minDeltaNanos = 1_000_000_000L / targetFps
+                // Compare against the midpoint to the *next* VSYNC, not this one. A bare
+                // `elapsed < minDelta` test makes a 60 fps cap on a 120 Hz panel land on every
+                // third VSYNC (~40 fps) instead of every second, because the second VSYNC arrives
+                // at exactly the threshold and jitter pushes it under.
+                val framePeriodNanos = (now - lastFrame).coerceAtLeast(0L)
+                lastFrame = now
+                if (now - lastEmit + framePeriodNanos / 2 < minDeltaNanos) continue
+                lastEmit = now
                 animTime = (startOffset + (now - origin) / 1_000_000_000f) % BG_EFFECT_TIME_WRAP_SECONDS
                 invalidateDraw()
             }

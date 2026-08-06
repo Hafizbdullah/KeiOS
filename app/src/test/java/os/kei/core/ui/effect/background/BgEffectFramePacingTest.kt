@@ -6,8 +6,13 @@ import kotlin.test.assertTrue
 import org.junit.Test
 
 class BgEffectFramePacingTest {
+    /**
+     * The loop must keep waking on every VSYNC so 120/90/60 Hz and thermal transitions share one
+     * phase, while capping how often it actually invalidates: on a 120 Hz panel an untouched Home
+     * otherwise redraws the whole Liquid Glass page at 120 fps for a slow drift.
+     */
     @Test
-    fun `dynamic background follows ARR without a fixed software frame cap`() {
+    fun `dynamic background stays vsync phased but caps invalidation`() {
         val modifierSource = sourceFile(BG_EFFECT_MODIFIER_SOURCE)
         val backgroundSource = sourceFile(BG_EFFECT_BACKGROUND_SOURCE)
         val animationSource =
@@ -16,15 +21,32 @@ class BgEffectFramePacingTest {
                 .substringBefore("private fun stopAnimation()")
 
         assertTrue(animationSource.isNotBlank())
+        // Still driven by Choreographer, so the phase survives ARR/LTPO and thermal changes.
         assertTrue("val now = withFrameNanos { it }" in animationSource)
         assertTrue("animTime =" in animationSource)
         assertTrue("invalidateDraw()" in animationSource)
         assertTrue(animationSource.indexOf("animTime =") < animationSource.indexOf("invalidateDraw()"))
         assertTrue(".preferredFrameRate(FrameRateCategory.High)" in backgroundSource)
-        assertFalse("BG_EFFECT_HIGH_FPS" in modifierSource)
-        assertFalse("BG_EFFECT_LOW_FPS" in modifierSource)
-        assertFalse("minDeltaNanos" in modifierSource)
+
+        // The cap skips the invalidate, never the VSYNC wake-up.
+        assertTrue("minDeltaNanos" in animationSource)
+        assertTrue(animationSource.indexOf("withFrameNanos") < animationSource.indexOf("minDeltaNanos"))
+        assertTrue("continue" in animationSource)
+        assertTrue("BG_EFFECT_HIGH_FPS" in modifierSource)
+        assertTrue("BG_EFFECT_LOW_FPS" in modifierSource)
         assertFalse("framePacer" in modifierSource)
+    }
+
+    /** animTime comes from real elapsed time, so capping changes sampling rate, not drift speed. */
+    @Test
+    fun `animation speed is independent of the invalidation cap`() {
+        val animationSource =
+            sourceFile(BG_EFFECT_MODIFIER_SOURCE)
+                .substringAfter("private fun startAnimation()", missingDelimiterValue = "")
+                .substringBefore("private fun stopAnimation()")
+
+        assertTrue("(now - origin)" in animationSource)
+        assertFalse("lastEmit)" in animationSource.substringAfter("animTime ="))
     }
 }
 
