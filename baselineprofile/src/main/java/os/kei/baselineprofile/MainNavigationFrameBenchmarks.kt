@@ -3,8 +3,10 @@ package os.kei.baselineprofile
 import android.os.Trace
 import androidx.benchmark.macro.BaselineProfileMode
 import androidx.benchmark.macro.CompilationMode
+import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -121,6 +123,160 @@ class MainNavigationFrameBenchmarks {
         )
     }
 
+    /**
+     * First entry into BA after a warm start: the RenderNode/Backdrop first-record window.
+     */
+    @Test
+    fun homeBaFirstEntry() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:home_to_ba_first") {
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_BA,
+                        pageTag = BA_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_BA,
+                    )
+                }
+            },
+        )
+    }
+
+    /**
+     * Second entry into BA within the same process, for the first-vs-second tail gap.
+     */
+    @Test
+    fun homeBaSecondEntry() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_BA,
+                    pageTag = BA_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_BA,
+                )
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_HOME,
+                    pageTag = HOME_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_HOME,
+                )
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:home_to_ba_second") {
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_BA,
+                        pageTag = BA_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_BA,
+                    )
+                }
+            },
+        )
+    }
+
+    /**
+     * Same journey as [homeBaFirstEntry], but reports a RenderThread/UI slice breakdown instead of
+     * only frame percentiles. Four blind single-variable experiments have failed to move the
+     * first-entry Max, so this answers "which stage owns the long bars" directly.
+     *
+     * [TraceSectionMetric.Mode.Sum] reports 0 for a section that never appears, so unmatched names
+     * are harmless — the metric list can stay broad while we learn the real slice names.
+     */
+    @OptIn(ExperimentalMetricApi::class)
+    @Test
+    fun homeBaFirstEntryTraceBreakdown() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = traceBreakdownMetrics(),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:home_to_ba_first") {
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_BA,
+                        pageTag = BA_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_BA,
+                    )
+                }
+            },
+        )
+    }
+
+    /**
+     * Slice breakdown for the *second* entry in the same process, to diff against
+     * [homeBaFirstEntryTraceBreakdown]. Second entry keeps the material fully intact, so whatever
+     * stage carries the first-vs-second delta is the only cost a visually-neutral pre-warm can
+     * recover.
+     */
+    @OptIn(ExperimentalMetricApi::class)
+    @Test
+    fun homeBaSecondEntryTraceBreakdown() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = traceBreakdownMetrics(),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_BA,
+                    pageTag = BA_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_BA,
+                )
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_HOME,
+                    pageTag = HOME_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_HOME,
+                )
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:home_to_ba_second") {
+                    clickAndWait(
+                        tabTag = MAIN_BOTTOM_TAB_BA,
+                        pageTag = BA_PAGE_ROOT,
+                        settledTag = MAIN_PAGER_SETTLED_BA,
+                    )
+                }
+            },
+        )
+    }
+
     @Test
     fun mcpStackedCardsScroll() {
         rule.measureRepeated(
@@ -164,6 +320,15 @@ class MainNavigationFrameBenchmarks {
         waitForTag(settledTag)
     }
 
+    /**
+     * The plan's fixed journey is "温启动 App，停留 Home，Home → BA" — it dwells on Home before the
+     * jump. Tapping the instant Home settles was measuring something a user never does, and it also
+     * gave any idle-triggered work no window to run in.
+     */
+    private fun dwellOnHome() {
+        Thread.sleep(HOME_DWELL_MS)
+    }
+
     private fun androidx.benchmark.macro.MacrobenchmarkScope.waitForTag(tag: String) {
         check(device.wait(Until.hasObject(By.res(tag)), PAGE_TIMEOUT_MS)) {
             "Timed out waiting for testTag=$tag in $targetAppId"
@@ -195,6 +360,24 @@ class MainNavigationFrameBenchmarks {
     }
 }
 
+@OptIn(ExperimentalMetricApi::class)
+private fun traceBreakdownMetrics(): List<androidx.benchmark.macro.Metric> =
+    listOf(FrameTimingMetric()) +
+        TRACE_BREAKDOWN_SECTIONS.flatMap { section ->
+            listOf(
+                TraceSectionMetric(
+                    sectionName = section,
+                    mode = TraceSectionMetric.Mode.Sum,
+                    label = "${section}_sum",
+                ),
+                TraceSectionMetric(
+                    sectionName = section,
+                    mode = TraceSectionMetric.Mode.Max,
+                    label = "${section}_max",
+                ),
+            )
+        }
+
 private inline fun <T> traceSection(
     name: String,
     block: () -> T,
@@ -210,13 +393,45 @@ private inline fun <T> traceSection(
 private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
 private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
 private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
+private const val MAIN_BOTTOM_TAB_BA = "main_bottom_tab_ba"
 private const val MAIN_PAGER_SETTLED_HOME = "main_pager_settled_home"
 private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
 private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
+private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
+private const val BA_PAGE_ROOT = "ba_page_root"
+/**
+ * RenderThread/UI slice names for the plan's P0 breakdown. "%" is a TraceProcessor wildcard, used
+ * where the exact HWUI slice name carries a per-frame suffix.
+ */
+private val TRACE_BREAKDOWN_SECTIONS =
+    listOf(
+        // RenderThread
+        "DrawFrame%",
+        "flush layers",
+        "flush commands",
+        "drawLayer",
+        "eglSwapBuffers%",
+        "dequeueBuffer%",
+        "queueBuffer%",
+        "syncFrameState",
+        "prepareTree",
+        "Drawing%",
+        // UI thread / Compose
+        "Choreographer#doFrame%",
+        "Compose:recompose",
+        "Record View#draw()",
+        "measure",
+        "layout",
+        "draw",
+    )
+
 private const val PAGE_TIMEOUT_MS = 15_000L
+
+/** Dwell on Home before jumping to BA, per the plan's "停留 Home" fixed journey. */
+private const val HOME_DWELL_MS = 1_500L
 private const val HOME_RESTING_MEASURE_MS = 3_000L
 private const val HOME_SCROLL_BETWEEN_SWIPES_MS = 180L
 private const val HOME_SCROLL_SETTLE_MS = 600L
