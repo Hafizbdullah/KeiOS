@@ -3,6 +3,7 @@
 package os.kei.ui.page.main.host.main
 
 import android.os.SystemClock
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -49,6 +50,8 @@ import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.nav.core.NavBackStack
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
+import top.yukonga.miuix.kmp.nav.transition.NavMotion
+import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
 import top.yukonga.miuix.kmp.nav.transition.NavTransition
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
@@ -94,10 +97,11 @@ internal fun MainScreenNavHost(
     val isDarkTheme = isAppInDarkTheme()
     // miuix-nav keeps one visual contract for push/pop/predictive back (visual = f(depth)), so the
     // former transitionSpec/popTransitionSpec/predictivePopTransitionSpec trio collapses into a
-    // single NavTransition: MiuixDefault when route animations are on, None for an instant swap.
+    // single NavTransition: MiuixDefault's geometry with our own pacing when route animations are
+    // on, None for an instant swap. See keiosNavTransition for why the pacing differs.
     val navTransition =
         remember(routeAnimationsEnabled) {
-            if (routeAnimationsEnabled) NavTransitions.MiuixDefault else NavTransitions.None
+            if (routeAnimationsEnabled) keiosNavTransition() else NavTransitions.None
         }
     val catalogTransition =
         remember(routeAnimationsEnabled) {
@@ -376,8 +380,49 @@ internal fun MainScreenNavHost(
  * full-width Miuix slide. The same depth function drives push, pop, and predictive back: the
  * entering/leaving top fades over a width/7 offset, the covered layer parallaxes width/18.
  */
+/**
+ * Route push/pop pacing.
+ *
+ * Miuix's own [NavProgrammaticEasing] bakes an underdamped spring into the tween: it reaches ~48%
+ * of the travel in a fifth of the duration and spends the rest on a tail that is barely visible.
+ * The page therefore reads as a snap even at the stock 500ms, which is what "too fast" describes.
+ * A symmetric emphasized curve spends the duration on the part you can actually see, so the same
+ * ballpark length feels deliberate instead of abrupt.
+ *
+ * Only the programmatic phase is overridden. Gesture commit and cancel stay on the shared spring,
+ * which has to seed the release velocity a tween cannot carry.
+ */
+/** Route push/pop length. Raise for a heavier feel, lower for a snappier one. */
+private const val RouteSwitchDurationMillis = 560
+
+private val RouteSwitchMotion =
+    NavMotion(
+        programmatic =
+            NavSettleSpec.Tween(
+                durationMillis = RouteSwitchDurationMillis,
+                easing = CubicBezierEasing(0.2f, 0f, 0f, 1f),
+            ),
+    )
+
+private fun keiosNavTransition(): NavTransition =
+    navGraphicsTransition(opaqueDepth = 1f, motion = RouteSwitchMotion) { scope ->
+        // Geometry copied from NavTransitions.MiuixDefault so only the pacing differs: the entering
+        // page slides full width from the trailing edge, the covered one parallaxes a quarter width
+        // with a light alpha falloff, RTL mirrored, entering offset pixel-snapped.
+        val width = scope.layoutSize.width.toFloat()
+        val d = scope.relativeDepth
+        val rtl = scope.layoutDirection == LayoutDirection.Rtl
+        if (d <= 0f) {
+            translationX = ((if (rtl) -1f else 1f) * (-d).coerceIn(0f, 1f) * width).roundToInt().toFloat()
+        } else {
+            val progress = d.coerceIn(0f, 1f)
+            translationX = (if (rtl) 1f else -1f) * progress * width * 0.25f
+            alpha = 1f - 0.1f * progress
+        }
+    }
+
 private fun baGuideCatalogNavTransition(): NavTransition =
-    navGraphicsTransition(opaqueDepth = 1f) { scope ->
+    navGraphicsTransition(opaqueDepth = 1f, motion = RouteSwitchMotion) { scope ->
         val width = scope.layoutSize.width.toFloat()
         val d = scope.relativeDepth
         val direction = if (scope.layoutDirection == LayoutDirection.Rtl) -1f else 1f
