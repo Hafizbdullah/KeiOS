@@ -50,6 +50,7 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewPill
@@ -363,6 +364,7 @@ internal fun OsPageMainList(
                     .fillMaxWidth()
                     .weight(1f)
                     .layerBackdrop(topBarBackdrop),
+            pullToRefreshState = rememberAppPullToRefreshState(),
             topAppBarScrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             refreshTexts =

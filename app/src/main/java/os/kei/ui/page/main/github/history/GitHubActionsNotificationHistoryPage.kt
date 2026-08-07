@@ -67,6 +67,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageContentSwitchState
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
@@ -388,6 +389,7 @@ internal fun GitHubActionsNotificationHistoryPage(
                     .weight(1f)
                     .layerBackdrop(pageBackdrop)
                     .layerBackdrop(bottomBarBackdrop),
+            pullToRefreshState = rememberAppPullToRefreshState(),
             topAppBarScrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             refreshTexts =

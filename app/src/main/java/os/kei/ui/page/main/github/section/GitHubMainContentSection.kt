@@ -42,6 +42,7 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
@@ -273,6 +274,7 @@ internal fun GitHubMainContent(
                             .fillMaxWidth()
                             .weight(1f)
                             .layerBackdrop(surfaces.topBarBackdrop),
+                    pullToRefreshState = rememberAppPullToRefreshState(),
                     topAppBarScrollBehavior = layout.scrollBehavior,
                     contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                     refreshTexts =

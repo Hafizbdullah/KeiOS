@@ -39,6 +39,7 @@ import os.kei.ui.page.main.mcp.state.McpToolBuckets
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
+import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
@@ -106,6 +107,7 @@ internal fun McpPageContent(
                     .fillMaxWidth()
                     .weight(1f)
                     .layerBackdrop(backdrops.topBar),
+            pullToRefreshState = rememberAppPullToRefreshState(),
             topAppBarScrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             refreshTexts =
