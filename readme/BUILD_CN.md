@@ -62,7 +62,7 @@ Gradle 配置也支持环境变量兜底：
 org.gradle.java.home=/path/to/your/jdk
 
 # 可选：本地覆盖 Miuix 版本
-miuix.version=0.9.3-e198169a-SNAPSHOT
+miuix.version=0.9.3-c6d7d6dd-SNAPSHOT
 ```
 
 JDK 兜底示例路径：
