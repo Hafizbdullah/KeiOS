@@ -21,7 +21,6 @@ internal fun BindMcpPageEffects(
     pageUiState: McpPageUiState,
     runtime: MainPageRuntime,
     listState: LazyListState,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     BindLazyListScrollBoundsEffect(
         listState = listState,
@@ -48,9 +47,6 @@ internal fun BindMcpPageEffects(
                 searchQuery = toolBucketSearchQuery,
             ),
         )
-    }
-    DisposableEffect(Unit) {
-        onDispose { onActionBarInteractingChanged(false) }
     }
     BindScrollToTopEffect(
         scrollToTopSignal = runtime.scrollToTopSignal,

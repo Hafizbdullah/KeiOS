@@ -30,7 +30,6 @@ internal data class MainPagerTabJumpControllerState(
     val selectedPageIndex: Int,
     val navigationActive: Boolean,
     val nestedScrollConnection: NestedScrollConnection,
-    val onActionBarInteractingChanged: (Boolean) -> Unit,
     val onPageSelected: (Int) -> Unit,
     val onShowBottomBar: () -> Unit,
 )
@@ -171,7 +170,6 @@ internal fun rememberMainPagerTabJumpController(
         selectedPageIndex,
         navigationActive,
         nestedScrollConnection,
-        onActionBarInteractingChanged,
         onPageSelected,
         onShowBottomBar,
     ) {
@@ -181,7 +179,6 @@ internal fun rememberMainPagerTabJumpController(
             selectedPageIndex = selectedPageIndex,
             navigationActive = navigationActive,
             nestedScrollConnection = nestedScrollConnection,
-            onActionBarInteractingChanged = onActionBarInteractingChanged,
             onPageSelected = onPageSelected,
             onShowBottomBar = onShowBottomBar,
         )

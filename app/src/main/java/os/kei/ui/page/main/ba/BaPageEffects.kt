@@ -169,7 +169,6 @@ internal fun BaPageCommonEffects(
     isPageActive: Boolean,
     consumedScrollToTopSignal: Int,
     onConsumedScrollToTopSignalChange: (Int) -> Unit,
-    onDisposeActionBarInteraction: () -> Unit,
     office: BaOfficeController,
     runtimePersistenceCoordinator: BaRuntimePersistenceCoordinator,
     onUiNowMsChange: (Long) -> Unit,
@@ -190,10 +189,6 @@ internal fun BaPageCommonEffects(
         isActive = isPageActive,
         onScrollBoundsChange = onScrollBoundsChange,
     )
-
-    DisposableEffect(Unit) {
-        onDispose { onDisposeActionBarInteraction() }
-    }
 
     LaunchedEffect(runtimePersistenceCoordinator) {
         runtimePersistenceCoordinator.run()

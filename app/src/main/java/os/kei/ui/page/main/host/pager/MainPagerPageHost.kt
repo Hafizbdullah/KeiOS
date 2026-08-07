@@ -99,7 +99,6 @@ internal fun MainPagerPageHost(
     baPageState: MainPagerBaPageState?,
     mcpPageState: MainPagerMcpPageState?,
     githubPageState: MainPagerGitHubPageState?,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
@@ -144,7 +143,6 @@ internal fun MainPagerPageHost(
                         onOpenWebDavSync = homeState.onOpenWebDavSync,
                         onOpenSettings = homeState.onOpenSettings,
                         onOpenAbout = homeState.onOpenAbout,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -159,7 +157,6 @@ internal fun MainPagerPageHost(
                         privilegedShell = osState.privilegedShell,
                         onOpenShellRunner = osState.onOpenShellRunner,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -178,7 +175,6 @@ internal fun MainPagerPageHost(
                         onOpenPool = baState.onOpenBaPool,
                         requestedAccountId = baState.requestedAccountId,
                         requestedAccountToken = baState.requestedAccountToken,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -192,7 +188,6 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = mcpState.onOpenMcpSkill,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
 
@@ -209,7 +204,6 @@ internal fun MainPagerPageHost(
                         externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenActionsNotificationHistory = githubState.onOpenActionsNotificationHistory,
-                        onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
                 }
             }

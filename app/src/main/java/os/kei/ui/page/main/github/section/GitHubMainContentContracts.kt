@@ -141,5 +141,4 @@ internal data class GitHubMainContentActions(
     val onCancelActiveShareImportFlow: () -> Unit,
     val onCancelPendingShareImportTrack: () -> Unit,
     val onDismissShareImportResult: () -> Unit,
-    val onActionBarInteractingChanged: (Boolean) -> Unit,
 )

@@ -488,7 +488,6 @@ internal fun MainPagerLayout(
                         baPageState = baPageState,
                         mcpPageState = mcpPageState,
                         githubPageState = githubPageState,
-                        onActionBarInteractingChanged = coordinator.onActionBarInteractingChanged,
                     )
                 }
             }

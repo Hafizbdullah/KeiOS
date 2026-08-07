@@ -59,7 +59,6 @@ fun GitHubPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onOpenActionsNotificationHistory: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val openLinkFailureMessage = context.resolveString(R.string.github_error_open_link)
@@ -288,7 +287,6 @@ fun GitHubPage(
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = launchAppListPermission,
-        onActionBarInteractingChanged = onActionBarInteractingChanged,
         onHistoryUnreadCountMayChange = githubPageViewModel::refreshHistoryUnreadCount,
     )
 
@@ -454,7 +452,6 @@ fun GitHubPage(
                     onCancelActiveShareImportFlow = actions::cancelActiveShareImportFlow,
                     onCancelPendingShareImportTrack = actions::cancelPendingShareImportTrack,
                     onDismissShareImportResult = actions::dismissShareImportResult,
-                    onActionBarInteractingChanged = onActionBarInteractingChanged,
                 ),
         )
     }

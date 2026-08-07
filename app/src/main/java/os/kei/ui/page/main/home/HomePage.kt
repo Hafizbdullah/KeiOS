@@ -105,7 +105,6 @@ fun HomePage(
     onOpenWebDavSync: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val configuration = LocalConfiguration.current
@@ -168,9 +167,6 @@ fun HomePage(
             runtimeNowMs = runtimeNowMs,
         )
 
-    DisposableEffect(Unit) {
-        onDispose { onActionBarInteractingChanged(false) }
-    }
     val layersIcon = appLucideLayersIcon()
     val aboutIcon = appLucideInfoIcon()
     val settingsIcon = osLucideSettingsIcon()

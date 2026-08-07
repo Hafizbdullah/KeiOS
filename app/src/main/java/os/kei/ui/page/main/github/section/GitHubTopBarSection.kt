@@ -94,7 +94,6 @@ internal fun GitHubTopBarActions(
     onExportTrackedItems: () -> Unit,
     onImportTrackedItems: () -> Unit,
     onOpenStarImport: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
 ) {
     val editStrategyIcon = appLucideEditIcon()
     val checkLogicIcon = appLucideConfigIcon()

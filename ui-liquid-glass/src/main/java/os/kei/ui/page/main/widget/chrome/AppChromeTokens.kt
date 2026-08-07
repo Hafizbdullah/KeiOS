@@ -26,11 +26,8 @@ object AppChromeTokens {
     val searchFieldHorizontalPadding: Dp = 14.dp
     val searchFieldBottomSpacing: Dp = 6.dp
 
-    val liquidActionBarSingleWidth: Dp = 52.dp
-    val liquidActionBarSingleBreakoutPadding: Dp = 8.dp
-    val liquidActionBarTwoItemWidth: Dp = 112.dp
-    val liquidActionBarMinWidth: Dp = 160.dp
-    val liquidActionBarItemStep: Dp = 40.dp
+    // The fixed bar widths and item step that used to live here belonged to the old bar's
+    // weight-based slot maths. The toolbar sizes itself from its actions.
     val liquidActionBarMinimumTouchTarget: Dp = 48.dp
     val liquidActionBarOuterHeight: Dp = 52.dp
     val liquidActionBarInnerHeight: Dp = 44.dp

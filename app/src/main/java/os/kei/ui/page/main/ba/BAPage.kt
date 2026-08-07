@@ -49,7 +49,6 @@ fun BAPage(
     onOpenPool: (Int?) -> Unit = {},
     requestedAccountId: String? = null,
     requestedAccountToken: Int = 0,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -322,7 +321,6 @@ fun BAPage(
         isPageActive = settledWorkActive,
         consumedScrollToTopSignal = baRouteState.consumedScrollToTopSignal,
         onConsumedScrollToTopSignalChange = officeViewModel::updateConsumedScrollToTopSignal,
-        onDisposeActionBarInteraction = { onActionBarInteractingChanged(false) },
         office = office,
         runtimePersistenceCoordinator = runtimePersistenceCoordinator,
         onUiNowMsChange = { ui.uiNowMs = it },
@@ -385,7 +383,6 @@ fun BAPage(
                     onShowAccountManagement = { openAccountManagementSheet() },
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,
-                    onInteractionChanged = onActionBarInteractingChanged,
                 )
             }
             BaPageFloatingDock(

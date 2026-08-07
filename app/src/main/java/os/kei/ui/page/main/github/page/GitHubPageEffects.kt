@@ -30,7 +30,6 @@ internal fun BindGitHubPageEffects(
     actions: GitHubPageActions,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onLaunchAppListPermission: (Intent) -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
     onHistoryUnreadCountMayChange: () -> Unit,
 ) {
     BindGitHubPageLifecycleCoordinator(
@@ -43,7 +42,6 @@ internal fun BindGitHubPageEffects(
         actions = actions,
         installedOnlineShareTargets = installedOnlineShareTargets,
         onLaunchAppListPermission = onLaunchAppListPermission,
-        onActionBarInteractingChanged = onActionBarInteractingChanged,
         onHistoryUnreadCountMayChange = onHistoryUnreadCountMayChange,
     )
 }
@@ -59,12 +57,8 @@ internal fun BindGitHubPageLifecycleCoordinator(
     actions: GitHubPageActions,
     installedOnlineShareTargets: List<OnlineShareTargetOption>,
     onLaunchAppListPermission: (Intent) -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
     onHistoryUnreadCountMayChange: () -> Unit,
 ) {
-    DisposableEffect(Unit) {
-        onDispose { onActionBarInteractingChanged(false) }
-    }
 
     LaunchedEffect(installedOnlineShareTargets) {
         actions.handleInstalledOnlineShareTargetsChanged(installedOnlineShareTargets)

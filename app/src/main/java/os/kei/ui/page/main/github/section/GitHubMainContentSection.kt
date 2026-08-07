@@ -496,7 +496,6 @@ internal fun GitHubMainContent(
                 onExportTrackedItems = actions.onExportTrackedItems,
                 onImportTrackedItems = actions.onImportTrackedItems,
                 onOpenStarImport = actions.onOpenStarImport,
-                onActionBarInteractingChanged = actions.onActionBarInteractingChanged,
             )
         }
     }

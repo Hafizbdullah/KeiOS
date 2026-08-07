@@ -46,7 +46,6 @@ fun OsPage(
     onOpenShellRunner: () -> Unit,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val pageScope = rememberCoroutineScope()
@@ -167,7 +166,6 @@ fun OsPage(
     }
     DisposableEffect(Unit) {
         onDispose {
-            onActionBarInteractingChanged(false)
             osPageViewModel.closePersistentShell()
         }
     }
@@ -644,7 +642,6 @@ fun OsPage(
                     listState.animateScrollToItem(0)
                 }
             },
-            onActionBarInteractingChanged = onActionBarInteractingChanged,
         ) { innerPadding ->
             OsPageOverlayCoordinator(
                 context = context,

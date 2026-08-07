@@ -51,7 +51,6 @@ fun McpPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenSkill: () -> Unit = {},
-    onActionBarInteractingChanged: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     val mcpPageViewModel: McpPageViewModel = viewModel(factory = McpPageViewModel.Factory)
@@ -320,7 +319,6 @@ fun McpPage(
         pageUiState = pageUiState,
         runtime = runtime,
         listState = listState,
-        onActionBarInteractingChanged = onActionBarInteractingChanged,
     )
 
     CompositionLocalProvider(LocalGlassEffectRuntime provides mcpGlassRuntime) {

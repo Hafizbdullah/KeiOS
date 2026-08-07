@@ -28,7 +28,6 @@ internal fun OsPageScaffoldShell(
     onOpenShellCardVisibilityManager: () -> Unit,
     onRefresh: () -> Unit,
     onTitleClick: () -> Unit,
-    onActionBarInteractingChanged: (Boolean) -> Unit,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val manageCardsIcon = appLucideLayersIcon()

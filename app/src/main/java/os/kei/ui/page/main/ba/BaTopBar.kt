@@ -40,7 +40,6 @@ internal fun BaTopBarActions(
     onShowAccountManagement: () -> Unit,
     onShowSettings: () -> Unit,
     onShowNotificationSettings: () -> Unit,
-    onInteractionChanged: (Boolean) -> Unit,
 ) {
     val accountIcon = appLucideListIcon()
     val editIcon = appLucideEditIcon()

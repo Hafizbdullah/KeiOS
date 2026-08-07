@@ -20,6 +20,7 @@ import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
 import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.capsule.ContinuousCapsule
@@ -48,6 +49,8 @@ fun AppFloatingLiquidVerticalDockSurface(
                 animationScope = animationScope,
                 highlightStrength = 1.18f,
                 highlightRadiusScale = 1.34f,
+                // The surface claims drags via claimFloatingChromeDrags below, so the highlight
+                // itself does not need to; leaving it off keeps its gesture purely observational.
                 consumeDragChanges = false,
                 animationsEnabled = transitionAnimationsEnabled,
             )
@@ -62,11 +65,15 @@ fun AppFloatingLiquidVerticalDockSurface(
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
                             shape = { ContinuousCapsule },
+                            // Deformation lives here rather than in a graphicsLayer so the glass
+                            // squishes while the sampled backdrop stays put -- otherwise the
+                            // refraction travels with the capsule and reads as a decal.
                             layerBlock = {
                                 val progress = interactiveHighlight.deformationProgress
                                 if (progress > 0f) {
-                                    scaleX = 1f + 2.dp.toPx() / size.width.coerceAtLeast(1f) * progress
-                                    scaleY = 1f + 2.dp.toPx() / size.height.coerceAtLeast(1f) * progress
+                                    val stretch = 2.dp.toPx() / size.width.coerceAtLeast(1f)
+                                    scaleX = 1f + stretch * progress
+                                    scaleY = 1f - FloatingDockPressSquashY * progress
                                 }
                             },
                             effects = {
@@ -77,8 +84,16 @@ fun AppFloatingLiquidVerticalDockSurface(
                                     material.lensAmount.toPx(),
                                 )
                             },
+                            // Ambient is an environment reflection around the whole rim; Default
+                            // is a single directional streak. Apple's glass reads as reflective from
+                            // every angle, not lit from one side.
                             highlight = {
-                                Highlight.Default.copy(alpha = material.highlightAlpha)
+                                Highlight(
+                                    width = if (isDark) 0.9.dp else 1.0.dp,
+                                    blurRadius = if (isDark) 1.7.dp else 2.0.dp,
+                                    alpha = material.highlightAlpha,
+                                    style = HighlightStyle.Ambient(if (isDark) 0.78f else 0.62f),
+                                )
                             },
                             shadow = {
                                 Shadow.Default.copy(color = Color.Black.copy(alpha = material.shadowAlpha))
@@ -95,6 +110,7 @@ fun AppFloatingLiquidVerticalDockSurface(
                     },
                 ).then(interactiveHighlight.modifier)
                 .then(interactiveHighlight.gestureModifier)
+                .claimFloatingChromeDrags()
                 .graphicsLayer { clip = false }
                 .appSquircleClip(999.dp)
                 .background(
@@ -190,3 +206,6 @@ internal data class FloatingLiquidDockMaterial(
     val innerRim: Color,
     val edgeColor: Color,
 )
+
+/** Matches the toolbar's press squish so chrome deforms consistently across the app. */
+private const val FloatingDockPressSquashY = 0.022f

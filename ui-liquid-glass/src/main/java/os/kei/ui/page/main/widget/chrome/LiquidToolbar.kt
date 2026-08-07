@@ -34,11 +34,14 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.highlight.Highlight
+import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.capsule.ContinuousCapsule
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.AppLiquidBadgedIcon
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
+import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -183,6 +186,8 @@ private fun LiquidToolbarGroup(
             null
         }
 
+    val pressProgressProvider =
+        remember(pressHighlight) { { pressHighlight?.pressProgress ?: 0f } }
     Row(
         modifier =
             Modifier
@@ -203,7 +208,7 @@ private fun LiquidToolbarGroup(
                         }
                     },
                     highlight = {
-                        liquidActionBarBaseHighlight(
+                        liquidToolbarHighlight(
                             material = material,
                             layeredStyleEnabled = layeredStyleEnabled,
                             isBlurEnabled = effectiveBlurEnabled,
@@ -216,6 +221,20 @@ private fun LiquidToolbarGroup(
                             isInLightTheme = isInLightTheme,
                         )
                     },
+                    // Deformation belongs in layerBlock, not in a graphicsLayer on the node: it
+                    // squishes the glass surface while leaving the sampled backdrop where it is.
+                    // A graphicsLayer would drag the refraction along with the capsule and the
+                    // glass would read as a moving decal instead of a lens.
+                    layerBlock =
+                        if (layeredStyleEnabled) {
+                            {
+                                val progress = pressProgressProvider()
+                                scaleX = 1f + LiquidToolbarPressStretchX * progress
+                                scaleY = 1f - LiquidToolbarPressSquashY * progress
+                            }
+                        } else {
+                            null
+                        },
                     onDrawSurface = { drawRect(palette.baseFillColor) },
                 ).border(
                     width = 1.dp,
@@ -223,6 +242,7 @@ private fun LiquidToolbarGroup(
                     shape = ContinuousCapsule,
                 ).then(pressHighlight?.modifier ?: Modifier)
                 .then(pressHighlight?.gestureModifier ?: Modifier)
+                .claimFloatingChromeDrags()
                 .padding(horizontal = AppChromeTokens.liquidActionBarHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -333,6 +353,33 @@ private fun LiquidToolbarActionTooltip(
     )
 }
 
+/**
+ * The rim reflection. `HighlightStyle.Ambient` is an environment reflection around the shape rather
+ * than the single directional streak `Default` draws, which is what makes Apple's glass read as
+ * reflective from every angle instead of lit from one.
+ */
+private fun liquidToolbarHighlight(
+    material: LiquidActionBarMaterial,
+    layeredStyleEnabled: Boolean,
+    isBlurEnabled: Boolean,
+    isInLightTheme: Boolean,
+): Highlight {
+    if (!layeredStyleEnabled || !isBlurEnabled) {
+        return liquidActionBarBaseHighlight(
+            material = material,
+            layeredStyleEnabled = layeredStyleEnabled,
+            isBlurEnabled = isBlurEnabled,
+            isInLightTheme = isInLightTheme,
+        )
+    }
+    return Highlight(
+        width = if (isInLightTheme) 1.0.dp else 0.9.dp,
+        blurRadius = if (isInLightTheme) 2.0.dp else 1.7.dp,
+        alpha = material.highlightAlpha,
+        style = HighlightStyle.Ambient(if (isInLightTheme) 0.62f else 0.78f),
+    )
+}
+
 private fun liquidToolbarPressHighlightStrength(isInLightTheme: Boolean): Float =
     if (isInLightTheme) 0.70f else 0.85f
 
@@ -396,3 +443,7 @@ fun LiquidToolbarPopupAnchors(
         }
     }
 }
+
+/** Apple's press deformation stretches across and settles down; keep both subtle. */
+private const val LiquidToolbarPressStretchX = 0.016f
+private const val LiquidToolbarPressSquashY = 0.022f
