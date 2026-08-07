@@ -86,8 +86,8 @@
     <string name="settings_group_copy_summary">軽量コピーと完全選択モードを管理します。</string>
     <string name="settings_actionbar_style_header">アクションバー</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus アクションバー</string>
-    <string name="settings_actionbar_style_summary_enabled">レイヤード液体スタイルを使用します: カプセルベース、スライドハイライト、選択状態モーション。</string>
-    <string name="settings_actionbar_style_summary_disabled">スライドハイライトのみを維持します。リリースでハイライトボタンを発火し、直接タップは即時実行します。</string>
+    <string name="settings_actionbar_style_summary_enabled">完全な液体マテリアル: カプセルベース、屈折レンズ、ハイライトと影。</string>
+    <string name="settings_actionbar_style_summary_disabled">軽量マテリアル: ぼかしと輪郭を残し、屈折レンズと影を省きます。</string>
     <string name="settings_actionbar_style_scope">Home / OS / MCP / GitHub / BA / 生徒情報ページの上部 ActionBar</string>
     <string name="settings_liquid_switch_title">Liquid Glass コントロール</string>
     <string name="settings_liquid_switch_summary_enabled">v2 Liquid Glass のスイッチ、ボタン、カプセル型コントロールで操作感を統一します。</string>

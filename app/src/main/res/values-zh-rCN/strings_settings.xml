@@ -86,8 +86,8 @@
     <string name="settings_group_copy_summary">统一管理轻量复制与完整选区模式，兼顾流畅与可编辑性。</string>
     <string name="settings_actionbar_style_header">控件栏</string>
     <string name="settings_actionbar_style_title">液态玻璃Plus 控件栏</string>
-    <string name="settings_actionbar_style_summary_enabled">启用多层液态样式：胶囊基底 + 滑动高光 + 选中层动效。</string>
-    <string name="settings_actionbar_style_summary_disabled">关闭后仅保留滑动高光：松手触发高光按钮，直接点按立即触发。</string>
+    <string name="settings_actionbar_style_summary_enabled">完整液态材质：胶囊基底 + 折射透镜 + 高光与投影。</string>
+    <string name="settings_actionbar_style_summary_disabled">精简材质：保留模糊与描边，去掉折射透镜与投影，绘制更轻。</string>
     <string name="settings_actionbar_style_scope">Home / OS / MCP / GitHub / BA / 图鉴等页面顶部 ActionBar</string>
     <string name="settings_liquid_switch_title">液态玻璃控件</string>
     <string name="settings_liquid_switch_summary_enabled">使用 v2 Liquid Glass 开关、按钮与胶囊控件，统一液态交互质感。</string>

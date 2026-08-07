@@ -86,8 +86,8 @@
     <string name="settings_group_copy_summary">Manage lightweight copy and full selection modes.</string>
     <string name="settings_actionbar_style_header">Action bar</string>
     <string name="settings_actionbar_style_title">Liquid Glass Plus action bar</string>
-    <string name="settings_actionbar_style_summary_enabled">Use the layered liquid style: capsule base, sliding highlight, and selected-state motion.</string>
-    <string name="settings_actionbar_style_summary_disabled">Keep the sliding highlight only. Release triggers highlight buttons; direct taps run immediately.</string>
+    <string name="settings_actionbar_style_summary_enabled">Full liquid material: capsule base, refraction lens, highlight and shadow.</string>
+    <string name="settings_actionbar_style_summary_disabled">Lighter material: keeps blur and outline, drops the refraction lens and shadow.</string>
     <string name="settings_actionbar_style_scope">Top ActionBar on Home / OS / MCP / GitHub / BA / Guide pages</string>
     <string name="settings_liquid_switch_title">Liquid Glass controls</string>
     <string name="settings_liquid_switch_summary_enabled">Use v2 Liquid Glass switches, buttons, and capsule controls for consistent liquid interaction.</string>
