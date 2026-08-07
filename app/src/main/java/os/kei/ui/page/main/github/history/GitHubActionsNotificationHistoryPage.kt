@@ -69,6 +69,7 @@ import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
+import os.kei.ui.page.main.widget.chrome.preferPeakFrameRateForTabbedPageSwitch
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageContentSwitchState
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
@@ -406,6 +407,7 @@ internal fun GitHubActionsNotificationHistoryPage(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .preferPeakFrameRateForTabbedPageSwitch(historyContentSwitchState)
                         .nestedScroll(pageNestedScrollConnection)
                         .appEdgeStackContainer(edgeStackState),
                 bottomExtra =

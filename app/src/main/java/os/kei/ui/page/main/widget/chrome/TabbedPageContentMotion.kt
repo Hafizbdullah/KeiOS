@@ -20,6 +20,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import os.kei.ui.page.main.host.pager.rememberDisplayPeakFrameRate
+import androidx.compose.ui.preferredFrameRate
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -177,3 +180,32 @@ private const val TabbedPageContentSlideInMs = 220
 private const val TabbedPageContentFadeOutMs = 110
 private const val TabbedPageContentStaggerMs = 14
 private const val TabbedPageContentMaxStaggerItems = 5
+
+/**
+ * Requests the panel's peak rate while a tabbed-page section switch is animating.
+ *
+ * Same trap as the main pager: [androidx.compose.ui.FrameRateCategory.High] resolves through the
+ * display's frameRateCategoryRate, which caps at 90Hz on 5eea1f50, so the category would throttle
+ * the very motion it is meant to smooth. Ask for the peak mode instead, and only while the switch
+ * is in flight so a settled page can still downshift.
+ *
+ * The vote goes on the section container rather than [tabbedPageContentItemModifier]: the items
+ * animate individually, and one vote per row would hand the display a crowd of layers all asking
+ * for the same thing.
+ */
+@Composable
+internal fun Modifier.preferPeakFrameRateForTabbedPageSwitch(
+    switchState: TabbedPageContentSwitchState,
+): Modifier {
+    val peakFrameRate = rememberDisplayPeakFrameRate()
+    var switching by remember { mutableStateOf(false) }
+    LaunchedEffect(switchState.selectedPage) {
+        switching = true
+        delay(TabbedPageSwitchVoteMillis)
+        switching = false
+    }
+    return if (switching && peakFrameRate > 0f) preferredFrameRate(peakFrameRate) else this
+}
+
+/** Covers the slowest section-switch curve plus slack, so the vote outlives the last frame. */
+private const val TabbedPageSwitchVoteMillis = 520L
