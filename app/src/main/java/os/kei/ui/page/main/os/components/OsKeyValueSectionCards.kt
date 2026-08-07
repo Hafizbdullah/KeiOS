@@ -3,9 +3,7 @@
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -55,9 +53,6 @@ internal fun LazyListScope.addKeyValueSectionCard(
                 OsVirtualizedInfoRows(rows = rows)
             }
         }
-    }
-    item(key = "os-section-space-${card.name}", contentType = "os_section_space") {
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

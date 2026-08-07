@@ -386,9 +386,14 @@ internal fun OsPageMainList(
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .appEdgeStackContainer(edgeStackState),
             state = listState,
-            innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+            // Every card used to be followed by its own 8dp Spacer item, which doubled the
+            // list's item count: half of what the lazy column composed, measured and recorded
+            // each frame was an empty box. The arrangement produces the identical gap for free.
+            // The trailing 8dp the last spacer contributed moves into the bottom padding.
+            innerPadding =
+                PaddingValues(bottom = innerPadding.calculateBottomPadding() + OsSectionGap),
             topExtra = AppEdgeStackListTopInset,
-            sectionSpacing = 0.dp,
+            sectionSpacing = OsSectionGap,
         ) {
             addTopInfoCard(
                 visible = isCardVisible(OsSectionCard.TOP_INFO),
@@ -624,5 +629,8 @@ internal fun OsPageMainList(
         )
     }
 }
+
+/** The gap between OS section cards, formerly an 8dp Spacer item after every card. */
+private val OsSectionGap = 8.dp
 
 private const val OsPullRefreshStartTimeoutMs = 4_000L

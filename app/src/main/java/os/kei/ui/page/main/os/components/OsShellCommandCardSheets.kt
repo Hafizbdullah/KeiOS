@@ -4,10 +4,8 @@ package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
@@ -139,10 +137,6 @@ internal fun LazyListScope.addShellCommandCards(
                 )
             }
         }
-        item(
-            key = "os-shell-command-space-${card.id}",
-            contentType = "os_shell_command_space",
-        ) { Spacer(modifier = Modifier.height(8.dp)) }
     }
 }
 

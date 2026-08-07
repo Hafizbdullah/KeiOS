@@ -184,3 +184,32 @@ The same caution as the jank counter, one level up: **compare only passes taken 
 pool several of them.** A number from earlier in the session is not a baseline. If an effect is
 smaller than a couple of milliseconds, this instrument cannot see it, and neither reading is
 evidence.
+
+## OS is not the expensive tab
+
+Recorded because it was claimed twice from readings the noise floor above does not support.
+
+OS's frame *shape* differs from the other tabs, and that part is stable across every run: it has
+the highest UI-thread work (`ui_work` 2.05-2.82ms against github's 0.53-0.61) and the highest
+RenderThread CPU (6.19-7.83 against 3.73-4.75), but the **lowest GPU** (3.96-5.55 against
+4.50-7.08). The UI-thread figure is almost entirely `record draw` — 1.5-1.65ms p50 against
+github's 0.30 — which is what showing eight Liquid Glass cards costs when the comparison page is
+showing one.
+
+None of that makes it slow. Across the last two pooled measurements OS came out **best** of the
+four tabs on both totals and deadline misses: p50 13.80/14.09 and 40%/38% over budget, against
+github 18.48/17.80 at 55%/54%. Earlier in the same session OS read 20.95-23.11 and looked like the
+worst tab. Nothing changed in between that explains it.
+
+CPU-heavy and GPU-light is the shape of a page made of many small cards. It is not waste, and
+looking for waste there found none: the list is lazy, collapsed accordions do not compose their
+rows, and the edge stack already skips `placeWithLayer` for cards resting below the stack line.
+
+The one thing worth doing was a simplification, not a fix. Every OS card was followed by its own
+8dp `Spacer` item, so half the lazy list was empty boxes; every other page expresses the same gap
+through `sectionSpacing`, which is `Arrangement.spacedBy`. Converting is provably pixel-identical
+(a full-frame diff of before and after differs only in the 45 rows holding the status-bar clock)
+and measures **no change at all** to `record draw`: 1.51/1.59/1.65 after against 1.52/1.65/1.57
+before. A fixed-height empty Spacer records no draw commands; the item overhead was in composition
+and measurement, and `measure+layout` was already 0.04ms. Worth keeping for the code, not for the
+frames.

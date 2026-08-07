@@ -3,8 +3,6 @@
 package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -114,9 +112,6 @@ internal fun LazyListScope.addShortcutActivityCards(
                     }
                 }
             }
-        }
-        item(key = "os-activity-space-${card.id}", contentType = "os_section_space") {
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

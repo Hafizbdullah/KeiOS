@@ -3,9 +3,7 @@
 package os.kei.ui.page.main.os.components
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,9 +62,6 @@ internal fun LazyListScope.addTopInfoCard(
                 OsVirtualizedGroupedTopInfoRows(groupedRows = groupedTopInfoRows)
             }
         }
-    }
-    item(key = "os-top-info-space", contentType = "os_section_space") {
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 
