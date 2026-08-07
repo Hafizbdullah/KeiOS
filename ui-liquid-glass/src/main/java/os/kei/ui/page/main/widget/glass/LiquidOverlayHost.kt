@@ -57,9 +57,11 @@ class LiquidOverlayHostState internal constructor() {
     internal fun Content() {
         // Iterate a copy: an entry that unregisters while composing (a sheet that finishes its exit
         // animation and drops itself) would otherwise mutate the list mid-iteration.
-        entries.toList().forEach { entry ->
+        entries.toList().forEachIndexed { index, entry ->
             key(entry) {
-                entry.Content()
+                CompositionLocalProvider(LocalLiquidOverlayDepth provides index) {
+                    entry.Content()
+                }
             }
         }
     }
@@ -90,6 +92,17 @@ internal class LiquidOverlayEntry {
  * content without an activity root, and a sheet there should render in place rather than vanish.
  */
 val LocalLiquidOverlayHost = staticCompositionLocalOf<LiquidOverlayHostState?> { null }
+
+/**
+ * How many overlays are already stacked below this one. `0` is the bottom-most.
+ *
+ * Matters because the scene backdrop contains the *app*, not other overlays — overlays live outside
+ * the `layerBackdrop` producer by necessity. So a stacked presentation that paints a full-screen
+ * blurred plate from the scene backdrop draws a blurred copy of the page directly over whatever
+ * overlay is beneath it, and that overlay appears to vanish. A dialog opened from a sheet should dim
+ * the sheet, not replace it with the page.
+ */
+val LocalLiquidOverlayDepth = staticCompositionLocalOf { 0 }
 
 /**
  * Moves [content] to the top of the activity window.

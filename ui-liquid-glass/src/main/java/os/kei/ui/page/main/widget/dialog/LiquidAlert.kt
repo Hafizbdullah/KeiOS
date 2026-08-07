@@ -2,7 +2,9 @@
 
 package os.kei.ui.page.main.widget.dialog
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,35 +31,32 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val LiquidDialogCornerRadius = 24.dp
-private val LiquidDialogMaxWidth = 420.dp
-private val LiquidDialogPadding = 24.dp
+private val LiquidAlertCornerRadius = 26.dp
+private val LiquidAlertMaxWidth = 420.dp
+private val LiquidAlertPadding = 24.dp
 
 /**
- * Liquid Glass dialog — a centred card with a title, summary and a slot for actions.
+ * A Liquid Glass alert: critical information that needs acknowledging right away.
  *
- * This is [LiquidAlert] with a caller-owned action slot instead of a typed action list, kept because
- * dozens of call sites pass their own buttons. **Prefer [LiquidAlert] for new code**, and
- * [LiquidActionSheet] when the buttons are choices attached to something the person just did rather
- * than an acknowledgement.
+ * Follows Apple's alert anatomy — a title, optional informative text, and **up to three** buttons.
+ * Two buttons sit side by side with the expected choice trailing; three stack, because a row of three
+ * cannot hold readable titles. Pass more than three and they still render, but the guidance says an
+ * alert is the wrong container for that many choices — an [LiquidActionSheet] is.
  *
- * It used to host itself in a Dialog window, which had two consequences. Its glass never drew — a
- * `LayerBackdrop` cannot be sampled across a window boundary, so `LocalSceneBackdrop` is blanked to
- * `emptyBackdrop()` there and every `blur()` silently drew nothing, leaving a card you could read the
- * page through. And its surface was `Color.White.copy(alpha = 0.5f)` in both themes, so in dark mode
- * it was a pale card on a dark app. Both are fixed by rendering in the activity window through the
- * overlay portal with theme-aware fills.
+ * Use this for problems and irreversible confirmations. For choices attached to an action the person
+ * deliberately started, use [LiquidActionSheet] instead.
  */
 @Composable
-fun LiquidGlassDialog(
+fun LiquidAlert(
     show: Boolean,
+    title: String,
     modifier: Modifier = Modifier,
-    title: String? = null,
-    summary: String? = null,
+    message: String? = null,
+    actions: List<LiquidPresentationAction> = emptyList(),
+    dismissible: Boolean = true,
     onDismissRequest: (() -> Unit)? = null,
     onDismissFinished: (() -> Unit)? = null,
-    dismissible: Boolean = true,
-    maxWidth: Dp = LiquidDialogMaxWidth,
+    maxWidth: Dp = LiquidAlertMaxWidth,
     content: @Composable () -> Unit = {},
 ) {
     LiquidModalPresentation(
@@ -69,7 +68,7 @@ fun LiquidGlassDialog(
     ) { progressProvider ->
         val isDark = isAppInDarkTheme()
         val surface = rememberLiquidModalSurface(
-            cornerRadius = LiquidDialogCornerRadius,
+            cornerRadius = LiquidAlertCornerRadius,
             isDark = isDark,
             scaleProvider = { liquidModalCardScale(progressProvider()) },
         )
@@ -82,8 +81,8 @@ fun LiquidGlassDialog(
                 .then(surface.modifier)
                 .semantics {
                     isTraversalGroup = true
-                    title?.takeIf { it.isNotBlank() }?.let { paneTitle = it }
-                }.padding(LiquidDialogPadding),
+                    paneTitle = title
+                }.padding(LiquidAlertPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             CompositionLocalProvider(
@@ -94,22 +93,20 @@ fun LiquidGlassDialog(
                 LocalLiquidParentBackdropOverridesFallback provides true,
                 LocalLiquidDialogBackdrop provides surface.exportedBackdrop,
             ) {
-                if (!title.isNullOrBlank()) {
-                    Text(
-                        text = title,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                        lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                        fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().semantics { heading() },
-                    )
+                Text(
+                    text = title,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                    lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                    fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().semantics { heading() },
+                )
+                if (!message.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-                if (!summary.isNullOrBlank()) {
                     Text(
-                        text = summary,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f),
+                        text = message,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant,
                         fontSize = AppTypographyTokens.Body.fontSize,
                         lineHeight = AppTypographyTokens.Body.lineHeight,
                         fontWeight = AppTypographyTokens.Body.fontWeight,
@@ -118,6 +115,48 @@ fun LiquidGlassDialog(
                     )
                 }
                 content()
+                if (actions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    LiquidAlertActions(
+                        actions = actions,
+                        backdrop = surface.exportedBackdrop,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LiquidAlertActions(
+    actions: List<LiquidPresentationAction>,
+    backdrop: com.kyant.backdrop.Backdrop?,
+) {
+    if (liquidAlertUsesButtonRow(actions.size)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            liquidAlertRowOrder(actions).forEach { action ->
+                LiquidPresentationActionButton(
+                    action = action,
+                    backdrop = backdrop,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    } else {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Stacked alerts read top-down, so the expected choice goes first rather than trailing.
+            liquidAlertRowOrder(actions).reversed().forEach { action ->
+                LiquidPresentationActionButton(
+                    action = action,
+                    backdrop = backdrop,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }

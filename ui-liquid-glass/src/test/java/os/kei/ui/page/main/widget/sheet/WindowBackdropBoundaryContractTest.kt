@@ -74,17 +74,46 @@ class WindowBackdropBoundaryContractTest {
         )
     }
 
+    /**
+     * The whole presentation family — dialog, alert, action sheet — renders in the activity window
+     * through the overlay portal, and every one of them republishes its own surface so controls inside
+     * cannot sample the page they float over.
+     *
+     * Hosting any of these in a Dialog window is the regression to guard against: `LocalSceneBackdrop`
+     * is blanked there, so the card's blur draws nothing and it silently degrades to a flat fill. That
+     * is exactly how the old dialog ended up readable straight through.
+     */
     @Test
-    fun dialogCreatesOnlyAWindowLocalExportWithoutSelfConsumption() {
-        val dialog = windowBoundarySource(LIQUID_DIALOG_SOURCE)
-        val boundaryIndex = dialog.indexOf("LiquidBackdropWindowDialog(").windowMarkerFound()
-        val producerIndex = dialog.indexOf("val dialogBackdrop = rememberLayerBackdrop()").windowMarkerFound()
+    fun modalPresentationsRenderInWindowAndRepublishTheirOwnSurface() {
+        val presentation = windowBoundarySource(LIQUID_MODAL_PRESENTATION_SOURCE)
+        val modalSurface = windowBoundarySource(LIQUID_MODAL_SURFACE_SOURCE)
 
-        assertTrue(boundaryIndex < producerIndex)
-        assertTrue("LocalSceneBackdrop.current" in dialog)
-        assertTrue("exportedBackdrop = dialogBackdrop," in dialog)
-        assertTrue("LocalLiquidDialogBackdrop provides if (liquidControlsEnabled) dialogBackdrop else null" in dialog)
-        assertFalse(".layerBackdrop(dialogBackdrop)" in dialog)
+        assertTrue("LiquidOverlayPortal {" in presentation)
+        assertFalse("LiquidBackdropWindowDialog(" in presentation)
+        assertFalse("Dialog(" in presentation)
+
+        assertTrue("LocalSceneBackdrop.current" in modalSurface)
+        assertTrue("exportedBackdrop = cardBackdrop," in modalSurface)
+        assertTrue(
+            "LocalLiquidOverlayHost.current != null" in modalSurface,
+            "Glass must be gated on actually being inside the overlay host",
+        )
+        assertFalse(
+            ".layerBackdrop(" in modalSurface,
+            "A second layerBackdrop after drawBackdrop is the documented draw loop",
+        )
+
+        for (relativePath in LIQUID_MODAL_CONSUMER_SOURCES) {
+            val consumer = windowBoundarySource(relativePath)
+            assertTrue(
+                "LocalLiquidParentBackdrop provides surface.exportedBackdrop," in consumer,
+                "$relativePath must republish its own surface to its content",
+            )
+            assertFalse(
+                "LiquidBackdropWindowDialog(" in consumer,
+                "$relativePath must not go back to hosting itself in a Dialog window",
+            )
+        }
     }
 
     @Test
@@ -169,7 +198,15 @@ private const val GLASS_RUNTIME_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/GlassEffectRuntime.kt"
 private const val LIQUID_SHEET_SURFACE_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheetSurface.kt"
-private const val LIQUID_DIALOG_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidGlassDialog.kt"
+private const val LIQUID_MODAL_PRESENTATION_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidModalPresentation.kt"
+private const val LIQUID_MODAL_SURFACE_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidModalSurface.kt"
+private val LIQUID_MODAL_CONSUMER_SOURCES =
+    listOf(
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidGlassDialog.kt",
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidAlert.kt",
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidActionSheet.kt",
+    )
 private const val SNAPSHOT_POPUP_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/MiuixSnapshotAdapters.kt"

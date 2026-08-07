@@ -77,13 +77,23 @@ class LiquidGlassDialogTest {
         assertTrue(dialogWidth <= 280.dp, "Custom maxWidth must constrain the Liquid dialog card")
     }
 
+    /**
+     * Controls inside the card must sample the card, not the page it floats over.
+     *
+     * This used to be enforced by the Dialog window boundary nulling the inherited backdrop — which
+     * also meant the dialog itself had no backdrop to sample and no glass at all. Now the dialog
+     * renders in the activity window and overrides the local with its *own* exported surface, so the
+     * page backdrop still cannot leak in, but there is real glass to sample.
+     */
     @Test
-    fun dialogWindowClearsInheritedParentBackdrop() {
+    fun dialogReplacesInheritedParentBackdropWithItsOwnSurface() {
         var contentObserved = false
         var observedParentBackdrop: Backdrop? = null
+        var pageBackdropRef: Backdrop? = null
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 val pageBackdrop = rememberLayerBackdrop()
+                pageBackdropRef = pageBackdrop
                 CompositionLocalProvider(
                     LocalLiquidParentBackdrop provides pageBackdrop,
                     LocalTransitionAnimationsEnabled provides false,
@@ -105,7 +115,10 @@ class LiquidGlassDialogTest {
         composeRule.onNode(hasText("Window boundary")).assertIsDisplayed()
         composeRule.runOnIdle {
             assertTrue(contentObserved)
-            assertNull(observedParentBackdrop)
+            assertTrue(
+                observedParentBackdrop !== pageBackdropRef,
+                "The page backdrop must not leak into the dialog's content",
+            )
         }
     }
 
