@@ -41,6 +41,7 @@ import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -404,6 +405,7 @@ private fun rememberMcpPageActionItems(
             LiquidActionItem(
                 icon = notesIcon,
                 contentDescription = openSkillContentDescription,
+                testTag = KeiOsTestTags.McpSkillButton,
                 onClick = onOpenSkill,
             ),
         )

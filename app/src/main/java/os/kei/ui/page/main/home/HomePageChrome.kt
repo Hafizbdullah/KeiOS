@@ -54,6 +54,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionCard
 import os.kei.ui.page.main.widget.sheet.SheetSectionTitle
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -766,6 +767,7 @@ internal fun HomePageOverviewCards(
                     backdrop = homeCardBackdrop,
                     blurEnabled = blurEnabled,
                     onClick = onOpenWebDavSync,
+                    testTag = KeiOsTestTags.HomeWebDavCard,
                 ) {
                     HomeInfoPillCard(
                         naText = homeNa,

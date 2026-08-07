@@ -17,9 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -51,6 +48,7 @@ import os.kei.ui.page.main.settings.support.rememberSettingsAppLanguageControlle
 import os.kei.ui.page.main.settings.support.rememberSettingsBatteryOptimizationController
 import os.kei.ui.page.main.settings.support.rememberSettingsPermissionKeepAliveController
 import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
@@ -511,13 +509,10 @@ fun SettingsPage(
         // Keep both pager and search content mounted to avoid blank flash on
         // search toggle, matching the pattern used by GitHub, MCP, OS, and BA
         // Catalog pages. Control visibility and backdrop capture instead.
-        // testTagsAsResourceId is what makes the tag visible to UiAutomator; without it the
-        // baseline-profile journey cannot find the page. The history page already does this.
         Box(
             Modifier
                 .fillMaxSize()
-                .semantics { testTagsAsResourceId = true }
-                .testTag(KeiOsTestTags.SettingsPageRoot),
+                .pageRootTestTag(KeiOsTestTags.SettingsPageRoot),
         ) {
             SettingsCategoryPagerContent(
                 innerPadding = innerPadding,

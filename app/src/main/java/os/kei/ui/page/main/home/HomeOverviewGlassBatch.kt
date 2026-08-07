@@ -372,6 +372,7 @@ internal fun HomeOverviewGlassBatchHost(
 internal fun HomeOverviewBatchedCard(
     state: HomeOverviewCardBatchState,
     onClick: (() -> Unit)?,
+    testTag: String? = null,
     content: @Composable () -> Unit,
 ) {
     val key = remember { Any() }
@@ -441,6 +442,7 @@ internal fun HomeOverviewBatchedCard(
                         )
                     }.then(clickModifier)
                     .then(interactiveModifier)
+                    .homeOverviewCardTestTag(testTag)
                     .padding(
                         horizontal = HOME_INFO_CARD_HORIZONTAL_CONTENT_PADDING,
                         vertical = HOME_INFO_CARD_VERTICAL_CONTENT_PADDING,

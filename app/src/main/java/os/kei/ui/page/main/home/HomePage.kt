@@ -200,6 +200,7 @@ fun HomePage(
                 LiquidActionItem(
                     icon = aboutIcon,
                     contentDescription = aboutContentDescription,
+                    testTag = KeiOsTestTags.HomeAboutButton,
                     onClick = {
                         onActionBarSelectedIndexChange(1)
                         onOpenAbout()

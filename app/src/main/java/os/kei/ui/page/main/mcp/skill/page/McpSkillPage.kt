@@ -24,6 +24,8 @@ import os.kei.ui.page.main.mcp.skill.state.rememberMcpSkillPageTextBundle
 import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -73,7 +75,7 @@ fun McpSkillPage(
 
     AppPageScaffold(
         title = textBundle.pageTitle,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.McpSkillPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarMaterialBackdrop,
         titleBackdrop = topBarBackdrop,

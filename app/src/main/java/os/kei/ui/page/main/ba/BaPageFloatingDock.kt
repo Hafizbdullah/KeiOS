@@ -24,6 +24,7 @@ import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalActionDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -101,7 +102,7 @@ internal fun BoxScope.BaPageFloatingDock(
                     icon = calendarIcon,
                     contentDescription = calendarDescription,
                     iconTint = primaryIconTint,
-                    testTag = BA_DOCK_OPEN_CALENDAR,
+                    testTag = KeiOsTestTags.BaDockOpenCalendar,
                     badgeLabel = calendarBadgeLabel,
                     tooltipText = calendarBadgeTooltip,
                     onClick = openCalendarClick,
@@ -110,7 +111,7 @@ internal fun BoxScope.BaPageFloatingDock(
                     icon = poolIcon,
                     contentDescription = poolDescription,
                     iconTint = primaryIconTint,
-                    testTag = BA_DOCK_OPEN_POOL,
+                    testTag = KeiOsTestTags.BaDockOpenPool,
                     badgeLabel = poolBadgeLabel,
                     tooltipText = poolBadgeTooltip,
                     onClick = openPoolClick,
@@ -157,5 +158,3 @@ private fun baCalendarPoolDockBadgeLabel(count: Int): String? =
  * Stable handles for the two routes these actions push. The benchmark cannot match on the content
  * descriptions, which are localised.
  */
-internal const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
-internal const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"

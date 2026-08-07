@@ -55,6 +55,8 @@ import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -147,7 +149,7 @@ internal fun WebDavSyncPage(
 
     AppPageScaffold(
         title = stringResource(R.string.webdav_sync_title),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().pageRootTestTag(KeiOsTestTags.WebDavSyncPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,

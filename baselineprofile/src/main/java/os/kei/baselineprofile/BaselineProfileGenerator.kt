@@ -149,16 +149,11 @@ class BaselineProfileGenerator {
         ) {
             launchHomeFromColdStart()
 
-            waitForTestTag(HOME_SETTINGS_BUTTON, timeoutMs = 15_000)
-            val settingsButton = device.findObject(testTagSelector(HOME_SETTINGS_BUTTON))
-                ?: error("Unable to find testTag=$HOME_SETTINGS_BUTTON in ${targetAppId()}")
-            settingsButton.click()
-            waitForTestTag(SETTINGS_PAGE_ROOT, timeoutMs = 15_000)
-            flingVisibleScrollable(times = 2)
-
-            device.pressBack()
-            waitForTestTag(HOME_PAGE_ROOT, timeoutMs = 15_000)
-            device.waitForIdle()
+            pushRouteAndReturn(
+                entryTag = HOME_SETTINGS_BUTTON,
+                pageTag = SETTINGS_PAGE_ROOT,
+                returnTag = HOME_PAGE_ROOT,
+            )
         }
     }
 
@@ -180,19 +175,87 @@ class BaselineProfileGenerator {
                 pageTag = GITHUB_PAGE_ROOT,
                 settledTag = MAIN_PAGER_SETTLED_GITHUB,
             )
-
-            waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
-            val historyButton = device.findObject(testTagSelector(GITHUB_ACTIONS_HISTORY_BUTTON))
-                ?: error("Unable to find testTag=$GITHUB_ACTIONS_HISTORY_BUTTON in ${targetAppId()}")
-            historyButton.click()
-            waitForTestTag(GITHUB_ACTIONS_HISTORY_PAGE_ROOT, timeoutMs = 15_000)
-            flingVisibleScrollable(times = 2)
-
-            device.pressBack()
-            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
-            device.waitForIdle()
+            pushRouteAndReturn(
+                entryTag = GITHUB_ACTIONS_HISTORY_BUTTON,
+                pageTag = GITHUB_ACTIONS_HISTORY_PAGE_ROOT,
+                returnTag = GITHUB_PAGE_ROOT,
+            )
         }
     }
+
+    /**
+     * The two routes Home pushes besides Settings. About renders the changelog and the component
+     * inventory; the WebDAV card opens the sync route. Both were reachable only through paths no
+     * journey walked, so every class on them was interpreted on first entry.
+     */
+    @Test
+    fun homeAboutAndWebDavRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            pushRouteAndReturn(
+                entryTag = HOME_ABOUT_BUTTON,
+                pageTag = ABOUT_PAGE_ROOT,
+                returnTag = HOME_PAGE_ROOT,
+            )
+            pushRouteAndReturn(
+                entryTag = HOME_WEBDAV_CARD,
+                pageTag = WEBDAV_SYNC_PAGE_ROOT,
+                returnTag = HOME_PAGE_ROOT,
+            )
+        }
+    }
+
+    /**
+     * The MCP skill route, pushed from the MCP page's action bar. It renders Markdown, which is the
+     * most expensive first composition of any pushed route in the app.
+     */
+    @Test
+    fun mcpSkillRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_MCP,
+                pageTag = MCP_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_MCP,
+            )
+            pushRouteAndReturn(
+                entryTag = MCP_SKILL_BUTTON,
+                pageTag = MCP_SKILL_PAGE_ROOT,
+                returnTag = MCP_PAGE_ROOT,
+            )
+        }
+    }
+}
+
+/**
+ * Taps a control that pushes a nav route, exercises the route, then pops back.
+ *
+ * Both directions matter: the pop replays the covered entry's restore path, which is what a user
+ * feels on the way out.
+ */
+private fun MacrobenchmarkScope.pushRouteAndReturn(
+    entryTag: String,
+    pageTag: String,
+    returnTag: String,
+) {
+    waitForTestTag(entryTag, timeoutMs = 15_000)
+    val entry = device.findObject(testTagSelector(entryTag))
+        ?: error("Unable to find testTag=$entryTag in ${targetAppId()}")
+    entry.click()
+    waitForTestTag(pageTag, timeoutMs = 15_000)
+    flingVisibleScrollable(times = 2)
+
+    device.pressBack()
+    waitForTestTag(returnTag, timeoutMs = 15_000)
+    device.waitForIdle()
 }
 
 /**
@@ -236,9 +299,15 @@ private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
 private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
 private const val HOME_SETTINGS_BUTTON = "home_settings_button"
+private const val HOME_ABOUT_BUTTON = "home_about_button"
+private const val HOME_WEBDAV_CARD = "home_webdav_card"
 private const val SETTINGS_PAGE_ROOT = "settings_page_root"
+private const val ABOUT_PAGE_ROOT = "about_page_root"
+private const val WEBDAV_SYNC_PAGE_ROOT = "webdav_sync_page_root"
 private const val OS_PAGE_ROOT = "os_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
+private const val MCP_SKILL_BUTTON = "mcp_skill_button"
+private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
 private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"

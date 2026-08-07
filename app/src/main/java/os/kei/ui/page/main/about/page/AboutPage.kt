@@ -52,6 +52,8 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -293,7 +295,8 @@ fun AboutPage(
         title = stringResource(R.string.about_page_title),
         modifier =
             Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .pageRootTestTag(KeiOsTestTags.AboutPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = topBarBackdrop,

@@ -40,6 +40,7 @@ import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
 import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.testing.pageRootTestTag
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.BlurColors
@@ -132,11 +133,21 @@ internal fun Modifier.homeHeroForegroundBlur(
     )
 }
 
+/**
+ * Tags an overview card so a macrobenchmark journey can reach the route it opens.
+ *
+ * Both [HomeInfoCard] paths route through here so the batched and unbatched cards expose the tag
+ * identically — the batch host is chosen by a composition local, not by the caller.
+ */
+internal fun Modifier.homeOverviewCardTestTag(tag: String?): Modifier =
+    if (tag == null) this else pageRootTestTag(tag)
+
 @Composable
 internal fun HomeInfoCard(
     backdrop: Backdrop?,
     blurEnabled: Boolean,
     onClick: (() -> Unit)? = null,
+    testTag: String? = null,
     content: @Composable () -> Unit,
 ) {
     val batchState = LocalHomeOverviewCardBatchState.current
@@ -144,6 +155,7 @@ internal fun HomeInfoCard(
         HomeOverviewBatchedCard(
             state = batchState,
             onClick = onClick,
+            testTag = testTag,
             content = content,
         )
         return
@@ -162,7 +174,8 @@ internal fun HomeInfoCard(
         modifier =
             Modifier
                 .padding(horizontal = HOME_CARD_HORIZONTAL_PADDING_DP.dp)
-                .padding(bottom = HOME_INFO_CARD_GAP),
+                .padding(bottom = HOME_INFO_CARD_GAP)
+                .homeOverviewCardTestTag(testTag),
         backdrop = activeBackdrop,
         containerColor = containerColor,
         shape = RoundedRectangle(20.dp),

@@ -34,10 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,6 +83,7 @@ import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -280,8 +278,7 @@ internal fun GitHubActionsNotificationHistoryPage(
         modifier =
             Modifier
                 .fillMaxSize()
-                .semantics { testTagsAsResourceId = true }
-                .testTag(KeiOsTestTags.GitHubActionsHistoryPageRoot),
+                .pageRootTestTag(KeiOsTestTags.GitHubActionsHistoryPageRoot),
         scrollBehavior = scrollBehavior,
         topBarColor = topBarColor,
         titleBackdrop = pageBackdrop,
