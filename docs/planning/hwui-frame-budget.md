@@ -88,3 +88,71 @@ rather than a change here.
 
 There is no free frame-time win in the paths measured above. Anyone picking this up should start
 by reproducing the table in "The stage that matters", not by re-running the rejected experiment.
+
+## Why Home reads differently at different moments
+
+The panel is LTPO and moves between 120Hz and 60Hz on its own. Home idle, measured twice on the
+same build, with nothing changed but when the sample was taken:
+
+| Home idle | panel | vsync budget | frame cost p50 | gpu p50 | over deadline |
+|---|---|---|---|---|---|
+| within ~1s of a scroll | 120Hz | 8.31ms | 19.65 | 11.27 | 100% |
+| ~10s after last touch | 60Hz | 16.62ms | 21.29 | 11.25 | 100% |
+
+The work is the same — GPU 11.27 vs 11.25. What changes is the deadline it is scored against, and
+the panel crosses between the two a second or so after the last touch. `dumpsys gfxinfo`
+accumulates both regimes into one jank figure, so the same build reads well or badly depending on
+how the app was being used while the counter was open. Six consecutive settled samples, by
+contrast, land within 20.85-22.15ms — the variance is not in the app.
+
+The part that is a real problem: **Home misses the deadline 100% of the time in both regimes.**
+A ~20ms frame does not fit an 8.31ms budget and does not fit a 16.62ms one either. Home never
+keeps up while its background animates. That is the full-screen glass blur, deferred to a separate
+Backdrop investigation.
+
+When comparing builds, reset the counter and drive a fixed journey (`scripts/perf/`) rather than
+reading the accumulated figure — otherwise the refresh-rate mix is the variable, not the change.
+
+## Switching into BA
+
+Ranked by cost of Home -> tab, three passes pooled, every tab a first entry:
+
+| switch to | total p50 | p90 | p99 | ui p99 | rt p99 | gpu p99 |
+|---|---|---|---|---|---|---|
+| github | 17.04 | 33.90 | 48.44 | 24.01 | 22.49 | 28.63 |
+| mcp | 18.48 | 44.75 | 59.34 | 25.28 | 38.84 | 31.36 |
+| os | 15.34 | 45.96 | 76.96 | 19.44 | 18.46 | 37.99 |
+| **ba** | **15.26** | **58.79** | **83.76** | **38.38** | **57.72** | 26.81 |
+
+BA's median is the *best* of the four and its GPU p99 is the *lowest*. The entire complaint is the
+tail, and the tail is first activation. Bouncing Home <-> BA repeatedly:
+
+| Home -> BA | p50 | p90 | p99 | ui p99 | rt p99 |
+|---|---|---|---|---|---|
+| entry #1 | 13.13 | 55.78 | 74.65 | 32.15 | 62.63 |
+| entry #2 | 12.74 | 41.26 | 55.78 | 14.32 | 35.94 |
+| entry #3 | 12.84 | 43.19 | 59.20 | 11.81 | 36.68 |
+| entry #4 | 13.19 | 38.06 | 56.48 | 13.93 | 29.80 |
+
+`MainPageActivationState.hasActivated` keeps a page composed once it has been reached, so a page
+composes exactly once per process — which is why only entry #1 pays. First entry costs ~19ms of
+extra UI-thread work (composing BA's tree) and ~26ms of extra RenderThread (first rasterization of
+its glass layers) over a repeat.
+
+### The candidate worth trying
+
+`MainPageActivationState` marks a page activated from two `LaunchedEffect`s: when it becomes the
+settled page, and when it is the scroll target *while `isScrollInProgress` is true*. A tab tap
+reaches the second one, so BA's tree composes on the **first frame of the switch animation** —
+the worst possible frame to spend 19ms on.
+
+`MainPagerTabJumpController.onPageSelected` already knows the target index synchronously, at tap
+time, before `animateToPage` is launched. Marking the target activated there would move that
+composition into the touch-response window, ahead of any motion. Same work, same tap, one frame
+earlier.
+
+This is **not** the layer pre-warm recorded in the BA first-entry notes, which rendered glass off
+the click path and made the other half worse. Nothing is rendered early here; only the ordering of
+composition versus the start of the animation changes. It does need care: `activationState` is
+built after the coordinator in `MainPagerLayout`, so the target index has to be threaded out of
+`MainPagerTabJumpControllerState` first.
