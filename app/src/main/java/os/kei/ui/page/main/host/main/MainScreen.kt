@@ -100,6 +100,11 @@ fun MainScreen(
         navigator.popUntil { it == KeiosRoute.Main }
         navigator.pushSingleTop(KeiosRoute.WebDavSync)
     }
+    LaunchedEffect(hostState.requestedOsShellRunnerToken) {
+        if (hostState.requestedOsShellRunnerToken <= 0) return@LaunchedEffect
+        navigator.popUntil { it == KeiosRoute.Main }
+        navigator.pushSingleTop(KeiosRoute.OsShellRunner)
+    }
     LaunchedEffect(hostState.requestedBaCalendarPoolToken) {
         if (hostState.requestedBaCalendarPoolToken <= 0) return@LaunchedEffect
         val serverIndex = hostState.requestedBaCalendarPoolServerIndex

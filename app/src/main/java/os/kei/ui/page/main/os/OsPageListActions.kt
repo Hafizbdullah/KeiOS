@@ -5,7 +5,6 @@ package os.kei.ui.page.main.os
 import android.content.Context
 import androidx.compose.runtime.Immutable
 import os.kei.ui.page.main.os.shell.OsShellCommandCard
-import os.kei.ui.page.main.os.shell.OsShellRunnerActivity
 import os.kei.ui.page.main.os.shortcut.OsActivityShortcutCard
 import os.kei.ui.page.main.os.state.OsPageActionState
 import os.kei.ui.page.main.os.state.OsPageTextBundle
@@ -34,9 +33,10 @@ internal fun createOsPageMainListActions(
     routeState: OsPageRouteState,
     privilegeStatus: PrivilegeStatus,
     osPageViewModel: OsPageViewModel,
+    onOpenShellRunner: () -> Unit,
 ): OsPageMainListActions =
     OsPageMainListActions(
-        onOpenShellRunner = { OsShellRunnerActivity.launch(context) },
+        onOpenShellRunner = onOpenShellRunner,
         onShellCommandCardExpandedChange = osPageViewModel::updateShellCommandCardExpanded,
         onOpenShellCommandCardEditor = osPageViewModel::openShellCommandCardEditor,
         onRunShellCommandCard = { card ->

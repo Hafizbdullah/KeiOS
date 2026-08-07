@@ -53,4 +53,7 @@ sealed interface KeiosRoute : NavKey {
 
     @Serializable
     data object WebDavSync : KeiosRoute
+
+    @Serializable
+    data object OsShellRunner : KeiosRoute
 }

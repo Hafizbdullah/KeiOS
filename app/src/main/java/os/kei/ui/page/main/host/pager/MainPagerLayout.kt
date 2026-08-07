@@ -112,6 +112,10 @@ internal fun MainPagerLayout(
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.McpSkill) }
         }
+    val onOpenShellRunner =
+        remember(navigator) {
+            { navigator.pushSingleTop(KeiosRoute.OsShellRunner) }
+        }
     val onOpenGitHubActionsNotificationHistory =
         remember(navigator) {
             { navigator.pushSingleTop(KeiosRoute.GitHubActionsNotificationHistory) }
@@ -420,6 +424,7 @@ internal fun MainPagerLayout(
                                 MainPagerOsPageState(
                                     privilegeStatus = privilegeStatus,
                                     privilegedShell = privilegedShell,
+                                    onOpenShellRunner = onOpenShellRunner,
                                 )
                             }
                         } else {

@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_ROUTE_WEBDAV_SYNC = "WebDavSync"
         const val TARGET_ROUTE_BA_ACTIVITY_CALENDAR = "BaActivityCalendar"
         const val TARGET_ROUTE_BA_POOL = "BaPool"
+        const val TARGET_ROUTE_OS_SHELL_RUNNER = "OsShellRunner"
         const val MCP_SERVER_ACTION_TOGGLE = "toggle"
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
@@ -338,6 +339,11 @@ class MainActivity : ComponentActivity() {
         } else {
             previous.requestedWebDavSyncToken
         }
+        val nextOsShellRunnerToken = if (route.targetRoute == TARGET_ROUTE_OS_SHELL_RUNNER) {
+            previous.requestedOsShellRunnerToken + 1
+        } else {
+            previous.requestedOsShellRunnerToken
+        }
         val isBaCalendarPoolRoute =
             route.targetRoute == TARGET_ROUTE_BA_ACTIVITY_CALENDAR ||
                 route.targetRoute == TARGET_ROUTE_BA_POOL
@@ -354,6 +360,7 @@ class MainActivity : ComponentActivity() {
             requestedBaAccountId = route.baAccountId ?: previous.requestedBaAccountId,
             requestedBaAccountToken = nextBaAccountToken,
             requestedWebDavSyncToken = nextWebDavSyncToken,
+            requestedOsShellRunnerToken = nextOsShellRunnerToken,
             requestedBaCalendarPoolRoute =
                 if (isBaCalendarPoolRoute) route.targetRoute else previous.requestedBaCalendarPoolRoute,
             requestedBaCalendarPoolServerIndex =

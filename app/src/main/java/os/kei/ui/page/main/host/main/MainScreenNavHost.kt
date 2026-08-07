@@ -29,6 +29,7 @@ import os.kei.ui.page.main.ba.toInitialServerSelection
 import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
 import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
+import os.kei.ui.page.main.os.shell.page.OsShellRunnerPage
 import os.kei.ui.page.main.settings.page.SettingsPage
 import os.kei.ui.page.main.student.catalog.page.BaGuideCatalogPage
 import os.kei.ui.page.main.student.page.BaStudentGuidePage
@@ -363,6 +364,36 @@ internal fun MainScreenNavHost(
                             WebDavSyncPage(
                                 onBack = onRouteBack,
                                 dataPorts = dataPorts,
+                            )
+                        }
+                    }
+                    entry<KeiosRoute.OsShellRunner> {
+                        val privilegedShell = pagerCoordinator.privilegedShell
+                        // As an activity this page owned a second PrivilegedShell and attached its
+                        // own status callback. PrivilegedShell keeps exactly one callback, so a
+                        // shared instance could not have carried both; the private one existed to
+                        // avoid displacing MainActivity's. Reading the status MainActivity already
+                        // publishes needs no callback at all, so the route can use the shared shell
+                        // and privilege lifetime stays exactly where it was.
+                        val canRunShellCommand =
+                            remember(privilegedShell, pagerCoordinator.privilegeStatus) {
+                                privilegedShell.canUseCommand()
+                            }
+                        MainScreenRouteBackgroundHost(
+                            prefsState = prefsState,
+                            style = AppManagedBackgroundStyles.FocusedTask,
+                            exportBackdropToContent = true,
+                        ) {
+                            OsShellRunnerPage(
+                                canRunShellCommand = canRunShellCommand,
+                                onRequestPrivilegeAccess = onCheckOrRequestPrivilege,
+                                onRunShellCommand = { command, timeoutMs, onOutput ->
+                                    privilegedShell.execCommandCancellableStreaming(
+                                        command = command,
+                                        timeoutMs = timeoutMs,
+                                    ) { output -> onOutput(output) }
+                                },
+                                onClose = onRouteBack,
                             )
                         }
                     }

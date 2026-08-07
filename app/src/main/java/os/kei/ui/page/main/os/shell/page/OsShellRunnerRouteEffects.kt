@@ -71,6 +71,9 @@ internal fun OsShellRunnerRouteEffects(
             pageState.requestStartupFocus()
         }
     }
+    DisposableEffect(shellRunnerViewModel) {
+        onDispose { shellRunnerViewModel.releaseStartupFocus() }
+    }
 }
 
 @Composable

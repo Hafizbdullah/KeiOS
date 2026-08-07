@@ -152,6 +152,20 @@ internal class OsShellRunnerViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Re-arms the one-shot startup focus for the next visit.
+     *
+     * As an activity the runner got a fresh ViewModel per launch, so the latch reset itself. As a
+     * nav route the ViewModel is scoped to the host activity and outlives the page — miuix-nav
+     * gives entries no ViewModelStore of their own — so leaving the page has to clear it, or the
+     * command input auto-focuses on the first visit only.
+     */
+    fun releaseStartupFocus() {
+        pageChromeMutableState.update { state ->
+            if (!state.startupFocusApplied) state else state.copy(startupFocusApplied = false)
+        }
+    }
+
     fun openSaveSheet(suggestedSubtitle: String) {
         pageChromeMutableState.update { state ->
             state.copy(

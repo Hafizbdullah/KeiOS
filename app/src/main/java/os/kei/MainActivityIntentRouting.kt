@@ -61,6 +61,7 @@ internal object MainActivityIntentRouting {
             MainActivity.TARGET_ROUTE_WEBDAV_SYNC -> MainActivity.TARGET_ROUTE_WEBDAV_SYNC
             MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR -> MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR
             MainActivity.TARGET_ROUTE_BA_POOL -> MainActivity.TARGET_ROUTE_BA_POOL
+            MainActivity.TARGET_ROUTE_OS_SHELL_RUNNER -> MainActivity.TARGET_ROUTE_OS_SHELL_RUNNER
             else -> null
         }
     }

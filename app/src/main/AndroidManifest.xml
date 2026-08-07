@@ -158,12 +158,6 @@
             android:label="@string/github_star_import_title" />
 
         <activity
-            android:name=".ui.page.main.os.shell.OsShellRunnerActivity"
-            android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
-            android:enableOnBackInvokedCallback="true"
-            android:exported="false" />
-
-        <activity
             android:name=".ui.page.main.feedback.FeedbackIssueActivity"
             android:configChanges="keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:enableOnBackInvokedCallback="true"

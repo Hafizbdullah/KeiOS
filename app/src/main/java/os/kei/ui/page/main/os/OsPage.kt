@@ -43,6 +43,7 @@ fun OsPage(
     runtime: MainPageRuntime,
     privilegeStatus: PrivilegeStatus,
     privilegedShell: PrivilegedShell,
+    onOpenShellRunner: () -> Unit,
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -475,6 +476,7 @@ fun OsPage(
             routeState,
             privilegeStatus,
             osPageViewModel,
+            onOpenShellRunner,
         ) {
             createOsPageMainListActions(
                 context = context,
@@ -483,6 +485,7 @@ fun OsPage(
                 routeState = routeState,
                 privilegeStatus = privilegeStatus,
                 osPageViewModel = osPageViewModel,
+                onOpenShellRunner = onOpenShellRunner,
             )
         }
     val mainListChromeState =

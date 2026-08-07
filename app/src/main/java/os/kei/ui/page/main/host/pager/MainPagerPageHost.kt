@@ -62,6 +62,7 @@ internal data class MainPagerHomePageState(
 internal data class MainPagerOsPageState(
     val privilegeStatus: PrivilegeStatus,
     val privilegedShell: PrivilegedShell,
+    val onOpenShellRunner: () -> Unit,
 )
 
 @Immutable
@@ -160,6 +161,7 @@ internal fun MainPagerPageHost(
                         runtime = runtime,
                         privilegeStatus = osState.privilegeStatus,
                         privilegedShell = osState.privilegedShell,
+                        onOpenShellRunner = osState.onOpenShellRunner,
                         liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onActionBarInteractingChanged = onActionBarInteractingChanged,
                     )
