@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import os.kei.core.prefs.UiPrefs
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 
 class DebugLiquidCatalogActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -14,7 +15,12 @@ class DebugLiquidCatalogActivity : ComponentActivity() {
 
         setContent {
             DebugActivityTheme(appThemeMode) {
-                DebugLiquidCatalogPage(onClose = { finish() })
+                // The catalog previews sheets, alerts and action sheets, and those only get real
+                // glass where a scene backdrop exists to sample. Without this they fall back to an
+                // opaque fill, which is legible but not what the catalog is for.
+                SceneBackdropHost {
+                    DebugLiquidCatalogPage(onClose = { finish() })
+                }
             }
         }
     }

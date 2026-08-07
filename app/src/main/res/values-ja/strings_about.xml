@@ -203,6 +203,15 @@
     <string name="debug_component_lab_liquid_feedback_dialog_result_cancelled">キャンセル済み</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_confirmed">確認済み</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_dismissed">閉じました</string>
+    <string name="debug_component_lab_liquid_alert_open">Alert を開く</string>
+    <string name="debug_component_lab_liquid_alert_title">ローカルキャッシュを削除しますか？</string>
+    <string name="debug_component_lab_liquid_alert_message">ダウンロード済みの図鑑メディアは削除され、次回また取得が必要になります。</string>
+    <string name="debug_component_lab_liquid_alert_confirm">削除</string>
+    <string name="debug_component_lab_liquid_action_sheet_open">ActionSheet を開く</string>
+    <string name="debug_component_lab_liquid_action_sheet_title">この下書きは未保存です</string>
+    <string name="debug_component_lab_liquid_action_sheet_message">現在の編集内容の扱いを選択してください。</string>
+    <string name="debug_component_lab_liquid_action_sheet_discard">下書きを破棄</string>
+    <string name="debug_component_lab_liquid_action_sheet_save">下書きを保存</string>
     <string name="debug_component_lab_liquid_sheet_title">Liquid Bottom Sheet 負荷試作</string>
     <string name="debug_component_lab_liquid_sheet_subtitle">Detent、長い内容、IME、閉じる操作の制限</string>
     <string name="debug_component_lab_liquid_sheet_allow_dismiss">閉じる操作を許可</string>

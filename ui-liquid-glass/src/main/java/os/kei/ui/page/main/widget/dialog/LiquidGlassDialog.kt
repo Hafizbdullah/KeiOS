@@ -2,52 +2,31 @@
 
 package os.kei.ui.page.main.widget.dialog
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.paneTitle
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import os.kei.ui.page.main.widget.core.AppTypographyTokens
-import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
-import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
-import os.kei.ui.page.main.widget.isAppInDarkTheme
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val LiquidDialogCornerRadius = 24.dp
 private val LiquidDialogMaxWidth = 420.dp
-private val LiquidDialogPadding = 24.dp
 
 /**
- * Liquid Glass dialog — a centred card with a title, summary and a slot for actions.
+ * Deprecated alias for [LiquidAlert].
  *
- * This is [LiquidAlert] with a caller-owned action slot instead of a typed action list, kept because
- * dozens of call sites pass their own buttons. **Prefer [LiquidAlert] for new code**, and
- * [LiquidActionSheet] when the buttons are choices attached to something the person just did rather
- * than an acknowledgement.
+ * These were the same component: a centred glass card with a title, a summary and buttons. The only
+ * difference was how the buttons arrived — a caller-owned `content` slot here, a typed
+ * [LiquidPresentationAction] list there — and [LiquidAlert] accepts both, so keeping two
+ * implementations only meant two places for the material and the motion to drift apart.
  *
- * It used to host itself in a Dialog window, which had two consequences. Its glass never drew — a
- * `LayerBackdrop` cannot be sampled across a window boundary, so `LocalSceneBackdrop` is blanked to
- * `emptyBackdrop()` there and every `blur()` silently drew nothing, leaving a card you could read the
- * page through. And its surface was `Color.White.copy(alpha = 0.5f)` in both themes, so in dark mode
- * it was a pale card on a dark app. Both are fixed by rendering in the activity window through the
- * overlay portal with theme-aware fills.
+ * Existing call sites keep working unchanged. New code should call [LiquidAlert] and pass `actions`
+ * rather than building its own button row, so that Apple's ordering rules — expected choice trailing,
+ * destructive marked — come for free. When the buttons are choices attached to something the person
+ * just did rather than an acknowledgement, use [LiquidActionSheet].
  */
+@Deprecated(
+    message = "Use LiquidAlert, which this now delegates to. Prefer its `actions` list over a " +
+        "hand-built button row so the alert ordering rules are applied for you.",
+    replaceWith = ReplaceWith("LiquidAlert(show, title, modifier, summary, emptyList(), dismissible, onDismissRequest, onDismissFinished, maxWidth, content)"),
+)
 @Composable
 fun LiquidGlassDialog(
     show: Boolean,
@@ -60,65 +39,15 @@ fun LiquidGlassDialog(
     maxWidth: Dp = LiquidDialogMaxWidth,
     content: @Composable () -> Unit = {},
 ) {
-    LiquidModalPresentation(
+    LiquidAlert(
         show = show,
-        placement = LiquidModalPlacement.Center,
+        title = title,
+        modifier = modifier,
+        message = summary,
         dismissible = dismissible,
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
-    ) { progressProvider ->
-        val isDark = isAppInDarkTheme()
-        val surface = rememberLiquidModalSurface(
-            cornerRadius = LiquidDialogCornerRadius,
-            isDark = isDark,
-            scaleProvider = { liquidModalCardScale(progressProvider()) },
-        )
-        Column(
-            modifier = modifier
-                .safeDrawingPadding()
-                .widthIn(max = maxWidth)
-                .fillMaxWidth(0.88f)
-                .graphicsLayer { alpha = liquidModalCardAlpha(progressProvider()) }
-                .then(surface.modifier)
-                .semantics {
-                    isTraversalGroup = true
-                    title?.takeIf { it.isNotBlank() }?.let { paneTitle = it }
-                }.padding(LiquidDialogPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            CompositionLocalProvider(
-                // Controls inside the card sample the *card*, never the page behind it. Without the
-                // parent override they would inherit the page backdrop the caller was using and show
-                // unblurred content through a surface that is sitting on glass.
-                LocalLiquidParentBackdrop provides surface.exportedBackdrop,
-                LocalLiquidParentBackdropOverridesFallback provides true,
-                LocalLiquidDialogBackdrop provides surface.exportedBackdrop,
-            ) {
-                if (!title.isNullOrBlank()) {
-                    Text(
-                        text = title,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                        lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                        fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().semantics { heading() },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                if (!summary.isNullOrBlank()) {
-                    Text(
-                        text = summary,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f),
-                        fontSize = AppTypographyTokens.Body.fontSize,
-                        lineHeight = AppTypographyTokens.Body.lineHeight,
-                        fontWeight = AppTypographyTokens.Body.fontWeight,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                content()
-            }
-        }
-    }
+        maxWidth = maxWidth,
+        content = content,
+    )
 }

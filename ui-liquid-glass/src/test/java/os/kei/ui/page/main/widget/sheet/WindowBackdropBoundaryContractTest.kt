@@ -204,7 +204,8 @@ private const val LIQUID_MODAL_SURFACE_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidModalSurface.kt"
 private val LIQUID_MODAL_CONSUMER_SOURCES =
     listOf(
-        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidGlassDialog.kt",
+        // LiquidGlassDialog is a deprecated alias that delegates to LiquidAlert, so it has no
+        // material of its own to check.
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidAlert.kt",
         "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidActionSheet.kt",
     )

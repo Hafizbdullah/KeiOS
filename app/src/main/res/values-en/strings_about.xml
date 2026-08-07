@@ -208,6 +208,15 @@
     <string name="debug_component_lab_liquid_feedback_dialog_result_cancelled">Cancelled</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_confirmed">Confirmed</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_dismissed">Dismissed</string>
+    <string name="debug_component_lab_liquid_alert_open">Open alert</string>
+    <string name="debug_component_lab_liquid_alert_title">Delete local cache?</string>
+    <string name="debug_component_lab_liquid_alert_message">Downloaded guide media is removed and has to be fetched again next time.</string>
+    <string name="debug_component_lab_liquid_alert_confirm">Delete</string>
+    <string name="debug_component_lab_liquid_action_sheet_open">Open action sheet</string>
+    <string name="debug_component_lab_liquid_action_sheet_title">This draft is unsaved</string>
+    <string name="debug_component_lab_liquid_action_sheet_message">Choose what to do with the current edits.</string>
+    <string name="debug_component_lab_liquid_action_sheet_discard">Discard Draft</string>
+    <string name="debug_component_lab_liquid_action_sheet_save">Save Draft</string>
     <string name="debug_component_lab_liquid_sheet_title">Liquid Bottom Sheet stress proof</string>
     <string name="debug_component_lab_liquid_sheet_subtitle">Detents, long content, IME, and blocked dismissal</string>
     <string name="debug_component_lab_liquid_sheet_allow_dismiss">Allow dismissal</string>

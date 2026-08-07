@@ -36,7 +36,11 @@ import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.widget.core.AppFeatureCard
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.dialog.LiquidActionRole
+import os.kei.ui.page.main.widget.dialog.LiquidActionSheet
+import os.kei.ui.page.main.widget.dialog.LiquidAlert
 import os.kei.ui.page.main.widget.dialog.LiquidGlassDialog
+import os.kei.ui.page.main.widget.dialog.LiquidPresentationAction
 import os.kei.ui.page.main.widget.glass.AppLiquidCheckbox
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
@@ -61,6 +65,8 @@ internal fun DebugLiquidFeedbackCard(
     var progress by remember { mutableFloatStateOf(0.42f) }
     var toastSequence by remember { mutableIntStateOf(0) }
     var dialogVisible by remember { mutableStateOf(false) }
+    var alertVisible by remember { mutableStateOf(false) }
+    var actionSheetVisible by remember { mutableStateOf(false) }
     var dialogDismissFinishedCount by remember { mutableIntStateOf(0) }
     var dialogResultRes by remember {
         mutableIntStateOf(R.string.debug_component_lab_liquid_feedback_dialog_result_idle)
@@ -293,7 +299,74 @@ internal fun DebugLiquidFeedbackCard(
             variant = GlassVariant.SheetPrimaryAction,
             minHeight = 44.dp,
         )
+        AppLiquidTextButton(
+            backdrop = cardBackdrop,
+            text = stringResource(R.string.debug_component_lab_liquid_alert_open),
+            onClick = { alertVisible = true },
+            modifier = Modifier.fillMaxWidth(),
+            textColor = contentColor,
+            variant = GlassVariant.SheetAction,
+            minHeight = 44.dp,
+        )
+        AppLiquidTextButton(
+            backdrop = cardBackdrop,
+            text = stringResource(R.string.debug_component_lab_liquid_action_sheet_open),
+            onClick = { actionSheetVisible = true },
+            modifier = Modifier.fillMaxWidth(),
+            textColor = contentColor,
+            variant = GlassVariant.SheetAction,
+            minHeight = 44.dp,
+        )
     }
+
+    // A two-button alert: Cancel plus one destructive confirmation, which is the shape Apple's alert
+    // guidance is written for.
+    LiquidAlert(
+        show = alertVisible,
+        title = stringResource(R.string.debug_component_lab_liquid_alert_title),
+        message = stringResource(R.string.debug_component_lab_liquid_alert_message),
+        actions =
+            listOf(
+                LiquidPresentationAction(
+                    label = stringResource(R.string.debug_component_lab_liquid_feedback_dialog_cancel),
+                    onClick = { alertVisible = false },
+                    role = LiquidActionRole.Cancel,
+                ),
+                LiquidPresentationAction(
+                    label = stringResource(R.string.debug_component_lab_liquid_alert_confirm),
+                    onClick = { alertVisible = false },
+                    role = LiquidActionRole.Destructive,
+                ),
+            ),
+        onDismissRequest = { alertVisible = false },
+    )
+
+    // An action sheet: choices attached to something the user just did. Deliberately passed in the
+    // "wrong" order so the enforced ordering is visible — destructive rises to the top, Cancel sinks.
+    LiquidActionSheet(
+        show = actionSheetVisible,
+        title = stringResource(R.string.debug_component_lab_liquid_action_sheet_title),
+        message = stringResource(R.string.debug_component_lab_liquid_action_sheet_message),
+        actions =
+            listOf(
+                LiquidPresentationAction(
+                    label = stringResource(R.string.debug_component_lab_liquid_feedback_dialog_cancel),
+                    onClick = { actionSheetVisible = false },
+                    role = LiquidActionRole.Cancel,
+                ),
+                LiquidPresentationAction(
+                    label = stringResource(R.string.debug_component_lab_liquid_action_sheet_save),
+                    onClick = { actionSheetVisible = false },
+                    role = LiquidActionRole.Default,
+                ),
+                LiquidPresentationAction(
+                    label = stringResource(R.string.debug_component_lab_liquid_action_sheet_discard),
+                    onClick = { actionSheetVisible = false },
+                    role = LiquidActionRole.Destructive,
+                ),
+            ),
+        onDismissRequest = { actionSheetVisible = false },
+    )
 
     LiquidGlassDialog(
         show = dialogVisible,

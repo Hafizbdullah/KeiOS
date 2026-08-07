@@ -49,7 +49,7 @@ private val LiquidAlertPadding = 24.dp
 @Composable
 fun LiquidAlert(
     show: Boolean,
-    title: String,
+    title: String? = null,
     modifier: Modifier = Modifier,
     message: String? = null,
     actions: List<LiquidPresentationAction> = emptyList(),
@@ -81,7 +81,7 @@ fun LiquidAlert(
                 .then(surface.modifier)
                 .semantics {
                     isTraversalGroup = true
-                    paneTitle = title
+                    title?.takeIf { it.isNotBlank() }?.let { paneTitle = it }
                 }.padding(LiquidAlertPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -93,20 +93,22 @@ fun LiquidAlert(
                 LocalLiquidParentBackdropOverridesFallback provides true,
                 LocalLiquidDialogBackdrop provides surface.exportedBackdrop,
             ) {
-                Text(
-                    text = title,
-                    color = MiuixTheme.colorScheme.onBackground,
-                    fontSize = AppTypographyTokens.SectionTitle.fontSize,
-                    lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
-                    fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().semantics { heading() },
-                )
+                if (!title.isNullOrBlank()) {
+                    Text(
+                        text = title,
+                        color = MiuixTheme.colorScheme.onBackground,
+                        fontSize = AppTypographyTokens.SectionTitle.fontSize,
+                        lineHeight = AppTypographyTokens.SectionTitle.lineHeight,
+                        fontWeight = AppTypographyTokens.SectionTitle.fontWeight,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().semantics { heading() },
+                    )
+                }
                 if (!message.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    if (!title.isNullOrBlank()) Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = message,
-                        color = MiuixTheme.colorScheme.onBackgroundVariant,
+                        color = MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = 0.86f),
                         fontSize = AppTypographyTokens.Body.fontSize,
                         lineHeight = AppTypographyTokens.Body.lineHeight,
                         fontWeight = AppTypographyTokens.Body.fontWeight,

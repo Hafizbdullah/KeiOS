@@ -212,6 +212,15 @@
     <string name="debug_component_lab_liquid_feedback_dialog_result_cancelled">已取消</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_confirmed">已确认</string>
     <string name="debug_component_lab_liquid_feedback_dialog_result_dismissed">已关闭</string>
+    <string name="debug_component_lab_liquid_alert_open">打开 Alert</string>
+    <string name="debug_component_lab_liquid_alert_title">删除本地缓存？</string>
+    <string name="debug_component_lab_liquid_alert_message">已下载的图鉴媒体会被移除，下次打开需要重新获取。</string>
+    <string name="debug_component_lab_liquid_alert_confirm">删除</string>
+    <string name="debug_component_lab_liquid_action_sheet_open">打开 ActionSheet</string>
+    <string name="debug_component_lab_liquid_action_sheet_title">这份草稿还没保存</string>
+    <string name="debug_component_lab_liquid_action_sheet_message">选择如何处理当前编辑内容。</string>
+    <string name="debug_component_lab_liquid_action_sheet_discard">丢弃草稿</string>
+    <string name="debug_component_lab_liquid_action_sheet_save">保存草稿</string>
     <string name="debug_component_lab_liquid_sheet_title">Liquid Bottom Sheet 压力样张</string>
     <string name="debug_component_lab_liquid_sheet_subtitle">Detent、长内容、IME 与禁止关闭行为</string>
     <string name="debug_component_lab_liquid_sheet_allow_dismiss">允许关闭</string>
