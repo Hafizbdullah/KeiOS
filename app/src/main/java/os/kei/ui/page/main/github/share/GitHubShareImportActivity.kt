@@ -22,6 +22,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import os.kei.MainActivity
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
@@ -102,40 +103,44 @@ class GitHubShareImportActivity : ComponentActivity() {
                                     flowActivityBackNeedsInterception,
                             onBack = { finishSafely() },
                         )
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            when (displayState) {
-                                GitHubShareImportActivityDisplayState.Sheet -> {
-                                    GitHubShareImportWindowFlowHost(
-                                        incomingGitHubShareText = incomingGitHubShareText,
-                                        incomingGitHubShareToken = incomingGitHubShareToken,
-                                        resumeRequestToken = shareImportResumeToken,
-                                        onIncomingGitHubShareConsumed = {
-                                            incomingGitHubShareText = null
-                                        },
-                                        onNavigateToGitHubPage = {
-                                            val launched = openGitHubPage()
-                                            if (!launched) {
-                                                showToast(getString(R.string.common_open_link_failed))
-                                            }
-                                            finishSafely()
-                                        },
-                                        showPendingArmedSheet = true,
-                                        onNotificationOnlyResolveChanged = {
-                                            clearShareImportWindowDim()
-                                        },
-                                        onActivityBackInterceptionChanged = { needsInterception ->
-                                            flowActivityBackNeedsInterception = needsInterception
-                                        },
-                                        onMinimizeActiveFlow = { finishSafely() },
-                                        onClosePendingArmedSheet = { finishSafely() },
-                                        onIdleWithNoPendingFlow = { finishSafely() },
-                                    )
-                                }
+                        // Sheets, alerts and action sheets only get real glass where a scene backdrop exists
+                        // to sample. Without this they still work, but fall back to an opaque fill.
+                        SceneBackdropHost {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                when (displayState) {
+                                    GitHubShareImportActivityDisplayState.Sheet -> {
+                                        GitHubShareImportWindowFlowHost(
+                                            incomingGitHubShareText = incomingGitHubShareText,
+                                            incomingGitHubShareToken = incomingGitHubShareToken,
+                                            resumeRequestToken = shareImportResumeToken,
+                                            onIncomingGitHubShareConsumed = {
+                                                incomingGitHubShareText = null
+                                            },
+                                            onNavigateToGitHubPage = {
+                                                val launched = openGitHubPage()
+                                                if (!launched) {
+                                                    showToast(getString(R.string.common_open_link_failed))
+                                                }
+                                                finishSafely()
+                                            },
+                                            showPendingArmedSheet = true,
+                                            onNotificationOnlyResolveChanged = {
+                                                clearShareImportWindowDim()
+                                            },
+                                            onActivityBackInterceptionChanged = { needsInterception ->
+                                                flowActivityBackNeedsInterception = needsInterception
+                                            },
+                                            onMinimizeActiveFlow = { finishSafely() },
+                                            onClosePendingArmedSheet = { finishSafely() },
+                                            onIdleWithNoPendingFlow = { finishSafely() },
+                                        )
+                                    }
 
-                                GitHubShareImportActivityDisplayState.Hidden,
-                                GitHubShareImportActivityDisplayState.SendingInstall,
-                                GitHubShareImportActivityDisplayState.Finish,
-                                -> {}
+                                    GitHubShareImportActivityDisplayState.Hidden,
+                                    GitHubShareImportActivityDisplayState.SendingInstall,
+                                    GitHubShareImportActivityDisplayState.Finish,
+                                    -> {}
+                                }
                             }
                         }
                     }

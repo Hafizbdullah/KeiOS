@@ -145,20 +145,37 @@ class UnsavedSheetDismissTest {
     }
 }
 
-class UnsavedSheetDismissWindowBoundaryContractTest {
+class UnsavedSheetDismissPresentationContractTest {
+    /**
+     * Apple's sheet guidance names this exact case: *"If people have unsaved changes in the sheet when
+     * they begin swiping to dismiss it, use an action sheet to let them confirm their action."*
+     *
+     * It used to be miuix's `WindowDialog` inside an `AppLiquidWindowBoundary`, which meant no glass at
+     * all — the boundary blanks `LocalSceneBackdrop` and a blur inside a Dialog window draws nothing.
+     */
     @Test
-    fun confirmationComposesWindowDialogInsideLiquidWindowBoundary() {
+    fun confirmationIsAnActionSheetWithTheDiscardMarkedDestructive() {
         val source = unsavedSheetDismissSource(UNSAVED_SHEET_DISMISS_SOURCE)
         val function = source.substringAfter("fun UnsavedSheetDismissConfirmDialog(")
-        val boundaryIndex = function.indexOf("AppLiquidWindowBoundary {").markerFound()
-        val windowDialogIndex = function.indexOf("WindowDialog(", boundaryIndex).markerFound()
-        val contentIndex = function.indexOf("AppLiquidDialogActionButton(", windowDialogIndex).markerFound()
 
-        assertTrue(boundaryIndex < windowDialogIndex)
-        assertTrue(windowDialogIndex < contentIndex)
-        assertTrue("title = stringResource(R.string.common_unsaved_changes_title)" in function)
-        assertTrue("summary = stringResource(R.string.common_unsaved_changes_summary)" in function)
+        val actionSheetIndex = function.indexOf("LiquidActionSheet(").markerFound()
+        val discardIndex = function.indexOf("R.string.common_discard_changes", actionSheetIndex).markerFound()
+        val keepEditingIndex = function.indexOf("R.string.common_keep_editing", discardIndex).markerFound()
+
+        assertTrue(actionSheetIndex < discardIndex)
+        assertTrue(
+            discardIndex < keepEditingIndex,
+            "Destructive first and Cancel last, so the enforced ordering has nothing to reorder",
+        )
+        assertTrue("role = LiquidActionRole.Destructive" in function)
+        assertTrue("role = LiquidActionRole.Cancel" in function)
         assertTrue("onDismissRequest = onKeepEditing" in function)
+
+        assertFalse(
+            "AppLiquidWindowBoundary" in function,
+            "A Dialog window would take the confirmation's glass away again",
+        )
+        assertFalse("WindowDialog(" in function)
     }
 }
 

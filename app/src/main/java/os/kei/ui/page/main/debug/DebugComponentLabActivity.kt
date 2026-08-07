@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import os.kei.core.prefs.UiPrefs
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 
 class DebugComponentLabActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -14,10 +15,14 @@ class DebugComponentLabActivity : ComponentActivity() {
 
         setContent {
             DebugActivityTheme(appThemeMode) {
-                DebugComponentLabPage(
-                    onClose = { finish() },
-                    onOpenLiquidCatalog = { DebugLiquidCatalogActivity.launch(this) }
-                )
+                // Sheets, alerts and action sheets only get real glass where a scene backdrop exists
+                // to sample. Without this they still work, but fall back to an opaque fill.
+                SceneBackdropHost {
+                    DebugComponentLabPage(
+                        onClose = { finish() },
+                        onOpenLiquidCatalog = { DebugLiquidCatalogActivity.launch(this) }
+                    )
+                }
             }
         }
     }

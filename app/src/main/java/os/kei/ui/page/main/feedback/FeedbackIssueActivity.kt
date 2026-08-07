@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import os.kei.R
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.platform.PredictiveBackOemCompat
@@ -103,30 +104,34 @@ class FeedbackIssueActivity : ComponentActivity() {
                             }
                         }
 
-                        AppManagedBackgroundHost(
-                            enabled = initialPrefsSnapshot.nonHomeBackgroundEnabled,
-                            imageUri = initialPrefsSnapshot.nonHomeBackgroundUri,
-                            opacity = initialPrefsSnapshot.nonHomeBackgroundOpacity,
-                            contentScale = initialPrefsSnapshot.nonHomeBackgroundContentScale,
-                            alignment = initialPrefsSnapshot.nonHomeBackgroundAlignment,
-                            pageStyle = initialPrefsSnapshot.nonHomeBackgroundPageStyle,
-                            scrim = initialPrefsSnapshot.nonHomeBackgroundScrim,
-                            style = AppManagedBackgroundStyles.FocusedTask,
-                            exportBackdropToContent = true,
-                        ) {
-                            FeedbackIssuePage(
-                                state = uiState,
-                                onTitleChange = viewModel::updateTitle,
-                                onBodyChange = viewModel::updateBody,
-                                onRefresh = viewModel::refresh,
-                                onExportZip = viewModel::requestLogExport,
-                                onClearLogs = viewModel::clearLogs,
-                                onRequestSubmit = viewModel::requestSubmit,
-                                onDismissSubmit = viewModel::dismissSubmitConfirmation,
-                                onConfirmBrowserSubmit = viewModel::submitViaBrowser,
-                                onConfirmApiSubmit = viewModel::submitViaApi,
-                                onClose = { finish() },
-                            )
+                        // Sheets, alerts and action sheets only get real glass where a scene backdrop exists to
+                        // sample. Without this they still work, but fall back to an opaque fill.
+                        SceneBackdropHost {
+                            AppManagedBackgroundHost(
+                                enabled = initialPrefsSnapshot.nonHomeBackgroundEnabled,
+                                imageUri = initialPrefsSnapshot.nonHomeBackgroundUri,
+                                opacity = initialPrefsSnapshot.nonHomeBackgroundOpacity,
+                                contentScale = initialPrefsSnapshot.nonHomeBackgroundContentScale,
+                                alignment = initialPrefsSnapshot.nonHomeBackgroundAlignment,
+                                pageStyle = initialPrefsSnapshot.nonHomeBackgroundPageStyle,
+                                scrim = initialPrefsSnapshot.nonHomeBackgroundScrim,
+                                style = AppManagedBackgroundStyles.FocusedTask,
+                                exportBackdropToContent = true,
+                            ) {
+                                FeedbackIssuePage(
+                                    state = uiState,
+                                    onTitleChange = viewModel::updateTitle,
+                                    onBodyChange = viewModel::updateBody,
+                                    onRefresh = viewModel::refresh,
+                                    onExportZip = viewModel::requestLogExport,
+                                    onClearLogs = viewModel::clearLogs,
+                                    onRequestSubmit = viewModel::requestSubmit,
+                                    onDismissSubmit = viewModel::dismissSubmitConfirmation,
+                                    onConfirmBrowserSubmit = viewModel::submitViaBrowser,
+                                    onConfirmApiSubmit = viewModel::submitViaApi,
+                                    onClose = { finish() },
+                                )
+                            }
                         }
                     }
                 }

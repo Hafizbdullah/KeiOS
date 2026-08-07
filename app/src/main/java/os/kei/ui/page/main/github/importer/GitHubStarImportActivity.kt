@@ -14,6 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import os.kei.core.platform.PredictiveBackOemCompat
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.feature.github.model.StarImportApplyResult
@@ -40,12 +41,16 @@ class GitHubStarImportActivity : ComponentActivity() {
 
         setContent {
             GitHubStarImportTheme {
-                GitHubStarImportPage(
-                    onImported = { result ->
-                        setResult(RESULT_OK, buildResultIntent(result))
-                    },
-                    onClose = { finish() }
-                )
+                // Sheets, alerts and action sheets only get real glass where a scene backdrop exists
+                // to sample. Without this they still work, but fall back to an opaque fill.
+                SceneBackdropHost {
+                    GitHubStarImportPage(
+                        onImported = { result ->
+                            setResult(RESULT_OK, buildResultIntent(result))
+                        },
+                        onClose = { finish() }
+                    )
+                }
             }
         }
     }

@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import os.kei.MainActivity
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
@@ -77,24 +78,28 @@ class KeiOSJsonImportActivity : ComponentActivity() {
                             }
                         }
 
-                        AppManagedBackgroundHost(
-                            enabled = prefsSnapshot.nonHomeBackgroundEnabled,
-                            imageUri = prefsSnapshot.nonHomeBackgroundUri,
-                            opacity = prefsSnapshot.nonHomeBackgroundOpacity,
-                            saturation = prefsSnapshot.nonHomeBackgroundSaturation,
-                            contentScale = prefsSnapshot.nonHomeBackgroundContentScale,
-                            alignment = prefsSnapshot.nonHomeBackgroundAlignment,
-                            pageStyle = prefsSnapshot.nonHomeBackgroundPageStyle,
-                            scrim = prefsSnapshot.nonHomeBackgroundScrim,
-                            style = AppManagedBackgroundStyles.FocusedTask,
-                            exportBackdropToContent = true,
-                        ) {
-                            KeiOSJsonImportPage(
-                                state = uiState,
-                                onConfirmImport = viewModel::confirmImport,
-                                onOpenResult = viewModel::requestOpenResult,
-                                onClose = { finish() },
-                            )
+                        // Sheets, alerts and action sheets only get real glass where a scene backdrop exists to
+                        // sample. Without this they still work, but fall back to an opaque fill.
+                        SceneBackdropHost {
+                            AppManagedBackgroundHost(
+                                enabled = prefsSnapshot.nonHomeBackgroundEnabled,
+                                imageUri = prefsSnapshot.nonHomeBackgroundUri,
+                                opacity = prefsSnapshot.nonHomeBackgroundOpacity,
+                                saturation = prefsSnapshot.nonHomeBackgroundSaturation,
+                                contentScale = prefsSnapshot.nonHomeBackgroundContentScale,
+                                alignment = prefsSnapshot.nonHomeBackgroundAlignment,
+                                pageStyle = prefsSnapshot.nonHomeBackgroundPageStyle,
+                                scrim = prefsSnapshot.nonHomeBackgroundScrim,
+                                style = AppManagedBackgroundStyles.FocusedTask,
+                                exportBackdropToContent = true,
+                            ) {
+                                KeiOSJsonImportPage(
+                                    state = uiState,
+                                    onConfirmImport = viewModel::confirmImport,
+                                    onOpenResult = viewModel::requestOpenResult,
+                                    onClose = { finish() },
+                                )
+                            }
                         }
                     }
                 }
