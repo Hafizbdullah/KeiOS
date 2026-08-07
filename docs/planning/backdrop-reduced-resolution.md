@@ -110,3 +110,34 @@ idle against a build where the full-screen `LayerBackdrop` producer is disabled 
 broken, but it isolates what the capture costs, and it is a measurement, not a candidate fix.
 
 If that number is small, this whole direction is not worth an upstream conversation.
+
+## Measured: the number is zero
+
+Run on the API 37 AVD, which turns out to be representative for this: it holds 120Hz and its Home
+idle GPU (11.1-11.6ms) lands within half a millisecond of the physical device's 11.08ms.
+
+Two builds, identical but for `MainPagerLayout`'s producer — `Modifier.layerBackdrop(coordinator
+.backdrop)` versus a bare `Modifier`. With it removed the glass has nothing to sample and visibly
+goes flat, which is the point: this is not a candidate fix, it is an upper bound. Whatever reduced
+resolution could ever save is a *fraction* of what deleting the capture outright saves.
+
+Twelve 3-second Home idle samples per variant, pooled in two groups each:
+
+| | frames / 3s | total p50 | rt_cpu p50 | gpu p50 |
+|---|---|---|---|---|
+| capture on | 119 / 119 | 16.29 / 16.14 | 3.68 / 4.13 | 11.59 / 11.09 |
+| capture off | 119 / 119 | 16.15 / 16.14 | 3.10 / 3.21 | 12.27 / 11.98 |
+
+**Frame time does not move.** 16.14ms against 16.14ms, at an identical 119 frames per three
+seconds. The capture does cost about 0.75ms of RenderThread CPU — and removing it *raises* GPU by
+about the same, so the two cancel. Plausibly the captured layer is also serving as a cache that
+several glass surfaces sample once instead of the page being re-rasterized behind each of them.
+
+So the upper bound on reduced-resolution backdrop capture is **zero**, and a 0.5x capture would be
+some fraction of zero. The direction is dead. Nothing to ask upstream for, and the small
+`drawBackdrop` change sketched above is not worth proposing on this evidence.
+
+What this also settles: Home's idle cost is not the capture. It is the per-surface effect chains
+(`blur` + `lens` + `vibrancy` over each glass element's own bounds) plus the background shader —
+work that happens wherever the backdrop pixels come from. Reducing *that* means reducing the
+material, which is the line this work is not allowed to cross.
