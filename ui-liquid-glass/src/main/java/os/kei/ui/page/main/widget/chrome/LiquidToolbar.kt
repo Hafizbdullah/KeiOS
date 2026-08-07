@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.widget.chrome
 
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -34,6 +36,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
+import androidx.compose.ui.util.fastCoerceIn
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.capsule.ContinuousCapsule
@@ -49,7 +52,9 @@ import os.kei.ui.page.main.widget.motion.appMotionFloatState
 import top.yukonga.miuix.kmp.basic.TooltipAnchorPosition
 import top.yukonga.miuix.kmp.basic.TooltipBox
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 /**
  * One action in a [LiquidToolbar] group.
@@ -188,6 +193,8 @@ private fun LiquidToolbarGroup(
 
     val pressProgressProvider =
         remember(pressHighlight) { { pressHighlight?.pressProgress ?: 0f } }
+    val dragOffsetProvider =
+        remember(pressHighlight) { { pressHighlight?.offset ?: Offset.Zero } }
     Row(
         modifier =
             Modifier
@@ -229,8 +236,19 @@ private fun LiquidToolbarGroup(
                         if (layeredStyleEnabled) {
                             {
                                 val progress = pressProgressProvider()
-                                scaleX = 1f + LiquidToolbarPressStretchX * progress
-                                scaleY = 1f - LiquidToolbarPressSquashY * progress
+                                val drag = dragOffsetProvider()
+                                val maxSlide = LiquidToolbarDragSlide.toPx()
+                                // Drag the glass and it follows, eased and capped, then springs
+                                // back -- the damped give the old bar had, without the selection it
+                                // used to commit on release.
+                                val slideX = liquidToolbarDamp(drag.x, maxSlide)
+                                val slideY = liquidToolbarDamp(drag.y, maxSlide)
+                                translationX = slideX
+                                translationY = slideY
+                                // Stretch along the pull, squash across it, on top of the press.
+                                val pull = (abs(slideX) / maxSlide).fastCoerceIn(0f, 1f)
+                                scaleX = 1f + LiquidToolbarPressStretchX * progress + LiquidToolbarDragStretchX * pull
+                                scaleY = 1f - LiquidToolbarPressSquashY * progress - LiquidToolbarDragSquashY * pull
                             }
                         } else {
                             null
@@ -241,8 +259,11 @@ private fun LiquidToolbarGroup(
                     color = palette.outlineColor,
                     shape = ContinuousCapsule,
                 ).then(pressHighlight?.modifier ?: Modifier)
-                .then(pressHighlight?.gestureModifier ?: Modifier)
+                // Claim first (outer) so the highlight's gesture, which is inner, still reads the
+                // drag on the Main pass. Reversed, the claim eats the position changes and the glass
+                // stops following the finger.
                 .claimFloatingChromeDrags()
+                .then(pressHighlight?.gestureModifier ?: Modifier)
                 .padding(horizontal = AppChromeTokens.liquidActionBarHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -447,3 +468,21 @@ fun LiquidToolbarPopupAnchors(
 /** Apple's press deformation stretches across and settles down; keep both subtle. */
 private const val LiquidToolbarPressStretchX = 0.016f
 private const val LiquidToolbarPressSquashY = 0.022f
+
+/** Eased, capped give: full response near zero, asymptotic at the cap. */
+private fun liquidToolbarDamp(
+    rawPx: Float,
+    maxPx: Float,
+): Float {
+    if (maxPx <= 0f || rawPx == 0f) return 0f
+    val fraction = (rawPx / (maxPx * LiquidToolbarDragResistance)).fastCoerceIn(-1f, 1f)
+    return maxPx * sign(fraction) * EaseOut.transform(abs(fraction))
+}
+
+/** How far the glass may slide under the finger before it stops giving. */
+private val LiquidToolbarDragSlide = 4.dp
+
+/** Travel needed to reach the cap, as a multiple of it -- higher feels heavier. */
+private const val LiquidToolbarDragResistance = 6f
+private const val LiquidToolbarDragStretchX = 0.020f
+private const val LiquidToolbarDragSquashY = 0.014f

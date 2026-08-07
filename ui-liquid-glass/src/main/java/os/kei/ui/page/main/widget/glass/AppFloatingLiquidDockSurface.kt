@@ -12,6 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,16 @@ fun AppFloatingLiquidVerticalDockSurface(
                                     scaleX = 1f + stretch * progress
                                     scaleY = 1f - FloatingDockPressSquashY * progress
                                 }
+                                // A vertical dock is dragged along its own axis, so the give is
+                                // vertical; the offset is already spring-damped.
+                                val drag = interactiveHighlight.offset
+                                if (drag != Offset.Zero) {
+                                    val maxSlide = FloatingDockDragSlide.toPx()
+                                    val fraction =
+                                        (drag.y / (maxSlide * FloatingDockDragResistance))
+                                            .coerceIn(-1f, 1f)
+                                    translationY = maxSlide * fraction
+                                }
                             },
                             effects = {
                                 vibrancy()
@@ -109,8 +120,9 @@ fun AppFloatingLiquidVerticalDockSurface(
                         Modifier.appSquircleBackground(fallbackSurface.copy(alpha = material.surfaceAlpha), 999.dp)
                     },
                 ).then(interactiveHighlight.modifier)
-                .then(interactiveHighlight.gestureModifier)
+                // Outer of the highlight's gesture on purpose -- see claimFloatingChromeDrags.
                 .claimFloatingChromeDrags()
+                .then(interactiveHighlight.gestureModifier)
                 .graphicsLayer { clip = false }
                 .appSquircleClip(999.dp)
                 .background(
@@ -209,3 +221,6 @@ internal data class FloatingLiquidDockMaterial(
 
 /** Matches the toolbar's press squish so chrome deforms consistently across the app. */
 private const val FloatingDockPressSquashY = 0.022f
+
+private val FloatingDockDragSlide = 4.dp
+private const val FloatingDockDragResistance = 6f

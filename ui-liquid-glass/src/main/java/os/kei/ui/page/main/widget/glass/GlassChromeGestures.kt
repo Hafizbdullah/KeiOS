@@ -20,6 +20,16 @@ import androidx.compose.ui.util.fastForEach
  * was touched, threading an `onInteractionChanged` callback through four layers to do it. This is the
  * local form: nothing outside the chrome's own bounds changes behaviour.
  *
+ * **Order matters, and getting it wrong is silent.** Chain this *before* any gesture that needs to
+ * read the drag — the highlight's `gestureModifier`, for instance. Modifiers declared earlier are
+ * outer, and the Main pass travels inner-to-outer, so an inner claim consumes position changes
+ * before an outer gesture ever sees them. Put this last and the finger-tracking highlight and
+ * drag-following deformation die without any error: the glass simply stops responding, which reads
+ * as the component being dead rather than as a bug.
+ *
+ * Correct:  `.claimFloatingChromeDrags().then(highlight.gestureModifier)`
+ * Wrong:    `.then(highlight.gestureModifier).claimFloatingChromeDrags()`
+ *
  * **Only for chrome that floats above scrollable content.** Do not put this on buttons that live
  * inside a list — a list is scrolled by dragging, and starting that drag on a button is normal. That
  * is why [os.kei.ui.animation.InteractiveHighlight.consumeDragChanges] defaults to `false` and why
