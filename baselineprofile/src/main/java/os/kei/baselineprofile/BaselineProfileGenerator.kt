@@ -233,6 +233,32 @@ class BaselineProfileGenerator {
             )
         }
     }
+
+    /**
+     * The shell runner, which stopped being an activity and became a route. That move put its first
+     * composition inside the push transition, where an interpreted class costs a dropped frame
+     * rather than a slower activity launch — the same trap the calendar and pool pages fell into.
+     */
+    @Test
+    fun osShellRunnerRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_OS,
+                pageTag = OS_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_OS,
+            )
+            pushRouteAndReturn(
+                entryTag = OS_SHELL_RUNNER_BUTTON,
+                pageTag = OS_SHELL_RUNNER_PAGE_ROOT,
+                returnTag = OS_PAGE_ROOT,
+            )
+        }
+    }
 }
 
 /**
@@ -305,6 +331,8 @@ private const val SETTINGS_PAGE_ROOT = "settings_page_root"
 private const val ABOUT_PAGE_ROOT = "about_page_root"
 private const val WEBDAV_SYNC_PAGE_ROOT = "webdav_sync_page_root"
 private const val OS_PAGE_ROOT = "os_page_root"
+private const val OS_SHELL_RUNNER_BUTTON = "os_shell_runner_button"
+private const val OS_SHELL_RUNNER_PAGE_ROOT = "os_shell_runner_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val MCP_SKILL_BUTTON = "mcp_skill_button"
 private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"

@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -68,6 +69,7 @@ import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingDockBottomState
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.status.StatusPill
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -419,6 +421,7 @@ internal fun OsPageMainList(
                         icon = osLucideEnterIcon(),
                         contentDescription = stringResource(R.string.os_shell_card_cd_open),
                         onClick = onOpenShellRunner,
+                        modifier = Modifier.testTag(KeiOsTestTags.OsShellRunnerButton),
                     )
                 },
             )

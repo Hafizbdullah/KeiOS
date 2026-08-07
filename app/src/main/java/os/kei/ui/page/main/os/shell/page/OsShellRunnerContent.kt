@@ -18,6 +18,8 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
+import os.kei.ui.testing.KeiOsTestTags
+import os.kei.ui.testing.pageRootTestTag
 import os.kei.ui.page.main.widget.chrome.LiquidActionBar
 import os.kei.ui.page.main.widget.chrome.LiquidActionItem
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -43,6 +45,7 @@ internal fun OsShellRunnerContent(
     AppPageScaffold(
         title = textBundle.shellPageTitle,
         largeTitle = textBundle.shellPageTitle,
+        modifier = Modifier.pageRootTestTag(KeiOsTestTags.OsShellRunnerPageRoot),
         scrollBehavior = scrollBehavior,
         titleBackdrop = topBarBackdrop,
         reserveTopEndActionSpace = true,

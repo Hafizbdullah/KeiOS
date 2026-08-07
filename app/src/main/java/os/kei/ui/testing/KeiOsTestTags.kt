@@ -21,6 +21,8 @@ object KeiOsTestTags {
     const val AboutPageRoot = "about_page_root"
     const val WebDavSyncPageRoot = "webdav_sync_page_root"
     const val OsPageRoot = "os_page_root"
+    const val OsShellRunnerButton = "os_shell_runner_button"
+    const val OsShellRunnerPageRoot = "os_shell_runner_page_root"
     const val McpPageRoot = "mcp_page_root"
     const val McpSkillButton = "mcp_skill_button"
     const val McpSkillPageRoot = "mcp_skill_page_root"

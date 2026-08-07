@@ -89,6 +89,7 @@ private val PAGE_ROOT_SOURCES =
         "app/src/main/java/os/kei/ui/page/main/about/page/AboutPage.kt" to "AboutPageRoot",
         "app/src/main/java/os/kei/ui/page/main/sync/WebDavSyncPage.kt" to "WebDavSyncPageRoot",
         "app/src/main/java/os/kei/ui/page/main/mcp/skill/page/McpSkillPage.kt" to "McpSkillPageRoot",
+        "app/src/main/java/os/kei/ui/page/main/os/shell/page/OsShellRunnerContent.kt" to "OsShellRunnerPageRoot",
         "app/src/main/java/os/kei/ui/page/main/github/history/GitHubActionsNotificationHistoryPage.kt"
             to "GitHubActionsHistoryPageRoot",
     )
