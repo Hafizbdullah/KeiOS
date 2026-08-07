@@ -46,6 +46,7 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.appLucideInfoIcon
 import os.kei.ui.page.main.os.appLucideLayersIcon
 import os.kei.ui.page.main.os.osLucideSettingsIcon
+import os.kei.ui.testing.KeiOsTestTags
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
@@ -207,6 +208,7 @@ fun HomePage(
                 LiquidActionItem(
                     icon = settingsIcon,
                     contentDescription = settingsContentDescription,
+                    testTag = KeiOsTestTags.HomeSettingsButton,
                     onClick = {
                         onActionBarSelectedIndexChange(2)
                         onOpenSettings()

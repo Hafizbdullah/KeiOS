@@ -14,6 +14,8 @@ object KeiOsTestTags {
     const val MainPagerSettledGitHub = "main_pager_settled_github"
     const val MainPagerSettledBa = "main_pager_settled_ba"
     const val HomePageRoot = "home_page_root"
+    const val HomeSettingsButton = "home_settings_button"
+    const val SettingsPageRoot = "settings_page_root"
     const val OsPageRoot = "os_page_root"
     const val McpPageRoot = "mcp_page_root"
     const val BaPageRoot = "ba_page_root"

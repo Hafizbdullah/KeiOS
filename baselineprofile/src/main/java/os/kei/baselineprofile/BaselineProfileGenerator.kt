@@ -138,6 +138,31 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The Settings route: the most-reached push in the app, and still cold on first entry. Its
+     * category pager shares MainLoadedPager, so this also covers the section-switch path there.
+     */
+    @Test
+    fun settingsRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            waitForTestTag(HOME_SETTINGS_BUTTON, timeoutMs = 15_000)
+            val settingsButton = device.findObject(testTagSelector(HOME_SETTINGS_BUTTON))
+                ?: error("Unable to find testTag=$HOME_SETTINGS_BUTTON in ${targetAppId()}")
+            settingsButton.click()
+            waitForTestTag(SETTINGS_PAGE_ROOT, timeoutMs = 15_000)
+            flingVisibleScrollable(times = 2)
+
+            device.pressBack()
+            waitForTestTag(HOME_PAGE_ROOT, timeoutMs = 15_000)
+            device.waitForIdle()
+        }
+    }
+
+    /**
      * The GitHub Actions history route. Its tabbed section switch had no profile coverage at all —
      * TabbedPageContentMotion resolved to zero rules — so that path was interpreted on first use,
      * the same gap the calendar and pool pages had before they got a journey.
@@ -210,6 +235,8 @@ private const val MAIN_PAGER_SETTLED_MCP = "main_pager_settled_mcp"
 private const val MAIN_PAGER_SETTLED_GITHUB = "main_pager_settled_github"
 private const val MAIN_PAGER_SETTLED_BA = "main_pager_settled_ba"
 private const val HOME_PAGE_ROOT = "home_page_root"
+private const val HOME_SETTINGS_BUTTON = "home_settings_button"
+private const val SETTINGS_PAGE_ROOT = "settings_page_root"
 private const val OS_PAGE_ROOT = "os_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
