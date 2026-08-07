@@ -65,6 +65,16 @@ org.gradle.java.home=/path/to/your/jdk
 miuix.version=0.9.3-c6d7d6dd-SNAPSHOT
 ```
 
+Miuix 迭代很快。遇到疑似 Miuix 的问题时，先确认当前 pin 是不是最新快照再动手改，很多问题上游
+已经修好了：
+
+```bash
+scripts/deps/miuix_snapshot_check.sh
+```
+
+脚本会输出生效的 pin 及其来源文件、最新已发布快照，以及两者之间的库侧提交。`--diff PullToRefresh`
+打印单个组件的 patch，`--update` 直接把 pin 移到最新。退出码：0 为最新，1 为落后。
+
 JDK 兜底示例路径：
 
 - macOS Android Studio JBR：`/Applications/Android Studio.app/Contents/jbr/Contents/Home`

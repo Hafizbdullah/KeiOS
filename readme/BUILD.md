@@ -73,6 +73,17 @@ org.gradle.java.home=/path/to/your/jdk
 miuix.version=0.9.3-c6d7d6dd-SNAPSHOT
 ```
 
+Miuix iterates fast. When something Miuix-shaped misbehaves, check whether the pin is current
+before writing a workaround — the fix is often already upstream:
+
+```bash
+scripts/deps/miuix_snapshot_check.sh
+```
+
+It reports the effective pin and which file supplies it, the newest published snapshot, and the
+library commits in between. `--diff PullToRefresh` prints the patch for one component, `--update`
+moves the pin. Exit codes: 0 up to date, 1 behind.
+
 JDK fallback examples:
 
 - macOS Android Studio JBR: `/Applications/Android Studio.app/Contents/jbr/Contents/Home`
