@@ -111,6 +111,52 @@ class BaselineProfileGenerator {
             flingVisibleScrollable(times = 3)
         }
     }
+
+    /**
+     * The activity calendar and pool pages became nav routes, so their first composition now runs
+     * inside the push transition instead of behind an activity launch. Nothing had ever profiled
+     * them — the shipped profile carried 606 BaCalendarPool* rules and not one for either page
+     * composable — which left the whole route path to be interpreted on first entry, mid-animation.
+     */
+    @Test
+    fun baCalendarPoolRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+
+            openDockRouteAndReturn(BA_DOCK_OPEN_CALENDAR)
+            openDockRouteAndReturn(BA_DOCK_OPEN_POOL)
+        }
+    }
+}
+
+/**
+ * Pushes a route from the BA floating dock, exercises it, then pops back. Both directions matter:
+ * the pop replays the covered entry's restore path, which is what a user feels on the way out.
+ */
+private fun MacrobenchmarkScope.openDockRouteAndReturn(dockTag: String) {
+    waitForTestTag(dockTag, timeoutMs = 15_000)
+    val action = device.findObject(testTagSelector(dockTag))
+        ?: error("Unable to find dock action testTag=$dockTag in ${targetAppId()}")
+    action.click()
+    device.waitForIdle()
+    // The route settles over the push transition; the dock belongs to the covered page and goes away.
+    check(device.wait(Until.gone(testTagSelector(dockTag)), 15_000)) {
+        "Timed out waiting for the route pushed by testTag=$dockTag in ${targetAppId()}"
+    }
+    device.waitForIdle()
+    flingVisibleScrollable(times = 2)
+    device.pressBack()
+    waitForTestTag(BA_PAGE_ROOT, timeoutMs = 15_000)
+    device.waitForIdle()
 }
 
 private fun MacrobenchmarkScope.waitForHome() {
@@ -136,6 +182,8 @@ private const val OS_PAGE_ROOT = "os_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
+private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
+private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
 
 private fun targetAppId(): String {
     return InstrumentationRegistry.getArguments().getString("targetAppId")
