@@ -277,6 +277,165 @@ class MainNavigationFrameBenchmarks {
         )
     }
 
+    /**
+     * A route push and the pop back out, measured separately.
+     *
+     * `dumpsys gfxinfo` cannot answer this: its 120-frame ring holds far more than a 560ms
+     * transition, so three attempts each caught a different mix of slide frames and whatever the
+     * page did afterwards. A trace section around each half bounds the measurement to the
+     * transition itself.
+     *
+     * Settings is the push to measure first because it is the one users take most, and both sides
+     * of it are full-screen Liquid Glass — the covered page parallaxes under the scrim while the
+     * entering page slides, so the display is compositing two glass surfaces for the whole slide.
+     */
+    @Test
+    fun settingsRoutePushAndPop() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:settings_route_push") {
+                    clickTag(HOME_SETTINGS_BUTTON)
+                    waitForTag(SETTINGS_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+                traceSection("benchmark:settings_route_pop") {
+                    device.pressBack()
+                    waitForTag(HOME_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+            },
+        )
+    }
+
+    /**
+     * The same push measured on its *second* traversal in one process, so the numbers carry no
+     * first-composition cost. The gap against [settingsRoutePushAndPop] separates "the route is
+     * cold" from "the slide itself is expensive" — only the second is worth a rendering change.
+     */
+    @Test
+    fun settingsRouteSecondPushAndPop() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickTag(HOME_SETTINGS_BUTTON)
+                waitForTag(SETTINGS_PAGE_ROOT)
+                settleRouteTransition()
+                device.pressBack()
+                waitForTag(HOME_PAGE_ROOT)
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:settings_route_push_second") {
+                    clickTag(HOME_SETTINGS_BUTTON)
+                    waitForTag(SETTINGS_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+                traceSection("benchmark:settings_route_pop_second") {
+                    device.pressBack()
+                    waitForTag(HOME_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+            },
+        )
+    }
+
+    /**
+     * The push the calendar/pool migration created, from the BA floating dock. Its covered page is
+     * the heaviest surface in the app, so if the cost tracks what the covered layer keeps drawing
+     * rather than what the entering layer composes, this is where it shows.
+     */
+    @Test
+    fun baPoolRoutePushAndPop() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = listOf(FrameTimingMetric()),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                clickAndWait(
+                    tabTag = MAIN_BOTTOM_TAB_BA,
+                    pageTag = BA_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_BA,
+                )
+                waitForTag(BA_DOCK_OPEN_POOL)
+            },
+            measureBlock = {
+                traceSection("benchmark:ba_pool_route_push") {
+                    clickTag(BA_DOCK_OPEN_POOL)
+                    check(device.wait(Until.gone(By.res(BA_DOCK_OPEN_POOL)), PAGE_TIMEOUT_MS)) {
+                        "Timed out waiting for the pool route to cover the BA page"
+                    }
+                    settleRouteTransition()
+                }
+                traceSection("benchmark:ba_pool_route_pop") {
+                    device.pressBack()
+                    waitForTag(BA_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+            },
+        )
+    }
+
+    /**
+     * Slice breakdown for the Settings push, to name the stage that owns the slide. Reported
+     * alongside [settingsRoutePushAndPop] so the percentiles and the breakdown describe the same
+     * journey.
+     */
+    @OptIn(ExperimentalMetricApi::class)
+    @Test
+    fun settingsRoutePushTraceBreakdown() {
+        rule.measureRepeated(
+            packageName = targetAppId,
+            metrics = traceBreakdownMetrics(),
+            compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
+            startupMode = StartupMode.WARM,
+            iterations = 5,
+            setupBlock = {
+                pressHome()
+                grantRuntimePermissions(targetAppId)
+                startActivityAndWait()
+                waitForTag(HOME_PAGE_ROOT)
+                waitForTag(MAIN_PAGER_SETTLED_HOME)
+                dwellOnHome()
+            },
+            measureBlock = {
+                traceSection("benchmark:settings_route_push") {
+                    clickTag(HOME_SETTINGS_BUTTON)
+                    waitForTag(SETTINGS_PAGE_ROOT)
+                    settleRouteTransition()
+                }
+            },
+        )
+    }
+
     @Test
     fun mcpStackedCardsScroll() {
         rule.measureRepeated(
@@ -327,6 +486,23 @@ class MainNavigationFrameBenchmarks {
      */
     private fun dwellOnHome() {
         Thread.sleep(HOME_DWELL_MS)
+    }
+
+    private fun androidx.benchmark.macro.MacrobenchmarkScope.clickTag(tag: String) {
+        val node = device.findObject(By.res(tag))
+            ?: error("Unable to find testTag=$tag")
+        node.click()
+    }
+
+    /**
+     * Holds the measurement open past the end of the route transition.
+     *
+     * The page-root tag appears as soon as the entering entry composes, which is the *start* of the
+     * slide, not the end. Without this the measured window would cover only the first few frames —
+     * the cheap ones, before both layers are on screen together.
+     */
+    private fun settleRouteTransition() {
+        Thread.sleep(ROUTE_TRANSITION_SETTLE_MS)
     }
 
     private fun androidx.benchmark.macro.MacrobenchmarkScope.waitForTag(tag: String) {
@@ -402,6 +578,9 @@ private const val HOME_PAGE_ROOT = "home_page_root"
 private const val MCP_PAGE_ROOT = "mcp_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
+private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
+private const val HOME_SETTINGS_BUTTON = "home_settings_button"
+private const val SETTINGS_PAGE_ROOT = "settings_page_root"
 /**
  * RenderThread/UI slice names for the plan's P0 breakdown. "%" is a TraceProcessor wildcard, used
  * where the exact HWUI slice name carries a per-frame suffix.
@@ -432,6 +611,12 @@ private const val PAGE_TIMEOUT_MS = 15_000L
 
 /** Dwell on Home before jumping to BA, per the plan's "停留 Home" fixed journey. */
 private const val HOME_DWELL_MS = 1_500L
+
+/**
+ * Comfortably past `RouteSwitchDurationMillis` (560), so a measured window always contains the
+ * whole slide plus the frames right after it settles.
+ */
+private const val ROUTE_TRANSITION_SETTLE_MS = 900L
 private const val HOME_RESTING_MEASURE_MS = 3_000L
 private const val HOME_SCROLL_BETWEEN_SWIPES_MS = 180L
 private const val HOME_SCROLL_SETTLE_MS = 600L
