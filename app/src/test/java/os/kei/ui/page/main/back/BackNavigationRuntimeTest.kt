@@ -80,8 +80,6 @@ class BackNavigationRuntimeTest {
         val policy =
             PredictiveBackOemCompat.Policy(
                 frameworkAnimationsEnabled = true,
-                popDirectionFollowsSwipeEdge = true,
-                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.HyperOs,
@@ -127,8 +125,6 @@ class BackNavigationRuntimeTest {
         val mode = resolveBackNavigationHandlerMode(
             policy = PredictiveBackOemCompat.Policy(
                 frameworkAnimationsEnabled = true,
-                popDirectionFollowsSwipeEdge = false,
-                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
                 activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.Aosp
@@ -145,8 +141,6 @@ class BackNavigationRuntimeTest {
         val mode = resolveBackNavigationHandlerMode(
             policy = PredictiveBackOemCompat.Policy(
                 frameworkAnimationsEnabled = true,
-                popDirectionFollowsSwipeEdge = true,
-                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
@@ -163,8 +157,6 @@ class BackNavigationRuntimeTest {
         val mode = resolveBackNavigationHandlerMode(
             policy = PredictiveBackOemCompat.Policy(
                 frameworkAnimationsEnabled = false,
-                popDirectionFollowsSwipeEdge = false,
-                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
                 romFamily = PredictiveBackOemCompat.RomFamily.Aosp
@@ -181,8 +173,6 @@ class BackNavigationRuntimeTest {
         val mode = resolveActivityBackHandlerMode(
             policy = PredictiveBackOemCompat.Policy(
                 frameworkAnimationsEnabled = true,
-                popDirectionFollowsSwipeEdge = true,
-                routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                 localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
@@ -197,8 +187,6 @@ class BackNavigationRuntimeTest {
             shouldInstallActivityBackCallback(
                 policy = PredictiveBackOemCompat.Policy(
                     frameworkAnimationsEnabled = true,
-                    popDirectionFollowsSwipeEdge = true,
-                    routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
                     localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                     activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                     romFamily = PredictiveBackOemCompat.RomFamily.HyperOs
@@ -214,8 +202,6 @@ class BackNavigationRuntimeTest {
     fun `activity root installs callback for local interception`() {
         val policy = PredictiveBackOemCompat.Policy(
             frameworkAnimationsEnabled = true,
-            popDirectionFollowsSwipeEdge = false,
-            routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
             localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
             activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
             romFamily = PredictiveBackOemCompat.RomFamily.Aosp
@@ -244,8 +230,6 @@ class BackNavigationRuntimeTest {
     fun `disabled predictive back setting keeps activity root callback`() {
         val policy = PredictiveBackOemCompat.Policy(
             frameworkAnimationsEnabled = false,
-            popDirectionFollowsSwipeEdge = false,
-            routeBackPipeline = PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
             localBackPipeline = PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             activityBackPipeline = PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
             romFamily = PredictiveBackOemCompat.RomFamily.Aosp

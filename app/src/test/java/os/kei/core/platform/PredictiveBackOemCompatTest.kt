@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 class PredictiveBackOemCompatTest {
     @Test
-    fun `hyperos uses swipe edge aware predictive back policy`() {
+    fun `hyperos commits local back and finishes activities through the framework`() {
         val policy = PredictiveBackOemCompat.resolvePolicy(
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
@@ -25,11 +25,6 @@ class PredictiveBackOemCompatTest {
 
         assertEquals(PredictiveBackOemCompat.RomFamily.HyperOs, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
-        assertTrue(policy.popDirectionFollowsSwipeEdge)
-        assertEquals(
-            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
-            policy.routeBackPipeline
-        )
         assertEquals(
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
@@ -38,11 +33,10 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
             policy.activityBackPipeline
         )
-        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
-    fun `google api image keeps default predictive back direction`() {
+    fun `aosp drives local back through compose predictive back`() {
         val policy = PredictiveBackOemCompat.resolvePolicy(
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
@@ -57,11 +51,6 @@ class PredictiveBackOemCompatTest {
 
         assertEquals(PredictiveBackOemCompat.RomFamily.Aosp, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
-        assertFalse(policy.popDirectionFollowsSwipeEdge)
-        assertEquals(
-            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
-            policy.routeBackPipeline
-        )
         assertEquals(
             PredictiveBackOemCompat.LocalBackPipeline.ComposePredictive,
             policy.localBackPipeline
@@ -70,11 +59,10 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
             policy.activityBackPipeline
         )
-        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
-    fun `coloros family uses swipe edge aware predictive back policy`() {
+    fun `coloros commits local back and finishes activities through the framework`() {
         val policy = PredictiveBackOemCompat.resolvePolicy(
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
@@ -89,11 +77,6 @@ class PredictiveBackOemCompatTest {
 
         assertEquals(PredictiveBackOemCompat.RomFamily.ColorOs, policy.romFamily)
         assertTrue(policy.frameworkAnimationsEnabled)
-        assertTrue(policy.popDirectionFollowsSwipeEdge)
-        assertEquals(
-            PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
-            policy.routeBackPipeline
-        )
         assertEquals(
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
@@ -102,11 +85,10 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
             policy.activityBackPipeline
         )
-        assertTrue(policy.activityFrameworkFinishEnabled)
     }
 
     @Test
-    fun `miui and xiaomi families keep route predictive and commit local back`() {
+    fun `miui and xiaomi families commit local back`() {
         val miuiPolicy = PredictiveBackOemCompat.resolvePolicy(
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
@@ -131,12 +113,7 @@ class PredictiveBackOemCompatTest {
         )
 
         listOf(miuiPolicy, xiaomiPolicy).forEach { policy ->
-            assertTrue(policy.routePredictiveBackEnabled)
             assertFalse(policy.localPredictiveBackEnabled)
-            assertEquals(
-                PredictiveBackOemCompat.RouteBackPipeline.NavigationEvent,
-                policy.routeBackPipeline
-            )
             assertEquals(
                 PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
                 policy.localBackPipeline
@@ -145,7 +122,6 @@ class PredictiveBackOemCompatTest {
                 PredictiveBackOemCompat.ActivityBackPipeline.FrameworkFinish,
                 policy.activityBackPipeline
             )
-            assertTrue(policy.activityFrameworkFinishEnabled)
         }
         assertEquals(PredictiveBackOemCompat.RomFamily.Miui, miuiPolicy.romFamily)
         assertEquals(PredictiveBackOemCompat.RomFamily.Xiaomi, xiaomiPolicy.romFamily)
@@ -167,11 +143,6 @@ class PredictiveBackOemCompatTest {
 
         assertEquals(PredictiveBackOemCompat.RomFamily.HyperOs, policy.romFamily)
         assertFalse(policy.frameworkAnimationsEnabled)
-        assertFalse(policy.popDirectionFollowsSwipeEdge)
-        assertEquals(
-            PredictiveBackOemCompat.RouteBackPipeline.CommitOnly,
-            policy.routeBackPipeline
-        )
         assertEquals(
             PredictiveBackOemCompat.LocalBackPipeline.CommitOnly,
             policy.localBackPipeline
@@ -180,6 +151,5 @@ class PredictiveBackOemCompatTest {
             PredictiveBackOemCompat.ActivityBackPipeline.CommitCallback,
             policy.activityBackPipeline
         )
-        assertFalse(policy.activityFrameworkFinishEnabled)
     }
 }

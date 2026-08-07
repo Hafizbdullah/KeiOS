@@ -18,11 +18,6 @@ object PredictiveBackOemCompat {
         Unknown
     }
 
-    enum class RouteBackPipeline {
-        NavigationEvent,
-        CommitOnly
-    }
-
     enum class LocalBackPipeline {
         ComposePredictive,
         CommitOnly
@@ -41,22 +36,20 @@ object PredictiveBackOemCompat {
         val properties: Map<String, String> = emptyMap()
     )
 
+    /**
+     * Back handling for nav routes is not represented here. NavDisplay owns the predictive back
+     * gesture for everything on the back stack, so this policy only covers what miuix-nav does not
+     * reach: in-page overlays ([localBackPipeline]) and standalone Activities
+     * ([activityBackPipeline]).
+     */
     data class Policy(
         val frameworkAnimationsEnabled: Boolean,
-        val popDirectionFollowsSwipeEdge: Boolean,
-        val routeBackPipeline: RouteBackPipeline,
         val localBackPipeline: LocalBackPipeline,
         val activityBackPipeline: ActivityBackPipeline,
         val romFamily: RomFamily
     ) {
-        val routePredictiveBackEnabled: Boolean
-            get() = frameworkAnimationsEnabled && routeBackPipeline == RouteBackPipeline.NavigationEvent
-
         val localPredictiveBackEnabled: Boolean
             get() = frameworkAnimationsEnabled && localBackPipeline == LocalBackPipeline.ComposePredictive
-
-        val activityFrameworkFinishEnabled: Boolean
-            get() = frameworkAnimationsEnabled && activityBackPipeline == ActivityBackPipeline.FrameworkFinish
     }
 
     private val currentRomFamily: RomFamily by lazy {
@@ -92,11 +85,6 @@ object PredictiveBackOemCompat {
         romFamily: RomFamily
     ): Policy {
         val frameworkAnimationsEnabled = transitionAnimationsEnabled && predictiveBackAnimationsEnabled
-        val routeBackPipeline = if (frameworkAnimationsEnabled) {
-            RouteBackPipeline.NavigationEvent
-        } else {
-            RouteBackPipeline.CommitOnly
-        }
         val localBackPipeline =
             if (frameworkAnimationsEnabled && romFamily.usesComposePredictiveLocalBack) {
                 LocalBackPipeline.ComposePredictive
@@ -110,8 +98,6 @@ object PredictiveBackOemCompat {
         }
         return Policy(
             frameworkAnimationsEnabled = frameworkAnimationsEnabled,
-            popDirectionFollowsSwipeEdge = frameworkAnimationsEnabled && romFamily.usesTwoEdgeBackAnimation,
-            routeBackPipeline = routeBackPipeline,
             localBackPipeline = localBackPipeline,
             activityBackPipeline = activityBackPipeline,
             romFamily = romFamily
@@ -162,20 +148,6 @@ object PredictiveBackOemCompat {
             properties = watchedPropertyKeys.associateWith { key -> findPropString(key) }
         )
     }
-
-    private val RomFamily.usesTwoEdgeBackAnimation: Boolean
-        get() = when (this) {
-            RomFamily.HyperOs,
-            RomFamily.Miui,
-            RomFamily.Xiaomi,
-            RomFamily.ColorOs,
-            RomFamily.OriginOs,
-            RomFamily.MagicOs,
-            RomFamily.Emui,
-            RomFamily.OneUi -> true
-            RomFamily.Aosp,
-            RomFamily.Unknown -> false
-        }
 
     private val RomFamily.usesComposePredictiveLocalBack: Boolean
         get() = when (this) {

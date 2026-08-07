@@ -33,6 +33,16 @@ class DampedDragAnimation(
     val gestureKey: Any? = Unit,
     val canDrag: (Offset) -> Boolean = { true },
     val consumeDragChanges: Boolean = false,
+    /**
+     * Registers this node's bounds through [androidx.compose.foundation.systemGestureExclusion].
+     *
+     * No production call site sets it, and a bottom-bar drag starting ~18dp from the screen edge is
+     * still taken by the system back gesture on HyperOS (measured on 5eea1f50: Settings popped
+     * instead of switching tabs, unchanged whether the exclusion sat on the selection pill or on the
+     * bar's whole footprint). HyperOS appears to ignore app exclusion rects for its own back
+     * gesture, so treat this as an AOSP-only lever, and remember the platform caps exclusions at
+     * 200dp per edge — a `true` default would spend that budget on every damped drag at once.
+     */
     val excludeFromSystemGestures: Boolean = false,
     val dragOrientation: Orientation? = null,
     val dragTouchSlop: Float = 0f,
