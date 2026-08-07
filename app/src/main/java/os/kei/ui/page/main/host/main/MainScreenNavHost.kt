@@ -9,7 +9,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -46,7 +45,6 @@ import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.nav.core.NavBackStack
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavDisplayEffects
-import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import top.yukonga.miuix.kmp.nav.transition.NavTransition
 import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 import top.yukonga.miuix.kmp.nav.transition.navGraphicsTransition
@@ -113,19 +111,13 @@ internal fun MainScreenNavHost(
                 NavDisplayEffects.None
             }
         }
-    // Full-page swipe back (the edge predictive gesture stays independent). Directions are
-    // physical, so RTL picks the mirrored swipe; gated with route animations because a dismiss
-    // without a transition would pop with no visual feedback. BaStudentGuide opts out below —
-    // its HorizontalPager owns horizontal drags.
-    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val swipeBackDirection =
-        remember(routeAnimationsEnabled, isRtl) {
-            when {
-                !routeAnimationsEnabled -> null
-                isRtl -> NavSwipeDirection.RightToLeft
-                else -> NavSwipeDirection.LeftToRight
-            }
-        }
+    // No route opts into navSwipeDismiss. Miuix attaches that gesture to the display container and
+    // watches PointerEventPass.Initial, which dispatches parent-first, so it claims any horizontal
+    // drag past touch slop before a descendant sees it — sliders, AppSwitch, the bottom-bar tab
+    // drag and text fields all lose their gesture (issue #21). Descendants cannot pre-empt an
+    // Initial-pass ancestor, and Miuix exposes no edge band or nested veto, so back stays with the
+    // system predictive gesture that NavDisplay already drives.
+    // See docs/planning/miuix-nav-swipe-dismiss-gap.md before enabling it again.
 
     CompositionLocalProvider(
         LocalBackNavigationRuntimeController provides backRuntimeController,
@@ -196,7 +188,7 @@ internal fun MainScreenNavHost(
                             onRequestedBottomPageConsumed = pagerCoordinator.onRequestedBottomPageConsumed,
                         )
                     }
-                    entry<KeiosRoute.Settings>(swipeDismiss = swipeBackDirection) {
+                    entry<KeiosRoute.Settings> {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -278,7 +270,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.McpSkill>(swipeDismiss = swipeBackDirection) {
+                    entry<KeiosRoute.McpSkill> {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -289,7 +281,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.GitHubActionsNotificationHistory>(swipeDismiss = swipeBackDirection) {
+                    entry<KeiosRoute.GitHubActionsNotificationHistory> {
                         MainScreenRouteBackgroundHost(
                             prefsState = prefsState,
                             exportBackdropToContent = true,
@@ -301,7 +293,7 @@ internal fun MainScreenNavHost(
                             )
                         }
                     }
-                    entry<KeiosRoute.About>(swipeDismiss = swipeBackDirection) {
+                    entry<KeiosRoute.About> {
                         MainScreenRouteBackgroundHost(prefsState = prefsState) {
                             AboutPage(
                                 appLabel = appLabel,
@@ -321,10 +313,7 @@ internal fun MainScreenNavHost(
                             onBack = onRouteBack,
                         )
                     }
-                    entry<KeiosRoute.BaGuideCatalog>(
-                        transition = catalogTransition,
-                        swipeDismiss = swipeBackDirection,
-                    ) { route ->
+                    entry<KeiosRoute.BaGuideCatalog>(transition = catalogTransition) { route ->
                         BaGuideCatalogPage(
                             liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                             preloadingEnabled = prefsState.preloadingEnabled,
@@ -335,7 +324,7 @@ internal fun MainScreenNavHost(
                             onOpenGuide = pagerCoordinator.onOpenGuideDetail,
                         )
                     }
-                    entry<KeiosRoute.WebDavSync>(swipeDismiss = swipeBackDirection) {
+                    entry<KeiosRoute.WebDavSync> {
                         val dataPorts = rememberWebDavSyncDataPorts()
                         MainScreenRouteBackgroundHost(prefsState = prefsState) {
                             WebDavSyncPage(
