@@ -76,8 +76,8 @@ fun SheetContentColumn(
                 .fillMaxWidth()
                 .then(scrollModifier)
                 .navigationBarsPadding()
-                // LiquidDetentWindowBottomSheet owns IME avoidance for the whole surface. The
-                // Miuix window still relies on the content column to consume the IME inset.
+                // LiquidSheetPresentation owns IME avoidance for the whole surface. The Miuix window
+                // still relies on the content column to consume the IME inset.
                 .then(if (visualMode == SheetVisualMode.Miuix) Modifier.imePadding() else Modifier)
                 .padding(
                     top = SheetContentShadowEdgePadding,

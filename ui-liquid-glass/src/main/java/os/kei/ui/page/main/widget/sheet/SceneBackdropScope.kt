@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,6 +15,8 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import os.kei.ui.page.main.widget.glass.LiquidOverlayHostState
+import os.kei.ui.page.main.widget.glass.LocalLiquidOverlayHost
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -33,6 +36,11 @@ val LocalSceneBackdrop = staticCompositionLocalOf<Backdrop> { emptyBackdrop() }
  * subtree (the actual MainScreen) becomes the source any `Modifier.drawBackdrop(...)` consumer
  * samples. The backdrop pre-paints [backgroundColor] underneath the content so glass surfaces
  * see a stable opaque background instead of a transparent compose surface.
+ *
+ * Also installs the [LiquidOverlayHostState] that sheets and other on-top glass render into. The
+ * overlay is a **sibling** of the captured content, never a child: content inside
+ * `Modifier.layerBackdrop` is recorded into the backdrop, so an overlay placed there would sample
+ * the layer it is being drawn into. The library documents that loop as a RenderThread SIGSEGV.
  *
  * Usage at the activity root:
  *
@@ -55,13 +63,20 @@ fun SceneBackdropHost(
         drawRect(solidBackground)
         drawContent()
     }
-    CompositionLocalProvider(LocalSceneBackdrop provides sceneBackdrop) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(sceneBackdrop),
-        ) {
-            content()
+    val overlayHost = remember { LiquidOverlayHostState() }
+    CompositionLocalProvider(
+        LocalSceneBackdrop provides sceneBackdrop,
+        LocalLiquidOverlayHost provides overlayHost,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(sceneBackdrop),
+            ) {
+                content()
+            }
+            overlayHost.Content()
         }
     }
 }

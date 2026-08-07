@@ -1,0 +1,121 @@
+@file:Suppress("FunctionName")
+
+package os.kei.ui.page.main.widget.glass
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalContext
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.currentCompositionLocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.staticCompositionLocalOf
+
+/**
+ * Renders on-top chrome inside the activity window instead of a Dialog window.
+ *
+ * A `LayerBackdrop` only samples correctly inside the window that produced it — the offset between
+ * consumer and producer is resolved through shared `LayoutCoordinates`, which two windows do not
+ * have. That is why [os.kei.ui.page.main.widget.glass.LiquidBackdropWindowBoundary] blanks
+ * `LocalSceneBackdrop` for Dialog and Popup content: a sheet hosted in its own window can only fake
+ * glass with a flat translucent fill, because every `blur()` it asks for resolves against
+ * `emptyBackdrop()` and draws nothing.
+ *
+ * So anything that wants real Liquid Glass has to stay in the activity window. Compose has no
+ * in-window z-order escape — drawing order follows the tree, so a sheet declared inside a page draws
+ * underneath the floating docks, toolbar and bottom bar that the host declares after it. This host
+ * is the escape hatch: callers register content from wherever they sit in the tree and it is composed
+ * at the top of the activity window, as a sibling of (and therefore above) the whole app.
+ *
+ * The host must sit *outside* the `Modifier.layerBackdrop` producer. Inside it, the overlay would be
+ * captured into the very backdrop it samples, which the library documents as a draw loop and a
+ * RenderThread SIGSEGV, not a soft failure.
+ */
+@Stable
+class LiquidOverlayHostState internal constructor() {
+    private val entries: SnapshotStateList<LiquidOverlayEntry> = mutableStateListOf()
+
+    internal fun register(entry: LiquidOverlayEntry) {
+        if (!entries.contains(entry)) entries.add(entry)
+    }
+
+    internal fun unregister(entry: LiquidOverlayEntry) {
+        entries.remove(entry)
+    }
+
+    /**
+     * Composes every registered entry in registration order, so a sheet opened from another sheet
+     * stacks above it.
+     */
+    @Composable
+    internal fun Content() {
+        // Iterate a copy: an entry that unregisters while composing (a sheet that finishes its exit
+        // animation and drops itself) would otherwise mutate the list mid-iteration.
+        entries.toList().forEach { entry ->
+            key(entry) {
+                entry.Content()
+            }
+        }
+    }
+}
+
+/**
+ * One portalled subtree. Holds the caller's content plus the caller's `CompositionLocal`s, so
+ * content composed at the host still sees the theme, backdrop and app locals from where it was
+ * declared rather than the host's.
+ */
+internal class LiquidOverlayEntry {
+    var locals: CompositionLocalContext? by mutableStateOf(null)
+    var content: @Composable () -> Unit by mutableStateOf({})
+
+    @Composable
+    fun Content() {
+        val resolvedLocals = locals
+        if (resolvedLocals != null) {
+            CompositionLocalProvider(resolvedLocals) { content() }
+        } else {
+            content()
+        }
+    }
+}
+
+/**
+ * Null outside [LiquidOverlayContainer]. Previews, screenshot harnesses and unit tests compose page
+ * content without an activity root, and a sheet there should render in place rather than vanish.
+ */
+val LocalLiquidOverlayHost = staticCompositionLocalOf<LiquidOverlayHostState?> { null }
+
+/**
+ * Moves [content] to the top of the activity window.
+ *
+ * Registration is a snapshot write, so the host picks the content up one composition after the
+ * caller declares it. Sheets animate in from off-screen, so that frame is not observable; do not use
+ * this for anything that must be correct on its very first composed frame.
+ *
+ * Falls back to composing in place when there is no host, which keeps previews and Robolectric
+ * harnesses working.
+ */
+@Composable
+fun LiquidOverlayPortal(content: @Composable () -> Unit) {
+    val host = LocalLiquidOverlayHost.current
+    if (host == null) {
+        content()
+        return
+    }
+    val locals = currentCompositionLocalContext
+    val entry = remember { LiquidOverlayEntry() }
+    // Assigning during composition is what lets the host observe the newest content in the frame it
+    // recomposes. The host only reads these, so there is no write-after-read loop.
+    entry.locals = locals
+    entry.content = content
+    DisposableEffect(host, entry) {
+        host.register(entry)
+        onDispose { host.unregister(entry) }
+    }
+}

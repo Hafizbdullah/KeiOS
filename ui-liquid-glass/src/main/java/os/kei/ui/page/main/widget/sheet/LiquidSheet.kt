@@ -1,0 +1,704 @@
+@file:Suppress("FunctionName")
+
+package os.kei.ui.page.main.widget.sheet
+
+import android.view.WindowInsets as AndroidWindowInsets
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
+import kotlinx.coroutines.launch
+import os.kei.ui.page.main.widget.isAppInDarkTheme
+import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
+import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
+import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
+import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import top.yukonga.miuix.kmp.anim.folmeSpring
+import top.yukonga.miuix.kmp.theme.LocalDismissState
+import kotlin.math.roundToInt
+
+private const val LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE = 0.35f
+private val LiquidSheetDismissVelocityThreshold = 800.dp
+
+private const val LIQUID_SHEET_ENTER_DAMPING = 0.92f
+private const val LIQUID_SHEET_ENTER_RESPONSE = 0.38f
+
+// Critically damped. A sheet that overshoots on the way out bounces back into view before
+// disappearing, which reads as a flinch rather than an exit.
+private const val LIQUID_SHEET_EXIT_DAMPING = 1f
+private const val LIQUID_SHEET_EXIT_RESPONSE = 0.30f
+
+private const val LIQUID_SHEET_SETTLE_DAMPING = 0.85f
+private const val LIQUID_SHEET_SETTLE_RESPONSE = 0.40f
+
+private fun enterSpec(): AnimationSpec<Float> =
+    folmeSpring(damping = LIQUID_SHEET_ENTER_DAMPING, response = LIQUID_SHEET_ENTER_RESPONSE)
+
+private fun exitSpec(): AnimationSpec<Float> =
+    folmeSpring(damping = LIQUID_SHEET_EXIT_DAMPING, response = LIQUID_SHEET_EXIT_RESPONSE)
+
+private fun settleSpec(): AnimationSpec<Float> =
+    folmeSpring(damping = LIQUID_SHEET_SETTLE_DAMPING, response = LIQUID_SHEET_SETTLE_RESPONSE)
+
+/**
+ * An in-window Liquid Glass sheet.
+ *
+ * ## One driver, one exit
+ *
+ * The sheet's whole vertical state is a single normalised float: `hidden`, where `0` is resting and
+ * `1` is translated fully below the window. Placement, the scrim's dim, the background blur's alpha
+ * and the glass strength are all *derived* from it — nothing else animates.
+ *
+ * That is the fix for the dismiss flinch. The sheet this replaces animated four independent values
+ * (`animationProgress`, `dismissOffsetY`, `dimAlpha`, `visibleSheetHeightPx`) along two different
+ * exit paths: dragging away drove `dimAlpha` to zero, while tapping outside drove only
+ * `animationProgress` and left `dimAlpha` at 1. Since the dim was floored at 28% of full opacity, an
+ * outside tap faded the sheet out and then cut a 28%-dimmed screen to nothing the instant the Dialog
+ * window was torn down. With one driver the scrim reaches zero exactly as the sheet reaches the
+ * bottom edge, so there is nothing left to cut — whichever gesture started the dismissal.
+ *
+ * Every dismissal — outside tap, back, predictive back, drag, or the caller flipping `show` — routes
+ * through `onDismissRequest`, and the single `LaunchedEffect(show)` below owns the animation. Release
+ * velocity reaches it through `exitVelocity` so a fling stays continuous instead of restarting.
+ *
+ * ## Why it is not a Dialog
+ *
+ * See [os.kei.ui.page.main.widget.glass.LiquidOverlayHostState]: a `LayerBackdrop` cannot be sampled
+ * from another window, so a sheet in its own window can only imitate glass with a flat fill.
+ */
+@Composable
+internal fun LiquidSheetPresentation(
+    show: Boolean,
+    onMountedChanged: (Boolean) -> Unit,
+    modifier: Modifier,
+    title: String?,
+    startAction: @Composable (() -> Unit)?,
+    endAction: @Composable (() -> Unit)?,
+    solidness: Float,
+    surfaceTone: LiquidSheetSurfaceTone,
+    explicitBackgroundColor: Color?,
+    fallbackSurfaceColor: Color,
+    enableDim: Boolean,
+    scrimBlurRadius: Dp,
+    cornerRadius: Dp,
+    sheetMaxWidth: Dp,
+    outsideMargin: DpSize,
+    insideMargin: DpSize,
+    applyImePadding: Boolean,
+    dragHandleColor: Color,
+    allowDismiss: Boolean,
+    enableNestedScroll: Boolean,
+    minimumHeight: Dp,
+    topInset: Dp,
+    dismissDragThreshold: Dp,
+    onDismissRequest: (() -> Unit)?,
+    onDismissFinished: (() -> Unit)?,
+    onBlockedDismissRequest: (() -> Unit)?,
+    contentCanScrollUp: () -> Boolean,
+    preferExportedBackdrop: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val scope = rememberCoroutineScope()
+    val transitionsEnabled = LocalTransitionAnimationsEnabled.current
+    val predictiveBackEnabled = LocalPredictiveBackAnimationsEnabled.current
+
+    val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
+    val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
+    val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
+    val currentAllowDismiss by rememberUpdatedState(allowDismiss)
+    val currentContentCanScrollUp by rememberUpdatedState(contentCanScrollUp)
+    val currentOnMountedChanged by rememberUpdatedState(onMountedChanged)
+
+    // The single motion driver, in units of sheet-heights below rest.
+    val hidden = remember { mutableFloatStateOf(1f) }
+    val exitVelocity = remember { mutableFloatStateOf(0f) }
+    // Latches for the duration of one dismissal, so a second gesture cannot dispatch a second
+    // request and the finger cannot grab a sheet that is already leaving.
+    val dismissInProgress = remember { mutableStateOf(false) }
+    // Bumped whenever the finger takes over, so an animation still in flight stops writing instead
+    // of fighting the drag for the same value.
+    val motionGeneration = remember { mutableIntStateOf(0) }
+
+    // Height is orthogonal to presentation: dragging the grabber resizes the sheet while its bottom
+    // edge stays anchored, which has nothing to do with sliding it off-screen.
+    val naturalHeightPx = remember { mutableIntStateOf(0) }
+    val resizedHeightPx = remember { mutableFloatStateOf(0f) }
+    val userResized = remember { mutableStateOf(false) }
+
+    val windowHeightPx = with(density) { windowInfo.containerDpSize.height.toPx() }
+    val topInsetPx = with(density) { topInset.toPx() }
+    val minimumHeightPx = with(density) { minimumHeight.toPx() }
+    val dismissThresholdPx = with(density) { dismissDragThreshold.toPx() }
+    val dismissVelocityPx = with(density) { LiquidSheetDismissVelocityThreshold.toPx() }
+    val maxSheetHeight = with(density) { (windowHeightPx - topInsetPx).coerceAtLeast(0f).toDp() }
+
+    fun maxHeightPx(): Float = (windowHeightPx - topInsetPx).coerceAtLeast(0f)
+
+    fun currentHeightPx(): Float {
+        val requested = when {
+            resizedHeightPx.floatValue > 0f -> resizedHeightPx.floatValue
+            naturalHeightPx.intValue > 0 -> naturalHeightPx.intValue.toFloat()
+            else -> maxHeightPx()
+        }
+        return requested.coerceIn(0f, maxHeightPx())
+    }
+
+    fun minVisibleHeightPx(): Float {
+        val floor = minimumHeightPx.coerceAtMost(maxHeightPx())
+        val natural = naturalHeightPx.intValue.toFloat()
+        // A sheet already shorter than the floor is as small as it goes.
+        return if (natural in 1f..floor) natural else floor
+    }
+
+    fun offsetPx(): Float = liquidSheetOffsetPx(hidden.floatValue, currentHeightPx())
+
+    fun presentation(): Float = liquidSheetPresentation(hidden.floatValue)
+
+    fun scrimBlurHeightPx(): Int =
+        liquidSheetScrimBlurHeightPx(
+            windowHeightPx = windowHeightPx,
+            sheetHeightPx = currentHeightPx(),
+            offsetPx = offsetPx(),
+            cornerRadiusPx = with(density) { cornerRadius.toPx() },
+        )
+
+    // Built here rather than passed in: the material has to invert the sheet's own translation for
+    // its backdrop sample, so it needs `offsetPx` — which only exists at this level.
+    val surface = rememberLiquidSheetSurface(
+        cornerRadius = cornerRadius,
+        solidness = solidness,
+        surfaceTone = surfaceTone,
+        isDark = isAppInDarkTheme(),
+        explicitBackgroundColor = explicitBackgroundColor,
+        fallbackColor = fallbackSurfaceColor,
+        offsetProvider = ::offsetPx,
+    )
+
+    suspend fun animateHiddenTo(
+        target: Float,
+        spec: AnimationSpec<Float>,
+        initialVelocity: Float = 0f,
+    ) {
+        val generation = motionGeneration.intValue + 1
+        motionGeneration.intValue = generation
+        animate(
+            initialValue = hidden.floatValue,
+            targetValue = target,
+            initialVelocity = initialVelocity,
+            animationSpec = spec,
+        ) { value, _ ->
+            if (motionGeneration.intValue == generation) hidden.floatValue = value
+        }
+        if (motionGeneration.intValue == generation) hidden.floatValue = target
+    }
+
+    /** Hands the value to the finger and silences any running animation. */
+    fun takeOverMotion() {
+        motionGeneration.intValue += 1
+    }
+
+    /** The one exit animation. Both the gesture path and the programmatic path call exactly this. */
+    suspend fun runExit(velocity: Float) {
+        if (!transitionsEnabled) {
+            takeOverMotion()
+            hidden.floatValue = 1f
+            return
+        }
+        val height = currentHeightPx().coerceAtLeast(1f)
+        animateHiddenTo(target = 1f, spec = exitSpec(), initialVelocity = velocity / height)
+    }
+
+    LaunchedEffect(show, transitionsEnabled) {
+        if (show) {
+            currentOnMountedChanged(true)
+            dismissInProgress.value = false
+            exitVelocity.floatValue = 0f
+            if (transitionsEnabled) {
+                animateHiddenTo(0f, enterSpec())
+            } else {
+                takeOverMotion()
+                hidden.floatValue = 0f
+            }
+        } else {
+            // A gesture-driven dismissal has already flown the sheet out and is about to unmount it;
+            // re-running the exit here would restart the animation from the bottom edge.
+            if (hidden.floatValue < 1f) {
+                runExit(exitVelocity.floatValue)
+            }
+            currentOnDismissFinished?.invoke()
+            currentOnMountedChanged(false)
+        }
+    }
+
+    /**
+     * Requests dismissal, animating the sheet out first.
+     *
+     * Two properties here are load-bearing and were both in the sheet this replaces:
+     *
+     * - **At most one request per dismissal.** Without the latch, frantic back presses or a
+     *   double-tapped Cancel each dispatch, and callers that pop a route or reset state would do it
+     *   twice — the request goes out immediately while `show` needs a frame to come back false.
+     * - **`allowDismiss` is re-read after the animation.** A sheet whose content turns dirty while it
+     *   is flying out springs back instead of vanishing with unsaved edits.
+     */
+    fun requestDismiss(velocity: Float) {
+        if (dismissInProgress.value) return
+        if (!currentAllowDismiss) {
+            currentOnBlockedDismissRequest?.invoke()
+            scope.launch { animateHiddenTo(0f, settleSpec()) }
+            return
+        }
+        dismissInProgress.value = true
+        exitVelocity.floatValue = velocity
+        scope.launch {
+            try {
+                runExit(velocity)
+                if (currentAllowDismiss) {
+                    currentOnDismissRequest?.invoke()
+                } else {
+                    currentOnBlockedDismissRequest?.invoke()
+                    animateHiddenTo(0f, settleSpec())
+                }
+            } finally {
+                dismissInProgress.value = false
+            }
+        }
+    }
+
+    /**
+     * Turns a vertical drag into either a resize or dismiss progress, reporting what it consumed so
+     * nested scrolling stays honest.
+     */
+    fun applyDrag(delta: Float): Float {
+        if (delta == 0f || dismissInProgress.value) return 0f
+        takeOverMotion()
+        val result = liquidSheetResolveDrag(
+            deltaPx = delta,
+            heightPx = currentHeightPx(),
+            hidden = hidden.floatValue,
+            minVisibleHeightPx = minVisibleHeightPx(),
+            maxVisibleHeightPx = maxHeightPx(),
+            resistance = if (currentAllowDismiss) 1f else LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE,
+        )
+        if (result.heightPx != currentHeightPx()) userResized.value = true
+        resizedHeightPx.floatValue = result.heightPx
+        hidden.floatValue = result.hidden
+        return result.consumedPx
+    }
+
+    fun settle(velocity: Float) {
+        if (dismissInProgress.value) return
+        val height = currentHeightPx().coerceAtLeast(1f)
+        val draggedPx = hidden.floatValue * height
+        val effectiveDrag =
+            if (currentAllowDismiss) draggedPx else draggedPx / LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE
+        if (
+            liquidSheetDismissDragExceeded(
+                draggedPx = effectiveDrag,
+                thresholdPx = dismissThresholdPx,
+                velocity = velocity,
+                velocityThresholdPx = dismissVelocityPx,
+            )
+        ) {
+            requestDismiss(velocity)
+        } else if (hidden.floatValue != 0f) {
+            scope.launch { animateHiddenTo(0f, settleSpec(), initialVelocity = velocity / height) }
+        }
+    }
+
+    fun resizeTo(targetHeightPx: Float) {
+        if (dismissInProgress.value) return
+        val resolved = targetHeightPx.coerceIn(minVisibleHeightPx(), maxHeightPx())
+        userResized.value = true
+        if (!transitionsEnabled) {
+            resizedHeightPx.floatValue = resolved
+            return
+        }
+        scope.launch {
+            animate(
+                initialValue = currentHeightPx(),
+                targetValue = resolved,
+                animationSpec = settleSpec(),
+            ) { value, _ ->
+                resizedHeightPx.floatValue = value
+            }
+            resizedHeightPx.floatValue = resolved
+        }
+    }
+
+    // ---- back ---------------------------------------------------------------------------------
+
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
+    // The insets object is stable; only `getBottom` reads state. Calling it inside callbacks rather
+    // than during composition keeps the IME's per-frame inset animation from recomposing the whole
+    // sheet — and the sheet's glass is the most expensive thing on screen to re-record.
+    val imeInsets = WindowInsets.ime
+    val completeBack: () -> Unit = {
+        val imeVisible = liquidSheetImeVisible(
+            composeImeBottomPx = imeInsets.getBottom(density),
+            platformImeVisible =
+                view.rootWindowInsets?.isVisible(AndroidWindowInsets.Type.ime()) == true,
+        )
+        if (imeVisible) {
+            // Back closes the keyboard first, as it does on every other text surface in the app.
+            focusManager.clearFocus(force = true)
+            view.windowInsetsController?.hide(AndroidWindowInsets.Type.ime())
+                ?: keyboardController?.hide()
+            scope.launch { animateHiddenTo(0f, settleSpec()) }
+        } else {
+            requestDismiss(0f)
+        }
+    }
+
+    val navigationEventOwnerAvailable = LocalNavigationEventDispatcherOwner.current != null
+    if (navigationEventOwnerAvailable) {
+        val navigationEventState =
+            rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
+        NavigationBackHandler(
+            state = navigationEventState,
+            isBackEnabled = show && predictiveBackEnabled,
+            onBackCancelled = { scope.launch { animateHiddenTo(0f, settleSpec()) } },
+            onBackCompleted = completeBack,
+        )
+        LaunchedEffect(navigationEventState, predictiveBackEnabled, allowDismiss) {
+            if (!predictiveBackEnabled) return@LaunchedEffect
+            snapshotFlow { navigationEventState.transitionState }.collect { transitionState ->
+                if (
+                    transitionState is NavigationEventTransitionState.InProgress &&
+                    transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
+                ) {
+                    takeOverMotion()
+                    val progress = transitionState.latestEvent.progress.coerceIn(0f, 1f)
+                    val resistance =
+                        if (allowDismiss) 1f else LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE
+                    hidden.floatValue = progress * resistance
+                }
+            }
+        }
+    }
+    BackHandler(
+        enabled = show && (!navigationEventOwnerAvailable || !predictiveBackEnabled),
+        onBack = completeBack,
+    )
+
+    // ---- nested scroll ------------------------------------------------------------------------
+
+    val nestedScrollConnection = remember(enableNestedScroll, allowDismiss) {
+        var sheetConsumedScroll = false
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (!enableNestedScroll) return Offset.Zero
+                val delta = available.y
+                if (
+                    delta < 0f &&
+                    (
+                        hidden.floatValue > 0f ||
+                            (!currentContentCanScrollUp() && currentHeightPx() < maxHeightPx())
+                    )
+                ) {
+                    val consumed = applyDrag(delta)
+                    if (consumed != 0f) {
+                        sheetConsumedScroll = true
+                        return Offset(0f, consumed)
+                    }
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource,
+            ): Offset {
+                if (!enableNestedScroll) return Offset.Zero
+                if (available.y > 0f) {
+                    val consumedY = applyDrag(available.y)
+                    if (consumedY != 0f) {
+                        sheetConsumedScroll = true
+                        return Offset(0f, consumedY)
+                    }
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                if (!enableNestedScroll) return Velocity.Zero
+                if (available.y > 0f && currentContentCanScrollUp()) return Velocity.Zero
+                if (sheetConsumedScroll || hidden.floatValue != 0f) {
+                    settle(available.y)
+                    sheetConsumedScroll = false
+                    return available
+                }
+                return Velocity.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                if (!enableNestedScroll) return Velocity.Zero
+                if (sheetConsumedScroll || hidden.floatValue != 0f) {
+                    settle(available.y)
+                    sheetConsumedScroll = false
+                    return available
+                }
+                return Velocity.Zero
+            }
+        }
+    }
+
+    // ---- rendering ----------------------------------------------------------------------------
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (enableDim) {
+            LiquidSheetScrim(
+                backdrop = if (surface.glassEnabled) LocalSceneBackdrop.current else null,
+                blurRadius = scrimBlurRadius,
+                presentationProvider = ::presentation,
+                blurHeightPxProvider = ::scrimBlurHeightPx,
+            )
+        }
+        // Outside-tap dismissal, and a hard stop for drags that start off the sheet. Without the
+        // claim a drag on the exposed area above the sheet reaches the pager, and the page behind a
+        // modal surface scrolls or switches.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .liquidSheetOutsideDismiss(
+                    allowDismiss = allowDismiss,
+                    onDismissRequest = { requestDismiss(0f) },
+                    onBlockedDismissRequest = onBlockedDismissRequest,
+                ),
+        )
+        Column(
+            modifier = modifier
+                .align(Alignment.BottomCenter)
+                .widthIn(max = sheetMaxWidth)
+                .fillMaxWidth()
+                .padding(horizontal = outsideMargin.width)
+                // The slide lives inside the surface, not in a graphicsLayer here: `drawBackdrop`
+                // applies its `layerBlock` as the element's own layer *and* inverse-transforms the
+                // sample by it, so translating separately would move the sheet twice.
+                .then(surface.modifier)
+                // Nothing that starts on the sheet may reach the pager underneath. The claim only
+                // consumes position changes, and descendants see the Main pass first, so the
+                // grabber's drag and the content's own scrolling still work — it only swallows what
+                // would otherwise have leaked out to switch pages behind a modal surface.
+                .claimFloatingChromeDrags()
+                .then(
+                    if (enableNestedScroll) Modifier.nestedScroll(nestedScrollConnection) else Modifier,
+                ).wrapContentHeight()
+                .heightIn(max = maxSheetHeight)
+                .then(
+                    if (userResized.value) {
+                        Modifier.liquidSheetOptionalHeightPx { currentHeightPx().roundToInt() }
+                    } else {
+                        Modifier
+                    },
+                ).onSizeChanged { size ->
+                    // Read off the layout pass and never written back into it: placement is a
+                    // graphicsLayer translation, so this cannot feed the measure loop the previous
+                    // sheet created by writing its height from onGloballyPositioned.
+                    if (imeInsets.getBottom(density) == 0 && !userResized.value) {
+                        naturalHeightPx.intValue = size.height
+                    }
+                }.then(if (applyImePadding) Modifier.imePadding() else Modifier)
+                .padding(horizontal = insideMargin.width)
+                .padding(bottom = insideMargin.height)
+                .semantics { title?.takeIf { it.isNotBlank() }?.let { paneTitle = it } },
+        ) {
+            LiquidSheetTopChrome(
+                title = title,
+                startAction = startAction,
+                endAction = endAction,
+                dragHandleColor = dragHandleColor,
+                canExpand = currentHeightPx() < maxHeightPx() - 0.5f,
+                canCollapse = currentHeightPx() > minVisibleHeightPx() + 0.5f,
+                canDismiss = allowDismiss,
+                onExpand = { resizeTo(maxHeightPx()) },
+                onCollapse = { resizeTo(minVisibleHeightPx()) },
+                onDismiss = { requestDismiss(0f) },
+                onDrag = { applyDrag(it) },
+                onDragStopped = { velocity -> settle(velocity) },
+            )
+            CompositionLocalProvider(
+                LocalDismissState provides { requestDismiss(0f) },
+                LocalLiquidSheetVisibleHeightPx provides {
+                    if (userResized.value) currentHeightPx().roundToInt() else 0
+                },
+                LocalLiquidParentBackdrop provides surface.exportedBackdrop,
+                LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
+            ) {
+                Box(
+                    modifier = Modifier.liquidSheetScrollEdge(
+                        visible = contentCanScrollUp,
+                        isDark = isAppInDarkTheme(),
+                    ),
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * How present the sheet is, derived from the single motion driver.
+ *
+ * **This must reach exactly 0 when the sheet is fully hidden.** Everything that fades with the sheet —
+ * the scrim dim, the background blur's alpha — is scaled by this, so a non-zero floor here means the
+ * screen is still visibly dimmed at the instant the sheet is unmounted, and the user sees a cut. That
+ * floor is precisely what made the old sheet flinch when dismissed by tapping outside: its dim depth
+ * bottomed out at 0.28 instead of 0.
+ */
+internal fun liquidSheetPresentation(hidden: Float): Float = (1f - hidden).coerceIn(0f, 1f)
+
+/**
+ * Where to draw the sheet, in pixels below rest.
+ *
+ * Clamped at zero so the slightly underdamped enter spring cannot overshoot past rest and lift the
+ * sheet off the bottom edge, which would flash a strip of background beneath it.
+ */
+internal fun liquidSheetOffsetPx(
+    hidden: Float,
+    heightPx: Float,
+): Float = (hidden * heightPx).coerceAtLeast(0f)
+
+/**
+ * The scrim's blurred plate covers everything down to the sheet's top edge plus one corner radius, so
+ * the blur continues behind the rounded shoulders instead of ending in a visible straight line across
+ * them. It deliberately stops there: the sheet blurs its own region, and extending this underneath
+ * would pay for those pixels twice.
+ */
+internal fun liquidSheetScrimBlurHeightPx(
+    windowHeightPx: Float,
+    sheetHeightPx: Float,
+    offsetPx: Float,
+    cornerRadiusPx: Float,
+): Int {
+    val sheetTop = windowHeightPx - sheetHeightPx + offsetPx
+    return (sheetTop + cornerRadiusPx.coerceAtLeast(0f))
+        .coerceIn(0f, windowHeightPx.coerceAtLeast(0f))
+        .roundToInt()
+}
+
+internal data class LiquidSheetDragResult(
+    val heightPx: Float,
+    val hidden: Float,
+    val consumedPx: Float,
+)
+
+/**
+ * Resolves one vertical drag event into a new sheet height and dismiss progress.
+ *
+ * Dragging down shrinks the sheet until it reaches [minVisibleHeightPx]; only the part of the drag
+ * *below* that floor turns into dismiss progress. Dragging up spends itself undoing dismiss progress
+ * first, and grows the sheet with whatever is left.
+ *
+ * **Dismiss progress accumulates.** A drag arrives as a stream of small deltas, so assigning progress
+ * from a single event instead of adding to it leaves the driver holding only the last delta's worth —
+ * and a long drag past the floor never reaches the dismiss threshold no matter how far it is pulled.
+ * That is a bug this function exists to keep fixed; [consumedPx] is what nested scrolling needs back.
+ */
+internal fun liquidSheetResolveDrag(
+    deltaPx: Float,
+    heightPx: Float,
+    hidden: Float,
+    minVisibleHeightPx: Float,
+    maxVisibleHeightPx: Float,
+    resistance: Float,
+): LiquidSheetDragResult {
+    val beforeOffset = liquidSheetOffsetPx(hidden, heightPx)
+    var currentHidden = hidden
+    var currentHeight = heightPx
+    var remaining = deltaPx
+
+    if (remaining < 0f && currentHidden > 0f) {
+        val restoredPx = minOf(liquidSheetOffsetPx(currentHidden, currentHeight), -remaining)
+        val normaliser = currentHeight.coerceAtLeast(1f)
+        currentHidden = (currentHidden - restoredPx / normaliser).coerceAtLeast(0f)
+        remaining += restoredPx
+    }
+
+    if (remaining != 0f) {
+        val desired = currentHeight - remaining
+        when {
+            desired >= maxVisibleHeightPx -> currentHeight = maxVisibleHeightPx
+            desired >= minVisibleHeightPx -> currentHeight = desired
+            else -> {
+                currentHeight = minVisibleHeightPx
+                val surplusPx = minVisibleHeightPx - desired
+                currentHidden += surplusPx * resistance / minVisibleHeightPx.coerceAtLeast(1f)
+            }
+        }
+    }
+
+    val consumed =
+        (heightPx - currentHeight) +
+            (liquidSheetOffsetPx(currentHidden, currentHeight) - beforeOffset)
+    return LiquidSheetDragResult(
+        heightPx = currentHeight,
+        hidden = currentHidden,
+        consumedPx = consumed,
+    )
+}
+
+internal fun liquidSheetImeVisible(
+    composeImeBottomPx: Int,
+    platformImeVisible: Boolean,
+): Boolean = composeImeBottomPx > 0 || platformImeVisible
+
+internal fun liquidSheetDismissDragExceeded(
+    draggedPx: Float,
+    thresholdPx: Float,
+    velocity: Float,
+    velocityThresholdPx: Float,
+): Boolean = draggedPx > 0f && (draggedPx > thresholdPx || velocity > velocityThresholdPx)

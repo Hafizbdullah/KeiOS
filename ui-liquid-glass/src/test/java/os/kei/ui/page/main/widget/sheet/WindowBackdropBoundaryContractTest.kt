@@ -46,19 +46,32 @@ class WindowBackdropBoundaryContractTest {
         assertFalse(".drawBackdrop(" in boundary)
     }
 
+    /**
+     * The sheet no longer hides behind the boundary — it renders in the activity window, so it both
+     * may and must sample the real scene backdrop. What it still has to do is degrade to an opaque
+     * fill whenever that backdrop cannot be trusted: outside an overlay host, `LocalSceneBackdrop` is
+     * whatever the surrounding window provides, and in a preview or Robolectric harness that is
+     * `emptyBackdrop()`. Asking it for blur there produces a *transparent* sheet, not a blurred one.
+     */
     @Test
-    fun sheetUsesFallbackSurfaceInsideDialogWindow() {
-        val host = windowBoundarySource(DETENT_WINDOW_SHEET_SOURCE)
-        val sheet = windowBoundarySource(LIQUID_SHEET_SOURCE)
+    fun sheetSamplesTheSceneBackdropButFallsBackWithoutAnOverlayHost() {
+        val surface = windowBoundarySource(LIQUID_SHEET_SURFACE_SOURCE)
 
-        assertTrue("LiquidBackdropWindowDialog(" in host)
-        assertTrue(host.indexOf("LiquidBackdropWindowDialog(") < host.indexOf("hostContent()"))
-        assertTrue("surfaceModifier = Modifier," in sheet)
-        assertTrue("?: liquidSheetSurfaceColor(" in sheet)
-        assertFalse("LocalSceneBackdrop.current" in sheet)
-        assertFalse("rememberLayerBackdrop" in sheet)
-        assertFalse(".drawBackdrop(" in sheet)
-        assertFalse("LocalLiquidParentBackdrop provides" in sheet)
+        assertTrue("LocalSceneBackdrop.current" in surface)
+        assertTrue(".drawBackdrop(" in surface)
+        assertTrue("exportedBackdrop = sheetBackdrop," in surface)
+        assertTrue(
+            "LocalLiquidOverlayHost.current != null" in surface,
+            "Glass must be gated on actually being inside the overlay host",
+        )
+        assertTrue(
+            ".background(" in surface,
+            "The fallback must be an opaque fill, not a no-op backdrop",
+        )
+        assertFalse(
+            ".layerBackdrop(" in surface,
+            "A second layerBackdrop after drawBackdrop is the documented draw loop",
+        )
     }
 
     @Test
@@ -154,10 +167,8 @@ private const val WINDOW_BOUNDARY_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidBackdropWindowBoundary.kt"
 private const val GLASS_RUNTIME_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/GlassEffectRuntime.kt"
-private const val DETENT_WINDOW_SHEET_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidDetentWindowBottomSheet.kt"
-private const val LIQUID_SHEET_SOURCE =
-    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidGlassBottomSheet.kt"
+private const val LIQUID_SHEET_SURFACE_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheetSurface.kt"
 private const val LIQUID_DIALOG_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/dialog/LiquidGlassDialog.kt"
 private const val SNAPSHOT_POPUP_SOURCE =

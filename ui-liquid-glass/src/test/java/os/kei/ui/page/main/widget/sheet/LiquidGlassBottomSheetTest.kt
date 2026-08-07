@@ -290,30 +290,36 @@ class LiquidGlassBottomSheetTest {
         }
     }
 
+    /**
+     * Glass on glass: a control inside the sheet must sample the *sheet*, not the page behind it.
+     *
+     * This is what the sheet's `exportedBackdrop` is for. Before the rewrite the sheet lived in a
+     * Dialog window and could not sample anything, so it published no parent backdrop at all and every
+     * control inside it fell back to a flat fill.
+     */
     @Test
-    fun childControlsIgnoreCapturedPageBackdropWhenExportOptInIsRetainedForCompatibility() {
+    fun childControlsSampleTheSheetSurfaceInsideTheOverlayHost() {
         var pageBackdrop: Backdrop? = null
         var sheetBackdrop: Backdrop? = null
-        var resolvedControlBackdrop: Backdrop? = null
 
         composeRule.setContent {
             LiquidSheetTestTheme {
-                val fallback = LocalSceneBackdrop.current
-                pageBackdrop = fallback
-                LiquidGlassBottomSheet(
-                    show = true,
-                    title = "Inherited backdrop",
-                    preferExportedBackdrop = true,
-                ) {
-                    sheetBackdrop = LocalLiquidParentBackdrop.current
-                    resolvedControlBackdrop = activeGlassBackdrop(fallback)
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(96.dp)
-                                .testTag("sheet-inherited-control"),
-                    )
+                SceneBackdropHost {
+                    pageBackdrop = LocalSceneBackdrop.current
+                    LiquidGlassBottomSheet(
+                        show = true,
+                        title = "Inherited backdrop",
+                        preferExportedBackdrop = true,
+                    ) {
+                        sheetBackdrop = LocalLiquidParentBackdrop.current
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(96.dp)
+                                    .testTag("sheet-inherited-control"),
+                        )
+                    }
                 }
             }
         }
@@ -324,27 +330,30 @@ class LiquidGlassBottomSheetTest {
 
         composeRule.runOnIdle {
             assertNotNull(pageBackdrop)
-            assertNull(sheetBackdrop)
-            assertNull(resolvedControlBackdrop)
+            assertNotNull(sheetBackdrop, "The sheet must publish its own surface for inner controls")
+            assertTrue(
+                sheetBackdrop !== pageBackdrop,
+                "Inner controls must sample the sheet, not the page it floats over",
+            )
         }
     }
 
+    /**
+     * Without an overlay host there is no trustworthy backdrop, so the sheet must publish none and
+     * paint itself opaque. Asking for blur here would draw *nothing* and leave a transparent sheet —
+     * a silent failure, which is exactly how the Dialog-hosted sheet lost its glass.
+     */
     @Test
-    fun childControlsIgnoreCapturedPageBackdropWithoutExportOptIn() {
-        var pageBackdrop: Backdrop? = null
+    fun sheetPublishesNoBackdropWithoutAnOverlayHost() {
         var sheetBackdrop: Backdrop? = null
-        var resolvedControlBackdrop: Backdrop? = null
 
         composeRule.setContent {
             LiquidSheetTestTheme {
-                val fallback = LocalSceneBackdrop.current
-                pageBackdrop = fallback
                 LiquidGlassBottomSheet(
                     show = true,
                     title = "Page fallback",
                 ) {
                     sheetBackdrop = LocalLiquidParentBackdrop.current
-                    resolvedControlBackdrop = activeGlassBackdrop(fallback)
                     Box(
                         modifier =
                             Modifier
@@ -361,9 +370,7 @@ class LiquidGlassBottomSheetTest {
         composeRule.onNodeWithTag("sheet-page-fallback-control").assertExists()
 
         composeRule.runOnIdle {
-            assertNotNull(pageBackdrop)
             assertNull(sheetBackdrop)
-            assertNull(resolvedControlBackdrop)
         }
     }
 
