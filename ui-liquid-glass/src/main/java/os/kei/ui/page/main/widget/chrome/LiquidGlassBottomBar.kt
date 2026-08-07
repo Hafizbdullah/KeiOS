@@ -76,6 +76,7 @@ import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
+import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
 import os.kei.ui.page.main.widget.glass.radialRefraction
@@ -792,7 +793,13 @@ fun LiquidGlassBottomBar(
                             translationY = snapChromeTranslationPx(-pressLiftPx * combinedPressProgress)
                             scaleX = lerp(1f, 1.006f, combinedPressProgress)
                             scaleY = lerp(1f, 0.996f, combinedPressProgress)
-                        }.then(
+                        }
+                        // Outer of both gestures below, so the horizontal drag-to-select still reads
+                        // the pointer while a vertical drift no longer scrolls the list underneath
+                        // and lose the tab tap. The drag detector here is horizontal-only, so
+                        // nothing was claiming the other axis.
+                        .claimFloatingChromeDrags()
+                        .then(
                             if (interactionEnabled && interactiveHighlight != null) {
                                 interactiveHighlight.gestureModifier
                             } else {

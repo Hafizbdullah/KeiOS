@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
+import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -169,7 +170,12 @@ private fun AppTopBarTitleCardSurface(
         modifier =
             modifier
                 .height(height)
-                .width(width),
+                .width(width)
+                // Same exposure as the toolbar: this pill floats over a vertically scrolling list
+                // inside a horizontally swipeable pager, so a press that drifts is handed to one of
+                // them and the scroll-to-top tap is lost. Outer of the button's own gesture, which
+                // is nested inside AppLiquidTextButton -- see claimFloatingChromeDrags on ordering.
+                .claimFloatingChromeDrags(),
         contentAlignment = Alignment.Center,
     ) {
         AppLiquidTextButton(
