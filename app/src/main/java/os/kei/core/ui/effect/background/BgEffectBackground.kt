@@ -18,13 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.FrameRateCategory
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.preferredFrameRate
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -91,16 +89,15 @@ fun BgEffectBackground(
             val renderHeightDp = with(density) { renderSize.height.toDp() }
             val shaderSizeModifier =
                 if (dynamicBackground) {
+                    // No frame-rate vote here on purpose. A vote governs the whole display, not
+                    // just this layer: the High category resolved to 90Hz through the panel's
+                    // frameRateCategoryRate and pinned a 120Hz screen there for as long as the
+                    // background was visible, and replacing it with an explicit 60 only moved the
+                    // ceiling down — a full-screen layer that renders slower than the panel must
+                    // not speak for it. Staying silent lets scrolling and pager motion reach the
+                    // peak while an idle page still downshifts through LTPO.
                     Modifier
                         .requiredSize(renderWidthDp, renderHeightDp)
-                        // 121c232ec capped this shader at 60fps, so ask for 60 rather than
-                        // FrameRateCategory.High. SurfaceFlinger resolves High through the
-                        // display's frameRateCategoryRate — {normal = 60, high = 90} on
-                        // 5eea1f50 — so the old vote pinned a 120Hz panel to 90 for as long
-                        // as the background was visible, dragging every section switch down
-                        // with it. Votes aggregate as a max, so declaring the real cadence
-                        // lets a pager or route asking for the peak rate still win.
-                        .preferredFrameRate(BG_EFFECT_VOTE_HZ)
                         .graphicsLayer {
                             scaleX = 1f / renderScale
                             scaleY = 1f / renderScale
@@ -129,6 +126,3 @@ fun BgEffectBackground(
         content()
     }
 }
-
-/** The shader's own invalidation ceiling; see BgEffectModifier's BG_EFFECT_HIGH_FPS. */
-private const val BG_EFFECT_VOTE_HZ = 60f

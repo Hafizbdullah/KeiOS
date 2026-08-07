@@ -26,13 +26,10 @@ class BgEffectFramePacingTest {
         assertTrue("animTime =" in animationSource)
         assertTrue("invalidateDraw()" in animationSource)
         assertTrue(animationSource.indexOf("animTime =") < animationSource.indexOf("invalidateDraw()"))
-        // The shader caps itself at BG_EFFECT_HIGH_FPS, so it votes that rate rather than
-        // FrameRateCategory.High: the category resolved to 90Hz on 5eea1f50 and pinned the panel
-        // there for as long as the background was visible. Votes aggregate as a max, so declaring
-        // the real cadence lets pager motion still pull the display up to its peak.
-        assertFalse("preferredFrameRate(FrameRateCategory" in backgroundSource)
-        assertTrue(".preferredFrameRate(BG_EFFECT_VOTE_HZ)" in backgroundSource)
-        assertTrue("private const val BG_EFFECT_VOTE_HZ = 60f" in backgroundSource)
+        // A full-screen layer that renders slower than the panel must not vote at all: the vote
+        // governs the whole display, so High pinned it to 90 and an explicit 60 pinned it lower
+        // still. Silence lets scrolling and pager motion reach the peak.
+        assertFalse("preferredFrameRate" in backgroundSource)
 
         // The cap skips the invalidate, never the VSYNC wake-up.
         assertTrue("minDeltaNanos" in animationSource)
