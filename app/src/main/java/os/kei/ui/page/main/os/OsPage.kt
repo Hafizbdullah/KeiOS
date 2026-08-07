@@ -588,12 +588,14 @@ fun OsPage(
                 onLinuxEnvExpandedChange = osPageViewModel::updateLinuxEnvExpanded,
             )
         }
-    val mainListShowFloatingAddButton =
+    // Guards the overview card's add click the way it used to guard the dock button:
+    // no adding while a sheet or the visibility manager owns the screen.
+    val mainListAddActionEnabled =
         !activitySuggestionChromeState.showSheet &&
             !overlayState.showShellCardVisibilityManager
     val mainListSearchDockState =
         remember(
-            mainListShowFloatingAddButton,
+            mainListAddActionEnabled,
             enableSearchBar,
             chromeState.searchExpanded,
             chromeState.overlaySearchSuppressed,
@@ -602,7 +604,7 @@ fun OsPage(
             osPageViewModel,
         ) {
             OsPageMainListSearchDockState(
-                showFloatingAddButton = mainListShowFloatingAddButton,
+                addActionEnabled = mainListAddActionEnabled,
                 searchExpanded =
                     enableSearchBar &&
                         chromeState.searchExpanded &&

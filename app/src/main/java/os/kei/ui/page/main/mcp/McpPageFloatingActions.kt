@@ -72,17 +72,13 @@ internal fun BoxScope.McpPageFloatingActionDock(
             actions,
         ) {
             listOf(
+                // Start/stop is the overview card's click (see McpOverviewSection), so
+                // the dock does not carry a second copy of it.
                 AppFloatingDockAction(
                     icon = copyIcon,
                     contentDescription = copyClawSetupContentDescription,
                     iconTint = primaryColor,
                     onClick = actions.onCopyClawSetupPrompt,
-                ),
-                AppFloatingDockAction(
-                    icon = toggleIcon,
-                    contentDescription = toggleContentDescription,
-                    iconTint = if (uiState.running) errorColor else primaryColor,
-                    onClick = actions.onToggleServer,
                 ),
             )
         }

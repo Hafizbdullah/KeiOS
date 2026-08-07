@@ -74,7 +74,8 @@ internal fun GitHubOverviewCard(
     metrics: GitHubOverviewMetrics,
     failedFilterActive: Boolean,
     onRetryFailedTracked: () -> Unit,
-    onFailedFilterToggle: (Boolean) -> Unit
+    onFailedFilterToggle: (Boolean) -> Unit,
+    onAddTracked: () -> Unit
 ) {
     val context = LocalContext.current
     val lookupValue = lookupConfig.overviewLookupPillLabel(context)
@@ -97,6 +98,9 @@ internal fun GitHubOverviewCard(
     AppOverviewCard(
         title = stringResource(R.string.github_overview_title),
         backdrop = backdrop,
+        // Adding a tracked repo used to be a dock button. The dock is the scarcer
+        // surface, and this card had no click of its own to give up.
+        onClick = onAddTracked,
         titleColor = MiuixTheme.colorScheme.onBackground,
         subtitleColor = MiuixTheme.colorScheme.onBackgroundVariant,
         containerColor = displayRefreshState.surfaceColor(
@@ -353,7 +357,8 @@ private fun GitHubOverviewCardPreview() {
             ),
             failedFilterActive = false,
             onRetryFailedTracked = {},
-            onFailedFilterToggle = {}
+            onFailedFilterToggle = {},
+            onAddTracked = {}
         )
     }
 }

@@ -258,6 +258,7 @@ internal fun GitHubMainContent(
                         failedFilterActive = controls.trackedFilterMode == GitHubTrackedFilterMode.FailedChecks,
                         onRetryFailedTracked = actions.onRetryFailedTracked,
                         onFailedFilterToggle = actions.onFailedFilterToggle,
+                        onAddTracked = actions.onOpenTrackSheetForAdd,
                     )
                 }
                 CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
@@ -436,7 +437,7 @@ internal fun GitHubMainContent(
                     refreshIcon = appLucideRefreshIcon(),
                     refreshContentDescription = stringResource(R.string.github_topbar_cd_check),
                     onRefreshClick = actions.onRefreshVisibleTracked,
-                    showAddAction = true,
+                    showAddAction = false,
                     showRefreshAction = false,
                     refreshEnabled = !controls.deleteInProgress,
                     refreshStatus = refreshStatus,

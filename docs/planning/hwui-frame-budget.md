@@ -156,3 +156,31 @@ the click path and made the other half worse. Nothing is rendered early here; on
 composition versus the start of the animation changes. It does need care: `activationState` is
 built after the coordinator in `MainPagerLayout`, so the target index has to be threaded out of
 `MainPagerTabJumpControllerState` first.
+
+## The switch metric has a noise floor of ~7ms
+
+`switch_into_page.sh` reports p50 for Home -> tab. Six measurement passes taken across one
+afternoon, on builds differing by at most a few UI elements:
+
+| pass | github | mcp | os | ba |
+|---|---|---|---|---|
+| build A, run 1 | 17.04 | 18.48 | 15.34 | 15.26 |
+| build A, run 2 | 16.06 | 17.77 | 21.69 | 16.00 |
+| build B, run 1 | 15.09 | 14.93 | 23.11 | 12.59 |
+| build B, run 2 | 12.12 | 15.17 | 20.95 | 15.16 |
+| build C, run 1 | 17.78 | 18.73 | 13.67 | 16.51 |
+| build C pooled (6) | 18.48 | 19.45 | 13.80 | 15.55 |
+
+github spans 12.1-18.5 and os spans 13.7-23.1 — 6 to 9ms — while build A and build B differ only
+by three dock buttons. Two runs of the *same* build (B) differ by 3ms on github and 2.6ms on ba.
+
+So this metric can rank tabs against each other within one pass, which is what it was built for,
+but it cannot resolve a change worth a millisecond or two. A first read of build B against a
+build A number taken hours earlier looked like "github 16.06 -> 12.12, frames over budget 46% ->
+30%"; six passes later that improvement is gone and github reads worse than where it started.
+Nothing in the app changed in between.
+
+The same caution as the jank counter, one level up: **compare only passes taken back-to-back, and
+pool several of them.** A number from earlier in the session is not a baseline. If an effect is
+smaller than a couple of milliseconds, this instrument cannot see it, and neither reading is
+evidence.

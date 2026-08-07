@@ -133,7 +133,7 @@ internal data class OsPageMainListExpansionState(
 
 @Immutable
 internal data class OsPageMainListSearchDockState(
-    val showFloatingAddButton: Boolean,
+    val addActionEnabled: Boolean,
     val searchExpanded: Boolean,
     val queryInput: String,
     val searchLabel: String,
@@ -219,7 +219,7 @@ internal fun OsPageMainList(
     val androidPropsExpanded = expansionState.androidPropsExpanded
     val javaPropsExpanded = expansionState.javaPropsExpanded
     val linuxEnvExpanded = expansionState.linuxEnvExpanded
-    val showFloatingAddButton = searchDockState.showFloatingAddButton
+    val addActionEnabled = searchDockState.addActionEnabled
     val searchExpanded = searchDockState.searchExpanded
     val queryInput = searchDockState.queryInput
     val searchLabel = searchDockState.searchLabel
@@ -319,9 +319,11 @@ internal fun OsPageMainList(
                         end = AppChromeTokens.pageHorizontalPadding,
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     ),
+            // Refresh has the pull gesture and the section's own controls; adding an
+            // activity card had only a dock button. The scarcer surface wins the click.
             onClick = {
-                if (refreshing) return@AppOverviewCard
-                onRefreshAll()
+                if (!addActionEnabled) return@AppOverviewCard
+                onOpenAddActivityShortcutCard()
             },
             titleAccessory = {
                 topOverviewPill?.let { pill ->
@@ -604,7 +606,7 @@ internal fun OsPageMainList(
             refreshIcon = appLucideRefreshIcon(),
             refreshContentDescription = stringResource(R.string.common_refresh),
             onRefreshClick = onRefreshAll,
-            showAddAction = showFloatingAddButton,
+            showAddAction = false,
             showRefreshAction = false,
             refreshEnabled = !refreshing,
             refreshStatus = refreshStatus,

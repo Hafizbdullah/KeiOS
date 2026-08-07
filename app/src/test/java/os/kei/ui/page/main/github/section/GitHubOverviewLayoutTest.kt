@@ -103,6 +103,7 @@ class GitHubOverviewLayoutTest {
                         failedFilterActive = false,
                         onRetryFailedTracked = {},
                         onFailedFilterToggle = {},
+                        onAddTracked = {},
                     )
                 }
             }
