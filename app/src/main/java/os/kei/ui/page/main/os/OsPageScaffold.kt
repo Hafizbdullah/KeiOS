@@ -8,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -44,17 +44,17 @@ internal fun OsPageScaffoldShell(
             onOpenShellCardVisibilityManager,
         ) {
             listOf(
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = manageCardsIcon,
                     contentDescription = manageCardsContentDescription,
                     onClick = onOpenCardManager,
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = manageActivitiesIcon,
                     contentDescription = manageActivitiesContentDescription,
                     onClick = onOpenActivityVisibilityManager,
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = manageShellCardsIcon,
                     contentDescription = manageShellCardsContentDescription,
                     onClick = onOpenShellCardVisibilityManager,
@@ -72,11 +72,10 @@ internal fun OsPageScaffoldShell(
         reserveTopEndActionSpace = true,
         onTitleClick = onTitleClick,
         actions = {
-            LiquidActionBar(
+            LiquidToolbar(
                 backdrop = topBarBackdrop,
                 layeredStyleEnabled = layeredStyleEnabled,
-                items = actionItems,
-                onInteractionChanged = onActionBarInteractingChanged,
+                actions = actionItems,
             )
         },
         content = content,

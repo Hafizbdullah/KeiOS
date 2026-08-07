@@ -33,8 +33,8 @@ import os.kei.ui.page.main.os.appLucideMusicIcon
 import os.kei.ui.page.main.os.appLucidePlayIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.appLucideShareIcon
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
 import os.kei.ui.page.main.widget.chrome.liquidGlassBottomBarItemContentColor
@@ -94,30 +94,29 @@ internal fun DebugLiquidChromeCard(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center,
         ) {
-            LiquidActionBar(
+            LiquidToolbar(
                 backdrop = cardBackdrop,
-                selectedIndex = selectedActionIndex,
-                items =
+                actions =
                     listOf(
-                        LiquidActionItem(
+                        LiquidToolbarAction(
                             icon = appLucidePlayIcon(),
                             contentDescription = actionLabels[0],
                             tooltipText = actionLabels[0],
                             onClick = { selectedActionIndex = 0 },
                         ),
-                        LiquidActionItem(
+                        LiquidToolbarAction(
                             icon = appLucideHeartIcon(),
                             contentDescription = actionLabels[1],
                             tooltipText = actionLabels[1],
                             onClick = { selectedActionIndex = 1 },
                         ),
-                        LiquidActionItem(
+                        LiquidToolbarAction(
                             icon = appLucideShareIcon(),
                             contentDescription = actionLabels[2],
                             tooltipText = actionLabels[2],
                             onClick = { selectedActionIndex = 2 },
                         ),
-                        LiquidActionItem(
+                        LiquidToolbarAction(
                             icon = appLucideDownloadIcon(),
                             contentDescription = actionLabels[3],
                             tooltipText = actionLabels[3],
@@ -125,7 +124,6 @@ internal fun DebugLiquidChromeCard(
                             onClick = {},
                         ),
                     ),
-                onInteractionChanged = { actionBarInteractionActive = it },
             )
         }
         Row(

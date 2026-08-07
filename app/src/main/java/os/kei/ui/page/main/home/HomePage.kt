@@ -51,8 +51,8 @@ import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.kyant.backdrop.backdrops.layerBackdrop as kyantLayerBackdrop
@@ -97,12 +97,10 @@ fun HomePage(
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
     showCacheFreshnessInCards: Boolean = false,
-    actionBarSelectedIndex: Int = 1,
     showBottomPageEditor: Boolean = false,
     onBottomPageVisibilityChange: (BottomPage, Boolean) -> Unit,
     onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit = { _, _ -> },
     onCacheFreshnessVisibilityChange: (Boolean) -> Unit = {},
-    onActionBarSelectedIndexChange: (Int) -> Unit = {},
     onBottomPageEditorVisibleChange: (Boolean) -> Unit = {},
     onOpenWebDavSync: () -> Unit = {},
     onOpenSettings: () -> Unit,
@@ -184,34 +182,31 @@ fun HomePage(
             editBottomPagesContentDescription,
             aboutContentDescription,
             settingsContentDescription,
-            onActionBarSelectedIndexChange,
             onBottomPageEditorVisibleChange,
             onOpenAbout,
             onOpenSettings,
         ) {
             listOf(
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = layersIcon,
                     contentDescription = editBottomPagesContentDescription,
                     onClick = {
                         onBottomPageEditorVisibleChange(true)
                     },
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = aboutIcon,
                     contentDescription = aboutContentDescription,
                     testTag = KeiOsTestTags.HomeAboutButton,
                     onClick = {
-                        onActionBarSelectedIndexChange(1)
                         onOpenAbout()
                     },
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = settingsIcon,
                     contentDescription = settingsContentDescription,
                     testTag = KeiOsTestTags.HomeSettingsButton,
                     onClick = {
-                        onActionBarSelectedIndexChange(2)
                         onOpenSettings()
                     },
                 ),
@@ -385,12 +380,10 @@ fun HomePage(
         }
 
         AppTopEndActionBarOverlay {
-            LiquidActionBar(
+            LiquidToolbar(
                 backdrop = actionBarBackdrop,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = homeActionItems,
-                selectedIndex = actionBarSelectedIndex,
-                onInteractionChanged = onActionBarInteractingChanged,
+                actions = homeActionItems,
             )
         }
     }

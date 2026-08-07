@@ -34,9 +34,9 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppTopBarTitleCard
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarPopupAnchors
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.sheet.capturePopupAnchor
 import top.yukonga.miuix.kmp.basic.Text
@@ -98,11 +98,10 @@ internal fun BaGuideCatalogMusicTopBar(
             Box(
                 modifier = Modifier.capturePopupAnchor { actionBarAnchorBounds = it },
             ) {
-                LiquidActionBar(
+                LiquidToolbar(
                     modifier = Modifier.height(AppChromeTokens.liquidActionBarOuterHeight),
                     backdrop = backdrop,
-                    selectedIndex = 0,
-                    items =
+                    actions =
                         remember(
                             filterContentDescription,
                             moreContentDescription,
@@ -116,18 +115,18 @@ internal fun BaGuideCatalogMusicTopBar(
                             onRefresh,
                         ) {
                             listOf(
-                                LiquidActionItem(
+                                LiquidToolbarAction(
                                     icon = filterIcon,
                                     contentDescription = filterContentDescription,
                                     onClick = onFilter,
                                     enabled = filterEnabled,
                                 ),
-                                LiquidActionItem(
+                                LiquidToolbarAction(
                                     icon = moreIcon,
                                     contentDescription = moreContentDescription,
                                     onClick = onMore,
                                 ),
-                                LiquidActionItem(
+                                LiquidToolbarAction(
                                     icon = refreshIcon,
                                     contentDescription = refreshContentDescription,
                                     onClick = onRefresh,
@@ -135,7 +134,7 @@ internal fun BaGuideCatalogMusicTopBar(
                             )
                         },
                 )
-                LiquidActionBarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
+                LiquidToolbarPopupAnchors(itemCount = 3) { slotIndex, popupAnchorBounds ->
                     when (slotIndex) {
                         0 -> {
                             BaGuideCatalogFilterActionPopup(

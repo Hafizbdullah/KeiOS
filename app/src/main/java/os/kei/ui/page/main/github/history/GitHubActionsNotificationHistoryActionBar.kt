@@ -17,9 +17,9 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSortIcon
 import os.kei.ui.page.main.os.appLucideTimeIcon
 import os.kei.ui.page.main.os.appLucideTrashIcon
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionBarPopupAnchors
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarPopupAnchors
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.chrome.appWindowWidthDp
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenu
 import os.kei.ui.page.main.widget.glass.LiquidGlassActionMenuActionRow
@@ -178,7 +178,7 @@ internal fun GitHubActionsNotificationHistoryActionBar(
             onShowActionMenuPopupChange,
         ) {
             listOf(
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = refreshIcon,
                     contentDescription = refreshLabel,
                     enabled = !loading,
@@ -187,23 +187,26 @@ internal fun GitHubActionsNotificationHistoryActionBar(
                         onRefresh()
                     },
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = moreIcon,
                     contentDescription = moreLabel,
                     onClick = { onShowActionMenuPopupChange(!showActionMenuPopup) },
+                    // Was `selectedIndex = if (showActionMenuPopup) 1 else 0`. The More action is
+                    // on for as long as its menu is open, which is what a toolbar item's selected
+                    // appearance is for.
+                    active = showActionMenuPopup,
                 ),
             )
         }
 
     Box {
-        LiquidActionBar(
+        LiquidToolbar(
             backdrop = backdrop,
             layeredStyleEnabled = true,
-            items = actionItems,
-            selectedIndex = if (showActionMenuPopup) 1 else 0,
+            actions = actionItems,
         )
 
-        LiquidActionBarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->
+        LiquidToolbarPopupAnchors(itemCount = 2) { slotIndex, popupAnchorBounds ->
             if (slotIndex == 1) {
                 SnapshotWindowListPopup(
                     show = showActionMenuPopup,

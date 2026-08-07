@@ -8,8 +8,8 @@ import androidx.compose.ui.graphics.Color
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.os.appLucideConfigIcon
 import os.kei.ui.page.main.os.appLucideRefreshIcon
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 
 @Composable
 internal fun BaCalendarPoolActionBar(
@@ -35,25 +35,27 @@ internal fun BaCalendarPoolActionBar(
             onRefresh,
         ) {
             listOf(
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = settingsIcon,
                     contentDescription = settingsContentDescription,
                     onClick = onOpenSettings,
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = refreshIcon,
                     contentDescription = refreshContentDescription,
                     onClick = onRefresh,
                     iconRotationDegrees = refreshIconRotation,
                     iconTint = refreshingTint.takeIf { refreshing },
+                    // Was `selectedIndex = if (refreshing) 1 else 0` on the bar, which is a tab
+                    // bar's vocabulary. The refresh action is simply on while it runs.
+                    active = refreshing,
                 ),
             )
         }
 
-    LiquidActionBar(
+    LiquidToolbar(
         backdrop = backdrop,
         layeredStyleEnabled = true,
-        items = actionItems,
-        selectedIndex = if (refreshing) 1 else 0,
+        actions = actionItems,
     )
 }

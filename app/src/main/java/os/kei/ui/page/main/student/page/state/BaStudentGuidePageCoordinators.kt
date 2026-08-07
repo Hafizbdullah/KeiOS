@@ -12,7 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.host.pager.animateTabSwitch
 import os.kei.ui.page.main.student.GuideBottomTab
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.motion.AppMotionTokens
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 
@@ -27,7 +27,7 @@ internal fun rememberBaStudentGuideTopBarActionItems(
     onShareSource: () -> Unit,
     onRefresh: () -> Unit,
     onOpenCacheStatus: () -> Unit,
-): List<LiquidActionItem> =
+): List<LiquidToolbarAction> =
     remember(
         shareIcon,
         refreshIcon,
@@ -40,17 +40,17 @@ internal fun rememberBaStudentGuideTopBarActionItems(
         onOpenCacheStatus,
     ) {
         listOf(
-            LiquidActionItem(
+            LiquidToolbarAction(
                 icon = shareIcon,
                 contentDescription = shareSourceContentDescription,
                 onClick = onShareSource,
             ),
-            LiquidActionItem(
+            LiquidToolbarAction(
                 icon = refreshIcon,
                 contentDescription = refreshContentDescription,
                 onClick = onRefresh,
             ),
-            LiquidActionItem(
+            LiquidToolbarAction(
                 icon = cacheStatusIcon,
                 contentDescription = cacheStatusContentDescription,
                 onClick = onOpenCacheStatus,

@@ -37,8 +37,8 @@ import os.kei.ui.page.main.mcp.util.copyToClipboard
 import os.kei.ui.page.main.os.appLucideEditIcon
 import os.kei.ui.page.main.os.appLucideNotesIcon
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.testing.KeiOsTestTags
@@ -338,15 +338,14 @@ fun McpPage(
                 }
             },
             actions = {
-                LiquidActionBar(
+                LiquidToolbar(
                     backdrop = backdrops.topBar,
                     layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    items =
+                    actions =
                         rememberMcpPageActionItems(
                             onOpenEditSheet = actions.onOpenEditSheet,
                             onOpenSkill = onOpenSkill,
                         ),
-                    onInteractionChanged = onActionBarInteractingChanged,
                 )
             },
         ) { innerPadding ->
@@ -383,7 +382,7 @@ fun McpPage(
 private fun rememberMcpPageActionItems(
     onOpenEditSheet: () -> Unit,
     onOpenSkill: () -> Unit,
-): List<LiquidActionItem> {
+): List<LiquidToolbarAction> {
     val editIcon = appLucideEditIcon()
     val notesIcon = appLucideNotesIcon()
     val editServiceParamsContentDescription = stringResource(R.string.mcp_action_edit_service_params)
@@ -397,12 +396,12 @@ private fun rememberMcpPageActionItems(
         onOpenSkill,
     ) {
         listOf(
-            LiquidActionItem(
+            LiquidToolbarAction(
                 icon = editIcon,
                 contentDescription = editServiceParamsContentDescription,
                 onClick = onOpenEditSheet,
             ),
-            LiquidActionItem(
+            LiquidToolbarAction(
                 icon = notesIcon,
                 contentDescription = openSkillContentDescription,
                 testTag = KeiOsTestTags.McpSkillButton,

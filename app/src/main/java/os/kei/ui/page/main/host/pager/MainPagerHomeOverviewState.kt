@@ -38,18 +38,15 @@ internal data class MainPagerHomeOverviewState(
     val homeBaOverview: HomeBaOverview,
     val visibleOverviewCards: Set<HomeOverviewCard>,
     val showCacheFreshnessInCards: Boolean,
-    val actionBarSelectedIndex: Int,
     val showBottomPageEditor: Boolean,
     val runtimeNowMs: Long,
     val onOverviewCardVisibilityChange: (HomeOverviewCard, Boolean) -> Unit,
     val onCacheFreshnessVisibilityChange: (Boolean) -> Unit,
-    val onActionBarSelectedIndexChange: (Int) -> Unit,
     val onBottomPageEditorVisibleChange: (Boolean) -> Unit,
 )
 
 @Immutable
 internal data class MainPagerHomeChromeUiState(
-    val actionBarSelectedIndex: Int = 1,
     val showBottomPageEditor: Boolean = false,
 )
 
@@ -89,16 +86,6 @@ internal class MainPagerHomeOverviewViewModel(
         }
     }
 
-    fun setActionBarSelectedIndex(index: Int) {
-        _chromeUiState.update { state ->
-            if (state.actionBarSelectedIndex == index) {
-                state
-            } else {
-                state.copy(actionBarSelectedIndex = index)
-            }
-        }
-    }
-
     fun setBottomPageEditorVisible(visible: Boolean) {
         _chromeUiState.update { state ->
             if (state.showBottomPageEditor == visible) {
@@ -111,10 +98,7 @@ internal class MainPagerHomeOverviewViewModel(
 
     fun openBottomPageEditor() {
         _chromeUiState.update { state ->
-            state.copy(
-                actionBarSelectedIndex = 0,
-                showBottomPageEditor = true,
-            )
+            state.copy(showBottomPageEditor = true)
         }
     }
 
@@ -200,12 +184,6 @@ internal fun rememberMainPagerHomeOverviewState(
                 homeOverviewViewModel.setCacheFreshnessVisibleInCards(visible)
             }
         }
-    val onActionBarSelectedIndexChange =
-        remember(homeOverviewViewModel) {
-            { index: Int ->
-                homeOverviewViewModel.setActionBarSelectedIndex(index)
-            }
-        }
     val onBottomPageEditorVisibleChange =
         remember(homeOverviewViewModel) {
             { visible: Boolean ->
@@ -222,7 +200,6 @@ internal fun rememberMainPagerHomeOverviewState(
         runtimeNowMs,
         onOverviewCardVisibilityChange,
         onCacheFreshnessVisibilityChange,
-        onActionBarSelectedIndexChange,
         onBottomPageEditorVisibleChange,
     ) {
         MainPagerHomeOverviewState(
@@ -233,12 +210,10 @@ internal fun rememberMainPagerHomeOverviewState(
             homeBaOverview = uiState.baOverview,
             visibleOverviewCards = uiState.visibleOverviewCards,
             showCacheFreshnessInCards = uiState.showCacheFreshnessInCards,
-            actionBarSelectedIndex = chromeUiState.actionBarSelectedIndex,
             showBottomPageEditor = chromeUiState.showBottomPageEditor,
             runtimeNowMs = runtimeNowMs,
             onOverviewCardVisibilityChange = onOverviewCardVisibilityChange,
             onCacheFreshnessVisibilityChange = onCacheFreshnessVisibilityChange,
-            onActionBarSelectedIndexChange = onActionBarSelectedIndexChange,
             onBottomPageEditorVisibleChange = onBottomPageEditorVisibleChange,
         )
     }

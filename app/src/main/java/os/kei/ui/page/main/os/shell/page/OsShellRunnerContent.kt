@@ -20,8 +20,8 @@ import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.testing.KeiOsTestTags
 import os.kei.ui.testing.pageRootTestTag
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 
 @Composable
@@ -31,7 +31,7 @@ internal fun OsShellRunnerContent(
     topBarBackdrop: LayerBackdrop,
     pageListState: LazyListState,
     liquidActionBarLayeredStyleEnabled: Boolean,
-    actionItems: List<LiquidActionItem>,
+    actionItems: List<LiquidToolbarAction>,
     commandInput: String,
     runningCommand: Boolean,
     startupFocusRequestToken: Int,
@@ -59,10 +59,10 @@ internal fun OsShellRunnerContent(
             )
         },
         actions = {
-            LiquidActionBar(
+            LiquidToolbar(
                 backdrop = topBarBackdrop,
                 layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                items = actionItems,
+                actions = actionItems,
             )
         },
     ) { innerPadding ->

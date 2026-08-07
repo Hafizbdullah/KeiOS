@@ -26,7 +26,7 @@ import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.chrome.LiquidActionItem
+import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -158,17 +158,17 @@ fun OsShellRunnerPage(
             outputSettingsDescription,
         ) {
             listOf(
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = clearAllIcon,
                     contentDescription = textBundle.clearAllActionDescription,
                     onClick = actions.clearAllContent,
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = behaviorSettingsIcon,
                     contentDescription = behaviorSettingsDescription,
                     onClick = { pageState.showBehaviorSettingsSheet = true },
                 ),
-                LiquidActionItem(
+                LiquidToolbarAction(
                     icon = outputSettingsIcon,
                     contentDescription = outputSettingsDescription,
                     onClick = { pageState.showOutputSettingsSheet = true },

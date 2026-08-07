@@ -36,6 +36,13 @@ object AppChromeTokens {
     val liquidActionBarInnerHeight: Dp = 44.dp
     val liquidActionBarHorizontalPadding: Dp = 4.dp
 
+    /**
+     * Fixed space between toolbar groups. Apple asks for separation so adjacent groups do not read
+     * as one control, and warns that a symbol placed next to another can look like a single combined
+     * action.
+     */
+    val liquidToolbarGroupSpacing: Dp = 8.dp
+
     val floatingBottomBarOuterHeight: Dp = 62.dp
     val floatingBottomBarInnerHeight: Dp = 54.dp
     val floatingBottomBarHorizontalPadding: Dp = 4.dp

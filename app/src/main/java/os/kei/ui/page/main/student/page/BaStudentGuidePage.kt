@@ -68,7 +68,7 @@ import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
-import os.kei.ui.page.main.widget.chrome.LiquidActionBar
+import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -448,10 +448,10 @@ fun BaStudentGuidePage(
                 )
             }
             AppTopEndActionBarOverlay {
-                LiquidActionBar(
+                LiquidToolbar(
                     backdrop = topBarBackdrop,
                     layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
-                    items = actionItems,
+                    actions = actionItems,
                 )
             }
             BaStudentGuideCacheStatusSheet(
