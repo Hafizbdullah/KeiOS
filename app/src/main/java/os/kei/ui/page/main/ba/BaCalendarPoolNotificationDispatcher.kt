@@ -542,18 +542,20 @@ internal fun baCalendarPoolOpenIntent(
     destination: BaCalendarPoolNotificationDestination,
     serverIndex: Int,
 ): Intent {
-    val intent =
+    val targetRoute =
         when (destination) {
-            BaCalendarPoolNotificationDestination.Calendar ->
-                BaActivityCalendarActivity.createIntent(context, serverIndex)
-
-            BaCalendarPoolNotificationDestination.Pool ->
-                BaPoolActivity.createIntent(context, serverIndex)
+            BaCalendarPoolNotificationDestination.Calendar -> MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR
+            BaCalendarPoolNotificationDestination.Pool -> MainActivity.TARGET_ROUTE_BA_POOL
         }
-    return intent.apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
-    }
+    // Both destinations are nav routes now, so the notification lands in MainActivity and pushes
+    // onto the shared back stack the way the WebDAV sync notification already does.
+    return Intent(context, MainActivity::class.java)
+        .withBaCalendarPoolServerIndex(serverIndex)
+        .apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE, MainActivity.TARGET_BOTTOM_PAGE_BA)
+            putExtra(MainActivity.EXTRA_TARGET_ROUTE, targetRoute)
+        }
 }
 
 internal fun baCalendarPoolGroupedNotificationId(

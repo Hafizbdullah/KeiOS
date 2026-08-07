@@ -4,10 +4,6 @@ package os.kei.ui.page.main.ba
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -24,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -35,10 +32,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import os.kei.R
+import os.kei.core.ext.showToast
+import os.kei.core.intent.SafeExternalIntents
 import os.kei.core.ui.effect.rememberAppTopBarColor
-import os.kei.ui.page.main.ba.card.filterVisibleCalendarEntries
-import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.card.filterVisiblePoolEntries
+import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.formatBaDateTimeNoYearInTimeZone
 import os.kei.ui.page.main.ba.support.serverRefreshTimeZone
 import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
@@ -51,68 +52,11 @@ import os.kei.ui.page.main.widget.status.AppStatusColors
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-class BaActivityCalendarActivity : ComponentActivity() {
-    private var targetServerSelection by mutableStateOf(
-        BaCalendarPoolInitialServerSelection(serverIndex = null, token = 0L),
-    )
-    private var targetServerSelectionToken = 0L
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        consumeTargetIntent(intent)
-
-        setContent {
-            BaStandaloneActivityTheme {
-                BaActivityCalendarPage(
-                    targetServerSelection = targetServerSelection,
-                    onClose = { finish() },
-                )
-            }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        consumeTargetIntent(intent)
-    }
-
-    private fun consumeTargetIntent(intent: Intent?) {
-        targetServerSelectionToken += 1
-        targetServerSelection =
-            intent.toBaCalendarPoolInitialServerSelection(targetServerSelectionToken)
-    }
-
-    companion object {
-        fun createIntent(
-            context: Context,
-            serverIndex: Int? = null,
-        ): Intent =
-            Intent(context, BaActivityCalendarActivity::class.java)
-                .withBaCalendarPoolServerIndex(serverIndex)
-
-        fun launch(
-            context: Context,
-            serverIndex: Int? = null,
-        ) {
-            val hostActivity = context.findBaHostActivity()
-            val intent = createIntent(context, serverIndex).apply {
-                if (hostActivity == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            if (hostActivity != null) {
-                hostActivity.startActivity(intent)
-            } else {
-                context.startActivity(intent)
-            }
-        }
-    }
-}
-
 @Composable
-private fun BaActivityCalendarPage(
+internal fun BaPoolPage(
     targetServerSelection: BaCalendarPoolInitialServerSelection,
     onClose: () -> Unit,
+    onOpenGuide: () -> Unit,
 ) {
     KeiOSActivityRootBackHandler(
         needsInterception = false,
@@ -120,11 +64,12 @@ private fun BaActivityCalendarPage(
     )
 
     val context = LocalContext.current
+    val pageScope = rememberCoroutineScope()
     val calendarPoolViewModel: BaCalendarPoolViewModel = applicationViewModel(create = ::BaCalendarPoolViewModel)
     val settingsUiState by calendarPoolViewModel.settingsUiState.collectAsStateWithLifecycle()
     val snapshot = settingsUiState.snapshot
     val chromeUiState by calendarPoolViewModel.chromeUiState.collectAsStateWithLifecycle()
-    val calendarUiState by calendarPoolViewModel.calendarUiState.collectAsStateWithLifecycle()
+    val poolUiState by calendarPoolViewModel.poolUiState.collectAsStateWithLifecycle()
     val serverOptions =
         listOf(
             stringResource(R.string.ba_server_cn),
@@ -132,7 +77,7 @@ private fun BaActivityCalendarPage(
             stringResource(R.string.ba_server_jp),
         )
     val serverIndex = chromeUiState.serverIndex
-    val reloadSignal = chromeUiState.calendarReloadSignal
+    val reloadSignal = chromeUiState.poolReloadSignal
     val hydrationReady = settingsUiState.loaded
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
@@ -142,13 +87,13 @@ private fun BaActivityCalendarPage(
     val serverTimeZone = serverRefreshTimeZone(serverIndex)
     val syncText =
         when {
-            calendarUiState.loading || calendarUiState.refreshing -> {
+            poolUiState.loading || poolUiState.refreshing -> {
                 stringResource(R.string.ba_syncing)
             }
 
-            calendarUiState.lastSyncMs > 0L -> {
+            poolUiState.lastSyncMs > 0L -> {
                 formatBaDateTimeNoYearInTimeZone(
-                    calendarUiState.lastSyncMs,
+                    poolUiState.lastSyncMs,
                     serverTimeZone,
                 )
             }
@@ -169,13 +114,18 @@ private fun BaActivityCalendarPage(
 
     LaunchedEffect(serverIndex, calendarPoolViewModel) {
         calendarPoolViewModel.markUnreadRead(
-            kind = BaCalendarPoolUnreadKind.Calendar,
+            kind = BaCalendarPoolUnreadKind.Pool,
             serverIndex = serverIndex,
         )
     }
 
-    LaunchedEffect(serverIndex, reloadSignal, snapshot.calendarRefreshIntervalHours, hydrationReady) {
-        calendarPoolViewModel.syncCalendar(
+    LaunchedEffect(
+        serverIndex,
+        reloadSignal,
+        snapshot.calendarRefreshIntervalHours,
+        hydrationReady,
+    ) {
+        calendarPoolViewModel.syncPool(
             isPageActive = true,
             serverIndex = serverIndex,
             reloadSignal = reloadSignal,
@@ -185,8 +135,8 @@ private fun BaActivityCalendarPage(
     }
 
     val refreshIconRotation =
-        if (calendarUiState.loading || calendarUiState.refreshing) {
-            val loadingRotation by rememberInfiniteTransition(label = "ba_activity_calendar_refresh_rotation")
+        if (poolUiState.loading || poolUiState.refreshing) {
+            val loadingRotation by rememberInfiniteTransition(label = "ba_pool_refresh_rotation")
                 .animateFloat(
                     initialValue = 0f,
                     targetValue = 360f,
@@ -195,7 +145,7 @@ private fun BaActivityCalendarPage(
                             animation = tween(durationMillis = 900, easing = LinearEasing),
                             repeatMode = RepeatMode.Restart,
                         ),
-                    label = "ba_activity_calendar_refresh_rotation_value",
+                    label = "ba_pool_refresh_rotation_value",
                 )
             loadingRotation
         } else {
@@ -204,7 +154,7 @@ private fun BaActivityCalendarPage(
 
     val pageTitle =
         stringResource(
-            R.string.ba_calendar_title_format,
+            R.string.ba_pool_title_format,
             serverOptions[serverIndex],
         )
 
@@ -227,12 +177,12 @@ private fun BaActivityCalendarPage(
             BaCalendarPoolActionBar(
                 backdrop = pageBackdrop,
                 settingsContentDescription = stringResource(R.string.ba_calendar_pool_cd_data_settings),
-                refreshContentDescription = stringResource(R.string.ba_calendar_cd_refresh),
-                refreshing = calendarUiState.loading || calendarUiState.refreshing,
+                refreshContentDescription = stringResource(R.string.ba_pool_cd_refresh),
+                refreshing = poolUiState.loading || poolUiState.refreshing,
                 refreshIconRotation = refreshIconRotation,
                 refreshingTint = countdownBlue,
                 onOpenSettings = { calendarPoolViewModel.updateDataSettingsSheetVisible(true) },
-                onRefresh = calendarPoolViewModel::requestCalendarReload,
+                onRefresh = calendarPoolViewModel::requestPoolReload,
             )
         },
     ) { innerPadding ->
@@ -252,7 +202,7 @@ private fun BaActivityCalendarPage(
                             ),
                         ).layerBackdrop(pageBackdrop),
             )
-            BaActivityCalendarListContent(
+            BaPoolListContent(
                 innerPadding = innerPadding,
                 listState = listState,
                 nestedScrollConnection = scrollBehavior.nestedScrollConnection,
@@ -261,12 +211,12 @@ private fun BaActivityCalendarPage(
                 serverIndex = serverIndex,
                 showServerPopup = chromeUiState.showServerPopup,
                 serverPopupAnchorBounds = chromeUiState.serverPopupAnchorBounds,
-                showEndedActivities = snapshot.showEndedActivities,
+                showEndedPools = snapshot.showEndedPools,
                 showCalendarPoolImages = snapshot.showCalendarPoolImages,
-                entries = calendarUiState.entries,
-                loading = calendarUiState.loading,
-                refreshing = calendarUiState.refreshing,
-                error = calendarUiState.error,
+                entries = poolUiState.entries,
+                loading = poolUiState.loading,
+                refreshing = poolUiState.refreshing,
+                error = poolUiState.error,
                 syncText = syncText,
                 syncTextColor = countdownBlue,
                 onServerPopupChange = calendarPoolViewModel::updateServerPopupExpanded,
@@ -274,6 +224,15 @@ private fun BaActivityCalendarPage(
                 onServerSelected = { selected ->
                     val normalized = selected.coerceIn(serverOptions.indices)
                     calendarPoolViewModel.selectServer(normalized)
+                },
+                onOpenPoolStudentGuide = { url ->
+                    openBaPoolGuideLink(
+                        context = context,
+                        scope = pageScope,
+                        calendarPoolViewModel = calendarPoolViewModel,
+                        rawUrl = url,
+                        onOpenGuide = onOpenGuide,
+                    )
                 },
                 onOpenCalendarLink = { url ->
                     openBaExternalLink(context = context, url = url)
@@ -284,7 +243,7 @@ private fun BaActivityCalendarPage(
     BaCalendarPoolDataSettingsSheet(
         show = chromeUiState.showDataSettingsSheet,
         backdrop = pageBackdrop,
-        pageKind = BaCalendarPoolPageKind.Calendar,
+        pageKind = BaCalendarPoolPageKind.Pool,
         snapshot = snapshot,
         refreshIntervalDropdownExpanded = chromeUiState.dataRefreshIntervalDropdownExpanded,
         refreshIntervalDropdownAnchorBounds = chromeUiState.dataRefreshIntervalDropdownAnchorBounds,
@@ -293,8 +252,8 @@ private fun BaActivityCalendarPage(
         onRefreshIntervalSelected = { hours ->
             calendarPoolViewModel.saveRefreshInterval(
                 hours = hours,
-                lastSyncMs = calendarUiState.lastSyncMs,
-                pageKind = BaCalendarPoolPageKind.Calendar,
+                lastSyncMs = poolUiState.lastSyncMs,
+                pageKind = BaCalendarPoolPageKind.Pool,
             )
         },
         onShowEndedActivitiesChange = calendarPoolViewModel::saveShowEndedActivities,
@@ -305,7 +264,7 @@ private fun BaActivityCalendarPage(
 }
 
 @Composable
-private fun BaActivityCalendarListContent(
+private fun BaPoolListContent(
     innerPadding: androidx.compose.foundation.layout.PaddingValues,
     listState: androidx.compose.foundation.lazy.LazyListState,
     nestedScrollConnection: androidx.compose.ui.input.nestedscroll.NestedScrollConnection,
@@ -314,9 +273,9 @@ private fun BaActivityCalendarListContent(
     serverIndex: Int,
     showServerPopup: Boolean,
     serverPopupAnchorBounds: IntRect?,
-    showEndedActivities: Boolean,
+    showEndedPools: Boolean,
     showCalendarPoolImages: Boolean,
-    entries: List<BaCalendarEntry>,
+    entries: List<BaPoolEntry>,
     loading: Boolean,
     refreshing: Boolean,
     error: String?,
@@ -325,18 +284,19 @@ private fun BaActivityCalendarListContent(
     onServerPopupChange: (Boolean) -> Unit,
     onServerPopupAnchorBoundsChange: (IntRect?) -> Unit,
     onServerSelected: (Int) -> Unit,
+    onOpenPoolStudentGuide: (String) -> Unit,
     onOpenCalendarLink: (String) -> Unit,
 ) {
     val nowMs = rememberBaMinuteTickMs(enabled = !loading && entries.isNotEmpty())
     val visibleEntries =
         remember(
             entries,
-            showEndedActivities,
+            showEndedPools,
             nowMs,
         ) {
-            filterVisibleCalendarEntries(
+            filterVisiblePoolEntries(
                 entries = entries,
-                showEndedActivities = showEndedActivities,
+                showEndedPools = showEndedPools,
                 nowMs = nowMs,
             )
         }
@@ -355,18 +315,57 @@ private fun BaActivityCalendarListContent(
         onServerPopupAnchorBoundsChange = onServerPopupAnchorBoundsChange,
         onServerSelected = onServerSelected,
     ) {
-        baActivityCalendarEntryItems(
+        baPoolEntryItems(
             backdrop = backdrop,
             serverIndex = serverIndex,
             visibleEntries = visibleEntries,
             loading = loading,
             refreshing = refreshing,
             error = error,
-            showEndedActivities = showEndedActivities,
+            showEndedPools = showEndedPools,
             showCalendarPoolImages = showCalendarPoolImages,
             nowMs = nowMs,
             syncTextColor = syncTextColor,
+            onOpenPoolStudentGuide = onOpenPoolStudentGuide,
             onOpenCalendarLink = onOpenCalendarLink,
         )
+    }
+}
+
+private fun openBaPoolGuideLink(
+    context: Context,
+    scope: CoroutineScope,
+    calendarPoolViewModel: BaCalendarPoolViewModel,
+    rawUrl: String,
+    onOpenGuide: () -> Unit,
+) {
+    scope.launch {
+        when (val plan = calendarPoolViewModel.preparePoolGuideOpen(rawUrl)) {
+            BaPoolGuideOpenPlan.Missing -> {
+                context.showToast(R.string.main_toast_pool_guide_missing)
+            }
+
+            is BaPoolGuideOpenPlan.OpenInApp -> {
+                onOpenGuide()
+            }
+
+            is BaPoolGuideOpenPlan.OpenExternal -> {
+                openBaStandaloneExternalLink(context, plan.url)
+            }
+        }
+    }
+}
+
+private fun openBaStandaloneExternalLink(
+    context: Context,
+    url: String,
+) {
+    val intent = SafeExternalIntents.browsableViewIntent(url, newTask = true)
+    if (intent == null) {
+        context.showToast(R.string.ba_error_open_activity_link)
+        return
+    }
+    runCatching { context.startActivity(intent) }.onFailure {
+        context.showToast(R.string.ba_error_open_activity_link)
     }
 }

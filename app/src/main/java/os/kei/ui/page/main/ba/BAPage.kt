@@ -45,6 +45,8 @@ fun BAPage(
     liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
+    onOpenActivityCalendar: (Int?) -> Unit = {},
+    onOpenPool: (Int?) -> Unit = {},
     requestedAccountId: String? = null,
     requestedAccountToken: Int = 0,
     onActionBarInteractingChanged: (Boolean) -> Unit = {},
@@ -393,12 +395,12 @@ fun BAPage(
                 onOpenCalendar = {
                     val serverIndex = currentServerIndexState.value
                     calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Calendar, serverIndex)
-                    BaActivityCalendarActivity.launch(context, serverIndex)
+                    onOpenActivityCalendar(serverIndex)
                 },
                 onOpenPool = {
                     val serverIndex = currentServerIndexState.value
                     calendarPoolViewModel.markUnreadRead(BaCalendarPoolUnreadKind.Pool, serverIndex)
-                    BaPoolActivity.launch(context, serverIndex)
+                    onOpenPool(serverIndex)
                 },
                 onOpenGuideCatalog = onOpenGuideCatalog,
             )

@@ -7,7 +7,7 @@ import org.junit.Test
 
 class BaCalendarPoolThemeSourceTest {
     @Test
-    fun standalonePageGradientsFollowTheKeiOSAppTheme() {
+    fun calendarPoolRouteGradientsFollowTheKeiOSAppTheme() {
         listOf(
             sourceFile(BA_ACTIVITY_CALENDAR_SOURCE),
             sourceFile(BA_POOL_SOURCE),
@@ -32,6 +32,6 @@ private fun sourceFile(relativePath: String): String {
 private fun String.occurrencesOf(needle: String): Int = windowed(needle.length).count { it == needle }
 
 private const val BA_ACTIVITY_CALENDAR_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaActivityCalendarActivity.kt"
+    "app/src/main/java/os/kei/ui/page/main/ba/BaActivityCalendarPage.kt"
 private const val BA_POOL_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaPoolActivity.kt"
+    "app/src/main/java/os/kei/ui/page/main/ba/BaPoolPage.kt"

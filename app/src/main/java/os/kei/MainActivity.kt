@@ -46,6 +46,7 @@ import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.mcp.server.KeiOsMcpToolPlugins
 import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
+import os.kei.ui.page.main.ba.baCalendarPoolServerIndexOrNull
 import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
 import os.kei.ui.page.main.host.main.MainHostCallbacks
 import os.kei.ui.page.main.host.main.MainHostUiState
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
         const val TARGET_BOTTOM_PAGE_MCP = "Mcp"
         const val TARGET_BOTTOM_PAGE_BA = "Ba"
         const val TARGET_ROUTE_WEBDAV_SYNC = "WebDavSync"
+        const val TARGET_ROUTE_BA_ACTIVITY_CALENDAR = "BaActivityCalendar"
+        const val TARGET_ROUTE_BA_POOL = "BaPool"
         const val MCP_SERVER_ACTION_TOGGLE = "toggle"
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
@@ -317,6 +320,7 @@ class MainActivity : ComponentActivity() {
                 rawGitHubActionsTrackId = intent?.getStringExtra(EXTRA_GITHUB_ACTIONS_TRACK_ID),
                 rawBaAccountId = intent?.getStringExtra(EXTRA_BA_ACCOUNT_ID),
             ) ?: return
+        val intentServerIndex = intent?.baCalendarPoolServerIndexOrNull()
         val previous = hostUiState
         val nextActionsTrackId = route.githubActionsTrackId ?: previous.requestedGitHubActionsTrackId
         val nextActionsSheetToken = if (route.githubActionsTrackId != null) {
@@ -334,6 +338,14 @@ class MainActivity : ComponentActivity() {
         } else {
             previous.requestedWebDavSyncToken
         }
+        val isBaCalendarPoolRoute =
+            route.targetRoute == TARGET_ROUTE_BA_ACTIVITY_CALENDAR ||
+                route.targetRoute == TARGET_ROUTE_BA_POOL
+        val nextBaCalendarPoolToken = if (isBaCalendarPoolRoute) {
+            previous.requestedBaCalendarPoolToken + 1
+        } else {
+            previous.requestedBaCalendarPoolToken
+        }
         hostUiState = previous.copy(
             requestedBottomPage = route.targetBottomPage,
             requestedBottomPageToken = previous.requestedBottomPageToken + 1,
@@ -342,6 +354,15 @@ class MainActivity : ComponentActivity() {
             requestedBaAccountId = route.baAccountId ?: previous.requestedBaAccountId,
             requestedBaAccountToken = nextBaAccountToken,
             requestedWebDavSyncToken = nextWebDavSyncToken,
+            requestedBaCalendarPoolRoute =
+                if (isBaCalendarPoolRoute) route.targetRoute else previous.requestedBaCalendarPoolRoute,
+            requestedBaCalendarPoolServerIndex =
+                if (isBaCalendarPoolRoute) {
+                    intentServerIndex
+                } else {
+                    previous.requestedBaCalendarPoolServerIndex
+                },
+            requestedBaCalendarPoolToken = nextBaCalendarPoolToken,
         )
         pendingMcpServerAction = route.mcpServerAction
         pendingShortcutAction = route.shortcutAction

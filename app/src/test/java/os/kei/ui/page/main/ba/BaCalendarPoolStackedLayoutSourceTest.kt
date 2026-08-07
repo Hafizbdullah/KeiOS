@@ -25,7 +25,7 @@ class BaCalendarPoolStackedLayoutSourceTest {
     }
 
     @Test
-    fun bothStandalonePagesUseTheSharedStackedLayout() {
+    fun bothCalendarPoolRoutesUseTheSharedStackedLayout() {
         listOf(
             sourceFile(BA_ACTIVITY_CALENDAR_SOURCE),
             sourceFile(BA_POOL_SOURCE),
@@ -51,6 +51,6 @@ private fun sourceFile(relativePath: String): String {
 private const val BA_CALENDAR_POOL_STACKED_LAYOUT_SOURCE =
     "app/src/main/java/os/kei/ui/page/main/ba/BaCalendarPoolStackedLayout.kt"
 private const val BA_ACTIVITY_CALENDAR_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaActivityCalendarActivity.kt"
+    "app/src/main/java/os/kei/ui/page/main/ba/BaActivityCalendarPage.kt"
 private const val BA_POOL_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/ba/BaPoolActivity.kt"
+    "app/src/main/java/os/kei/ui/page/main/ba/BaPoolPage.kt"

@@ -2,6 +2,7 @@
 
 package os.kei.ui.page.main.host.main
 
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -21,6 +22,9 @@ import os.kei.ui.page.main.about.page.AboutPage
 import os.kei.ui.page.main.back.BackNavigationRuntimeController
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeController
 import os.kei.ui.page.main.back.LocalBackNavigationRuntimeState
+import os.kei.ui.page.main.ba.BaActivityCalendarPage
+import os.kei.ui.page.main.ba.BaPoolPage
+import os.kei.ui.page.main.ba.toInitialServerSelection
 import os.kei.ui.page.main.github.history.GitHubActionsNotificationHistoryPage
 import os.kei.ui.page.main.host.pager.MainPagerLayout
 import os.kei.ui.page.main.mcp.skill.page.McpSkillPage
@@ -177,6 +181,8 @@ internal fun MainScreenNavHost(
                             mcpServerManager = pagerCoordinator.mcpServerManager,
                             onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
                             onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
+                            onOpenBaActivityCalendar = pagerCoordinator.onOpenBaActivityCalendar,
+                            onOpenBaPool = pagerCoordinator.onOpenBaPool,
                             requestedBottomPage = pagerCoordinator.requestedBottomPage,
                             requestedBottomPageToken = pagerCoordinator.requestedBottomPageToken,
                             requestedGitHubRefreshToken = pagerCoordinator.requestedGitHubRefreshToken,
@@ -322,6 +328,28 @@ internal fun MainScreenNavHost(
                             openBgmPlaybackToken = route.openBgmPlaybackToken,
                             onBack = onRouteBack,
                             onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                        )
+                    }
+                    entry<KeiosRoute.BaActivityCalendar> { route ->
+                        BaActivityCalendarPage(
+                            targetServerSelection = route.toInitialServerSelection(),
+                            onClose = onRouteBack,
+                        )
+                    }
+                    entry<KeiosRoute.BaPool> { route ->
+                        BaPoolPage(
+                            targetServerSelection = route.toInitialServerSelection(),
+                            onClose = onRouteBack,
+                            // The pool page used to swap in the guide behind a boolean with its own
+                            // back handler; it is a back-stack push like every other detail page
+                            // now. The URL is already saved by preparePoolGuideOpen, so the guide
+                            // reads it back the same way it does on the canonical path, and the
+                            // nonce only has to keep the content key unique.
+                            onOpenGuide = {
+                                navigator.push(
+                                    KeiosRoute.BaStudentGuide(nonce = SystemClock.elapsedRealtimeNanos()),
+                                )
+                            },
                         )
                     }
                     entry<KeiosRoute.WebDavSync> {

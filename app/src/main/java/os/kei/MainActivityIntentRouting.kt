@@ -59,6 +59,8 @@ internal object MainActivityIntentRouting {
     private fun normalizeTargetRoute(raw: String?): String? {
         return when (raw?.trim()) {
             MainActivity.TARGET_ROUTE_WEBDAV_SYNC -> MainActivity.TARGET_ROUTE_WEBDAV_SYNC
+            MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR -> MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR
+            MainActivity.TARGET_ROUTE_BA_POOL -> MainActivity.TARGET_ROUTE_BA_POOL
             else -> null
         }
     }

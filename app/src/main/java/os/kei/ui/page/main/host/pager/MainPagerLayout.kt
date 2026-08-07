@@ -76,6 +76,8 @@ internal fun MainPagerLayout(
     mcpServerManager: McpServerManager,
     onOpenGuideDetail: (String) -> Unit,
     onOpenBaGuideCatalog: () -> Unit,
+    onOpenBaActivityCalendar: (Int?) -> Unit,
+    onOpenBaPool: (Int?) -> Unit,
     requestedBottomPage: String?,
     requestedBottomPageToken: Int,
     requestedGitHubRefreshToken: Int,
@@ -428,6 +430,8 @@ internal fun MainPagerLayout(
                                     preloadingEnabled = preloadingEnabled,
                                     onOpenPoolGuideDetail = onOpenGuideDetail,
                                     onOpenBaGuideCatalog = openBaGuideCatalog,
+                                    onOpenBaActivityCalendar = onOpenBaActivityCalendar,
+                                    onOpenBaPool = onOpenBaPool,
                                     requestedAccountId = requestedBaAccountId,
                                     requestedAccountToken = requestedBaAccountToken,
                                 )

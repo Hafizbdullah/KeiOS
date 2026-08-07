@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.host.main
 
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +15,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.mcp.server.McpServerManager
@@ -98,6 +100,19 @@ fun MainScreen(
         navigator.popUntil { it == KeiosRoute.Main }
         navigator.pushSingleTop(KeiosRoute.WebDavSync)
     }
+    LaunchedEffect(hostState.requestedBaCalendarPoolToken) {
+        if (hostState.requestedBaCalendarPoolToken <= 0) return@LaunchedEffect
+        val serverIndex = hostState.requestedBaCalendarPoolServerIndex
+        val nonce = hostState.requestedBaCalendarPoolToken.toLong()
+        navigator.popUntil { it == KeiosRoute.Main }
+        when (hostState.requestedBaCalendarPoolRoute) {
+            MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR ->
+                navigator.push(KeiosRoute.BaActivityCalendar(serverIndex = serverIndex, nonce = nonce))
+
+            MainActivity.TARGET_ROUTE_BA_POOL ->
+                navigator.push(KeiosRoute.BaPool(serverIndex = serverIndex, nonce = nonce))
+        }
+    }
     LaunchedEffect(guideNavigationViewModel, navigator) {
         guideNavigationViewModel.events.collect { event ->
             when (event) {
@@ -167,6 +182,24 @@ fun MainScreen(
                 onBaGuideCatalogBack = {
                     localRequestedBottomPage = BottomPage.Ba.name
                     localRequestedBottomPageToken += 1
+                },
+                // The nonce keeps the content key unique when the same server is opened again while
+                // an earlier instance is still on the stack; NavDisplay rejects duplicate keys.
+                onOpenBaActivityCalendar = { serverIndex ->
+                    navigator.push(
+                        KeiosRoute.BaActivityCalendar(
+                            serverIndex = serverIndex,
+                            nonce = SystemClock.elapsedRealtimeNanos(),
+                        ),
+                    )
+                },
+                onOpenBaPool = { serverIndex ->
+                    navigator.push(
+                        KeiosRoute.BaPool(
+                            serverIndex = serverIndex,
+                            nonce = SystemClock.elapsedRealtimeNanos(),
+                        ),
+                    )
                 },
             )
         }

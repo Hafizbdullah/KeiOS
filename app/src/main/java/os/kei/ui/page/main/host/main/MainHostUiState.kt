@@ -34,6 +34,9 @@ data class MainHostUiState(
     val requestedBaAccountId: String?,
     val requestedBaAccountToken: Int,
     val requestedWebDavSyncToken: Int,
+    val requestedBaCalendarPoolRoute: String?,
+    val requestedBaCalendarPoolServerIndex: Int?,
+    val requestedBaCalendarPoolToken: Int,
 ) {
     companion object {
         val Initial: MainHostUiState = MainHostUiState(
@@ -50,6 +53,9 @@ data class MainHostUiState(
             requestedBaAccountId = null,
             requestedBaAccountToken = 0,
             requestedWebDavSyncToken = 0,
+            requestedBaCalendarPoolRoute = null,
+            requestedBaCalendarPoolServerIndex = null,
+            requestedBaCalendarPoolToken = 0,
         )
     }
 }

@@ -1,5 +1,6 @@
 package os.kei.ui.page.main.ba
 
+import os.kei.MainActivity
 import android.app.Application
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
@@ -71,7 +72,9 @@ class BaCalendarPoolNotificationDispatcherTest {
                 serverIndex = 2,
             )
 
-        assertEquals(BaActivityCalendarActivity::class.java.name, intent.component?.className)
+        assertEquals(MainActivity::class.java.name, intent.component?.className)
+        assertEquals(MainActivity.TARGET_ROUTE_BA_ACTIVITY_CALENDAR, intent.getStringExtra(MainActivity.EXTRA_TARGET_ROUTE))
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE))
         assertEquals(2, intent.baCalendarPoolServerIndexOrNull())
         assertFlag(intent, Intent.FLAG_ACTIVITY_NEW_TASK)
         assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -88,7 +91,9 @@ class BaCalendarPoolNotificationDispatcherTest {
                 serverIndex = 1,
             )
 
-        assertEquals(BaPoolActivity::class.java.name, intent.component?.className)
+        assertEquals(MainActivity::class.java.name, intent.component?.className)
+        assertEquals(MainActivity.TARGET_ROUTE_BA_POOL, intent.getStringExtra(MainActivity.EXTRA_TARGET_ROUTE))
+        assertEquals(MainActivity.TARGET_BOTTOM_PAGE_BA, intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE))
         assertEquals(1, intent.baCalendarPoolServerIndexOrNull())
         assertFlag(intent, Intent.FLAG_ACTIVITY_NEW_TASK)
         assertFlag(intent, Intent.FLAG_ACTIVITY_SINGLE_TOP)
