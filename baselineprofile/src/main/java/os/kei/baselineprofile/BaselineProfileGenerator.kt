@@ -136,6 +136,38 @@ class BaselineProfileGenerator {
             openDockRouteAndReturn(BA_DOCK_OPEN_POOL)
         }
     }
+
+    /**
+     * The GitHub Actions history route. Its tabbed section switch had no profile coverage at all —
+     * TabbedPageContentMotion resolved to zero rules — so that path was interpreted on first use,
+     * the same gap the calendar and pool pages had before they got a journey.
+     */
+    @Test
+    fun gitHubActionsHistoryRouteInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+
+            waitForTestTag(GITHUB_ACTIONS_HISTORY_BUTTON, timeoutMs = 15_000)
+            val historyButton = device.findObject(testTagSelector(GITHUB_ACTIONS_HISTORY_BUTTON))
+                ?: error("Unable to find testTag=$GITHUB_ACTIONS_HISTORY_BUTTON in ${targetAppId()}")
+            historyButton.click()
+            waitForTestTag(GITHUB_ACTIONS_HISTORY_PAGE_ROOT, timeoutMs = 15_000)
+            flingVisibleScrollable(times = 2)
+
+            device.pressBack()
+            waitForTestTag(GITHUB_PAGE_ROOT, timeoutMs = 15_000)
+            device.waitForIdle()
+        }
+    }
 }
 
 /**
@@ -184,6 +216,8 @@ private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
 private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
 private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
+private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
+private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
 
 private fun targetAppId(): String {
     return InstrumentationRegistry.getArguments().getString("targetAppId")

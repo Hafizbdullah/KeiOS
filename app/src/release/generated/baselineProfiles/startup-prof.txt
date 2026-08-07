@@ -5512,7 +5512,7 @@ SPLandroidx/compose/ui/geometry/Rect$Companion;-><init>()V
 SPLandroidx/compose/ui/geometry/Rect$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 SPLandroidx/compose/ui/geometry/Rect$Companion;->getZero()Landroidx/compose/ui/geometry/Rect;
 Landroidx/compose/ui/geometry/RectKt;
-HSPLandroidx/compose/ui/geometry/RectKt;->Rect-tz77jQw(JJ)Landroidx/compose/ui/geometry/Rect;
+SPLandroidx/compose/ui/geometry/RectKt;->Rect-tz77jQw(JJ)Landroidx/compose/ui/geometry/Rect;
 Landroidx/compose/ui/geometry/RoundRect;
 SPLandroidx/compose/ui/geometry/RoundRect;-><clinit>()V
 SPLandroidx/compose/ui/geometry/RoundRect;-><init>(FFFFJJJJ)V
@@ -9706,7 +9706,7 @@ SPLandroidx/compose/ui/semantics/SemanticsNode;->emitFakeNodes(Ljava/util/List;)
 SPLandroidx/compose/ui/semantics/SemanticsNode;->fakeSemanticsNode-ypyhhiA(Landroidx/compose/ui/semantics/Role;Lkotlin/jvm/functions/Function1;)Landroidx/compose/ui/semantics/SemanticsNode;
 SPLandroidx/compose/ui/semantics/SemanticsNode;->fillOneLayerOfSemanticsWrappers(Landroidx/compose/ui/node/LayoutNode;Ljava/util/List;Z)V
 SPLandroidx/compose/ui/semantics/SemanticsNode;->findCoordinatorToGetBounds$ui()Landroidx/compose/ui/node/NodeCoordinator;
-HSPLandroidx/compose/ui/semantics/SemanticsNode;->findSemanticsModifierNodeToGetBounds()Landroidx/compose/ui/node/SemanticsModifierNode;
+SPLandroidx/compose/ui/semantics/SemanticsNode;->findSemanticsModifierNodeToGetBounds()Landroidx/compose/ui/node/SemanticsModifierNode;
 SPLandroidx/compose/ui/semantics/SemanticsNode;->getBoundsInRoot()Landroidx/compose/ui/geometry/Rect;
 SPLandroidx/compose/ui/semantics/SemanticsNode;->getChildren$ui$default(Landroidx/compose/ui/semantics/SemanticsNode;ZZZILjava/lang/Object;)Ljava/util/List;
 SPLandroidx/compose/ui/semantics/SemanticsNode;->getChildren$ui(ZZZ)Ljava/util/List;
@@ -12026,7 +12026,7 @@ SPLandroidx/emoji2/text/flatbuffer/MetadataItem;->__init(ILjava/nio/ByteBuffer;)
 SPLandroidx/emoji2/text/flatbuffer/MetadataItem;->codepoints(I)I
 SPLandroidx/emoji2/text/flatbuffer/MetadataItem;->codepointsLength()I
 SPLandroidx/emoji2/text/flatbuffer/MetadataItem;->emojiStyle()Z
-SPLandroidx/emoji2/text/flatbuffer/MetadataItem;->id()I
+HSPLandroidx/emoji2/text/flatbuffer/MetadataItem;->id()I
 Landroidx/emoji2/text/flatbuffer/MetadataList;
 SPLandroidx/emoji2/text/flatbuffer/MetadataList;-><init>()V
 SPLandroidx/emoji2/text/flatbuffer/MetadataList;->__assign(ILjava/nio/ByteBuffer;)Landroidx/emoji2/text/flatbuffer/MetadataList;
@@ -13532,7 +13532,7 @@ SPLkotlin/collections/ArrayDeque;->isEmpty()Z
 SPLkotlin/collections/ArrayDeque;->lastOrNull()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->positiveMod(I)I
 SPLkotlin/collections/ArrayDeque;->registerModification()V
-SPLkotlin/collections/ArrayDeque;->removeFirst()Ljava/lang/Object;
+HSPLkotlin/collections/ArrayDeque;->removeFirst()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->removeFirstOrNull()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->removeLast()Ljava/lang/Object;
 SPLkotlin/collections/ArrayDeque;->removeLastOrNull()Ljava/lang/Object;
@@ -13884,7 +13884,7 @@ SPLkotlin/coroutines/jvm/internal/ContinuationImpl;-><init>(Lkotlin/coroutines/C
 SPLkotlin/coroutines/jvm/internal/ContinuationImpl;-><init>(Lkotlin/coroutines/Continuation;Lkotlin/coroutines/CoroutineContext;)V
 SPLkotlin/coroutines/jvm/internal/ContinuationImpl;->getContext()Lkotlin/coroutines/CoroutineContext;
 SPLkotlin/coroutines/jvm/internal/ContinuationImpl;->intercepted()Lkotlin/coroutines/Continuation;
-SPLkotlin/coroutines/jvm/internal/ContinuationImpl;->releaseIntercepted()V
+HSPLkotlin/coroutines/jvm/internal/ContinuationImpl;->releaseIntercepted()V
 Lkotlin/coroutines/jvm/internal/CoroutineStackFrame;
 Lkotlin/coroutines/jvm/internal/DebugProbesKt;
 SPLkotlin/coroutines/jvm/internal/DebugProbesKt;->probeCoroutineCreated(Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
