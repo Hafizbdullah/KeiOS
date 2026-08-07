@@ -29,12 +29,20 @@ class MainPagerFrameRateTest {
     }
 
     @Test
-    fun `pager requests an adaptive category without fixing a display mode`() {
+    fun `pager asks for the panel peak without fixing a display mode`() {
         val frameRateSource = sourceFile(MAIN_PAGER_FRAME_RATE_SOURCE)
         val pagerSource = sourceFile(MAIN_LOADED_PAGER_SOURCE)
 
-        assertTrue("preferredFrameRate(FrameRateCategory.High)" in frameRateSource)
-        assertTrue("preferHighFrameRateForPagerMotion(highFrameRateMotionActive)" in pagerSource)
+        // FrameRateCategory.High resolves through the display's frameRateCategoryRate, which is
+        // {normal = 60, high = 90} on 5eea1f50 — so the category asked a 120Hz panel for 90 and
+        // capped the very motion it was meant to smooth. Ask for the peak mode instead.
+        assertFalse("preferredFrameRate(FrameRateCategory" in frameRateSource)
+        assertTrue("display.supportedModes.maxOfOrNull { mode -> mode.refreshRate }" in frameRateSource)
+        assertTrue("preferredFrameRate(peakFrameRate)" in frameRateSource)
+        assertTrue("peakFrameRate = peakFrameRate," in pagerSource)
+
+        // The rate is still read from the display rather than pinned, and the app never selects a
+        // mode outright — ARR and thermal policy keep ownership of the actual cadence.
         assertFalse("preferredFrameRate(120" in frameRateSource)
         assertFalse("preferredDisplayModeId" in frameRateSource)
     }

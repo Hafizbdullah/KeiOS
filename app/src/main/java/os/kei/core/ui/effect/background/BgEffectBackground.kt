@@ -93,7 +93,14 @@ fun BgEffectBackground(
                 if (dynamicBackground) {
                     Modifier
                         .requiredSize(renderWidthDp, renderHeightDp)
-                        .preferredFrameRate(FrameRateCategory.High)
+                        // 121c232ec capped this shader at 60fps, so ask for 60 rather than
+                        // FrameRateCategory.High. SurfaceFlinger resolves High through the
+                        // display's frameRateCategoryRate — {normal = 60, high = 90} on
+                        // 5eea1f50 — so the old vote pinned a 120Hz panel to 90 for as long
+                        // as the background was visible, dragging every section switch down
+                        // with it. Votes aggregate as a max, so declaring the real cadence
+                        // lets a pager or route asking for the peak rate still win.
+                        .preferredFrameRate(BG_EFFECT_VOTE_HZ)
                         .graphicsLayer {
                             scaleX = 1f / renderScale
                             scaleY = 1f / renderScale
@@ -122,3 +129,6 @@ fun BgEffectBackground(
         content()
     }
 }
+
+/** The shader's own invalidation ceiling; see BgEffectModifier's BG_EFFECT_HIGH_FPS. */
+private const val BG_EFFECT_VOTE_HZ = 60f
