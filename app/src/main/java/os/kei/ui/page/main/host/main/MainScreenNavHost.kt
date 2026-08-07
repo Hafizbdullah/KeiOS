@@ -185,6 +185,7 @@ internal fun MainScreenNavHost(
                             mcpServerManager = pagerCoordinator.mcpServerManager,
                             onOpenGuideDetail = pagerCoordinator.onOpenGuideDetail,
                             onOpenBaGuideCatalog = pagerCoordinator.onBaGuideCatalogOpen,
+                            routeAtTop = rememberNavEntryAtTop(),
                             onOpenBaActivityCalendar = pagerCoordinator.onOpenBaActivityCalendar,
                             onOpenBaPool = pagerCoordinator.onOpenBaPool,
                             requestedBottomPage = pagerCoordinator.requestedBottomPage,

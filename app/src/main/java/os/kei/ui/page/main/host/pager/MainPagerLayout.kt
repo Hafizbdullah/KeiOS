@@ -76,6 +76,7 @@ internal fun MainPagerLayout(
     mcpServerManager: McpServerManager,
     onOpenGuideDetail: (String) -> Unit,
     onOpenBaGuideCatalog: () -> Unit,
+    routeAtTop: Boolean,
     onOpenBaActivityCalendar: (Int?) -> Unit,
     onOpenBaPool: (Int?) -> Unit,
     requestedBottomPage: String?,
@@ -279,7 +280,14 @@ internal fun MainPagerLayout(
                         scaleX = backMotion.scale
                         scaleY = backMotion.scale
                         alpha = backMotion.contentAlpha
-                    }.layerBackdrop(coordinator.backdrop)
+                    }.then(
+                        // The backdrop producer records the whole pager into a GraphicsLayer every
+                        // frame so glass surfaces can sample it. While another route covers this
+                        // one that recording feeds nothing on screen, so stop producing until the
+                        // entry is the interactive top again. Nothing visible changes: the gate can
+                        // only close behind a full-screen opaque page.
+                        if (routeAtTop) Modifier.layerBackdrop(coordinator.backdrop) else Modifier,
+                    )
             val activationState =
                 rememberMainPageActivationState(
                     tabs = coordinator.tabs,
