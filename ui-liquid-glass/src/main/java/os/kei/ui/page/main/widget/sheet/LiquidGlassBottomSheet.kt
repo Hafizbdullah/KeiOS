@@ -27,11 +27,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidOverlayPortal
-import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.clampGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassBlur
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import kotlin.math.roundToInt
@@ -117,12 +114,9 @@ fun LiquidGlassBottomSheet(
 
     val isDark = isAppInDarkTheme()
     val density = LocalDensity.current
-    val glassRuntime = LocalGlassEffectRuntime.current
-    // Also the full ceiling: the scrim is what makes the app recede behind the sheet, and a soft
-    // 6dp smear still leaves headings and cards readable through it.
-    val scrimBlurRadius =
-        (UiPerformanceBudget.maxGlassBlur * glassRuntime.blurScaleFor(GlassVariant.Floating))
-            .clampGlassBlur()
+    // The scrim is what makes the app recede behind the sheet, so it takes the same ceiling the sheet
+    // itself does — a soft 6dp smear still leaves headings and cards readable through it.
+    val scrimBlurRadius = presentationGlassBlur()
 
     var managedScrollableContent by remember(show) { mutableStateOf(false) }
     var scrollableContentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }

@@ -247,6 +247,9 @@ internal fun DebugLiquidFeedbackCard(
                 state = toastState,
                 backdrop = toastPreviewBackdrop,
                 modifier = Modifier.matchParentSize(),
+                // An inline demo: it has to stay inside this 154dp card, not lift itself to the top of
+                // the window the way the real host does.
+                portalToOverlay = false,
             )
         }
         AppLiquidTextButton(

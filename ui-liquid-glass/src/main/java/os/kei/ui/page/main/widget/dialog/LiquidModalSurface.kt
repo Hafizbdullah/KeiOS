@@ -19,12 +19,10 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
-import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidOverlayHost
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.clampGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassLens
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
 import os.kei.ui.page.main.widget.sheet.LocalSceneBackdrop
 
@@ -63,7 +61,6 @@ internal fun rememberLiquidModalSurface(
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val inOverlay = LocalLiquidOverlayHost.current != null
     val sceneBackdrop = LocalSceneBackdrop.current
-    val glassRuntime = LocalGlassEffectRuntime.current
     val cardBackdrop = rememberLayerBackdrop()
     val glassEnabled = liquidControlsEnabled && inOverlay && explicitBackgroundColor == null
     val shape = remember(cornerRadius) { RoundedRectangle(cornerRadius) }
@@ -84,13 +81,12 @@ internal fun rememberLiquidModalSurface(
         )
     }
 
-    val blurRadius =
-        (UiPerformanceBudget.maxGlassBlur * glassRuntime.blurScaleFor(GlassVariant.Floating))
-            .clampGlassBlur()
-    val lensRadius =
-        UiPerformanceBudget.backdropLens *
-            LIQUID_MODAL_LENS_SCALE *
-            glassRuntime.lensScaleFor(GlassVariant.Floating)
+    val blurRadius = presentationGlassBlur()
+    val lens =
+        presentationGlassLens(
+            lensScale = LIQUID_MODAL_LENS_SCALE,
+            refractionScale = LIQUID_MODAL_REFRACTION_AMOUNT_SCALE,
+        )
     val fill = liquidModalGlassFill(isDark)
 
     return LiquidModalSurface(
@@ -101,8 +97,8 @@ internal fun rememberLiquidModalSurface(
                 vibrancy()
                 blur(blurRadius.toPx())
                 safeLiquidLens(
-                    lensRadius.toPx(),
-                    (lensRadius * LIQUID_MODAL_REFRACTION_AMOUNT_SCALE).toPx(),
+                    lens.refractionHeight.toPx(),
+                    lens.refractionAmount.toPx(),
                     chromaticAberration = false,
                     depthEffect = true,
                 )

@@ -50,21 +50,66 @@ class LiquidOverlayHostState internal constructor() {
     }
 
     /**
-     * Composes every registered entry in registration order, so a sheet opened from another sheet
-     * stacks above it.
+     * Composes every registered entry: presentations in registration order, then notifications.
+     *
+     * Registration order alone is not enough. A presentation registers when it opens, so a sheet
+     * opened from another sheet stacks above it, which is what you want. But a notification host is
+     * mounted once at the app root and stays mounted, so it always registers *first* — and would
+     * therefore draw underneath every sheet and alert opened later, which is the opposite of what a
+     * toast is for. Splitting the pass fixes that without giving callers an ordering knob to get
+     * wrong.
      */
     @Composable
     internal fun Content() {
-        // Iterate a copy: an entry that unregisters while composing (a sheet that finishes its exit
+        // Order a copy: an entry that unregisters while composing (a sheet that finishes its exit
         // animation and drops itself) would otherwise mutate the list mid-iteration.
-        entries.toList().forEachIndexed { index, entry ->
-            key(entry) {
-                CompositionLocalProvider(LocalLiquidOverlayDepth provides index) {
-                    entry.Content()
+        liquidOverlayPlacements(entries.toList()) { it.layer }.forEach { placement ->
+            key(placement.entry) {
+                CompositionLocalProvider(LocalLiquidOverlayDepth provides placement.depth) {
+                    placement.entry.Content()
                 }
             }
         }
     }
+}
+
+internal class LiquidOverlayPlacement<T>(
+    val entry: T,
+    val depth: Int,
+)
+
+/**
+ * Resolves compose order and depth for the registered overlays.
+ *
+ * Pure so the ordering rule is unit-testable — it is the kind of thing that silently regresses into
+ * "whatever registration order happened to be", and registration order is exactly what it exists to
+ * override.
+ *
+ * Notification depth is the presentation *count*, not an index within the notification layer. Depth
+ * answers "is there an overlay beneath me that my full-screen blurred plate would erase", so counting
+ * notifications against each other would be meaningless — they do not draw such a plate. Reporting the
+ * truthful count keeps the invariant usable if one ever does.
+ */
+internal fun <T> liquidOverlayPlacements(
+    entries: List<T>,
+    layerOf: (T) -> LiquidOverlayLayer,
+): List<LiquidOverlayPlacement<T>> {
+    val presentations = entries.filter { layerOf(it) == LiquidOverlayLayer.Presentation }
+    val notifications = entries.filter { layerOf(it) == LiquidOverlayLayer.Notification }
+    return presentations.mapIndexed { index, entry -> LiquidOverlayPlacement(entry, index) } +
+        notifications.map { LiquidOverlayPlacement(it, presentations.size) }
+}
+
+/**
+ * Which pass an overlay is composed in. Notifications always draw above presentations regardless of
+ * when either registered.
+ */
+enum class LiquidOverlayLayer {
+    /** Sheets, alerts and action sheets — modal, one at a time, stacking in the order they open. */
+    Presentation,
+
+    /** Toasts and other transient status chrome — never modal, always on top. */
+    Notification,
 }
 
 /**
@@ -72,7 +117,9 @@ class LiquidOverlayHostState internal constructor() {
  * content composed at the host still sees the theme, backdrop and app locals from where it was
  * declared rather than the host's.
  */
-internal class LiquidOverlayEntry {
+internal class LiquidOverlayEntry(
+    val layer: LiquidOverlayLayer,
+) {
     var locals: CompositionLocalContext? by mutableStateOf(null)
     var content: @Composable () -> Unit by mutableStateOf({})
 
@@ -115,14 +162,17 @@ val LocalLiquidOverlayDepth = staticCompositionLocalOf { 0 }
  * harnesses working.
  */
 @Composable
-fun LiquidOverlayPortal(content: @Composable () -> Unit) {
+fun LiquidOverlayPortal(
+    layer: LiquidOverlayLayer = LiquidOverlayLayer.Presentation,
+    content: @Composable () -> Unit,
+) {
     val host = LocalLiquidOverlayHost.current
     if (host == null) {
         content()
         return
     }
     val locals = currentCompositionLocalContext
-    val entry = remember { LiquidOverlayEntry() }
+    val entry = remember(layer) { LiquidOverlayEntry(layer) }
     // Assigning during composition is what lets the host observe the newest content in the frame it
     // recomposes. The host only reads these, so there is no write-after-read loop.
     entry.locals = locals

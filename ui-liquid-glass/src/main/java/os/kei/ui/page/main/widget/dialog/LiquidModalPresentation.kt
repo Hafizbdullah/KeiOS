@@ -17,12 +17,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidOverlayPortal
-import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidOverlayDepth
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.clampGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassBlur
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.sheet.BlockedDismissRequestGate
 import os.kei.ui.page.main.widget.sheet.LiquidSheetScrim
@@ -74,7 +71,6 @@ internal fun LiquidModalPresentation(
 
     LiquidOverlayPortal {
         val transitionsEnabled = LocalTransitionAnimationsEnabled.current
-        val glassRuntime = LocalGlassEffectRuntime.current
         val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
         val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
 
@@ -83,9 +79,7 @@ internal fun LiquidModalPresentation(
         // double-tapped Cancel — into a single dispatch, then releases itself so a caller that
         // declines the first request can still be dismissed on the next try.
         val dismissGate = remember(show) { BlockedDismissRequestGate() }
-        val scrimBlurRadius =
-            (UiPerformanceBudget.maxGlassBlur * glassRuntime.blurScaleFor(GlassVariant.Floating))
-                .clampGlassBlur()
+        val scrimBlurRadius = presentationGlassBlur()
 
         suspend fun animateProgressTo(
             target: Float,

@@ -21,12 +21,10 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.kyant.shapes.RoundedRectangle
-import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.glass.LocalLiquidOverlayHost
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.clampGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassBlur
+import os.kei.ui.page.main.widget.glass.presentationGlassLens
 import os.kei.ui.page.main.widget.glass.safeLiquidLens
 
 private const val LIQUID_SHEET_LENS_SCALE = 0.34f
@@ -69,7 +67,6 @@ internal fun rememberLiquidSheetSurface(
     val liquidControlsEnabled = LocalLiquidControlsEnabled.current
     val inOverlay = LocalLiquidOverlayHost.current != null
     val sceneBackdrop = LocalSceneBackdrop.current
-    val glassRuntime = LocalGlassEffectRuntime.current
     val sheetBackdrop = rememberLayerBackdrop()
     val glassEnabled = liquidControlsEnabled && inOverlay && explicitBackgroundColor == null
 
@@ -88,17 +85,12 @@ internal fun rememberLiquidSheetSurface(
         )
     }
 
-    // The sheet takes the project's full blur ceiling, not the small `backdropBlur` the floating
-    // chrome uses. A capsule can get away with ~4dp because it is tiny and heavily tinted; across a
-    // whole sheet 4dp merely softens the page behind it and body text stays readable straight
-    // through the glass, which is the legibility complaint in its new form.
-    val blurRadius =
-        (UiPerformanceBudget.maxGlassBlur * glassRuntime.blurScaleFor(GlassVariant.Floating))
-            .clampGlassBlur()
-    val lensRadius =
-        UiPerformanceBudget.backdropLens *
-            LIQUID_SHEET_LENS_SCALE *
-            glassRuntime.lensScaleFor(GlassVariant.Floating)
+    val blurRadius = presentationGlassBlur()
+    val lens =
+        presentationGlassLens(
+            lensScale = LIQUID_SHEET_LENS_SCALE,
+            refractionScale = LIQUID_SHEET_REFRACTION_AMOUNT_SCALE,
+        )
     val glassFill = liquidSheetGlassSurfaceColor(
         isDark = isDark,
         solidness = solidness,
@@ -118,11 +110,9 @@ internal fun rememberLiquidSheetSurface(
             effects = {
                 vibrancy()
                 blur(blurRadius.toPx())
-                // The refraction rim. This is what makes the edge read as a thick piece of glass
-                // rather than a translucent rectangle.
                 safeLiquidLens(
-                    lensRadius.toPx(),
-                    (lensRadius * LIQUID_SHEET_REFRACTION_AMOUNT_SCALE).toPx(),
+                    lens.refractionHeight.toPx(),
+                    lens.refractionAmount.toPx(),
                     chromaticAberration = false,
                     depthEffect = true,
                 )

@@ -12,8 +12,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.LayoutDirection
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.platform.PredictiveBackOemCompat
 import os.kei.core.prefs.AppThemeMode
 import os.kei.mcp.server.McpServerManager
@@ -137,20 +135,18 @@ internal fun MainScreenNavHost(
         LocalTextCopyExpandedOverride provides prefsState.textCopyCapabilityExpanded,
     ) {
         val liquidToastState = rememberLiquidToastState()
-        val liquidToastBackdrop = rememberLayerBackdrop()
         BindLiquidToastBridge(
             state = liquidToastState,
             liquidToastEnabled = prefsState.liquidToastEnabled,
             reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
         )
+        // The toast used to own a second `layerBackdrop` producer wrapping NavDisplay, gated on
+        // visibility to keep the offscreen layer off the idle path. It no longer needs one: it portals
+        // into the overlay host's notification layer and samples `LocalSceneBackdrop`, which already
+        // captures this very content — and captures it over an opaque base rect, which the private
+        // producer never did.
         Box(modifier = Modifier.fillMaxSize()) {
-            val toastBackdropProducer =
-                if (liquidToastState.isVisible) {
-                    Modifier.layerBackdrop(liquidToastBackdrop)
-                } else {
-                    Modifier
-                }
-            Box(modifier = Modifier.fillMaxSize().then(toastBackdropProducer)) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 NavDisplay(
                     backStack = backStack,
                     modifier = Modifier.fillMaxSize(),
@@ -388,10 +384,7 @@ internal fun MainScreenNavHost(
                     }
                 }
             }
-            LiquidToastHost(
-                state = liquidToastState,
-                backdrop = liquidToastBackdrop,
-            )
+            LiquidToastHost(state = liquidToastState)
         }
     }
 }
