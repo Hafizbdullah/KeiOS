@@ -34,7 +34,6 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -75,7 +74,6 @@ class GitHubShareImportActivity : ComponentActivity() {
 
             val appThemeMode = UiPrefs.getAppThemeMode()
             val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
-            val liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled()
             val predictiveBackPolicy =
                 PredictiveBackOemCompat.currentPolicy(
                     transitionAnimationsEnabled = transitionAnimationsEnabled,
@@ -95,7 +93,6 @@ class GitHubShareImportActivity : ComponentActivity() {
                         LocalOverscrollFactory provides MiuixOverscrollFactory,
                         LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
-                        LocalLiquidSheetEnabled provides liquidSheetEnabled,
                     ) {
                         KeiOSActivityRootBackHandler(
                             needsInterception =

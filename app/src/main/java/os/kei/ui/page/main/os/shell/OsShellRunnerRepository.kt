@@ -22,7 +22,6 @@ import os.kei.core.concurrency.AppDispatchers
 
 internal data class OsShellRunnerChromePrefs(
     val appThemeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM,
-    val liquidActionBarLayeredStyleEnabled: Boolean = true,
     val liquidSwitchEnabled: Boolean = true,
     val transitionAnimationsEnabled: Boolean = true,
     val predictiveBackAnimationsEnabled: Boolean = true,
@@ -95,7 +94,6 @@ internal class OsShellRunnerRepository(
         val loaded = withContext(ioDispatcher) {
             OsShellRunnerChromePrefs(
                 appThemeMode = UiPrefs.getAppThemeMode(),
-                liquidActionBarLayeredStyleEnabled = UiPrefs.isLiquidActionBarLayeredStyleEnabled(),
                 liquidSwitchEnabled = UiPrefs.isLiquidSwitchEnabled(),
                 transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled(),
                 predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled(),

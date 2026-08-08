@@ -19,13 +19,7 @@ import os.kei.core.prefs.UiPrefsSnapshot
 import os.kei.core.privilege.PrivilegeMode
 
 internal class MainScreenPrefsViewModel : ViewModel() {
-    private val repository =
-        UiPrefsRepository(
-            initialSnapshot =
-                UiPrefs.defaultSnapshot().copy(
-                    liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled(),
-                ),
-        )
+    private val repository = UiPrefsRepository(initialSnapshot = UiPrefs.defaultSnapshot())
     val snapshot: StateFlow<UiPrefsSnapshot> =
         repository
             .observeSnapshots()
@@ -44,12 +38,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
             }
     }
 
-    fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setLiquidActionBarLayeredStyleEnabled(value)
-        }
-    }
-
     fun updateLiquidSwitchEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setLiquidSwitchEnabled(value)
@@ -65,18 +53,6 @@ internal class MainScreenPrefsViewModel : ViewModel() {
     fun updateReduceToastInterruptionEnabled(value: Boolean) {
         launchRepositoryUpdate {
             setReduceToastInterruptionEnabled(value)
-        }
-    }
-
-    fun updateLiquidSheetEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setLiquidSheetEnabled(value)
-        }
-    }
-
-    fun updateLiquidDialogEnabled(value: Boolean) {
-        launchRepositoryUpdate {
-            setLiquidDialogEnabled(value)
         }
     }
 

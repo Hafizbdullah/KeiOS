@@ -180,19 +180,8 @@ fun SheetSurfaceCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val isDark = isAppInDarkTheme()
-    val visualMode = LocalSheetVisualMode.current
-    val sheetBaseColor = MiuixTheme.colorScheme.background
-    val rawContainerColor = containerColor ?: sheetCardSurfaceColor(surfaceTone, isDark, visualMode)
-    val resolvedContainerColor =
-        when (visualMode) {
-            SheetVisualMode.Liquid -> rawContainerColor
-            SheetVisualMode.Miuix -> rawContainerColor.opaqueCompositeOver(sheetBaseColor)
-        }
-    val optics =
-        sheetCardOptics(
-            visualMode = visualMode,
-            interactive = onClick != null,
-        )
+    val resolvedContainerColor = containerColor ?: sheetCardSurfaceColor(surfaceTone, isDark)
+    val optics = sheetCardOptics(interactive = onClick != null)
     AppSurfaceCard(
         modifier = modifier,
         exportBackdropToContent = true,
@@ -241,11 +230,7 @@ fun SheetSectionCard(
 private fun sheetCardSurfaceColor(
     surfaceTone: SheetCardSurfaceTone,
     isDark: Boolean,
-    visualMode: SheetVisualMode,
 ): Color {
-    if (visualMode == SheetVisualMode.Miuix) {
-        return MiuixTheme.colorScheme.surfaceContainer
-    }
     val alpha =
         when (surfaceTone) {
             SheetCardSurfaceTone.Default -> 0.64f

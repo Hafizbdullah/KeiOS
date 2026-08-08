@@ -46,7 +46,6 @@ fun BaGuideCatalogPage(
     onOpenGuide: (String) -> Unit,
     notificationPermissionGranted: Boolean = true,
     onRequestNotificationPermission: () -> Unit = {},
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     enableSearchBar: Boolean = true,
     openBgmPlaybackToken: Long = 0L,

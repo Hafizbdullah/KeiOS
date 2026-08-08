@@ -55,7 +55,6 @@ internal fun BaCalendarPoolActionBar(
 
     LiquidToolbar(
         backdrop = backdrop,
-        layeredStyleEnabled = true,
         actions = actionItems,
     )
 }

@@ -30,7 +30,6 @@ internal fun OsShellRunnerContent(
     scrollBehavior: ScrollBehavior,
     topBarBackdrop: LayerBackdrop,
     pageListState: LazyListState,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     actionItems: List<LiquidToolbarAction>,
     commandInput: String,
     runningCommand: Boolean,
@@ -55,13 +54,11 @@ internal fun OsShellRunnerContent(
                 contentDescription = stringResource(R.string.common_close),
                 onClick = onRequestClose,
                 backdrop = topBarBackdrop,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             )
         },
         actions = {
             LiquidToolbar(
                 backdrop = topBarBackdrop,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 actions = actionItems,
             )
         },

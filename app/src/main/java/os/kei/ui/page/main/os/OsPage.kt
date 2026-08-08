@@ -44,7 +44,6 @@ fun OsPage(
     privilegeStatus: PrivilegeStatus,
     privilegedShell: PrivilegedShell,
     onOpenShellRunner: () -> Unit,
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
 ) {
     val listState = rememberLazyListState()
@@ -627,7 +626,6 @@ fun OsPage(
             scrollBehavior = scrollBehavior,
             topBarColor = topBarMaterialBackdrop,
             topBarBackdrop = backdrops.topBar,
-            layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             manageCardsContentDescription = textBundle.manageCardsContentDescription,
             manageActivitiesContentDescription = textBundle.manageActivitiesContentDescription,
             manageShellCardsContentDescription = textBundle.manageShellCardsContentDescription,

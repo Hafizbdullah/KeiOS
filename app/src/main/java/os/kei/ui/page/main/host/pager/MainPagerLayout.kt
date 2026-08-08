@@ -55,7 +55,6 @@ internal fun MainPagerLayout(
     rootBackHandlersEnabled: Boolean,
     navigator: Navigator,
     settingsReturnToken: Int,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean,
@@ -482,7 +481,6 @@ internal fun MainPagerLayout(
                     MainPagerPageHost(
                         pageType = pageType,
                         runtime = pageRuntime,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         homePageState = homePageState,
                         osPageState = osPageState,
                         baPageState = baPageState,

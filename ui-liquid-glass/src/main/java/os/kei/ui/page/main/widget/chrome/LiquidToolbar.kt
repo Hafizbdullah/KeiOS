@@ -107,7 +107,6 @@ fun LiquidToolbarGroups(
     groups: List<List<LiquidToolbarAction>>,
     modifier: Modifier = Modifier,
     isBlurEnabled: Boolean = true,
-    layeredStyleEnabled: Boolean = true,
 ) {
     val visibleGroups = remember(groups) { groups.filter { it.isNotEmpty() } }
     if (visibleGroups.isEmpty()) return
@@ -124,7 +123,6 @@ fun LiquidToolbarGroups(
                 backdrop = backdrop,
                 actions = actions,
                 isBlurEnabled = isBlurEnabled,
-                layeredStyleEnabled = layeredStyleEnabled,
             )
         }
     }
@@ -140,7 +138,6 @@ fun LiquidToolbar(
     actions: List<LiquidToolbarAction>,
     modifier: Modifier = Modifier,
     isBlurEnabled: Boolean = true,
-    layeredStyleEnabled: Boolean = true,
 ) {
     val groups = remember(actions) { listOf(actions) }
     LiquidToolbarGroups(
@@ -148,7 +145,6 @@ fun LiquidToolbar(
         groups = groups,
         modifier = modifier,
         isBlurEnabled = isBlurEnabled,
-        layeredStyleEnabled = layeredStyleEnabled,
     )
 }
 
@@ -157,7 +153,6 @@ private fun LiquidToolbarGroup(
     backdrop: Backdrop,
     actions: List<LiquidToolbarAction>,
     isBlurEnabled: Boolean,
-    layeredStyleEnabled: Boolean,
 ) {
     val isInLightTheme = !isAppInDarkTheme()
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -166,7 +161,6 @@ private fun LiquidToolbarGroup(
     val palette =
         rememberLiquidActionBarPalette(
             material = material,
-            layeredStyleEnabled = layeredStyleEnabled,
             isBlurEnabled = effectiveBlurEnabled,
             isInLightTheme = isInLightTheme,
             primary = MiuixTheme.colorScheme.primary,
@@ -206,53 +200,42 @@ private fun LiquidToolbarGroup(
                         if (effectiveBlurEnabled) {
                             vibrancy()
                             blur(material.blur.toPx())
-                            if (layeredStyleEnabled) {
-                                safeLiquidLens(
-                                    material.lensHeight.toPx(),
-                                    material.lensAmount.toPx(),
-                                )
-                            }
+                            safeLiquidLens(
+                                material.lensHeight.toPx(),
+                                material.lensAmount.toPx(),
+                            )
                         }
                     },
                     highlight = {
                         liquidToolbarHighlight(
                             material = material,
-                            layeredStyleEnabled = layeredStyleEnabled,
                             isBlurEnabled = effectiveBlurEnabled,
                             isInLightTheme = isInLightTheme,
                         )
                     },
                     shadow = {
-                        liquidActionBarBaseShadow(
-                            layeredStyleEnabled = layeredStyleEnabled,
-                            isInLightTheme = isInLightTheme,
-                        )
+                        liquidActionBarBaseShadow(isInLightTheme = isInLightTheme)
                     },
                     // Deformation belongs in layerBlock, not in a graphicsLayer on the node: it
                     // squishes the glass surface while leaving the sampled backdrop where it is.
                     // A graphicsLayer would drag the refraction along with the capsule and the
                     // glass would read as a moving decal instead of a lens.
-                    layerBlock =
-                        if (layeredStyleEnabled) {
-                            {
-                                val progress = pressProgressProvider()
-                                val drag = dragOffsetProvider()
-                                val maxSlide = LiquidToolbarDragSlide.toPx()
-                                // Drag the glass and it follows, eased and capped, then springs
-                                // back -- the damped give the old bar had, without the selection it
-                                // used to commit on release.
-                                val slideX = liquidToolbarDamp(drag.x, maxSlide)
-                                val slideY = liquidToolbarDamp(drag.y, maxSlide)
-                                translationX = slideX
-                                translationY = slideY
-                                // Stretch along the pull, squash across it, on top of the press.
-                                val pull = (abs(slideX) / maxSlide).fastCoerceIn(0f, 1f)
-                                scaleX = 1f + LiquidToolbarPressStretchX * progress + LiquidToolbarDragStretchX * pull
-                                scaleY = 1f - LiquidToolbarPressSquashY * progress - LiquidToolbarDragSquashY * pull
-                            }
-                        } else {
-                            null
-                        },
+                    layerBlock = {
+                        val progress = pressProgressProvider()
+                        val drag = dragOffsetProvider()
+                        val maxSlide = LiquidToolbarDragSlide.toPx()
+                        // Drag the glass and it follows, eased and capped, then springs back -- the
+                        // damped give the old bar had, without the selection it used to commit on
+                        // release.
+                        val slideX = liquidToolbarDamp(drag.x, maxSlide)
+                        val slideY = liquidToolbarDamp(drag.y, maxSlide)
+                        translationX = slideX
+                        translationY = slideY
+                        // Stretch along the pull, squash across it, on top of the press.
+                        val pull = (abs(slideX) / maxSlide).fastCoerceIn(0f, 1f)
+                        scaleX = 1f + LiquidToolbarPressStretchX * progress + LiquidToolbarDragStretchX * pull
+                        scaleY = 1f - LiquidToolbarPressSquashY * progress - LiquidToolbarDragSquashY * pull
+                    },
                     onDrawSurface = { drawRect(palette.baseFillColor) },
                 ).border(
                     width = 1.dp,
@@ -381,16 +364,13 @@ private fun LiquidToolbarActionTooltip(
  */
 private fun liquidToolbarHighlight(
     material: LiquidActionBarMaterial,
-    layeredStyleEnabled: Boolean,
     isBlurEnabled: Boolean,
     isInLightTheme: Boolean,
 ): Highlight {
-    if (!layeredStyleEnabled || !isBlurEnabled) {
+    if (!isBlurEnabled) {
         return liquidActionBarBaseHighlight(
             material = material,
-            layeredStyleEnabled = layeredStyleEnabled,
             isBlurEnabled = isBlurEnabled,
-            isInLightTheme = isInLightTheme,
         )
     }
     return Highlight(

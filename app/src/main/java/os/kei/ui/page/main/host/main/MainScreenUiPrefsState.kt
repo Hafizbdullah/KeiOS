@@ -25,12 +25,9 @@ internal class MainScreenUiPrefsState(
     private val mcpServerManager: McpServerManager,
     private val viewModel: MainScreenPrefsViewModel,
 ) {
-    val liquidActionBarLayeredStyleEnabled: Boolean get() = snapshot.liquidActionBarLayeredStyleEnabled
     val liquidSwitchEnabled: Boolean get() = snapshot.liquidSwitchEnabled
     val liquidToastEnabled: Boolean get() = snapshot.liquidToastEnabled
     val reduceToastInterruptionEnabled: Boolean get() = snapshot.reduceToastInterruptionEnabled
-    val liquidSheetEnabled: Boolean get() = snapshot.liquidSheetEnabled
-    val liquidDialogEnabled: Boolean get() = snapshot.liquidDialogEnabled
     val transitionAnimationsEnabled: Boolean get() = snapshot.transitionAnimationsEnabled
     val predictiveBackAnimationsEnabled: Boolean get() = snapshot.predictiveBackAnimationsEnabled
     val searchAutoFocusEnabled: Boolean get() = snapshot.searchAutoFocusEnabled
@@ -59,10 +56,6 @@ internal class MainScreenUiPrefsState(
     val cacheDiagnosticsEnabled: Boolean get() = snapshot.cacheDiagnosticsEnabled
     val visibleBottomPageNames: Set<String> get() = snapshot.visibleBottomPageNames
 
-    fun updateLiquidActionBarLayeredStyleEnabled(value: Boolean) {
-        viewModel.updateLiquidActionBarLayeredStyleEnabled(value)
-    }
-
     fun updateLiquidSwitchEnabled(value: Boolean) {
         viewModel.updateLiquidSwitchEnabled(value)
     }
@@ -73,14 +66,6 @@ internal class MainScreenUiPrefsState(
 
     fun updateReduceToastInterruptionEnabled(value: Boolean) {
         viewModel.updateReduceToastInterruptionEnabled(value)
-    }
-
-    fun updateLiquidSheetEnabled(value: Boolean) {
-        viewModel.updateLiquidSheetEnabled(value)
-    }
-
-    fun updateLiquidDialogEnabled(value: Boolean) {
-        viewModel.updateLiquidDialogEnabled(value)
     }
 
     fun updateTransitionAnimationsEnabled(value: Boolean) {

@@ -93,7 +93,6 @@ fun HomePage(
     homeIconHdrEnabled: Boolean,
     homeDynamicFullEffectEnabled: Boolean = false,
     runtime: MainPageRuntime = MainPageRuntime(),
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     visibleBottomPages: Set<BottomPage>,
     visibleOverviewCards: Set<HomeOverviewCard> = defaultHomeOverviewCards(),
     showCacheFreshnessInCards: Boolean = false,
@@ -378,7 +377,6 @@ fun HomePage(
         AppTopEndActionBarOverlay {
             LiquidToolbar(
                 backdrop = actionBarBackdrop,
-                layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 actions = homeActionItems,
             )
         }

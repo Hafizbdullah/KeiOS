@@ -79,7 +79,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun BaStudentGuidePage(
     warmStartId: Long = 0L,
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     preloadingEnabled: Boolean = false,
     onBack: () -> Unit,
 ) {
@@ -450,7 +449,6 @@ fun BaStudentGuidePage(
             AppTopEndActionBarOverlay {
                 LiquidToolbar(
                     backdrop = topBarBackdrop,
-                    layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     actions = actionItems,
                 )
             }

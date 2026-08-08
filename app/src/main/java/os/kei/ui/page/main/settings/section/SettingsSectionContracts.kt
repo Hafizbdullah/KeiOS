@@ -124,23 +124,17 @@ internal data class SettingsAnimationSectionActions(
 
 @Immutable
 internal data class SettingsComponentEffectsSectionState(
-    val liquidActionBarLayeredStyleEnabled: Boolean,
     val liquidSwitchEnabled: Boolean,
     val liquidToastEnabled: Boolean,
     val reduceToastInterruptionEnabled: Boolean,
-    val liquidSheetEnabled: Boolean,
-    val liquidDialogEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
 )
 
 internal data class SettingsComponentEffectsSectionActions(
-    val onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     val onLiquidSwitchChanged: (Boolean) -> Unit,
     val onLiquidToastChanged: (Boolean) -> Unit,
     val onReduceToastInterruptionChanged: (Boolean) -> Unit,
-    val onLiquidSheetChanged: (Boolean) -> Unit,
-    val onLiquidDialogChanged: (Boolean) -> Unit,
     val onSearchAutoFocusChanged: (Boolean) -> Unit,
     val onGripAwareFloatingDockChanged: (Boolean) -> Unit,
 )

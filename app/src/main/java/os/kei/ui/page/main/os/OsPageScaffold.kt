@@ -17,7 +17,6 @@ internal fun OsPageScaffoldShell(
     scrollBehavior: ScrollBehavior,
     topBarColor: Color,
     topBarBackdrop: LayerBackdrop,
-    layeredStyleEnabled: Boolean,
     manageCardsContentDescription: String,
     manageActivitiesContentDescription: String,
     manageShellCardsContentDescription: String,
@@ -73,7 +72,6 @@ internal fun OsPageScaffoldShell(
         actions = {
             LiquidToolbar(
                 backdrop = topBarBackdrop,
-                layeredStyleEnabled = layeredStyleEnabled,
                 actions = actionItems,
             )
         },

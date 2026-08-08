@@ -73,12 +73,9 @@ internal fun deriveAnimationPresentation(state: SettingsAnimationSectionState): 
 internal fun deriveComponentEffectsPresentation(state: SettingsComponentEffectsSectionState): SettingsSectionPresentationState =
     SettingsSectionPresentationState(
         active =
-            state.liquidActionBarLayeredStyleEnabled ||
-                state.liquidSwitchEnabled ||
+            state.liquidSwitchEnabled ||
                 state.liquidToastEnabled ||
                 state.reduceToastInterruptionEnabled ||
-                state.liquidSheetEnabled ||
-                state.liquidDialogEnabled ||
                 state.searchAutoFocusEnabled ||
                 state.gripAwareFloatingDockEnabled,
     )

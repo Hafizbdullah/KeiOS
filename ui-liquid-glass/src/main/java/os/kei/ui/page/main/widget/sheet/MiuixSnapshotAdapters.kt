@@ -9,8 +9,6 @@ import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -25,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,9 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -62,16 +57,12 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.navigationevent.findViewTreeNavigationEventDispatcherOwner
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowPopup
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import androidx.compose.ui.window.PopupPositionProvider as ComposePopupPositionProvider
@@ -500,7 +491,6 @@ fun SnapshotWindowBottomSheet(
     initialDetent: LiquidSheetInitialDetent = LiquidSheetInitialDetent.ThreeQuarter,
     surfaceTone: LiquidSheetSurfaceTone = LiquidSheetSurfaceTone.Default,
     preferExportedBackdrop: Boolean = false,
-    useLiquidGlassSheet: Boolean = LocalLiquidSheetEnabled.current,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -515,13 +505,6 @@ fun SnapshotWindowBottomSheet(
         }
     }
 
-    val sheetVisualMode =
-        if (useLiquidGlassSheet) {
-            SheetVisualMode.Liquid
-        } else {
-            SheetVisualMode.Miuix
-        }
-
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
     val blockedDismissRequestGate = remember(show) { BlockedDismissRequestGate() }
     val requestBlockedDismiss: () -> Unit = {
@@ -529,90 +512,36 @@ fun SnapshotWindowBottomSheet(
             currentOnBlockedDismissRequest?.invoke()
         }
     }
-    var blockedDismissPromptToken by remember { mutableIntStateOf(0) }
-    LaunchedEffect(blockedDismissPromptToken) {
-        if (blockedDismissPromptToken <= 0) return@LaunchedEffect
-        delay(BlockedSheetDismissPromptDelayMillis)
-        requestBlockedDismiss()
-    }
-    val sheetModifier =
-        modifier.blockedSheetDismissGesturePrompt(
-            enabled =
-                sheetVisualMode == SheetVisualMode.Miuix &&
-                    show &&
-                    !allowDismiss &&
-                    onBlockedDismissRequest != null,
-            onBlockedDismissRequest = { blockedDismissPromptToken++ },
-        )
-    val sheetContent: @Composable () -> Unit = {
-        CompositionLocalProvider(LocalSheetVisualMode provides sheetVisualMode) {
-            if (sheetVisualMode == SheetVisualMode.Miuix) {
-                BackHandler(
-                    enabled = show && !allowDismiss && onBlockedDismissRequest != null,
-                    onBack = requestBlockedDismiss,
-                )
-            }
-            content()
-        }
-    }
 
-    val miuixSheetBackgroundColor =
-        (backgroundColor ?: BottomSheetDefaults.backgroundColor())
-            .opaqueCompositeOver(MiuixTheme.colorScheme.background)
-
-    if (useLiquidGlassSheet) {
-        LiquidGlassBottomSheet(
-            show = show,
-            modifier = sheetModifier,
-            title = title,
-            startAction = startAction,
-            endAction = endAction,
-            backgroundColor = backgroundColor,
-            enableWindowDim = enableWindowDim,
-            cornerRadius = cornerRadius,
-            sheetMaxWidth = sheetMaxWidth,
-            onDismissRequest = onDismissRequest,
-            onDismissFinished = onDismissFinished,
-            outsideMargin = outsideMargin,
-            insideMargin = insideMargin,
-            defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-            dragHandleColor = dragHandleColor,
-            allowDismiss = allowDismiss,
-            onBlockedDismissRequest =
-                requestBlockedDismiss.takeIf {
-                    onBlockedDismissRequest != null
-                },
-            enableNestedScroll = enableNestedScroll,
-            initialDetent = initialDetent,
-            surfaceTone = surfaceTone,
-            preferExportedBackdrop = preferExportedBackdrop,
-            content = sheetContent,
-        )
-    } else {
-        WindowBottomSheet(
-            show = show,
-            modifier = sheetModifier,
-            title = title,
-            startAction = startAction,
-            endAction = endAction,
-            backgroundColor = miuixSheetBackgroundColor,
-            enableWindowDim = enableWindowDim,
-            cornerRadius = cornerRadius,
-            sheetMaxWidth = sheetMaxWidth,
-            onDismissRequest = onDismissRequest,
-            onDismissFinished = onDismissFinished,
-            outsideMargin = outsideMargin,
-            insideMargin = insideMargin,
-            defaultWindowInsetsPadding = defaultWindowInsetsPadding,
-            dragHandleColor = dragHandleColor ?: BottomSheetDefaults.dragHandleColor(),
-            allowDismiss = allowDismiss,
-            enableNestedScroll = enableNestedScroll,
-            content = sheetContent,
-        )
-    }
+    LiquidGlassBottomSheet(
+        show = show,
+        modifier = modifier,
+        title = title,
+        startAction = startAction,
+        endAction = endAction,
+        backgroundColor = backgroundColor,
+        enableWindowDim = enableWindowDim,
+        cornerRadius = cornerRadius,
+        sheetMaxWidth = sheetMaxWidth,
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+        outsideMargin = outsideMargin,
+        insideMargin = insideMargin,
+        defaultWindowInsetsPadding = defaultWindowInsetsPadding,
+        dragHandleColor = dragHandleColor,
+        allowDismiss = allowDismiss,
+        onBlockedDismissRequest =
+            requestBlockedDismiss.takeIf {
+                onBlockedDismissRequest != null
+            },
+        enableNestedScroll = enableNestedScroll,
+        initialDetent = initialDetent,
+        surfaceTone = surfaceTone,
+        preferExportedBackdrop = preferExportedBackdrop,
+        content = content,
+    )
 }
 
-private const val BlockedSheetDismissPromptDelayMillis = 140L
 private const val BlockedSheetDismissDeduplicationWindowNanos = 200_000_000L
 
 internal class BlockedDismissRequestGate(
@@ -632,50 +561,6 @@ internal class BlockedDismissRequestGate(
     }
 }
 
-private fun Modifier.blockedSheetDismissGesturePrompt(
-    enabled: Boolean,
-    onBlockedDismissRequest: () -> Unit,
-): Modifier {
-    if (!enabled) return this
-    return pointerInput(onBlockedDismissRequest) {
-        val topGestureRegionPx = 72.dp.toPx()
-        val dismissIntentThresholdPx = 42.dp.toPx()
-        awaitEachGesture {
-            val down =
-                awaitFirstDown(
-                    requireUnconsumed = false,
-                    pass = PointerEventPass.Initial,
-                )
-            if (down.position.y > topGestureRegionPx) {
-                return@awaitEachGesture
-            }
-            var totalX = 0f
-            var totalY = 0f
-            var hasDismissIntent = false
-            while (true) {
-                val event = awaitPointerEvent(pass = PointerEventPass.Initial)
-                val change =
-                    event.changes.firstOrNull { it.id == down.id }
-                        ?: event.changes.firstOrNull()
-                        ?: break
-                if (!change.pressed) break
-                val delta = change.positionChange()
-                totalX += delta.x
-                totalY += delta.y
-                if (
-                    !hasDismissIntent &&
-                    totalY > dismissIntentThresholdPx &&
-                    totalY > abs(totalX) * 1.35f
-                ) {
-                    hasDismissIntent = true
-                }
-            }
-            if (hasDismissIntent) {
-                onBlockedDismissRequest()
-            }
-        }
-    }
-}
 
 private fun PaddingValues.toIntRect(
     density: androidx.compose.ui.unit.Density,

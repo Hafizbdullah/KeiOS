@@ -93,7 +93,6 @@ internal data class MainPagerGitHubPageState(
 internal fun MainPagerPageHost(
     pageType: BottomPage,
     runtime: MainPageRuntime,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     homePageState: MainPagerHomePageState?,
     osPageState: MainPagerOsPageState?,
     baPageState: MainPagerBaPageState?,
@@ -131,7 +130,6 @@ internal fun MainPagerPageHost(
                         homeIconHdrEnabled = homeState.homeIconHdrEnabled,
                         homeDynamicFullEffectEnabled = homeState.homeDynamicFullEffectEnabled,
                         runtime = runtime,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         visibleBottomPages = homeState.visibleBottomPages,
                         visibleOverviewCards = homeState.visibleOverviewCards,
                         showCacheFreshnessInCards = homeState.showCacheFreshnessInCards,
@@ -156,7 +154,6 @@ internal fun MainPagerPageHost(
                         privilegeStatus = osState.privilegeStatus,
                         privilegedShell = osState.privilegedShell,
                         onOpenShellRunner = osState.onOpenShellRunner,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     )
                 }
 
@@ -168,7 +165,6 @@ internal fun MainPagerPageHost(
                     BAPage(
                         runtime = runtime,
                         preloadingEnabled = baState.preloadingEnabled,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenPoolStudentGuide = baState.onOpenPoolGuideDetail,
                         onOpenGuideCatalog = baState.onOpenBaGuideCatalog,
                         onOpenActivityCalendar = baState.onOpenBaActivityCalendar,
@@ -186,7 +182,6 @@ internal fun MainPagerPageHost(
                     McpPage(
                         mcpServerManager = mcpState.mcpServerManager,
                         runtime = runtime,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenSkill = mcpState.onOpenMcpSkill,
                     )
                 }
@@ -202,7 +197,6 @@ internal fun MainPagerPageHost(
                         externalRefreshTriggerToken = githubState.requestedGitHubRefreshToken,
                         externalActionsTrackId = githubState.requestedGitHubActionsTrackId,
                         externalActionsSheetToken = githubState.requestedGitHubActionsSheetToken,
-                        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                         onOpenActionsNotificationHistory = githubState.onOpenActionsNotificationHistory,
                     )
                 }

@@ -89,11 +89,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
 
     val liquidControlsGroupLabel = resolveString(R.string.settings_group_liquid_controls_title)
     val interactionGroupLabel = resolveString(R.string.settings_group_interaction_title)
-    val actionbarStyleLabel = resolveString(R.string.settings_actionbar_style_title)
     val liquidSwitchLabel = resolveString(R.string.settings_liquid_switch_title)
     val liquidToastLabel = resolveString(R.string.settings_liquid_toast_title)
-    val liquidSheetLabel = resolveString(R.string.settings_liquid_sheet_title)
-    val liquidDialogLabel = resolveString(R.string.settings_liquid_dialog_title)
     val searchAutoFocusLabel = resolveString(R.string.settings_search_auto_focus_title)
     val gripAwareFloatingDockLabel = resolveString(R.string.settings_grip_aware_floating_dock_title)
 
@@ -275,11 +272,8 @@ internal fun buildSettingsSearchTargets(resolveString: (Int) -> String): List<Se
                     interfaceCategoryLabel,
                     legacyEffectsCategoryLabel,
                     liquidControlsGroupLabel,
-                    actionbarStyleLabel,
                     liquidSwitchLabel,
                     liquidToastLabel,
-                    liquidSheetLabel,
-                    liquidDialogLabel,
                 ),
         ),
         SettingsSearchTarget(

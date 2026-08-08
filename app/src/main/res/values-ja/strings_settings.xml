@@ -62,7 +62,7 @@
     <string name="settings_group_component_effects_summary">ActionBar、下部バー、カードのフィードバック表示を管理します。</string>
     <string name="settings_group_liquid_controls_header">リキッド</string>
     <string name="settings_group_liquid_controls_title">リキッド操作</string>
-    <string name="settings_group_liquid_controls_summary">ActionBar、スイッチ、Toast、Sheet、Dialog の Liquid Glass 表示を管理します。</string>
+    <string name="settings_group_liquid_controls_summary">スイッチと Toast の Liquid Glass 表示を管理します。ActionBar、Sheet、Dialog は常に Liquid Glass です。</string>
     <string name="settings_group_interaction_header">操作</string>
     <string name="settings_group_interaction_title">操作体験</string>
     <string name="settings_group_interaction_summary">Toast の割り込み、検索フォーカス、握り方に応じたフローティングボタンを管理します。</string>
@@ -84,11 +84,6 @@
     <string name="settings_group_copy_header">テキストコピー</string>
     <string name="settings_group_copy_title">コピーとテキスト選択</string>
     <string name="settings_group_copy_summary">軽量コピーと完全選択モードを管理します。</string>
-    <string name="settings_actionbar_style_header">アクションバー</string>
-    <string name="settings_actionbar_style_title">Liquid Glass Plus アクションバー</string>
-    <string name="settings_actionbar_style_summary_enabled">完全な液体マテリアル: カプセルベース、屈折レンズ、ハイライトと影。</string>
-    <string name="settings_actionbar_style_summary_disabled">軽量マテリアル: ぼかしと輪郭を残し、屈折レンズと影を省きます。</string>
-    <string name="settings_actionbar_style_scope">Home / OS / MCP / GitHub / BA / 生徒情報ページの上部 ActionBar</string>
     <string name="settings_liquid_switch_title">Liquid Glass コントロール</string>
     <string name="settings_liquid_switch_summary_enabled">v2 Liquid Glass のスイッチ、ボタン、カプセル型コントロールで操作感を統一します。</string>
     <string name="settings_liquid_switch_summary_disabled">ソリッドなカプセル fallback と Miuix スイッチで低負荷時の見た目をそろえます。</string>
@@ -388,12 +383,6 @@
     <string name="settings_reduce_toast_interruption_title">Toast の割り込みを減らす</string>
     <string name="settings_reduce_toast_interruption_summary_enabled">実行完了、コピー完了、クリア完了など優先度の低い通知を隠します。エラーと権限の通知は表示されます。</string>
     <string name="settings_reduce_toast_interruption_summary_disabled">優先度の低い通知を軽量な Liquid Glass Toast として表示します。</string>
-    <string name="settings_liquid_sheet_title">リキッドグラス シート</string>
-    <string name="settings_liquid_sheet_summary_enabled">v2 Liquid Glass ボトムシートを使用し、すりガラス屈折効果とスプリングアニメーション付き。</string>
-    <string name="settings_liquid_sheet_summary_disabled">Miuix 標準のボトムシートスタイルを使用します。</string>
-    <string name="settings_liquid_dialog_title">リキッドグラス ダイアログ</string>
-    <string name="settings_liquid_dialog_summary_enabled">v2 Liquid Glass 確認ダイアログを使用し、すりガラス外観とスプリングアニメーション付き。</string>
-    <string name="settings_liquid_dialog_summary_disabled">Miuix 標準のダイアログスタイルを使用します。</string>
     <string name="settings_cache_scope_disabled">設定ページのキャッシュ診断だけを無効にします。ページキャッシュと通常利用は有効のままです。</string>
     <string name="settings_cache_disabled_desc">キャッシュ診断は無効です。設定はキャッシュサイズ、更新時刻、クリーンアップ統計を読みません。</string>
     <string name="settings_cache_loading_desc">ページ横断でキャッシュ概要を読み取り中</string>

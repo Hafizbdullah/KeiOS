@@ -62,7 +62,7 @@
     <string name="settings_group_component_effects_summary">Manage ActionBar, bottom bar, and card feedback visuals.</string>
     <string name="settings_group_liquid_controls_header">Liquid</string>
     <string name="settings_group_liquid_controls_title">Liquid controls</string>
-    <string name="settings_group_liquid_controls_summary">Liquid Glass style for ActionBar, switches, Toast, Sheet, and Dialog.</string>
+    <string name="settings_group_liquid_controls_summary">Liquid Glass style for switches and Toast. ActionBar, Sheet, and Dialog are always Liquid Glass.</string>
     <string name="settings_group_interaction_header">Interaction</string>
     <string name="settings_group_interaction_title">Interaction</string>
     <string name="settings_group_interaction_summary">Toast interruption, search focus, and grip-aware floating buttons.</string>
@@ -84,11 +84,6 @@
     <string name="settings_group_copy_header">Text copy</string>
     <string name="settings_group_copy_title">Copy &amp; text selection</string>
     <string name="settings_group_copy_summary">Manage lightweight copy and full selection modes.</string>
-    <string name="settings_actionbar_style_header">Action bar</string>
-    <string name="settings_actionbar_style_title">Liquid Glass Plus action bar</string>
-    <string name="settings_actionbar_style_summary_enabled">Full liquid material: capsule base, refraction lens, highlight and shadow.</string>
-    <string name="settings_actionbar_style_summary_disabled">Lighter material: keeps blur and outline, drops the refraction lens and shadow.</string>
-    <string name="settings_actionbar_style_scope">Top ActionBar on Home / OS / MCP / GitHub / BA / Guide pages</string>
     <string name="settings_liquid_switch_title">Liquid Glass controls</string>
     <string name="settings_liquid_switch_summary_enabled">Use v2 Liquid Glass switches, buttons, and capsule controls for consistent liquid interaction.</string>
     <string name="settings_liquid_switch_summary_disabled">Use solid capsule fallback and the Miuix switch style for consistent low-load visuals.</string>
@@ -388,12 +383,6 @@
     <string name="settings_reduce_toast_interruption_title">Reduce toast interruptions</string>
     <string name="settings_reduce_toast_interruption_summary_enabled">Hide low-priority prompts such as run completed, copied, and cleared. Error and permission prompts still appear.</string>
     <string name="settings_reduce_toast_interruption_summary_disabled">Allow low-priority prompts to appear as lightweight Liquid Glass Toast messages.</string>
-    <string name="settings_liquid_sheet_title">Liquid Glass Sheet</string>
-    <string name="settings_liquid_sheet_summary_enabled">Use v2 Liquid Glass bottom sheet with frosted-glass refraction and spring animations.</string>
-    <string name="settings_liquid_sheet_summary_disabled">Use Miuix standard bottom sheet style.</string>
-    <string name="settings_liquid_dialog_title">Liquid Glass Dialog</string>
-    <string name="settings_liquid_dialog_summary_enabled">Use v2 Liquid Glass confirmation dialogs with frosted-glass appearance and spring animations.</string>
-    <string name="settings_liquid_dialog_summary_disabled">Use Miuix standard dialog style.</string>
     <string name="settings_cache_scope_disabled">Only disables Settings-page cache diagnostics. Page caches and normal usage remain active.</string>
     <string name="settings_cache_disabled_desc">Cache diagnostics are disabled. Settings will skip cache size, update time, and cleanup stats.</string>
     <string name="settings_cache_loading_desc">Reading cache summaries across pages</string>

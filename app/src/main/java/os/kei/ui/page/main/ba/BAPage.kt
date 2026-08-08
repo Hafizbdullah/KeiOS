@@ -42,7 +42,6 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 fun BAPage(
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
     preloadingEnabled: Boolean = false,
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenPoolStudentGuide: (String) -> Unit = {},
     onOpenGuideCatalog: () -> Unit = {},
     onOpenActivityCalendar: (Int?) -> Unit = {},
@@ -379,7 +378,6 @@ fun BAPage(
             AppTopEndActionBarOverlay {
                 BaTopBarActions(
                     backdrop = backdrops.topBar,
-                    liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     onShowAccountManagement = { openAccountManagementSheet() },
                     onShowSettings = ::openSettingsSheet,
                     onShowNotificationSettings = ::openNotificationSettingsSheet,

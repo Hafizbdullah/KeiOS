@@ -49,7 +49,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun McpPage(
     mcpServerManager: McpServerManager,
     runtime: MainPageRuntime = MainPageRuntime(contentBottomPadding = 72.dp),
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     onOpenSkill: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -338,7 +337,6 @@ fun McpPage(
             actions = {
                 LiquidToolbar(
                     backdrop = backdrops.topBar,
-                    layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     actions =
                         rememberMcpPageActionItems(
                             onOpenEditSheet = actions.onOpenEditSheet,

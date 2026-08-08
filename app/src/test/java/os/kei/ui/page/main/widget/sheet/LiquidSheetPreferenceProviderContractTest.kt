@@ -1,73 +1,60 @@
 package os.kei.ui.page.main.widget.sheet
 
-import java.io.File
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import java.io.File
+import kotlin.test.assertFalse
 
+/**
+ * The Liquid sheet, alert and action bar are no longer optional.
+ *
+ * They used to sit behind preferences that swapped in the Miuix originals, and those originals could
+ * not be more than flat cards: hosted in a Dialog window, `LocalSceneBackdrop` is blanked to
+ * `emptyBackdrop()` and every blur they asked for silently drew nothing. Rather than keep shipping a
+ * downgrade path, the toggles are gone.
+ *
+ * This is the inverse of the contract test it replaces — it fails if any of that plumbing grows back.
+ */
 class LiquidSheetPreferenceProviderContractTest {
     @Test
-    fun `main root seeds repository from stored liquid sheet preference`() {
-        val source = sourceFile(MAIN_PREFS_VIEW_MODEL_SOURCE)
+    fun `no source still reads a liquid sheet or dialog or action bar preference`() {
+        val forbidden =
+            listOf(
+                "isLiquidSheetEnabled",
+                "setLiquidSheetEnabled",
+                "liquidSheetEnabled",
+                "LocalLiquidSheetEnabled",
+                "useLiquidGlassSheet",
+                "isLiquidDialogEnabled",
+                "setLiquidDialogEnabled",
+                "liquidDialogEnabled",
+                "isLiquidActionBarLayeredStyleEnabled",
+                "setLiquidActionBarLayeredStyleEnabled",
+                "liquidActionBarLayeredStyleEnabled",
+                "layeredStyleEnabled",
+                "SheetVisualMode",
+            )
 
-        assertEquals(1, source.occurrencesOf("UiPrefs.isLiquidSheetEnabled()"))
-        assertTrue("initialSnapshot =" in source)
-        assertTrue("liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled()," in source)
-    }
-
-    @Test
-    fun `github share root provides stored liquid sheet preference`() {
-        val source = sourceFile(GITHUB_SHARE_IMPORT_ACTIVITY_SOURCE)
-        val providerBlock = source.functionCallBlock("CompositionLocalProvider")
-
-        assertEquals(1, source.occurrencesOf("UiPrefs.isLiquidSheetEnabled()"))
-        assertTrue("val liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled()" in source)
-        assertTrue("LocalLiquidSheetEnabled provides liquidSheetEnabled" in providerBlock)
-    }
-
-    @Test
-    fun `component lab keeps its explicit liquid sheet showcase`() {
-        val source = sourceFile(DEBUG_LIQUID_SHEET_CARD_SOURCE)
-
-        assertTrue("useLiquidGlassSheet = true," in source)
-    }
-}
-
-private fun String.functionCallBlock(functionName: String): String {
-    val marker = "$functionName("
-    val start = indexOf(marker)
-    require(start >= 0) { "Unable to locate $marker" }
-
-    var depth = 1
-    var index = start + marker.length
-    while (index < length && depth > 0) {
-        when (this[index]) {
-            '(' -> depth += 1
-            ')' -> depth -= 1
+        kotlinSources().forEach { file ->
+            val text = file.readText()
+            forbidden.forEach { symbol ->
+                assertFalse(
+                    symbol in text,
+                    "${file.path} still references the removed '$symbol'",
+                )
+            }
         }
-        index += 1
     }
-    require(depth == 0) { "Unable to locate the closing parenthesis for $marker" }
-    return substring(start, index)
+
+    private fun kotlinSources(): List<File> {
+        val root = repositoryRoot()
+        return listOf("app/src/main", "ui-liquid-glass/src/main", "core-prefs/src/main")
+            .map { File(root, it) }
+            .flatMap { dir -> dir.walkTopDown().filter { it.isFile && it.extension == "kt" } }
+    }
+
+    private fun repositoryRoot(): File {
+        val start = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+        return generateSequence(start) { it.parentFile }
+            .first { File(it, "settings.gradle.kts").isFile || File(it, "settings.gradle").isFile }
+    }
 }
-
-private fun String.occurrencesOf(needle: String): Int =
-    windowed(needle.length).count { it == needle }
-
-private fun sourceFile(relativePath: String): String {
-    val workingDirectory = File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
-    val sourceFile =
-        generateSequence(workingDirectory) { directory -> directory.parentFile }
-            .map { directory -> File(directory, relativePath) }
-            .firstOrNull(File::isFile)
-    return requireNotNull(sourceFile) {
-        "Unable to locate $relativePath from $workingDirectory"
-    }.readText()
-}
-
-private const val MAIN_PREFS_VIEW_MODEL_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/host/main/MainScreenPrefsViewModel.kt"
-private const val GITHUB_SHARE_IMPORT_ACTIVITY_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/github/share/GitHubShareImportActivity.kt"
-private const val DEBUG_LIQUID_SHEET_CARD_SOURCE =
-    "app/src/main/java/os/kei/ui/page/main/debug/DebugLiquidSheetCard.kt"

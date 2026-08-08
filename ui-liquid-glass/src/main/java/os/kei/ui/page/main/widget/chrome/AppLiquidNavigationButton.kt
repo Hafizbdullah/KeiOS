@@ -15,7 +15,6 @@ fun AppLiquidNavigationButton(
     onClick: () -> Unit,
     backdrop: Backdrop,
     modifier: Modifier = Modifier,
-    layeredStyleEnabled: Boolean = true,
     onInteractionChanged: (Boolean) -> Unit = {}
 ) {
     AppLiquidIconButton(

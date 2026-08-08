@@ -72,7 +72,6 @@ internal fun GitHubTopBarSection(
 @Composable
 internal fun GitHubTopBarActions(
     backdrop: LayerBackdrop,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     sortMode: GitHubSortMode,
     sortDirection: GitHubSortDirection,
     trackedFilterMode: GitHubTrackedFilterMode,
@@ -182,7 +181,6 @@ internal fun GitHubTopBarActions(
     Box {
         LiquidToolbar(
             backdrop = backdrop,
-            layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
             actions = actionItems,
         )
 

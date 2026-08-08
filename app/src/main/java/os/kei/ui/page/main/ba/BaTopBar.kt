@@ -36,7 +36,6 @@ internal fun BaTopBar(
 @Composable
 internal fun BaTopBarActions(
     backdrop: LayerBackdrop,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     onShowAccountManagement: () -> Unit,
     onShowSettings: () -> Unit,
     onShowNotificationSettings: () -> Unit,
@@ -77,7 +76,6 @@ internal fun BaTopBarActions(
 
     LiquidToolbar(
         backdrop = backdrop,
-        layeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
         actions = actionItems,
     )
 }

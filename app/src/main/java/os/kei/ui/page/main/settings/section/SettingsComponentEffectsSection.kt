@@ -39,12 +39,7 @@ internal fun SettingsComponentEffectsSection(
                 containerColor =
                     settingsSectionContainerColor(
                         SettingsSectionPresentationState(
-                            active =
-                                state.liquidActionBarLayeredStyleEnabled ||
-                                    state.liquidSwitchEnabled ||
-                                    state.liquidToastEnabled ||
-                                    state.liquidSheetEnabled ||
-                                    state.liquidDialogEnabled,
+                            active = state.liquidSwitchEnabled || state.liquidToastEnabled,
                         ),
                         enabledCardColor,
                         disabledCardColor,
@@ -52,19 +47,6 @@ internal fun SettingsComponentEffectsSection(
                 expanded = isCardExpanded(SettingsCardExpansionId.LiquidControls),
                 onExpandedChange = { onCardExpandedChange(SettingsCardExpansionId.LiquidControls, it) },
             ) {
-                SettingsToggleItem(
-                    title = stringResource(R.string.settings_actionbar_style_title),
-                    summary =
-                        if (state.liquidActionBarLayeredStyleEnabled) {
-                            stringResource(R.string.settings_actionbar_style_summary_enabled)
-                        } else {
-                            stringResource(R.string.settings_actionbar_style_summary_disabled)
-                        },
-                    checked = state.liquidActionBarLayeredStyleEnabled,
-                    onCheckedChange = actions.onLiquidActionBarLayeredStyleChanged,
-                    infoKey = stringResource(R.string.common_scope),
-                    infoValue = stringResource(R.string.settings_actionbar_style_scope),
-                )
                 SettingsToggleItem(
                     title = stringResource(R.string.settings_liquid_switch_title),
                     summary =
@@ -88,28 +70,6 @@ internal fun SettingsComponentEffectsSection(
                         },
                     checked = state.liquidToastEnabled,
                     onCheckedChange = actions.onLiquidToastChanged,
-                )
-                SettingsToggleItem(
-                    title = stringResource(R.string.settings_liquid_sheet_title),
-                    summary =
-                        if (state.liquidSheetEnabled) {
-                            stringResource(R.string.settings_liquid_sheet_summary_enabled)
-                        } else {
-                            stringResource(R.string.settings_liquid_sheet_summary_disabled)
-                        },
-                    checked = state.liquidSheetEnabled,
-                    onCheckedChange = actions.onLiquidSheetChanged,
-                )
-                SettingsToggleItem(
-                    title = stringResource(R.string.settings_liquid_dialog_title),
-                    summary =
-                        if (state.liquidDialogEnabled) {
-                            stringResource(R.string.settings_liquid_dialog_summary_enabled)
-                        } else {
-                            stringResource(R.string.settings_liquid_dialog_summary_disabled)
-                        },
-                    checked = state.liquidDialogEnabled,
-                    onCheckedChange = actions.onLiquidDialogChanged,
                 )
             }
         }

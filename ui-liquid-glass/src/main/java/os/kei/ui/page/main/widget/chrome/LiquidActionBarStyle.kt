@@ -9,11 +9,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceIn
 import com.kyant.backdrop.highlight.Highlight
-import com.kyant.backdrop.highlight.HighlightStyle
 import com.kyant.backdrop.shadow.Shadow
 import os.kei.ui.animation.DampedDragAnimation
 
@@ -61,7 +59,6 @@ internal fun Modifier.liquidActionBarSelectionAura(
 @Composable
 internal fun rememberLiquidActionBarPalette(
     material: LiquidActionBarMaterial,
-    layeredStyleEnabled: Boolean,
     isBlurEnabled: Boolean,
     isInLightTheme: Boolean,
     primary: Color,
@@ -70,152 +67,53 @@ internal fun rememberLiquidActionBarPalette(
 ): LiquidActionBarPalette =
     remember(
         material,
-        layeredStyleEnabled,
         isBlurEnabled,
         isInLightTheme,
         primary,
         onSurface,
         surfaceContainer,
     ) {
-        if (layeredStyleEnabled) {
-            if (isInLightTheme) {
-                return@remember LiquidActionBarPalette(
-                    baseFillColor = if (isBlurEnabled) surfaceContainer.copy(alpha = material.surfaceAlpha) else surfaceContainer,
-                    inactiveContentColor = onSurface.copy(alpha = if (isBlurEnabled) 0.92f else 0.90f),
-                    activeContentColor = primary,
-                    selectionGlowColor = Color.White,
-                    selectionCoreColor = Color.White,
-                    outlineColor = Color.White.copy(alpha = if (isBlurEnabled) 0.18f else 0.16f),
-                )
-            }
-
-            return@remember LiquidActionBarPalette(
-                baseFillColor = if (isBlurEnabled) surfaceContainer.copy(alpha = material.surfaceAlpha) else surfaceContainer,
-                inactiveContentColor = onSurface.copy(alpha = 0.94f),
-                activeContentColor = primary.copy(alpha = 0.98f),
-                selectionGlowColor = Color.White.copy(alpha = 0.26f),
-                selectionCoreColor = Color.White.copy(alpha = 0.18f),
-                outlineColor = Color.White.copy(alpha = if (isBlurEnabled) 0.12f else 0.10f),
-            )
-        }
-
-        if (!isBlurEnabled) {
-            return@remember LiquidActionBarPalette(
-                baseFillColor = surfaceContainer,
-                inactiveContentColor = onSurface.copy(alpha = 0.68f),
-                activeContentColor = onSurface.copy(alpha = 0.94f),
-                selectionGlowColor = Color.White.copy(alpha = 0.10f),
-                selectionCoreColor = Color.White.copy(alpha = 0.08f),
-                outlineColor =
-                    if (isInLightTheme) {
-                        Color.White.copy(alpha = 0.12f)
-                    } else {
-                        Color.White.copy(alpha = 0.10f)
-                    },
-            )
-        }
-
         if (isInLightTheme) {
             return@remember LiquidActionBarPalette(
-                baseFillColor = surfaceContainer.copy(alpha = 0.20f),
-                inactiveContentColor = onSurface.copy(alpha = 0.60f),
-                activeContentColor = onSurface.copy(alpha = 0.92f),
-                selectionGlowColor = Color.White.copy(alpha = 0.14f),
-                selectionCoreColor = Color.White.copy(alpha = 0.10f),
-                outlineColor = Color.White.copy(alpha = 0.14f),
+                baseFillColor = if (isBlurEnabled) surfaceContainer.copy(alpha = material.surfaceAlpha) else surfaceContainer,
+                inactiveContentColor = onSurface.copy(alpha = if (isBlurEnabled) 0.92f else 0.90f),
+                activeContentColor = primary,
+                selectionGlowColor = Color.White,
+                selectionCoreColor = Color.White,
+                outlineColor = Color.White.copy(alpha = if (isBlurEnabled) 0.18f else 0.16f),
             )
         }
 
-        return@remember LiquidActionBarPalette(
-            baseFillColor = surfaceContainer.copy(alpha = 0.22f),
-            inactiveContentColor = onSurface.copy(alpha = 0.82f),
-            activeContentColor = onSurface.copy(alpha = 0.97f),
-            selectionGlowColor = onSurface.copy(alpha = 0.13f),
-            selectionCoreColor = surfaceContainer.copy(alpha = 0.20f),
-            outlineColor = Color.White.copy(alpha = 0.10f),
+        LiquidActionBarPalette(
+            baseFillColor = if (isBlurEnabled) surfaceContainer.copy(alpha = material.surfaceAlpha) else surfaceContainer,
+            inactiveContentColor = onSurface.copy(alpha = 0.94f),
+            activeContentColor = primary.copy(alpha = 0.98f),
+            selectionGlowColor = Color.White.copy(alpha = 0.26f),
+            selectionCoreColor = Color.White.copy(alpha = 0.18f),
+            outlineColor = Color.White.copy(alpha = if (isBlurEnabled) 0.12f else 0.10f),
         )
     }
 
 internal fun liquidActionBarBaseHighlight(
     material: LiquidActionBarMaterial,
-    layeredStyleEnabled: Boolean,
     isBlurEnabled: Boolean,
-    isInLightTheme: Boolean,
-): Highlight {
-    if (layeredStyleEnabled) {
-        return Highlight.Default.copy(
-            alpha = if (isBlurEnabled) material.highlightAlpha else 0f,
-        )
-    }
-
-    val highlightColor =
-        if (isInLightTheme) {
-            Color.White.copy(alpha = if (isBlurEnabled) 0.26f else 0.18f)
-        } else {
-            Color.White.copy(alpha = if (isBlurEnabled) 0.14f else 0.10f)
-        }
-    return Highlight(
-        width = if (isInLightTheme) 0.50.dp else 0.42.dp,
-        blurRadius = if (isInLightTheme) 1.30.dp else 1.05.dp,
-        alpha =
-            if (isBlurEnabled) {
-                if (isInLightTheme) 0.30f else 0.26f
-            } else {
-                if (isInLightTheme) 0.18f else 0.14f
-            },
-        style =
-            HighlightStyle.Default(
-                color = highlightColor,
-                angle = 84f,
-                falloff = 1.45f,
-            ),
+): Highlight =
+    Highlight.Default.copy(
+        alpha = if (isBlurEnabled) material.highlightAlpha else 0f,
     )
-}
 
-internal fun liquidActionBarBaseShadow(
-    layeredStyleEnabled: Boolean,
-    isInLightTheme: Boolean,
-): Shadow {
-    if (layeredStyleEnabled) {
-        return Shadow.Default.copy(
-            color = Color.Black.copy(alpha = if (isInLightTheme) 0.10f else 0.20f),
-        )
-    }
+internal fun liquidActionBarBaseShadow(isInLightTheme: Boolean): Shadow =
+    Shadow.Default.copy(
+        color = Color.Black.copy(alpha = if (isInLightTheme) 0.10f else 0.20f),
+    )
 
-    return if (isInLightTheme) {
-        Shadow(
-            radius = 12.dp,
-            offset = DpOffset(0.dp, 1.dp),
-            color = Color.Black.copy(alpha = 0.032f),
-        )
-    } else {
-        Shadow(
-            radius = 16.dp,
-            offset = DpOffset(0.dp, 1.5.dp),
-            color = Color.Black.copy(alpha = 0.09f),
-        )
-    }
-}
+/**
+ * The full-material action bar always takes the strong interaction highlight. The reduced tier these
+ * used to switch to went away with the preference that selected it.
+ */
+internal const val LiquidActionBarInteractionHighlightStrength = 1f
 
-internal fun liquidActionBarInteractionHighlightStrength(
-    layeredStyleEnabled: Boolean,
-    isInLightTheme: Boolean,
-): Float =
-    when {
-        layeredStyleEnabled -> 1f
-        isInLightTheme -> 0.48f
-        else -> 0.62f
-    }
-
-internal fun liquidActionBarInteractionHighlightRadiusScale(
-    layeredStyleEnabled: Boolean,
-    isInLightTheme: Boolean,
-): Float =
-    when {
-        layeredStyleEnabled -> 1.2f
-        isInLightTheme -> 0.88f
-        else -> 0.86f
-    }
+internal const val LiquidActionBarInteractionHighlightRadiusScale = 1.2f
 
 internal fun liquidActionBarMaterial(isLight: Boolean): LiquidActionBarMaterial =
     if (isLight) {

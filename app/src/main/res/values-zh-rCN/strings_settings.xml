@@ -62,7 +62,7 @@
     <string name="settings_group_component_effects_summary">管理 ActionBar、底栏与卡片反馈等组件视觉效果。</string>
     <string name="settings_group_liquid_controls_header">液态</string>
     <string name="settings_group_liquid_controls_title">液态控件</string>
-    <string name="settings_group_liquid_controls_summary">ActionBar、开关、Toast、Sheet 与 Dialog 的液态玻璃样式。</string>
+    <string name="settings_group_liquid_controls_summary">开关与 Toast 的液态玻璃样式。ActionBar、Sheet 与 Dialog 已固定为液态玻璃。</string>
     <string name="settings_group_interaction_header">交互</string>
     <string name="settings_group_interaction_title">交互体验</string>
     <string name="settings_group_interaction_summary">Toast 打扰、搜索聚焦与浮动按钮握姿辅助。</string>
@@ -84,11 +84,6 @@
     <string name="settings_group_copy_header">文本复制</string>
     <string name="settings_group_copy_title">复制与文本选择</string>
     <string name="settings_group_copy_summary">统一管理轻量复制与完整选区模式，兼顾流畅与可编辑性。</string>
-    <string name="settings_actionbar_style_header">控件栏</string>
-    <string name="settings_actionbar_style_title">液态玻璃Plus 控件栏</string>
-    <string name="settings_actionbar_style_summary_enabled">完整液态材质：胶囊基底 + 折射透镜 + 高光与投影。</string>
-    <string name="settings_actionbar_style_summary_disabled">精简材质：保留模糊与描边，去掉折射透镜与投影，绘制更轻。</string>
-    <string name="settings_actionbar_style_scope">Home / OS / MCP / GitHub / BA / 图鉴等页面顶部 ActionBar</string>
     <string name="settings_liquid_switch_title">液态玻璃控件</string>
     <string name="settings_liquid_switch_summary_enabled">使用 v2 Liquid Glass 开关、按钮与胶囊控件，统一液态交互质感。</string>
     <string name="settings_liquid_switch_summary_disabled">使用实体胶囊 fallback 与 Miuix 开关样式，保持低负载观感一致。</string>
@@ -382,12 +377,6 @@
     <string name="settings_reduce_toast_interruption_title">减少轻提示打扰</string>
     <string name="settings_reduce_toast_interruption_summary_enabled">隐藏运行完成、复制完成、清空完成等低优先级提示；错误和权限提示仍会显示。</string>
     <string name="settings_reduce_toast_interruption_summary_disabled">允许低优先级提示通过液态玻璃 Toast 轻量显示。</string>
-    <string name="settings_liquid_sheet_title">液态玻璃弹出面板</string>
-    <string name="settings_liquid_sheet_summary_enabled">使用 v2 Liquid Glass 弹出面板，带毛玻璃折射效果和弹性动画。</string>
-    <string name="settings_liquid_sheet_summary_disabled">使用 Miuix 标准弹出面板样式。</string>
-    <string name="settings_liquid_dialog_title">液态玻璃对话框</string>
-    <string name="settings_liquid_dialog_summary_enabled">使用 v2 Liquid Glass 确认对话框，带毛玻璃外观和弹性动画。</string>
-    <string name="settings_liquid_dialog_summary_disabled">使用 Miuix 标准对话框样式。</string>
     <string name="settings_cache_scope_disabled">仅关闭设置页缓存诊断统计，不影响各页面实际缓存与正常使用</string>
     <string name="settings_cache_disabled_desc">已关闭缓存诊断统计。设置页不会再读取缓存大小、更新时间或清理记录。</string>
     <string name="settings_cache_loading_desc">正在读取各页面缓存摘要</string>

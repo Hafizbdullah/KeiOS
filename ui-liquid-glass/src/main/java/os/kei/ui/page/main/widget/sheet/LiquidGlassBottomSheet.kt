@@ -73,7 +73,6 @@ val LocalLiquidSheetManagedScrollableContentReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetVisibleHeightPx =
     compositionLocalOf<(() -> Int)?> { null }
-val LocalLiquidSheetEnabled = compositionLocalOf { false }
 
 /**
  * Liquid glass bottom sheet.
@@ -234,7 +233,6 @@ fun LiquidGlassBottomSheet(
                     },
             ) {
                 CompositionLocalProvider(
-                    LocalLiquidSheetEnabled provides true,
                     LocalLiquidSheetContentOverflowReporter provides { overflows ->
                         if (overflows) scrollableContentOverflowsOpeningDetent = true
                     },

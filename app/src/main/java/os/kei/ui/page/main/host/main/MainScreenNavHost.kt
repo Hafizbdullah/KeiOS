@@ -46,7 +46,6 @@ import os.kei.ui.page.main.widget.glass.rememberLiquidToastState
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
 import top.yukonga.miuix.kmp.nav.core.NavBackStack
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
@@ -135,7 +134,6 @@ internal fun MainScreenNavHost(
         LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
         LocalSearchAutoFocusEnabled provides prefsState.searchAutoFocusEnabled,
         LocalLiquidControlsEnabled provides prefsState.liquidSwitchEnabled,
-        LocalLiquidSheetEnabled provides prefsState.liquidSheetEnabled,
         LocalTextCopyExpandedOverride provides prefsState.textCopyCapabilityExpanded,
     ) {
         val liquidToastState = rememberLiquidToastState()
@@ -165,7 +163,6 @@ internal fun MainScreenNavHost(
                             rootBackHandlersEnabled = backStack.lastOrNull() is KeiosRoute.Main,
                             navigator = navigator,
                             settingsReturnToken = pagerCoordinator.settingsReturnToken,
-                            liquidActionBarLayeredStyleEnabled = pagerCoordinator.liquidActionBarLayeredStyleEnabled,
                             gripAwareFloatingDockEnabled = pagerCoordinator.gripAwareFloatingDockEnabled,
                             homeIconHdrEnabled = pagerCoordinator.homeIconHdrEnabled,
                             homeDynamicFullEffectEnabled = pagerCoordinator.homeDynamicFullEffectEnabled,
@@ -208,18 +205,12 @@ internal fun MainScreenNavHost(
                             SettingsPage(
                                 notificationPermissionGranted = notificationPermissionGranted,
                                 onRequestNotificationPermission = onRequestNotificationPermission,
-                                liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
-                                onLiquidActionBarLayeredStyleChanged = prefsState::updateLiquidActionBarLayeredStyleEnabled,
                                 liquidSwitchEnabled = prefsState.liquidSwitchEnabled,
                                 onLiquidSwitchChanged = prefsState::updateLiquidSwitchEnabled,
                                 liquidToastEnabled = prefsState.liquidToastEnabled,
                                 onLiquidToastChanged = prefsState::updateLiquidToastEnabled,
                                 reduceToastInterruptionEnabled = prefsState.reduceToastInterruptionEnabled,
                                 onReduceToastInterruptionChanged = prefsState::updateReduceToastInterruptionEnabled,
-                                liquidSheetEnabled = prefsState.liquidSheetEnabled,
-                                onLiquidSheetChanged = prefsState::updateLiquidSheetEnabled,
-                                liquidDialogEnabled = prefsState.liquidDialogEnabled,
-                                onLiquidDialogChanged = prefsState::updateLiquidDialogEnabled,
                                 transitionAnimationsEnabled = prefsState.transitionAnimationsEnabled,
                                 onTransitionAnimationsChanged = prefsState::updateTransitionAnimationsEnabled,
                                 predictiveBackAnimationsEnabled = prefsState.predictiveBackAnimationsEnabled,
@@ -320,14 +311,12 @@ internal fun MainScreenNavHost(
                     entry<KeiosRoute.BaStudentGuide> { route ->
                         BaStudentGuidePage(
                             warmStartId = route.nonce,
-                            liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                             preloadingEnabled = prefsState.preloadingEnabled,
                             onBack = onRouteBack,
                         )
                     }
                     entry<KeiosRoute.BaGuideCatalog>(transition = catalogTransition) { route ->
                         BaGuideCatalogPage(
-                            liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
                             preloadingEnabled = prefsState.preloadingEnabled,
                             notificationPermissionGranted = notificationPermissionGranted,
                             onRequestNotificationPermission = onRequestNotificationPermission,

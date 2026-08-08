@@ -32,6 +32,7 @@ import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import java.io.File
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -158,36 +159,39 @@ class AppWindowDialogHostTest {
         }
     }
 
+    /**
+     * The card presentation has one branch now. The Miuix fallback it used to choose between went away
+     * with the preference that selected it — hosted in a Dialog window it could never have real glass,
+     * because the window boundary blanks LocalSceneBackdrop and its blur drew nothing.
+     *
+     * The fullscreen presentation is a different thing entirely and still opens its own window, so it
+     * keeps the boundary and the window-scoped navigation-event re-resolve.
+     */
     @Test
-    fun cardBranchesForwardMetadataAndEveryWindowInstallsABackdropBoundary() {
+    fun cardPresentationForwardsMetadataToTheSingleLiquidBranch() {
         val source = dialogHostSource(APP_WINDOW_DIALOG_HOST_SOURCE)
-        val liquidDialogCall = source.functionCallBlock("LiquidGlassDialog")
-        val legacyDialogCall = source.functionCallBlock("WindowDialog")
+        val alertCall = source.functionCallBlock("LiquidAlert")
 
         listOf(
             "modifier = modifier",
             "title = title",
-            "summary = summary",
+            "message = summary",
+            "dismissible = dismissible",
+            "onDismissRequest = onDismissRequest",
             "onDismissFinished = onDismissFinished",
             "maxWidth = maxWidth",
             "content = content",
         ).forEach { forwarding ->
-            assertTrue(forwarding in liquidDialogCall, "Liquid branch must forward $forwarding")
-            assertTrue(forwarding in legacyDialogCall, "Legacy branch must forward $forwarding")
+            assertTrue(forwarding in alertCall, "Card branch must forward $forwarding")
         }
-        assertTrue("dismissible = dismissible" in liquidDialogCall)
-        assertTrue("onDismissRequest = onDismissRequest.takeIf { dismissible }" in legacyDialogCall)
         assertTrue("maxWidth: Dp = DialogDefaults.MaxWidth" in source)
 
-        val legacyBoundary = source.indexOf("AppLiquidWindowBoundary {").dialogMarkerFound()
-        val legacyDialog = source.indexOf("WindowDialog(", legacyBoundary).dialogMarkerFound()
-        val fullscreenBoundary =
-            source.indexOf("AppLiquidWindowBoundary {", legacyBoundary + 1).dialogMarkerFound()
+        assertFalse("WindowDialog(" in source, "The Miuix card fallback must not come back")
+
+        val fullscreenBoundary = source.indexOf("AppLiquidWindowBoundary {").dialogMarkerFound()
         val fullscreenDialog = source.indexOf("\n        Dialog(", fullscreenBoundary).dialogMarkerFound()
         val fullscreenWindowScope =
             source.indexOf("WindowNavigationEventScope {", fullscreenDialog).dialogMarkerFound()
-        assertTrue(legacyBoundary < legacyDialog)
-        assertTrue(legacyDialog < fullscreenBoundary)
         assertTrue(fullscreenBoundary < fullscreenDialog)
         assertTrue(fullscreenDialog < fullscreenWindowScope)
     }

@@ -13,12 +13,6 @@ class UiPrefsDefaultSnapshotTest {
     }
 
     @Test
-    fun `liquid sheet starts enabled`() {
-        assertTrue(UiPrefs.LIQUID_SHEET_DEFAULT_ENABLED)
-        assertTrue(UiPrefs.defaultSnapshot().liquidSheetEnabled)
-    }
-
-    @Test
     fun `non home background customization keeps legacy default rendering`() {
         val snapshot = UiPrefs.defaultSnapshot()
 

@@ -11,7 +11,6 @@ import os.kei.core.privilege.PrivilegeStatus
 @Stable
 internal data class MainScreenPagerCoordinator(
     val settingsReturnToken: Int,
-    val liquidActionBarLayeredStyleEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
@@ -67,7 +66,6 @@ internal fun buildMainScreenPagerCoordinator(
 ): MainScreenPagerCoordinator =
     MainScreenPagerCoordinator(
         settingsReturnToken = settingsReturnToken,
-        liquidActionBarLayeredStyleEnabled = prefsState.liquidActionBarLayeredStyleEnabled,
         gripAwareFloatingDockEnabled = prefsState.gripAwareFloatingDockEnabled,
         homeIconHdrEnabled = prefsState.homeIconHdrEnabled,
         homeDynamicFullEffectEnabled = prefsState.homeDynamicFullEffectEnabled,

@@ -116,7 +116,6 @@ internal fun DebugLiquidSheetCard(
         onBlockedDismissRequest = { blockedDismissCount++ },
         initialDetent = initialDetent,
         preferExportedBackdrop = true,
-        useLiquidGlassSheet = true,
     ) {
         SheetContentColumn(verticalSpacing = 12.dp) {
             SheetSectionHeader(stringResource(R.string.debug_component_lab_liquid_sheet_ime_section))

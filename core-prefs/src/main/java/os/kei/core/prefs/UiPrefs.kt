@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import os.kei.core.log.AppLogLevel
 
 data class UiPrefsSnapshot(
-    val liquidActionBarLayeredStyleEnabled: Boolean,
     val liquidSwitchEnabled: Boolean,
     val transitionAnimationsEnabled: Boolean,
     val predictiveBackAnimationsEnabled: Boolean,
@@ -37,8 +36,6 @@ data class UiPrefsSnapshot(
     val cacheDiagnosticsEnabled: Boolean,
     val liquidToastEnabled: Boolean,
     val reduceToastInterruptionEnabled: Boolean,
-    val liquidSheetEnabled: Boolean,
-    val liquidDialogEnabled: Boolean,
     val appThemeMode: AppThemeMode,
     val visibleBottomPageNames: Set<String>,
 )
@@ -110,7 +107,6 @@ enum class NonHomeBackgroundPageStyle(
 
 object UiPrefs {
     private const val KV_ID = "ui_prefs"
-    private const val KEY_LIQUID_ACTION_BAR_LAYERED_STYLE = "liquid_action_bar_layered_style"
     private const val KEY_LIQUID_SWITCH = "liquid_switch"
     private const val KEY_TRANSITION_ANIMATIONS = "transition_animations"
     private const val KEY_PREDICTIVE_BACK_ANIMATIONS = "predictive_back_animations"
@@ -142,8 +138,6 @@ object UiPrefs {
     private const val KEY_CACHE_DIAGNOSTICS = "cache_diagnostics"
     private const val KEY_LIQUID_TOAST = "liquid_toast"
     private const val KEY_REDUCE_TOAST_INTERRUPTION = "reduce_toast_interruption"
-    private const val KEY_LIQUID_SHEET = "liquid_sheet"
-    private const val KEY_LIQUID_DIALOG = "liquid_dialog"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_VISIBLE_BOTTOM_PAGES = "visible_bottom_pages"
     private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
@@ -155,7 +149,6 @@ object UiPrefs {
     private const val NON_HOME_BACKGROUND_SATURATION_DEFAULT = 1.00f
     private const val NON_HOME_BACKGROUND_SATURATION_MIN = 0.60f
     private const val NON_HOME_BACKGROUND_SATURATION_MAX = 1.20f
-    internal const val LIQUID_SHEET_DEFAULT_ENABLED = true
     const val SUPER_ISLAND_RESTORE_DELAY_DEFAULT_MS = 100
     const val SUPER_ISLAND_RESTORE_DELAY_MIN_MS = 50
     const val SUPER_ISLAND_RESTORE_DELAY_MAX_MS = 350
@@ -182,13 +175,6 @@ object UiPrefs {
     private fun buildTypeAwareLogDebugKey(): String = "${KEY_LOG_DEBUG}_${UiPrefsRuntimeDefaults.buildType}"
 
     private fun buildTypeAwareLogLevelKey(): String = "${KEY_LOG_LEVEL}_${UiPrefsRuntimeDefaults.buildType}"
-
-    fun isLiquidActionBarLayeredStyleEnabled(defaultValue: Boolean = true): Boolean =
-        kv().decodeBool(KEY_LIQUID_ACTION_BAR_LAYERED_STYLE, defaultValue)
-
-    fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
-        kv().encode(KEY_LIQUID_ACTION_BAR_LAYERED_STYLE, value)
-    }
 
     fun isLiquidSwitchEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_SWITCH, defaultValue)
 
@@ -525,19 +511,6 @@ object UiPrefs {
         kv().encode(KEY_REDUCE_TOAST_INTERRUPTION, value)
     }
 
-    fun isLiquidSheetEnabled(defaultValue: Boolean = LIQUID_SHEET_DEFAULT_ENABLED): Boolean =
-        kv().decodeBool(KEY_LIQUID_SHEET, defaultValue)
-
-    fun setLiquidSheetEnabled(value: Boolean) {
-        kv().encode(KEY_LIQUID_SHEET, value)
-    }
-
-    fun isLiquidDialogEnabled(defaultValue: Boolean = true): Boolean = kv().decodeBool(KEY_LIQUID_DIALOG, defaultValue)
-
-    fun setLiquidDialogEnabled(value: Boolean) {
-        kv().encode(KEY_LIQUID_DIALOG, value)
-    }
-
     fun getAppThemeMode(defaultValue: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): AppThemeMode {
         val raw = kv().decodeString(KEY_THEME_MODE, null) ?: return defaultValue
         return AppThemeMode.entries.firstOrNull { it.name == raw } ?: defaultValue
@@ -569,7 +542,6 @@ object UiPrefs {
 
     fun defaultSnapshot(appThemeMode: AppThemeMode = AppThemeMode.FOLLOW_SYSTEM): UiPrefsSnapshot =
         UiPrefsSnapshot(
-            liquidActionBarLayeredStyleEnabled = true,
             liquidSwitchEnabled = true,
             transitionAnimationsEnabled = true,
             predictiveBackAnimationsEnabled = true,
@@ -599,8 +571,6 @@ object UiPrefs {
             cacheDiagnosticsEnabled = true,
             liquidToastEnabled = true,
             reduceToastInterruptionEnabled = false,
-            liquidSheetEnabled = LIQUID_SHEET_DEFAULT_ENABLED,
-            liquidDialogEnabled = true,
             appThemeMode = appThemeMode,
             visibleBottomPageNames = DEFAULT_VISIBLE_BOTTOM_PAGE_NAMES,
         )
@@ -609,7 +579,6 @@ object UiPrefs {
         val store = kv()
         val superIslandFloatBehavior = getSuperIslandFloatBehavior()
         return UiPrefsSnapshot(
-            liquidActionBarLayeredStyleEnabled = store.decodeBool(KEY_LIQUID_ACTION_BAR_LAYERED_STYLE, true),
             liquidSwitchEnabled = store.decodeBool(KEY_LIQUID_SWITCH, true),
             transitionAnimationsEnabled = store.decodeBool(KEY_TRANSITION_ANIMATIONS, true),
             predictiveBackAnimationsEnabled = store.decodeBool(KEY_PREDICTIVE_BACK_ANIMATIONS, true),
@@ -644,8 +613,6 @@ object UiPrefs {
             cacheDiagnosticsEnabled = store.decodeBool(KEY_CACHE_DIAGNOSTICS, true),
             liquidToastEnabled = store.decodeBool(KEY_LIQUID_TOAST, true),
             reduceToastInterruptionEnabled = store.decodeBool(KEY_REDUCE_TOAST_INTERRUPTION, false),
-            liquidSheetEnabled = store.decodeBool(KEY_LIQUID_SHEET, LIQUID_SHEET_DEFAULT_ENABLED),
-            liquidDialogEnabled = store.decodeBool(KEY_LIQUID_DIALOG, true),
             appThemeMode = getAppThemeMode(),
             visibleBottomPageNames = loadVisibleBottomPageNames(),
         )

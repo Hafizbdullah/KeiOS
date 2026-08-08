@@ -82,7 +82,6 @@ fun OsShellRunnerPage(
     val shellStoppedAccentColor = if (isDark) Color(0xFFFF9E9E) else Color(0xFFDC2626)
     val outputScrollState = rememberScrollState()
     val outputLazyListState = rememberLazyListState()
-    val liquidActionBarLayeredStyleEnabled = chromePrefs.liquidActionBarLayeredStyleEnabled
 
     val surfaceColor = MiuixTheme.colorScheme.surface
     val topBarBackdrop =
@@ -181,7 +180,6 @@ fun OsShellRunnerPage(
         scrollBehavior = scrollBehavior,
         topBarBackdrop = topBarBackdrop,
         pageListState = pageListState,
-        liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
         actionItems = actionItems,
         commandInput = commandInput,
         runningCommand = commandExecutionState.runningCommand,

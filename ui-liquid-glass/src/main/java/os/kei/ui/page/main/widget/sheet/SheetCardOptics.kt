@@ -11,22 +11,13 @@ internal data class SheetCardOptics(
     val borderWidth: Dp,
 )
 
-internal fun sheetCardOptics(
-    visualMode: SheetVisualMode,
-    interactive: Boolean,
-): SheetCardOptics =
-    when (visualMode) {
-        SheetVisualMode.Liquid ->
-            SheetCardOptics(
-                depthEffect = true,
-                highlightAlpha = if (interactive) 1f else 0.82f,
-                borderWidth = 1.dp,
-            )
-
-        SheetVisualMode.Miuix ->
-            SheetCardOptics(
-                depthEffect = false,
-                highlightAlpha = null,
-                borderWidth = 1.dp,
-            )
-    }
+/**
+ * Optics for a card inside a sheet. There is only one sheet material now — the Miuix variant and the
+ * toggle that selected it are gone — so this varies only with whether the card is interactive.
+ */
+internal fun sheetCardOptics(interactive: Boolean): SheetCardOptics =
+    SheetCardOptics(
+        depthEffect = true,
+        highlightAlpha = if (interactive) 1f else 0.82f,
+        borderWidth = 1.dp,
+    )

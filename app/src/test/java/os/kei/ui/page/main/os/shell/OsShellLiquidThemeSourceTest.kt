@@ -46,7 +46,6 @@ class OsShellLiquidThemeSourceTest {
             "LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled" in
                 providerBlock,
         )
-        assertTrue("LocalLiquidSheetEnabled provides prefsState.liquidSheetEnabled" in providerBlock)
     }
 
     /**

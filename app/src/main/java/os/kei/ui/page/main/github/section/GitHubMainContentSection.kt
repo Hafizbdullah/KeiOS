@@ -474,7 +474,6 @@ internal fun GitHubMainContent(
         AppTopEndActionBarOverlay {
             GitHubTopBarActions(
                 backdrop = surfaces.topBarBackdrop,
-                liquidActionBarLayeredStyleEnabled = surfaces.liquidActionBarLayeredStyleEnabled,
                 sortMode = controls.sortMode,
                 sortDirection = controls.sortDirection,
                 trackedFilterMode = controls.trackedFilterMode,

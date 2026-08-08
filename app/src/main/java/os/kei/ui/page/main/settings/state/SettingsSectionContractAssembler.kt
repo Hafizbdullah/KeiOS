@@ -61,12 +61,9 @@ internal fun rememberSettingsSectionContractBundle(
     appLanguageActionAvailable: Boolean,
     transitionAnimationsEnabled: Boolean,
     predictiveBackAnimationsEnabled: Boolean,
-    liquidActionBarLayeredStyleEnabled: Boolean,
     liquidSwitchEnabled: Boolean,
     liquidToastEnabled: Boolean,
     reduceToastInterruptionEnabled: Boolean,
-    liquidSheetEnabled: Boolean,
-    liquidDialogEnabled: Boolean,
     searchAutoFocusEnabled: Boolean,
     gripAwareFloatingDockEnabled: Boolean,
     superIslandNotificationEnabled: Boolean,
@@ -99,12 +96,9 @@ internal fun rememberSettingsSectionContractBundle(
     onOpenAppLanguageSettings: () -> Unit,
     onTransitionAnimationsChanged: (Boolean) -> Unit,
     onPredictiveBackAnimationsChanged: (Boolean) -> Unit,
-    onLiquidActionBarLayeredStyleChanged: (Boolean) -> Unit,
     onLiquidSwitchChanged: (Boolean) -> Unit,
     onLiquidToastChanged: (Boolean) -> Unit,
     onReduceToastInterruptionChanged: (Boolean) -> Unit,
-    onLiquidSheetChanged: (Boolean) -> Unit,
-    onLiquidDialogChanged: (Boolean) -> Unit,
     onSearchAutoFocusChanged: (Boolean) -> Unit,
     onGripAwareFloatingDockChanged: (Boolean) -> Unit,
     onSuperIslandNotificationChanged: (Boolean) -> Unit,
@@ -279,44 +273,32 @@ internal fun rememberSettingsSectionContractBundle(
         }
     val componentEffectsState =
         remember(
-            liquidActionBarLayeredStyleEnabled,
             liquidSwitchEnabled,
             liquidToastEnabled,
             reduceToastInterruptionEnabled,
-            liquidSheetEnabled,
-            liquidDialogEnabled,
             searchAutoFocusEnabled,
             gripAwareFloatingDockEnabled,
         ) {
             SettingsComponentEffectsSectionState(
-                liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                 liquidSwitchEnabled = liquidSwitchEnabled,
                 liquidToastEnabled = liquidToastEnabled,
                 reduceToastInterruptionEnabled = reduceToastInterruptionEnabled,
-                liquidSheetEnabled = liquidSheetEnabled,
-                liquidDialogEnabled = liquidDialogEnabled,
                 searchAutoFocusEnabled = searchAutoFocusEnabled,
                 gripAwareFloatingDockEnabled = gripAwareFloatingDockEnabled,
             )
         }
     val componentEffectsActions =
         remember(
-            onLiquidActionBarLayeredStyleChanged,
             onLiquidSwitchChanged,
             onLiquidToastChanged,
             onReduceToastInterruptionChanged,
-            onLiquidSheetChanged,
-            onLiquidDialogChanged,
             onSearchAutoFocusChanged,
             onGripAwareFloatingDockChanged,
         ) {
             SettingsComponentEffectsSectionActions(
-                onLiquidActionBarLayeredStyleChanged = onLiquidActionBarLayeredStyleChanged,
                 onLiquidSwitchChanged = onLiquidSwitchChanged,
                 onLiquidToastChanged = onLiquidToastChanged,
                 onReduceToastInterruptionChanged = onReduceToastInterruptionChanged,
-                onLiquidSheetChanged = onLiquidSheetChanged,
-                onLiquidDialogChanged = onLiquidDialogChanged,
                 onSearchAutoFocusChanged = onSearchAutoFocusChanged,
                 onGripAwareFloatingDockChanged = onGripAwareFloatingDockChanged,
             )

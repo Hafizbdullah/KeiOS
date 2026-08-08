@@ -202,7 +202,6 @@ internal fun GitHubActionsNotificationHistoryActionBar(
     Box {
         LiquidToolbar(
             backdrop = backdrop,
-            layeredStyleEnabled = true,
             actions = actionItems,
         )
 

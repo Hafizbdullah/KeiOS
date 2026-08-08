@@ -13,7 +13,6 @@ import os.kei.ui.page.main.back.ProvideBackNavigationRuntime
 import os.kei.ui.page.main.widget.glass.LocalLiquidControlsEnabled
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
-import os.kei.ui.page.main.widget.sheet.LocalLiquidSheetEnabled
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -23,7 +22,6 @@ import top.yukonga.miuix.kmp.utils.MiuixOverscrollFactory
 internal fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
     val transitionAnimationsEnabled = UiPrefs.isTransitionAnimationsEnabled()
     val liquidControlsEnabled = UiPrefs.isLiquidSwitchEnabled()
-    val liquidSheetEnabled = UiPrefs.isLiquidSheetEnabled()
     val predictiveBackPolicy = PredictiveBackOemCompat.currentPolicy(
         transitionAnimationsEnabled = transitionAnimationsEnabled,
         predictiveBackAnimationsEnabled = UiPrefs.isPredictiveBackAnimationsEnabled()
@@ -41,7 +39,6 @@ internal fun BaStandaloneActivityTheme(content: @Composable () -> Unit) {
                 LocalTransitionAnimationsEnabled provides transitionAnimationsEnabled,
                 LocalPredictiveBackAnimationsEnabled provides predictiveBackPolicy.localPredictiveBackEnabled,
                 LocalLiquidControlsEnabled provides liquidControlsEnabled,
-                LocalLiquidSheetEnabled provides liquidSheetEnabled,
             ) {
                 content()
             }

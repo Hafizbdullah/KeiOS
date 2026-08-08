@@ -5,7 +5,6 @@ package os.kei.ui.page.main.widget.sheet
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -32,7 +31,6 @@ fun SheetContentColumn(
     verticalSpacing: Dp = AppChromeTokens.pageSectionGapLarge,
     content: @Composable () -> Unit,
 ) {
-    val visualMode = LocalSheetVisualMode.current
     val scrollState = rememberScrollState()
     val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
     val scrollStateReporter by rememberUpdatedState(LocalLiquidSheetContentScrollStateReporter.current)
@@ -76,9 +74,6 @@ fun SheetContentColumn(
                 .fillMaxWidth()
                 .then(scrollModifier)
                 .navigationBarsPadding()
-                // LiquidSheetPresentation owns IME avoidance for the whole surface. The Miuix window
-                // still relies on the content column to consume the IME inset.
-                .then(if (visualMode == SheetVisualMode.Miuix) Modifier.imePadding() else Modifier)
                 .padding(
                     top = SheetContentShadowEdgePadding,
                     bottom = SheetContentBottomPadding + SheetContentShadowEdgePadding,

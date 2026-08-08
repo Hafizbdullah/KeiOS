@@ -24,12 +24,6 @@ class UiPrefsRepository(
             }
     }
 
-    suspend fun setLiquidActionBarLayeredStyleEnabled(value: Boolean) {
-        updateAndPersist({ copy(liquidActionBarLayeredStyleEnabled = value) }) {
-            UiPrefs.setLiquidActionBarLayeredStyleEnabled(value)
-        }
-    }
-
     suspend fun setLiquidSwitchEnabled(value: Boolean) {
         updateAndPersist({ copy(liquidSwitchEnabled = value) }) {
             UiPrefs.setLiquidSwitchEnabled(value)
@@ -45,18 +39,6 @@ class UiPrefsRepository(
     suspend fun setReduceToastInterruptionEnabled(value: Boolean) {
         updateAndPersist({ copy(reduceToastInterruptionEnabled = value) }) {
             UiPrefs.setReduceToastInterruptionEnabled(value)
-        }
-    }
-
-    suspend fun setLiquidSheetEnabled(value: Boolean) {
-        updateAndPersist({ copy(liquidSheetEnabled = value) }) {
-            UiPrefs.setLiquidSheetEnabled(value)
-        }
-    }
-
-    suspend fun setLiquidDialogEnabled(value: Boolean) {
-        updateAndPersist({ copy(liquidDialogEnabled = value) }) {
-            UiPrefs.setLiquidDialogEnabled(value)
         }
     }
 

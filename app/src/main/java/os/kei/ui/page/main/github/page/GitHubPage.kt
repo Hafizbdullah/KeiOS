@@ -56,7 +56,6 @@ fun GitHubPage(
     externalRefreshTriggerToken: Int = 0,
     externalActionsTrackId: String? = null,
     externalActionsSheetToken: Int = 0,
-    liquidActionBarLayeredStyleEnabled: Boolean = true,
     enableSearchBar: Boolean = true,
     onOpenActionsNotificationHistory: () -> Unit = {},
 ) {
@@ -337,7 +336,6 @@ fun GitHubPage(
                     sheetBackdrop = backdrops.sheet,
                     backdropProducerActive = backdrops.sheet !== backdrops.content,
                     topBarColor = topBarColor,
-                    liquidActionBarLayeredStyleEnabled = liquidActionBarLayeredStyleEnabled,
                     isDark = isDark,
                 ),
             controls =
