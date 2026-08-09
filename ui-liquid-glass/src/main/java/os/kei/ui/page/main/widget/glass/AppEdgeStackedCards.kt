@@ -11,8 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -132,6 +134,8 @@ class AppEdgeStackCard internal constructor() {
     internal var translationY by mutableFloatStateOf(0f)
     internal var scale by mutableFloatStateOf(1f)
     internal var dim by mutableFloatStateOf(0f)
+    internal var contentAlpha by mutableFloatStateOf(1f)
+    internal var contentBlur by mutableFloatStateOf(0f)
     internal var fade by mutableFloatStateOf(1f)
 
     internal fun rest() {
@@ -140,6 +144,8 @@ class AppEdgeStackCard internal constructor() {
         translationY = 0f
         scale = 1f
         dim = 0f
+        contentAlpha = 1f
+        contentBlur = 0f
         fade = 1f
     }
 
@@ -148,6 +154,8 @@ class AppEdgeStackCard internal constructor() {
         if (translationY != transform.translationY) translationY = transform.translationY
         if (scale != transform.scale) scale = transform.scale
         if (dim != transform.dim) dim = transform.dim
+        if (contentAlpha != transform.contentAlpha) contentAlpha = transform.contentAlpha
+        if (contentBlur != transform.contentBlur) contentBlur = transform.contentBlur
         if (fade != transform.fade) fade = transform.fade
     }
 }
@@ -309,17 +317,82 @@ internal fun appEdgeStackDimAlpha(
  */
 internal val AppEdgeStackDimColor = Color(0xFF0B0F18)
 
+/**
+ * Opacity for a stacked card's content, so a receding card becomes a blank plate.
+ *
+ * This is the channel that makes the pile legible on a large card. Apple's stacked artifacts all show
+ * the surfaces behind the front one *empty* — the plates in the Pickers stack carry nothing, a grouped
+ * notification behind the top one is a bare sliver, and a Wallet pass behind the front pass shows only
+ * its edge. Keeping a card's text and artwork and merely darkening them produces a muddy photograph
+ * instead of a receded surface, which is worse the more content the card has.
+ */
+internal fun appEdgeStackContentAlpha(card: AppEdgeStackCard): Float =
+    if (card.stacked) card.contentAlpha.coerceIn(0f, 1f) else 1f
+
+/**
+ * Slides a receding card's content out of focus, in its own layer.
+ *
+ * Blur is the load-bearing channel and opacity is the trim. Both are layer properties, so the whole
+ * recession is a render-thread update with no recomposition and no relayout — the same reason the
+ * geometry rides in a layer block. A blur render effect does force the layer offscreen, but only for
+ * the one or two cards actually in the pile.
+ */
+internal fun GraphicsLayerScope.applyAppEdgeStackContentRecession(card: AppEdgeStackCard) {
+    if (!card.stacked) {
+        renderEffect = null
+        return
+    }
+    alpha = appEdgeStackContentAlpha(card)
+    val blurPx = card.contentBlur.coerceIn(0f, 1f) * AppEdgeStackContentBlurMax.toPx()
+    // Below about half a pixel a BlurEffect is invisible and not worth an offscreen pass, and a zero
+    // radius is not a legal blur at all.
+    renderEffect =
+        if (blurPx >= 0.5f) {
+            BlurEffect(radiusX = blurPx, radiusY = blurPx, edgeTreatment = TileMode.Clamp)
+        } else {
+            null
+        }
+}
+
 data class AppEdgeStackTransform(
     /** Pins the card at the stack line, less the rise it has earned by sinking. */
     val translationY: Float,
     val scale: Float,
     /** 0 at the stack line, 1 fully receded. Scaled per theme by [appEdgeStackDimAlpha]. */
     val dim: Float,
+    /**
+     * Opacity of the card's *content* — not its surface. Bottoms out at
+     * [APP_EDGE_STACK_CONTENT_ALPHA_FLOOR] rather than at zero.
+     *
+     * Deliberately never reaches zero while the card is a member of the pile. Emptying a receding card
+     * makes the pile legible but throws its information away, which costs more screen than the pile
+     * saves — the point of stacking is that *more* of the page stays useful, not less. So a receded
+     * card stays vaguely readable and only leaves during retirement.
+     */
+    val contentAlpha: Float,
+    /**
+     * Blur applied to the card's content, 0..1 of [AppEdgeStackContentBlurMax], **linear in depth**.
+     *
+     * This is Apple's actual recession verb and it is the one the first attempt at this missed. The
+     * watchOS sheet guidance is explicit that the system "applies a material to the background that
+     * blurs and desaturates the covered content" — it blurs, progressively, rather than switching the
+     * content off. Linear rather than eased on purpose: the ramp has to read as a continuous slide out
+     * of focus, so a card never jumps from sharp to unrecognisable.
+     */
+    val contentBlur: Float,
     /** 1 until the retirement tail; reaches 0 before the lazy layout disposes the card. */
     val fade: Float,
 ) {
     companion object {
-        val Identity = AppEdgeStackTransform(translationY = 0f, scale = 1f, dim = 0f, fade = 1f)
+        val Identity =
+            AppEdgeStackTransform(
+                translationY = 0f,
+                scale = 1f,
+                dim = 0f,
+                contentAlpha = 1f,
+                contentBlur = 0f,
+                fade = 1f,
+            )
     }
 }
 
@@ -359,6 +432,12 @@ fun computeAppEdgeStackTransform(
         translationY = overshoot - riseTotalPx * eased,
         scale = 1f - (1f - minScale) * eased,
         dim = eased,
+        // Softens toward the floor rather than to nothing, so a receded card is still worth having on
+        // screen. Eased alongside the geometry so opacity and inset move together.
+        contentAlpha = 1f - (1f - APP_EDGE_STACK_CONTENT_ALPHA_FLOOR) * eased,
+        // Linear, unlike everything else here: the blur is the channel the eye reads as "sliding out of
+        // focus", and easing it makes a card lose legibility in a rush near the line.
+        contentBlur = progress,
         fade =
             if (progress <= APP_EDGE_STACK_FADE_START || fadeSpan <= 0f) {
                 1f
@@ -373,7 +452,14 @@ private val AppEdgeStackTopLeftOrigin = TransformOrigin(0f, 0f)
 /** Cards narrow toward their horizontal centre as they recede, so the pivot is centre-x, top. */
 private const val APP_EDGE_STACK_PIVOT_X = 0.5f
 
-private val AppEdgeStackTuckRise = 18.dp
+/**
+ * Total rise across the pile.
+ *
+ * Generous on purpose. The point of the inset and the rise together is that a reader can *count* the
+ * plates behind the front card — with a small offset a large card recedes into something that reads as
+ * one dimmed card rather than as a stack, which is the whole legibility problem.
+ */
+private val AppEdgeStackTuckRise = 26.dp
 
 /** Scroll travel per depth level is the card's height, held inside this band. */
 private val AppEdgeStackStepFloor = 64.dp
@@ -386,7 +472,7 @@ private val AppEdgeStackStepCeiling = 168.dp
  */
 val AppEdgeStackListTopInset = 26.dp
 
-const val APP_EDGE_STACK_MIN_SCALE = 0.90f
+const val APP_EDGE_STACK_MIN_SCALE = 0.86f
 
 /** Visible pile depth. Ours, not Apple's — see the class KDoc. */
 internal const val APP_EDGE_STACK_LEVELS = 3f
@@ -397,5 +483,25 @@ internal const val APP_EDGE_STACK_RETIRE_MARGIN = 0.9f
 /** Where the retirement tail starts, as a fraction of the pile. */
 internal const val APP_EDGE_STACK_FADE_START = 0.82f
 
-internal const val APP_EDGE_STACK_DIM_DARK = 0.34f
-internal const val APP_EDGE_STACK_DIM_LIGHT = 0.22f
+/**
+ * How faint a fully receded card's content is allowed to get while it is still in the pile.
+ *
+ * Well above zero on purpose. A blank plate reads beautifully and is the wrong trade: it converts
+ * screen the reader could still be using into decoration, so the pile ends up showing *less* than a
+ * plain list. Blur carries the recession; opacity only takes the edge off.
+ */
+internal const val APP_EDGE_STACK_CONTENT_ALPHA_FLOOR = 0.55f
+
+/**
+ * Blur at full depth. Enough that a receded card is plainly out of focus and cannot compete with the
+ * card in front, but not so much that its shapes stop being identifiable.
+ */
+internal val AppEdgeStackContentBlurMax = 9.dp
+
+/**
+ * Scrim ceilings, much lighter than they would need to be if the plate still carried its content.
+ * With the card emptied, the scrim only has to seat the plate behind the one in front — it is not
+ * fighting a photograph for attention.
+ */
+internal const val APP_EDGE_STACK_DIM_DARK = 0.20f
+internal const val APP_EDGE_STACK_DIM_LIGHT = 0.12f

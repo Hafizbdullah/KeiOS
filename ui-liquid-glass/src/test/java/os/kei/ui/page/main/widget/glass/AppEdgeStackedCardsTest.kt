@@ -26,6 +26,16 @@ class AppEdgeStackedCardsTest {
     private val riseTotal = 54f
     private val step = 150f
 
+    /** Whichever bound the pile actually runs to — the level budget or the disposal margin. */
+    private val extent =
+        minOf(
+            APP_EDGE_STACK_LEVELS * step,
+            (stackLine + height) * APP_EDGE_STACK_RETIRE_MARGIN,
+        )
+
+    private fun transformAtDepth(fraction: Float): AppEdgeStackTransform =
+        transformAt(stackLine - fraction * extent)
+
     private fun transformAt(
         itemTop: Float,
         itemHeightPx: Float = height,
@@ -59,6 +69,59 @@ class AppEdgeStackedCardsTest {
         assertTrue(transform.translationY > overshoot - riseTotal)
         assertTrue(transform.translationY <= overshoot)
         assertTrue(transform.scale < 1f)
+    }
+
+    @Test
+    fun `a receding card slides out of focus and stays readable`() {
+        // Recession is carried by blur, per Apple's own verb for it - watchOS "applies a material to the
+        // background that blurs and desaturates the covered content". An earlier attempt emptied the
+        // card instead, which reads beautifully and is the wrong trade: it converts screen the reader
+        // could still be using into decoration, so the pile shows LESS than a plain list would.
+        val shallow = transformAt(stackLine - 40f)
+        val deep = transformAt(stackLine - 4000f)
+
+        assertTrue(shallow.contentBlur > 0f)
+        assertTrue(deep.contentBlur > shallow.contentBlur)
+        assertEquals(1f, deep.contentBlur)
+        assertTrue(
+            deep.contentAlpha >= APP_EDGE_STACK_CONTENT_ALPHA_FLOOR,
+            "a card in the pile is never emptied: ${deep.contentAlpha}",
+        )
+        assertTrue(APP_EDGE_STACK_CONTENT_ALPHA_FLOOR >= 0.5f, "still worth screen space")
+    }
+
+    @Test
+    fun `the blur ramp is linear so nothing jumps out of focus`() {
+        // Everything else here is eased; the blur is not. Easing it makes a card lose legibility in a
+        // rush right after the line, which is the "can't tell what it is any more" failure.
+        val quarter = transformAtDepth(0.25f)
+        val half = transformAtDepth(0.5f)
+        val threeQuarters = transformAtDepth(0.75f)
+
+        val firstStep = half.contentBlur - quarter.contentBlur
+        val secondStep = threeQuarters.contentBlur - half.contentBlur
+        assertTrue(
+            kotlin.math.abs(firstStep - secondStep) < 0.01f,
+            "equal depth steps must cost equal blur: $firstStep vs $secondStep",
+        )
+    }
+
+    @Test
+    fun `the surface stays crisp while its content softens`() {
+        val receded = transformAtDepth(0.5f)
+
+        assertTrue(receded.contentBlur > 0f)
+        assertTrue(receded.contentAlpha < 1f)
+        assertEquals(1f, receded.fade, "the plate itself is fully present")
+    }
+
+    @Test
+    fun `the scrim is light enough not to read as a filter over the card`() {
+        // It only has to seat the card behind the one in front. Left to carry the whole recession on its
+        // own these ceilings were nearly twice as heavy, and over artwork that looked like colour
+        // grading rather than depth. Blur does the work now.
+        assertTrue(APP_EDGE_STACK_DIM_DARK <= 0.24f)
+        assertTrue(APP_EDGE_STACK_DIM_LIGHT <= 0.16f)
     }
 
     @Test

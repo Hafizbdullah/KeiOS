@@ -220,6 +220,18 @@ fun LiquidSurface(
     // recession belongs. Shape.createOutline rather than the optimized corner radius, because that
     // helper only resolves circles and capsules — every page card is a RoundedRectangle and would
     // have fallen through to null.
+    // Slides the card's content out of focus as it recedes, leaving the surface crisp. Sits at the end
+    // of the chain, where the existing disabled-content alpha already proves a layer there affects the
+    // content without touching the surface the earlier modifiers drew.
+    val stackContentFadeModifier =
+        if (stackCard != null) {
+            Modifier.graphicsLayer {
+                applyAppEdgeStackContentRecession(stackCard)
+                clip = false
+            }
+        } else {
+            Modifier
+        }
     val stackRecessionModifier =
         if (stackCard != null) {
             Modifier.drawWithCache {
@@ -310,7 +322,8 @@ fun LiquidSurface(
                     .then(clickableModifier)
                     .then(stateSemanticsModifier)
                     .then(interactionModifier)
-                    .then(contentAlphaModifier),
+                    .then(contentAlphaModifier)
+                    .then(stackContentFadeModifier),
             contentAlignment = contentAlignment,
             content = content,
         )
@@ -337,6 +350,7 @@ fun LiquidSurface(
                 modifier =
                     Modifier.graphicsLayer {
                         interactiveLayerBlock?.invoke(this)
+                        stackCard?.let { applyAppEdgeStackContentRecession(it) }
                         clip = false
                     },
                 contentAlignment = contentAlignment,
