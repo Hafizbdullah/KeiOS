@@ -53,7 +53,8 @@ fun AppSurfaceBox(
     tint: Color = Color.Unspecified,
     depthEffect: Boolean = false,
     highlightAlpha: Float? = null,
-    shadow: Boolean = true,
+    /** See [LiquidSurface]'s `shadow`: off by default because a clipped ring squares off the corners. */
+    shadow: Boolean = false,
     shadowAlpha: Float = 0.10f,
     exportBackdropToContent: Boolean = false,
     clipContent: Boolean = true,

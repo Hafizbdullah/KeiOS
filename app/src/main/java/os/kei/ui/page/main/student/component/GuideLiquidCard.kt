@@ -29,7 +29,7 @@ internal fun GuideLiquidCard(
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
     effectVariant: GlassVariant? = GlassVariant.Content,
     depthEffect: Boolean = true,
-    shadow: Boolean = true,
+    shadow: Boolean = false,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {

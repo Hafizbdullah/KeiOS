@@ -193,7 +193,7 @@ internal fun GitHubActionsNoticeCard(
         fillWidth = true,
         depthEffect = true,
         highlightAlpha = 0.82f,
-        shadow = true,
+        shadow = false,
         shadowAlpha = 0.10f,
     )
 }

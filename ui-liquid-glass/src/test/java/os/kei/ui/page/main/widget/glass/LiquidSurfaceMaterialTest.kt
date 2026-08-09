@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -55,31 +56,35 @@ class LiquidSurfaceMaterialTest {
     }
 
     @Test
-    fun shadowBlurIsScaledToTheSurfaceItSitsUnder() {
-        // The square-cornered shadow was geometry, not clipping: `Shadow.Default` is a fixed 24dp blur
-        // spreading `radius * 2` every way, so on a 22dp checkbox it drew a silhouette four times the
-        // control's size — and a silhouette that large has no corner rounding left to see, which reads
-        // as a right angle behind a rounded shape.
-        val checkbox = liquidSurfaceShadowRadius(22f)
-        val pill = liquidSurfaceShadowRadius(32f)
-        val field = liquidSurfaceShadowRadius(44f)
-        val card = liquidSurfaceShadowRadius(160f)
+    fun theGlassShadowIsTightEnoughToKeepItsCornersRound() {
+        // The right-angled shadow was geometry. `ShadowNode` spreads `radius * 2`, so `Shadow.Default`'s
+        // 24dp blur threw a ring 48dp past its surface: far enough to reach the enclosing scroll
+        // container's clip on a card, and four times the size of a 30dp checkbox. Either way the blurred
+        // silhouette keeps no visible corner rounding, and a straight boundary beside a rounded corner is
+        // the artifact. A tight ring stays close to the shape it traces.
+        assertTrue("a card's 24dp blur must not come back: $LiquidShadowRadius", LiquidShadowRadius <= 12.dp)
 
-        assertTrue("a checkbox must not wear a card's shadow: $checkbox", checkbox < 12.dp)
-        assertTrue(pill > checkbox)
-        assertTrue(field > pill)
-        // Anything card-sized keeps exactly the previous radius, so cards and sheets do not move.
-        assertEquals(LiquidShadowRadiusMax, card)
+        val shadow = liquidGlassShadow(Color.Black.copy(alpha = 0.10f))
+        assertEquals(LiquidShadowRadius, shadow.radius)
+        // Dropped, not centred, so what little spread there is falls below the surface.
+        assertTrue(shadow.offset.y > 0.dp)
+        assertTrue(shadow.offset.y < shadow.radius)
+        assertEquals(0.dp, shadow.offset.x)
     }
 
     @Test
-    fun shadowBlurStaysInsideItsBand() {
-        assertEquals(LiquidShadowRadiusMin, liquidSurfaceShadowRadius(1f))
-        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(10_000f))
-        // Before the first measurement, fall back to the ceiling rather than to a hard-edged zero blur.
-        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(0f))
-        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(Float.NaN))
-        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(-5f))
+    fun cardsDoNotCastAnOuterDropShadowByDefault() {
+        // Measured, not preference: inside a scrolling container the ring is bounded to the element's
+        // vertical extent, so it steps hard at the top edge and renders nothing at all below the bottom
+        // one. Tightening the radius only shrank the wedge and dropping it fully downward moved the wedge
+        // to the bottom corners. Off is the only setting with no straight edge beside the corner.
+        val surfaceSource = sourceFile(LIQUID_SURFACES_SOURCE)
+        val boxSource = sourceFile(APP_SURFACE_BOX_SOURCE)
+
+        assertTrue("shadow: Boolean = false" in surfaceSource)
+        assertTrue("shadow: Boolean = false" in boxSource)
+        assertFalse("shadow: Boolean = true" in surfaceSource)
+        assertFalse("shadow: Boolean = true" in boxSource)
     }
 
     @Test
@@ -207,3 +212,18 @@ class LiquidSurfaceMaterialTest {
 }
 
 private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
+
+private fun sourceFile(relativePath: String): String {
+    val workingDirectory = java.io.File(requireNotNull(System.getProperty("user.dir"))).canonicalFile
+    val sourceFile =
+        generateSequence(workingDirectory) { directory -> directory.parentFile }
+            .map { directory -> java.io.File(directory, relativePath) }
+            .firstOrNull(java.io.File::isFile)
+    return requireNotNull(sourceFile) { "Unable to locate $relativePath from $workingDirectory" }.readText()
+}
+
+private const val LIQUID_SURFACES_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidSurfaces.kt"
+
+private const val APP_SURFACE_BOX_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/core/AppSurfaceBox.kt"

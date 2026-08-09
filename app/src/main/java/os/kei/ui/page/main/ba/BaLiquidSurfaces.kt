@@ -120,7 +120,10 @@ private fun BaLiquidSurfaceColumn(
             shape = liquidShape,
             contentColor = LocalContentColor.current,
             isInteractive = hasLiquidPress,
-            shadow = shadowEnabled && glass.shadowAlpha > 0f,
+            // No outer drop shadow: these cards live in a scrolling list, which bounds the ring to
+            // the card's vertical extent and leaves a right angle beside each rounded corner. See
+            // LiquidSurface's `shadow`.
+            shadow = false,
             shadowAlpha = glass.shadowAlpha,
             exportBackdropToContent = true,
             pressSafePadding = pressSafePadding,

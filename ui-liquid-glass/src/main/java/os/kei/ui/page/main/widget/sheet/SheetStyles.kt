@@ -576,7 +576,7 @@ fun SheetLiquidChoiceIndicator(
             effectVariant = GlassVariant.Compact,
             chromaticAberration = selected,
             depthEffect = selected,
-            shadow = selected,
+            shadow = false,
         ) {
             Box(
                 modifier = Modifier

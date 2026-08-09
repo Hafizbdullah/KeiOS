@@ -29,7 +29,9 @@ class GitHubActionsNoticeCardSourceTest {
         assertTrue("fillWidth = true" in noticeImplementation)
         assertTrue("depthEffect = true" in noticeImplementation)
         assertTrue("highlightAlpha = 0.82f" in noticeImplementation)
-        assertTrue("shadow = true" in noticeImplementation)
+        // No outer drop shadow: the notice card scrolls, and a clipped shadow ring squares off its
+        // corners. See LiquidSurface's `shadow`.
+        assertTrue("shadow = false" in noticeImplementation)
         assertTrue("shadowAlpha = 0.10f" in noticeImplementation)
         assertFalse("maxLines =" in noticeImplementation)
         assertFalse("TextOverflow.Ellipsis" in noticeImplementation)

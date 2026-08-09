@@ -141,12 +141,9 @@ fun AppLiquidCheckbox(
                                     Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
                                 },
                                 shadow = {
-                                    // `Shadow.Default` is a 24dp blur — a card's shadow, spreading 48dp
-                                    // around a 30dp box, with no corner rounding left to see.
-                                    liquidGlassShadow(
-                                        minDimension = AppLiquidCheckboxBoxSize,
-                                        color = Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f),
-                                    )
+                                    // Not `Shadow.Default`: its 24dp blur is a card's shadow, spreading
+                                    // 48dp around a 30dp box with no corner rounding left to see.
+                                    liquidGlassShadow(Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
                                 },
                                 innerShadow = {
                                     val pressProgress = pressProgressProvider()

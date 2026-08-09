@@ -92,37 +92,49 @@ buffer — the expensive kind on a surface that also draws a blurred backdrop. `
 
 ## The square-cornered shadow
 
-Diagnosed and fixed on 2026-08-09. It was **geometry, not clipping**, which is worth recording because
-the first theory (that an enclosing layer was bounding the `ShadowNode` ring to the element rect) was
-wrong — measured pixel scans show the ring escaping the card's edge normally.
+Diagnosed and fixed across `004bb8f9b` and its follow-up. It was **geometry, not clipping of the ring by
+an enclosing layer** — the first theory — and then, on a second report, **the container clip after all**,
+just not where that theory put it. Both wrong turns are recorded because each looked convincing.
 
-`Shadow.Default` is a fixed **24dp blur with a 4dp drop**, and `ShadowNode` spreads `radius * 2` in
-every direction. On a card that is correct. On a 30dp checkbox it draws a silhouette four times the
-control's size, and a blurred silhouette that large has no visible corner rounding left — so what
-appears under a rounded corner is a right angle. Nearly every glass control in the app was wearing a
-card's shadow.
+`Shadow.Default` is a fixed **24dp blur with a 4dp drop**, and `ShadowNode` spreads `radius * 2` in every
+direction — a ring 48dp past its surface. That is:
 
-The fix scales the blur to the surface's shorter side, `0.5x` clamped to 5-24dp:
+- **Four times the size of a 30dp checkbox.** A blurred silhouette that large keeps no visible corner
+  rounding, so what shows under a rounded corner is a right angle.
+- **Far enough on a card to reach the enclosing scroll container's clip**, which bounds it on the scroll
+  axis only. Measured on the BA account card: the ring stepped 247 → 242 *in one pixel* at the card's top
+  edge, where a 24dp blur should have faded in over ~20dp, and cut dead again at the bottom edge, while
+  still spilling sideways. Every clip leaves a straight edge; a straight edge beside a rounded corner is
+  the artifact.
 
-- `liquidSurfaceShadowRadius` / `liquidGlassShadow` in `LiquidSurfaces.kt` are the shared helpers.
-- `LiquidSurface` measures itself with `onSizeChanged` (only when a shadow is enabled) and reads the
-  result in the shadow lambda at draw time — so the whole family (cards, pills, status blocks, GitHub,
-  BA and guide surfaces) is proportioned without per-call-site work.
-- `AppLiquidFloatingSurface` measures itself the same way, since it spans a round button to a tall dock.
-- `AppLiquidCheckbox`, both `AppLiquidButtons` sites and both `AppLiquidSearchField` sites pass their
-  own height explicitly.
-- The 24dp ceiling is the old constant, so **anything card-sized is pixel-identical**.
+Two fixes were tried and measured before the third:
 
-Separately, `AppLiquidSearchField` was casting a **hard rectangle** on focus: it set `shadowElevation`
-in a `graphicsLayer` without setting `shape`, and a platform elevation shadow is derived from the
-layer's outline, which defaults to `RectangleShape`. `LiquidGlassDropdownItems` does the same thing
-correctly and is the reference — if you add `shadowElevation` anywhere, set `shape` and `clip = false`
-with it.
+| attempt | result |
+|---|---|
+| tighten the blur to 10dp | wedge shrank (step 5 → 3 levels) but survived |
+| drop the shadow fully downward so nothing spreads up | moved the wedge to the **bottom** corners and made it worse (230 vs 247), and below the card it rendered nothing at all |
+| **no outer drop shadow on the card family** | both corners flat 247 — clean |
 
-Deliberately left alone, because 24dp is right at their size: `LiquidModalSurface`, `LiquidToastSurface`,
-`LiquidSheetSurface`, `LiquidActionBarStyle`, `LiquidGlassBottomBar`, `AppFloatingLiquidDockSurface`,
-`HomeOverviewGlassBatch`. `AppSwitch`, `LiquidSliderVariants` and `LiquidProgressBars` already used
-explicit small radii and were already correct.
+So `LiquidSurface.shadow` and `AppSurfaceBox.shadow` now default to **false**, with `BaLiquidSurfaces`,
+`GuideLiquidCard`, `GitHubActionsPrimitives`, `LiquidRoundedCard` and the sheet choice cards following.
+Nothing of value is lost: the ring rendered nothing below a card anyway, and these cards separate from the
+page by being brighter than it, with the rim highlight carrying the edge. Turn it back on only for a
+surface that is **not** inside a scroll container.
+
+Surfaces that still cast one — the sheet, alert, toast, action bar, bottom bar, dock and home overview —
+are not in scroll containers and resolve correctly, so they keep `Shadow.Default`.
+
+For the small controls that call `drawBackdrop` directly, `liquidGlassShadow(color)` in `LiquidSurfaces.kt`
+is the shared tight shadow (`LiquidShadowRadius = 10.dp`). A *proportional* radius — half the surface's
+shorter side, measured with `onSizeChanged` — was built and then removed: once the ceiling came down to
+10dp every remaining caller landed on the ceiling, so the machinery bought only the illusion of scaling.
+`AppSwitch`, `LiquidSliderVariants` and `LiquidProgressBars` already used explicit small radii and were
+correct all along.
+
+Separately, `AppLiquidSearchField` was casting a **hard rectangle** on focus: it set `shadowElevation` in
+a `graphicsLayer` without setting `shape`, and a platform elevation shadow is derived from the layer's
+outline, which defaults to `RectangleShape`. `LiquidGlassDropdownItems` does the same thing correctly and
+is the reference — if you add `shadowElevation` anywhere, set `shape` and `clip = false` with it.
 
 ## Gaps worth doing early
 
