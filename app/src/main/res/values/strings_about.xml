@@ -21,8 +21,8 @@
 
     <string name="about_card_app_title">App</string>
     <string name="about_card_app_subtitle">应用身份与运行时信息</string>
-    <string name="about_card_release_title">Release v1.12.0</string>
-    <string name="about_card_release_subtitle">特权模式、追踪下载、后台同步与 Liquid Glass 全面升级</string>
+    <string name="about_card_release_title">Release v1.13.0</string>
+    <string name="about_card_release_subtitle">全局 Liquid Glass 展示层、路由导航与交互性能升级</string>
     <string name="about_card_runtime_title">运行时状态</string>
     <string name="about_card_runtime_subtitle">通知/Shizuku/系统状态快速检查</string>
     <string name="about_card_permission_title">权限清单</string>
@@ -339,21 +339,21 @@
     <string name="about_label_security_patch">安全补丁</string>
 
     <string name="about_release_row_version">版本线</string>
-    <string name="about_release_value_version">v1.12.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
-    <string name="about_release_row_github">特权与安装</string>
-    <string name="about_release_value_github">特权模式支持关闭、Shizuku 与 Root；GitHub 托管安装可通过 Shizuku 或 Root 完成下载、校验、安装与取消</string>
-    <string name="about_release_row_ba_guide">GitHub / F-Droid</string>
-    <string name="about_release_value_ba_guide">刷新历史加入失败诊断与重试，已读数字即时同步；增强预发布、Actions、嵌套 APK、未发布仓库和 F-Droid 源追踪</string>
-    <string name="about_release_row_navigation">WebDAV 与后台</string>
-    <string name="about_release_value_navigation">自动同步支持自定义间隔、系统调度恢复、冲突处理与历史诊断；新增后台限制检查和可选无障碍自守护</string>
+    <string name="about_release_value_version">v1.13.0 · Android 15+ · arm64-v8a · targetSdk 37</string>
+    <string name="about_release_row_github">特权与 GitHub</string>
+    <string name="about_release_value_github">未明确选择时默认关闭特权模式；Home、设置、应用发现、Shell 与 MCP 网络命令统一跟随当前 Shizuku / Root 选择，APK 信息新增 SHA-256</string>
+    <string name="about_release_row_ba_guide">Home 与页面入口</string>
+    <string name="about_release_value_ba_guide">GitHub、OS 与 MCP 的新增或切换操作移入概览卡片，浮动 Dock 更简洁；下拉刷新采用更深的触发距离，减少误刷新</string>
+    <string name="about_release_row_navigation">导航与工具栏</string>
+    <string name="about_release_value_navigation">BA 活动日历、卡池和 OS Shell 接入统一路由、转场与返回栈；顶部操作栏升级为分组工具栏，点击、拖动和菜单锚点更稳定</string>
     <string name="about_release_row_icon">BA</string>
-    <string name="about_release_value_icon">修复账号状态与 AP 已读提醒，活动日历和卡池升级堆叠卡片，并优化学生图鉴、相册及 BGM 播放体验</string>
-    <string name="about_release_row_release_gate">Liquid Glass 与导航</string>
-    <string name="about_release_value_release_gate">统一卡片、Sheet、Dialog、Popup 与表单设计，完善侧滑返回、下拉刷新及窄屏、高 DPI、大字体和横屏适配</string>
-    <string name="about_release_row_performance">MCP、通知与性能</string>
-    <string name="about_release_value_performance">MCP 扩展 WebDAV、Home 与特权状态能力；完善超级岛任务状态，并提升分段下载、长列表和堆叠卡片性能</string>
+    <string name="about_release_value_icon">学生图鉴在进入前异步预热缓存，图像预取限制在当前视口；活动日历与卡池首次获得真实玻璃材质，堆叠时内容渐进虚化并保持可辨识</string>
+    <string name="about_release_row_release_gate">Liquid Glass 展示层</string>
+    <string name="about_release_value_release_gate">Sheet、Alert、Action Sheet、Toast、Dropdown 与操作菜单统一在应用窗口内渲染，正确采样实时背景并支持深浅色、叠层与一致的退出动画</string>
+    <string name="about_release_row_performance">性能与启动</string>
+    <string name="about_release_value_performance">批量绘制 Home 卡片与状态 Pill，暂停不可见页面和面板的背景采样；滑动时请求峰值刷新率并保留动量，Baseline Profile 覆盖展示层与卡片堆</string>
     <string name="about_release_row_next">升级建议</string>
-    <string name="about_release_value_next">建议所有旧版本用户升级；使用 Root/Shizuku、GitHub/F-Droid 追踪、WebDAV、BA 或 MCP 的用户优先升级</string>
+    <string name="about_release_value_next">建议所有 v1.12.x 用户升级；经常切换主页面、使用浮动操作、弹出面板、BA 图鉴、Root / Shizuku 或高刷新率设备的用户提升最明显</string>
 
     <string name="about_row_kotlin">Kotlin</string>
     <string name="about_row_gradle">Gradle</string>
