@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -51,6 +52,34 @@ class LiquidSurfaceMaterialTest {
                 enabled = true,
             ),
         )
+    }
+
+    @Test
+    fun shadowBlurIsScaledToTheSurfaceItSitsUnder() {
+        // The square-cornered shadow was geometry, not clipping: `Shadow.Default` is a fixed 24dp blur
+        // spreading `radius * 2` every way, so on a 22dp checkbox it drew a silhouette four times the
+        // control's size — and a silhouette that large has no corner rounding left to see, which reads
+        // as a right angle behind a rounded shape.
+        val checkbox = liquidSurfaceShadowRadius(22f)
+        val pill = liquidSurfaceShadowRadius(32f)
+        val field = liquidSurfaceShadowRadius(44f)
+        val card = liquidSurfaceShadowRadius(160f)
+
+        assertTrue("a checkbox must not wear a card's shadow: $checkbox", checkbox < 12.dp)
+        assertTrue(pill > checkbox)
+        assertTrue(field > pill)
+        // Anything card-sized keeps exactly the previous radius, so cards and sheets do not move.
+        assertEquals(LiquidShadowRadiusMax, card)
+    }
+
+    @Test
+    fun shadowBlurStaysInsideItsBand() {
+        assertEquals(LiquidShadowRadiusMin, liquidSurfaceShadowRadius(1f))
+        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(10_000f))
+        // Before the first measurement, fall back to the ceiling rather than to a hard-edged zero blur.
+        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(0f))
+        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(Float.NaN))
+        assertEquals(LiquidShadowRadiusMax, liquidSurfaceShadowRadius(-5f))
     }
 
     @Test

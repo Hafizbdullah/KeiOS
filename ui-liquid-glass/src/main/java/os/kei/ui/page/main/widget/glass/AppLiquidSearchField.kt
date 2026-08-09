@@ -159,6 +159,10 @@ fun AppLiquidInputField(
             )
         }
 
+    val fieldShape =
+        remember(cornerRadius) {
+            if (cornerRadius == 999.dp) ContinuousCapsule else RoundedRectangle(cornerRadius)
+        }
     Box(
         modifier =
             modifier
@@ -168,13 +172,7 @@ fun AppLiquidInputField(
                     if (activeBackdrop != null) {
                         Modifier.drawBackdrop(
                             backdrop = activeBackdrop,
-                            shape = {
-                                if (cornerRadius == 999.dp) {
-                                    ContinuousCapsule
-                                } else {
-                                    RoundedRectangle(cornerRadius)
-                                }
-                            },
+                            shape = { fieldShape },
                             layerBlock = {
                                 val focusProgress = focusProgressProvider()
                                 val focusScale =
@@ -208,7 +206,8 @@ fun AppLiquidInputField(
                             },
                             shadow = {
                                 val focusProgress = focusProgressProvider()
-                                Shadow.Default.copy(
+                                liquidGlassShadow(
+                                    minDimension = minHeight,
                                     color = Color.Black.copy(alpha = glass.shadowAlpha + 0.04f * focusProgress),
                                 )
                             },
@@ -260,6 +259,12 @@ fun AppLiquidInputField(
                 ).graphicsLayer {
                     val focusProgress = focusProgressProvider()
                     shadowElevation = 2.dp.toPx() * focusProgress
+                    // A platform elevation shadow is derived from the layer's OUTLINE, and an unset
+                    // shape is `RectangleShape` — so this was casting a hard rectangle behind a
+                    // squircle field every time the field took focus. `clip = false` because the
+                    // outline is wanted for the shadow only; the surface does its own clipping.
+                    shape = fieldShape
+                    clip = false
                     ambientShadowColor = Color.Black.copy(alpha = 0.06f * focusProgress)
                     spotShadowColor = Color.Black.copy(alpha = 0.08f * focusProgress)
                 }.then(
@@ -366,6 +371,14 @@ fun AppLiquidSearchSurface(
     compactMaterial: Boolean = false,
     pressDurationMillis: Int = 120,
     pressLabel: String = "app_liquid_search_surface_press",
+    /**
+     * Shorter side of the surface, used only to proportion its drop shadow.
+     *
+     * This surface wraps arbitrary content and so cannot know its own height at composition. The
+     * default is the search field's own min height, which is what every caller is; a caller that is
+     * substantially taller should say so rather than inherit a shadow sized for a search bar.
+     */
+    shadowMinDimension: Dp = AppInteractiveTokens.appLiquidSearchFieldMinHeight,
     contentAlignment: Alignment = Alignment.CenterStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -438,7 +451,8 @@ fun AppLiquidSearchSurface(
                             shadow = {
                                 val focusProgress = focusProgressProvider()
                                 val pressProgress = pressProgressProvider()
-                                Shadow.Default.copy(
+                                liquidGlassShadow(
+                                    minDimension = shadowMinDimension,
                                     color =
                                         Color.Black.copy(
                                             alpha = (glass.shadowAlpha + 0.04f * focusProgress) * (1f - 0.25f * pressProgress),

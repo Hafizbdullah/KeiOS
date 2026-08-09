@@ -121,7 +121,7 @@ fun AppLiquidCheckbox(
         Box(
             modifier =
                 Modifier
-                    .size(30.dp)
+                    .size(AppLiquidCheckboxBoxSize)
                     .then(
                         if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
@@ -141,7 +141,12 @@ fun AppLiquidCheckbox(
                                     Highlight.Default.copy(alpha = if (isDark) 0.42f else 0.74f)
                                 },
                                 shadow = {
-                                    Shadow.Default.copy(color = Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f))
+                                    // `Shadow.Default` is a 24dp blur — a card's shadow, spreading 48dp
+                                    // around a 30dp box, with no corner rounding left to see.
+                                    liquidGlassShadow(
+                                        minDimension = AppLiquidCheckboxBoxSize,
+                                        color = Color.Black.copy(alpha = if (isDark) 0.10f else 0.08f),
+                                    )
                                 },
                                 innerShadow = {
                                     val pressProgress = pressProgressProvider()
@@ -236,3 +241,6 @@ internal fun liquidCheckboxCheckmarkColor(isDark: Boolean): Color =
     } else {
         Color.White
     }
+
+/** The glass box itself, inside the 48dp touch target. */
+private val AppLiquidCheckboxBoxSize = 30.dp

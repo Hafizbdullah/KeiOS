@@ -407,7 +407,10 @@ private fun AppLiquidIconButtonContainer(
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },
                             shadow = {
-                                Shadow.Default.copy(
+                                // Proportioned to the control, not to a card: `Shadow.Default`'s 24dp
+                                // blur loses every trace of the corner rounding on a button this size.
+                                liquidGlassShadow(
+                                    minDimension = height,
                                     color =
                                         Color.Black.copy(
                                             alpha =
@@ -699,7 +702,10 @@ fun AppLiquidTextButton(
                                 Highlight.Default.copy(alpha = surfaceHighlightAlpha)
                             },
                             shadow = {
-                                Shadow.Default.copy(
+                                // Proportioned to the control, not to a card: `Shadow.Default`'s 24dp
+                                // blur loses every trace of the corner rounding on a button this size.
+                                liquidGlassShadow(
+                                    minDimension = minHeight,
                                     color =
                                         Color.Black.copy(
                                             alpha =

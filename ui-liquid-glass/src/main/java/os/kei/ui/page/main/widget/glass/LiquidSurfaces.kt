@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
@@ -39,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.compose.ui.util.lerp
@@ -200,11 +203,35 @@ fun LiquidSurface(
             Modifier
         }
     val contentAlphaModifier = liquidSurfaceContentAlphaModifier(enabled)
+    // The shadow is sized to the surface rather than to a constant. `Shadow.Default` is a fixed 24dp
+    // blur with a 4dp drop, which is right for a card and badly wrong for a checkbox: once the blur
+    // radius dwarfs the corner radius, the blurred silhouette collapses towards the bounding box and
+    // what shows under a rounded corner is a right angle. That is the square-cornered shadow, and it
+    // is geometry rather than clipping — every small glass control in the app was drawing a card's
+    // shadow.
+    val surfaceMinDimensionDp = remember { mutableFloatStateOf(0f) }
     val outerShadow: (() -> Shadow?)? =
         liquidSurfaceOuterShadowOrNull(
             enabled = shadow,
             alpha = shadowAlpha,
+            minDimensionDp = { surfaceMinDimensionDp.floatValue },
         )
+    val density = LocalDensity.current
+    // Only surfaces that actually cast a shadow pay for the probe. Written during layout and read in
+    // the shadow lambda during draw, which is the safe direction and lands in the same frame.
+    val shadowSizeProbeModifier =
+        if (outerShadow != null) {
+            remember(density, surfaceMinDimensionDp) {
+                Modifier.onSizeChanged { size ->
+                    val resolved = with(density) { minOf(size.width, size.height).toDp().value }
+                    if (surfaceMinDimensionDp.floatValue != resolved) {
+                        surfaceMinDimensionDp.floatValue = resolved
+                    }
+                }
+            }
+        } else {
+            Modifier
+        }
     val innerShadow: (() -> InnerShadow?)? =
         if (liquidSurfaceNeedsInteractiveInnerShadow(isInteractive = isInteractive, enabled = enabled)) {
             {
@@ -316,6 +343,7 @@ fun LiquidSurface(
         Box(
             modifier =
                 modifier
+                    .then(shadowSizeProbeModifier)
                     .then(surfaceModifier)
                     .then(stackRecessionModifier)
                     .then(borderModifier)
@@ -341,6 +369,7 @@ fun LiquidSurface(
                 modifier =
                     Modifier
                         .matchParentSize()
+                        .then(shadowSizeProbeModifier)
                         .then(surfaceModifier)
                         .then(stackRecessionModifier)
                         .then(borderModifier)
@@ -372,13 +401,67 @@ internal fun liquidSurfaceContentAlphaModifier(enabled: Boolean): Modifier =
 internal fun liquidSurfaceOuterShadowOrNull(
     enabled: Boolean,
     alpha: Float,
+    minDimensionDp: () -> Float = { 0f },
 ): (() -> Shadow?)? {
     val resolvedAlpha = alpha.takeIf(Float::isFinite)?.coerceIn(0f, 1f) ?: 0f
     if (!enabled || resolvedAlpha <= 0f) return null
     return {
-        Shadow.Default.copy(color = Color.Black.copy(alpha = resolvedAlpha))
+        val radius = liquidSurfaceShadowRadius(minDimensionDp())
+        Shadow(
+            radius = radius,
+            offset = DpOffset(0.dp, radius / LIQUID_SHADOW_OFFSET_DIVISOR),
+            color = Color.Black.copy(alpha = resolvedAlpha),
+        )
     }
 }
+
+/**
+ * Blur radius for a surface's drop shadow, scaled to the surface's shorter side.
+ *
+ * A shadow only reads as a shadow while its blur stays small relative to the corner it is tracing.
+ * `Shadow.Default`'s fixed 24dp blur spreads `radius * 2` in every direction, so on a 22dp checkbox it
+ * is drawing a silhouette four times the size of the control — and a silhouette that large has no
+ * visible corner rounding left, which is why it reads as a right-angled smudge behind a rounded shape.
+ * Half the shorter side keeps the blur proportionate; the ceiling is the previous constant, so cards
+ * and sheets are unchanged.
+ *
+ * Falls back to the ceiling before the first measurement, so a surface never flashes a hard shadow on
+ * its first frame.
+ */
+internal fun liquidSurfaceShadowRadius(minDimensionDp: Float): Dp {
+    if (!minDimensionDp.isFinite() || minDimensionDp <= 0f) return LiquidShadowRadiusMax
+    return (minDimensionDp * LIQUID_SHADOW_RADIUS_RATIO).dp
+        .coerceIn(LiquidShadowRadiusMin, LiquidShadowRadiusMax)
+}
+
+/**
+ * A drop shadow proportioned to a control whose shorter side is [minDimension].
+ *
+ * For the surfaces that call `drawBackdrop` directly instead of going through [LiquidSurface] and so
+ * cannot use the measured probe. Pass the control's own height — never `Shadow.Default`, whose 24dp
+ * blur is a card's shadow and turns a small rounded control's shadow into a right-angled smudge.
+ */
+internal fun liquidGlassShadow(
+    minDimension: Dp,
+    color: Color,
+): Shadow {
+    val radius = liquidSurfaceShadowRadius(minDimension.value)
+    return Shadow(
+        radius = radius,
+        offset = DpOffset(0.dp, radius / LIQUID_SHADOW_OFFSET_DIVISOR),
+        color = color,
+    )
+}
+
+private const val LIQUID_SHADOW_RADIUS_RATIO = 0.5f
+
+/** Matches the proportion `Shadow.Default` uses between its own radius and drop. */
+private const val LIQUID_SHADOW_OFFSET_DIVISOR = 6f
+
+internal val LiquidShadowRadiusMin = 5.dp
+
+/** The old fixed radius, kept as the ceiling so anything card-sized looks exactly as it did. */
+internal val LiquidShadowRadiusMax = 24.dp
 
 internal fun liquidSurfaceNeedsInteractiveInnerShadow(
     isInteractive: Boolean,
@@ -451,6 +534,17 @@ fun AppLiquidFloatingSurface(
             label = pressLabel,
         )
     val pressProgressProvider = remember(pressProgressState) { { pressProgressState.value } }
+    val floatingMinDimensionDp = remember { mutableFloatStateOf(0f) }
+    val floatingDensity = LocalDensity.current
+    val floatingShadowProbe =
+        remember(floatingDensity, floatingMinDimensionDp) {
+            Modifier.onSizeChanged { size ->
+                val resolved = with(floatingDensity) { minOf(size.width, size.height).toDp().value }
+                if (floatingMinDimensionDp.floatValue != resolved) {
+                    floatingMinDimensionDp.floatValue = resolved
+                }
+            }
+        }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val deformationProgressProvider =
         remember(pressProgressProvider, transitionAnimationsEnabled) {
@@ -510,6 +604,7 @@ fun AppLiquidFloatingSurface(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .then(floatingShadowProbe)
                     .then(
                         if (activeBackdrop != null) {
                             Modifier.drawBackdrop(
@@ -539,7 +634,10 @@ fun AppLiquidFloatingSurface(
                                 shadow = {
                                     val pressProgress = pressProgressProvider()
                                     val shadowAlpha = (if (isDark) 0.12f else 0.05f) * (1f - 0.35f * pressProgress)
-                                    Shadow.Default.copy(
+                                    // Floating chrome runs from a small round button to a tall dock, so
+                                    // the radius is measured rather than assumed.
+                                    liquidGlassShadow(
+                                        minDimension = floatingMinDimensionDp.floatValue.dp,
                                         color = Color.Black.copy(alpha = shadowAlpha),
                                     )
                                 },
