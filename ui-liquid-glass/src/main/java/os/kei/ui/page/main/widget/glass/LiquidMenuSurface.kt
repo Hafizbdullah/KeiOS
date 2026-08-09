@@ -158,13 +158,29 @@ internal fun rememberLiquidMenuSurface(
                 )
             },
             layerBlock = transform,
-            highlight = { Highlight.Default.copy(alpha = if (isDark) 0.72f else 0.90f) },
-            shadow = {
-                Shadow.Default.copy(
-                    color = Color.Black.copy(alpha = if (isDark) 0.36f else 0.22f),
-                )
-            },
-            innerShadow = { InnerShadow(radius = 12.dp, alpha = if (isDark) 0.22f else 0.14f) },
+            // A brighter rim than its siblings, because it is doing the lifting a drop shadow would.
+            highlight = { Highlight.Default.copy(alpha = if (isDark) 0.86f else 1f) },
+            // No drop shadow, deliberately, and it cost a while to arrive at.
+            //
+            // `drawBackdrop`'s shadow is drawn by a `ShadowNode` that sits inside
+            // `Modifier.graphicsLayer(layerBlock)` and paints past the element's bounds — a blurred
+            // outline with the shape cleared out of it, spreading `radius * 2` every way. Inside a layer
+            // bounded to the element, all that survives is the slice inside the bounding rectangle but
+            // outside the rounded shape, which reads as dark right-angled corners hugging the panel.
+            // Measuring across the panel's edge showed no darkening at all *outside* it, which is the
+            // tell, and disabling the shadow made the corners clean immediately.
+            //
+            // A platform elevation shadow would not have that problem — the renderer derives it from the
+            // node's outline rather than from draw instructions inside a layer. But `Modifier.shadow`
+            // applied outside the transform measured as casting nothing here (identical pixels above and
+            // below the panel with it on and off), so it went rather than stay as a knob that does
+            // nothing — this file just deleted twenty of those.
+            //
+            // The menu is the only presentation this bites: the sheet and alert put their corners over a
+            // dimmed scrim, and the toast is a capsule with almost no corner notch to expose. Depth here
+            // comes from the rim and the inner shadow instead, which is what the glass already had.
+            shadow = null,
+            innerShadow = { InnerShadow(radius = 14.dp, alpha = if (isDark) 0.26f else 0.18f) },
             onDrawSurface = { drawRect(fill) },
         ),
         glassEnabled = true,
