@@ -25,7 +25,7 @@ import com.kyant.shapes.RoundedRectangle
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackSlot
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -60,15 +60,10 @@ fun AppSurfaceCard(
     toggleableState: ToggleableState? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val edgeStack = LocalAppEdgeStackCards.current
-    val edgeStackModifier =
-        if (edgeStackEnabled && edgeStack != null) {
-            Modifier.appEdgeStackedCard(edgeStack)
-        } else {
-            Modifier
-        }
+    val edgeStack = rememberAppEdgeStackSlot(enabled = edgeStackEnabled)
     AppSurfaceBox(
-        modifier = edgeStackModifier.then(modifier),
+        modifier = edgeStack.modifier.then(modifier),
+        edgeStack = edgeStack,
         backdrop = backdrop,
         surfaceColor = containerColor,
         shape = shape,

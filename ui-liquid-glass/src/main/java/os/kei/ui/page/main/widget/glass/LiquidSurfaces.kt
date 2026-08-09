@@ -23,11 +23,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalDensity
@@ -87,6 +89,16 @@ fun LiquidSurface(
     shadow: Boolean = true,
     shadowAlpha: Float = 0.10f,
     exportedBackdrop: LayerBackdrop? = null,
+    /**
+     * This card's place in a host page's card pile, when it is a page card on a stacking page.
+     *
+     * Threaded in rather than read from the composition local here because only the page-card
+     * wrappers should stack — a pill or a button inside a card must not — and because the transform
+     * has to end up inside [drawBackdrop]'s `layerBlock` so the sampled backdrop is
+     * inverse-corrected for it. Defaults to inert, which is byte-identical to not having the
+     * parameter.
+     */
+    edgeStack: AppEdgeStackSlot = AppEdgeStackSlot.Inert,
     interactionSource: MutableInteractionSource? = null,
     role: Role = Role.Button,
     selected: Boolean? = null,
@@ -131,11 +143,31 @@ fun LiquidSurface(
             Modifier
         }
 
+    val stackCard = edgeStack.card
+    val interactiveTransformEnabled = isInteractive && enabled
+    // Both transforms compose into one layer block, and the pile's contribution is applied on top of
+    // the press deformation rather than replacing it, so a card at the front of the pile still
+    // responds to touch.
     val interactiveLayerBlock: (GraphicsLayerScope.() -> Unit)? =
-        if (isInteractive && enabled) {
-            { applyLiquidSurfaceInteractiveTransform(interactiveHighlight) }
-        } else {
-            null
+        remember(interactiveTransformEnabled, interactiveHighlight, stackCard) {
+            when {
+                interactiveTransformEnabled && stackCard != null -> {
+                    {
+                        applyLiquidSurfaceInteractiveTransform(interactiveHighlight)
+                        applyAppEdgeStackTransform(stackCard)
+                    }
+                }
+
+                interactiveTransformEnabled -> {
+                    { applyLiquidSurfaceInteractiveTransform(interactiveHighlight) }
+                }
+
+                stackCard != null -> {
+                    { applyAppEdgeStackTransform(stackCard) }
+                }
+
+                else -> null
+            }
         }
     val activeBackdrop = activeGlassBackdrop(backdrop)
     val effectiveBlurRadius =
@@ -181,6 +213,26 @@ fun LiquidSurface(
             }
         } else {
             null
+        }
+    // Depth is drawn as a scrim over the card's own surface, shaped to the card, and it has to sit
+    // inside the pile's transform layer so it scales and travels with the card. Chained after the
+    // surface modifier, it lands after the backdrop and before the content, which is where a
+    // recession belongs. Shape.createOutline rather than the optimized corner radius, because that
+    // helper only resolves circles and capsules — every page card is a RoundedRectangle and would
+    // have fallen through to null.
+    val stackRecessionModifier =
+        if (stackCard != null) {
+            Modifier.drawWithCache {
+                val outline = shape.createOutline(size, layoutDirection, this)
+                onDrawBehind {
+                    val dimAlpha = appEdgeStackDimAlpha(stackCard, isDark)
+                    if (dimAlpha > 0f) {
+                        drawOutline(outline, color = AppEdgeStackDimColor.copy(alpha = dimAlpha))
+                    }
+                }
+            }
+        } else {
+            Modifier
         }
     val surfaceModifier =
         if (activeBackdrop != null) {
@@ -233,7 +285,16 @@ fun LiquidSurface(
                 },
             )
         } else {
-            Modifier.appLiquidOptimizedSurface(
+            // No backdrop to hand the transform to, so the pile needs its own layer here. Only the
+            // stack's contribution — the press deformation has never been applied on this path and
+            // adding it would change every fallback surface in the app.
+            val fallbackStackLayer =
+                if (stackCard != null) {
+                    Modifier.graphicsLayer { applyAppEdgeStackTransform(stackCard) }
+                } else {
+                    Modifier
+                }
+            fallbackStackLayer.appLiquidOptimizedSurface(
                 shape = shape,
                 optimizedCornerRadius = optimizedCornerRadius,
                 color = fallbackSurfaceColor,
@@ -244,6 +305,7 @@ fun LiquidSurface(
             modifier =
                 modifier
                     .then(surfaceModifier)
+                    .then(stackRecessionModifier)
                     .then(borderModifier)
                     .then(clickableModifier)
                     .then(stateSemanticsModifier)
@@ -267,6 +329,7 @@ fun LiquidSurface(
                     Modifier
                         .matchParentSize()
                         .then(surfaceModifier)
+                        .then(stackRecessionModifier)
                         .then(borderModifier)
                         .graphicsLayer { clip = false },
             )

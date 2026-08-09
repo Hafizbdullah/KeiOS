@@ -3,39 +3,91 @@
 package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * iOS-notification-center style edge stacking for card-dense lazy pages.
+ * iOS-style card piling for card-dense lazy pages.
  *
- * Cards leaving through the top of the viewport pin at the page's content start line,
- * tuck upward a few dp per depth level while scaling down, and fade out shortly before
- * the lazy layout would dispose them, so scrolling reads as cards collecting into a
- * shallow pile instead of sliding off screen.
+ * Cards leaving through the top of the viewport pin at the page's content start line and recede:
+ * they rise a little per depth level, scale down, and **darken** until they retire. A page opts in
+ * with one provider plus [appEdgeStackContainer] on its lazy column; the card wrappers pick the
+ * effect up through [rememberAppEdgeStackSlot]. Pages without the provider render byte-identically
+ * to a page that has never heard of stacking — the slot resolves to [AppEdgeStackSlot.Inert], which
+ * contributes no modifier, no layer and no measurement.
  *
- * Wiring: a page provides [LocalAppEdgeStackCards] around its lazy column and tags the
- * column with [appEdgeStackContainer]; [AppSurfaceCard][os.kei.ui.page.main.widget.core.AppSurfaceCard]
- * picks the effect up automatically for every top-level card and blocks nested surfaces
- * from double-transforming. Pages without the provider render unchanged.
+ * ## Depth darkens, it does not dissolve
+ *
+ * This is the part that was wrong before, and it is worth being precise about because the fix is not
+ * a matter of taste. Every recession treatment Apple documents **adds** something to the surface
+ * going behind: macOS sheets dim the parent window, visionOS sheets dim the parent, and watchOS is
+ * explicit that "the system applies a material to the background that blurs and desaturates the
+ * covered content". The Materials guidance offers one concrete opacity anywhere in this area — "a
+ * dark dimming layer of 35% opacity" — and it is additive too. Apple's four depth channels for
+ * Liquid Glass are lensing, a content-adaptive shadow, simulated thickness and highlights; opacity
+ * of the receding surface is not among them.
+ *
+ * The previous implementation encoded depth *only* as `alpha`, on the single channel Apple never
+ * uses, and drove it all the way to zero. Over a light page a receding card therefore got lighter
+ * and dissolved — the exact opposite of receding — and at low alpha it could no longer carry a
+ * shadow or an edge for light to bend at, so it lost the cues that would have sold the depth. That
+ * is why the pile read as nothing more than translucency.
+ *
+ * So: [AppEdgeStackTransform.dim] is the primary depth channel, [AppEdgeStackTransform.scale] and
+ * the rise are the geometry, and [AppEdgeStackTransform.fade] is only a retirement tail — it exists
+ * so a card cannot pop out of existence when the lazy layout disposes it, not to express depth.
+ * Because the depth signal is geometric plus a solid dim rather than translucency, it also survives
+ * a reduced-transparency setting, which Apple requires of the material.
+ *
+ * ## The numbers here are ours
+ *
+ * Apple publishes none of them. There is no stated figure anywhere for how many cards are visible in
+ * a pile, nor for inset, scale, opacity or corner radius per depth level, nor any spring or duration
+ * for a stacking transition. The two caps Apple does state are "display only one sheet at a time"
+ * and exactly two Live Activities in the Dynamic Island, and its crowding strategy is always to
+ * degrade or drop to one rather than grow the stack — so a small bounded depth is the Apple-shaped
+ * choice, and [APP_EDGE_STACK_LEVELS] is our pick within it.
  */
 @Stable
-class AppEdgeStackState internal constructor(
-    internal val stackLinePx: Float,
-) {
-    internal val containerTopInRootY = mutableFloatStateOf(Float.NaN)
+class AppEdgeStackState internal constructor() {
+    /**
+     * Distance from the lazy container's top edge at which cards stop travelling and start piling.
+     *
+     * Mutable rather than constructor-captured on purpose. Three hosts (the GitHub notification
+     * history, the guide catalog and the memory lobby) derive this at runtime from whether their
+     * pinned hub is showing. When the state was `remember`ed *keyed* on the pixel value, every flip
+     * of that condition built a fresh state whose container position reset to unknown, and for a
+     * whole positioning pass every card on the page rendered untransformed. Writing into a stable
+     * state instead keeps the container attached across the flip. A density or font-scale change
+     * used to re-key it for the same reason, and no longer does.
+     */
+    internal var stackLinePx by mutableFloatStateOf(0f)
+
+    /**
+     * Live coordinates of the lazy container, used to measure each card against the stack line.
+     *
+     * Snapshot-backed only so that the first non-null write invalidates placement once; the object
+     * itself is a live view onto the container's coordinator, so reading a position off it during a
+     * card's placement gives that card a *current-frame* answer even though this reference was
+     * captured on an earlier pass.
+     */
+    internal var containerCoordinates by mutableStateOf<LayoutCoordinates?>(null)
 }
 
 val LocalAppEdgeStackCards = compositionLocalOf<AppEdgeStackState?> { null }
@@ -43,140 +95,307 @@ val LocalAppEdgeStackCards = compositionLocalOf<AppEdgeStackState?> { null }
 @Composable
 fun rememberAppEdgeStackState(stackLine: Dp): AppEdgeStackState {
     val stackLinePx = with(LocalDensity.current) { stackLine.toPx() }
-    return remember(stackLinePx) { AppEdgeStackState(stackLinePx = stackLinePx) }
+    return remember { AppEdgeStackState() }.also { state ->
+        if (state.stackLinePx != stackLinePx) {
+            state.stackLinePx = stackLinePx
+        }
+    }
 }
 
-/** Tags the lazy container whose top edge anchors the stack line. */
+/**
+ * Tags the lazy container whose top edge anchors the stack line.
+ *
+ * [onPlaced] rather than `onGloballyPositioned`: it runs inside the placement pass, so the container
+ * is attached before the cards below it are placed on the very first frame rather than one frame
+ * later.
+ */
 fun Modifier.appEdgeStackContainer(state: AppEdgeStackState): Modifier =
-    onGloballyPositioned { coordinates ->
-        val topInRootY = coordinates.positionInRoot().y
-        if (state.containerTopInRootY.floatValue != topInRootY) {
-            state.containerTopInRootY.floatValue = topInRootY
+    onPlaced { coordinates ->
+        if (state.containerCoordinates !== coordinates) {
+            state.containerCoordinates = coordinates
         }
     }
 
 /**
- * Opts the wrapped cards out of edge stacking inside a providing page. Page overview
- * cards use this: they carry the page's status hub and must scroll away readable
- * instead of being buried under the pile.
+ * One card's live place in the pile.
+ *
+ * Written during the card's placement and read during the glass's draw. That direction matters:
+ * Compose runs composition, then layout, then draw, so a value written in layout and read in draw
+ * lands in the *same* frame. The previous implementation went the other way round — it wrote from
+ * `onGloballyPositioned`, which fires after layout has finished, and read the result in the next
+ * frame's placement — so during a fling every card in the pile trailed the list by a frame. That was
+ * the whole of the "not smooth" complaint, and it is structural rather than a matter of tuning.
  */
-@Composable
-fun AppEdgeStackExempt(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalAppEdgeStackCards provides null, content = content)
+@Stable
+class AppEdgeStackCard internal constructor() {
+    internal var stacked by mutableStateOf(false)
+    internal var translationY by mutableFloatStateOf(0f)
+    internal var scale by mutableFloatStateOf(1f)
+    internal var dim by mutableFloatStateOf(0f)
+    internal var fade by mutableFloatStateOf(1f)
+
+    internal fun rest() {
+        if (!stacked) return
+        stacked = false
+        translationY = 0f
+        scale = 1f
+        dim = 0f
+        fade = 1f
+    }
+
+    internal fun apply(transform: AppEdgeStackTransform) {
+        if (!stacked) stacked = true
+        if (translationY != transform.translationY) translationY = transform.translationY
+        if (scale != transform.scale) scale = transform.scale
+        if (dim != transform.dim) dim = transform.dim
+        if (fade != transform.fade) fade = transform.fade
+    }
 }
 
 /**
- * Card-side transform, applied by page-card containers (AppSurfaceCard and friends)
- * when a host page provides [LocalAppEdgeStackCards]. Layout position feeds the
- * placement-phase layer lambda through snapshot state, so scrolling never invalidates
- * composition. Cards resting below the stack line use plain placement and allocate no
- * graphics layer; only the few cards actively entering the pile use `placeWithLayer`.
+ * What a page card needs to join the pile: a probe [modifier] to wear, and the [card] the glass
+ * reads at draw time.
+ *
+ * Replaces three hand-rolled copies of the same wiring (AppSurfaceCard, GuideLiquidCard and the BA
+ * surfaces each resolved the local, built a transform modifier and suppressed nested surfaces on
+ * their own). [Inert] is the shared no-host answer, so an unstacked page allocates nothing.
+ */
+@Stable
+class AppEdgeStackSlot internal constructor(
+    internal val card: AppEdgeStackCard?,
+    val modifier: Modifier,
+) {
+    val stacking: Boolean get() = card != null
+
+    companion object {
+        val Inert: AppEdgeStackSlot = AppEdgeStackSlot(card = null, modifier = Modifier)
+    }
+}
+
+/**
+ * Resolves this card's slot against the host page.
+ *
+ * [enabled] is the opt-out AppSurfaceCard uses while an expandable card is animating its height —
+ * see `shouldApplyEdgeStackToExpandableCard`.
  */
 @Composable
-fun Modifier.appEdgeStackedCard(state: AppEdgeStackState): Modifier {
-    val itemTopInContainerY = remember { mutableFloatStateOf(APP_EDGE_STACK_RESTING) }
-    val itemHeightPx = remember { mutableIntStateOf(0) }
-    val tuckRisePx = with(LocalDensity.current) { AppEdgeStackTuckRise.toPx() }
-    return this
-        .onGloballyPositioned { coordinates ->
-            val containerTop = state.containerTopInRootY.floatValue
-            val topInContainer =
-                if (containerTop.isNaN()) {
-                    APP_EDGE_STACK_RESTING
-                } else {
-                    val relative = coordinates.positionInRoot().y - containerTop
-                    if (relative >= state.stackLinePx) APP_EDGE_STACK_RESTING else relative
-                }
-            if (itemTopInContainerY.floatValue != topInContainer) {
-                itemTopInContainerY.floatValue = topInContainer
-            }
-            val heightPx = coordinates.size.height
-            if (itemHeightPx.intValue != heightPx) {
-                itemHeightPx.intValue = heightPx
-            }
-        }
-        .layout { measurable, constraints ->
-            val placeable = measurable.measure(constraints)
-            layout(placeable.width, placeable.height) {
-                val itemTop = itemTopInContainerY.floatValue
-                if (itemTop == APP_EDGE_STACK_RESTING) {
-                    placeable.placeRelative(0, 0)
-                } else {
-                    val transform =
-                        computeAppEdgeStackTransform(
-                            itemTopInContainer = itemTop,
-                            itemHeightPx = itemHeightPx.intValue.toFloat(),
-                            stackLinePx = state.stackLinePx,
-                            tuckRisePx = tuckRisePx,
-                        )
-                    placeable.placeRelativeWithLayer(0, 0) {
-                        translationY = transform.translationY
-                        scaleX = transform.scale
-                        scaleY = transform.scale
-                        alpha = transform.alpha
-                        transformOrigin = TransformOrigin(0.5f, 0f)
-                    }
-                }
-            }
-        }
+fun rememberAppEdgeStackSlot(enabled: Boolean = true): AppEdgeStackSlot {
+    val state = LocalAppEdgeStackCards.current
+    if (state == null || !enabled) return AppEdgeStackSlot.Inert
+    val card = remember(state) { AppEdgeStackCard() }
+    val stepRange = with(LocalDensity.current) {
+        AppEdgeStackStepFloor.toPx() to AppEdgeStackStepCeiling.toPx()
+    }
+    val riseTotalPx = with(LocalDensity.current) { AppEdgeStackTuckRise.toPx() }
+    return remember(state, card, stepRange, riseTotalPx) {
+        AppEdgeStackSlot(
+            card = card,
+            modifier = Modifier.appEdgeStackProbe(
+                state = state,
+                card = card,
+                stepFloorPx = stepRange.first,
+                stepCeilingPx = stepRange.second,
+                riseTotalPx = riseTotalPx,
+            ),
+        )
+    }
 }
+
+/**
+ * Measures the card against the stack line and publishes its depth.
+ *
+ * Reads its position from [androidx.compose.ui.layout.Placeable.PlacementScope.coordinates], which
+ * Compose documents as re-running the placement block "when the parent layout changes a position" —
+ * exactly the invalidation a scrolling list produces, and it arrives in the current frame. Placement
+ * itself is plain: the card is never offset here, because the visual transform belongs inside the
+ * glass layer (see [applyAppEdgeStackTransform]) where the backdrop can be inverse-corrected for it.
+ */
+private fun Modifier.appEdgeStackProbe(
+    state: AppEdgeStackState,
+    card: AppEdgeStackCard,
+    stepFloorPx: Float,
+    stepCeilingPx: Float,
+    riseTotalPx: Float,
+): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) {
+            val container = state.containerCoordinates
+            val self = coordinates
+            val itemTop =
+                if (container != null && self != null && container.isAttached && self.isAttached) {
+                    container.localPositionOf(self).y
+                } else {
+                    Float.NaN
+                }
+            if (itemTop.isNaN() || itemTop >= state.stackLinePx) {
+                card.rest()
+            } else {
+                card.apply(
+                    computeAppEdgeStackTransform(
+                        itemTopInContainer = itemTop,
+                        itemHeightPx = placeable.height.toFloat(),
+                        stackLinePx = state.stackLinePx,
+                        riseTotalPx = riseTotalPx,
+                        stepPx = placeable.height.toFloat().coerceIn(stepFloorPx, stepCeilingPx),
+                    ),
+                )
+            }
+            placeable.placeRelative(0, 0)
+        }
+    }
+
+/**
+ * Folds a card's place in the pile into a glass surface's `layerBlock`.
+ *
+ * Being *inside* `drawBackdrop`'s layer rather than wrapped around it is what keeps the card real
+ * glass while it recedes. `LayerBackdrop.drawBackdrop` inverse-transforms the sampled backdrop by
+ * the layer block it is handed, so the refraction stays registered with the page behind; a transform
+ * applied outside the modifier instead falls into the library's documented "outer transformations
+ * lead to wrong position calculation" path, and the lens visibly slides as the card moves.
+ *
+ * The pivot is expressed as a translation deliberately. `InverseLayerScope.inverseTransformAtTopLeft`
+ * reads only `rotationZ`, `scaleX` and `scaleY` and inverts about the element's top-left — it never
+ * looks at `transformOrigin`. The old code scaled about `TransformOrigin(0.5f, 0f)`, which the
+ * inverse cannot undo, so it would have left a horizontal residual that slid the refraction for the
+ * length of the pile. Scaling about the top-left with a compensating `translationX` is the same
+ * transform and one the inverse handles exactly.
+ */
+internal fun GraphicsLayerScope.applyAppEdgeStackTransform(card: AppEdgeStackCard) {
+    if (!card.stacked) return
+    val resolvedScale = card.scale
+    scaleX = resolvedScale
+    scaleY = resolvedScale
+    translationX = size.width * APP_EDGE_STACK_PIVOT_X * (1f - resolvedScale)
+    translationY = card.translationY
+    transformOrigin = AppEdgeStackTopLeftOrigin
+    // Only when it is actually retiring: a plain `alpha` promotes the layer to an offscreen buffer,
+    // which on a surface that also draws a blurred backdrop is the expensive kind, and it bounds the
+    // backdrop shadow's spread to the element rect.
+    if (card.fade < 1f) presentationFade(card.fade)
+}
+
+/**
+ * Applies the pile transform in a layer of its own.
+ *
+ * For surfaces with no glass layer to fold it into — a card rendering its opaque fallback because the
+ * page has no usable backdrop. Prefer letting `LiquidSurface` carry it, so the sampled backdrop gets
+ * inverse-corrected; this is the degraded path and it carries geometry only, no scrim.
+ */
+fun Modifier.appEdgeStackLayer(slot: AppEdgeStackSlot): Modifier {
+    val card = slot.card ?: return this
+    return graphicsLayer { applyAppEdgeStackTransform(card) }
+}
+
+/**
+ * Alpha of the recession scrim a stacked card draws over its own surface, per theme.
+ *
+ * Light mode carries less than dark, and not for symmetry: a dark scrim on a pale card is far more
+ * conspicuous per unit alpha than the same scrim on a dark one, so matching the numbers would make
+ * the light pile look bruised while the dark pile looked flat.
+ */
+internal fun appEdgeStackDimAlpha(
+    card: AppEdgeStackCard,
+    isDark: Boolean,
+): Float {
+    if (!card.stacked) return 0f
+    val ceiling = if (isDark) APP_EDGE_STACK_DIM_DARK else APP_EDGE_STACK_DIM_LIGHT
+    return (card.dim * ceiling).coerceIn(0f, 1f)
+}
+
+/**
+ * The scrim colour. A near-black with a blue cast rather than pure black, so a receding card reads as
+ * falling into shade rather than as having a grey filter dropped on it.
+ */
+internal val AppEdgeStackDimColor = Color(0xFF0B0F18)
 
 data class AppEdgeStackTransform(
+    /** Pins the card at the stack line, less the rise it has earned by sinking. */
     val translationY: Float,
     val scale: Float,
-    val alpha: Float,
+    /** 0 at the stack line, 1 fully receded. Scaled per theme by [appEdgeStackDimAlpha]. */
+    val dim: Float,
+    /** 1 until the retirement tail; reaches 0 before the lazy layout disposes the card. */
+    val fade: Float,
 ) {
     companion object {
-        val Identity = AppEdgeStackTransform(translationY = 0f, scale = 1f, alpha = 1f)
+        val Identity = AppEdgeStackTransform(translationY = 0f, scale = 1f, dim = 0f, fade = 1f)
     }
 }
 
 /**
- * Depth progress runs 0..2: 0 at the stack line, 1 when one following card has fully
- * replaced this one, 2 exactly when the item's layout leaves the viewport and the lazy
- * layout disposes it - alpha must reach zero before that point so disposal never pops.
+ * The pile geometry, kept pure so it can be unit-tested — it is the part that is easy to get subtly
+ * wrong and impossible to see in a screenshot.
+ *
+ * [stepPx] is how much scroll travel one depth level costs. It tracks the card's own height, clamped
+ * to [AppEdgeStackStepFloor]..[AppEdgeStackStepCeiling]. Unclamped height was the previous
+ * behaviour's real bug: depth ran over `stackLine + height`, so a 600dp card needed 626dp of
+ * overshoot to recede while a 60dp row needed 86dp — a sevenfold spread, which is why the pile
+ * looked like a different effect on the OS page than on the history pages. Clamping caps that spread
+ * at under 3x while still letting a tall card own more of the pile than a single row does.
  */
 fun computeAppEdgeStackTransform(
     itemTopInContainer: Float,
     itemHeightPx: Float,
     stackLinePx: Float,
-    tuckRisePx: Float,
+    riseTotalPx: Float,
+    stepPx: Float,
     minScale: Float = APP_EDGE_STACK_MIN_SCALE,
 ): AppEdgeStackTransform {
     val overshoot = stackLinePx - itemTopInContainer
     if (overshoot <= 0f || itemHeightPx <= 0f) return AppEdgeStackTransform.Identity
-    val disposalOvershoot = stackLinePx + itemHeightPx
-    val progress = (overshoot / (disposalOvershoot / 2f)).coerceIn(0f, 2f)
-    val firstLevel = progress.coerceAtMost(1f)
-    val secondLevel = (progress - 1f).coerceIn(0f, 1f)
-    val rise = tuckRisePx * (FIRST_LEVEL_RISE_WEIGHT * firstLevel + SECOND_LEVEL_RISE_WEIGHT * secondLevel)
-    val scale = 1f - (1f - minScale) * (0.5f * firstLevel + 0.5f * secondLevel)
-    val alpha = when {
-        progress <= APP_EDGE_STACK_FADE_START -> 1f
-        progress >= APP_EDGE_STACK_FADE_END -> 0f
-        else ->
-            1f - (progress - APP_EDGE_STACK_FADE_START) /
-                (APP_EDGE_STACK_FADE_END - APP_EDGE_STACK_FADE_START)
-    }
+    // A pinned card is still disposed on its LAYOUT position, not the position it is drawn at, so the
+    // pile can never outlast the card's own height. Clamping the extent to a margin inside that is
+    // what makes `fade == 0` before disposal provable rather than hopeful.
+    val disposalOvershoot = (stackLinePx + itemHeightPx) * APP_EDGE_STACK_RETIRE_MARGIN
+    val extent =
+        minOf(APP_EDGE_STACK_LEVELS * stepPx.coerceAtLeast(1f), disposalOvershoot)
+            .coerceAtLeast(1f)
+    val progress = (overshoot / extent).coerceIn(0f, 1f)
+    // Decelerate, so levels tighten as they deepen and the pile reads as a stack rather than a ramp.
+    val eased = progress * (2f - progress)
+    val fadeSpan = 1f - APP_EDGE_STACK_FADE_START
     return AppEdgeStackTransform(
-        translationY = overshoot - rise,
-        scale = scale,
-        alpha = alpha,
+        translationY = overshoot - riseTotalPx * eased,
+        scale = 1f - (1f - minScale) * eased,
+        dim = eased,
+        fade =
+            if (progress <= APP_EDGE_STACK_FADE_START || fadeSpan <= 0f) {
+                1f
+            } else {
+                (1f - (progress - APP_EDGE_STACK_FADE_START) / fadeSpan).coerceIn(0f, 1f)
+            },
     )
 }
 
+private val AppEdgeStackTopLeftOrigin = TransformOrigin(0f, 0f)
+
+/** Cards narrow toward their horizontal centre as they recede, so the pivot is centre-x, top. */
+private const val APP_EDGE_STACK_PIVOT_X = 0.5f
+
 private val AppEdgeStackTuckRise = 18.dp
 
+/** Scroll travel per depth level is the card's height, held inside this band. */
+private val AppEdgeStackStepFloor = 64.dp
+private val AppEdgeStackStepCeiling = 168.dp
+
 /**
- * Top content inset for lists whose page pins an overview block above them: leaves the
- * tuck rise fully visible inside the lazy viewport plus a breathing gap, and doubles as
- * the stack line those lists pass to [rememberAppEdgeStackState].
+ * Top content inset for lists whose page pins an overview block above them: leaves the tuck rise
+ * fully visible inside the lazy viewport plus a breathing gap, and doubles as the stack line those
+ * lists pass to [rememberAppEdgeStackState].
  */
 val AppEdgeStackListTopInset = 26.dp
 
 const val APP_EDGE_STACK_MIN_SCALE = 0.90f
-internal const val APP_EDGE_STACK_RESTING = Float.MAX_VALUE
-internal const val FIRST_LEVEL_RISE_WEIGHT = 0.55f
-internal const val SECOND_LEVEL_RISE_WEIGHT = 0.45f
-internal const val APP_EDGE_STACK_FADE_START = 1.2f
-internal const val APP_EDGE_STACK_FADE_END = 1.9f
+
+/** Visible pile depth. Ours, not Apple's — see the class KDoc. */
+internal const val APP_EDGE_STACK_LEVELS = 3f
+
+/** Retire this far inside the disposal point, so removal never pops. */
+internal const val APP_EDGE_STACK_RETIRE_MARGIN = 0.9f
+
+/** Where the retirement tail starts, as a fraction of the pile. */
+internal const val APP_EDGE_STACK_FADE_START = 0.82f
+
+internal const val APP_EDGE_STACK_DIM_DARK = 0.34f
+internal const val APP_EDGE_STACK_DIM_LIGHT = 0.22f

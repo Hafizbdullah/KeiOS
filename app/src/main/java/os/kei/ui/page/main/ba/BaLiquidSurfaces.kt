@@ -34,7 +34,8 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.activeGlassBackdrop
-import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
+import os.kei.ui.page.main.widget.glass.appEdgeStackLayer
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackSlot
 import os.kei.ui.page.main.widget.glass.glassStyle
 import os.kei.ui.page.main.widget.glass.resolvedGlassBlurDp
 import os.kei.ui.page.main.widget.glass.resolvedGlassLensDp
@@ -84,9 +85,17 @@ private fun BaLiquidSurfaceColumn(
         } else {
             backdrop ?: parentBackdrop
         }
-    val edgeStack = LocalAppEdgeStackCards.current
+    val edgeStack = rememberAppEdgeStackSlot()
+    // Restoring glass here is the largest visible change in this rewrite. 482f0cfb3 switched the
+    // backdrop off whenever a card stack was provided, and BaCalendarPoolStackedLayout always
+    // provides one — so every card on the activity calendar and the pool page fell to
+    // `appSquircleBackground(fallbackSurface)`: a flat surfaceContainer at 40% alpha in dark and 56%
+    // in light. Those two pages were not Liquid Glass at all, they were semi-transparent rectangles,
+    // and the same gate silently took their press feedback with it (the fallback branch swaps the
+    // liquid press for `combinedClickable(indication = null)`). Recession is the pile's own job now —
+    // a scrim drawn inside the glass layer — so the material no longer has to be sacrificed to get it.
     val activeBackdrop =
-        if (effectsEnabled && edgeStack == null) {
+        if (effectsEnabled) {
             activeGlassBackdrop(inheritedBackdrop)
         } else {
             null
@@ -97,16 +106,12 @@ private fun BaLiquidSurfaceColumn(
     } else {
         0.dp
     }
-    val stackedModifier =
-        if (edgeStack != null) {
-            Modifier.appEdgeStackedCard(edgeStack).then(modifier)
-        } else {
-            modifier
-        }
+    val stackedModifier = edgeStack.modifier.then(modifier)
 
     if (activeBackdrop != null) {
         AppSurfaceBox(
             modifier = stackedModifier,
+            edgeStack = edgeStack,
             backdrop = activeBackdrop,
             surfaceColor =
                 accentTint
@@ -151,6 +156,8 @@ private fun BaLiquidSurfaceColumn(
             }
         Column(
             modifier = stackedModifier
+                // No glass layer to fold the pile into on this path, so it gets its own.
+                .appEdgeStackLayer(edgeStack)
                 .padding(pressSafePadding)
                 .appSquircleBackground(fallbackSurface, cornerRadius)
                 .then(

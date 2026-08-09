@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.shapes.RoundedRectangle
+import os.kei.ui.page.main.widget.glass.AppEdgeStackSlot
 import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LiquidSurface
@@ -60,6 +61,8 @@ fun AppSurfaceBox(
     blurRadius: Dp = UiPerformanceBudget.backdropBlur,
     lensRadius: Dp = UiPerformanceBudget.backdropLens,
     effectVariant: GlassVariant? = null,
+    /** Forwarded to [LiquidSurface] so a page card recedes inside its own glass layer. */
+    edgeStack: AppEdgeStackSlot = AppEdgeStackSlot.Inert,
     contentAlignment: Alignment = Alignment.TopStart,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
@@ -131,6 +134,7 @@ fun AppSurfaceBox(
             blurRadius = blurRadius,
             lensRadius = lensRadius,
             effectVariant = effectVariant,
+            edgeStack = edgeStack,
             depthEffect = depthEffect,
             highlightAlpha = highlightAlpha,
             borderColor = borderColor,

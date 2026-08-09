@@ -181,13 +181,20 @@ class BaLiquidSurfacesBackdropTest {
         assertEquals(1, source.occurrencesOf("isAppInDarkTheme()"))
         assertEquals(1, source.occurrencesOf("AppSurfaceBox("))
         assertTrue("activeGlassBackdrop(inheritedBackdrop)" in source)
-        assertTrue("effectsEnabled && edgeStack == null" in source)
+        // The calendar and pool cards must keep their glass while they are in the card pile. 482f0cfb3
+        // gated the backdrop on `effectsEnabled && edgeStack == null`, and since the shared layout
+        // always provides a stack, that gate meant neither page ever rendered Liquid Glass — every
+        // card fell to a flat surfaceContainer fill, and lost its press feedback with it. Recession is
+        // the pile's own job now, so the gate must stay gone.
+        assertFalse("edgeStack == null" in source, "stacking must not switch the glass off")
+        assertTrue("if (effectsEnabled) {" in source)
         assertFalse("LiquidSurface(" in source)
         assertFalse("rememberLayerBackdrop" in source)
         assertFalse("LocalLiquidParentBackdrop provides" in source)
         assertFalse(".layerBackdrop(" in source)
         assertFalse("localBackdrop" in source)
-        assertTrue("Modifier.appEdgeStackedCard(edgeStack).then(modifier)" in source)
+        assertTrue("val stackedModifier = edgeStack.modifier.then(modifier)" in source)
+        assertTrue("edgeStack = edgeStack," in source, "the slot reaches the glass layer")
         assertEquals(
             2,
             source.occurrencesOf(

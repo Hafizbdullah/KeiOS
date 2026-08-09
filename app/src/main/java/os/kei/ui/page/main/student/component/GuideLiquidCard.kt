@@ -14,7 +14,7 @@ import os.kei.ui.page.main.widget.glass.AppInteractiveTokens
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
-import os.kei.ui.page.main.widget.glass.appEdgeStackedCard
+import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackSlot
 import top.yukonga.miuix.kmp.theme.LocalContentColor
 
 @Composable
@@ -38,16 +38,11 @@ internal fun GuideLiquidCard(
     } else {
         0.dp
     }
-    val edgeStack = LocalAppEdgeStackCards.current
-    val edgeStackModifier =
-        if (edgeStack != null) {
-            Modifier.appEdgeStackedCard(edgeStack)
-        } else {
-            Modifier
-        }
+    val edgeStack = rememberAppEdgeStackSlot()
 
     AppSurfaceBox(
-        modifier = edgeStackModifier.then(modifier),
+        modifier = edgeStack.modifier.then(modifier),
+        edgeStack = edgeStack,
         surfaceColor = surfaceColor,
         shape = RoundedRectangle(cornerRadius),
         contentColor = LocalContentColor.current,
