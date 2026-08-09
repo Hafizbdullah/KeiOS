@@ -48,9 +48,6 @@ import os.kei.ui.page.main.settings.support.SettingsToggleItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogEntryCard
-import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.AppTopBarSearchField
-import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.core.AppInfoListBody
 import os.kei.ui.page.main.widget.core.AppInfoRow
 import os.kei.ui.page.main.widget.core.AppOverviewCard
@@ -69,7 +66,6 @@ import os.kei.ui.page.main.widget.glass.LiquidGlassDropdownSingleChoiceList
 import os.kei.ui.page.main.widget.status.AppStatusColors
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.LocalTextCopyExpandedOverride
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
@@ -565,37 +561,8 @@ class AppDesignSystemScreenshotTest {
         }
     }
 
-    @Test
-    fun topBarSearchShellLight() {
-        captureRoboImage(filePath = "src/test/screenshots/design-system/topbar_search_shell_light.png") {
-            CompositionLocalProvider(LocalTextCopyExpandedOverride provides false) {
-                MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .background(Color(0xFFF3F4F6))
-                                .padding(16.dp),
-                    ) {
-                        AppTopBarSection(
-                            title = "",
-                            largeTitle = "图鉴",
-                            scrollBehavior = MiuixScrollBehavior(),
-                            color = Color.Transparent,
-                            searchBarVisible = true,
-                            searchBarAnimationLabelPrefix = "screenshotTopBar",
-                        ) {
-                            AppTopBarSearchField(
-                                value = "星野",
-                                onValueChange = {},
-                                label = "搜索学生 / NPC / 卫星",
-                                modifier = Modifier.padding(horizontal = AppChromeTokens.searchFieldHorizontalPadding),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // topbar_search_shell_light.png lives in AppTopBarSearchShellScreenshotTest, which needs a
+    // compose rule this class must not have -- see that file for why.
 
     @Test
     fun controlClusterLight() {
