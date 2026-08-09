@@ -6,9 +6,9 @@
 
 - Stable installs should use [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
 - The latest public tag baseline
-  is [KeiOS v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0).
-- `master` is the v1.11.0 release baseline for GitHub/Git/F-Droid tracking, WebDAV sync,
-  MCP service modules, BA guide/cache/PiP helpers, History Hub, and UI/performance polish.
+  is [KeiOS v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0).
+- `master` is the v1.13.0 release baseline for the in-window Liquid Glass presentation layer,
+  routed BA/OS destinations, privilege-aware app discovery, and main-page performance work.
 - This build guide covers local source builds, debug packages, and contributor workflows.
 - Use the commands in `Common Local Commands` to generate debug, benchmark, and release APKs.
 
@@ -35,8 +35,8 @@ This repo keeps machine-specific paths and secrets out of VCS on purpose.
 - Local builds can override `keios.version.name`, `keios.nextVersion.name`,
   `keios.version.anchorTag`, and `keios.git.*` in `~/.gradle/gradle.properties` or `local.properties`.
 - Release builds use the newer value between the latest merged semver tag and the current release
-  target, for example `1.11.0`.
-- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.11.1+12.gabcdef0`.
+  target, for example `1.13.0`.
+- Debug and benchmark builds use the next patch version plus commit count and short SHA, for example `1.13.1+12.gabcdef0`.
 - Local builds resolve git metadata directly when CI metadata is absent, using the latest merged tag
   as the commit-count anchor and the current release target as the release base when it is newer.
 - Package chains stay compact: debug installs as `os.kei.debug`; benchmark and release install as `os.kei`.
@@ -102,7 +102,7 @@ JDK fallback examples:
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.11.0 Release Gate
+### v1.13.0 Release Gate
 
 Use this gate before tagging or publishing a stable APK:
 
@@ -115,13 +115,12 @@ git diff --check
 
 Recommended focused checks for this release:
 
-- GitHub, Gitee, generic Git, F-Droid, Actions, History Hub, ignore-version, and managed-install flows open correctly.
-- WebDAV sync shows remote refresh and change-plan confirmation before sync or upload, including BA account merge previews.
-- BA account reminders, AP/cafe/calendar/pool badges, Student Guide cache, and Memorial Lobby PiP route to the right surfaces.
-- MCP local server starts, rejects unauthorized requests, serves Claw setup resources, exposes history queries, and keeps logs responsive.
-- Miuix/Liquid sheet selection follows the current setting, and custom backgrounds remain readable on supported pages.
-- Release APK signing, version metadata, R8/minify output, dependencies, startup, and PiP lifecycle are verified.
-- GitHub release upload notes copied from [Release Notes v1.11.0](RELEASE_V1.11.0.md).
+- Sheets, alerts, action sheets, toasts, dropdowns, and action menus sample the live scene in light and dark themes, stack correctly, and dismiss through back, outside tap, and drag where supported.
+- BA Calendar, Pools, Student Guide, OS Shell, Settings, About, WebDAV, MCP Skill, and GitHub Actions History enter and return through the shared route stack.
+- Floating toolbars, title cards, bottom bars, overview-card actions, and pull-to-refresh preserve their intended click and gesture behavior over pageable content.
+- Disabled, Shizuku, and Root modes stay aligned across Home, Settings diagnostics, GitHub app discovery, OS Shell, and MCP networking.
+- Release APK signing, `1.13.0` metadata, R8/minify output, Baseline Profile packaging, and the signer certificate are verified.
+- GitHub release upload notes are copied from [Release Notes v1.13.0](RELEASE_V1.13.0.md).
 
 ### Screenshot Baseline
 

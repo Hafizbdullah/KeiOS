@@ -5,9 +5,9 @@
 ## 安装方式
 
 - 稳定安装建议直接使用 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases)。
-- 当前公开标签基线为 [KeiOS v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0)。
-- `master` 当前作为 v1.11.0 发布基线，覆盖 GitHub/Git/F-Droid 追踪、WebDAV 同步、MCP 服务模块、
-  BA 图鉴/缓存/PiP、历史中心和 UI/性能打磨。
+- 当前公开标签基线为 [KeiOS v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0)。
+- `master` 当前作为 v1.13.0 发布基线，覆盖窗口内 Liquid Glass 展示层、BA/OS 路由、
+  特权感知应用发现和主页面性能优化。
 - 本构建指南覆盖源码本地构建、Debug 包生成和贡献者开发流程。
 - 使用 `常用本地命令` 中的命令即可产出 Debug、Benchmark 与 Release APK。
 
@@ -31,8 +31,8 @@
 - CI 会在 Gradle 外根据当前 HEAD 已合入的最新 semver tag 和当前发布目标注入版本元数据。
 - 本地构建可在 `~/.gradle/gradle.properties` 或 `local.properties` 覆盖
   `keios.version.name`、`keios.nextVersion.name`、`keios.version.anchorTag` 与 `keios.git.*`。
-- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.11.0`。
-- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.11.1+12.gabcdef0`。
+- Release 构建使用最新已合入 semver tag 与当前发布目标之间更新的版本，例如 `1.13.0`。
+- Debug / Benchmark 构建使用下一 patch 版本，并追加 commit 数和短 SHA，例如 `1.13.1+12.gabcdef0`。
 - 缺少 CI 注入 metadata 的本地构建会直接读取 git metadata，以最新已合入 tag 作为 commit 数锚点，并在发布目标更新时使用发布目标作为 release base。
 - 包名链路保持精简：Debug 安装为 `os.kei.debug`；Benchmark 与 Release 安装为 `os.kei`。
 - 当前 CI artifact 名称保持简洁：`KeiOS_<versionName>`，APK 文件名为 `KeiOS_<versionName>.apk`。
@@ -93,7 +93,7 @@ JDK 兜底示例路径：
 ./gradlew :app:testDebugUnitTest
 ```
 
-### v1.11.0 发布门禁
+### v1.13.0 发布门禁
 
 打 tag 或发布稳定版 APK 前建议跑完：
 
@@ -106,13 +106,12 @@ git diff --check
 
 本次发布建议重点复查：
 
-- GitHub、Gitee、通用 Git、F-Droid、Actions、历史中心、忽略版本和托管安装链路可以正常打开和执行。
-- WebDAV 同步会在同步或上传前展示远端刷新与变更计划确认，包括 BA 账号合并预览。
-- BA 账号提醒、AP / 咖啡厅 / 活动日历 / 卡池角标、学生图鉴缓存和记忆大厅 PiP 能跳转到对应界面。
-- MCP 本地服务能启动、拒绝未授权请求、输出 Claw 接入资源、暴露历史查询，并保持日志响应。
-- Miuix/Liquid sheet 选择遵循当前设置，自定义背景在支持页面保持可读。
-- Release APK 签名、版本元数据、R8/minify 输出、依赖、启动和 PiP 生命周期完成验证。
-- GitHub Release 发布文案可直接参考 [Release Notes v1.11.0](RELEASE_V1.11.0.md)。
+- Sheet、Alert、Action Sheet、Toast、Dropdown 与操作菜单能在深浅色下采样实时页面，正确叠层，并通过返回、外部点击及支持的拖动手势关闭。
+- BA 活动日历、卡池、学生图鉴、OS Shell、Settings、About、WebDAV、MCP Skill 与 GitHub Actions History 通过统一路由栈进入和返回。
+- 浮动工具栏、标题卡、底栏、概览卡片操作和下拉刷新在可横向切页内容上保持预期点击与手势行为。
+- 关闭、Shizuku 与 Root 模式在 Home、设置诊断、GitHub 应用发现、OS Shell 和 MCP 网络命令中保持一致。
+- Release APK 签名、`1.13.0` 元数据、R8/minify 输出、Baseline Profile 打包与签名证书完成验证。
+- GitHub Release 发布文案使用 [Release Notes v1.13.0](RELEASE_V1.13.0.md)。
 
 ### 截图基线
 

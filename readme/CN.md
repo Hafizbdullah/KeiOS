@@ -39,7 +39,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 | UI 技术栈     | Jetpack Compose、Miuix、液态玻璃风格 chrome            |
 | 运行技术栈      | Kotlin、Java 21、Shizuku、Media3、MMKV、Ktor、OkHttp |
 | 语言资源       | 简体中文、English、日本語                               |
-| 最新稳定标签     | `v1.11.0`                                      |
+| 最新稳定标签     | `v1.13.0`                                      |
 
 ## 常用入口
 
@@ -72,13 +72,14 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 - 设置页提供主题、动效、v2 液态玻璃组件、底栏特效策略、搜索默认聚焦、握姿感知浮动
   dock、背景图、应用语言、权限、缓存诊断、结构化日志、本地 GitHub Issue 反馈、无遥测诊断与通知兼容配置。
 
-## v1.11.0 重点变化
+## v1.13.0 重点变化
 
-- GitHub 全量与增量刷新更快，刷新历史会记录更完整的慢项原因、失败原因、耗时和会话目的。
-- GitHub 长列表滚动时会继续加载已安装 App 图标，靠后的追踪项目也能显示真实应用图标。
-- WebDAV 自动同步增强启动刷新、确认上传、远端摘要和冲突恢复链路，并新增同步历史记录。
-- BA 多账号 WebDAV 合并支持按账号保留多设备独立修改，减少不同设备编辑不同账号时的覆盖风险。
-- BA 咖啡厅摸摸头与邀请券支持长按精确编辑剩余冷却时间，短按仍保留原本的使用动作。
+- Sheet、Alert、Action Sheet、Toast、Dropdown 与操作菜单统一使用窗口内 Liquid Glass 展示层，
+  支持实时背景采样、正确的深浅色材质以及一致的叠层和关闭行为。
+- BA 活动日历、卡池和 OS Shell 接入主 Miuix Nav 路由栈，共享页面转场、边缘返回、主题与背景生命周期。
+- 主页面手势保留松手动量，仅在运动时申请峰值刷新率；不可见页面和弹出层会暂停多余的 Backdrop 生产。
+- 活动日历与卡池通过渐进虚化、深度和缩放保持后退卡片可辨识；学生图鉴在进入前异步预热缓存。
+- 未明确选择特权模式时默认关闭，Home、设置、GitHub 应用发现、OS Shell 与 MCP 统一跟随当前 Shizuku 或 Root 后端。
 
 完整功能介绍：
 
@@ -88,7 +89,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 当前分发方式
 
 - 稳定版安装包通过 [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases) 发布。
-- 当前稳定标签：[v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0)。
+- 当前稳定标签：[v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0)。
 - 正式版基线：`os.kei`、`arm64-v8a`、Android 15+（`minSdk 35`）。
 - 运行与构建基线：`targetSdk=37`、Java 21、Gradle Wrapper `9.6.1`、Kotlin `2.4.0`、
   Compose `1.11.4`、Android Gradle Plugin `9.3.0-rc01`、Ktor `3.5.1`。
@@ -97,7 +98,7 @@ MCP Skill、支持语义化图标的通知提醒、仓库发现、反馈 Issue �
 ## 文档
 
 - [文档索引](INDEX.md)
-- [Release Notes v1.11.0](RELEASE_V1.11.0.md)
+- [Release Notes v1.13.0](RELEASE_V1.13.0.md)
 - [Build Guide (EN)](BUILD.md)
 - [构建指南 (CN)](BUILD_CN.md)
 - [Todo List (EN)](TODO.md)

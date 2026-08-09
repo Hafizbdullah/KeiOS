@@ -40,7 +40,7 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
 | UI stack          | Jetpack Compose, Miuix, liquid-glass chrome          |
 | Runtime stack     | Kotlin, Java 21, Shizuku/Root, Media3, MMKV, Ktor, OkHttp |
 | Languages         | Simplified Chinese, English, Japanese                |
-| Latest stable tag | `v1.11.0`                                            |
+| Latest stable tag | `v1.13.0`                                            |
 
 ## Quick Links
 
@@ -87,18 +87,19 @@ feedback issue drafting, cache diagnostics, and generated Baseline Profiles.
   diagnostics, structured logs, local GitHub issue feedback, telemetry-free diagnostics, and
   notification compatibility.
 
-## v1.11.0 Highlights
+## v1.13.0 Highlights
 
-- GitHub refreshes are faster and easier to diagnose, with shared metadata reuse, clearer slow-item
-  reasons, stronger timeout cleanup, and restored notification / Live Updates session endings.
-- Long GitHub tracking lists keep installed app icons loaded while scrolling, including items far
-  below the first viewport.
-- WebDAV auto sync is safer under launch-time refreshes, confirmed uploads, stale remote summaries,
-  and independent BA account edits from multiple devices.
-- WebDAV history records sync attempts and outcomes, and BA multi-account merge now preserves
-  per-account changes from different devices.
-- BA cafe headpat and invitation tickets support long-press cooldown calibration with hour, minute,
-  and second precision while short taps keep the original consume actions.
+- Sheets, alerts, action sheets, toasts, dropdowns, and action menus now share an in-window Liquid
+  Glass presentation layer with live backdrop sampling, correct light/dark materials, and consistent
+  stacking and dismissal.
+- BA Calendar, Pools, and OS Shell join the main Miuix Nav route stack with shared transitions,
+  edge-back behavior, theming, and background lifecycle.
+- Main-page gestures preserve release momentum and request peak refresh rate only while moving;
+  hidden pages and presentations pause unnecessary backdrop production.
+- Calendar and Pool card piles keep receding content identifiable through progressive blur, depth,
+  and scale, while Student Guide warms cached content asynchronously before entry.
+- Privilege mode defaults to Off when no explicit selection exists, and Home, Settings, GitHub app
+  discovery, OS Shell, and MCP consistently follow the selected Shizuku or Root backend.
 
 Read the full feature tour:
 
@@ -108,7 +109,7 @@ Read the full feature tour:
 ## Current Distribution
 
 - Stable APKs are published through [GitHub Releases](https://github.com/hosizoraru/KeiOS/releases).
-- Current stable tag: [v1.11.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.11.0).
+- Current stable tag: [v1.13.0](https://github.com/hosizoraru/KeiOS/releases/tag/v1.13.0).
 - Release package baseline: `os.kei`, `arm64-v8a`, Android 15+ (`minSdk 35`).
 - Runtime and build baseline: `targetSdk=37`, Java 21, Gradle Wrapper `9.6.1`, Kotlin `2.4.10`,
   Compose `1.11.4`, Android Gradle Plugin `9.3.1`, Ktor `3.5.1`.
@@ -117,7 +118,7 @@ Read the full feature tour:
 ## Documentation
 
 - [Documentation Index](readme/INDEX.md)
-- [Release Notes v1.11.0](readme/RELEASE_V1.11.0.md)
+- [Release Notes v1.13.0](readme/RELEASE_V1.13.0.md)
 - [Build Guide (EN)](readme/BUILD.md)
 - [构建指南 (CN)](readme/BUILD_CN.md)
 - [Todo List (EN)](readme/TODO.md)
