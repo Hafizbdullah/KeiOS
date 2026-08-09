@@ -18,11 +18,12 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,6 +35,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import os.kei.R
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
+import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -52,6 +55,16 @@ import kotlin.test.assertTrue
 class DebugLiquidDropdownSelectorSamplesTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    private fun menuPanelWidth(): Dp =
+        with(composeRule.density) {
+            composeRule
+                .onNodeWithTag(SnapshotMenuPanelTestTag)
+                .fetchSemanticsNode()
+                .boundsInRoot
+                .width
+                .toDp()
+        }
 
     @Test
     fun productionMatrixDelegatesEveryPressureStateToTheSharedSelector() {
@@ -122,7 +135,7 @@ class DebugLiquidDropdownSelectorSamplesTest {
                 .assertHeightIsAtLeast(48.dp)
                 .assertIsNotEnabled()
         }
-        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+        composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).assertCountEquals(0)
     }
 
     @Test
@@ -161,15 +174,11 @@ class DebugLiquidDropdownSelectorSamplesTest {
                 .onNode(hasText(label) and radioRoleMatcher)
                 .assertIsDisplayed()
         }
-        val rootWidths =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .map { root -> with(composeRule.density) { root.boundsInRoot.width.toDp() } }
-                .filter { width -> width > 0.dp }
-        assertTrue(rootWidths.size >= 2, "Expected activity and popup roots, widths=$rootWidths")
-        assertTrue(324.dp in rootWidths, "Expected popup width to match 324dp anchor, widths=$rootWidths")
-        assertTrue(rootWidths.all { width -> width <= 360.dp }, "Popup escaped the window: $rootWidths")
+        // Measured off the panel's own node. This used to look for a second Compose root, which existed
+        // only while the panel had a window to itself; it is hosted in the activity window now.
+        val panelWidth = menuPanelWidth()
+        assertEquals(324.dp, panelWidth, "Expected panel width to match the 324dp anchor")
+        assertTrue(panelWidth <= 360.dp, "Panel escaped the window: $panelWidth")
 
         composeRule
             .onNode(hasText(longLabels[1]) and radioRoleMatcher)
@@ -183,7 +192,7 @@ class DebugLiquidDropdownSelectorSamplesTest {
         composeRule
             .onNodeWithTag(DEBUG_LIQUID_MULTILINGUAL_SELECTOR_TAG)
             .assertWidthIsEqualTo(324.dp)
-        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+        composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).assertCountEquals(0)
     }
 
     @Test
@@ -228,7 +237,7 @@ class DebugLiquidDropdownSelectorSamplesTest {
         composeRule
             .onNodeWithTag(DEBUG_LIQUID_SCROLL_SELECTOR_TAG)
             .assertWidthIsEqualTo(324.dp)
-        composeRule.onAllNodes(isRoot()).assertCountEquals(1)
+        composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).assertCountEquals(0)
     }
 
     private fun setProductionMatrix() {
@@ -239,14 +248,19 @@ class DebugLiquidDropdownSelectorSamplesTest {
                 LocalTransitionAnimationsEnabled provides false,
             ) {
                 MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.TopCenter,
-                    ) {
-                        DebugLiquidProductionDropdownSelectorSamples(
-                            backdrop = emptyBackdrop(),
-                            modifier = Modifier.width(324.dp),
-                        )
+                    // The anchored panel portals into the overlay host now, so the harness has to provide
+                    // one. Without it the portal composes the panel in place, inside the 324dp sample
+                    // column, and the panel inherits that width instead of resolving its own.
+                    SceneBackdropHost {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.TopCenter,
+                        ) {
+                            DebugLiquidProductionDropdownSelectorSamples(
+                                backdrop = emptyBackdrop(),
+                                modifier = Modifier.width(324.dp),
+                            )
+                        }
                     }
                 }
             }

@@ -116,13 +116,44 @@ class WindowBackdropBoundaryContractTest {
         }
     }
 
+    /**
+     * Inverted from the contract it replaces, which checked that the anchored panel installed a window
+     * boundary before composing caller content.
+     *
+     * That was the right invariant for a panel in a `Popup`: content there must not inherit a producer
+     * from the activity window, because a `LayerBackdrop` resolves its offset through shared
+     * `LayoutCoordinates` and two windows have none. But obeying it meant the panel had no backdrop at
+     * all — `activeGlassBackdrop` resolved to null and every menu in the app drew a flat filled card
+     * while carrying twenty configured optical values that never reached a shader.
+     *
+     * So the panel moved into the activity window, and the invariant flips: it must *not* install a
+     * boundary, and it must go through the overlay portal.
+     */
     @Test
-    fun popupInstallsBoundaryBeforeComposingCallerContent() {
-        val popup = windowBoundarySource(SNAPSHOT_POPUP_SOURCE)
-        val popupIndex = popup.indexOf("        LiquidBackdropWindowPopup(").windowMarkerFound()
-        val contentIndex = popup.indexOf("                content()", popupIndex).windowMarkerFound()
+    fun theAnchoredPanelIsHostedInWindowRatherThanBehindAWindowBoundary() {
+        val panel = windowBoundarySource(SNAPSHOT_POPUP_SOURCE)
 
-        assertTrue(popupIndex < contentIndex)
+        assertFalse(
+            "LiquidBackdropWindowPopup(" in panel,
+            "the anchored panel must not host itself in a Popup window — that is what blanked its backdrop",
+        )
+        assertTrue(
+            "LiquidMenuPresentation(" in panel,
+            "the panel is hosted by LiquidMenuPresentation, which portals it into the activity window",
+        )
+
+        val presentation = windowBoundarySource(LIQUID_MENU_PRESENTATION_SOURCE)
+        assertTrue(
+            "LiquidOverlayPortal {" in presentation,
+            "in-window hosting is what makes the scene backdrop reachable",
+        )
+        // Matched on the call, not the bare name: the presentation's own KDoc names the boundary while
+        // explaining why the panel no longer sits behind one.
+        assertFalse(
+            "LiquidBackdropWindowBoundary {" in presentation ||
+                "LiquidBackdropWindowBoundary(" in presentation,
+            "installing a boundary here would blank the very backdrop the panel now samples",
+        )
     }
 }
 
@@ -211,3 +242,5 @@ private val LIQUID_MODAL_CONSUMER_SOURCES =
     )
 private const val SNAPSHOT_POPUP_SOURCE =
     "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/MiuixSnapshotAdapters.kt"
+private const val LIQUID_MENU_PRESENTATION_SOURCE =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/glass/LiquidMenuPresentation.kt"

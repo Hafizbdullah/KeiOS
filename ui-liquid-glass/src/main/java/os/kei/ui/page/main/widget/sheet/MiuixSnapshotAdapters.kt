@@ -3,46 +3,27 @@
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.clipRect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -50,22 +31,11 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.NavigationEventTransitionState
-import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
-import androidx.navigationevent.findViewTreeNavigationEventDispatcherOwner
-import kotlinx.coroutines.launch
-import os.kei.ui.page.main.widget.glass.LiquidBackdropWindowPopup
-import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
+import os.kei.ui.page.main.widget.glass.LiquidMenuPresentation
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import kotlin.math.abs
 import kotlin.math.roundToInt
-import androidx.compose.ui.window.PopupPositionProvider as ComposePopupPositionProvider
 
 enum class SnapshotPopupPlacement {
     Dropdown,
@@ -87,48 +57,33 @@ internal data class SnapshotPopupSafeInsets(
     val bottom: Int,
 )
 
+/** Identifies the anchored panel itself, as opposed to anything inside it. */
+const val SnapshotMenuPanelTestTag = "snapshot_menu_panel"
+
+
 /**
- * Liquid glass popup expansion animation.
+ * An anchored menu or dropdown panel.
  *
- * Spring-based for a natural, elastic feel — slightly underdamped so the popup settles smoothly
- * without an obvious overshoot. Replaces the linear-feeling Miuix default fraction spec.
+ * Renders in the activity window, not a `Popup`. Every call site already threaded a `Backdrop` through to
+ * the panel inside, and every one of them was discarded: a Popup is a second window, a `LayerBackdrop`
+ * resolves its consumer/producer offset through shared `LayoutCoordinates`, and
+ * `LiquidBackdropWindowBoundary` therefore blanks the scene backdrop for exactly that reason. So
+ * `activeGlassBackdrop` returned null and the panel drew a flat filled card — with the blur, lens,
+ * vibrancy and shadow values configured for it never reaching a shader. Hosting in-window is what makes
+ * the material real.
+ *
+ * The signature is unchanged so the call sites did not have to move. Behaviour differences worth knowing:
+ *
+ * - **Placement is identical.** The same miuix position provider and the same
+ *   [calculateSnapshotPopupLayout] run, just against the activity window's bounds.
+ * - **The panel can no longer overflow the window.** The Popup set `clippingEnabled = false`; menus were
+ *   clamped inside the safe insets regardless, so nothing reachable became unreachable.
+ * - **Back and outside-tap moved.** The Popup was focusable and owned both, including a deliberate
+ *   host-window dispatcher lookup to work around miuix-nav's entry-scoped owner. In-window there is no
+ *   second window to take focus, so a plain `BackHandler` sees the event and the workaround is gone.
+ * - **Focus stays where it was.** Not taking focus is what lets a dropdown open beside a focused text
+ *   field without dismissing the keyboard.
  */
-private val SnapshotPopupFractionAnimationSpec =
-    spring<Float>(
-        dampingRatio = 0.82f,
-        stiffness = 420f,
-        visibilityThreshold = 0.001f,
-    )
-
-/**
- * Liquid glass popup collapse animation — quicker and more linear, so dismissal feels decisive.
- */
-private val SnapshotPopupFractionExitAnimationSpec =
-    tween<Float>(
-        durationMillis = 180,
-        easing = FastOutLinearInEasing,
-    )
-
-/** Alpha fades in slightly slower than the geometric reveal so content remains crisp. */
-private val SnapshotPopupAlphaEnterAnimationSpec =
-    tween<Float>(
-        durationMillis = 220,
-        easing = LinearOutSlowInEasing,
-    )
-
-/** Alpha fades out faster than the geometric collapse to avoid lingering ghost frames. */
-private val SnapshotPopupAlphaExitAnimationSpec =
-    tween<Float>(
-        durationMillis = 140,
-        easing = FastOutLinearInEasing,
-    )
-
-/** Initial scale of the popup before expansion — subtle so it grows into place rather than popping. */
-private const val SnapshotPopupInitialScale = 0.88f
-
-/** Vertical offset (in dp) the popup translates from before settling — adds directional cue. */
-private const val SnapshotPopupTranslationDp = 8f
-
 @Composable
 fun SnapshotWindowListPopup(
     show: Boolean,
@@ -145,328 +100,38 @@ fun SnapshotWindowListPopup(
     matchAnchorWidth: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
-    val explicitAnchorBounds = anchorBounds
-    val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
-    val displayCutout = WindowInsets.displayCutout
-    val statusBars = WindowInsets.statusBars
-    val navigationBars = WindowInsets.navigationBars
-    val captionBar = WindowInsets.captionBar
-    val safeInsets =
-        with(density) {
-            SnapshotPopupSafeInsets(
-                left =
-                    maxOf(
-                        displayCutout.getLeft(this, layoutDirection),
-                        navigationBars.getLeft(this, layoutDirection),
-                        captionBar.getLeft(this, layoutDirection),
-                    ),
-                top =
-                    maxOf(
-                        displayCutout.getTop(this),
-                        statusBars.getTop(this),
-                        captionBar.getTop(this),
-                    ),
-                right =
-                    maxOf(
-                        displayCutout.getRight(this, layoutDirection),
-                        navigationBars.getRight(this, layoutDirection),
-                        captionBar.getRight(this, layoutDirection),
-                    ),
-                bottom =
-                    maxOf(
-                        displayCutout.getBottom(this),
-                        navigationBars.getBottom(this),
-                        captionBar.getBottom(this),
-                    ),
-            )
-        }
     val anchorWidthDp =
-        remember(explicitAnchorBounds, density) {
-            explicitAnchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
+        remember(anchorBounds, density) {
+            anchorBounds?.let { with(density) { it.width.toDp() } } ?: 0.dp
         }
     val resolvedMinWidth =
-        if (matchAnchorWidth) {
-            maxOf(minWidth, anchorWidthDp)
-        } else {
-            minWidth
-        }
-    val popupMinWidth = maxWidth?.let { resolvedMinWidth.coerceAtMost(it) } ?: resolvedMinWidth
-    var popupLayoutInfo by remember { mutableStateOf<SnapshotPopupLayoutInfo?>(null) }
-    val popupPlacementReady = popupLayoutInfo != null
-    val fractionProgress = remember { Animatable(0f) }
-    val alphaProgress = remember { Animatable(0f) }
-    val fractionProgressProvider = remember(fractionProgress) { { fractionProgress.value.coerceIn(0f, 1f) } }
-    val alphaProgressProvider = remember(alphaProgress) { { alphaProgress.value.coerceIn(0f, 1f) } }
-    val coroutineScope = rememberCoroutineScope()
-    var wasVisible by remember { mutableStateOf(show) }
-    var popupRender by remember { mutableStateOf(show) }
-    val currentOnDismissRequest = rememberUpdatedState(onDismissRequest)
-    val currentOnDismissFinished = rememberUpdatedState(onDismissFinished)
-    // The focused popup window has no back dispatcher of its own; the system falls back to
-    // the host window, so the popup's back handler must bind to the host window's view-tree
-    // owner. The composition local can't be used here: miuix-nav explicitly provides an
-    // entry-scoped owner that never receives the host window's fallback events.
-    val hostView = LocalView.current
-    val navigationEventDispatcherOwner =
-        remember(hostView) { hostView.findViewTreeNavigationEventDispatcherOwner() }
-    val composePopupPositionProvider =
-        remember(
-            density,
-            popupPositionProvider,
-            alignment,
-            placement,
-            explicitAnchorBounds,
-            safeInsets,
-        ) {
-            object : ComposePopupPositionProvider {
-                override fun calculatePosition(
-                    anchorBounds: IntRect,
-                    windowSize: IntSize,
-                    layoutDirection: LayoutDirection,
-                    popupContentSize: IntSize,
-                ): IntOffset {
-                    val effectiveAnchorBounds = explicitAnchorBounds ?: anchorBounds
-                    val popupMargin = popupPositionProvider.getMargins().toIntRect(density, layoutDirection)
-                    val windowBounds = calculateSnapshotPopupWindowBounds(windowSize, safeInsets)
-                    val providerOffset =
-                        popupPositionProvider.calculatePosition(
-                            anchorBounds = effectiveAnchorBounds,
-                            windowBounds = windowBounds,
-                            layoutDirection = layoutDirection,
-                            popupContentSize = popupContentSize,
-                            popupMargin = popupMargin,
-                            alignment = alignment,
-                        )
-                    val resolvedLayout =
-                        calculateSnapshotPopupLayout(
-                            anchorBounds = effectiveAnchorBounds,
-                            windowBounds = windowBounds,
-                            layoutDirection = layoutDirection,
-                            popupContentSize = popupContentSize,
-                            popupMargin = popupMargin,
-                            alignment = alignment,
-                            placement = placement,
-                            providerOffset = providerOffset,
-                        )
-                    if (
-                        popupContentSize.width > 0 &&
-                        popupContentSize.height > 0 &&
-                        popupLayoutInfo != resolvedLayout
-                    ) {
-                        popupLayoutInfo = resolvedLayout
-                    }
-                    return resolvedLayout.offset
-                }
-            }
-        }
+        if (matchAnchorWidth) maxOf(minWidth, anchorWidthDp) else minWidth
+    val panelMinWidth = maxWidth?.let { resolvedMinWidth.coerceAtMost(it) } ?: resolvedMinWidth
 
-    LaunchedEffect(show, popupPlacementReady, transitionAnimationsEnabled) {
-        if (show) {
-            wasVisible = true
-            popupRender = true
-            if (!popupPlacementReady) return@LaunchedEffect
-            if (transitionAnimationsEnabled) {
-                launch {
-                    fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec)
-                }
-                alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
-            } else {
-                fractionProgress.snapTo(1f)
-                alphaProgress.snapTo(1f)
-            }
-        } else {
-            if (!popupRender && !wasVisible) return@LaunchedEffect
-            if (transitionAnimationsEnabled) {
-                // Run both animations in parallel and wait for BOTH to complete before
-                // removing the Popup. Previously fractionProgress.stop() was called after
-                // alpha finished, which killed the fraction animation mid-flight and caused
-                // the dropdown to "flash disappear" without a visible collapse.
-                val fractionJob =
-                    launch {
-                        fractionProgress.animateTo(0f, SnapshotPopupFractionExitAnimationSpec)
-                    }
-                val alphaJob =
-                    launch {
-                        alphaProgress.animateTo(0f, SnapshotPopupAlphaExitAnimationSpec)
-                    }
-                fractionJob.join()
-                alphaJob.join()
-            } else {
-                fractionProgress.snapTo(0f)
-                alphaProgress.snapTo(0f)
-            }
-            popupRender = false
-            popupLayoutInfo = null
-            if (wasVisible) {
-                wasVisible = false
-                currentOnDismissFinished.value?.invoke()
-            }
-        }
-    }
-
-    if (popupRender) {
-        LiquidBackdropWindowPopup(
-            popupPositionProvider = composePopupPositionProvider,
-            onDismissRequest = { currentOnDismissRequest.value?.invoke() },
-            properties =
-                PopupProperties(
-                    focusable = true,
-                    // A focusable popup window owns back dispatch and has no navigation-event
-                    // dispatcher, so the platform popup must handle back itself; the dismiss
-                    // request runs the normal collapse animation before removal. (Upstream
-                    // miuix hosts list popups in a Dialog window instead, which is the path
-                    // to gesture-progress predictive collapse if ever needed.)
-                    dismissOnBackPress = true,
-                    dismissOnClickOutside = true,
-                    clippingEnabled = false,
-                ),
+    LiquidMenuPresentation(
+        show = show,
+        anchorBounds = anchorBounds,
+        popupPositionProvider = popupPositionProvider,
+        alignment = alignment,
+        placement = placement,
+        onDismissRequest = onDismissRequest,
+        onDismissFinished = onDismissFinished,
+    ) {
+        Box(
+            modifier =
+                modifier
+                    // The panel used to be measurable as "the second Compose root", because it lived in
+                    // its own window. In-window there is only one root, so it identifies itself.
+                    .testTag(SnapshotMenuPanelTestTag)
+                    .defaultMinSize(minWidth = panelMinWidth)
+                    .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
+                    .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier),
         ) {
-            val popupContent: @Composable () -> Unit = {
-                SnapshotPopupBackHandler(
-                    show = show,
-                    popupRender = popupRender,
-                    fractionProgress = fractionProgress,
-                    alphaProgress = alphaProgress,
-                    onDismissRequest = { currentOnDismissRequest.value?.invoke() },
-                )
-                val translationOffsetPx = with(density) { SnapshotPopupTranslationDp.dp.toPx() }
-                val resolvedLayout = popupLayoutInfo
-                Box(
-                    modifier =
-                        modifier
-                            .defaultMinSize(minWidth = popupMinWidth)
-                            .then(if (maxWidth != null) Modifier.widthIn(max = maxWidth) else Modifier)
-                            .then(if (maxHeight != null) Modifier.heightIn(max = maxHeight) else Modifier)
-                            .snapshotPopupReveal(
-                                fractionProgress = fractionProgressProvider,
-                                alphaProgress = alphaProgressProvider,
-                                transformOrigin =
-                                    resolvedLayout?.transformOrigin
-                                        ?: TransformOrigin(0.5f, 0.5f),
-                                showBelow = resolvedLayout?.showBelow == true,
-                                showAbove = resolvedLayout?.showAbove == true,
-                                translationOffsetPx = translationOffsetPx,
-                            ),
-                ) {
-                    content()
-                }
-            }
-            if (navigationEventDispatcherOwner != null) {
-                CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides navigationEventDispatcherOwner) {
-                    popupContent()
-                }
-            } else {
-                popupContent()
-            }
+            content()
         }
     }
 }
-
-@Composable
-private fun SnapshotPopupBackHandler(
-    show: Boolean,
-    popupRender: Boolean,
-    fractionProgress: Animatable<Float, AnimationVector1D>,
-    alphaProgress: Animatable<Float, AnimationVector1D>,
-    onDismissRequest: (() -> Unit)?,
-) {
-    val coroutineScope = rememberCoroutineScope()
-    var dismissRequestDispatched by remember(show) { mutableStateOf(false) }
-    if (LocalNavigationEventDispatcherOwner.current != null) {
-        val navigationEventState = rememberNavigationEventState(currentInfo = NavigationEventInfo.None)
-        NavigationBackHandler(
-            state = navigationEventState,
-            isBackEnabled = popupRender,
-            onBackCancelled = {
-                if (show) {
-                    coroutineScope.launch {
-                        launch { fractionProgress.animateTo(1f, SnapshotPopupFractionAnimationSpec) }
-                        alphaProgress.animateTo(1f, SnapshotPopupAlphaEnterAnimationSpec)
-                    }
-                }
-            },
-            onBackCompleted = {
-                if (show && !dismissRequestDispatched) {
-                    dismissRequestDispatched = true
-                    onDismissRequest?.invoke()
-                }
-            },
-        )
-        LaunchedEffect(navigationEventState) {
-            snapshotFlow { navigationEventState.transitionState }
-                .collect { transitionState ->
-                    if (
-                        show &&
-                        transitionState is NavigationEventTransitionState.InProgress &&
-                        transitionState.direction == NavigationEventTransitionState.TRANSITIONING_BACK
-                    ) {
-                        val progress = 1f - transitionState.latestEvent.progress.coerceIn(0f, 1f)
-                        fractionProgress.snapTo(progress)
-                        alphaProgress.snapTo(progress)
-                    }
-                }
-        }
-    } else {
-        BackHandler(enabled = popupRender) {
-            if (show && !dismissRequestDispatched) {
-                dismissRequestDispatched = true
-                onDismissRequest?.invoke()
-            }
-        }
-    }
-}
-
-private fun Modifier.snapshotPopupReveal(
-    fractionProgress: () -> Float,
-    alphaProgress: () -> Float,
-    transformOrigin: TransformOrigin,
-    showBelow: Boolean,
-    showAbove: Boolean,
-    translationOffsetPx: Float,
-): Modifier =
-    graphicsLayer {
-        val fraction = fractionProgress()
-        val scale = SnapshotPopupInitialScale + (1f - SnapshotPopupInitialScale) * fraction
-        val translationY =
-            if (showBelow) {
-                -translationOffsetPx * (1f - fraction)
-            } else {
-                translationOffsetPx * (1f - fraction)
-            }
-        scaleX = scale
-        scaleY = scale
-        this.translationY = translationY
-        alpha = alphaProgress()
-        this.transformOrigin = transformOrigin
-    }.drawWithContent {
-        val progress = fractionProgress()
-        val showMiddle = !showBelow && !showAbove
-        val clipStart =
-            when {
-                showAbove -> size.height * (1f - progress)
-                showMiddle -> size.height * (0.5f - 0.5f * progress)
-                else -> 0f
-            }
-        val clipBottom =
-            when {
-                showBelow -> size.height * progress
-                showAbove -> size.height
-                showMiddle -> size.height * (0.5f + 0.5f * progress)
-                else -> size.height
-            }
-        if (clipBottom > clipStart) {
-            clipRect(
-                left = 0f,
-                top = clipStart,
-                right = size.width,
-                bottom = clipBottom,
-            ) {
-                this@drawWithContent.drawContent()
-            }
-        }
-    }
 
 @Composable
 fun SnapshotWindowBottomSheet(

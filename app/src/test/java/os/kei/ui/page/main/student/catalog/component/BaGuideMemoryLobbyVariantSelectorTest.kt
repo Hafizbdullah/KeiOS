@@ -16,10 +16,10 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
@@ -31,6 +31,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
+import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
@@ -45,6 +47,16 @@ import top.yukonga.miuix.kmp.theme.ThemeController
 class BaGuideMemoryLobbyVariantSelectorTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    private fun menuPanelBounds() =
+        composeRule
+            .onNodeWithTag(SnapshotMenuPanelTestTag)
+            .fetchSemanticsNode()
+            .boundsInRoot
+
+    private fun menuPanelWidth(): Dp = with(composeRule.density) { menuPanelBounds().width.toDp() }
+
+    private fun menuPanelHeight(): Dp = with(composeRule.density) { menuPanelBounds().height.toDp() }
 
     @Test
     fun sourceDelegatesTheCompleteVariantPickerContractToAppDropdownSelector() {
@@ -165,16 +177,9 @@ class BaGuideMemoryLobbyVariantSelectorTest {
         composeRule
             .onNode(hasText("A") and radioRoleMatcher)
             .assertIsSelected()
-        val rootWidths =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .map { root ->
-                    with(composeRule.density) { root.boundsInRoot.width.toDp() }
-                }.filter { width -> width > 0.dp }
-
-        assertTrue(rootWidths.size >= 2, "Expected activity and popup roots, widths=$rootWidths")
-        assertEquals(136.dp, rootWidths.maxOrNull())
+        // Measured off the panel's own node. This used to look for a second Compose root, which existed
+        // only while the panel had a window to itself; it is hosted in the activity window now.
+        assertEquals(136.dp, menuPanelWidth())
     }
 
     @Test
@@ -212,27 +217,15 @@ class BaGuideMemoryLobbyVariantSelectorTest {
             .assertIsSelected()
             .assertIsDisplayed()
 
-        val rootGeometries =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .map { root ->
-                    with(composeRule.density) {
-                        root.boundsInRoot.width.toDp() to root.boundsInRoot.height.toDp()
-                    }
-                }.filter { (width, height) -> width > 0.dp && height > 0.dp }
-        assertTrue(rootGeometries.size >= 2, "Expected activity and popup roots, roots=$rootGeometries")
-        val popupGeometry =
-            requireNotNull(rootGeometries.maxByOrNull { (_, height) -> height }) {
-                "Expected non-empty popup geometry, roots=$rootGeometries"
-            }
+        val panelWidth = menuPanelWidth()
+        val panelHeight = menuPanelHeight()
         assertTrue(
-            popupGeometry.first <= 196.dp,
-            "Expected popup width <= 196.dp, roots=$rootGeometries",
+            panelWidth <= 196.dp,
+            "Expected panel width <= 196.dp, was $panelWidth",
         )
         assertTrue(
-            popupGeometry.second <= 220.dp,
-            "Expected popup height <= 220.dp, roots=$rootGeometries",
+            panelHeight <= 220.dp,
+            "Expected panel height <= 220.dp, was $panelHeight",
         )
 
         composeRule
@@ -284,7 +277,12 @@ private fun assertSourceContains(
 
 @androidx.compose.runtime.Composable
 private fun MemoryLobbyDropdownTestTheme(content: @androidx.compose.runtime.Composable () -> Unit) {
-    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
+    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+        // The anchored panel is hosted in the activity window through the overlay host now, so the
+        // harness has to provide one. Without it the portal composes the panel in place, inside the
+        // anchor's own 96dp-wide layout, and every geometry assertion here measures the anchor instead.
+        SceneBackdropHost(content = content)
+    }
 }
 
 class BaGuideMemoryLobbyVariantSelectorTestApp : Application()

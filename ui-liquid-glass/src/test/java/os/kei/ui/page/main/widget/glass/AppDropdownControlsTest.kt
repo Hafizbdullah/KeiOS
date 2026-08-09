@@ -12,12 +12,16 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import os.kei.ui.page.main.widget.sheet.SceneBackdropHost
+import os.kei.ui.page.main.widget.sheet.SnapshotMenuPanelTestTag
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -65,7 +69,13 @@ class AppDropdownControlsTest {
         composeRule.waitForIdle()
 
         composeRule.onNodeWithText("No choices").assertIsNotEnabled()
-        assertEquals(1, composeRule.onAllNodes(isRoot()).fetchSemanticsNodes().size)
+        // Used to assert a single Compose root, which proved no popup window had opened. The panel is
+        // hosted in the activity window now, so there is always exactly one root and that assertion would
+        // pass vacuously — check for the panel itself instead.
+        assertEquals(
+            0,
+            composeRule.onAllNodesWithTag(SnapshotMenuPanelTestTag).fetchSemanticsNodes().size,
+        )
         assertEquals(listOf(false), expandedChanges)
     }
 
@@ -132,19 +142,23 @@ class AppDropdownControlsTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(hasText("Option 1") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        val rootHeights =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .map { root ->
-                    with(composeRule.density) { root.boundsInRoot.height.toDp() }
-                }.filter { height -> height > 0.dp }
-        val popupHeight = rootHeights.maxOrNull()
+        // Measured off the panel's own node. This used to find "the tallest Compose root", which worked
+        // only because the panel had a window to itself; it is now hosted in the activity window, where
+        // the single root is the whole screen.
+        val panelHeight: Dp =
+            with(composeRule.density) {
+                composeRule
+                    .onNodeWithTag(SnapshotMenuPanelTestTag)
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+                    .height
+                    .toDp()
+            }
 
-        assertTrue(rootHeights.size >= 2, "Expected activity and popup roots, heights=$rootHeights")
+        assertTrue(panelHeight > 0.dp, "Expected a measured panel, got $panelHeight")
         assertTrue(
-            popupHeight != null && popupHeight <= popupMaxHeight,
-            "Expected popup height <= $popupMaxHeight, heights=$rootHeights",
+            panelHeight <= popupMaxHeight,
+            "Expected panel height <= $popupMaxHeight, was $panelHeight",
         )
     }
 
@@ -173,22 +187,28 @@ class AppDropdownControlsTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             composeRule.onAllNodes(hasText("B") and hasClickAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        val rootWidths =
-            composeRule
-                .onAllNodes(isRoot())
-                .fetchSemanticsNodes()
-                .map { root ->
-                    with(composeRule.density) { root.boundsInRoot.width.toDp() }
-                }.filter { width -> width > 0.dp }
+        val panelWidth: Dp =
+            with(composeRule.density) {
+                composeRule
+                    .onNodeWithTag(SnapshotMenuPanelTestTag)
+                    .fetchSemanticsNode()
+                    .boundsInRoot
+                    .width
+                    .toDp()
+            }
 
-        assertTrue(rootWidths.size >= 2, "Expected activity and popup roots, widths=$rootWidths")
-        assertEquals(popupMinWidth, rootWidths.maxOrNull())
+        assertEquals(popupMinWidth, panelWidth)
     }
 }
 
 @Composable
 private fun DropdownTestTheme(content: @Composable () -> Unit) {
-    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light), content = content)
+    MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+        // The anchored panel portals into the overlay host, so the harness has to provide one. Without
+        // it the portal falls back to composing in place, inside the anchor's own layout, and the panel
+        // inherits the anchor's width instead of resolving its own.
+        SceneBackdropHost(content = content)
+    }
 }
 
 class AppDropdownControlsTestApp : Application()
