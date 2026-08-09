@@ -29,6 +29,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
+import os.kei.ui.page.main.widget.glass.presentationFade
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -91,7 +92,7 @@ fun LiquidActionSheet(
                 .fillMaxWidth()
                 .onSizeChanged { cardHeightPx.floatValue = it.height.toFloat() }
                 .graphicsLayer {
-                    alpha = liquidModalCardAlpha(progressProvider())
+                    presentationFade(liquidModalCardAlpha(progressProvider()))
                     translationY = liquidModalBottomOffsetPx(
                         progress = progressProvider(),
                         cardHeightPx = cardHeightPx.floatValue,

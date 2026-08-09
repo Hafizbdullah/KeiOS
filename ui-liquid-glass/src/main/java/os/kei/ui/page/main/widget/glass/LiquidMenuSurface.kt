@@ -120,7 +120,7 @@ internal fun rememberLiquidMenuSurface(
             scaleY = resolved.scale
             translationX = resolved.translationX
             translationY = resolved.translationY
-            alpha = resolved.alpha
+            presentationFade(resolved.alpha)
             // Explicit, not incidental: the inverse transform assumes it.
             transformOrigin = LiquidMenuTopLeftOrigin
         }

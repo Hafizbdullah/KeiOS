@@ -295,7 +295,7 @@ private fun LiquidToastPill(
                 val scale = liquidToastScale(value)
                 scaleX = scale
                 scaleY = scale
-                alpha = liquidToastAlpha(value)
+                presentationFade(liquidToastAlpha(value))
             },
         )
 

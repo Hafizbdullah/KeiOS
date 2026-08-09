@@ -2,6 +2,8 @@ package os.kei.ui.page.main.widget.glass
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.unit.Dp
 
 /**
@@ -38,6 +40,30 @@ internal class LiquidPresentationLens(
 internal fun presentationGlassBlur(): Dp =
     (UiPerformanceBudget.maxGlassBlur * glassEffectRuntime().blurScaleFor(GlassVariant.Floating))
         .clampGlassBlur()
+
+/**
+ * Fades a presentation surface without cutting its shadow into a rectangle.
+ *
+ * `drawBackdrop` composes `Modifier.graphicsLayer(layerBlock)` *outside* its `ShadowElement`, and
+ * `ShadowNode` deliberately draws beyond the element's bounds — it records a layer of
+ * `size + radius * 4` and draws it at `-radius * 2` so the shadow can spread. Put an animated `alpha`
+ * on any layer that wraps that node and the default `CompositingStrategy.Auto` rasterizes the layer
+ * into an offscreen buffer the size of the element, which clips the spread away. What survives is the
+ * part of the shadow ring that falls *inside* the element's rectangle but outside its rounded shape:
+ * a hard-edged grey box hugging the panel with filled corners, for the whole length of the fade.
+ *
+ * [CompositingStrategy.ModulateAlpha] applies the alpha to each recorded draw instruction instead of
+ * compositing offscreen, so nothing is bounded and the shadow keeps its spread. The tradeoff is that
+ * stacked translucent draws fade independently rather than as one composed image, which at these
+ * durations is not perceptible — and at `alpha == 1f` the two strategies are identical anyway.
+ *
+ * Use this anywhere a surface with a backdrop shadow animates its opacity. The sheet is the one member
+ * of the family that does not need it, because it slides rather than fades.
+ */
+internal fun GraphicsLayerScope.presentationFade(alpha: Float) {
+    this.alpha = alpha
+    compositingStrategy = CompositingStrategy.ModulateAlpha
+}
 
 /**
  * The refraction rim for a presentation surface. This is what makes an edge read as a thick piece of

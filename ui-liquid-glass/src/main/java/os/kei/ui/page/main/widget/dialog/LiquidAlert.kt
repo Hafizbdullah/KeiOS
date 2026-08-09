@@ -27,6 +27,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.glass.LocalLiquidDialogBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
+import os.kei.ui.page.main.widget.glass.presentationFade
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -77,7 +78,7 @@ fun LiquidAlert(
                 .safeDrawingPadding()
                 .widthIn(max = maxWidth)
                 .fillMaxWidth(0.88f)
-                .graphicsLayer { alpha = liquidModalCardAlpha(progressProvider()) }
+                .graphicsLayer { presentationFade(liquidModalCardAlpha(progressProvider())) }
                 .then(surface.modifier)
                 .semantics {
                     isTraversalGroup = true

@@ -158,10 +158,21 @@ fun LiquidGlassActionMenu(
     maxWidth: Dp = 312.dp,
     maxHeight: Dp = 420.dp,
     initialExpandedSubmenuId: String? = null,
+    layout: LiquidMenuLayout? = null,
     onDismissRequest: () -> Unit = {},
 ) {
+    // Apple defines the top row's size and whether it carries labels; the plan decides which layout is
+    // actually achievable for the quick actions given, and lists anything that does not fit rather than
+    // dropping it. See resolveLiquidMenuLayoutPlan.
+    val layoutPlan = remember(layout, quickActions) { resolveLiquidMenuLayoutPlan(layout, quickActions) }
+    val listedQuickActionRows =
+        remember(layoutPlan) { layoutPlan.listed.map { action -> action.asMenuRow() } }
+    val resolvedItems =
+        remember(listedQuickActionRows, items) {
+            if (listedQuickActionRows.isEmpty()) items else listedQuickActionRows + items
+        }
     val availableSubmenuIds =
-        items
+        resolvedItems
             .asSequence()
             .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
             .filter { item -> item.enabled && item.submenuItems.isNotEmpty() }
@@ -180,7 +191,7 @@ fun LiquidGlassActionMenu(
         }
     val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
     val expandedSubmenu =
-        items
+        resolvedItems
             .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
             .firstOrNull { item ->
                 item.id == expandedSubmenuId &&
@@ -188,7 +199,7 @@ fun LiquidGlassActionMenu(
                     item.submenuItems.isNotEmpty()
             }
     val renderedSubmenu =
-        items
+        resolvedItems
             .filterIsInstance<LiquidGlassActionMenuSubmenuRow>()
             .firstOrNull { item ->
                 item.id == renderedSubmenuId &&
@@ -275,9 +286,10 @@ fun LiquidGlassActionMenu(
         material = LiquidGlassDropdownMaterial.ActionMenu,
         initialScrollItemIndex = renderedSubmenu?.initialScrollItemIndex,
     ) {
-        if (quickActions.isNotEmpty()) {
+        if (layoutPlan.topRow.isNotEmpty()) {
             LiquidGlassActionMenuQuickActionsRow(
-                quickActions = quickActions,
+                quickActions = layoutPlan.topRow,
+                showLabels = layoutPlan.topRowShowsLabels,
                 accentColor = accentColor,
                 onActionClick = { action ->
                     action.onClick()
@@ -288,7 +300,7 @@ fun LiquidGlassActionMenu(
         }
         if (renderedSubmenu == null) {
             LiquidGlassActionMenuItemsPanel(
-                items = items,
+                items = resolvedItems,
                 expandedSubmenuId = expandedSubmenuId,
                 accentColor = accentColor,
                 onExpandSubmenu = expandSubmenu,
@@ -564,6 +576,7 @@ private fun LiquidGlassActionMenuSubmenuPanel(
 @Composable
 private fun LiquidGlassActionMenuQuickActionsRow(
     quickActions: List<LiquidGlassActionMenuQuickAction>,
+    showLabels: Boolean,
     accentColor: Color,
     onActionClick: (LiquidGlassActionMenuQuickAction) -> Unit,
 ) {
@@ -581,6 +594,7 @@ private fun LiquidGlassActionMenuQuickActionsRow(
         quickActions.forEach { action ->
             LiquidGlassActionMenuQuickActionButton(
                 action = action,
+                showLabel = showLabels,
                 accentColor = accentColor,
                 onActionClick = onActionClick,
                 modifier = Modifier.weight(1f),
@@ -592,6 +606,7 @@ private fun LiquidGlassActionMenuQuickActionsRow(
 @Composable
 private fun LiquidGlassActionMenuQuickActionButton(
     action: LiquidGlassActionMenuQuickAction,
+    showLabel: Boolean,
     accentColor: Color,
     onActionClick: (LiquidGlassActionMenuQuickAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -647,18 +662,23 @@ private fun LiquidGlassActionMenuQuickActionButton(
             imageVector = action.icon,
             contentDescription = null,
             tint = contentColor,
-            modifier = Modifier.size(21.dp),
+            // A symbol-only row has to carry the whole meaning, so it gets a larger glyph.
+            modifier = Modifier.size(if (showLabel) 21.dp else 24.dp),
         )
-        Text(
-            text = action.label,
-            color = contentColor,
-            fontSize = 12.sp,
-            lineHeight = 15.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.clearAndSetSemantics {},
-        )
+        if (showLabel) {
+            Text(
+                text = action.label,
+                color = contentColor,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                // The row above already carries the label as its contentDescription; repeating it here
+                // would make a screen reader announce every action twice.
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+        }
     }
 }
 
