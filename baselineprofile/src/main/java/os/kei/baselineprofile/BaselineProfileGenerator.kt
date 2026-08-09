@@ -235,6 +235,71 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The menu — the whole presentation layer, which had no coverage at all.
+     *
+     * Every journey before this one walked pages and routes, so not one class in the overlay layer was
+     * ever profiled: the menu presentation, the shared overlay host and the shared presentation
+     * material were all interpreted the first time a user opened them. That is the worst case for it,
+     * and for exactly the reason recorded on the calendar and pool journeys above — a menu composes
+     * *inside* its present transition, so an interpreted class there costs a dropped frame rather than
+     * a slower launch.
+     *
+     * The GitHub top-bar menu is the one to use: it routes through `SnapshotWindowListPopup` into the
+     * menu presentation and renders a `LiquidGlassActionMenu` inside it, so one tap reaches the menu
+     * surface, the action-menu layouts, the dropdown rows, the overlay host and the shared material.
+     *
+     * It waits on a menu *row*, not on the panel container. A bare `Modifier.testTag` on a container
+     * with no other semantics never becomes its own accessibility node, so `SnapshotMenuPanelTestTag`
+     * is invisible to UiAutomator — verified by dumping the hierarchy with the menu open, where the
+     * rows appear and the panel does not. Sheets are still uncovered: the BA account toolbar action
+     * does not open its sheet under a synthetic tap, and an unverified wait here costs a 25-minute run.
+     */
+    @Test
+    fun presentationChromeInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_GITHUB,
+                pageTag = GITHUB_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_GITHUB,
+            )
+            openAndDismissOverlay(
+                triggerTag = GITHUB_IMPORT_MENU_BUTTON,
+                panelTag = GITHUB_IMPORT_TRACKS,
+            )
+        }
+    }
+
+    /**
+     * The card pile at a standstill, which a fling never reaches.
+     *
+     * The other journeys fling, and a fling crosses the stack line so fast that the receding states in
+     * between are barely sampled. The pile's transform, its progressive blur and its scrim only run
+     * while a card is *part way* into the pile, so a slow drag that parks it there is what gets that
+     * code compiled. OS is the page to do it on: it is the most card-dense one in the app.
+     */
+    @Test
+    fun cardPileInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_OS,
+                pageTag = OS_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_OS,
+            )
+            dragSlowly(times = 3)
+        }
+    }
+
+    /**
      * The shell runner, which stopped being an activity and became a route. That move put its first
      * composition inside the push transition, where an interpreted class costs a dropped frame
      * rather than a slower activity launch — the same trap the calendar and pool pages fell into.
@@ -305,6 +370,45 @@ private fun MacrobenchmarkScope.openDockRouteAndReturn(dockTag: String) {
     device.waitForIdle()
 }
 
+/**
+ * Opens an overlay from a tagged trigger, lets it settle, and dismisses it with back.
+ *
+ * Waits for the panel to be *gone* rather than for a fixed delay, so the exit animation is collected
+ * too — a dismissal recomposes and re-animates the same surface, and it is what the user feels last.
+ */
+private fun MacrobenchmarkScope.openAndDismissOverlay(
+    triggerTag: String,
+    panelTag: String,
+) {
+    waitForTestTag(triggerTag, timeoutMs = 15_000)
+    val trigger = device.findObject(testTagSelector(triggerTag))
+        ?: error("Unable to find overlay trigger testTag=$triggerTag in ${targetAppId()}")
+    trigger.click()
+    waitForTestTag(panelTag, timeoutMs = 15_000)
+
+    device.pressBack()
+    check(device.wait(Until.gone(testTagSelector(panelTag)), 15_000)) {
+        "Timed out waiting for testTag=$panelTag to dismiss in ${targetAppId()}"
+    }
+    device.waitForIdle()
+}
+
+/**
+ * Drags roughly one card at a time, slowly, so cards sit part way into the pile.
+ *
+ * 120 steps against [flingVisibleScrollable]'s 24: the step count is the whole point, because the
+ * receding transform, blur and scrim only run for cards mid-pile and a fling skips straight past them.
+ */
+private fun MacrobenchmarkScope.dragSlowly(times: Int) {
+    val centerX = device.displayWidth / 2
+    val startY = (device.displayHeight * 0.68f).toInt()
+    val endY = (device.displayHeight * 0.42f).toInt()
+    repeat(times) {
+        device.swipe(centerX, startY, centerX, endY, 120)
+        device.waitForIdle()
+    }
+}
+
 private fun MacrobenchmarkScope.waitForHome() {
     check(device.wait(Until.hasObject(By.pkg(targetAppId()).depth(0)), 10_000)) {
         "Timed out waiting for target package ${targetAppId()}"
@@ -338,6 +442,10 @@ private const val MCP_SKILL_BUTTON = "mcp_skill_button"
 private const val MCP_SKILL_PAGE_ROOT = "mcp_skill_page_root"
 private const val GITHUB_PAGE_ROOT = "github_page_root"
 private const val BA_PAGE_ROOT = "ba_page_root"
+private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
+
+/** A menu row, used as the "menu is open" signal — see [presentationChromeInteractions]. */
+private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
 private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
 private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"

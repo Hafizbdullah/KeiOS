@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import com.kyant.backdrop.backdrops.LayerBackdrop
+import os.kei.ui.testing.KeiOsTestTags
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideBellIcon
 import os.kei.ui.page.main.os.appLucideEditIcon
@@ -59,6 +60,7 @@ internal fun BaTopBarActions(
                 LiquidToolbarAction(
                     icon = accountIcon,
                     contentDescription = accountContentDescription,
+                    testTag = KeiOsTestTags.BaAccountManagementButton,
                     onClick = onShowAccountManagement,
                 ),
                 LiquidToolbarAction(

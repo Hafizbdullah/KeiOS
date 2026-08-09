@@ -30,6 +30,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -65,6 +66,15 @@ import top.yukonga.miuix.kmp.theme.LocalDismissState
 import kotlin.math.roundToInt
 
 private const val LIQUID_SHEET_BLOCKED_DRAG_RESISTANCE = 0.35f
+/**
+ * Identifies the sheet's panel, for anything that has to wait for a sheet without knowing which one.
+ *
+ * Mirrors `SnapshotMenuPanelTestTag`. The baseline profile needs it: a sheet's first composition runs
+ * inside the present transition, so an interpreted class there costs a dropped frame rather than a
+ * slower launch, and no journey could reach a sheet at all before this.
+ */
+const val LiquidSheetPanelTestTag = "liquid_sheet_panel"
+
 private val LiquidSheetDismissVelocityThreshold = 800.dp
 
 private const val LIQUID_SHEET_ENTER_DAMPING = 0.92f
@@ -553,7 +563,8 @@ internal fun LiquidSheetPresentation(
                 }.then(if (applyImePadding) Modifier.imePadding() else Modifier)
                 .padding(horizontal = insideMargin.width)
                 .padding(bottom = insideMargin.height)
-                .semantics { title?.takeIf { it.isNotBlank() }?.let { paneTitle = it } },
+                .semantics { title?.takeIf { it.isNotBlank() }?.let { paneTitle = it } }
+                .testTag(LiquidSheetPanelTestTag),
         ) {
             LiquidSheetTopChrome(
                 title = title,

@@ -27,6 +27,7 @@ object KeiOsTestTags {
     const val McpSkillButton = "mcp_skill_button"
     const val McpSkillPageRoot = "mcp_skill_page_root"
     const val BaPageRoot = "ba_page_root"
+    const val BaAccountManagementButton = "ba_account_management_button"
     const val BaDockOpenCalendar = "ba_dock_open_calendar"
     const val BaDockOpenPool = "ba_dock_open_pool"
     const val GitHubPageRoot = "github_page_root"
