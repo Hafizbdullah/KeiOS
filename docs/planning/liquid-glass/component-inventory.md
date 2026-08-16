@@ -392,7 +392,44 @@ own, since the scene is now the base. `appManagedPageBackgroundActive()` cannot 
 consumer value that happened to be one would be silently re-recorded and blanked. That is exactly the trap
 the scene backdrop would have walked into.
 
-### Cards stay off it, on Apple's advice and a measurement
+### Cards are translucent without sampling anything
+
+Reported as the cards looking opaque over a wallpaper. They were: their material is a flat
+`drawRect(baseColor)`, fully opaque, so the page behind them was simply gone.
+
+The first instinct — give them the scene — is the one the next section rejects, and re-measuring at
+**steady state** (rather than on BA first entry, where the earlier 8 fps figure came from) confirmed the
+rejection rather than overturning it:
+
+| BA page, six-swipe scroll | AVG | 1% low |
+|---|---|---|
+| canvas fill | 36 | **13** |
+| scene-sampled cards | 33 | **6** |
+
+But a card does not need to sample anything to show what is behind it. `drawBackdrop` composites its
+sampled layer *over* what is already on screen, so drawing the fill below full opacity reveals the page
+underneath for the price of the same single rect. Zero measured cost: 120 fps / 1% low 120 idle after.
+
+The alpha is a floor derived from the weakest text a card carries, `onBackgroundVariant`, against a
+worst-case image, keeping **80%** of the contrast that same text has on a plain page (3.86:1 dark,
+3.04:1 light):
+
+| | alpha | worst-case secondary | show-through |
+|---|---|---|---|
+| dark | 0.80 | 3.11:1 | 20% |
+| light | 0.82 | 2.45:1 | 18% |
+
+Light needs the thicker fill because `onBackgroundVariant` has no headroom there at all — 3.04:1 on pure
+white — so any darkening costs it immediately. That asymmetry is why the value is per-theme.
+
+Both round *up* from the solved minimum (0.794 / 0.813); rounding down put light at 2.41:1 against a
+2.43:1 floor, and the test caught it. Primary text cannot be the casualty here: the page ceiling already
+holds it at AA, and a translucent card is no worse than the page it reveals — asserted at alpha 0.
+
+This does trade secondary-text contrast, deliberately. A card that reads as an opaque slab on a
+photograph was the defect being fixed.
+
+### Cards stay off the scene, on Apple's advice and a measurement
 
 Composing the scene under the content material as well looked right and was wrong twice over. Apple:
 "Don't use Liquid Glass in the content layer... Instead, use standard materials for elements in the

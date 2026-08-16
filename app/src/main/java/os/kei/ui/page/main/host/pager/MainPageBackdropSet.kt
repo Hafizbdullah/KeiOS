@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -18,6 +19,7 @@ import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
+import os.kei.ui.page.main.widget.chrome.appManagedPageCardMaterialAlpha
 import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
 
 /**
@@ -135,12 +137,17 @@ fun rememberMainPageBackdropSet(
     // Apple's Materials guidance: "Don't use Liquid Glass in the content layer... Instead, use standard
     // materials for elements in the content layer" — a card is content, and a standard material is a
     // blur-and-fill, not a refracting lens. Composing the scene under it turns every one of a page's
-    // ~20 cards from a single `drawRect` into a real blur of a screen-sized layer, and the BA page's 1%
-    // low frame rate fell to **8 fps** when it did. The card's job here is to be the right colour, which
-    // is what `appPageBackdropBaseColor` fixed; carrying the wallpaper is the chrome's job.
+    // ~20 cards from a `drawRect` into a real sample of a screen-sized layer, and on the BA page's
+    // steady-state scroll that took the 1% low from 13 fps to **6** (average 36 → 33).
+    //
+    // It does not have to be opaque to show the page, though. `drawBackdrop` composites its sampled layer
+    // over what is already on screen, so a fill below full opacity lets the wallpaper through underneath
+    // for the price of the same single rect — see [appManagedPageCardMaterialAlpha] for where the number
+    // comes from. Full opacity with no background, because then there is nothing behind to reveal.
+    val cardAlpha = if (scene != null) appManagedPageCardMaterialAlpha(baseColor.luminance() < 0.5f) else 1f
     val contentMaterial =
         key("$keyPrefix-content-material$instanceKeySuffix") {
-            rememberCanvasBackdrop { drawRect(baseColor) }
+            rememberCanvasBackdrop { drawRect(baseColor.copy(alpha = cardAlpha)) }
         }
     return MainPageBackdropSet(
         topBar = rememberSceneComposedBackdrop(scene, topBarProducer),

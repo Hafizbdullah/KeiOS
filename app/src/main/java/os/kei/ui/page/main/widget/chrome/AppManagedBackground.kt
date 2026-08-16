@@ -156,6 +156,38 @@ object AppManagedBackgroundStyles {
 internal fun appManagedBackgroundReadableStrengthCeiling(darkBase: Boolean): Float = if (darkBase) 0.357f else 0.527f
 
 /**
+ * How opaque a content-layer card's fill is while a managed background is painting.
+ *
+ * A card cannot *sample* the page — measured on the BA page's steady-state scroll, giving every card the
+ * scene to blur took the 1% low frame rate from 13 fps to **6** while the average went 36 → 33. But it
+ * does not need to: `drawBackdrop` composites its sampled layer over what is already on screen, so
+ * drawing the card's own fill below full opacity lets the page — wallpaper and all — through underneath,
+ * at exactly the cost of the `drawRect` that was already there.
+ *
+ * The number is a floor derived from the weakest text on a card, `onBackgroundVariant`, against a
+ * worst-case image (white in dark theme, black in light). Its contrast on a *plain* page is the app's own
+ * baseline — 3.86:1 dark, 3.04:1 light — and these alphas keep **80%** of that:
+ *
+ * | | alpha | worst-case secondary | show-through |
+ * |---|---|---|---|
+ * | dark | 0.80 | 3.11:1 | 20% |
+ * | light | 0.82 | 2.45:1 | 18% |
+ *
+ * Both round *up* from the solved minimum (0.794 and 0.813). Rounding down put light at 2.41:1 against a
+ * 2.43:1 floor — the test caught it.
+ *
+ * Light needs the higher alpha because `onBackgroundVariant` has no headroom there at all: it is already
+ * 3.04:1 on pure white, so any darkening costs it immediately. That asymmetry is why this is per-theme
+ * rather than one constant.
+ *
+ * Worth being plain about the trade: this *does* cost secondary-text contrast, deliberately, because a
+ * card that reads as opaque over a wallpaper is the thing being fixed. Primary text is unaffected —
+ * [appManagedBackgroundReadableStrengthCeiling] already holds the page itself at AA for primary text, and
+ * a translucent card can be no worse than the page it reveals.
+ */
+internal fun appManagedPageCardMaterialAlpha(darkBase: Boolean): Float = if (darkBase) 0.80f else 0.82f
+
+/**
  * The image alpha and the readability overlay floor to render with, from one place.
  *
  * Both the main pager and the route host draw this background, and they have already drifted apart once

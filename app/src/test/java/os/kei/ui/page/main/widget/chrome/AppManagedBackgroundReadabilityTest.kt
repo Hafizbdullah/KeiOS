@@ -135,6 +135,62 @@ class AppManagedBackgroundReadabilityTest {
     }
 
     @Test
+    fun aTranslucentCardStillKeepsMostOfItsSecondaryTextContrast() {
+        // A content-layer card cannot sample the page (6 fps at the 1% low when it did), so translucency
+        // comes from its own fill alpha instead. That trades secondary-text contrast, and the alpha is the
+        // floor that keeps 80% of what the same text has on a plain page.
+        listOf(
+            Triple(true, DARK_BASE, WHITE),
+            Triple(false, LIGHT_BASE, BLACK),
+        ).forEach { (darkBase, base, worstImage) ->
+            val variant = if (darkBase) DARK_VARIANT else LIGHT_VARIANT
+            val plain = contrast(variant, base)
+            val card =
+                cardComposite(
+                    base = base,
+                    worstImage = worstImage,
+                    darkBase = darkBase,
+                    alpha = appManagedPageCardMaterialAlpha(darkBase),
+                )
+            val ratio = contrast(variant, card)
+            assertTrue(
+                "darkBase=$darkBase card gave $ratio:1, under 80% of the plain-page $plain:1",
+                ratio >= plain * 0.80f,
+            )
+        }
+    }
+
+    @Test
+    fun theCardIsTranslucentEnoughToBeWorthDoingInBothThemes() {
+        listOf(true, false).forEach { darkBase ->
+            val alpha = appManagedPageCardMaterialAlpha(darkBase)
+            assertTrue("darkBase=$darkBase is opaque at $alpha", alpha < 1f)
+            assertTrue("darkBase=$darkBase shows too little through at $alpha", alpha <= 0.85f)
+        }
+        // Light needs the thicker fill: `onBackgroundVariant` is already 3.04:1 on pure white, so it has
+        // no headroom there and any darkening costs it immediately.
+        assertTrue(
+            "light should need at least as thick a fill as dark",
+            appManagedPageCardMaterialAlpha(darkBase = false) >= appManagedPageCardMaterialAlpha(darkBase = true),
+        )
+    }
+
+    @Test
+    fun primaryTextSurvivesEvenAFullyTransparentCard() {
+        // The page ceiling already holds primary text at AA, and a translucent card can be no worse than
+        // the page it reveals — so card translucency can never be what breaks primary text.
+        listOf(
+            Triple(true, DARK_BASE, WHITE),
+            Triple(false, LIGHT_BASE, BLACK),
+        ).forEach { (darkBase, base, worstImage) ->
+            val text = if (darkBase) WHITE else BLACK
+            val ratio =
+                contrast(text, cardComposite(base = base, worstImage = worstImage, darkBase = darkBase, alpha = 0f))
+            assertTrue("darkBase=$darkBase gave $ratio:1 with no card fill at all", ratio >= WCAG_AA_BODY)
+        }
+    }
+
+    @Test
     fun malformedOpacityCannotProduceAnInvalidOverlay() {
         listOf(Float.NaN, Float.POSITIVE_INFINITY, -1f, 5f).forEach { opacity ->
             val render = appManagedBackgroundRender(opacity, AppManagedBackgroundStyles.Standard, darkBase = true)
@@ -176,6 +232,30 @@ class AppManagedBackgroundReadabilityTest {
             b: Float,
         ) = i * strength + b * (1f - strength)
         return Color(mix(image.red, base.red), mix(image.green, base.green), mix(image.blue, base.blue))
+    }
+
+    /** The page at its readable ceiling over [worstImage], with a card fill of [alpha] on top. */
+    private fun cardComposite(
+        base: Color,
+        worstImage: Color,
+        darkBase: Boolean,
+        alpha: Float,
+    ): Color {
+        val strength = appManagedBackgroundReadableStrengthCeiling(darkBase)
+        fun mix(
+            over: Float,
+            under: Float,
+            a: Float,
+        ) = over * a + under * (1f - a)
+        fun channel(image: Float, plain: Float): Float {
+            val page = mix(image, plain, strength)
+            return mix(plain, page, alpha)
+        }
+        return Color(
+            channel(worstImage.red, base.red),
+            channel(worstImage.green, base.green),
+            channel(worstImage.blue, base.blue),
+        )
     }
 
     private fun contrast(
