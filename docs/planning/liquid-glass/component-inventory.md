@@ -516,6 +516,42 @@ Left as an asymmetry rather than changed: Settings passes `exportBackdropToConte
 get a real glass material, and About does not, so About's cards are tinted fills. Worth unifying, but it
 changes what every nested component inside About samples.
 
+### With no background, the page was painting the elevated token
+
+Apple, Dark Mode: *"the system uses two sets of background colors — called base and elevated… The base
+colors are dimmer, making background interfaces appear to recede, and the elevated colors are brighter,
+making foreground interfaces appear to advance."* miuix ships exactly that pair:
+
+| | light | dark |
+|---|---|---|
+| `surface` (base) | `#F7F7F7` | Black |
+| `background` / `surfaceContainer` (elevated) | White | `#242424` |
+
+Non-Home main pages were painting the **elevated** token as their page base, and their cards were
+sampling that same colour. `AppFeatureCard` fills with `surfaceContainer` at 64%, and 64% of a colour over
+itself changes nothing — so the card had nothing to stand on. Routes never had the problem, because their
+scaffold paints `surface`.
+
+Measured page vs card interior, no background:
+
+| | before | after | Apple's own |
+|---|---|---|---|
+| dark | 36 / 42 — **Δ6** | **0 / 42 — Δ42** | `#000` / `#1C1C1E` — Δ28 |
+| light | 255 / 255 — **Δ0** | **247 / 255 — Δ8** | `#F2F2F7` / `#FFF` — Δ8–13 |
+
+Δ0 in light is the striking one: the cards were the page, held together only by their rim.
+
+Two changes, both narrow. The pager paints `surface` unless a managed background is active — with one, the
+base has to stay `background`, which is what the image composites over and what the readability ceiling is
+solved for. And `mainPagerPageContainerColorOverride` is now conditional on a background actually
+painting, rather than transparent for every non-Home page; that also makes
+`appManagedPageBackgroundActive()` mean what its name says, retiring the caveat recorded against it above.
+
+`appManagedPageCardMaterialColor` names the choice: elevated when unbacked, the page base at
+[the card alpha](#cards-are-translucent-without-sampling-anything) when backed. Its test caught a real
+confusion while being written — the wallpaper's base (`background`) and the unbacked page's base
+(`surface`) are *different pairings*, and the first version compared the wrong two.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it

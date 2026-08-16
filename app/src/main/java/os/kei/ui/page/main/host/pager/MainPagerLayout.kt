@@ -231,7 +231,23 @@ internal fun MainPagerLayout(
                 .appGripAwareDockTouchObserver(
                     enabled = gripAwareFloatingDockEnabled,
                     state = floatingDockState,
-                ).background(MiuixTheme.colorScheme.background)
+                ).background(
+                    // Apple, Dark Mode: "the system uses two sets of background colors — called base and
+                    // elevated... The base colors are dimmer, making background interfaces appear to
+                    // recede, and the elevated colors are brighter."
+                    //
+                    // miuix ships exactly that pair — `surface` is Black / `#F7F7F7` against `background`
+                    // and `surfaceContainer` at `#242424` / White — and this page was painting the
+                    // *elevated* one as its base. `AppFeatureCard` fills with `surfaceContainer` at 64%,
+                    // which in dark is that same `#242424`, so 64% of it over itself changed nothing:
+                    // measured card rgb(42,44,46) against page rgb(36,36,36), a 6-level step held together
+                    // only by the card's rim. Routes never had this, because their scaffold paints
+                    // `surface` — so this also stops a card looking different on a page than on a route.
+                    //
+                    // With a managed background the base stays `background`: that is the colour the image
+                    // composites over and the readability ceiling is solved for.
+                    if (nonHomeBackgroundActive) pageBaseColor else MiuixTheme.colorScheme.surface,
+                )
                 .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
             val safeSelectedPageIndex =

@@ -191,6 +191,43 @@ class AppManagedBackgroundReadabilityTest {
     }
 
     @Test
+    fun anUnbackedCardDrawsTheElevatedSurfaceRatherThanThePageItSitsOn() {
+        // Apple pairs a receding base with an advancing elevated surface. Drawing the base here is what
+        // made cards disappear: `AppFeatureCard` fills with `surfaceContainer` at 64%, and 64% of a colour
+        // over itself changes nothing.
+        listOf(
+            Triple(DARK_PAGE_BASE, DARK_ELEVATED, true),
+            Triple(LIGHT_PAGE_BASE, LIGHT_ELEVATED, false),
+        ).forEach { (base, elevated, darkBase) ->
+            val material = appManagedPageCardMaterialColor(base, elevated, backed = false)
+
+            assertEquals("darkBase=$darkBase must draw the elevated token", elevated, material)
+            assertEquals("an unbacked card has nothing to reveal, so it stays opaque", 1f, material.alpha, 0f)
+            assertTrue(
+                "the two tokens must actually differ, or there is no step to draw (darkBase=$darkBase)",
+                base != elevated,
+            )
+        }
+    }
+
+    @Test
+    fun aBackedCardRevealsThePageInstead() {
+        listOf(
+            Triple(DARK_BASE, DARK_ELEVATED, true),
+            Triple(LIGHT_BASE, LIGHT_ELEVATED, false),
+        ).forEach { (base, elevated, darkBase) ->
+            val material = appManagedPageCardMaterialColor(base, elevated, backed = true)
+
+            assertEquals(
+                "darkBase=$darkBase should reveal the page through the base colour",
+                appManagedPageCardMaterialAlpha(darkBase),
+                material.alpha,
+                1f / 255f,
+            )
+        }
+    }
+
+    @Test
     fun malformedOpacityCannotProduceAnInvalidOverlay() {
         listOf(Float.NaN, Float.POSITIVE_INFINITY, -1f, 5f).forEach { opacity ->
             val render = appManagedBackgroundRender(opacity, AppManagedBackgroundStyles.Standard, darkBase = true)
@@ -292,5 +329,15 @@ class AppManagedBackgroundReadabilityTest {
         val DARK_BASE = Color(0xFF242424)
         val LIGHT_VARIANT = Color(0xFF8C93B0)
         val DARK_VARIANT = Color(0xFF787E96)
+
+        /**
+         * Apple's base/elevated pair for a page with *no* background, which is a different pairing from
+         * [LIGHT_BASE] / [DARK_BASE] above — those are `colorScheme.background`, the colour the wallpaper
+         * composites over. Unbacked, the page is `surface` and the card is `surfaceContainer`.
+         */
+        val LIGHT_PAGE_BASE = Color(0xFFF7F7F7)
+        val DARK_PAGE_BASE = Color.Black
+        val LIGHT_ELEVATED = Color.White
+        val DARK_ELEVATED = Color(0xFF242424)
     }
 }

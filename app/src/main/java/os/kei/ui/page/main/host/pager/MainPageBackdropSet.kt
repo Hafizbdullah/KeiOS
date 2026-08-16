@@ -11,7 +11,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.luminance
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -19,8 +18,9 @@ import com.kyant.backdrop.backdrops.rememberCanvasBackdrop
 import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
-import os.kei.ui.page.main.widget.chrome.appManagedPageCardMaterialAlpha
+import os.kei.ui.page.main.widget.chrome.appManagedPageCardMaterialColor
 import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * A page's backdrops, split by direction: what glass **samples**, and what **records** into a layer.
@@ -144,10 +144,22 @@ fun rememberMainPageBackdropSet(
     // over what is already on screen, so a fill below full opacity lets the wallpaper through underneath
     // for the price of the same single rect — see [appManagedPageCardMaterialAlpha] for where the number
     // comes from. Full opacity with no background, because then there is nothing behind to reveal.
-    val cardAlpha = if (scene != null) appManagedPageCardMaterialAlpha(baseColor.luminance() < 0.5f) else 1f
+    //
+    // With no background the material is the *elevated* token at full strength, not the page's base.
+    // Apple pairs a receding base with an advancing elevated surface, and a card is the advancing one;
+    // sampling the page instead left the card's own 64% `surfaceContainer` fill nothing to lift off —
+    // measured a 6-level step in dark and, once the page moved to `surface`, still only +5 in light,
+    // where miuix has just 8 levels between the two tokens. This is also exactly what a route's cards
+    // already sample, so a card stops depending on how deep the page is.
+    val cardMaterialColor =
+        appManagedPageCardMaterialColor(
+            baseColor = baseColor,
+            elevatedColor = MiuixTheme.colorScheme.surfaceContainer,
+            backed = scene != null,
+        )
     val contentMaterial =
         key("$keyPrefix-content-material$instanceKeySuffix") {
-            rememberCanvasBackdrop { drawRect(baseColor.copy(alpha = cardAlpha)) }
+            rememberCanvasBackdrop { drawRect(cardMaterialColor) }
         }
     return MainPageBackdropSet(
         topBar = rememberSceneComposedBackdrop(scene, topBarProducer),

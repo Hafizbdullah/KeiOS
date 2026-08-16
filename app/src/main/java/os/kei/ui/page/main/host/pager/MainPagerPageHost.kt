@@ -26,6 +26,7 @@ import os.kei.ui.page.main.home.HomePage
 import os.kei.ui.page.main.mcp.McpPage
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.os.OsPage
+import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
 import os.kei.ui.page.main.widget.chrome.LocalAppScaffoldContainerColor
 import os.kei.ui.page.main.widget.glass.GlassEffectRuntime
 import os.kei.ui.page.main.widget.glass.LocalGlassEffectRuntime
@@ -101,7 +102,11 @@ internal fun MainPagerPageHost(
 ) {
     val glassRuntime = remember { GlassEffectRuntime() }
     CompositionLocalProvider(
-        LocalAppScaffoldContainerColor provides mainPagerPageContainerColorOverride(pageType),
+        LocalAppScaffoldContainerColor provides
+            mainPagerPageContainerColorOverride(
+                pageType = pageType,
+                managedBackgroundActive = LocalAppManagedSceneBackdrop.current != null,
+            ),
         LocalGlassEffectRuntime provides glassRuntime,
     ) {
         Box(
@@ -213,8 +218,19 @@ internal fun shouldRenderMainPagerPageContent(
         runtime.hasActivated ||
         runtime.isWarmActive
 
-internal fun mainPagerPageContainerColorOverride(pageType: BottomPage): Color? =
-    if (pageType == BottomPage.Home) null else Color.Transparent
+/**
+ * Transparent only while something is actually painting behind the page.
+ *
+ * This used to be unconditional for every non-Home page, which made `appManagedPageBackgroundActive()`
+ * read true with no background in sight and, worse, made `appPageBackdropBaseColor()` resolve to the
+ * *elevated* token as the page's base — leaving cards a 6-level step to stand on. With no background the
+ * page keeps its own `surface`, so the base/elevated pairing holds and a card reads as a card.
+ */
+internal fun mainPagerPageContainerColorOverride(
+    pageType: BottomPage,
+    managedBackgroundActive: Boolean,
+): Color? =
+    if (pageType == BottomPage.Home || !managedBackgroundActive) null else Color.Transparent
 
 private fun BottomPage.pageRootTestTag(): String =
     when (this) {

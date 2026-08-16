@@ -188,6 +188,32 @@ internal fun appManagedBackgroundReadableStrengthCeiling(darkBase: Boolean): Flo
 internal fun appManagedPageCardMaterialAlpha(darkBase: Boolean): Float = if (darkBase) 0.80f else 0.82f
 
 /**
+ * What a content-layer card's material draws: the page revealed through it, or the elevated surface.
+ *
+ * Apple, Dark Mode: "the system uses two sets of background colors — called base and elevated... The base
+ * colors are dimmer, making background interfaces appear to recede, and the elevated colors are brighter,
+ * making foreground interfaces appear to advance." A card is the advancing one, so with nothing behind the
+ * page it draws [elevatedColor] outright.
+ *
+ * Sampling [baseColor] there instead — the page's own base — is what made cards vanish: `AppFeatureCard`
+ * fills with `surfaceContainer` at 64%, and 64% of a colour over itself changes nothing. Measured a
+ * 6-level card/page step in dark and none at all in light.
+ *
+ * With a background the card has something worth revealing, so it draws the base at
+ * [appManagedPageCardMaterialAlpha] and lets the wallpaper through.
+ */
+internal fun appManagedPageCardMaterialColor(
+    baseColor: Color,
+    elevatedColor: Color,
+    backed: Boolean,
+): Color =
+    if (backed) {
+        baseColor.copy(alpha = appManagedPageCardMaterialAlpha(baseColor.luminance() < 0.5f))
+    } else {
+        elevatedColor
+    }
+
+/**
  * The image alpha and the readability overlay floor to render with, from one place.
  *
  * Both the main pager and the route host draw this background, and they have already drifted apart once

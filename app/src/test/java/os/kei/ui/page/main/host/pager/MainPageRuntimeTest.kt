@@ -82,10 +82,28 @@ class MainPageRuntimeTest {
 
     @Test
     fun `main pager keeps non home page container transparent for shared background`() {
-        assertEquals(null, mainPagerPageContainerColorOverride(BottomPage.Home))
-        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Os))
-        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Ba))
-        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.Mcp))
-        assertEquals(Color.Transparent, mainPagerPageContainerColorOverride(BottomPage.GitHub))
+        val nonHome = listOf(BottomPage.Os, BottomPage.Ba, BottomPage.Mcp, BottomPage.GitHub)
+
+        assertEquals(null, mainPagerPageContainerColorOverride(BottomPage.Home, managedBackgroundActive = true))
+        nonHome.forEach { page ->
+            assertEquals(
+                Color.Transparent,
+                mainPagerPageContainerColorOverride(page, managedBackgroundActive = true),
+            )
+        }
+    }
+
+    @Test
+    fun `main pager keeps its own surface when no background is painting`() {
+        // Otherwise `appPageBackdropBaseColor()` resolves to the *elevated* token as the page base, and
+        // `AppFeatureCard`'s `surfaceContainer` fill at 64% is that same colour in dark theme — measured a
+        // 6-level step between card and page, against 36 on a route.
+        (listOf(BottomPage.Home) + listOf(BottomPage.Os, BottomPage.Ba, BottomPage.Mcp, BottomPage.GitHub))
+            .forEach { page ->
+                assertEquals(
+                    null,
+                    mainPagerPageContainerColorOverride(page, managedBackgroundActive = false),
+                )
+            }
     }
 }
