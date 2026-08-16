@@ -62,3 +62,72 @@
 | 2026-06-30 | P1 | `AppSquircle` now delegates to `miuix-squircle` public APIs while keeping non-composable draw-path helpers for hot-path callers. Popup and Liquid Glass sheet now use `NavigationBackHandler` predictive-back progress instead of framework back-only dismissal. |
 | 2026-06-30 | P2 | Liquid sliders gained MIUIX-style edge/key-point haptics; Liquid switch gained toggle haptics on drag and tap. Existing action bar/bottom bar/floating dock chrome already uses shared KeiOS glass primitives plus Miuix badge/tooltip pieces, so this pass preserved those visuals. |
 | 2026-06-30 | Verification | Passed `:ui-liquid-glass:compileDebugKotlin`, focused app back tests, `:ui-liquid-glass:testDebugUnitTest`, `:app:compileReleaseArtProfile`, and `git diff --check`. Removed stale Squircle SDF entries from release baseline profiles. |
+| 2026-08-16 | Upgrade | `0.9.3-c6d7d6dd-SNAPSHOT` → `0.9.4-4a6b750b-SNAPSHOT`. See [Snapshot upgrade: 0.9.4](#snapshot-upgrade-094). |
+
+<a id="snapshot-upgrade-094"></a>
+
+## Snapshot upgrade: 0.9.4-4a6b750b-SNAPSHOT
+
+Latest snapshot on the GitHub Packages feed, published 2026-08-13. `gradle.properties` carries the
+pin; `libs.versions.toml` holds the fallback and had drifted to a stale `0.9.2` — both now agree.
+
+Snapshot artifacts on that feed are addressed by their timestamped filename
+(`…-0.9.4-4a6b750b-20260813.145107-1-sources.jar`), not by the `-SNAPSHOT` version string, so a plain
+`curl` of the version-named path 404s. Read the per-version `maven-metadata.xml` for the
+`<snapshotVersion>` value first.
+
+### The source delta is four files
+
+Diffed from the published sources jars of both versions across all eight artifacts:
+
+| file | module | reaches KeiOS? |
+| --- | --- | --- |
+| `nav/gesture/NavSwipeArbitrator.kt` (new) | nav | only if `swipeDismiss` is enabled — it is not |
+| `nav/gesture/NavSwipeDismiss.kt` | nav | same |
+| `nav/core/NavDisplay.kt` | nav | comment only |
+| `blur/DrawBackdropModifier.kt` | blur | **no** — see below |
+| `basic/Scaffold.kt` | ui | **no** — see below |
+
+**`Scaffold.kt`** hoists the floating-toolbar measurement above the snackbar offset so a bottom-docked
+toolbar can no longer cover a snackbar. KeiOS has zero references to `floatingToolbar`,
+`ToolbarPosition` or `snackbar` in `:app`, `:ui-liquid-glass` or any feature module, so both slots
+measure 0×0: `isFloatingToolbarEmpty` short-circuits the new offset to `null` and `snackbarHeight == 0`
+short-circuits the new `coerceAtLeast`. Layout is byte-identical.
+
+**`DrawBackdropModifier.kt`** removes `DrawBackdropNode.captureLayerScale` and the display-space
+inverse it fed — the path that inverted a pure-scale `layerBlock` at full resolution instead of inside
+a downscaled recording, to stop fractional resampling flicker. That path only runs for a **non-null
+`layerBlock`**, and KeiOS never passes one: it reaches miuix blur solely through `textureBlur`,
+`textureEffect` and `progressiveTextureBlur` (`TextureEffect.kt`, unchanged), none of which expose the
+parameter, and no miuix-ui or miuix-nav component passes it either. KeiOS's own `layerBlock`-driven
+reveals — the toast and the menu — run on `com.kyant.backdrop`, a different library. Unreachable, so
+the revert cannot regress us; if a future KeiOS surface does pass a `layerBlock` over a downscaled
+miuix blur, expect scale-animation flicker and check this file first.
+
+**Nav** closes the issue #21 gap. Recorded in
+[`miuix-nav-swipe-dismiss-gap.md`](miuix-nav-swipe-dismiss-gap.md), including why the gesture stays
+disabled here anyway.
+
+### The upgrade is also a Compose upgrade
+
+Not optional, and easy to miss. 0.9.4 moved its Compose dependency from
+`org.jetbrains.compose.foundation:foundation` **1.11.1** to `foundation-android` **1.12.0-rc01**, and
+`material3-window-size-class` 1.9.0 → 1.12.0-alpha03. JetBrains' Android variants *are* the androidx
+artifacts, so every `androidx.compose.*` module — foundation, ui, runtime, saveable, graphics — now
+resolves to **1.12.0-rc01** regardless of what the catalog declares. Holding androidx at 1.11.4 would
+run miuix against APIs older than it was compiled on, so the catalog follows the resolution instead of
+fighting it; `BuildConfig.COMPOSE_VERSION` feeds the diagnostics page and must not lie.
+
+One new deprecation surfaced from the Compose side, not from miuix:
+`androidx.compose.ui.test.junit4.createComposeRule` now points at the `v2` package, whose rules use
+`StandardTestDispatcher` instead of `UnconfinedTestDispatcher`. It is a warning only —
+`AppTopBarSearchShellScreenshotTest` still passes — but the migration queues work, so tests relying on
+immediate execution will need explicit synchronisation when it happens.
+
+### Verified
+
+- `:app` and `:ui-liquid-glass` compile with no new source incompatibility.
+- 1793 unit tests across `:app`, `:ui-liquid-glass`, `:core-prefs` — 0 failures, same count as before.
+- API 37 AVD: Home, OS, MCP, GitHub and BA all render; Home's `textureBlur` chip rows, the BA floating
+  dock glass and the bottom bar are intact; logcat clean of `FATAL`, `AndroidRuntime`,
+  `NoSuchMethod` and `NoClassDefFound` across the sweep.

@@ -117,12 +117,17 @@ internal fun MainScreenNavHost(
                 NavDisplayEffects.None
             }
         }
-    // No route opts into navSwipeDismiss. Miuix attaches that gesture to the display container and
-    // watches PointerEventPass.Initial, which dispatches parent-first, so it claims any horizontal
-    // drag past touch slop before a descendant sees it — sliders, AppSwitch, the bottom-bar tab
-    // drag and text fields all lose their gesture (issue #21). Descendants cannot pre-empt an
-    // Initial-pass ancestor, and Miuix exposes no edge band or nested veto, so back stays with the
-    // system predictive gesture that NavDisplay already drives.
+    // No route opts into navSwipeDismiss. The original reason (issue #21) is gone: through
+    // 0.9.3 Miuix engaged that gesture on PointerEventPass.Initial, which dispatches parent-first,
+    // so the display container claimed any horizontal drag past touch slop before a descendant saw
+    // it and sliders, AppSwitch, the bottom-bar tab drag and text fields all lost their gesture.
+    // 0.9.4 moved engagement to PointerEventPass.Final and arbitrates ownership from child
+    // *consumption* (NavSwipeArbitrator) — the "honour a consumed drag" fix the gap doc asked for.
+    //
+    // It stays off anyway, on a different and unresolved observation: with dismissDirection =
+    // LeftToRight confirmed live on this transition, no synthesised drag engaged the gesture at all
+    // on the API 37 AVD — not from page content, not from the inert top-bar band, at 83% of screen
+    // width, fast or slow. Enabling would ship a gesture that is either dead or untested here.
     // See docs/planning/miuix-nav-swipe-dismiss-gap.md before enabling it again.
 
     CompositionLocalProvider(

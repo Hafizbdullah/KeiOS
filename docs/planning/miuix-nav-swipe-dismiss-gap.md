@@ -1,5 +1,10 @@
 # miuix-nav swipeDismiss vs. horizontal page content
 
+> **Closed upstream in `0.9.4-4a6b750b-SNAPSHOT` (2026-08-13); do not file the report.** Everything
+> below described `0.9.3` and is kept as the record of what was wrong and how it was measured. See
+> [What 0.9.4 changed](#what-0-9-4-changed) for the fix, and for the *new* open question that keeps
+> the gesture disabled in KeiOS anyway.
+
 Prepared for an upstream report against `compose-miuix-ui/miuix`. Held back while miuix-nav is
 still iterating; file it if a stable release still behaves this way.
 
@@ -70,3 +75,62 @@ Option 1 is the smallest change and needs no coordination from callers.
 KeiOS enables `swipeDismiss` on no route. Back stays with the system predictive gesture that
 `NavDisplay` already drives, which works on every route and never competes with content. Re-enabling
 is a per-entry argument in `MainScreenNavHost.kt`; wait for one of the three APIs above first.
+
+<a id="what-0-9-4-changed"></a>
+
+## What 0.9.4 changed
+
+`0.9.4-4a6b750b-SNAPSHOT` rewrites the engagement phase. It is option **3** above — *honour a
+consumed gesture* — in a stronger form than asked for, since it arbitrates on consumed **movement**
+rather than a consumed down:
+
+- engagement now watches `PointerEventPass.Final`, so descendants get the Main pass first. Only the
+  *follow* phase still consumes from `Initial`, which is where that behaviour was always wanted;
+- a new pure arbiter, `NavSwipeArbitrator`, holds the decision. The first consumed non-zero position
+  change opens a one-move confirmation window; a second consumed change locks `ChildOwned`
+  permanently, while an unconsumed one releases the evidence and lets navigation claim if travel has
+  crossed touch slop and dominates the cross axis. Ownership is terminal either way;
+- the arbiter separates the two signals deliberately: child ownership is **not** gated on
+  navigation's touch slop, so a lower-slop child still wins. It also distinguishes a real recognizer
+  from a `clickable` merely cancelling its press — the single most likely false positive;
+- cross-axis-dominant and opposite-direction travel yield to content outright, a second pointer
+  cancels engagement, and one joining mid-follow force-cancels the dismiss with zero release
+  velocity;
+- claimed gestures no longer restart at the claim event: `initialDismissTravelPx` carries the
+  slop-exceeding pre-claim travel forward, so the page catches up instead of jumping.
+
+miuix's own comment in `NavDisplay.kt` now states the intent in as many words: *"without stealing
+slider or scroll gestures."*
+
+## Why it stays off here regardless
+
+A probe against this build — `dismissDirection = NavSwipeDirection.LeftToRight` on
+`keiosNavTransition()`, with `routeAnimationsEnabled=true dismissDirection=LeftToRight` logged from
+the running APK to prove the argument reached `NavDisplay` — **could not make the gesture engage at
+all** on the API 37 AVD, on the `Settings` route (so `enabled = topIndex > 0` held):
+
+| start | travel | pacing | result |
+| --- | --- | --- | --- |
+| page content, y=1400 | 420–750px | held mid-drag, and 400/700ms swipes | no translation, no dismiss |
+| inert top-bar band, y=252 | 420px | 120ms and 400ms | nothing |
+| inert top-bar band, y=252 | 1060px (83% of width) | 150ms and 600ms | nothing |
+
+Whole-framebuffer tile diffs, not eyeballing. Injection itself was verified working in the same
+session: the launcher's app drawer opens on a synthesised swipe (2143/2144 tiles), and the OS page
+scrolls at 150/300/700/1400ms once end-of-list confounds are removed.
+
+So the original defect is gone and nothing replaced it in the *stealing* direction — but "does not
+steal" and "does not work" are indistinguishable from outside, and this probe cannot tell them
+apart. Two candidates worth checking before enabling:
+
+1. **A real finger.** The arbiter's confirmation window keys off consumption timing across passes,
+   which `adb shell input` may not reproduce. The 0.9.3 measurements in this doc were taken with a
+   finger on a physical Xiaomi; the fix deserves the same.
+2. **`externalGestureOwnership`.** `navSwipeDismissImpl` blocks the whole sequence from the down when
+   `initialExternalOwnership and 1L != 0L` — an odd generation on `NavDisplay`'s internal
+   `PredictiveBackOwnership`, meaning "an external back gesture owns this". KeiOS drives its own back
+   runtime (`BackNavigationRuntimeController`), and a lease acquired but never released would pin
+   that token odd and silently disable every swipe. This is a guess, not a finding: confirming it
+   needs instrumentation inside miuix.
+
+Until one of those resolves, enabling would ship a gesture that is either dead or untested.
