@@ -3,7 +3,6 @@
 package os.kei.ui.page.main.settings.section
 
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +58,7 @@ import os.kei.ui.page.main.widget.core.CardLayoutRhythm
 import os.kei.ui.page.main.widget.glass.AppDropdownSelector
 import os.kei.ui.page.main.widget.glass.AppStandaloneLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.sheet.LiquidSheetInitialDetent
 import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 import top.yukonga.miuix.kmp.basic.Text
@@ -101,7 +101,10 @@ internal fun SettingsBackgroundSection(
     var pageStyleDropdownExpanded by remember { mutableStateOf(false) }
     var pageStyleDropdownAnchorBounds by remember { mutableStateOf<IntRect?>(null) }
     var previewSheetVisible by remember { mutableStateOf(false) }
-    val isDarkTheme = isSystemInDarkTheme()
+    // `isAppInDarkTheme()`, not `isSystemInDarkTheme()`: an explicit Light/Dark choice in the app
+    // overrides the system, and reading the system directly made this suggestion compute for the
+    // wrong theme whenever the two disagreed — permanently, not just until a restart.
+    val isDarkTheme = isAppInDarkTheme()
     val presentation =
         deriveBackgroundPresentation(
             nonHomeBackgroundEnabled = nonHomeBackgroundEnabled,

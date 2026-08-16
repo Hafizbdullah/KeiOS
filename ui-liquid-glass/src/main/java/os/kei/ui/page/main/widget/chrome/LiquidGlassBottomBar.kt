@@ -582,6 +582,11 @@ fun LiquidGlassBottomBar(
                 displaySelectionValueProvider,
                 panelOffsetProvider,
                 transitionAnimationsEnabled,
+                // `InteractiveHighlight` takes strength and radius as constructor vals, so it never
+                // re-reads the theme. An in-app theme change re-runs this body but leaves `remember`
+                // keys alone, which left the press bloom at the previous theme's brightness until an
+                // unrelated key moved or the process restarted.
+                isInLightTheme,
             ) {
                 InteractiveHighlight(
                     animationScope = animationScope,
