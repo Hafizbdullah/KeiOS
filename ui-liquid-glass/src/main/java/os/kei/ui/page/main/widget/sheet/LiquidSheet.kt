@@ -56,7 +56,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
+import os.kei.ui.page.main.widget.glass.claimFloatingChromeCrossAxisDrags
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallback
 import os.kei.ui.page.main.widget.motion.LocalPredictiveBackAnimationsEnabled
@@ -151,10 +151,13 @@ internal fun LiquidSheetPresentation(
     onDismissRequest: (() -> Unit)?,
     onDismissFinished: (() -> Unit)?,
     onBlockedDismissRequest: (() -> Unit)?,
-    contentCanScrollUp: () -> Boolean,
     preferExportedBackdrop: Boolean,
     content: @Composable () -> Unit,
 ) {
+    // The sheet's own live handle on its content's scroll position, provided to the content below and
+    // read straight out of the nested-scroll callbacks. Replaces a reporter round trip that was both
+    // late and lossy — see [LiquidSheetContentScroll].
+    val contentScroll = rememberLiquidSheetContentScroll()
     val density = LocalDensity.current
     val windowInfo = LocalWindowInfo.current
     val scope = rememberCoroutineScope()
@@ -165,7 +168,6 @@ internal fun LiquidSheetPresentation(
     val currentOnDismissFinished by rememberUpdatedState(onDismissFinished)
     val currentOnBlockedDismissRequest by rememberUpdatedState(onBlockedDismissRequest)
     val currentAllowDismiss by rememberUpdatedState(allowDismiss)
-    val currentContentCanScrollUp by rememberUpdatedState(contentCanScrollUp)
     val currentOnMountedChanged by rememberUpdatedState(onMountedChanged)
 
     // The single motion driver, in units of sheet-heights below rest.
@@ -177,6 +179,12 @@ internal fun LiquidSheetPresentation(
     // Bumped whenever the finger takes over, so an animation still in flight stops writing instead
     // of fighting the drag for the same value.
     val motionGeneration = remember { mutableIntStateOf(0) }
+    // The same guard for the height, which needs its own counter because height and dismiss progress
+    // animate independently. `resizeTo` used to be the one animated value no generation covered, so
+    // two grabber taps — or a tap racing a drag — left two coroutines writing `resizedHeightPx` from
+    // two different spring trajectories, and `currentHeightPx()` was whichever landed last. Every
+    // drag decision is taken against that value.
+    val heightGeneration = remember { mutableIntStateOf(0) }
 
     // Height is orthogonal to presentation: dragging the grabber resizes the sheet while its bottom
     // edge stays anchored, which has nothing to do with sliding it off-screen.
@@ -251,9 +259,32 @@ internal fun LiquidSheetPresentation(
         if (motionGeneration.intValue == generation) hidden.floatValue = target
     }
 
-    /** Hands the value to the finger and silences any running animation. */
+    /** Hands both values to the finger and silences any running animation. */
     fun takeOverMotion() {
         motionGeneration.intValue += 1
+        heightGeneration.intValue += 1
+    }
+
+    /** Animates the sheet's height, last writer winning over any snap already in flight. */
+    suspend fun animateHeightTo(
+        target: Float,
+        spec: AnimationSpec<Float>,
+        initialVelocity: Float = 0f,
+    ) {
+        val generation = heightGeneration.intValue + 1
+        heightGeneration.intValue = generation
+        userResized.value = true
+        animate(
+            initialValue = currentHeightPx(),
+            targetValue = target,
+            initialVelocity = initialVelocity,
+            animationSpec = spec,
+        ) { value, _ ->
+            if (heightGeneration.intValue == generation) resizedHeightPx.floatValue = value
+        }
+        // Landing on the target *exactly* is the point, not a tidy-up: `liquidSheetCanGrow` compares
+        // against the maximum, and a sub-pixel shortfall there re-arms expand-to-scroll forever.
+        if (heightGeneration.intValue == generation) resizedHeightPx.floatValue = target
     }
 
     /** The one exit animation. Both the gesture path and the programmatic path call exactly this. */
@@ -345,6 +376,27 @@ internal fun LiquidSheetPresentation(
         return result.consumedPx
     }
 
+    fun resizeTo(targetHeightPx: Float) {
+        if (dismissInProgress.value) return
+        val resolved = targetHeightPx.coerceIn(minVisibleHeightPx(), maxHeightPx())
+        if (!transitionsEnabled) {
+            userResized.value = true
+            heightGeneration.intValue += 1
+            resizedHeightPx.floatValue = resolved
+            return
+        }
+        scope.launch { animateHeightTo(resolved, settleSpec()) }
+    }
+
+    /**
+     * Ends a drag the sheet owned: dismiss, or spring back to rest.
+     *
+     * Deliberately does **not** snap the height to a detent. A resize is meant to hold where the
+     * finger left it — the grabber is a continuous control and tapping it is what cycles detents —
+     * and `LiquidGlassBottomSheetTest` pins that in three places. Leaving the sheet a little below
+     * its maximum costs only that gap out of the next upward drag, because `applyDrag` reports what
+     * it actually used and hands the remainder straight on to the content.
+     */
     fun settle(velocity: Float) {
         if (dismissInProgress.value) return
         val height = currentHeightPx().coerceAtLeast(1f)
@@ -360,28 +412,10 @@ internal fun LiquidSheetPresentation(
             )
         ) {
             requestDismiss(velocity)
-        } else if (hidden.floatValue != 0f) {
-            scope.launch { animateHiddenTo(0f, settleSpec(), initialVelocity = velocity / height) }
-        }
-    }
-
-    fun resizeTo(targetHeightPx: Float) {
-        if (dismissInProgress.value) return
-        val resolved = targetHeightPx.coerceIn(minVisibleHeightPx(), maxHeightPx())
-        userResized.value = true
-        if (!transitionsEnabled) {
-            resizedHeightPx.floatValue = resolved
             return
         }
-        scope.launch {
-            animate(
-                initialValue = currentHeightPx(),
-                targetValue = resolved,
-                animationSpec = settleSpec(),
-            ) { value, _ ->
-                resizedHeightPx.floatValue = value
-            }
-            resizedHeightPx.floatValue = resolved
+        if (hidden.floatValue != 0f) {
+            scope.launch { animateHiddenTo(0f, settleSpec(), initialVelocity = velocity / height) }
         }
     }
 
@@ -444,26 +478,36 @@ internal fun LiquidSheetPresentation(
 
     // ---- nested scroll ------------------------------------------------------------------------
 
-    val nestedScrollConnection = remember(enableNestedScroll, allowDismiss) {
-        var sheetConsumedScroll = false
+    val nestedScrollConnection = remember(enableNestedScroll, allowDismiss, contentScroll) {
+        // "The sheet consumed the delta that just arrived" — deliberately **not** "the sheet consumed
+        // something during this gesture". See [liquidSheetShouldClaimFling]: the sticky version of
+        // this flag is what ate every content fling.
+        var sheetOwnsGesture = false
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (!enableNestedScroll) return Offset.Zero
                 val delta = available.y
-                if (
-                    delta < 0f &&
-                    (
-                        hidden.floatValue > 0f ||
-                            (!currentContentCanScrollUp() && currentHeightPx() < maxHeightPx())
-                    )
-                ) {
-                    val consumed = applyDrag(delta)
-                    if (consumed != 0f) {
-                        sheetConsumedScroll = true
-                        return Offset(0f, consumed)
-                    }
+                // Downward drags go to the content first; whatever it cannot use comes back to
+                // `onPostScroll`, which is where shrinking and dismissing live.
+                if (delta >= 0f) {
+                    sheetOwnsGesture = false
+                    return Offset.Zero
                 }
-                return Offset.Zero
+                val owner =
+                    liquidSheetUpwardDragOwner(
+                        hidden = hidden.floatValue,
+                        heightPx = currentHeightPx(),
+                        maxHeightPx = maxHeightPx(),
+                        contentCanScrollUp = contentScroll.canScrollUp,
+                        contentOverflows = contentScroll.overflows,
+                    )
+                if (owner == LiquidSheetDragOwner.Content) {
+                    sheetOwnsGesture = false
+                    return Offset.Zero
+                }
+                val consumed = applyDrag(delta)
+                sheetOwnsGesture = consumed != 0f
+                return if (consumed != 0f) Offset(0f, consumed) else Offset.Zero
             }
 
             override fun onPostScroll(
@@ -475,7 +519,7 @@ internal fun LiquidSheetPresentation(
                 if (available.y > 0f) {
                     val consumedY = applyDrag(available.y)
                     if (consumedY != 0f) {
-                        sheetConsumedScroll = true
+                        sheetOwnsGesture = true
                         return Offset(0f, consumedY)
                     }
                 }
@@ -484,20 +528,34 @@ internal fun LiquidSheetPresentation(
 
             override suspend fun onPreFling(available: Velocity): Velocity {
                 if (!enableNestedScroll) return Velocity.Zero
-                if (available.y > 0f && currentContentCanScrollUp()) return Velocity.Zero
-                if (sheetConsumedScroll || hidden.floatValue != 0f) {
+                if (available.y > 0f && contentScroll.canScrollUp) return Velocity.Zero
+                if (
+                    liquidSheetShouldClaimFling(
+                        sheetOwnsGesture = sheetOwnsGesture,
+                        hidden = hidden.floatValue,
+                        heightPx = currentHeightPx(),
+                    )
+                ) {
                     settle(available.y)
-                    sheetConsumedScroll = false
+                    sheetOwnsGesture = false
                     return available
                 }
+                // The sheet is at rest and the content was the one scrolling, so the fling belongs to
+                // the content and the velocity is handed back untouched.
                 return Velocity.Zero
             }
 
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 if (!enableNestedScroll) return Velocity.Zero
-                if (sheetConsumedScroll || hidden.floatValue != 0f) {
+                if (
+                    liquidSheetShouldClaimFling(
+                        sheetOwnsGesture = sheetOwnsGesture,
+                        hidden = hidden.floatValue,
+                        heightPx = currentHeightPx(),
+                    )
+                ) {
                     settle(available.y)
-                    sheetConsumedScroll = false
+                    sheetOwnsGesture = false
                     return available
                 }
                 return Velocity.Zero
@@ -538,11 +596,15 @@ internal fun LiquidSheetPresentation(
                 // applies its `layerBlock` as the element's own layer *and* inverse-transforms the
                 // sample by it, so translating separately would move the sheet twice.
                 .then(surface.modifier)
-                // Nothing that starts on the sheet may reach the pager underneath. The claim only
-                // consumes position changes, and descendants see the Main pass first, so the
-                // grabber's drag and the content's own scrolling still work — it only swallows what
-                // would otherwise have leaked out to switch pages behind a modal surface.
-                .claimFloatingChromeDrags()
+                // Nothing that starts on the sheet may reach the pager underneath — without a claim
+                // here, horizontal swipes across the panel dismissed the sheet outright.
+                //
+                // Cross-axis only, though. This surface *contains* a `verticalScroll`, and the
+                // unrestricted claim consumed the very position changes that scrollable needs in
+                // order to accumulate touch slop. A flick crossed slop in its first event or two and
+                // survived; a slow, deliberate drag never crossed it at all and moved nothing. See
+                // [claimFloatingChromeCrossAxisDrags] for the measurements.
+                .claimFloatingChromeCrossAxisDrags()
                 .then(
                     if (enableNestedScroll) Modifier.nestedScroll(nestedScrollConnection) else Modifier,
                 ).wrapContentHeight()
@@ -571,8 +633,8 @@ internal fun LiquidSheetPresentation(
                 startAction = startAction,
                 endAction = endAction,
                 dragHandleColor = dragHandleColor,
-                canExpand = currentHeightPx() < maxHeightPx() - 0.5f,
-                canCollapse = currentHeightPx() > minVisibleHeightPx() + 0.5f,
+                canExpand = liquidSheetCanGrow(currentHeightPx(), maxHeightPx()),
+                canCollapse = currentHeightPx() > minVisibleHeightPx() + LIQUID_SHEET_HEIGHT_EPSILON_PX,
                 canDismiss = allowDismiss,
                 onExpand = { resizeTo(maxHeightPx()) },
                 onCollapse = { resizeTo(minVisibleHeightPx()) },
@@ -587,10 +649,14 @@ internal fun LiquidSheetPresentation(
                 },
                 LocalLiquidParentBackdrop provides surface.exportedBackdrop,
                 LocalLiquidParentBackdropOverridesFallback provides preferExportedBackdrop,
+                LocalLiquidSheetContentScroll provides contentScroll,
             ) {
                 Box(
                     modifier = Modifier.liquidSheetScrollEdge(
-                        visible = contentCanScrollUp,
+                        // Read in the draw phase, so the edge appears on the same frame the content
+                        // moves and only invalidates draw. The reporter this replaced was a
+                        // recomposition a frame or more later.
+                        visible = { contentScroll.canScrollUp },
                         isDark = isAppInDarkTheme(),
                     ),
                 ) {
@@ -701,6 +767,89 @@ internal fun liquidSheetResolveDrag(
         consumedPx = consumed,
     )
 }
+
+/**
+ * How much slack counts as "already there", in pixels.
+ *
+ * Load-bearing. The sheet's height is animated and dragged in raw pixels, so it routinely comes to
+ * rest a fraction of a pixel — or, when a gesture simply runs out, a few dozen pixels — short of the
+ * maximum and stays there, because nothing snapped it. A bare `heightPx < maxHeightPx` is then
+ * permanently true, so the sheet claimed the start of *every* upward drag to "grow", and returned
+ * the whole delta as consumed. Measured on the Android 17 AVD: a sheet left at 2668px against a
+ * 2700px maximum swallowed 100% of every subsequent upward drag, and the content never moved.
+ *
+ * [LiquidSheetTopChrome]'s `canExpand`/`canCollapse` already guarded themselves this way. The
+ * gesture path did not, which is the whole difference between the grabber working and the content
+ * scroll dying.
+ */
+internal const val LIQUID_SHEET_HEIGHT_EPSILON_PX = 1f
+
+/** Who a vertical drag belongs to. */
+internal enum class LiquidSheetDragOwner {
+    /** Resize or dismiss the sheet; consume the delta. */
+    Sheet,
+
+    /** Leave the delta alone so the scrollable inside the sheet gets all of it. */
+    Content,
+}
+
+/** Whether the sheet is far enough off its resting position that it must be put back first. */
+internal fun liquidSheetIsOffRest(
+    hidden: Float,
+    heightPx: Float,
+): Boolean = liquidSheetOffsetPx(hidden, heightPx) > LIQUID_SHEET_HEIGHT_EPSILON_PX
+
+/** Whether the sheet has room to grow that is worth taking a drag for. */
+internal fun liquidSheetCanGrow(
+    heightPx: Float,
+    maxHeightPx: Float,
+): Boolean = heightPx < maxHeightPx - LIQUID_SHEET_HEIGHT_EPSILON_PX
+
+/**
+ * Decides who owns an upward drag — the gesture that scrolls content forward.
+ *
+ * Three rules, in order:
+ *
+ * 1. **A sheet that is off its resting position gets put back first.** Otherwise a half-dismissed
+ *    sheet can never be pulled back up.
+ * 2. **Expand-to-scroll**, Apple's behaviour for a sheet below its largest detent: growing the sheet
+ *    reveals more content, so it wins over scrolling. But only when growing actually buys the
+ *    content something — [contentOverflows] is what makes that true. Without that check a short
+ *    sheet inflated to full height on the first upward drag and left several hundred pixels of empty
+ *    glass under the content, which is measured behaviour, not a hypothetical.
+ * 3. **Otherwise the content owns it.** Once the content has scrolled off its top it keeps the
+ *    gesture, and once the sheet is at its maximum there is nothing left to grow.
+ */
+internal fun liquidSheetUpwardDragOwner(
+    hidden: Float,
+    heightPx: Float,
+    maxHeightPx: Float,
+    contentCanScrollUp: Boolean,
+    contentOverflows: Boolean,
+): LiquidSheetDragOwner =
+    when {
+        liquidSheetIsOffRest(hidden, heightPx) -> LiquidSheetDragOwner.Sheet
+        contentCanScrollUp -> LiquidSheetDragOwner.Content
+        contentOverflows && liquidSheetCanGrow(heightPx, maxHeightPx) -> LiquidSheetDragOwner.Sheet
+        else -> LiquidSheetDragOwner.Content
+    }
+
+/**
+ * Whether the sheet should take the release velocity instead of letting the content fling.
+ *
+ * [sheetOwnsGesture] must mean "the sheet consumed the **most recent** delta", not "the sheet
+ * consumed something at some point during this gesture". That distinction is the bug: the flag it
+ * replaces latched for the whole gesture, so the extremely common sequence *drag up → sheet grows to
+ * full → content starts scrolling → flick* ended with the sheet claiming the entire fling and
+ * returning it as consumed. The content stopped dead the instant the finger left the glass, on every
+ * single scroll. Traced on the AVD as `preFling EAT v=… sheetConsumed=true hidden=0.0` — a fling
+ * eaten while the sheet had nothing whatsoever to settle.
+ */
+internal fun liquidSheetShouldClaimFling(
+    sheetOwnsGesture: Boolean,
+    hidden: Float,
+    heightPx: Float,
+): Boolean = sheetOwnsGesture || liquidSheetIsOffRest(hidden, heightPx)
 
 internal fun liquidSheetImeVisible(
     composeImeBottomPx: Int,

@@ -136,6 +136,66 @@ a `graphicsLayer` without setting `shape`, and a platform elevation shadow is de
 outline, which defaults to `RectangleShape`. `LiquidGlassDropdownItems` does the same thing correctly and
 is the reference — if you add `shadowElevation` anywhere, set `shape` and `clip = false` with it.
 
+## The sheet's dead scroll ("断触")
+
+Reported as: scrolling a sheet's content suddenly stops responding, and you have to stop touching for
+a moment before it works again. Diagnosed 2026-08-16 by instrumenting the real nested-scroll callbacks
+and reading the trace off an Android 17 AVD, then confirmed by controlled before/after measurement.
+**Two independent causes**, either of which alone produces the symptom.
+
+### 1. The drag claim was starving the content's touch-slop detector
+
+`claimFloatingChromeDrags` consumes every position change on the Main pass. Its own KDoc already warned
+*"only for chrome that floats above scrollable content"* — and the sheet panel is the opposite: it
+*wraps* a `verticalScroll`. Dragging the same 700px through a sheet's content:
+
+| gesture duration | with the unrestricted claim | with it removed |
+|---|---|---|
+| 100ms | 579px | — |
+| 250ms | 598px | — |
+| 400ms | **0px** | 585px |
+| 600ms | **0px** | 659px |
+
+A flick crosses touch slop inside its first event or two, so the content's drag is already active — and
+consuming — before the claim gets a look in. A slow drag has to accumulate slop over many small events
+and every one was being consumed out from under it. Hence "scroll slowly and it dies; flick and it
+works", which reads as flaky hardware rather than a bug.
+
+The claim is still needed: with it gone entirely, horizontal swipes across the panel **dismissed the
+sheet**. Fix is `claimFloatingChromeCrossAxisDrags`, which claims only when the accumulated drag is
+horizontal-dominant. Verified: all durations 100–900ms scroll, and six horizontal swipes neither
+dismiss the sheet nor switch the pager behind it.
+
+### 2. The nested-scroll arbitration
+
+Traced directly, for a sheet whose maximum height is 2700px:
+
+```
+preScroll DIVERT delta=-19.2  hidden=0.0 canScrollUp=false h=2157 max=2700 consumed=-19.2
+preScroll DIVERT delta=-243.2 hidden=0.0 canScrollUp=false h=2700 max=2700 consumed=-198.8
+preFling  EAT   v=0.0 sheetConsumed=true hidden=0.0
+```
+
+- **The fling was eaten on every release.** `sheetConsumedScroll` latched for the whole gesture, so
+  *drag up → sheet grows → content scrolls → flick* ended with the sheet returning the entire velocity
+  as consumed while `hidden` was exactly zero. Now tracks the **most recent** delta only.
+- **`contentCanScrollUp` was latched false.** It arrived via `snapshotFlow → reporter → state write`,
+  and `SheetContentColumn`'s `DisposableEffect` was keyed on the reporter *lambdas* — so any
+  recomposition of the host published "cannot scroll up" mid-scroll, and `distinctUntilChanged` meant
+  the `true` never came back. The tracking sheet recomposes on every keystroke. Replaced by
+  `LiquidSheetContentScroll`, which holds the `ScrollState` and is read outside composition.
+- **The sheet inflated when growing revealed nothing**, leaving 500–700px of blank glass under content
+  that already fitted. Expand-to-scroll now requires `contentScroll.overflows`.
+- **No epsilon on "can grow"**, so a sub-pixel shortfall re-armed the diversion forever.
+- **`resizeTo` was outside the generation counter** — two overlapping resizes wrote `resizedHeightPx`
+  from two spring trajectories. It now has `heightGeneration`.
+
+**Rejected: snapping the height to a detent on release.** It looked right — a sheet resting below its
+maximum re-arms expand-to-scroll — but it broke three existing tests that pin the documented behaviour
+that the grabber is a *continuous* control and tapping it is what cycles detents. The residual cost is
+bounded anyway: `applyDrag` reports only what it used and the remainder reaches the content in the same
+event.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it

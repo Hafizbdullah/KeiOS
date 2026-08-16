@@ -14,11 +14,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.distinctUntilChanged
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 
 private val SheetContentShadowEdgePadding = 8.dp
@@ -33,7 +31,6 @@ fun SheetContentColumn(
 ) {
     val scrollState = rememberScrollState()
     val overflowReporter by rememberUpdatedState(LocalLiquidSheetContentOverflowReporter.current)
-    val scrollStateReporter by rememberUpdatedState(LocalLiquidSheetContentScrollStateReporter.current)
     val managedScrollableContentReporter by rememberUpdatedState(
         LocalLiquidSheetManagedScrollableContentReporter.current,
     )
@@ -49,22 +46,21 @@ fun SheetContentColumn(
     LaunchedEffect(scrollable, scrollState.maxValue) {
         overflowReporter(scrollable && scrollState.maxValue > 0)
     }
-    LaunchedEffect(scrollable, scrollState) {
-        snapshotFlow { scrollable && scrollState.value > 0 }
-            .distinctUntilChanged()
-            .collect { canScrollUp ->
-                scrollStateReporter(canScrollUp)
-            }
+    // The sheet reads this state directly in its nested-scroll callbacks. See
+    // [LiquidSheetContentScroll] for why the reporter round trip this replaces could not be made
+    // correct: it published a stale value, and worse, it published a *wrong* one whenever the host
+    // sheet recomposed.
+    //
+    // Keyed on the link and the scroll state, both of which are `remember`ed — never on a lambda, so
+    // an unrelated recomposition of the host cannot detach a live scroll position.
+    val contentScroll = LocalLiquidSheetContentScroll.current
+    DisposableEffect(contentScroll, scrollState, scrollable) {
+        if (scrollable) contentScroll?.attach(scrollState)
+        onDispose { contentScroll?.detach(scrollState) }
     }
-    DisposableEffect(
-        scrollable,
-        overflowReporter,
-        scrollStateReporter,
-        managedScrollableContentReporter,
-    ) {
+    DisposableEffect(scrollable, overflowReporter, managedScrollableContentReporter) {
         onDispose {
             overflowReporter(false)
-            scrollStateReporter(false)
             managedScrollableContentReporter(false)
         }
     }

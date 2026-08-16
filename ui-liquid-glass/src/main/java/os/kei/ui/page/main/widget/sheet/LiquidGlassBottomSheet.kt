@@ -64,8 +64,6 @@ enum class LiquidSheetSurfaceTone {
 
 val LocalLiquidSheetContentOverflowReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
-val LocalLiquidSheetContentScrollStateReporter =
-    compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetManagedScrollableContentReporter =
     compositionLocalOf<(Boolean) -> Unit> { {} }
 val LocalLiquidSheetVisibleHeightPx =
@@ -121,7 +119,6 @@ fun LiquidGlassBottomSheet(
     var managedScrollableContent by remember(show) { mutableStateOf(false) }
     var scrollableContentOverflowsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
     var plainContentExceedsOpeningDetent by remember(show, initialDetent) { mutableStateOf(false) }
-    var contentCanScrollUp by remember(show) { mutableStateOf(false) }
 
     val adaptedInitialDetent =
         liquidSheetAdaptedInitialDetent(
@@ -179,7 +176,6 @@ fun LiquidGlassBottomSheet(
             onDismissRequest = onDismissRequest,
             onDismissFinished = onDismissFinished,
             onBlockedDismissRequest = onBlockedDismissRequest,
-            contentCanScrollUp = { contentCanScrollUp },
             preferExportedBackdrop = preferExportedBackdrop,
         ) {
             Box(
@@ -229,9 +225,6 @@ fun LiquidGlassBottomSheet(
                 CompositionLocalProvider(
                     LocalLiquidSheetContentOverflowReporter provides { overflows ->
                         if (overflows) scrollableContentOverflowsOpeningDetent = true
-                    },
-                    LocalLiquidSheetContentScrollStateReporter provides { canScrollUp ->
-                        contentCanScrollUp = canScrollUp
                     },
                     LocalLiquidSheetManagedScrollableContentReporter provides { managed ->
                         managedScrollableContent = managed
