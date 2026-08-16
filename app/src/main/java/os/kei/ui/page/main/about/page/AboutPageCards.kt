@@ -23,6 +23,8 @@ import os.kei.ui.page.main.about.section.AboutRuntimeStatusCardSection
 import os.kei.ui.page.main.about.section.AboutUiFrameworkCardSection
 import os.kei.ui.page.main.about.state.AboutPageColorPalette
 import os.kei.ui.page.main.about.state.AboutPageSectionExpansionState
+import os.kei.ui.page.main.about.state.aboutCardColor
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal data class AboutCardRenderState(
     val appDetails: AboutAppDetails,
@@ -160,7 +162,7 @@ internal fun LazyListScope.aboutCardItem(
 
             AboutSearchCard.Component -> {
                 AboutComponentCardSection(
-                    cardColor = Color(0x2234D399),
+                    cardColor = aboutCardColor(Color(0x2234D399), MiuixTheme.colorScheme.surfaceContainer),
                     titleColor = palette.readyColor,
                     subtitleColor = palette.subtitleColor,
                     accent = palette.accent,

@@ -451,6 +451,34 @@ it is needed, and the bar's own title collided with a list row until the rise mo
 Worth knowing: the black curtain had been hiding that collision. Removing a curtain exposes whatever it
 was covering, which is a reason to check the layout underneath rather than to keep the curtain.
 
+### Light-mode acceptance, and the one page it failed on
+
+Run on the AVD's *system* light mode with the app on Follow-system and a cold start, not the in-app theme
+switch — that switch leaves components stale, which is its own open issue.
+
+Home, OS, MCP, GitHub, BA, Settings, Event Calendar and Archive all passed: chrome glass carries the
+wallpaper, cards keep their fill, the scroll edges brighten with White instead of darkening.
+
+**About failed.** Its cards are `0x22` tints — 13% alpha of an accent and nothing else — so with the
+wallpaper behind them the illustration *was* the card and the labels sat on raw imagery. Settings has the
+same kind of card and looked right because it fills with `surfaceContainer` at 64% before tinting. About
+now composites over the same surface at the same alpha, keeping its per-card hues:
+
+| `onBackgroundVariant` label, light | before | after | Settings | plain page |
+|---|---|---|---|---|
+| "Package name" | 2.09:1 | 2.43:1 | ~2.72:1 | 3.04:1 |
+| "Build Type" | 2.14:1 | 2.44:1 | | |
+| "Commit time" | 2.23:1 | 2.48:1 | | |
+
+Note the numbers understate the change: most of what made those labels unreadable was the illustration's
+high-frequency detail behind them, which a luminance ratio cannot see. About is now within ~0.3 of
+Settings, and the residual gap to a plain page is the `onBackgroundVariant` limitation recorded above,
+not this card.
+
+Left as an asymmetry rather than changed: Settings passes `exportBackdropToContent = true` so its cards
+get a real glass material, and About does not, so About's cards are tinted fills. Worth unifying, but it
+changes what every nested component inside About samples.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it
