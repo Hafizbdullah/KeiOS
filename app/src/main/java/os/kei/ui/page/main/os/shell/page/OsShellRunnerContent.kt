@@ -16,6 +16,7 @@ import os.kei.ui.page.main.os.shell.component.OsShellRunnerInputCard
 import os.kei.ui.page.main.os.shell.state.OsShellRunnerTextBundle
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
+import os.kei.ui.page.main.widget.chrome.AppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.testing.KeiOsTestTags
@@ -28,7 +29,7 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 internal fun OsShellRunnerContent(
     textBundle: OsShellRunnerTextBundle,
     scrollBehavior: ScrollBehavior,
-    topBarBackdrop: LayerBackdrop,
+    topBarBackdrop: AppPageBackdrop,
     pageListState: LazyListState,
     actionItems: List<LiquidToolbarAction>,
     commandInput: String,
@@ -70,7 +71,7 @@ internal fun OsShellRunnerContent(
                 Modifier
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .layerBackdrop(topBarBackdrop),
+                    .layerBackdrop(topBarBackdrop.producer),
             sectionSpacing = AppChromeTokens.pageSectionGap,
         ) {
             item(key = "shell_input_card", contentType = "shell_input_card") {

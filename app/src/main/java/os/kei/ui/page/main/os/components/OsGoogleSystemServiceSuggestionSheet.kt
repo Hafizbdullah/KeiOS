@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.github.AppIconImage
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
@@ -38,7 +38,7 @@ internal fun OsGoogleSystemServiceSuggestionSheet(
     show: Boolean,
     target: ShortcutSuggestionField,
     draft: OsGoogleSystemServiceConfig,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     packageSuggestions: List<ShortcutInstalledAppOption>,
     packageSuggestionsLoading: Boolean,
     packageSuggestionQuery: String,

@@ -22,7 +22,7 @@ import os.kei.ui.page.main.student.tabcontent.profile.SameNameRoleItem
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -30,7 +30,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun GuideSameNameRoleSection(
     sameNameRoleHint: String,
     sameNameRoleItems: List<SameNameRoleItem>,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenGuide: (String) -> Unit,
 ) {
     val relatedSameNameLabel = stringResource(R.string.guide_profile_related_same_name)
@@ -53,7 +53,7 @@ internal fun GuideRelationRoleSection(
     emptyText: String,
     roleHint: String,
     roleItems: List<SameNameRoleItem>,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenGuide: (String) -> Unit,
 ) {
     GuideProfileSectionHeader(title = sectionTitle)

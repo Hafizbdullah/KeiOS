@@ -21,7 +21,7 @@ import os.kei.ui.page.main.student.section.GuideWeaponCardItem
 import os.kei.ui.page.main.student.skillCardsForDisplay
 import os.kei.ui.page.main.student.weaponCardForDisplay
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -29,7 +29,7 @@ internal fun LazyListScope.renderGuideSkillsTabContent(
     tabLabel: String,
     info: BaStudentGuideInfo?,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
     mediaAdaptiveRotationEnabled: Boolean,
 ) {

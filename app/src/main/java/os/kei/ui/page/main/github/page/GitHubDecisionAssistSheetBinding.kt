@@ -4,7 +4,7 @@ package os.kei.ui.page.main.github.page
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.feature.github.model.GitHubRepositoryProfilePurpose
 import os.kei.feature.github.model.forTrackedItem
 import os.kei.ui.page.main.github.VersionCheckUi
@@ -17,7 +17,7 @@ import os.kei.ui.page.main.github.sheet.releaseNotesDetailRequestKey
 internal fun GitHubDecisionAssistSheetBinding(
     state: GitHubPageState,
     actions: GitHubPageActions,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     releaseNotesDetailState: GitHubReleaseNotesDetailUiState,
     onRequestReleaseNotesDetailState: (GitHubReleaseNotesDetailInput) -> Unit,
     onClearReleaseNotesDetailState: () -> Unit,

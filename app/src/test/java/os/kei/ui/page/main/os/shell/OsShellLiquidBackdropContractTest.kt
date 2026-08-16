@@ -73,9 +73,8 @@ class OsShellLiquidBackdropContractTest {
         val pageSource = sourceFile(OS_SHELL_RUNNER_PAGE_SOURCE)
         val contentSource = sourceFile(OS_SHELL_RUNNER_CONTENT_SOURCE)
 
-        assertTrue("val topBarBackdrop =" in pageSource)
-        assertTrue("rememberLayerBackdrop {" in pageSource)
-        assertTrue(".layerBackdrop(topBarBackdrop)" in contentSource)
+        assertTrue("val topBarBackdrop = rememberAppPageBackdrop(" in pageSource)
+        assertTrue(".layerBackdrop(topBarBackdrop.producer)" in contentSource)
     }
 }
 

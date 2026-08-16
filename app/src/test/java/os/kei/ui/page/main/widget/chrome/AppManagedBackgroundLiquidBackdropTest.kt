@@ -191,6 +191,38 @@ class AppManagedBackgroundLiquidBackdropTest {
             alphas.forEach { alpha -> assertEquals(1f, alpha, "a page base must be opaque") }
         }
     }
+
+    @Test
+    fun theSceneBackdropIsPublishedOnlyWhileABackgroundIsActuallyPainting() {
+        // Page producers decide whether to paint their own opaque base from this local, so it has to be
+        // null when nothing is behind the page — otherwise the chrome samples a transparent layer and the
+        // glass loses its base entirely. `appManagedPageBackgroundActive` cannot answer this: the main
+        // pager makes every non-Home page's scaffold transparent whether or not a background exists.
+        var inactive: Any? = Unit
+        var active: Any? = Unit
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Dark)) {
+                testManagedBackgroundHost(exportBackdropToContent = false) {
+                    val observed = LocalAppManagedSceneBackdrop.current
+                    SideEffect { inactive = observed }
+                }
+                testManagedBackgroundHost(
+                    exportBackdropToContent = false,
+                    enabled = true,
+                    imageUri = "file:///android_asset/does-not-need-to-decode.png",
+                ) {
+                    val observed = LocalAppManagedSceneBackdrop.current
+                    SideEffect { active = observed }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertEquals(null, inactive, "no background means no scene for page glass to sample")
+            assertNotNull(active, "an active background must publish its composite")
+        }
+    }
 }
 
 private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
@@ -215,11 +247,13 @@ private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
 @Composable
 private fun testManagedBackgroundHost(
     exportBackdropToContent: Boolean,
+    enabled: Boolean = false,
+    imageUri: String = "",
     content: @Composable () -> Unit,
 ) {
     AppManagedBackgroundHost(
-        enabled = false,
-        imageUri = "",
+        enabled = enabled,
+        imageUri = imageUri,
         opacity = 1f,
         contentScale = NonHomeBackgroundContentScale.Crop,
         scrim = 0f,

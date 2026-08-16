@@ -147,9 +147,10 @@ internal fun OsPageMainList(
     listState: LazyListState,
     innerPadding: PaddingValues,
     scrollBehavior: ScrollBehavior,
-    topBarBackdrop: LayerBackdrop,
+    topBarProducer: LayerBackdrop,
+    topBarMaterial: Backdrop,
     contentBackdrop: Backdrop,
-    sheetBackdrop: LayerBackdrop,
+    sheetProducer: LayerBackdrop,
     chromeState: OsPageMainListChromeState,
     overviewState: OsPageMainListOverviewState,
     contentState: OsPageMainListContentState,
@@ -297,8 +298,8 @@ internal fun OsPageMainList(
 
     val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
     MainPageContentBackdropScene(
-        contentBackdrop = contentBackdrop,
-        sheetBackdrop = sheetBackdrop,
+        contentProducer = null,
+        sheetProducer = sheetProducer,
         producerActive = chromeState.backdropProducerActive,
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -367,7 +368,7 @@ internal fun OsPageMainList(
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .layerBackdrop(topBarBackdrop),
+                    .layerBackdrop(topBarProducer),
             pullToRefreshState = rememberAppPullToRefreshState(),
             topAppBarScrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
@@ -597,7 +598,7 @@ internal fun OsPageMainList(
         }
 
         AppFloatingVerticalSearchActionDock(
-            backdrop = topBarBackdrop,
+            backdrop = topBarMaterial,
             expanded = searchExpanded,
             query = queryInput,
             onQueryChange = onQueryInputChange,

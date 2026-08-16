@@ -119,7 +119,10 @@ internal fun rememberMainPagerCoordinator(
             pageCount = tabs.size,
             pageKeys = pageKeys,
         )
-    val backdrop = rememberMainPagerBackdropLifecycle()
+    val backdrop =
+        rememberMainPagerBackdropLifecycle(
+            sceneActive = backgroundState.hasNonHomeBackground,
+        )
     val targetWarmDataActive = rememberPagerTargetWarmDataActive(pagerState).value
 
     val pagerRuntime =

@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -43,7 +43,7 @@ internal fun GitHubActionsArtifactsSection(
     alternativesArtifactCount: Int,
     relativeTimeNowMillis: Long,
     isDark: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onExpandedChange: (Boolean) -> Unit,
     onArtifactFilterChange: (GitHubActionsArtifactFilter) -> Unit,
     onInstallArtifact: (Long, Long) -> Unit,
@@ -153,7 +153,7 @@ private fun GitHubActionsArtifactsLazyList(
     relativeTimeNowMillis: Long,
     context: Context,
     isDark: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onInstallArtifact: (Long, Long) -> Unit,
     onDownloadArtifact: (Long, Long) -> Unit,
     onShareArtifact: (Long, Long) -> Unit,

@@ -33,7 +33,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import os.kei.R
@@ -70,7 +70,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubTrackAppPickerControls(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     includeUserApps: Boolean,
     includeSystemApps: Boolean,
     includeTrackedApps: Boolean,
@@ -187,7 +187,7 @@ internal fun GitHubTrackAppPickerSortRow(
 
 @Composable
 internal fun GitHubTrackAppTypeCheckbox(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     text: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
@@ -259,7 +259,7 @@ internal fun GitHubTrackAppPickerHeader(
 
 @Composable
 internal fun GitHubTrackAppPickerContent(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     active: Boolean,
     appSearch: String,
     selectedApp: InstalledAppItem?,

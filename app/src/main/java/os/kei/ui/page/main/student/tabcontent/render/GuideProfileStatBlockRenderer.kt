@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
@@ -62,7 +62,7 @@ internal fun LazyListScope.renderGuideProfileMediaGroup(
     @StringRes titleRes: Int,
     infoRows: List<BaGuideRow>,
     galleryItems: List<BaGuideGalleryItem>,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     context: Context,
     sourceUrl: String,
     galleryCacheRevision: Int,

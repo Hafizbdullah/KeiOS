@@ -71,6 +71,7 @@ import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.appManagedPageBackgroundActive
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
+import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -110,21 +111,9 @@ fun BaStudentGuidePage(
         onDispose { }
     }
     // Keep top-level backdrop only for navigator/pager layer and bottom bar.
-    val navBackdrop: LayerBackdrop =
-        key("nav-$activationCount") {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor)
-                drawContent()
-            }
-        }
+    val navBackdrop = rememberAppPageBackdrop("nav-$activationCount")
     // Top action bar uses its own backdrop instance to avoid cross-layer recursion.
-    val topBarBackdrop: LayerBackdrop =
-        key("topbar-$activationCount") {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor)
-                drawContent()
-            }
-        }
+    val topBarBackdrop = rememberAppPageBackdrop("topbar-$activationCount")
     val topBarMaterialBackdrop = rememberAppTopBarColor(enableBackdropEffects = true)
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -424,8 +413,8 @@ fun BaStudentGuidePage(
                     accent = accent,
                     innerPadding = innerPadding,
                     farJumpAlphaProvider = { farJumpAlpha.value },
-                    navBackdrop = navBackdrop,
-                    topBarBackdrop = topBarBackdrop,
+                    navBackdrop = navBackdrop.producer,
+                    topBarBackdrop = topBarBackdrop.producer,
                     galleryCacheRevision = guidePrefetchState.galleryCacheRevision,
                     selectedVoiceLanguage = selectedVoiceLanguage,
                     playingVoiceUrl = playingVoiceUrl,

@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubStatusPalette
 import os.kei.ui.page.main.os.appLucideRefreshIcon
@@ -47,7 +47,7 @@ internal fun GitHubActionsArtifactHintText(
 
 @Composable
 internal fun GitHubActionsLoadMoreRunsButton(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     visibleRunLimit: Int,
     loading: Boolean,
     onClick: () -> Unit

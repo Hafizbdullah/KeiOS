@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.github.page.GitHubDebugVisibleRefreshDefaultLimit
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -22,7 +22,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 @Composable
 internal fun GitHubDebugSheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     trackedCount: Int,
     visibleIncrementalTargetCount: Int,
     failedCount: Int,
@@ -177,7 +177,7 @@ internal fun GitHubDebugSheet(
 
 @Composable
 private fun RowScope.GitHubDebugActionButton(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     text: String,
     loading: Boolean,
     onClick: () -> Unit,

@@ -65,18 +65,18 @@ class BaPageBackdropTest {
         lateinit var settledBackdrops: MainPageBackdropSet
         composeRule.runOnIdle {
             settledBackdrops = requireNotNull(observedBackdrops)
-            assertSame(settledBackdrops.topBar, settledBackdrops.content)
-            assertNotSame(settledBackdrops.content, settledBackdrops.contentMaterial)
-            assertNotSame(settledBackdrops.topBar, settledBackdrops.sheet)
+            assertSame(settledBackdrops.topBarProducer, settledBackdrops.contentProducer)
+            assertNotSame(settledBackdrops.contentProducer, settledBackdrops.contentMaterial)
+            assertNotSame(settledBackdrops.topBarProducer, settledBackdrops.sheetProducer)
             recompositionSignal.intValue += 1
         }
         composeRule.waitForIdle()
         composeRule.runOnIdle {
             val recomposedBackdrops = requireNotNull(observedBackdrops)
-            assertSame(settledBackdrops.topBar, recomposedBackdrops.topBar)
-            assertSame(settledBackdrops.content, recomposedBackdrops.content)
+            assertSame(settledBackdrops.topBarProducer, recomposedBackdrops.topBarProducer)
+            assertSame(settledBackdrops.contentProducer, recomposedBackdrops.contentProducer)
             assertSame(settledBackdrops.contentMaterial, recomposedBackdrops.contentMaterial)
-            assertSame(settledBackdrops.sheet, recomposedBackdrops.sheet)
+            assertSame(settledBackdrops.sheetProducer, recomposedBackdrops.sheetProducer)
         }
     }
 
@@ -99,9 +99,9 @@ class BaPageBackdropTest {
         composeRule.waitForIdle()
         composeRule.runOnIdle {
             val backdrops = requireNotNull(observedBackdrops)
-            assertSame(backdrops.topBar, backdrops.content)
-            assertSame(backdrops.content, backdrops.sheet)
-            assertNotSame(backdrops.content, backdrops.contentMaterial)
+            assertSame(backdrops.topBarProducer, backdrops.contentProducer)
+            assertSame(backdrops.contentProducer, backdrops.sheetProducer)
+            assertNotSame(backdrops.contentProducer, backdrops.contentMaterial)
         }
     }
 
@@ -126,7 +126,7 @@ class BaPageBackdropTest {
         val contentSource = sourceFile(BA_PAGE_CONTENT_SOURCE)
         val sceneIndex = pageSource.indexOf("MainPageContentBackdropScene(")
         val sceneBackdropIndex =
-            pageSource.indexOf("contentBackdrop = backdrops.contentMaterial", startIndex = sceneIndex.coerceAtLeast(0))
+            pageSource.indexOf("contentProducer = null", startIndex = sceneIndex.coerceAtLeast(0))
         val scaffoldIndex = pageSource.indexOf("AppScaffold(", startIndex = sceneBackdropIndex.coerceAtLeast(0))
         val contentConsumerIndex =
             pageSource.indexOf("backdrop = backdrops.contentMaterial", startIndex = scaffoldIndex.coerceAtLeast(0))
@@ -135,18 +135,18 @@ class BaPageBackdropTest {
         val topBarProducerIndex = contentSource.indexOf(".layerBackdrop(topBarBackdrop)")
 
         assertTrue(sceneIndex >= 0, "BA page must host one content Backdrop scene")
-        assertTrue(sceneBackdropIndex > sceneIndex, "BA scene must receive the direct content material")
-        assertTrue(scaffoldIndex > sceneBackdropIndex, "Content material must precede the Scaffold consumer tree")
+        assertTrue(sceneBackdropIndex > sceneIndex, "BA scene must be handed a producer, and it has none of its own")
+        assertTrue(scaffoldIndex > sceneBackdropIndex, "The producer wiring must precede the Scaffold consumer tree")
         assertTrue(contentConsumerIndex > scaffoldIndex, "BA cards must consume the direct content material")
         assertTrue(dockConsumerIndex > contentConsumerIndex, "Floating dock must be composed after page consumers")
         assertTrue(
-            pageSource.indexOf("backdrop = backdrops.topBar", startIndex = dockConsumerIndex) > dockConsumerIndex,
+            pageSource.indexOf("backdrop = backdrops.topBar,", startIndex = dockConsumerIndex) > dockConsumerIndex,
             "Floating dock must sample the scrolling-content identity",
         )
         assertTrue(topBarProducerIndex >= 0, "BA scrolling content must keep the dedicated top-bar producer")
         assertEquals(1, pageSource.occurrencesOf("MainPageContentBackdropScene("))
         assertEquals(1, contentSource.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
-        assertEquals(1, pageSource.occurrencesOf("contentBackdrop = backdrops.contentMaterial"))
+        assertEquals(1, pageSource.occurrencesOf("contentProducer = null"))
         assertEquals(1, pageSource.occurrencesOf("backdrop = backdrops.contentMaterial"))
         assertEquals(
             1,
@@ -156,9 +156,9 @@ class BaPageBackdropTest {
             1,
             pageSource.occurrencesOf("distinctLayers = pageBackdropEffectsEnabled && sheetBackdropVisible"),
         )
-        assertEquals(0, pageSource.occurrencesOf("producerActive = backdrops.sheet !== backdrops.content"))
+        assertEquals(0, pageSource.occurrencesOf("producerActive = backdrops.sheetProducer !== backdrops.contentProducer"))
         assertEquals(1, pageSource.occurrencesOf("useSolidSurfaceBackdrops = true"))
-        assertEquals(0, pageSource.occurrencesOf(".layerBackdrop(backdrops.content)"))
+        assertEquals(0, pageSource.occurrencesOf(".layerBackdrop(backdrops.contentProducer)"))
         assertEquals(0, contentSource.occurrencesOf(".layerBackdrop(backdrop)"))
     }
 }

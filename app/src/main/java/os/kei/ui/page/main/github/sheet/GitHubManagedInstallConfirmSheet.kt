@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubApkManifestInfo
@@ -55,7 +55,7 @@ internal fun GitHubManagedInstallConfirmSheet(
     loading: Boolean,
     error: String,
     running: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onConfirm: () -> Unit,
     onDismissRequest: () -> Unit,
 ) {

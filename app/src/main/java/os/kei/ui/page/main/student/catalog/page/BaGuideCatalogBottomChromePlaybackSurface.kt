@@ -10,7 +10,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
@@ -40,7 +40,7 @@ internal fun BaGuideCatalogBottomChromePlaybackSurface(
     searchAutoFocusEnabled: Boolean,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     pagerSwitchMotion: BaGuideCatalogPagerSwitchMotion,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier,
 ) {
     val pageScope = rememberCoroutineScope()

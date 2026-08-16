@@ -5,7 +5,7 @@ package os.kei.ui.page.main.os.components
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.OsActivitySuggestionChromeState
 import os.kei.ui.page.main.os.OsActivitySuggestionUiState
@@ -26,7 +26,7 @@ import os.kei.ui.page.main.os.state.rememberOsPageOverlayEditorActions
 @Composable
 internal fun OsPageOverlayHost(
     context: Context,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     overlayState: OsPageOverlayState,
     visibleCardsTitle: String,
     visibleCardsHint: String,

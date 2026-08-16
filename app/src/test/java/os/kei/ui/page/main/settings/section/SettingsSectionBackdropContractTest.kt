@@ -8,9 +8,12 @@ class SettingsSectionBackdropContractTest {
     @Test
     fun managedBackgroundBackdropDrawsThemeBaseBeforeSceneContent() {
         val source = sourceFile(APP_MANAGED_BACKGROUND_SOURCE)
-        val producerStart = source.indexOf("rememberLayerBackdrop {")
+        // Anchored on the scene producer specifically: the file also holds `rememberAppPageBackdrop`,
+        // whose recording skips its base precisely *because* this scene is drawn under it.
+        val sceneStart = source.indexOf("val sceneBackdrop =")
+        val producerStart = source.indexOf("rememberLayerBackdrop {", sceneStart)
         val producerEnd = source.indexOf("}", producerStart)
-        require(producerStart >= 0 && producerEnd > producerStart) {
+        require(sceneStart >= 0 && producerStart >= 0 && producerEnd > producerStart) {
             "Unable to locate the managed background backdrop producer"
         }
         val producer = source.substring(producerStart, producerEnd)

@@ -4,7 +4,7 @@ package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.isCardVisible
@@ -20,7 +20,7 @@ import os.kei.ui.page.main.os.transfer.OsCardImportPreview
 internal fun OsPageOverlaySheets(
     showCardManager: Boolean,
     visibleCardsTitle: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     cardsHintText: String,
     visibleCards: Set<OsSectionCard>,
     onDismissCardManager: () -> Unit,

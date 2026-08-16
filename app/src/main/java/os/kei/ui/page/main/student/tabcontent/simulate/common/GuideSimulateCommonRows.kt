@@ -31,7 +31,7 @@ import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.status.StatusPill
 import os.kei.ui.page.main.widget.support.CopyModeSelectionContainer
 import os.kei.ui.page.main.widget.support.copyModeAwareRow
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -39,7 +39,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun GuideSimulateCardTitleRow(
     title: String,
     capsule: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val displayTitle = guideLocalizedLabel(title)
     val displayCapsule = if (capsule.isBlank()) "" else guideLocalizedLabel(capsule)
@@ -73,7 +73,7 @@ internal fun GuideSimulateCardTitleRow(
 @Composable
 internal fun GuideSimulateInlineCapsule(
     text: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val displayText = guideLocalizedLabel(text)
     StatusPill(
@@ -93,7 +93,7 @@ internal fun GuideSimulateInlineCapsule(
 @Composable
 internal fun GuideSimulateRowItem(
     row: BaGuideRow,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     valueDelta: String = ""
 ) {
     val key = row.key.trim()

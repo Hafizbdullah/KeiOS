@@ -26,14 +26,14 @@ import os.kei.ui.page.main.student.guideTabCopyable
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GuideSimulateAbilityCard(
     data: GuideSimulateData,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     var selectedAbility by rememberSaveable(
         data.initialRows.size,

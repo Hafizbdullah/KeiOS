@@ -31,8 +31,8 @@ class MainPageBackdropSetTest {
     @Test
     fun contentSceneKeepsLayerProducersBeforeConsumerSlot() {
         val source = sourceFile(MAIN_PAGE_BACKDROP_SET_SOURCE)
-        val contentProducerIndex = source.indexOf(".layerBackdrop(contentLayerBackdrop)")
-        val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetLayerBackdrop)")
+        val contentProducerIndex = source.indexOf(".layerBackdrop(contentProducer)")
+        val sheetProducerIndex = source.indexOf(".layerBackdrop(sheetProducer)")
         val consumerIndex = source.indexOf("content()", startIndex = sheetProducerIndex + 1)
 
         assertTrue(contentProducerIndex >= 0, "Expected a content Backdrop producer")
@@ -40,8 +40,9 @@ class MainPageBackdropSetTest {
         assertTrue(consumerIndex > sheetProducerIndex, "Content consumers must follow both producer siblings")
         assertTrue(".matchParentSize()" in source, "The producer must cover the complete page scene")
         assertTrue(
-            "contentBackdrop as? LayerBackdrop" in source && "sheetBackdrop as? LayerBackdrop" in source,
-            "Canvas materials must bypass page-sized LayerBackdrop producers",
+            "as? LayerBackdrop" !in source,
+            "Recording must be decided by the parameter's type, not by casting a consumer value: a " +
+                "consumer that happened to be a layer used to be silently re-recorded and blanked",
         )
         assertTrue(
             "Box(modifier = modifier)" in source,
@@ -66,9 +67,9 @@ class MainPageBackdropSetTest {
 
         composeRule.runOnIdle {
             val result = requireNotNull(backdrops)
-            assertSame(result.topBar, result.content)
-            assertNotSame(result.topBar, result.sheet)
-            assertNotSame(result.topBar, result.contentMaterial)
+            assertSame(result.topBarProducer, result.contentProducer)
+            assertNotSame(result.topBarProducer, result.sheetProducer)
+            assertNotSame(result.topBarProducer, result.contentMaterial)
         }
     }
 
@@ -88,9 +89,9 @@ class MainPageBackdropSetTest {
 
         composeRule.runOnIdle {
             val result = requireNotNull(backdrops)
-            assertNotSame(result.topBar, result.content)
-            assertNotSame(result.topBar, result.sheet)
-            assertNotSame(result.content, result.sheet)
+            assertNotSame(result.topBarProducer, result.contentProducer)
+            assertNotSame(result.topBarProducer, result.sheetProducer)
+            assertNotSame(result.contentProducer, result.sheetProducer)
         }
     }
 
@@ -110,8 +111,8 @@ class MainPageBackdropSetTest {
 
         composeRule.runOnIdle {
             val result = requireNotNull(backdrops)
-            assertNotSame(result.topBar, result.content)
-            assertSame(result.content, result.sheet)
+            assertNotSame(result.topBarProducer, result.contentProducer)
+            assertSame(result.contentProducer, result.sheetProducer)
         }
     }
 
@@ -139,18 +140,18 @@ class MainPageBackdropSetTest {
 
         composeRule.runOnIdle {
             val collapsed = requireNotNull(backdrops)
-            assertSame(expanded.topBar, collapsed.topBar)
-            assertSame(expanded.content, collapsed.content)
-            assertSame(collapsed.content, collapsed.sheet)
+            assertSame(expanded.topBarProducer, collapsed.topBarProducer)
+            assertSame(expanded.contentProducer, collapsed.contentProducer)
+            assertSame(collapsed.contentProducer, collapsed.sheetProducer)
             distinctLayers.value = true
         }
         composeRule.waitForIdle()
 
         composeRule.runOnIdle {
             val expandedAgain = requireNotNull(backdrops)
-            assertSame(expanded.topBar, expandedAgain.topBar)
-            assertSame(expanded.content, expandedAgain.content)
-            assertNotSame(expandedAgain.content, expandedAgain.sheet)
+            assertSame(expanded.topBarProducer, expandedAgain.topBarProducer)
+            assertSame(expanded.contentProducer, expandedAgain.contentProducer)
+            assertNotSame(expandedAgain.contentProducer, expandedAgain.sheetProducer)
         }
     }
 

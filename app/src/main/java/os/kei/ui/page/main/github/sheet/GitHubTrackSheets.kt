@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubLookupConfig
 import os.kei.feature.github.model.GitHubProfileDepth
@@ -31,7 +31,7 @@ import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 @Composable
 internal fun GitHubCheckLogicSheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     lookupConfig: GitHubLookupConfig,
     trackedCount: Int,
     refreshIntervalHours: Int,

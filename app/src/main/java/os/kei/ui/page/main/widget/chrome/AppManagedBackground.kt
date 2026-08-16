@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -26,8 +29,10 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
@@ -137,11 +142,16 @@ object AppManagedBackgroundStyles {
  *
  * Dark theme binds, because `#242424` is much closer to white than White is to black.
  *
- * Measured before this existed: at the 40% maximum in dark theme primary text fell to **4.20:1**, under
- * AA, with nothing in the default configuration to stop it — `AppManagedBackgroundStyles.Standard` has a
- * zero flat overlay and the reading-overlay pref defaults to 0, so readability depended on the user
- * finding the "Readable" page style. At the 16% default the worst case is 9.29:1 dark / 14.48:1 light,
- * so nothing needs to change there and nothing does: the ceiling only bites above ~36%.
+ * Measured before this existed: at the then-40% maximum in dark theme primary text fell to **4.20:1**,
+ * under AA, with nothing in the default configuration to stop it — `AppManagedBackgroundStyles.Standard`
+ * has a zero flat overlay and the reading-overlay pref defaults to 0, so readability depended on the
+ * user finding the "Readable" page style.
+ *
+ * This ceiling is also what the slider's own range is derived from, so the two cannot disagree — see
+ * `UiPrefs.NON_HOME_BACKGROUND_OPACITY_DEFAULT`. The default sits *at* the ceiling, which is the
+ * strongest wallpaper needing no dimming at all, and the maximum sits where Apple's 35% figure for a
+ * dimming layer is reached. `AppManagedBackgroundReadabilityTest` checks both properties, so raising the
+ * range without re-deriving it fails rather than quietly costing legibility.
  */
 internal fun appManagedBackgroundReadableStrengthCeiling(darkBase: Boolean): Float = if (darkBase) 0.357f else 0.527f
 
@@ -179,6 +189,69 @@ internal data class AppManagedBackgroundRender(
     val readabilityOverlay: Float,
 )
 
+/**
+ * The page's own composite — base colour, background image, readability overlay — as something glass
+ * can sample. `null` when no managed background is painting.
+ *
+ * Without this every glass surface refracted a flat token instead of the page. Each producer records
+ * `drawRect(colorScheme.surface)` before `drawContent()`, and the background image is a *sibling* drawn
+ * behind the recorded subtree, so the image could never reach the layer and the opaque rect would have
+ * covered it anyway. Measured on the BA page with an image at 16%: the title capsule read
+ * `rgb(14,14,14)` — perfectly neutral, so carrying no trace of the image — one pixel away from page
+ * pixels at `rgb(61,54,60)`. The chrome was a black hole punched into a photograph, which is the
+ * opposite of what the material is for: Apple's Materials guidance has Liquid Glass "allow content to
+ * scroll and peek through from beneath these elements".
+ *
+ * Consumers sample this *under* their own layer (see `MainPageBackdropSet`), so the wallpaper is blurred
+ * and refracted like any other content rather than being pasted in flat behind the effect.
+ */
+val LocalAppManagedSceneBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+
+/**
+ * A page-level backdrop, split by direction: [producer] records, the object itself is sampled.
+ *
+ * Routes that roll their own producer need the same treatment `MainPageBackdropSet` gives the main pages,
+ * and the two directions differ once a managed background exists — the recording must *not* paint a base,
+ * because the page composite is drawn under it instead. Keeping one object that is a `Backdrop` for
+ * consumers and hands out its layer for producers means a call site cannot accidentally record what it
+ * meant to sample.
+ */
+@Stable
+class AppPageBackdrop internal constructor(
+    val producer: LayerBackdrop,
+    private val sampled: Backdrop,
+) : Backdrop by sampled
+
+/**
+ * [AppPageBackdrop] for a page that owns its own producer.
+ *
+ * @param key identity for the underlying layer, so callers keep whatever lifecycle scoping they had —
+ *   guide tabs rekey theirs per activation to avoid RenderThread crashes on some HyperOS builds.
+ */
+@Composable
+fun rememberAppPageBackdrop(
+    key: String,
+    baseColor: Color = appPageBackdropBaseColor(),
+): AppPageBackdrop {
+    val scene = LocalAppManagedSceneBackdrop.current
+    val producer =
+        key(key) {
+            rememberLayerBackdrop {
+                if (scene == null) {
+                    drawRect(baseColor)
+                }
+                drawContent()
+            }
+        }
+    val sampled: Backdrop =
+        if (scene != null) {
+            rememberCombinedBackdrop(scene, producer)
+        } else {
+            producer
+        }
+    return remember(producer, sampled) { AppPageBackdrop(producer, sampled) }
+}
+
 @Composable
 fun AppManagedBackgroundHost(
     enabled: Boolean,
@@ -205,8 +278,10 @@ fun AppManagedBackgroundHost(
                 sceneStyle = style,
             )
         }
+    // Recorded whenever a background is painting, not only when a route asks for it: the page's glass
+    // needs to sample this composite even on routes that never exported a backdrop of their own.
     val sceneBackdrop =
-        if (exportBackdropToContent) {
+        if (active || exportBackdropToContent) {
             rememberLayerBackdrop {
                 drawRect(baseColor)
                 drawContent()
@@ -249,8 +324,11 @@ fun AppManagedBackgroundHost(
         }
         CompositionLocalProvider(
             LocalAppScaffoldContainerColor provides if (active) Color.Transparent else null,
+            LocalAppManagedSceneBackdrop provides sceneBackdrop.takeIf { active },
         ) {
-            if (sceneBackdrop != null) {
+            // Still gated on the caller opting in: handing every route's presentations a parent
+            // backdrop they never asked for is a wider change than letting their glass sample the page.
+            if (exportBackdropToContent && sceneBackdrop != null) {
                 CompositionLocalProvider(
                     LocalLiquidParentBackdrop provides sceneBackdrop,
                     content = content,

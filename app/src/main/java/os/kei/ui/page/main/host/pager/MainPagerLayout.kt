@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
@@ -28,7 +29,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.prefs.NonHomeBackgroundAlignment
 import os.kei.core.prefs.NonHomeBackgroundContentScale
 import os.kei.core.prefs.NonHomeBackgroundPageStyle
@@ -45,6 +49,7 @@ import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundOverlay
 import os.kei.ui.page.main.widget.chrome.appManagedBackgroundRender
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.AppScaffold
+import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
 import os.kei.ui.page.main.widget.glass.rememberAppGripAwareDockState
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -180,6 +185,29 @@ internal fun MainPagerLayout(
             coordinator.onPageSelected(homePageIndex)
         }
 
+    // The page composite the pager's glass samples: base colour, background image and readability
+    // overlay, recorded once and drawn under every layer that sits on top of it. Without it the chrome
+    // refracted a flat token and read as a black plate on a photograph — see
+    // [os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop].
+    val nonHomeBackgroundActive =
+        coordinator.pagerRuntime.shouldRenderNonHomeBackground && coordinator.hasNonHomeBackground
+    val pageBaseColor = MiuixTheme.colorScheme.background
+    val sceneBackdrop =
+        if (nonHomeBackgroundActive) {
+            rememberLayerBackdrop {
+                drawRect(pageBaseColor)
+                drawContent()
+            }
+        } else {
+            null
+        }
+    val bottomBarBackdrop: Backdrop =
+        if (sceneBackdrop != null) {
+            rememberCombinedBackdrop(sceneBackdrop, coordinator.backdrop)
+        } else {
+            coordinator.backdrop
+        }
+
     AppScaffold(
         // Transparent so the `background(colorScheme.background)` below is this page's only opaque base,
         // and so it is the *same* base the routes use.
@@ -229,7 +257,7 @@ internal fun MainPagerLayout(
                 selectedPageIndex = safeSelectedPageIndex,
                 selectedPagePosition = null,
                 selectedPagePositionProvider = selectedPagePositionProvider,
-                backdrop = coordinator.backdrop,
+                backdrop = bottomBarBackdrop,
                 onPageSelected = coordinator.onPageSelected,
                 onExpand = coordinator.onShowBottomBar,
             )
@@ -241,7 +269,7 @@ internal fun MainPagerLayout(
                     remember(nonHomeBackgroundPageStyle) {
                         AppManagedBackgroundStyles.forPageStyle(nonHomeBackgroundPageStyle)
                     }
-                val baseColor = MiuixTheme.colorScheme.background
+                val baseColor = pageBaseColor
                 val darkBase = baseColor.luminance() < 0.5f
                 val backgroundDepthTranslationPx =
                     remember(density) {
@@ -272,25 +300,42 @@ internal fun MainPagerLayout(
                         style = backgroundStyle,
                         darkBase = darkBase,
                     )
-                AppManagedBackgroundImage(
-                    enabled = coordinator.hasNonHomeBackground,
-                    imageUri = coordinator.effectiveNonHomeBackgroundUri,
-                    opacity = render.imageOpacity,
-                    saturation = nonHomeBackgroundSaturation,
-                    contentScale = nonHomeBackgroundContentScale,
-                    alignment = nonHomeBackgroundAlignment,
-                    motionScale = if (nonHomeBackgroundDepthEnabled) 1.022f else 1f,
-                    motionTranslationXProvider = backgroundDepthPositionProvider,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                AppManagedBackgroundOverlay(
-                    baseColor = baseColor,
-                    darkBase = darkBase,
-                    style = backgroundStyle,
-                    scrim = nonHomeBackgroundScrim,
-                    readabilityOverlay = render.readabilityOverlay,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Recorded as one composite so the chrome's glass refracts the wallpaper the way it
+                // refracts any other content. The base rect lives in the recording block rather than
+                // here because `layerBackdrop` draws only `drawContent()` to the screen — the opaque
+                // base on screen is the scaffold modifier's `background(colorScheme.background)`.
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .then(
+                                if (sceneBackdrop != null) {
+                                    Modifier.layerBackdrop(sceneBackdrop)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                ) {
+                    AppManagedBackgroundImage(
+                        enabled = coordinator.hasNonHomeBackground,
+                        imageUri = coordinator.effectiveNonHomeBackgroundUri,
+                        opacity = render.imageOpacity,
+                        saturation = nonHomeBackgroundSaturation,
+                        contentScale = nonHomeBackgroundContentScale,
+                        alignment = nonHomeBackgroundAlignment,
+                        motionScale = if (nonHomeBackgroundDepthEnabled) 1.022f else 1f,
+                        motionTranslationXProvider = backgroundDepthPositionProvider,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    AppManagedBackgroundOverlay(
+                        baseColor = baseColor,
+                        darkBase = darkBase,
+                        style = backgroundStyle,
+                        scrim = nonHomeBackgroundScrim,
+                        readabilityOverlay = render.readabilityOverlay,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
             val pagerModifier =
                 Modifier
@@ -504,15 +549,22 @@ internal fun MainPagerLayout(
                         } else {
                             null
                         }
-                    MainPagerPageHost(
-                        pageType = pageType,
-                        runtime = pageRuntime,
-                        homePageState = homePageState,
-                        osPageState = osPageState,
-                        baPageState = baPageState,
-                        mcpPageState = mcpPageState,
-                        githubPageState = githubPageState,
-                    )
+                    // Home is the one page this background does not apply to — it has its own — so it
+                    // must not have the non-Home composite handed to its glass either.
+                    CompositionLocalProvider(
+                        LocalAppManagedSceneBackdrop provides
+                            sceneBackdrop.takeIf { pageType != BottomPage.Home },
+                    ) {
+                        MainPagerPageHost(
+                            pageType = pageType,
+                            runtime = pageRuntime,
+                            homePageState = homePageState,
+                            osPageState = osPageState,
+                            baPageState = baPageState,
+                            mcpPageState = mcpPageState,
+                            githubPageState = githubPageState,
+                        )
+                    }
                 }
             }
             val mainPagerPageKey =

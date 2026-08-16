@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -33,7 +33,7 @@ internal fun LazyListScope.renderGuideProfileTabContent(
     tabLabel: String,
     info: BaStudentGuideInfo?,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
     context: Context,
     sourceUrl: String,

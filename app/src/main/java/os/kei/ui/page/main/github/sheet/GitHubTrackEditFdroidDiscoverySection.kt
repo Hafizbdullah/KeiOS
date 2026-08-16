@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
@@ -69,7 +69,7 @@ private data class FdroidCandidateRowUiState(
 
 @Composable
 internal fun GitHubTrackEditFdroidDiscoverySection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     repoUrlInput: String,
     repoScopeId: String,
     appSearchQuery: String,
@@ -294,7 +294,7 @@ internal fun GitHubTrackEditFdroidDiscoverySection(
 
 @Composable
 private fun FdroidSearchFailureNotice(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     failures: List<FdroidAppSearchFailure>,
     expanded: Boolean,
     repoReports: List<FdroidAppSearchRepoReport>,

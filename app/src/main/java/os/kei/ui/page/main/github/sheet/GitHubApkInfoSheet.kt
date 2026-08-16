@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
 import os.kei.feature.github.model.GitHubApkManifestInfo
@@ -38,7 +38,7 @@ internal fun GitHubApkInfoSheet(
     loading: Boolean,
     error: String,
     sheetState: GitHubApkInfoSheetUiState,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,
     onSearchQueryChange: (String) -> Unit,
@@ -192,7 +192,7 @@ private const val SHA256_DIGEST_PREFIX = "sha256:"
 
 @Composable
 private fun ApkInfoActionRow(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     loading: Boolean,
     managedInstallEnabled: Boolean,
     managedInstallRunning: Boolean,

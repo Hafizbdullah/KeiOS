@@ -13,7 +13,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -57,7 +57,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun GitHubStrategySheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     lookupConfig: GitHubLookupConfig,
     selectedStrategyInput: GitHubLookupStrategyOption,
     selectedActionsStrategyInput: GitHubActionsLookupStrategyOption,
@@ -348,7 +348,7 @@ internal fun GitHubStrategySheet(
 
 @Composable
 private fun GitHubStrategyBenchmarkSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     trackedCount: Int,
     strategyBenchmarkRunning: Boolean,
     strategyBenchmarkError: String?,

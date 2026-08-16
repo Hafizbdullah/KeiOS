@@ -21,8 +21,8 @@ class OsPageContentBackdropTest {
         assertEquals(1, source.occurrencesOf("MainPageContentBackdropScene("))
         assertTrue(
             """MainPageContentBackdropScene(
-        contentBackdrop = contentBackdrop,
-        sheetBackdrop = sheetBackdrop,
+        contentProducer = null,
+        sheetProducer = sheetProducer,
         producerActive = chromeState.backdropProducerActive,
         modifier = Modifier.fillMaxSize(),""" in source,
         )
@@ -30,18 +30,18 @@ class OsPageContentBackdropTest {
         assertTrue("contentBackdrop = backdrops.contentMaterial" in pageSource)
         assertTrue("backdropProducerActive = pageBackdropEffectsEnabled && overlaySheetVisible" in pageSource)
         assertTrue("useSolidSurfaceBackdrops = true" in uiContextSource)
-        assertEquals(0, source.occurrencesOf(".layerBackdrop(contentBackdrop)"))
+        assertEquals(0, source.occurrencesOf(".layerBackdrop(contentProducer)"))
     }
 
     @Test
     fun topBarProducerAndContentConsumersRemainConnected() {
         val source = sourceFile(OS_PAGE_MAIN_LIST_SOURCE)
 
-        assertEquals(1, source.occurrencesOf(".layerBackdrop(topBarBackdrop)"))
+        assertEquals(1, source.occurrencesOf(".layerBackdrop(topBarProducer)"))
         assertTrue("backdrop = contentBackdrop" in source)
         assertTrue("contentBackdrop = contentBackdrop" in source)
         assertTrue(
-            source.indexOf("backdrop = topBarBackdrop", startIndex = source.indexOf("AppFloatingVerticalSearchActionDock(")) >= 0,
+            source.indexOf("backdrop = topBarMaterial", startIndex = source.indexOf("AppFloatingVerticalSearchActionDock(")) >= 0,
             "Floating dock must sample the scrolling-content identity",
         )
     }

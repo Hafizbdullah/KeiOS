@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideGalleryItem
 import os.kei.ui.page.main.student.BaGuideRow
@@ -36,7 +36,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun LazyListScope.renderGuideGalleryStateContent(
     state: GuideGalleryTabResolvedState,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     context: Context,
     sourceUrl: String,
     studentTitle: String,
@@ -569,7 +569,7 @@ private fun guideGalleryRelatedLinksStableKey(rows: List<BaGuideRow>): String =
 @Composable
 private fun GuideGalleryErrorCard(
     error: String,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
 ) {
     GuideErrorSupportingBlock(
         error = error,

@@ -9,9 +9,8 @@ class BaStudentGuidePagerPageBackdropTest {
     @Test
     fun pageBackdropProducerPrecedesTheProvidedCardMaterial() {
         val source = sourceFile(BA_STUDENT_GUIDE_PAGER_PAGE_SOURCE)
-        val pageBackdropIndex = source.indexOf("val pageBackdrop: LayerBackdrop =")
-        val stableSurfaceIndex = source.indexOf("drawRect(surfaceColor)", pageBackdropIndex)
-        val siblingProducerIndex = source.indexOf(".layerBackdrop(pageBackdrop)", stableSurfaceIndex)
+        val pageBackdropIndex = source.indexOf("val pageBackdrop = rememberAppPageBackdrop(")
+        val siblingProducerIndex = source.indexOf(".layerBackdrop(pageBackdrop.producer)", pageBackdropIndex)
         val providerIndex =
             source.indexOf(
                 "CompositionLocalProvider(LocalLiquidParentBackdrop provides pageBackdrop)",
@@ -21,12 +20,13 @@ class BaStudentGuidePagerPageBackdropTest {
         val loadingOverlayIndex = source.indexOf("BaStudentGuidePagerLoadingOverlay(", listIndex)
 
         assertTrue(pageBackdropIndex >= 0, "The page must retain its dedicated Backdrop identity")
-        assertTrue(stableSurfaceIndex > pageBackdropIndex, "The page Backdrop must pre-paint its surface color")
-        assertTrue(siblingProducerIndex > stableSurfaceIndex, "The sibling producer must follow Backdrop creation")
+        // The base is no longer painted here: with a managed background the page composite is drawn
+        // under this layer, and `rememberAppPageBackdrop` is what decides that in one place.
+        assertTrue(siblingProducerIndex > pageBackdropIndex, "The sibling producer must follow Backdrop creation")
         assertTrue(providerIndex > siblingProducerIndex, "Cards must consume the already-produced page material")
         assertTrue(listIndex > providerIndex, "The provider must wrap the entire scrolling content")
         assertTrue(loadingOverlayIndex > listIndex, "The loading overlay must remain outside the scrolling list")
-        assertEquals(1, source.occurrencesOf(".layerBackdrop(pageBackdrop)"))
+        assertEquals(1, source.occurrencesOf(".layerBackdrop(pageBackdrop.producer)"))
         assertEquals(
             1,
             source.occurrencesOf("LocalLiquidParentBackdrop provides pageBackdrop"),

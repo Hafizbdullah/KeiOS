@@ -213,8 +213,8 @@ internal fun GitHubMainContent(
             )
         }
     MainPageContentBackdropScene(
-        contentBackdrop = surfaces.contentBackdrop,
-        sheetBackdrop = surfaces.sheetBackdrop,
+        contentProducer = null,
+        sheetProducer = surfaces.sheetProducer,
         producerActive = surfaces.backdropProducerActive,
         modifier =
             Modifier
@@ -227,7 +227,7 @@ internal fun GitHubMainContent(
                 GitHubTopBarSection(
                     topBarColor = surfaces.topBarColor,
                     scrollBehavior = layout.scrollBehavior,
-                    titleBackdrop = surfaces.topBarBackdrop,
+                    titleBackdrop = surfaces.topBarMaterial,
                     onTitleClick = layout.onTitleClick,
                 )
             },
@@ -274,7 +274,7 @@ internal fun GitHubMainContent(
                         Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .layerBackdrop(surfaces.topBarBackdrop),
+                            .layerBackdrop(surfaces.topBarProducer),
                     pullToRefreshState = rememberAppPullToRefreshState(),
                     topAppBarScrollBehavior = layout.scrollBehavior,
                     contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
@@ -423,7 +423,7 @@ internal fun GitHubMainContent(
                 }
 
                 AppFloatingVerticalSearchActionDock(
-                    backdrop = surfaces.topBarBackdrop,
+                    backdrop = surfaces.topBarMaterial,
                     expanded = controls.searchExpanded,
                     query = controls.trackedSearch,
                     onQueryChange = actions.onTrackedSearchChange,
@@ -474,7 +474,7 @@ internal fun GitHubMainContent(
         }
         AppTopEndActionBarOverlay {
             GitHubTopBarActions(
-                backdrop = surfaces.topBarBackdrop,
+                backdrop = surfaces.topBarMaterial,
                 sortMode = controls.sortMode,
                 sortDirection = controls.sortDirection,
                 trackedFilterMode = controls.trackedFilterMode,

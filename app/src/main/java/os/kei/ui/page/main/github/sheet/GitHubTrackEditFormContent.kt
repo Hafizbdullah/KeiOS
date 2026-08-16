@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAppSearchCandidate
 import os.kei.feature.github.model.FdroidAppSearchFailure
@@ -49,7 +49,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubTrackEditFormContent(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     repoUrlInput: String,
     repoScanCandidates: List<GitHubPackageRepositoryScanCandidate>,
     packageNameInput: String,

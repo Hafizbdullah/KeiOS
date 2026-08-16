@@ -20,7 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
@@ -42,7 +42,7 @@ internal fun MainPagerBottomBar(
     selectedPageIndex: Int,
     selectedPagePosition: Float?,
     selectedPagePositionProvider: (() -> Float?)? = null,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onPageSelected: (Int) -> Unit,
     onExpand: () -> Unit,
 ) {

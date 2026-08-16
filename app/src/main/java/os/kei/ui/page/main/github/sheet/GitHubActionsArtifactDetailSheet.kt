@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.feature.github.data.remote.GitHubReleaseAssetFile
@@ -43,7 +43,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 @Composable
 internal fun GitHubActionsArtifactDetailSheet(
     request: GitHubActionsArtifactDetailRequest?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     hasToken: Boolean,
     managedInstallEnabled: Boolean,
     downloading: Boolean,

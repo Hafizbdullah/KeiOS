@@ -8,7 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideRow
 import os.kei.ui.page.main.student.BaStudentGuideInfo
@@ -24,7 +24,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun LazyListScope.renderGuideNpcSatelliteProfileContent(
     guide: BaStudentGuideInfo,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     profileState: GuideNpcSatelliteProfileState?,
     onOpenGuide: (String) -> Unit,
 ) {

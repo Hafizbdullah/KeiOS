@@ -25,6 +25,7 @@ import os.kei.ui.page.main.os.osLucideClearAllIcon
 import os.kei.ui.page.main.os.shell.OsShellRunnerCommandExecutor
 import os.kei.ui.page.main.os.shell.OsShellRunnerViewModel
 import os.kei.ui.page.main.os.shell.state.rememberOsShellRunnerTextBundle
+import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -83,12 +84,7 @@ fun OsShellRunnerPage(
     val outputScrollState = rememberScrollState()
     val outputLazyListState = rememberLazyListState()
 
-    val surfaceColor = MiuixTheme.colorScheme.surface
-    val topBarBackdrop =
-        rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
-        }
+    val topBarBackdrop = rememberAppPageBackdrop("os-shell-runner-topbar")
 
     val commandInput = persistentState.commandInput
     val settings = persistentState.settings

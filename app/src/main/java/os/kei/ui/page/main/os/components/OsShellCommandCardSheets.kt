@@ -17,7 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
@@ -144,7 +143,7 @@ internal fun LazyListScope.addShellCommandCards(
 internal fun OsShellCommandVisibilityManagerSheet(
     show: Boolean,
     title: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     shellHintText: String,
     shellRunnerVisible: Boolean,
     onShellRunnerVisibilityChange: (Boolean) -> Unit,
@@ -370,7 +369,7 @@ private fun ShellCommandVisibilityRow(
 internal fun OsShellCommandCardEditorSheet(
     show: Boolean,
     title: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     draft: OsShellCommandCard,
     onDraftChange: (OsShellCommandCard) -> Unit,
     showDeleteAction: Boolean,

@@ -327,15 +327,99 @@ preference defaults to 0, so readability depended on the user finding the "Reada
 ~36%**, so the default look is untouched and the slider keeps its full range; it only trims the top,
 where AA was actually failing.
 
-**Defaults were left alone deliberately.** 16% measures at 9.29:1 / 14.48:1 — comfortably above AA — so
-there was nothing to fix there, and changing it would only have altered the look on taste. What was
-missing was the floor, not a different default.
+**Defaults were left alone at this point** — 16% measures at 9.29:1 / 14.48:1, comfortably above AA, so
+the missing piece looked like the floor rather than the number. That reading was incomplete: the reason
+16% was safe is that the chrome was not sampling the page at all, which the next section is about. The
+range was re-derived from this same ceiling once the chrome started carrying the wallpaper.
 
 **Known limitation:** `onBackgroundVariant` is only 3.04:1 on plain White and 3.86:1 on plain `#242424` —
-already at or under large-text AA *before* any image, dropping to ~2.1:1 / ~2.3:1 with the default
-background. No realistic overlay rescues it (14% only reaches ~2.2:1 / ~2.5:1). Fixing it means not
+already at or under large-text AA *before* any image. No realistic overlay rescues it. Fixing it means not
 putting secondary text on the raw page background, which is a change across many pages rather than a
 tuning of this one.
+
+Measured on the Archive route at the 35% default, where the rows go fully transparent so the wallpaper
+applies (dark theme, four sampled row backgrounds):
+
+| | primary | secondary |
+|---|---|---|
+| plain `#242424` | 14.87:1 | 3.86:1 |
+| over the wallpaper | 6.09–7.14:1 | **1.58–1.85:1** |
+
+Primary text is protected exactly as designed; secondary text is not, and the stronger default makes the
+pre-existing weakness plainer. **The default is not the lever, though.** Solving for a panel fill that
+would lift `onBackgroundVariant` to even 3.0:1 over a worst-case bright image gives α ≥ **0.92** — which
+is just covering the wallpaper again — and at the old 16% default it was still only ~2.3:1. The quantity
+that is wrong is the token, not the opacity, so picking a lower default or a hand-tuned panel alpha would
+buy the appearance of a fix without the fact of one. Archive and the student guide are simply where it
+shows, being the two routes whose content panels go fully transparent.
+
+## The chrome was not sampling the page at all
+
+Reported as "the custom background's defaults badly degrade the Liquid look". The defaults were a symptom;
+the cause was that **no glass surface in the app had ever sampled the page's background image.**
+
+Every `LayerBackdrop` producer recorded `drawRect(colorScheme.surface)` before `drawContent()`, and the
+background image is a *sibling* drawn behind the recorded subtree — so the image could not reach the layer,
+and the opaque rect would have covered it if it had. Measured on the BA page with an image at 16%:
+
+| | before | after | page 1px away |
+|---|---|---|---|
+| title capsule | (14,14,14) | **(46,52,58)** | (61,54,60) |
+| toolbar icon capsule | (8,8,8) | **(51,50,57)** | — |
+| bottom dock | (6,6,6) | **(63,61,64)** | (65,65,66) |
+
+Note the *neutrality* of the before column: exactly equal channels, so the sample carried no trace of a
+reddish image sitting right beside it. The chrome was a black hole punched into a photograph, which
+inverts what the material is for — Apple's Materials guidance has Liquid Glass "allow content to scroll
+and peek through from beneath these elements". A stronger wallpaper only made the mismatch louder, which
+is why the opacity default had drifted down to 16% to hide it.
+
+Two token bugs sat underneath, both live even with the feature off: producers recorded `surface` while a
+non-Home main page's visible base is `background` (Black against `#242424` in dark — 36 levels), and the
+pager's producer did the same. `appPageBackdropBaseColor()` now derives it from the scaffold container.
+
+### How the composite reaches the glass
+
+`LocalAppManagedSceneBackdrop` publishes the page composite — base colour, image, readability overlay — as
+a `LayerBackdrop`, non-null only while a background is actually painting. Chrome consumers get
+`rememberCombinedBackdrop(scene, ownLayer)`, so the scene is drawn *under* their own layer and each
+positions itself from its own coordinates; the producers correspondingly stop painting a base of their
+own, since the scene is now the base. `appManagedPageBackgroundActive()` cannot answer this question —
+`MainPagerPageHost` makes every non-Home page's scaffold transparent whether or not a background exists.
+
+`MainPageBackdropSet` also splits producers from consumers by name. They were the same objects, and
+`MainPageContentBackdropScene` decided whether to record by casting its argument to a layer — so any
+consumer value that happened to be one would be silently re-recorded and blanked. That is exactly the trap
+the scene backdrop would have walked into.
+
+### Cards stay off it, on Apple's advice and a measurement
+
+Composing the scene under the content material as well looked right and was wrong twice over. Apple:
+"Don't use Liquid Glass in the content layer... Instead, use standard materials for elements in the
+content layer." And it turns every one of a page's ~20 cards from a single `drawRect` into a real blur of
+a screen-sized layer: the BA page's 1% low frame rate fell to **8 fps**. Cards keep the canvas fill; what
+they needed was the right colour, which the base-token fix gave them.
+
+The scene itself is free. A/B on the same six-swipe scroll, background on both times: scene composed in
+= AVG 43 / 1%L 22, scene suppressed = AVG 44 / 1%L 15. ~43 fps is this page's pre-existing AVD floor.
+
+### The range, re-derived from Apple's dimming rule
+
+Apple handles legibility over a rich background with a *local* dimming layer: "If the underlying content
+is bright, consider adding a dark dimming layer of 35% opacity. If the underlying content is sufficiently
+dark... you don't need to apply a dimming layer." KeiOS's readability ceiling is the same quantity, so
+both ends of the slider now come from it rather than from taste:
+
+- **default = the ceiling itself, 0.35** — the strongest wallpaper that needs no dimming at all.
+- **maximum = ceiling / (1 − 0.35) = 0.55** — where Apple's 35% figure is reached.
+
+`AppManagedBackgroundReadabilityTest` checks both as properties, so widening the range without
+re-deriving it fails rather than quietly costing legibility. The slider's own copy of the range was a
+separate set of literals with nothing checking that they agreed; it now aliases the store.
+
+Verified at 35% on the AVD, both themes. Dark: title capsule (59,72,84) against page (90,76,88), dock
+(95,90,97) against (102,100,102). Light: (240,249,255) against (236,220,234), dock (254,251,255) against
+(246,244,248) — the glass carries the wallpaper's cast in both.
 
 ## Gaps worth doing early
 

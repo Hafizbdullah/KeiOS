@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.os.appLucideConfirmIcon
@@ -31,7 +31,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun McpEditServiceSheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     serverName: String,
     onServerNameChange: (String) -> Unit,
     serverNameFieldWidth: Dp,

@@ -140,9 +140,28 @@ object UiPrefs {
     private const val KEY_REDUCE_TOAST_INTERRUPTION = "reduce_toast_interruption"
     private const val KEY_THEME_MODE = "theme_mode"
     private const val KEY_VISIBLE_BOTTOM_PAGES = "visible_bottom_pages"
-    private const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
-    private const val NON_HOME_BACKGROUND_OPACITY_MIN = 0.06f
-    private const val NON_HOME_BACKGROUND_OPACITY_MAX = 0.40f
+    /**
+     * How strongly the non-Home background image is allowed to show, derived rather than dialled in.
+     *
+     * Apple's Materials guidance handles legibility over a rich background with a *local* dimming layer:
+     * "If the underlying content is bright, consider adding a dark dimming layer of 35% opacity. If the
+     * underlying content is sufficiently dark... you don't need to apply a dimming layer." KeiOS's
+     * equivalent is `appManagedBackgroundReadableStrengthCeiling`, which is the strongest composite that
+     * still keeps primary text at WCAG AA against a worst-case image.
+     *
+     * So both ends of the slider come from that ceiling instead of taste:
+     *  - [NON_HOME_BACKGROUND_OPACITY_DEFAULT] is the strongest wallpaper that needs **no** dimming at
+     *    all — the ceiling itself (0.357 in dark theme, which binds).
+     *  - [NON_HOME_BACKGROUND_OPACITY_MAX] is where Apple's 35% cap is reached: `ceiling / (1 - 0.35)`.
+     *
+     * The old 0.16 default long predates glass sampling the page. While the chrome refracted a flat
+     * token, a stronger wallpaper only ever made the mismatch louder, so the number was pushed down to
+     * hide it; now that the chrome carries the page composite, the wallpaper is what gives the material
+     * something to bend, and 0.16 leaves it with almost nothing.
+     */
+    const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.35f
+    const val NON_HOME_BACKGROUND_OPACITY_MIN = 0.06f
+    const val NON_HOME_BACKGROUND_OPACITY_MAX = 0.55f
     private const val NON_HOME_BACKGROUND_SCRIM_DEFAULT = 0.00f
     private const val NON_HOME_BACKGROUND_SCRIM_MIN = 0.00f
     private const val NON_HOME_BACKGROUND_SCRIM_MAX = 0.40f

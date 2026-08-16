@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.core.intent.SafeExternalIntents
@@ -68,7 +68,7 @@ private data class ReleaseNotesFallbackLineUiState(
 @Composable
 internal fun GitHubDecisionAssistDetailSheet(
     request: GitHubDecisionAssistDetailRequest?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     versionState: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,
     releaseNotesTargets: List<GitHubReleaseNotesTarget> = emptyList(),
@@ -170,7 +170,7 @@ internal fun GitHubDecisionAssistDetailSheet(
 
 @Composable
 private fun GitHubReleaseNotesDetailContent(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     item: GitHubTrackedApp,
     state: VersionCheckUi,
     assetBundle: GitHubReleaseAssetBundle?,

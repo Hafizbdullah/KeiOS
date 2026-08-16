@@ -44,9 +44,34 @@ internal val LocalAppScaffoldContainerColor = staticCompositionLocalOf<Color?> {
  *
  * Reads the same signal `AppManagedBackgroundHost` already publishes to make scaffolds transparent, so
  * there is one source of truth for "a background is active" rather than re-deriving it from prefs.
+ *
+ * **Only answers the question inside a route.** `MainPagerPageHost` makes every non-Home main page's
+ * scaffold transparent whether or not a background is enabled, so on those pages this reads true
+ * regardless. Anything that must know a background is genuinely painting — glass sampling it, for
+ * instance — should ask [LocalAppManagedSceneBackdrop], which is only non-null when one is.
  */
 @Composable
 fun appManagedPageBackgroundActive(): Boolean = LocalAppScaffoldContainerColor.current == Color.Transparent
+
+/**
+ * The colour actually behind this page's content, which is what its glass should treat as its base.
+ *
+ * `MiuixTheme.colorScheme.surface` is not it. `AppScaffold` defaults its container to `surface`, but
+ * `MainPagerPageHost` overrides every non-Home main page to transparent, leaving `MainPagerLayout`'s
+ * `background(colorScheme.background)` as the visible base. miuix sets those two tokens apart —
+ * `background` is White / `#242424` against `surface` = `#F7F7F7` / Black — so a page backdrop recorded
+ * over `surface` had its glass sampling pure black while the page rendered `#242424`, 36 levels lighter.
+ * Home keeps `surface`, because Home is the one page that really does paint it.
+ */
+@Composable
+internal fun appPageBackdropBaseColor(): Color {
+    val containerColor = LocalAppScaffoldContainerColor.current
+    return when {
+        containerColor == null -> MiuixTheme.colorScheme.surface
+        containerColor == Color.Transparent -> MiuixTheme.colorScheme.background
+        else -> containerColor
+    }
+}
 
 fun appPageContentPadding(
     innerPadding: PaddingValues,

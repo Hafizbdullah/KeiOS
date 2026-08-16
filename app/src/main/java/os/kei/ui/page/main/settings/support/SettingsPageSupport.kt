@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import os.kei.R
+import os.kei.core.prefs.UiPrefs
 import os.kei.ui.page.main.settings.cache.CacheEntrySummary
 import os.kei.ui.page.main.widget.core.AppControlRow
 import os.kei.ui.page.main.widget.core.AppFeatureCard
@@ -357,19 +358,21 @@ internal fun formatScalePercent(value: Float): Int = (value * 100f).roundToInt()
 
 internal fun formatMilliseconds(value: Int): Int = value.coerceAtLeast(0)
 
-internal const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = 0.16f
-internal const val NON_HOME_BACKGROUND_OPACITY_MIN = 0.06f
-internal const val NON_HOME_BACKGROUND_OPACITY_MAX = 0.40f
+// Aliased from the store rather than restated, so the slider cannot end up offering a range the
+// preference then clamps away. They were separate literals and nothing checked that they agreed.
+internal const val NON_HOME_BACKGROUND_OPACITY_DEFAULT = UiPrefs.NON_HOME_BACKGROUND_OPACITY_DEFAULT
+internal const val NON_HOME_BACKGROUND_OPACITY_MIN = UiPrefs.NON_HOME_BACKGROUND_OPACITY_MIN
+internal const val NON_HOME_BACKGROUND_OPACITY_MAX = UiPrefs.NON_HOME_BACKGROUND_OPACITY_MAX
 internal const val NON_HOME_BACKGROUND_OPACITY_MAGNET_THRESHOLD = 0.03f
 internal val NON_HOME_BACKGROUND_OPACITY_KEY_POINTS =
     listOf(
-        0.06f,
-        0.10f,
-        0.13f,
-        NON_HOME_BACKGROUND_OPACITY_DEFAULT,
+        NON_HOME_BACKGROUND_OPACITY_MIN,
+        0.12f,
         0.20f,
-        0.26f,
-        0.33f,
+        0.27f,
+        NON_HOME_BACKGROUND_OPACITY_DEFAULT,
+        0.42f,
+        0.48f,
         NON_HOME_BACKGROUND_OPACITY_MAX,
     )
 internal const val NON_HOME_BACKGROUND_SCRIM_DEFAULT = 0.00f

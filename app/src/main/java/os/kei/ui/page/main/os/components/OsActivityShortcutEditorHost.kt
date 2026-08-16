@@ -4,7 +4,7 @@ package os.kei.ui.page.main.os.components
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.shortcut.ShortcutActivityClassOption
 import os.kei.ui.page.main.os.shortcut.ShortcutInstalledAppOption
@@ -15,7 +15,7 @@ import os.kei.ui.page.main.os.shortcut.ShortcutSuggestionItem
 internal fun OsActivityShortcutEditorHost(
     showEditor: Boolean,
     editorTitle: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     draft: OsGoogleSystemServiceConfig,
     onDraftChange: (OsGoogleSystemServiceConfig) -> Unit,
     onOpenSuggestionSheet: (ShortcutSuggestionField) -> Unit,

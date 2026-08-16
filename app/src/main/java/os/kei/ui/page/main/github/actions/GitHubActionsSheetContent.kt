@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
@@ -22,7 +22,7 @@ import os.kei.ui.page.main.widget.sheet.SheetContentColumn
 internal fun GitHubActionsSheetContent(
     state: GitHubPageState,
     derivedState: GitHubActionsSheetUiState,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onSelectWorkflow: (Long) -> Unit,
     onSelectBranch: (String) -> Unit,
     onSelectRun: (Long) -> Unit,

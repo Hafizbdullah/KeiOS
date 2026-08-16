@@ -11,7 +11,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -41,7 +41,7 @@ internal fun GitHubActionsArtifactCard(
     sharing: Boolean,
     context: Context,
     isDark: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onInstall: () -> Unit,
     onDownload: () -> Unit,
     onShare: () -> Unit,

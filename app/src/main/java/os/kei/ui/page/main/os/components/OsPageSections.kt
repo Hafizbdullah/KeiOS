@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.OsSectionCard
 import os.kei.ui.page.main.os.appLucideCloseIcon
@@ -46,7 +46,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun OsCardVisibilityManagerSheet(
     show: Boolean,
     title: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     cardsHintText: String,
     onDismissRequest: () -> Unit,
     isCardVisible: (OsSectionCard) -> Boolean,
@@ -127,7 +127,7 @@ internal fun OsCardVisibilityManagerSheet(
 internal fun OsActivityVisibilityManagerSheet(
     show: Boolean,
     title: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     activityHintText: String,
     cards: List<OsActivityShortcutCard>,
     activityIconBitmaps: Map<String, Bitmap>,

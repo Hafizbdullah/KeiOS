@@ -331,10 +331,11 @@ fun GitHubPage(
                 ),
             surfaces =
                 GitHubMainContentSurfaces(
-                    topBarBackdrop = backdrops.topBar,
+                    topBarProducer = backdrops.topBarProducer,
+                    topBarMaterial = backdrops.topBar,
                     contentBackdrop = backdrops.contentMaterial,
-                    sheetBackdrop = backdrops.sheet,
-                    backdropProducerActive = backdrops.sheet !== backdrops.content,
+                    sheetProducer = backdrops.sheetProducer,
+                    backdropProducerActive = backdrops.sheetProducer !== backdrops.contentProducer,
                     topBarColor = topBarColor,
                     isDark = isDark,
                 ),

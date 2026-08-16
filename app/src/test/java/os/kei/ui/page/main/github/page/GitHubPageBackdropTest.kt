@@ -12,7 +12,7 @@ class GitHubPageBackdropTest {
         val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
         val sceneBackdropIndex =
             source.indexOf(
-                "contentBackdrop = surfaces.contentBackdrop,",
+                "contentProducer = null,",
                 startIndex = sceneIndex.coerceAtLeast(0),
             )
         val scaffoldIndex = source.indexOf("AppScaffold(", startIndex = sceneBackdropIndex.coerceAtLeast(0))
@@ -26,7 +26,7 @@ class GitHubPageBackdropTest {
         val dockIndex =
             source.indexOf("AppFloatingVerticalSearchActionDock(", startIndex = trackedBackdropIndex.coerceAtLeast(0))
         val dockBackdropIndex =
-            source.indexOf("backdrop = surfaces.topBarBackdrop,", startIndex = dockIndex.coerceAtLeast(0))
+            source.indexOf("backdrop = surfaces.topBarMaterial,", startIndex = dockIndex.coerceAtLeast(0))
 
         assertTrue(sceneIndex >= 0, "GitHub page must host the shared content Backdrop scene")
         assertTrue(sceneBackdropIndex > sceneIndex, "The scene must produce the page content identity")
@@ -43,15 +43,15 @@ class GitHubPageBackdropTest {
     @Test
     fun topBarProducerKeepsAnIdentitySeparateFromContentConsumers() {
         val source = sourceFile(GITHUB_MAIN_CONTENT_SOURCE)
-        val topBarProducerIndex = source.indexOf(".layerBackdrop(surfaces.topBarBackdrop)")
-        val contentSceneIndex = source.indexOf("contentBackdrop = surfaces.contentBackdrop,")
-        val titleConsumerIndex = source.indexOf("titleBackdrop = surfaces.topBarBackdrop,")
+        val topBarProducerIndex = source.indexOf(".layerBackdrop(surfaces.topBarProducer)")
+        val contentSceneIndex = source.indexOf("contentProducer = null,")
+        val titleConsumerIndex = source.indexOf("titleBackdrop = surfaces.topBarMaterial,")
 
         assertTrue(contentSceneIndex >= 0, "GitHub scene must use the content Backdrop identity")
         assertTrue(titleConsumerIndex > contentSceneIndex, "The title must consume the top-bar identity")
         assertTrue(topBarProducerIndex > titleConsumerIndex, "Scrolling content must produce the top-bar identity")
-        assertEquals(1, source.occurrencesOf(".layerBackdrop(surfaces.topBarBackdrop)"))
-        assertEquals(1, source.occurrencesOf("titleBackdrop = surfaces.topBarBackdrop,"))
+        assertEquals(1, source.occurrencesOf(".layerBackdrop(surfaces.topBarProducer)"))
+        assertEquals(1, source.occurrencesOf("titleBackdrop = surfaces.topBarMaterial,"))
     }
 
     @Test

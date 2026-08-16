@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import os.kei.core.prefs.UiPrefs
 import kotlin.math.pow
 
 /**
@@ -13,7 +14,7 @@ import kotlin.math.pow
  * dark theme, a black one in light. Composited strength is `opacity * (1 - overlay)`, and
  * [appManagedBackgroundRender] holds that below a ceiling solved from WCAG contrast.
  *
- * Measured before the ceiling existed: at the 40% maximum in dark theme primary text fell to **4.20:1**,
+ * Measured before the ceiling existed: at the then-40% maximum in dark theme primary text fell to **4.20:1**,
  * under the 4.5:1 AA line, and nothing in the default configuration prevented it —
  * `AppManagedBackgroundStyles.Standard` has a zero flat overlay and the reading-overlay preference
  * defaults to 0, so readability depended on the user discovering the "Readable" page style.
@@ -21,8 +22,8 @@ import kotlin.math.pow
 class AppManagedBackgroundReadabilityTest {
     @Test
     fun theDefaultOpacityNeedsNoProtectionSoTheDefaultLookIsUnchanged() {
-        // 16% is the shipped default. Worst case there is 9.29:1 dark / 14.48:1 light, so forcing an
-        // overlay would only dim the image for nothing. The ceiling must stay out of the way.
+        // The default is placed at the ceiling, so it is by construction the strongest wallpaper that
+        // needs no dimming; forcing an overlay there would dim the image for nothing.
         listOf(true, false).forEach { darkBase ->
             val render = appManagedBackgroundRender(DEFAULT_OPACITY, AppManagedBackgroundStyles.Standard, darkBase)
             assertEquals(
@@ -57,6 +58,47 @@ class AppManagedBackgroundReadabilityTest {
     }
 
     @Test
+    fun theDefaultIsTheStrongestWallpaperThatNeedsNoDimming() {
+        // Apple's Materials guidance dims only "if the underlying content is bright", and says a dark
+        // dimming layer of 35% opacity when it does. So the default is placed exactly at the ceiling:
+        // the most wallpaper that still needs none. One step past it must already ask for some, or the
+        // default is leaving strength on the table.
+        val darkBase = true
+        assertEquals(
+            "the default must need no dimming",
+            0f,
+            appManagedBackgroundRender(DEFAULT_OPACITY, AppManagedBackgroundStyles.Standard, darkBase).readabilityOverlay,
+            0f,
+        )
+        assertTrue(
+            "a step above the default should already need dimming, or the default is too timid",
+            appManagedBackgroundRender(
+                DEFAULT_OPACITY + 0.01f,
+                AppManagedBackgroundStyles.Standard,
+                darkBase,
+            ).readabilityOverlay > 0f,
+        )
+    }
+
+    @Test
+    fun noReachableOpacityNeedsMoreDimmingThanAppleAsksFor() {
+        // The maximum is derived as ceiling / (1 - 0.35), so the top of the slider lands exactly on
+        // Apple's 35% figure. Widening the range without re-deriving it should fail here.
+        var step = MIN_OPACITY
+        while (step <= MAX_OPACITY + 1e-4f) {
+            listOf(true, false).forEach { darkBase ->
+                val overlay =
+                    appManagedBackgroundRender(step, AppManagedBackgroundStyles.Standard, darkBase).readabilityOverlay
+                assertTrue(
+                    "opacity=$step darkBase=$darkBase needs $overlay dimming, past Apple's $APPLE_DIMMING_LAYER",
+                    overlay <= APPLE_DIMMING_LAYER + 1e-3f,
+                )
+            }
+            step += 0.01f
+        }
+    }
+
+    @Test
     fun theCeilingOnlyEngagesWhereItIsActuallyNeeded() {
         // Dark theme binds, because #242424 sits far closer to white than White does to black. So the
         // overlay must appear in dark theme before it appears in light, and only near the top of the range.
@@ -65,13 +107,13 @@ class AppManagedBackgroundReadabilityTest {
         assertTrue("dark should bind: $darkCeiling vs $lightCeiling", darkCeiling < lightCeiling)
 
         assertEquals(
-            "30% should still be untouched",
+            "the default must still be untouched",
             0f,
-            appManagedBackgroundRender(0.30f, AppManagedBackgroundStyles.Standard, darkBase = true).readabilityOverlay,
+            appManagedBackgroundRender(DEFAULT_OPACITY, AppManagedBackgroundStyles.Standard, darkBase = true).readabilityOverlay,
             0f,
         )
         assertTrue(
-            "the 40% maximum is the case that used to fail and must now be protected",
+            "the maximum is the case that used to fail and must now be protected",
             appManagedBackgroundRender(
                 MAX_OPACITY,
                 AppManagedBackgroundStyles.Standard,
@@ -152,12 +194,15 @@ class AppManagedBackgroundReadabilityTest {
     }
 
     private companion object {
-        // Mirrors core-prefs. Duplicated deliberately: if the prefs range widens, this test should fail
-        // rather than quietly stop covering the new positions.
-        const val DEFAULT_OPACITY = 0.16f
-        const val MIN_OPACITY = 0.06f
-        const val MAX_OPACITY = 0.40f
+        // Read from the store rather than restated, so the range these assertions sweep is the range the
+        // slider actually offers. The properties below are what pin the numbers down.
+        const val DEFAULT_OPACITY = UiPrefs.NON_HOME_BACKGROUND_OPACITY_DEFAULT
+        const val MIN_OPACITY = UiPrefs.NON_HOME_BACKGROUND_OPACITY_MIN
+        const val MAX_OPACITY = UiPrefs.NON_HOME_BACKGROUND_OPACITY_MAX
         const val WCAG_AA_BODY = 4.5f
+
+        /** Apple, Materials: "consider adding a dark dimming layer of 35% opacity". */
+        const val APPLE_DIMMING_LAYER = 0.35f
 
         val WHITE = Color.White
         val BLACK = Color.Black

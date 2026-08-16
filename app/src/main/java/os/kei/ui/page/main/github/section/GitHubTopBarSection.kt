@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.github.GitHubSortDirection
 import os.kei.ui.page.main.github.GitHubSortMode
@@ -55,7 +55,7 @@ private val GitHubActionMenuHorizontalMargin = 92.dp
 internal fun GitHubTopBarSection(
     topBarColor: Color,
     scrollBehavior: ScrollBehavior,
-    titleBackdrop: LayerBackdrop? = null,
+    titleBackdrop: Backdrop? = null,
     onTitleClick: () -> Unit = {},
 ) {
     AppTopBarSection(
@@ -71,7 +71,7 @@ internal fun GitHubTopBarSection(
 
 @Composable
 internal fun GitHubTopBarActions(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     sortMode: GitHubSortMode,
     sortDirection: GitHubSortDirection,
     trackedFilterMode: GitHubTrackedFilterMode,

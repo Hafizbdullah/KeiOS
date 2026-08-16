@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsLookupStrategyOption
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -27,7 +27,7 @@ internal fun GitHubActionsRunsSection(
     selectedRun: GitHubActionsRunMatch?,
     recommendedRunId: Long?,
     isDark: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onExpandedChange: (Boolean) -> Unit,
     onSelectRun: (Long) -> Unit,
     onRefreshRun: (Long) -> Unit,
@@ -94,7 +94,7 @@ private fun GitHubActionsRunsLazyList(
     recommendedRunId: Long?,
     showLoadMoreButton: Boolean,
     isDark: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onSelectRun: (Long) -> Unit,
     onRefreshRun: (Long) -> Unit,
     onOpenRun: () -> Unit,

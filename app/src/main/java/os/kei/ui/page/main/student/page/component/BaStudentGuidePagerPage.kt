@@ -43,6 +43,7 @@ import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderStat
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppTypographyTokens
@@ -130,13 +131,7 @@ internal fun BaStudentGuidePagerPage(
                 delegate = topBarNestedScrollConnection,
             )
         }
-    val pageBackdrop: LayerBackdrop =
-        key("page-$activationCount-$sourceUrl-$pageIndex") {
-            rememberLayerBackdrop {
-                drawRect(surfaceColor)
-                drawContent()
-            }
-        }
+    val pageBackdrop = rememberAppPageBackdrop("page-$activationCount-$sourceUrl-$pageIndex")
     val isActivePage = pageIndex == pagerState.currentPage
     val consumedScrollToTopSignal = remember { mutableIntStateOf(0) }
     LaunchedEffect(scrollToTopSignal) {
@@ -180,7 +175,7 @@ internal fun BaStudentGuidePagerPage(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .layerBackdrop(pageBackdrop),
+                    .layerBackdrop(pageBackdrop.producer),
         )
         val activeBottomTabLabel = stringResource(tabRenderState.activeBottomTab.labelRes)
         val headerState =

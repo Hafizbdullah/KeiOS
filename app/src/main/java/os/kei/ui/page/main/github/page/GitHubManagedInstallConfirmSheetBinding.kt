@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheet
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetInput
 import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
@@ -15,7 +15,7 @@ import os.kei.ui.page.main.github.sheet.GitHubManagedInstallConfirmSheetUiState
 internal fun GitHubManagedInstallConfirmSheetBinding(
     state: GitHubPageState,
     actions: GitHubPageActions,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     sheetState: GitHubManagedInstallConfirmSheetUiState,
     onRequestSheetState: (GitHubManagedInstallConfirmSheetInput) -> Unit,
     onClearSheetState: () -> Unit,

@@ -4,7 +4,7 @@ package os.kei.ui.page.main.github.actions
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.GitHubActionsArtifactMatch
 import os.kei.feature.github.model.GitHubActionsRunMatch
@@ -20,7 +20,7 @@ import os.kei.ui.page.main.widget.sheet.SnapshotWindowBottomSheet
 @Composable
 internal fun GitHubActionsSheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     state: GitHubPageState,
     derivedState: GitHubActionsSheetUiState,
     onDismissRequest: () -> Unit,

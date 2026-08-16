@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
@@ -16,7 +16,7 @@ import top.yukonga.miuix.kmp.basic.ScrollBehavior
 internal fun OsPageScaffoldShell(
     scrollBehavior: ScrollBehavior,
     topBarColor: Color,
-    topBarBackdrop: LayerBackdrop,
+    topBarBackdrop: Backdrop,
     manageCardsContentDescription: String,
     manageActivitiesContentDescription: String,
     manageShellCardsContentDescription: String,

@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ui.resource.resolveString
 import os.kei.feature.github.model.GitHubProfileDepth
@@ -37,7 +37,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun GitHubCheckOverviewSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     logicChanged: Boolean,
     trackedCount: Int,
     selectedRefreshOption: RefreshIntervalOption,
@@ -233,7 +233,7 @@ internal fun GitHubCheckStrategySection(
 
 @Composable
 internal fun GitHubCheckTransferSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     selectedDownloaderLabel: String,
     allDownloaderOptions: List<DownloaderOption>,
     preferredDownloaderPackageInput: String,
@@ -456,7 +456,7 @@ internal fun GitHubCheckEnhancementSection(
 
 @Composable
 internal fun GitHubCheckTracksSection(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     hasKeiOsSelfTrack: Boolean,
     exportInProgress: Boolean,
     importInProgress: Boolean,

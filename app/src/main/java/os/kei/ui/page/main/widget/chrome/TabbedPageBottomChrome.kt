@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppFloatingSearchDock
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import top.yukonga.miuix.kmp.basic.Icon
@@ -147,7 +147,7 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     searchContentDescription: String,
     searchPlaceholder: String,
     searchEnabled: Boolean = true,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
     onExpandDock: () -> Unit,
@@ -316,7 +316,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
     selectedPagePositionProvider: (() -> Float?)?,
     selectedPageProvider: () -> Int,
     collapsedDockWidth: Dp,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     interactionEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
@@ -376,7 +376,7 @@ private fun <C : TabbedPageCategory> TabbedPageCategoryBar(
 @Composable
 private fun <C : TabbedPageCategory> TabbedPageCompactCategoryDock(
     category: C,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

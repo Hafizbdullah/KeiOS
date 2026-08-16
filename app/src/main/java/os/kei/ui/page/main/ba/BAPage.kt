@@ -344,8 +344,8 @@ fun BAPage(
     }
     CompositionLocalProvider(LocalGlassEffectRuntime provides baGlassRuntime) {
         MainPageContentBackdropScene(
-            contentBackdrop = backdrops.contentMaterial,
-            sheetBackdrop = backdrops.sheet,
+            contentProducer = null,
+            sheetProducer = backdrops.sheetProducer,
             producerActive = pageBackdropEffectsEnabled && sheetBackdropVisible,
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -365,7 +365,7 @@ fun BAPage(
                 },
             ) { innerPadding ->
                 BaPageContent(
-                    topBarBackdrop = backdrops.topBar,
+                    topBarBackdrop = backdrops.topBarProducer,
                     backdrop = backdrops.contentMaterial,
                     innerPadding = innerPadding,
                     contentBottomPadding = runtime.contentBottomPadding,

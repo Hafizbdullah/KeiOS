@@ -67,8 +67,8 @@ internal fun McpPageContent(
 ) {
     val edgeStackState = rememberAppEdgeStackState(stackLine = AppEdgeStackListTopInset)
     MainPageContentBackdropScene(
-        contentBackdrop = backdrops.contentMaterial,
-        sheetBackdrop = backdrops.sheet,
+        contentProducer = null,
+        sheetProducer = backdrops.sheetProducer,
         producerActive = backdropProducerActive,
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -106,7 +106,7 @@ internal fun McpPageContent(
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .layerBackdrop(backdrops.topBar),
+                    .layerBackdrop(backdrops.topBarProducer),
             pullToRefreshState = rememberAppPullToRefreshState(),
             topAppBarScrollBehavior = scrollBehavior,
             contentPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),

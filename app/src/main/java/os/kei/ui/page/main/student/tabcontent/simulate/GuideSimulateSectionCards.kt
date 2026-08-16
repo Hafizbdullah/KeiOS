@@ -20,7 +20,7 @@ import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.guideTabCopyable
 import os.kei.ui.page.main.student.tabcontent.profile.normalizeProfileFieldKey
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -29,7 +29,7 @@ internal fun GuideSimulateSectionCard(
     title: String,
     rows: List<BaGuideRow>,
     hint: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val levelRowIndex = if (title == "能力解放") {
         rows.indexOfFirst { row ->
@@ -95,7 +95,7 @@ internal fun GuideSimulateEquipmentCard(
     title: String,
     rows: List<BaGuideRow>,
     hint: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val groups = buildSimulateEquipmentGroups(rows)
     val hintCapsule = extractSimulateLevelCapsule(hint)
@@ -199,7 +199,7 @@ internal fun GuideSimulateUnlockCard(
     title: String,
     rows: List<BaGuideRow>,
     hint: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val viewData = buildSimulateUnlockViewData(rows, hint)
 

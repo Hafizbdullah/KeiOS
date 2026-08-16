@@ -3,7 +3,7 @@ package os.kei.ui.page.main.student.tabcontent
 import android.content.Context
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.graphics.Color
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
@@ -21,7 +21,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
     activeBottomTabLabel: String,
     info: BaStudentGuideInfo?,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
     context: Context,
     sourceUrl: String,
@@ -167,7 +167,7 @@ internal fun LazyListScope.renderBaStudentGuideTabContent(
 
 private fun LazyListScope.renderGuideDerivedContentPendingBlock(
     tabLabel: String,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
 ) {
     item {

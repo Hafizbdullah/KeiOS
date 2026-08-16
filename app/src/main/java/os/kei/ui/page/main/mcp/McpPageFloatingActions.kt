@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.mcp.server.McpServerUiState
 import os.kei.ui.page.main.host.pager.MainPageRuntime
@@ -28,7 +28,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 internal fun BoxScope.McpPageFloatingActionDock(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     uiState: McpServerUiState,
     runtime: MainPageRuntime,
     actions: McpPageActions,

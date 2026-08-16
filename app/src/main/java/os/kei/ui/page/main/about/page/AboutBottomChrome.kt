@@ -8,7 +8,7 @@ package os.kei.ui.page.main.about.page
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
 
 @Composable
@@ -27,7 +27,7 @@ internal fun AboutBottomChrome(
     searchIcon: ImageVector,
     searchContentDescription: String,
     searchPlaceholder: String,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectCategory: (Int) -> Unit,
     onExpandDock: () -> Unit,

@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntRect
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.data.local.GitHubAppPickerPreferences
 import os.kei.feature.github.model.FdroidAppSearchCandidate
@@ -49,7 +49,7 @@ import os.kei.ui.page.main.widget.sheet.rememberUnsavedSheetDismissHandler
 @Composable
 internal fun GitHubTrackEditSheet(
     show: Boolean,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     editingTrackedItem: GitHubTrackedApp?,
     repoUrlInput: String,
     repoScanCandidates: List<GitHubPackageRepositoryScanCandidate>,

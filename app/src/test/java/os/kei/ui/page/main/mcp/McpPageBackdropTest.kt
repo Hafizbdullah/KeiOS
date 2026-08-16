@@ -21,7 +21,7 @@ class McpPageBackdropTest {
         val sceneIndex = source.indexOf("MainPageContentBackdropScene(")
         val contentMaterialIndex =
             source.indexOf(
-                "contentBackdrop = backdrops.contentMaterial,",
+                "contentProducer = null,",
                 startIndex = sceneIndex.coerceAtLeast(0),
             )
         val listIndex =
@@ -46,7 +46,7 @@ class McpPageBackdropTest {
             "The floating dock must sample scrolling content",
         )
         assertEquals(1, source.occurrencesOf("MainPageContentBackdropScene("))
-        assertEquals(1, source.occurrencesOf("contentBackdrop = backdrops.contentMaterial,"))
+        assertEquals(1, source.occurrencesOf("contentProducer = null,"))
     }
 
     @Test
@@ -65,8 +65,8 @@ class McpPageBackdropTest {
     fun topBarProducerStaysIndependentFromContentConsumers() {
         val source = sourceFile(MCP_PAGE_CONTENT_SOURCE)
 
-        assertEquals(1, source.occurrencesOf(".layerBackdrop(backdrops.topBar)"))
-        assertEquals(0, source.occurrencesOf(".layerBackdrop(backdrops.content)"))
+        assertEquals(1, source.occurrencesOf(".layerBackdrop(backdrops.topBarProducer)"))
+        assertEquals(0, source.occurrencesOf(".layerBackdrop(backdrops.contentProducer)"))
         assertEquals(12, source.occurrencesOf("backdrop = backdrops.content"))
     }
 
@@ -86,7 +86,7 @@ class McpPageBackdropTest {
         assertTrue("titleBackdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrop = backdrops.topBar" in pageSource)
         assertTrue("backdrops = backdrops" in pageSource)
-        assertTrue("contentBackdrop = backdrops.content" in contentSource)
+        assertTrue("contentProducer = null" in contentSource)
         assertTrue("producerActive = backdropProducerActive" in contentSource)
         assertFalse("producerActive = backdrops.sheet !== backdrops.content" in contentSource)
         assertEquals(1, sheetSource.occurrencesOf("backdrop = backdrops.sheet"))

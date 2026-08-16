@@ -5,7 +5,7 @@ package os.kei.ui.page.main.student.catalog.page
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
@@ -33,7 +33,7 @@ internal fun BaGuideCatalogBottomChromeRoute(
     searchAutoFocusEnabled: Boolean,
     playbackCoordinator: BaGuideBgmPlaybackCoordinator,
     pagerSwitchMotion: BaGuideCatalogPagerSwitchMotion,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     modifier: Modifier = Modifier,
 ) {
     BaGuideCatalogBottomChromePlaybackSurface(

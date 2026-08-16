@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.core.ext.showToast
 import os.kei.feature.github.data.local.fdroid.FdroidMetadataSidecar
@@ -56,7 +56,7 @@ import java.util.Locale
 @Composable
 internal fun GitHubFdroidDetailSheet(
     request: GitHubFdroidDetailRequest?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onDismissRequest: () -> Unit,
     onRefresh: (GitHubTrackedApp) -> Unit,
     onOpenExternalUrl: (String) -> Unit,
@@ -128,7 +128,7 @@ private fun FdroidLoadingDetail(item: GitHubTrackedApp) {
 @Composable
 private fun FdroidMissingCacheDetail(
     item: GitHubTrackedApp,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     SheetSummaryCard(
@@ -156,7 +156,7 @@ private fun FdroidMissingCacheDetail(
 private fun FdroidCachedDetail(
     item: GitHubTrackedApp,
     sidecar: FdroidMetadataSidecar,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -225,7 +225,7 @@ private fun FdroidCachedDetail(
 @Composable
 private fun FdroidTrackingConfigSection(
     item: GitHubTrackedApp,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     val identity = buildFdroidRepositoryTrackIdentity(item.repoUrl, item.packageName)
@@ -319,7 +319,7 @@ private fun FdroidTrackedAppConfig.fdroidTrackingSourceScopeLabel(
 @Composable
 private fun FdroidPackageSection(
     sidecar: FdroidMetadataSidecar,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     val packageInfo = sidecar.packageInfo
@@ -467,7 +467,7 @@ private fun FdroidVersionSection(
 @Composable
 private fun FdroidRepositorySection(
     sidecar: FdroidMetadataSidecar,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     SheetSectionHeader(stringResource(R.string.github_fdroid_detail_section_repository))
@@ -627,7 +627,7 @@ private fun FdroidInfoRow(
 private fun FdroidLinkRow(
     label: String,
     url: String,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     onOpenExternalUrl: (String) -> Unit,
 ) {
     if (url.isBlank()) return

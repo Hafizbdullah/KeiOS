@@ -21,7 +21,7 @@ import os.kei.ui.page.main.student.buildGuideTabCopyPayload
 import os.kei.ui.page.main.student.component.GuideLiquidCard
 import os.kei.ui.page.main.student.guideLocalizedLabel
 import os.kei.ui.page.main.student.guideTabCopyable
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -30,7 +30,7 @@ internal fun GuideSimulateBondCard(
     title: String,
     rows: List<BaGuideRow>,
     hint: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val groups = buildSimulateBondGroups(rows)
     val levelCapsule = extractSimulateLevelCapsule(hint)
@@ -111,7 +111,7 @@ internal fun GuideSimulateWeaponCard(
     title: String,
     rows: List<BaGuideRow>,
     hint: String,
-    backdrop: LayerBackdrop
+    backdrop: Backdrop
 ) {
     val viewData = buildSimulateWeaponViewData(rows)
     val levelCapsule = extractSimulateLevelCapsule(hint)

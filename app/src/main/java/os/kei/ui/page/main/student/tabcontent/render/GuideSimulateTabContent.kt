@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaStudentGuideInfo
 import os.kei.ui.page.main.student.component.GuideErrorSupportingBlock
@@ -33,7 +33,7 @@ internal fun LazyListScope.renderGuideSimulateTabContent(
     tabLabel: String,
     info: BaStudentGuideInfo?,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
     simulateData: GuideSimulateData? = null,
 ) {

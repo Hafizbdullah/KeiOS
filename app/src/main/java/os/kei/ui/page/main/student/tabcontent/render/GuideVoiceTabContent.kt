@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.student.BaGuideTempMediaCache
 import os.kei.ui.page.main.student.BaGuideVoiceEntry
@@ -43,7 +43,7 @@ internal fun LazyListScope.renderGuideVoiceTabContent(
     tabLabel: String,
     info: BaStudentGuideInfo?,
     error: String?,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     accent: Color,
     context: Context,
     sourceUrl: String,

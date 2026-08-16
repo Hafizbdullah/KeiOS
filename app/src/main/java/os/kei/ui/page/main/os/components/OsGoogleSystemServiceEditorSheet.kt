@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.os.OsGoogleSystemServiceConfig
 import os.kei.ui.page.main.os.appLucideAddIcon
@@ -41,7 +41,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun OsGoogleSystemServiceEditorSheet(
     show: Boolean,
     title: String,
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     draft: OsGoogleSystemServiceConfig,
     onDraftChange: (OsGoogleSystemServiceConfig) -> Unit,
     onOpenSuggestionSheet: (ShortcutSuggestionField) -> Unit,
@@ -421,7 +421,7 @@ internal fun OsGoogleSystemServiceEditorSheet(
 
 @Composable
 private fun SuggestionTriggerAction(
-    sheetBackdrop: LayerBackdrop,
+    sheetBackdrop: Backdrop,
     onClick: () -> Unit
 ) {
     AppLiquidIconButton(

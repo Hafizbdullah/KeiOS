@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntRect
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.feature.github.model.FdroidAntiFeaturePolicy
 import os.kei.feature.github.model.FdroidTrustPolicy
@@ -22,7 +22,7 @@ import os.kei.ui.page.main.widget.sheet.SheetSectionHeader
 
 @Composable
 internal fun GitHubTrackEditFdroidOptions(
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     versionSelectionMode: FdroidVersionSelectionMode,
     versionNameRegex: String,
     apkNameRegex: String,

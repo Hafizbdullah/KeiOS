@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
@@ -39,7 +39,7 @@ internal fun BaStudentGuideBottomBar(
     selectedPagePosition: Float,
     selectedPagePositionProvider: (() -> Float?)? = null,
     selectedPageProvider: () -> Int,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     isLiquidEffectEnabled: Boolean,
     onSelectTab: (Int) -> Unit,
     onExpand: () -> Unit,

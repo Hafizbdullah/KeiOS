@@ -4,7 +4,7 @@ package os.kei.ui.page.main.github.page
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import com.kyant.backdrop.backdrops.LayerBackdrop
+import com.kyant.backdrop.Backdrop
 import os.kei.feature.github.data.remote.isVerifiedManagedInstallAsset
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheet
 import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetInput
@@ -14,7 +14,7 @@ import os.kei.ui.page.main.github.sheet.GitHubApkInfoSheetUiState
 internal fun GitHubApkInfoSheetBinding(
     state: GitHubPageState,
     actions: GitHubPageActions,
-    backdrop: LayerBackdrop,
+    backdrop: Backdrop,
     sheetState: GitHubApkInfoSheetUiState,
     onRequestSheetState: (GitHubApkInfoSheetInput) -> Unit,
     onSearchQueryChange: (String) -> Unit,
