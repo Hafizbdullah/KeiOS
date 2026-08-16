@@ -862,6 +862,75 @@ internal object BASettingsStore {
         notifyChanged(notifyHomeOverview = notifyHomeOverview)
     }
 
+    /**
+     * Applies a whole daily-done template to one account.
+     *
+     * One function rather than a chain of the per-field savers above, for two reasons. Correctness
+     * first: [BaOfficeCooldownPersistenceUpdate] and the cooldown savers it drives are active-account
+     * only and carry no id, so composing a per-account template out of them would silently write
+     * somebody else's cooldowns. Cost second: each saver is its own whole-account-list JSON re-encode
+     * plus its own change signal, so the field-by-field route would be five of each per account.
+     *
+     * Still two record updates, because game state and reminder state are deliberately separate —
+     * `runtimeUpdatedAtMs` arbitrates WebDAV merge and the notified levels must not touch it. [notify]
+     * lets an all-accounts pass fold every account into a single signal at the end.
+     */
+    fun saveAccountDailyDone(
+        accountId: BaAccountId,
+        plan: BaDailyDonePlan,
+        notify: Boolean = true,
+    ) {
+        val store = migratedAccountStore()
+        store.updateAccountRuntime(accountId) { runtime ->
+            runtime.copy(
+                apCurrent = plan.apCurrent,
+                apRegenBaseMs = plan.apRegenBaseMs,
+                apSyncMs = plan.apSyncMs,
+                cafeStoredAp = plan.cafeStoredAp,
+                cafeLastHourMs = plan.cafeLastHourMs,
+                coffeeHeadpatMs = plan.coffeeHeadpatMs,
+                coffeeInvite1UsedMs = plan.coffeeInvite1UsedMs,
+                coffeeInvite2UsedMs = plan.coffeeInvite2UsedMs,
+                craft = plan.craft,
+            )
+        }
+        store.updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(
+                apLastNotifiedLevel = plan.apLastNotifiedLevel,
+                cafeApLastNotifiedLevel = plan.cafeApLastNotifiedLevel,
+            )
+        }
+        if (notify) notifyChanged(notifyHomeOverview = true)
+    }
+
+    /**
+     * Runs the daily-done template across every enabled account, in one signal.
+     *
+     * Returns the per-account outcomes so the caller can say what actually happened rather than
+     * claiming success. An account whose dailies were already done contributes an outcome with
+     * `changedAnything == false`.
+     */
+    fun applyDailyDone(
+        accountIds: List<BaAccountId>? = null,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Map<BaAccountId, BaDailyDoneOutcome> {
+        val accountState = loadAccountState()
+        val targets =
+            accountState.accounts
+                .filter { it.profile.enabled }
+                .filter { accountIds == null || it.profile.id in accountIds }
+        if (targets.isEmpty()) return emptyMap()
+        val outcomes = LinkedHashMap<BaAccountId, BaDailyDoneOutcome>(targets.size)
+        targets.forEach { account ->
+            val snapshot = BaPageSnapshot().withBaAccount(accountState = accountState, account = account)
+            val plan = planBaDailyDone(snapshot = snapshot, nowMs = nowMs)
+            saveAccountDailyDone(accountId = account.profile.id, plan = plan, notify = false)
+            outcomes[account.profile.id] = plan.outcome
+        }
+        notifyChanged(notifyHomeOverview = true)
+        return outcomes
+    }
+
     fun saveAccountApLastNotifiedLevel(
         accountId: BaAccountId,
         level: Int,
