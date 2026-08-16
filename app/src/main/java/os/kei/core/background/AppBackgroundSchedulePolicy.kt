@@ -6,6 +6,8 @@ import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_REGEN_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BA_CAFE_HOURLY_INTERVAL_MS
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
+import os.kei.ui.page.main.ba.support.nextCompletionAtMs
+import os.kei.ui.page.main.ba.support.pendingCraftReminders
 import os.kei.ui.page.main.ba.support.cafeHourlyGain
 import os.kei.ui.page.main.ba.support.cafeStorageCap
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
@@ -79,6 +81,9 @@ internal object AppBackgroundSchedulePolicy {
             if (snapshot.arenaRefreshNotifyEnabled) {
                 add(nextArenaRefreshSchedule(snapshot = snapshot, nowMs = nowMs))
             }
+            if (snapshot.craftNotifyEnabled) {
+                nextCraftSchedule(snapshot = snapshot, nowMs = nowMs)?.let(::add)
+            }
         }
         return candidates.minByOrNull { it.triggerAtMillis }
     }
@@ -100,7 +105,8 @@ internal object AppBackgroundSchedulePolicy {
         snapshot.apNotifyEnabled ||
                 snapshot.cafeApNotifyEnabled ||
                 snapshot.cafeVisitNotifyEnabled ||
-                snapshot.arenaRefreshNotifyEnabled
+                snapshot.arenaRefreshNotifyEnabled ||
+                snapshot.craftNotifyEnabled
 
     fun hasEnabledBaReminder(snapshots: List<BaPageSnapshot>): Boolean =
         snapshots.any(::hasEnabledBaReminder)
@@ -251,6 +257,28 @@ internal object AppBackgroundSchedulePolicy {
                 serverIndex = snapshot.serverIndex
             ) + BA_REFRESH_SETTLE_DELAY_MS
         )
+    }
+
+    /**
+     * Earliest craft slot completion, or `null` when nothing is loaded.
+     *
+     * Always [promptUserReminder], never [userReminderWindow]. The shortest real craft is 30 minutes,
+     * while a windowed alarm can slip 10-30 minutes on Android 17 (see [android17WindowLength]) — which
+     * would blunt the reminder in exactly the case it exists for. Unlike the AP and cafe sources there is
+     * also no threshold to project: the slot already carries an absolute end instant.
+     */
+    private fun nextCraftSchedule(
+        snapshot: BaPageSnapshot,
+        nowMs: Long,
+    ): BackgroundAlarmSchedule? {
+        // A slot that elapsed while the app was dead needs a notification now, not an alarm later.
+        val pending = snapshot.craft.pendingCraftReminders(
+            notified = snapshot.craftNotified,
+            nowMs = nowMs
+        )
+        if (pending.isNotEmpty()) return promptUserReminder(nowMs)
+        val nextAtMs = snapshot.craft.nextCompletionAtMs(nowMs) ?: return null
+        return promptUserReminder(nextAtMs)
     }
 
     private fun promptUserReminder(triggerAtMs: Long): BackgroundAlarmSchedule {

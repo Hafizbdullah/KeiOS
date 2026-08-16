@@ -38,6 +38,7 @@ data class LiveNotificationPayload(
         const val BA_CAFE_AP_SERVER_NAME = "BlueArchive Cafe AP"
         const val BA_CAFE_VISIT_SERVER_NAME = "BlueArchive Cafe Visit"
         const val BA_ARENA_REFRESH_SERVER_NAME = "BlueArchive Arena Refresh"
+        const val BA_CRAFT_SERVER_NAME = "BlueArchive Craft"
         const val BA_CALENDAR_POOL_SERVER_NAME = "BlueArchive Calendar Pool"
         const val GITHUB_SHARE_IMPORT_SERVER_NAME = "GitHub Share Import"
         const val WEBDAV_SYNC_SERVER_NAME = "WebDAV Sync"

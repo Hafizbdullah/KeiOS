@@ -44,6 +44,11 @@ internal data class BaAccountRuntime(
     val coffeeHeadpatMs: Long = 0L,
     val coffeeInvite1UsedMs: Long = 0L,
     val coffeeInvite2UsedMs: Long = 0L,
+    /**
+     * Craft Chamber slots, per account and never shared. Additive with a default, and `KeiJson.lenient`
+     * sets `ignoreUnknownKeys`, so records written by older builds decode straight to an idle set.
+     */
+    val craft: BaCraftState = BaCraftState(),
 )
 
 @Serializable
@@ -55,6 +60,7 @@ internal data class BaGlobalReminderSettings(
     val keepApRemindersReadUntilBelowThreshold: Boolean = true,
     val arenaRefreshNotifyEnabled: Boolean = false,
     val cafeVisitNotifyEnabled: Boolean = false,
+    val craftNotifyEnabled: Boolean = false,
 )
 
 @Serializable
@@ -67,6 +73,7 @@ internal data class BaAccountReminderOverride(
     val keepApRemindersReadUntilBelowThreshold: Boolean = true,
     val arenaRefreshNotifyEnabled: Boolean = false,
     val cafeVisitNotifyEnabled: Boolean = false,
+    val craftNotifyEnabled: Boolean = false,
 )
 
 internal data class BaAccountProfileInput(
@@ -85,6 +92,7 @@ internal data class BaAccountReminderRuntime(
     val cafeApLastNotifiedLevel: Int = -1,
     val arenaRefreshLastNotifiedSlotMs: Long = 0L,
     val cafeVisitLastNotifiedSlotMs: Long = 0L,
+    val craftNotified: BaCraftNotifiedMarkers = BaCraftNotifiedMarkers(),
 )
 
 @Serializable
@@ -186,6 +194,7 @@ internal fun BaAccountRuntime.normalized(): BaAccountRuntime =
             coffeeHeadpatMs = coffeeHeadpatMs.coerceAtLeast(0L),
             coffeeInvite1UsedMs = coffeeInvite1UsedMs.coerceAtLeast(0L),
             coffeeInvite2UsedMs = coffeeInvite2UsedMs.coerceAtLeast(0L),
+            craft = craft.normalized(),
         )
     }
 
@@ -208,6 +217,7 @@ internal fun BaAccountReminderRuntime.normalized(): BaAccountReminderRuntime =
         cafeApLastNotifiedLevel = cafeApLastNotifiedLevel.coerceIn(-1, BA_AP_MAX),
         arenaRefreshLastNotifiedSlotMs = arenaRefreshLastNotifiedSlotMs.coerceAtLeast(0L),
         cafeVisitLastNotifiedSlotMs = cafeVisitLastNotifiedSlotMs.coerceAtLeast(0L),
+        craftNotified = craftNotified.normalized(),
     )
 
 internal fun BaAccountRecord.effectiveReminderSettings(
@@ -230,6 +240,7 @@ internal fun BaAccountRecord.effectiveReminderSettings(
                     keepApRemindersReadUntilBelowThreshold = it.keepApRemindersReadUntilBelowThreshold,
                     arenaRefreshNotifyEnabled = it.arenaRefreshNotifyEnabled,
                     cafeVisitNotifyEnabled = it.cafeVisitNotifyEnabled,
+                    craftNotifyEnabled = it.craftNotifyEnabled,
                 )
             } ?: normalizedGlobal
     }
@@ -246,5 +257,6 @@ internal fun BaGlobalReminderSettings.toAccountReminderOverride(accountId: BaAcc
         keepApRemindersReadUntilBelowThreshold = normalized.keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = normalized.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = normalized.cafeVisitNotifyEnabled,
+        craftNotifyEnabled = normalized.craftNotifyEnabled,
     )
 }

@@ -2,9 +2,11 @@ package os.kei.ui.page.main.ba
 
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
+import os.kei.ui.page.main.ba.support.BaCraftCompletion
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.ba.support.cafeStorageCap
+import os.kei.ui.page.main.ba.support.pendingCraftReminders
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.displayAp
@@ -228,6 +230,27 @@ internal object BaReminderCoordinator {
         return evaluateSlot(
             lastSlotMs = snapshot.arenaRefreshLastNotifiedSlotMs,
             currentSlotMs = currentSlotMs
+        )
+    }
+
+    /**
+     * Craft slots that have elapsed and have not been announced yet.
+     *
+     * Unlike [evaluateCafeVisit] and [evaluateArenaRefresh] there is no baseline to seed. Those two
+     * describe a recurring instant the game reaches on its own, so a first run must swallow the slot it
+     * finds itself inside or it would fire for something the teacher already saw. A craft is the
+     * opposite: the teacher loaded it deliberately, and one that finished while the app was dead is
+     * exactly the notification worth having. Idempotence comes from the marker instead — see
+     * [os.kei.ui.page.main.ba.support.BaCraftNotifiedMarkers].
+     */
+    fun evaluateCraft(
+        snapshot: BaPageSnapshot,
+        nowMs: Long
+    ): List<BaCraftCompletion> {
+        if (!snapshot.craftNotifyEnabled) return emptyList()
+        return snapshot.craft.pendingCraftReminders(
+            notified = snapshot.craftNotified,
+            nowMs = nowMs
         )
     }
 
