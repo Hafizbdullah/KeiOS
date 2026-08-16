@@ -305,43 +305,51 @@ internal fun MainScreenNavHost(
                         }
                     }
                     entry<KeiosRoute.BaStudentGuide> { route ->
-                        BaStudentGuidePage(
-                            warmStartId = route.nonce,
-                            preloadingEnabled = prefsState.preloadingEnabled,
-                            onBack = onRouteBack,
-                        )
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            BaStudentGuidePage(
+                                warmStartId = route.nonce,
+                                preloadingEnabled = prefsState.preloadingEnabled,
+                                onBack = onRouteBack,
+                            )
+                        }
                     }
                     entry<KeiosRoute.BaGuideCatalog>(transition = catalogTransition) { route ->
-                        BaGuideCatalogPage(
-                            preloadingEnabled = prefsState.preloadingEnabled,
-                            notificationPermissionGranted = notificationPermissionGranted,
-                            onRequestNotificationPermission = onRequestNotificationPermission,
-                            openBgmPlaybackToken = route.openBgmPlaybackToken,
-                            onBack = onRouteBack,
-                            onOpenGuide = pagerCoordinator.onOpenGuideDetail,
-                        )
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            BaGuideCatalogPage(
+                                preloadingEnabled = prefsState.preloadingEnabled,
+                                notificationPermissionGranted = notificationPermissionGranted,
+                                onRequestNotificationPermission = onRequestNotificationPermission,
+                                openBgmPlaybackToken = route.openBgmPlaybackToken,
+                                onBack = onRouteBack,
+                                onOpenGuide = pagerCoordinator.onOpenGuideDetail,
+                            )
+                        }
                     }
                     entry<KeiosRoute.BaActivityCalendar> { route ->
-                        BaActivityCalendarPage(
-                            targetServerSelection = route.toInitialServerSelection(),
-                            onClose = onRouteBack,
-                        )
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            BaActivityCalendarPage(
+                                targetServerSelection = route.toInitialServerSelection(),
+                                onClose = onRouteBack,
+                            )
+                        }
                     }
                     entry<KeiosRoute.BaPool> { route ->
-                        BaPoolPage(
-                            targetServerSelection = route.toInitialServerSelection(),
-                            onClose = onRouteBack,
-                            // The pool page used to swap in the guide behind a boolean with its own
-                            // back handler; it is a back-stack push like every other detail page
-                            // now. The URL is already saved by preparePoolGuideOpen, so the guide
-                            // reads it back the same way it does on the canonical path, and the
-                            // nonce only has to keep the content key unique.
-                            onOpenGuide = {
-                                navigator.push(
-                                    KeiosRoute.BaStudentGuide(nonce = SystemClock.elapsedRealtimeNanos()),
-                                )
-                            },
-                        )
+                        MainScreenRouteBackgroundHost(prefsState = prefsState) {
+                            BaPoolPage(
+                                targetServerSelection = route.toInitialServerSelection(),
+                                onClose = onRouteBack,
+                                // The pool page used to swap in the guide behind a boolean with its own
+                                // back handler; it is a back-stack push like every other detail page
+                                // now. The URL is already saved by preparePoolGuideOpen, so the guide
+                                // reads it back the same way it does on the canonical path, and the
+                                // nonce only has to keep the content key unique.
+                                onOpenGuide = {
+                                    navigator.push(
+                                        KeiosRoute.BaStudentGuide(nonce = SystemClock.elapsedRealtimeNanos()),
+                                    )
+                                },
+                            )
+                        }
                     }
                     entry<KeiosRoute.WebDavSync> {
                         val dataPorts = rememberWebDavSyncDataPorts()

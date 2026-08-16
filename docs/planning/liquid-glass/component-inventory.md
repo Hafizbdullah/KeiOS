@@ -288,12 +288,54 @@ they had no base of their own. Confirmed on device before (1) was in place.
 After both, the same pixel of the same image is byte-identical on a main page and a secondary page:
 (59,64,69) dark, (244,250,255) light, across four sample points.
 
-### Still open
+### 3. It did not actually apply everywhere except Home
 
-The four BA routes — `BaStudentGuide`, `BaGuideCatalog`, `BaActivityCalendar`, `BaPool` — have no
-`MainScreenRouteBackgroundHost` at all, so the custom background never renders on them; each paints its
-own `colorScheme.background`. Deliberate or not, it means "non-Home pages show a custom background" is
-not true of those four.
+The feature's contract is its name: everywhere except Home, which has its own background. Four routes
+were missing it — `BaStudentGuide`, `BaGuideCatalog`, `BaActivityCalendar`, `BaPool` — and each also
+painted an opaque plate of its own that would have covered the image anyway.
+
+Those plates are not dead weight, so they were kept rather than deleted: the calendar and pool use theirs
+for a designed accent wash *and* as their glass backdrop producer, and the catalog uses `#10141B`. Each
+now asks `appManagedPageBackgroundActive()` and drops only the opaque part — the calendar and pool keep
+the accent wash with transparent ends, the catalog and guide go fully transparent. One signal, the same
+one that already makes scaffolds transparent, so there is no second definition of "a background is
+active".
+
+Verified on device: all four routes now sample identically to a main page and to the About route —
+(59,64,69) / (67,59,63) / (70,67,69) / (68,61,63) — except the calendar and pool, which sit slightly
+warmer because they still lay their accent wash over the top, as designed.
+
+### Readability is now a guarantee rather than a preset
+
+The image is user-supplied, so the worst case has to be assumed: a white image in dark theme, a black one
+in light. Composited strength is `opacity × (1 − overlay)`, and solving WCAG contrast for primary text
+against that worst case gives a ceiling of **0.357** in dark and 0.527 in light — dark binds, because
+`#242424` sits far closer to white than White does to black.
+
+Measured worst-case primary-text contrast before any ceiling existed:
+
+| opacity | dark | light |
+|---|---|---|
+| 16% (default) | 9.29:1 | 14.48:1 |
+| 25% | 6.82:1 | 11.45:1 |
+| 40% (maximum) | **4.20:1** | 7.37:1 |
+
+So the maximum breached the 4.5:1 AA line in dark theme, and nothing in the default configuration
+prevented it: `AppManagedBackgroundStyles.Standard` has a zero flat overlay and the reading-overlay
+preference defaults to 0, so readability depended on the user finding the "Readable" page style.
+`appManagedBackgroundRender` now derives a minimum overlay from the chosen opacity. It is **zero up to
+~36%**, so the default look is untouched and the slider keeps its full range; it only trims the top,
+where AA was actually failing.
+
+**Defaults were left alone deliberately.** 16% measures at 9.29:1 / 14.48:1 — comfortably above AA — so
+there was nothing to fix there, and changing it would only have altered the look on taste. What was
+missing was the floor, not a different default.
+
+**Known limitation:** `onBackgroundVariant` is only 3.04:1 on plain White and 3.86:1 on plain `#242424` —
+already at or under large-text AA *before* any image, dropping to ~2.1:1 / ~2.3:1 with the default
+background. No realistic overlay rescues it (14% only reaches ~2.2:1 / ~2.5:1). Fixing it means not
+putting secondary text on the raw page background, which is a change across many pages rather than a
+tuning of this one.
 
 ## Gaps worth doing early
 

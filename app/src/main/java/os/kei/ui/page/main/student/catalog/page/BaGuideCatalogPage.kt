@@ -34,6 +34,7 @@ import os.kei.ui.page.main.student.catalog.component.withResolvedCatalogStudentM
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogViewModel
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogFilterSortState
 import os.kei.ui.page.main.widget.chrome.LocalSearchAutoFocusEnabled
+import os.kei.ui.page.main.widget.chrome.appManagedPageBackgroundActive
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
@@ -61,7 +62,14 @@ fun BaGuideCatalogPage(
     val pageTitle = stringResource(R.string.ba_catalog_page_title)
     val accent = MiuixTheme.colorScheme.primary
     val isDark = isAppInDarkTheme()
-    val panelBackground = if (isDark) Color(0xFF10141B) else MiuixTheme.colorScheme.background
+    // Transparent while a non-Home background is painting, otherwise this opaque panel covers it and the
+    // setting silently does nothing on this page.
+    val panelBackground =
+        when {
+            appManagedPageBackgroundActive() -> Color.Transparent
+            isDark -> Color(0xFF10141B)
+            else -> MiuixTheme.colorScheme.background
+        }
     var activationCount by rememberSaveable { mutableIntStateOf(0) }
     DisposableEffect(Unit) {
         activationCount++

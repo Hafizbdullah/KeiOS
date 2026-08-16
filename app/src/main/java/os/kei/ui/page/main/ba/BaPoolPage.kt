@@ -46,6 +46,7 @@ import os.kei.ui.page.main.back.KeiOSActivityRootBackHandler
 import os.kei.ui.page.main.common.applicationViewModel
 import os.kei.ui.page.main.os.appLucideBackIcon
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
+import os.kei.ui.page.main.widget.chrome.appManagedPageBackgroundActive
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.status.AppStatusColors
@@ -186,6 +187,10 @@ internal fun BaPoolPage(
             )
         },
     ) { innerPadding ->
+        // Hoisted so the accent wash has exactly one theme decision, and so the gradient's
+        // opaque ends can drop out without duplicating it.
+        val accentWash = accent.copy(alpha = if (isAppInDarkTheme()) 0.11f else 0.07f)
+        val pageBase = MiuixTheme.colorScheme.background
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier =
@@ -193,12 +198,15 @@ internal fun BaPoolPage(
                         .matchParentSize()
                         .background(
                             Brush.verticalGradient(
+                                // The accent wash is this page's design and stays. Only the opaque ends
+                                // drop out while a non-Home background is painting, so the image shows
+                                // through instead of being hidden behind a full-page plate.
                                 colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.background,
-                                        accent.copy(alpha = if (isAppInDarkTheme()) 0.11f else 0.07f),
-                                        MiuixTheme.colorScheme.background,
-                                    ),
+                                    if (appManagedPageBackgroundActive()) {
+                                        listOf(Color.Transparent, accentWash, Color.Transparent)
+                                    } else {
+                                        listOf(pageBase, accentWash, pageBase)
+                                    },
                             ),
                         ).layerBackdrop(pageBackdrop),
             )

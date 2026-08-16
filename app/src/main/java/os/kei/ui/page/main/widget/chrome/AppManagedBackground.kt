@@ -121,6 +121,64 @@ object AppManagedBackgroundStyles {
     }
 }
 
+/**
+ * How far the background image is allowed to pull the page away from its base colour.
+ *
+ * The image and the page's primary text both sit on the same surface, so the further the composite
+ * travels from `colorScheme.background` the worse text contrast gets — and the image is user-supplied,
+ * so the worst case has to be assumed: a white image in dark theme, a black one in light.
+ *
+ * Composited strength is `opacity * (1 - overlay)`. Solving WCAG contrast for primary text against that
+ * worst case, targeting 4.8:1 for margin over the 4.5:1 AA line:
+ *
+ * | | dark (white image over `#242424`) | light (black image over White) |
+ * |---|---|---|
+ * | ceiling | **0.357** | 0.527 |
+ *
+ * Dark theme binds, because `#242424` is much closer to white than White is to black.
+ *
+ * Measured before this existed: at the 40% maximum in dark theme primary text fell to **4.20:1**, under
+ * AA, with nothing in the default configuration to stop it — `AppManagedBackgroundStyles.Standard` has a
+ * zero flat overlay and the reading-overlay pref defaults to 0, so readability depended on the user
+ * finding the "Readable" page style. At the 16% default the worst case is 9.29:1 dark / 14.48:1 light,
+ * so nothing needs to change there and nothing does: the ceiling only bites above ~36%.
+ */
+internal fun appManagedBackgroundReadableStrengthCeiling(darkBase: Boolean): Float = if (darkBase) 0.357f else 0.527f
+
+/**
+ * The image alpha and the readability overlay floor to render with, from one place.
+ *
+ * Both the main pager and the route host draw this background, and they have already drifted apart once
+ * — one of them composited over `surface` while the other used `background`, which is what made the same
+ * opacity slider produce two different results. Deriving both numbers here keeps that from recurring.
+ *
+ * The overlay is a *floor*: the page style's own overlay and the user's reading-overlay preference are
+ * still free to go higher.
+ */
+internal fun appManagedBackgroundRender(
+    opacity: Float,
+    style: AppManagedBackgroundStyle,
+    darkBase: Boolean,
+): AppManagedBackgroundRender {
+    // `coerceIn` passes NaN straight through, so a non-finite preference would otherwise reach
+    // `AsyncImage`'s alpha as NaN and take the readability test with it. Absent beats invalid.
+    val requested = (opacity * style.opacityMultiplier).takeIf(Float::isFinite) ?: 0f
+    val imageOpacity = requested.coerceIn(0f, 1f)
+    val ceiling = appManagedBackgroundReadableStrengthCeiling(darkBase)
+    // overlay = 1 - ceiling/opacity, i.e. exactly enough to pull the composite back to the ceiling.
+    val overlay = if (imageOpacity > ceiling) 1f - ceiling / imageOpacity else 0f
+    return AppManagedBackgroundRender(
+        imageOpacity = imageOpacity,
+        readabilityOverlay = overlay.coerceIn(0f, 1f),
+    )
+}
+
+@Immutable
+internal data class AppManagedBackgroundRender(
+    val imageOpacity: Float,
+    val readabilityOverlay: Float,
+)
+
 @Composable
 fun AppManagedBackgroundHost(
     enabled: Boolean,
@@ -169,10 +227,11 @@ fun AppManagedBackgroundHost(
                     .then(appManagedBackgroundBaseModifier(baseColor, sceneBackdrop)),
         ) {
             if (active) {
+                val render = appManagedBackgroundRender(opacity, resolvedStyle, darkBase)
                 AppManagedBackgroundImage(
                     enabled = true,
                     imageUri = trimmedUri,
-                    opacity = opacity * resolvedStyle.opacityMultiplier,
+                    opacity = render.imageOpacity,
                     saturation = saturation,
                     contentScale = contentScale,
                     alignment = alignment,
@@ -183,6 +242,7 @@ fun AppManagedBackgroundHost(
                     darkBase = darkBase,
                     style = resolvedStyle,
                     scrim = scrim,
+                    readabilityOverlay = render.readabilityOverlay,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -238,13 +298,24 @@ fun AppManagedBackgroundOverlay(
     scrim: Float,
     modifier: Modifier = Modifier,
     darkBase: Boolean = baseColor.luminance() < 0.5f,
+    /**
+     * Minimum overlay needed to keep primary text at WCAG AA against a worst-case image. A floor, not a
+     * replacement — the page style and the user's reading-overlay preference may ask for more. See
+     * [appManagedBackgroundReadableStrengthCeiling].
+     */
+    readabilityOverlay: Float = 0f,
 ) {
     val overlayAlpha =
-        (if (darkBase) {
-            style.darkOverlayAlpha
-        } else {
-            style.lightOverlayAlpha
-        } + scrim).coerceIn(0f, 1f)
+        maxOf(
+            (
+                if (darkBase) {
+                    style.darkOverlayAlpha
+                } else {
+                    style.lightOverlayAlpha
+                } + scrim
+            ).coerceIn(0f, 1f),
+            readabilityOverlay.coerceIn(0f, 1f),
+        )
     val edgeGradientAlpha =
         (if (darkBase) {
             style.darkEdgeGradientAlpha

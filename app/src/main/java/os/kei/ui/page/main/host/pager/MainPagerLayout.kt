@@ -42,6 +42,7 @@ import os.kei.ui.page.main.back.resolveMainBackNavigationAction
 import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundImage
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundOverlay
+import os.kei.ui.page.main.widget.chrome.appManagedBackgroundRender
 import os.kei.ui.page.main.widget.chrome.AppManagedBackgroundStyles
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.glass.appGripAwareDockTouchObserver
@@ -263,10 +264,18 @@ internal fun MainPagerLayout(
                             null
                         }
                     }
+                // Same helper the route host uses, so the image alpha and the readability floor cannot
+                // drift between the two levels again.
+                val render =
+                    appManagedBackgroundRender(
+                        opacity = nonHomeBackgroundOpacity,
+                        style = backgroundStyle,
+                        darkBase = darkBase,
+                    )
                 AppManagedBackgroundImage(
                     enabled = coordinator.hasNonHomeBackground,
                     imageUri = coordinator.effectiveNonHomeBackgroundUri,
-                    opacity = nonHomeBackgroundOpacity * backgroundStyle.opacityMultiplier,
+                    opacity = render.imageOpacity,
                     saturation = nonHomeBackgroundSaturation,
                     contentScale = nonHomeBackgroundContentScale,
                     alignment = nonHomeBackgroundAlignment,
@@ -279,6 +288,7 @@ internal fun MainPagerLayout(
                     darkBase = darkBase,
                     style = backgroundStyle,
                     scrim = nonHomeBackgroundScrim,
+                    readabilityOverlay = render.readabilityOverlay,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

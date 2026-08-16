@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -67,6 +68,7 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
+import os.kei.ui.page.main.widget.chrome.appManagedPageBackgroundActive
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
@@ -359,7 +361,15 @@ fun BaStudentGuidePage(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(MiuixTheme.colorScheme.background),
+                        // Transparent while a non-Home background is painting, otherwise this opaque
+                        // plate covers it and the setting does nothing on this page.
+                        .background(
+                            if (appManagedPageBackgroundActive()) {
+                                Color.Transparent
+                            } else {
+                                MiuixTheme.colorScheme.background
+                            },
+                        ),
                 topBar = {
                     AppTopBarSection(
                         title = pageTitle,

@@ -34,6 +34,20 @@ import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 
 internal val LocalAppScaffoldContainerColor = staticCompositionLocalOf<Color?> { null }
 
+/**
+ * True when a managed background is painting this page, so page-level fills must step aside.
+ *
+ * The non-Home background is meant to apply everywhere except Home, but a page that paints its own
+ * opaque plate covers it and the setting silently does nothing there. Rather than delete those plates —
+ * the BA calendar and pool use theirs for a designed accent wash, and it doubles as their glass
+ * backdrop producer — a page asks whether it is being backed and drops only the opaque part.
+ *
+ * Reads the same signal `AppManagedBackgroundHost` already publishes to make scaffolds transparent, so
+ * there is one source of truth for "a background is active" rather than re-deriving it from prefs.
+ */
+@Composable
+fun appManagedPageBackgroundActive(): Boolean = LocalAppScaffoldContainerColor.current == Color.Transparent
+
 fun appPageContentPadding(
     innerPadding: PaddingValues,
     bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
