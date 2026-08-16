@@ -54,6 +54,7 @@ internal data class BaOfficeState(
     val arenaRefreshNotifyEnabled: Boolean,
     val arenaRefreshLastNotifiedSlotMs: Long,
     val cafeVisitNotifyEnabled: Boolean,
+    val craftNotifyEnabled: Boolean,
     val cafeVisitLastNotifiedSlotMs: Long,
     val coffeeHeadpatMs: Long,
     val coffeeInvite1UsedMs: Long,
@@ -92,6 +93,7 @@ internal class BaOfficeController(
     var arenaRefreshNotifyEnabled by mutableStateOf(snapshot.arenaRefreshNotifyEnabled)
     var arenaRefreshLastNotifiedSlotMs by mutableLongStateOf(snapshot.arenaRefreshLastNotifiedSlotMs)
     var cafeVisitNotifyEnabled by mutableStateOf(snapshot.cafeVisitNotifyEnabled)
+    var craftNotifyEnabled by mutableStateOf(snapshot.craftNotifyEnabled)
     var cafeVisitLastNotifiedSlotMs by mutableLongStateOf(snapshot.cafeVisitLastNotifiedSlotMs)
     var coffeeHeadpatMs by mutableLongStateOf(snapshot.coffeeHeadpatMs)
     var coffeeInvite1UsedMs by mutableLongStateOf(snapshot.coffeeInvite1UsedMs)
@@ -143,6 +145,7 @@ internal class BaOfficeController(
             arenaRefreshNotifyEnabled == snapshot.arenaRefreshNotifyEnabled &&
             arenaRefreshLastNotifiedSlotMs == snapshot.arenaRefreshLastNotifiedSlotMs &&
             cafeVisitNotifyEnabled == snapshot.cafeVisitNotifyEnabled &&
+            craftNotifyEnabled == snapshot.craftNotifyEnabled &&
             cafeVisitLastNotifiedSlotMs == snapshot.cafeVisitLastNotifiedSlotMs &&
             coffeeHeadpatMs == snapshot.coffeeHeadpatMs &&
             coffeeInvite1UsedMs == snapshot.coffeeInvite1UsedMs &&
@@ -193,6 +196,7 @@ internal class BaOfficeController(
         arenaRefreshNotifyEnabled = snapshot.arenaRefreshNotifyEnabled
         arenaRefreshLastNotifiedSlotMs = snapshot.arenaRefreshLastNotifiedSlotMs
         cafeVisitNotifyEnabled = snapshot.cafeVisitNotifyEnabled
+        craftNotifyEnabled = snapshot.craftNotifyEnabled
         cafeVisitLastNotifiedSlotMs = snapshot.cafeVisitLastNotifiedSlotMs
         coffeeHeadpatMs = snapshot.coffeeHeadpatMs
         coffeeInvite1UsedMs = snapshot.coffeeInvite1UsedMs
@@ -228,6 +232,7 @@ internal class BaOfficeController(
             arenaRefreshNotifyEnabled = arenaRefreshNotifyEnabled,
             arenaRefreshLastNotifiedSlotMs = arenaRefreshLastNotifiedSlotMs,
             cafeVisitNotifyEnabled = cafeVisitNotifyEnabled,
+            craftNotifyEnabled = craftNotifyEnabled,
             cafeVisitLastNotifiedSlotMs = cafeVisitLastNotifiedSlotMs,
             coffeeHeadpatMs = coffeeHeadpatMs,
             coffeeInvite1UsedMs = coffeeInvite1UsedMs,

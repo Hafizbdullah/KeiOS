@@ -16,6 +16,9 @@ import os.kei.core.ui.resource.resolveString
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaCraftSlot
+import os.kei.ui.page.main.ba.support.BaCraftState
+import os.kei.ui.page.main.ba.support.slotAt
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
 
 internal class BaPageSheetApMutationPersistenceCoordinator(
@@ -26,6 +29,8 @@ internal class BaPageSheetApMutationPersistenceCoordinator(
     private val persistRuntimeUpdate: suspend (BaRuntimePersistenceUpdate) -> Unit =
         { update -> update.persistAsync() },
     private val scheduleBaApThreshold: () -> Unit,
+    private val saveCraft: suspend (BaAccountId?, BaCraftState) -> Unit =
+        { accountId, craft -> BaOfficeRepository.saveCraftAsync(accountId, craft) },
 ) {
     suspend fun persistApLimit(
         limit: Int,
@@ -47,6 +52,20 @@ internal class BaPageSheetApMutationPersistenceCoordinator(
             persist = {
                 persistRuntimeUpdate(update.withAccountId(accountIdProvider()))
             },
+            schedule = scheduleBaApThreshold,
+        )
+    }
+
+    /**
+     * Persists craft slots and re-arms the reminder alarm.
+     *
+     * The reschedule is the point: a craft write moves a completion instant, and the single BA alarm is
+     * armed at the earliest one across every kind. Without it the pending alarm keeps the old time and
+     * the new slot's reminder is either late or never.
+     */
+    suspend fun persistCraft(craft: BaCraftState) {
+        persistBaApMutationAndReschedule(
+            persist = { saveCraft(accountIdProvider(), craft) },
             schedule = scheduleBaApThreshold,
         )
     }
@@ -142,6 +161,13 @@ internal fun BaPageSheetHost(
     LaunchedEffect(routeState.showApLimitToolsSheet) {
         if (routeState.showApLimitToolsSheet) {
             office.apLimitInput = office.apLimit.toString()
+        }
+    }
+
+    fun persistCraft(craft: BaCraftState?) {
+        if (craft == null) return
+        sheetScope.launch {
+            apMutationPersistenceCoordinator.persistCraft(craft)
         }
     }
 
@@ -243,6 +269,9 @@ internal fun BaPageSheetHost(
         onCafeVisitNotifyEnabledChange = { enabled ->
             viewModel.updateNotificationDraft { draft -> draft.copy(cafeVisitNotifyEnabled = enabled) }
         },
+        onCraftNotifyEnabledChange = { enabled ->
+            viewModel.updateNotificationDraft { draft -> draft.copy(craftNotifyEnabled = enabled) }
+        },
         onCalendarUpcomingNotifyEnabledChange = { enabled ->
             viewModel.updateNotificationDraft { draft -> draft.copy(calendarUpcomingNotifyEnabled = enabled) }
         },
@@ -319,6 +348,35 @@ internal fun BaPageSheetHost(
             }
         },
         onDismissRequest = viewModel::hideCafeCooldownEditSheet,
+    )
+    BaCraftSlotEditSheet(
+        show = routeState.craftSlotEditTarget != null,
+        target = routeState.craftSlotEditTarget,
+        backdrop = backdrop,
+        slot =
+            routeState.craftSlotEditTarget?.let { target ->
+                office.craft.slotAt(target.function, target.index)
+            } ?: BaCraftSlot(),
+        uiNowMs = uiNowMsProvider(),
+        onStart = { draft ->
+            routeState.craftSlotEditTarget?.let { target ->
+                persistCraft(
+                    office.startCraftSlot(
+                        function = target.function,
+                        index = target.index,
+                        slot = draft,
+                    ),
+                )
+            }
+            viewModel.hideCraftSlotEditSheet()
+        },
+        onClear = {
+            routeState.craftSlotEditTarget?.let { target ->
+                persistCraft(office.clearCraftSlot(target.function, target.index))
+            }
+            viewModel.hideCraftSlotEditSheet()
+        },
+        onDismissRequest = viewModel::hideCraftSlotEditSheet,
     )
 }
 

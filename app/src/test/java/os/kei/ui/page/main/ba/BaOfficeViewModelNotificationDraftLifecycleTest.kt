@@ -141,6 +141,7 @@ private class RecordingBaOfficePageRepository(
                 poolEndingNotifyEnabled = sheetState.poolEndingNotifyEnabled,
                 calendarPoolChangeNotifyEnabled = sheetState.calendarPoolChangeNotifyEnabled,
                 calendarPoolNotifyLeadHours = sheetState.calendarPoolNotifyLeadHours,
+                craftNotifyEnabled = sheetState.craftNotifyEnabled,
             )
         return BaOfficeNotificationSavePersistenceResult(
             persisted = persisted,
@@ -152,6 +153,7 @@ private class RecordingBaOfficePageRepository(
                         persisted.keepApRemindersReadUntilBelowThreshold,
                     arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled,
                     cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled,
+                    craftNotifyEnabled = persisted.craftNotifyEnabled,
                     calendarUpcomingNotifyEnabled = persisted.calendarUpcomingNotifyEnabled,
                     calendarEndingNotifyEnabled = persisted.calendarEndingNotifyEnabled,
                     poolUpcomingNotifyEnabled = persisted.poolUpcomingNotifyEnabled,

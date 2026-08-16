@@ -530,6 +530,17 @@ private fun BaAccountCustomReminderEditor(
             },
         )
     }
+    SheetControlRow(
+        label = stringResource(R.string.ba_settings_label_craft_notify),
+        summary = stringResource(R.string.ba_settings_summary_craft_notify),
+    ) {
+        AppSwitch(
+            checked = settings.craftNotifyEnabled,
+            onCheckedChange = { enabled ->
+                onSettingsChange(settings.copy(craftNotifyEnabled = enabled))
+            },
+        )
+    }
 }
 
 @Composable

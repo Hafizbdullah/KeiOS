@@ -42,6 +42,7 @@ internal data class BaOfficeChromeUiState(
     val showApLimitToolsSheet: Boolean = false,
     val showCafeApToolsSheet: Boolean = false,
     val cafeCooldownEditTarget: BaCafeCooldownEditTarget? = null,
+    val craftSlotEditTarget: BaCraftSlotEditTarget? = null,
     val showCafeLevelPopup: Boolean = false,
     val cafeLevelPopupAnchorBounds: IntRect? = null,
     val notificationLeadDropdownExpanded: Boolean = false,
@@ -57,7 +58,8 @@ internal val BaOfficeChromeUiState.hasVisiblePageSheet: Boolean
             showNotificationSettingsSheet ||
             showApLimitToolsSheet ||
             showCafeApToolsSheet ||
-            cafeCooldownEditTarget != null
+            cafeCooldownEditTarget != null ||
+            craftSlotEditTarget != null
 
 internal data class BaOfficeSyncUiState(
     val calendarReloadSignal: Int = 0,
@@ -147,6 +149,7 @@ internal fun BaAccountStoreSnapshot.toOfficeAccountUiState(): BaOfficeAccountUiS
                                     override.keepApRemindersReadUntilBelowThreshold,
                                 arenaRefreshNotifyEnabled = override.arenaRefreshNotifyEnabled,
                                 cafeVisitNotifyEnabled = override.cafeVisitNotifyEnabled,
+                                craftNotifyEnabled = override.craftNotifyEnabled,
                             )
                         } ?: globalReminderSettings,
                 )

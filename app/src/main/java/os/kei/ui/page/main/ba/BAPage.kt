@@ -296,6 +296,7 @@ fun BAPage(
                 onOpenApLimitTools = officeViewModel::showApLimitToolsSheet,
                 onOpenCafeApTools = officeViewModel::showCafeApToolsSheet,
                 onOpenCafeCooldownEditSheet = officeViewModel::showCafeCooldownEditSheet,
+                onOpenCraftSlotEditSheet = officeViewModel::showCraftSlotEditSheet,
                 onAccountSelected = { accountId ->
                     officeViewModel.selectActiveAccount(
                         accountId = accountId,

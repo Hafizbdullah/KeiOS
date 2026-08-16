@@ -280,6 +280,10 @@
     <string name="ba_craft_sheet_start">开始计时</string>
     <string name="ba_craft_sheet_clear">清空槽位</string>
     <string name="ba_craft_slot_button_format">%1$s %2$d</string>
+    <string name="ba_craft_sheet_node_format">解 %1$d</string>
+    <string name="ba_craft_sheet_node_unopened">未开</string>
+    <string name="ba_craft_sheet_grade_label">品质</string>
+    <string name="ba_craft_sheet_quantity">个数</string>
     <string name="ba_craft_slot_idle">空闲</string>
     <string name="ba_craft_slot_done">已完成</string>
     <string name="ba_craft_slot_idle_countdown">—</string>

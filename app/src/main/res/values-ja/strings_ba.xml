@@ -265,6 +265,10 @@
     <string name="ba_craft_sheet_start">計測を開始</string>
     <string name="ba_craft_sheet_clear">スロットを空にする</string>
     <string name="ba_craft_slot_button_format">%1$s %2$d</string>
+    <string name="ba_craft_sheet_node_format">ノード %1$d</string>
+    <string name="ba_craft_sheet_node_unopened">未開放</string>
+    <string name="ba_craft_sheet_grade_label">等級</string>
+    <string name="ba_craft_sheet_quantity">個数</string>
     <string name="ba_craft_slot_idle">空き</string>
     <string name="ba_craft_slot_done">完了</string>
     <string name="ba_craft_slot_idle_countdown">—</string>

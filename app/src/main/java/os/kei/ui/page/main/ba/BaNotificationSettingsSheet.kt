@@ -51,6 +51,7 @@ internal data class BaNotificationSettingsSheetState(
     val keepApRemindersReadUntilBelowThreshold: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
+    val craftNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
     val calendarEndingNotifyEnabled: Boolean,
     val poolUpcomingNotifyEnabled: Boolean,
@@ -73,6 +74,7 @@ internal fun BaNotificationSettingsSheet(
     onKeepApRemindersReadUntilBelowThresholdChange: (Boolean) -> Unit,
     onArenaRefreshNotifyEnabledChange: (Boolean) -> Unit,
     onCafeVisitNotifyEnabledChange: (Boolean) -> Unit,
+    onCraftNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarUpcomingNotifyEnabledChange: (Boolean) -> Unit,
     onCalendarEndingNotifyEnabledChange: (Boolean) -> Unit,
     onPoolUpcomingNotifyEnabledChange: (Boolean) -> Unit,
@@ -250,6 +252,15 @@ internal fun BaNotificationSettingsSheet(
                     AppSwitch(
                         checked = state.cafeVisitNotifyEnabled,
                         onCheckedChange = onCafeVisitNotifyEnabledChange,
+                    )
+                }
+                SheetControlRow(
+                    label = stringResource(R.string.ba_settings_label_craft_notify),
+                    summary = stringResource(R.string.ba_settings_summary_craft_notify),
+                ) {
+                    AppSwitch(
+                        checked = state.craftNotifyEnabled,
+                        onCheckedChange = onCraftNotifyEnabledChange,
                     )
                 }
             }

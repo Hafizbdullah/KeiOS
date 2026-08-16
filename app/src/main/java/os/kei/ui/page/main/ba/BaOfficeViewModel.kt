@@ -240,6 +240,20 @@ internal class BaOfficeViewModel private constructor(
         }
     }
 
+    fun showCraftSlotEditSheet(target: BaCraftSlotEditTarget) {
+        _chromeUiState.update { state ->
+            state
+                .withoutFloatingPopups()
+                .copy(craftSlotEditTarget = target)
+        }
+    }
+
+    fun hideCraftSlotEditSheet() {
+        _chromeUiState.update { state ->
+            state.copy(craftSlotEditTarget = null)
+        }
+    }
+
     fun updateDebugUseRealCalendarPoolData(enabled: Boolean) {
         _chromeUiState.update { state ->
             if (state.debugUseRealCalendarPoolData == enabled) {
@@ -565,6 +579,7 @@ internal class BaOfficeViewModel private constructor(
                     persisted.keepApRemindersReadUntilBelowThreshold
                 office.arenaRefreshNotifyEnabled = persisted.arenaRefreshNotifyEnabled
                 office.cafeVisitNotifyEnabled = persisted.cafeVisitNotifyEnabled
+                office.craftNotifyEnabled = persisted.craftNotifyEnabled
                 office.apNotifyThreshold = persisted.savedThreshold
                 office.cafeApNotifyThreshold = persisted.savedCafeApThreshold
                 val savedDraft = saveResult.savedDraft
@@ -684,6 +699,7 @@ internal fun notificationRuntimeDraft(
             office.keepApRemindersReadUntilBelowThreshold,
         arenaRefreshNotifyEnabled = office.arenaRefreshNotifyEnabled,
         cafeVisitNotifyEnabled = office.cafeVisitNotifyEnabled,
+        craftNotifyEnabled = office.craftNotifyEnabled,
         apNotifyThresholdText = office.apNotifyThreshold.toString(),
         cafeApNotifyThresholdText = office.cafeApNotifyThreshold.toString(),
     )

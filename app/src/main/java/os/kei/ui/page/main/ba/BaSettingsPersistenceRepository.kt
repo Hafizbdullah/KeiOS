@@ -22,6 +22,7 @@ internal data class BaNotificationSettingsPersistenceResult(
     val keepApRemindersReadUntilBelowThreshold: Boolean,
     val arenaRefreshNotifyEnabled: Boolean,
     val cafeVisitNotifyEnabled: Boolean,
+    val craftNotifyEnabled: Boolean,
     val calendarUpcomingNotifyEnabled: Boolean,
     val calendarEndingNotifyEnabled: Boolean,
     val poolUpcomingNotifyEnabled: Boolean,
@@ -137,6 +138,7 @@ internal object BaSettingsPersistenceRepository {
                     sheetState.keepApRemindersReadUntilBelowThreshold,
                 arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
                 cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
+                craftNotifyEnabled = sheetState.craftNotifyEnabled,
             ),
         )
         BASettingsStore.saveCalendarUpcomingNotifyEnabled(sheetState.calendarUpcomingNotifyEnabled)
@@ -163,6 +165,7 @@ internal object BaSettingsPersistenceRepository {
                 sheetState.keepApRemindersReadUntilBelowThreshold,
             arenaRefreshNotifyEnabled = sheetState.arenaRefreshNotifyEnabled,
             cafeVisitNotifyEnabled = sheetState.cafeVisitNotifyEnabled,
+            craftNotifyEnabled = sheetState.craftNotifyEnabled,
             calendarUpcomingNotifyEnabled = sheetState.calendarUpcomingNotifyEnabled,
             calendarEndingNotifyEnabled = sheetState.calendarEndingNotifyEnabled,
             poolUpcomingNotifyEnabled = sheetState.poolUpcomingNotifyEnabled,

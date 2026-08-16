@@ -7,6 +7,8 @@ import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaCraftFunction
+import os.kei.ui.page.main.ba.support.BaCraftState
 
 internal suspend fun persistBaApMutationAndReschedule(
     persist: suspend () -> Unit,
@@ -28,6 +30,7 @@ internal class BaOfficeActionCoordinator(
     private val onOpenApLimitTools: () -> Unit,
     private val onOpenCafeApTools: () -> Unit,
     private val onOpenCafeCooldownEditSheet: (BaCafeCooldownEditTarget) -> Unit,
+    private val onOpenCraftSlotEditSheet: (BaCraftSlotEditTarget) -> Unit,
     private val onAccountSelected: (BaAccountId) -> Unit,
     private val onEditAccount: (BaAccountId) -> Unit,
     private val onRefreshCalendar: () -> Unit,
@@ -64,6 +67,12 @@ internal class BaOfficeActionCoordinator(
             onUseInviteTicket2 = { persistCooldown(office.useInviteTicket2()) },
             onEditInviteTicket2Cooldown = {
                 onOpenCafeCooldownEditSheet(BaCafeCooldownEditTarget.InviteTicket2)
+            },
+            onConfigureCraftSlot = { function, index ->
+                onOpenCraftSlotEditSheet(BaCraftSlotEditTarget(function = function, index = index))
+            },
+            onClearCraftSlot = { function, index ->
+                persistCraftAndReschedule(office.clearCraftSlot(function, index))
             },
             onRefreshCalendar = onRefreshCalendar,
             onOpenCalendarLink = onOpenCalendarLink,
@@ -113,6 +122,21 @@ internal class BaOfficeActionCoordinator(
 
     private fun BaRuntimePersistenceUpdate.withCurrentAccount(): BaRuntimePersistenceUpdate =
         withAccountId(accountIdProvider())
+
+    /**
+     * Craft writes reschedule, unlike the cooldown family: a slot's completion instant is one of the
+     * candidates the single BA reminder alarm is armed at, so leaving the old alarm in place would make
+     * the reminder late or drop it.
+     */
+    private fun persistCraftAndReschedule(craft: BaCraftState?) {
+        if (craft == null) return
+        scope.launch {
+            persistBaApMutationAndReschedule(
+                persist = { BaOfficeRepository.saveCraftAsync(accountIdProvider(), craft) },
+                schedule = scheduleBaApThreshold,
+            )
+        }
+    }
 
     private fun persistCooldown(update: BaOfficeCooldownPersistenceUpdate?) {
         if (update == null) return

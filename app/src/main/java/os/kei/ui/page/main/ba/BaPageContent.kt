@@ -21,6 +21,8 @@ import com.kyant.backdrop.backdrops.layerBackdrop
 import os.kei.ui.page.main.ba.card.BaAccountPagerCard
 import os.kei.ui.page.main.ba.card.BaApCard
 import os.kei.ui.page.main.ba.card.BaCafeCard
+import os.kei.ui.page.main.ba.support.BaCraftFunction
+import os.kei.ui.page.main.ba.card.BaCraftCard
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
@@ -71,6 +73,8 @@ internal data class BaPageContentActions(
     val onEditInviteTicket1Cooldown: () -> Unit,
     val onUseInviteTicket2: () -> Unit,
     val onEditInviteTicket2Cooldown: () -> Unit,
+    val onConfigureCraftSlot: (BaCraftFunction, Int) -> Unit,
+    val onClearCraftSlot: (BaCraftFunction, Int) -> Unit,
     val onRefreshCalendar: () -> Unit,
     val onOpenCalendarLink: (String) -> Unit,
     val onRefreshPool: () -> Unit,
@@ -81,6 +85,7 @@ internal enum class BaPageContentType {
     Account,
     Ap,
     Cafe,
+    Craft,
 }
 
 @Composable
@@ -168,6 +173,16 @@ internal fun BaPageContent(
                 onEditInviteTicket1Cooldown = actions.onEditInviteTicket1Cooldown,
                 onUseInviteTicket2 = actions.onUseInviteTicket2,
                 onEditInviteTicket2Cooldown = actions.onEditInviteTicket2Cooldown,
+            )
+        }
+
+        item(key = "ba-craft", contentType = BaPageContentType.Craft) {
+            BaCraftCard(
+                backdrop = backdrop,
+                clockState = state.clockState,
+                craft = state.officeState.craft,
+                onConfigureSlot = actions.onConfigureCraftSlot,
+                onClearSlot = actions.onClearCraftSlot,
             )
         }
     }

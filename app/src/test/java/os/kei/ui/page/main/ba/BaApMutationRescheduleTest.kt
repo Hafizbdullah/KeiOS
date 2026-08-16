@@ -203,6 +203,7 @@ class BaApMutationRescheduleTest {
                 onOpenApLimitTools = {},
                 onOpenCafeApTools = {},
                 onOpenCafeCooldownEditSheet = {},
+                onOpenCraftSlotEditSheet = {},
                 onAccountSelected = {},
                 onEditAccount = {},
                 onRefreshCalendar = {},

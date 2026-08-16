@@ -30,6 +30,7 @@ internal data class BaPageRouteState(
     val showApLimitToolsSheet: Boolean,
     val showCafeApToolsSheet: Boolean,
     val cafeCooldownEditTarget: BaCafeCooldownEditTarget?,
+    val craftSlotEditTarget: BaCraftSlotEditTarget?,
     val popupState: BaPagePopupState,
     val accountUiState: BaOfficeAccountUiState,
     val serverIndex: Int,
@@ -71,6 +72,7 @@ internal fun buildBaPageRouteState(
         showApLimitToolsSheet = chromeUiState.showApLimitToolsSheet,
         showCafeApToolsSheet = chromeUiState.showCafeApToolsSheet,
         cafeCooldownEditTarget = chromeUiState.cafeCooldownEditTarget,
+        craftSlotEditTarget = chromeUiState.craftSlotEditTarget,
         popupState =
             BaPagePopupState(
                 showCafeLevelPopup = chromeUiState.showCafeLevelPopup,
