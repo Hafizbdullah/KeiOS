@@ -421,6 +421,36 @@ Verified at 35% on the AVD, both themes. Dark: title capsule (59,72,84) against 
 (95,90,97) against (102,100,102). Light: (240,249,255) against (236,220,234), dock (254,251,255) against
 (246,244,248) — the glass carries the wallpaper's cast in both.
 
+### The catalog's edges were a curtain, not a scroll edge
+
+Follow-on from the same session, and self-inflicted: the catalog page draws a 150dp top and 196dp bottom
+band, each a gradient of its `panelBackground` at alpha 0.96/0.98. That colour became `Color.Transparent`
+when the page was taught to let the background through — and **`Color.Transparent` is transparent
+*black*, so `.copy(alpha = 0.96f)` is 96% black, not "the panel at 96%".** Measured on the AVD:
+`rgb(1,2,3)` at the top of the screen and `rgb(5,5,5)` at the bottom, the wallpaper surviving only in the
+strip between them. The pager-switch veil, `drawRect(panelBackground.copy(alpha = veilAlpha))`, had it
+too.
+
+Both are now `AppScrollEdgeEffect`, shared and living beside `liquidSheetScrollEdge`. It does what Apple
+describes — "blurring and reducing the opacity of background content" — rather than painting in front:
+a 16dp blur of the page composite, masked out toward the content with `BlendMode.DstIn`, plus a tint
+capped at Apple's 35%. The tint comes from `appPageBackdropBaseColor()`, so it is White in light theme
+and brightens rather than darkens.
+
+| | before | after |
+|---|---|---|
+| top, y=20 | (1,2,3) | **(20,24,30)** |
+| top, y=250 | (30,37,45) | **(55,68,84)** |
+| bottom, y=2750 | (10,9,10) | **(96,91,107)** |
+| bottom, y=2840 | (5,5,5) | **(80,81,88)** |
+
+The two ramps are deliberately asymmetric. A bottom edge separates chrome that floats *inside* the band —
+the catalog's playback bar starts about 14% down it — so a symmetric ramp is still near zero exactly where
+it is needed, and the bar's own title collided with a list row until the rise moved to 8%.
+
+Worth knowing: the black curtain had been hiding that collision. Removing a curtain exposes whatever it
+was covering, which is a reason to check the layout underneath rather than to keep the curtain.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it

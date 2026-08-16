@@ -35,8 +35,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.host.pager.MainLoadedPagerState
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -44,6 +46,10 @@ import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
+import os.kei.ui.page.main.widget.chrome.LocalAppManagedSceneBackdrop
+import os.kei.ui.page.main.widget.chrome.appPageBackdropBaseColor
+import os.kei.ui.page.main.widget.glass.AppScrollEdgeEffect
+import os.kei.ui.page.main.widget.glass.AppScrollEdgeSide
 import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdrop
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmBottomChromeScrollState
 import os.kei.ui.page.main.student.catalog.component.bgm.BaGuideBgmDockTab
@@ -173,6 +179,20 @@ internal fun BaGuideCatalogPageContent(
         resolvedMotionDuration(CatalogInitialContentCrossfadeMs, transitionAnimationsEnabled)
     val catalogSceneBackdrop = rememberBaGuideCatalogSceneBackdrop()
 
+    // What the scroll edges blur: the wallpaper composite under the list that slides beneath them.
+    // `pageChromeBackdrop` records the pager, so there is no feedback loop — the edges are siblings drawn
+    // after it. Sampling `bottomChromeBackdrop` would include the edges themselves.
+    val managedSceneBackdrop = LocalAppManagedSceneBackdrop.current
+    val scrollEdgeBackdrop: Backdrop =
+        if (managedSceneBackdrop != null) {
+            rememberCombinedBackdrop(managedSceneBackdrop, pageChromeBackdrop)
+        } else {
+            pageChromeBackdrop
+        }
+    // The page's real base, never `panelBackground` — that is transparent while a background paints, and
+    // tinting with it is what turned both edges black.
+    val scrollEdgeTint = appPageBackdropBaseColor()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier =
@@ -191,7 +211,9 @@ internal fun BaGuideCatalogPageContent(
                                     listOf(
                                         accent.copy(alpha = if (isDark) 0.20f else 0.08f),
                                         MiuixTheme.colorScheme.surface.copy(alpha = if (isDark) 0.10f else 0.55f),
-                                        panelBackground,
+                                        // Same RGB, zero alpha: ending on `panelBackground` while it is
+                                        // `Color.Transparent` walks the gradient's colour toward black.
+                                        MiuixTheme.colorScheme.surface.copy(alpha = 0f),
                                     ),
                             ),
                         ),
@@ -241,7 +263,7 @@ internal fun BaGuideCatalogPageContent(
                                         drawContent()
                                         val veilAlpha = pagerSwitchMotion.veilAlpha
                                         if (veilAlpha > 0f) {
-                                            drawRect(panelBackground.copy(alpha = veilAlpha))
+                                            drawRect(scrollEdgeTint.copy(alpha = veilAlpha))
                                         }
                                     },
                         )
@@ -250,22 +272,12 @@ internal fun BaGuideCatalogPageContent(
                     }
                 }
             }
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(topScrimHeight)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        panelBackground.copy(alpha = if (isDark) 0.96f else 0.94f),
-                                        panelBackground.copy(alpha = if (isDark) 0.78f else 0.72f),
-                                        Color.Transparent,
-                                    ),
-                            ),
-                        ),
+            AppScrollEdgeEffect(
+                backdrop = scrollEdgeBackdrop,
+                side = AppScrollEdgeSide.Top,
+                height = topScrimHeight,
+                tint = scrollEdgeTint,
+                modifier = Modifier.align(Alignment.TopCenter),
             )
             BaGuideCatalogMusicTopBar(
                 title = pageTitle,
@@ -340,22 +352,12 @@ internal fun BaGuideCatalogPageContent(
                     pageState.importPreviewState?.let(importActions.confirmFavoritesImport)
                 },
             )
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(196.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        Color.Transparent,
-                                        panelBackground.copy(alpha = if (isDark) 0.86f else 0.88f),
-                                        panelBackground.copy(alpha = if (isDark) 0.96f else 0.98f),
-                                    ),
-                            ),
-                        ),
+            AppScrollEdgeEffect(
+                backdrop = scrollEdgeBackdrop,
+                side = AppScrollEdgeSide.Bottom,
+                height = CATALOG_BOTTOM_SCROLL_EDGE_HEIGHT,
+                tint = scrollEdgeTint,
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
         AnimatedVisibility(
@@ -458,5 +460,7 @@ private fun isBaGuideCatalogInitialContentReady(
 
 private fun BaGuideCatalogBundle.hasAnyGuideCatalogEntry(): Boolean =
     entriesByTab.values.any { entries -> entries.isNotEmpty() }
+
+private val CATALOG_BOTTOM_SCROLL_EDGE_HEIGHT = 196.dp
 
 private const val CatalogInitialContentCrossfadeMs = 140
