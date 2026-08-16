@@ -8,7 +8,6 @@ import os.kei.core.notification.live.LiveNotificationPayload
 import os.kei.mcp.notification.McpNotificationHelper
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCraftCompletion
-import os.kei.ui.page.main.ba.support.BaCraftFunction
 
 /**
  * Posts one notification per completed Craft Chamber slot.
@@ -98,9 +97,3 @@ internal object BaCraftNotificationDispatcher {
         }
     }
 }
-
-internal fun baCraftFunctionLabelRes(function: BaCraftFunction): Int =
-    when (function) {
-        BaCraftFunction.Generate -> R.string.ba_craft_function_generate
-        BaCraftFunction.Fusion -> R.string.ba_craft_function_fusion
-    }

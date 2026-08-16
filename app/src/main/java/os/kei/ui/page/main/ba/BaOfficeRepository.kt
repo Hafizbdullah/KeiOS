@@ -6,6 +6,7 @@ import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
 import os.kei.ui.page.main.ba.support.BaAccountStoreSnapshot
+import os.kei.ui.page.main.ba.support.BaCraftState
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 
 internal object BaOfficeRepository {
@@ -236,6 +237,15 @@ internal object BaOfficeRepository {
     suspend fun saveCoffeeInvite2UsedMsAsync(epochMs: Long) {
         withContext(AppDispatchers.baFetch) {
             BASettingsStore.saveCoffeeInvite2UsedMs(epochMs)
+        }
+    }
+
+    suspend fun saveCraftAsync(
+        accountId: BaAccountId?,
+        craft: BaCraftState,
+    ) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCraft(accountId = accountId, craft = craft)
         }
     }
 

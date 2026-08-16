@@ -114,6 +114,53 @@ class BaCraftReminderTest {
     }
 
     @Test
+    fun `folding a batch of markers closes the loop exactly like marking one at a time`() {
+        // The store writes all of a sweep's markers in one update. That fold has to be equivalent to
+        // the per-completion write it replaces, or completions leak and the alarm retries forever.
+        val craft =
+            oneLowCraft(BaCraftFunction.Generate)
+                .withSlotAt(
+                    BaCraftFunction.Fusion,
+                    2,
+                    BaCraftSlot(startedAtMs = START, grades = listOf(BaCraftGrade.Low)),
+                )
+        val nowMs = START + 45L * MINUTE
+        val completions = BaReminderCoordinator.evaluateCraft(snapshot(craft), nowMs)
+        assertEquals(2, completions.size)
+
+        val folded =
+            completions.fold(BaCraftNotifiedMarkers()) { markers, completion ->
+                markers.withMarkerAt(completion.function, completion.index, completion.endAtMs)
+            }
+        val oneAtATime =
+            BaCraftNotifiedMarkers()
+                .withMarkerAt(BaCraftFunction.Generate, 0, START + 30L * MINUTE)
+                .withMarkerAt(BaCraftFunction.Fusion, 2, START + 30L * MINUTE)
+        assertEquals(oneAtATime, folded)
+
+        // Loop closed: nothing left to announce.
+        assertTrue(BaReminderCoordinator.evaluateCraft(snapshot(craft, folded), nowMs).isEmpty())
+    }
+
+    @Test
+    fun `a partially announced sweep keeps only the unsent slot pending`() {
+        val craft =
+            oneLowCraft(BaCraftFunction.Generate)
+                .withSlotAt(
+                    BaCraftFunction.Fusion,
+                    2,
+                    BaCraftSlot(startedAtMs = START, grades = listOf(BaCraftGrade.Low)),
+                )
+        val nowMs = START + 45L * MINUTE
+        // Only the generate slot's notification posted; the fusion one failed on permission.
+        val partial =
+            BaCraftNotifiedMarkers().withMarkerAt(BaCraftFunction.Generate, 0, START + 30L * MINUTE)
+        val remaining = BaReminderCoordinator.evaluateCraft(snapshot(craft, partial), nowMs)
+        assertEquals(1, remaining.size)
+        assertEquals(BaCraftFunction.Fusion, remaining.single().function)
+    }
+
+    @Test
     fun `craft notification ids clear the account range`() {
         // BaAccountNotificationIds spans 43_000 .. 43_000 + 99_999 * 4 + 3.
         val accountRangeEnd = 43_000 + 99_999 * 4 + 3

@@ -14,8 +14,15 @@ import os.kei.core.ext.showToast
 import os.kei.ui.page.main.ba.support.BA_AP_LIMIT_MAX
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
+import os.kei.ui.page.main.ba.support.BaCraftFunction
+import os.kei.ui.page.main.ba.support.BaCraftSlot
+import os.kei.ui.page.main.ba.support.BaCraftState
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.cafeStorageCap
+import os.kei.ui.page.main.ba.support.isActive
+import os.kei.ui.page.main.ba.support.normalized
+import os.kei.ui.page.main.ba.support.started
+import os.kei.ui.page.main.ba.support.withSlotAt
 import os.kei.ui.page.main.ba.support.currentArenaRefreshSlotMs
 import os.kei.ui.page.main.ba.support.currentCafeStudentRefreshSlotMs
 import os.kei.ui.page.main.ba.support.displayAp
@@ -51,6 +58,7 @@ internal data class BaOfficeState(
     val coffeeHeadpatMs: Long,
     val coffeeInvite1UsedMs: Long,
     val coffeeInvite2UsedMs: Long,
+    val craft: BaCraftState,
     val apCurrentInput: String,
     val apLimitInput: String,
     val cafeStoredApInput: String,
@@ -88,6 +96,10 @@ internal class BaOfficeController(
     var coffeeHeadpatMs by mutableLongStateOf(snapshot.coffeeHeadpatMs)
     var coffeeInvite1UsedMs by mutableLongStateOf(snapshot.coffeeInvite1UsedMs)
     var coffeeInvite2UsedMs by mutableLongStateOf(snapshot.coffeeInvite2UsedMs)
+
+    // mutableStateOf, not a primitive variant: BaCraftState is a data class of lists, so `==` is deep
+    // and structural, which is what both the equality chain and @Stable on BaOfficeState need.
+    var craft by mutableStateOf(snapshot.craft.normalized())
 
     var apCurrentInput by mutableStateOf(displayAp(apCurrent).toString())
     var apLimitInput by mutableStateOf(apLimit.toString())
@@ -135,6 +147,11 @@ internal class BaOfficeController(
             coffeeHeadpatMs == snapshot.coffeeHeadpatMs &&
             coffeeInvite1UsedMs == snapshot.coffeeInvite1UsedMs &&
             coffeeInvite2UsedMs == snapshot.coffeeInvite2UsedMs &&
+            // Against the NORMALIZED snapshot value, like the derived input strings below. The holder
+            // pads to BA_CRAFT_SLOT_COUNT, so comparing with the raw field would never hold for a
+            // freshly built controller and this would report dirty forever — which permanently skips
+            // applySnapshot and the loaded state would never reach the UI.
+            craft == snapshot.craft.normalized() &&
             apCurrentInput == displayAp(snapshot.apCurrent.coerceAtLeast(0.0)).toString() &&
             apLimitInput == snapshot.apLimit.toString() &&
             cafeStoredApInput == displayAp(snapshot.cafeStoredAp.coerceAtLeast(0.0)).toString() &&
@@ -180,6 +197,7 @@ internal class BaOfficeController(
         coffeeHeadpatMs = snapshot.coffeeHeadpatMs
         coffeeInvite1UsedMs = snapshot.coffeeInvite1UsedMs
         coffeeInvite2UsedMs = snapshot.coffeeInvite2UsedMs
+        craft = snapshot.craft.normalized()
         apCurrentInput = displayAp(apCurrent).toString()
         apLimitInput = apLimit.toString()
         cafeStoredApInput = displayAp(cafeStoredAp).toString()
@@ -214,6 +232,7 @@ internal class BaOfficeController(
             coffeeHeadpatMs = coffeeHeadpatMs,
             coffeeInvite1UsedMs = coffeeInvite1UsedMs,
             coffeeInvite2UsedMs = coffeeInvite2UsedMs,
+            craft = craft,
             apCurrentInput = apCurrentInput,
             apLimitInput = apLimitInput,
             cafeStoredApInput = cafeStoredApInput,
@@ -556,6 +575,40 @@ internal class BaOfficeController(
         coffeeInvite1UsedMs = usedMs
         return BaOfficeCooldownPersistenceUpdate(invite1Ms = usedMs)
     }
+
+    /**
+     * Writes one craft slot, returning the state to persist or `null` when nothing changed.
+     *
+     * Returning null on a no-op is what makes the caller skip both the write and the reschedule — the
+     * same contract the cooldown mutators use. It matters more here: a craft write re-arms the single BA
+     * reminder alarm, so a redundant write would re-arm it for no reason.
+     */
+    fun writeCraftSlot(
+        function: BaCraftFunction,
+        index: Int,
+        slot: BaCraftSlot,
+    ): BaCraftState? {
+        val next = craft.withSlotAt(function, index, slot)
+        if (next == craft) return null
+        craft = next
+        return next
+    }
+
+    /** Starts the slot at the current clock, or returns `null` when it has no resolvable duration. */
+    fun startCraftSlot(
+        function: BaCraftFunction,
+        index: Int,
+        slot: BaCraftSlot,
+    ): BaCraftState? {
+        val started = slot.started(nowMs = clock.nowMs())
+        if (!started.isActive()) return null
+        return writeCraftSlot(function = function, index = index, slot = started)
+    }
+
+    fun clearCraftSlot(
+        function: BaCraftFunction,
+        index: Int,
+    ): BaCraftState? = writeCraftSlot(function = function, index = index, slot = BaCraftSlot())
 
     fun useInviteTicket2(): BaOfficeCooldownPersistenceUpdate? {
         val consumedAt = consumeBaInviteTicket(coffeeInvite2UsedMs, nowMs = clock.nowMs()) ?: return null

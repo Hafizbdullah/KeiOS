@@ -152,6 +152,54 @@ internal fun BaCraftSlot.normalized(function: BaCraftFunction): BaCraftSlot {
     )
 }
 
+/**
+ * Adds one produced item at [grade], honouring the function's cap.
+ *
+ * This is the whole editing model: one tap is one item, which is exactly one summand of
+ * [computedDurationMs]. Generate appends freely up to three, mixed grades allowed.
+ *
+ * Fusion is one recipe repeated, so tapping a *different* grade re-bases the whole slot onto it and
+ * keeps the count — the teacher changed which recipe they are running, not how many. Appending a
+ * different grade instead would need a mixed list, which [normalized] would only throw away.
+ */
+internal fun BaCraftSlot.withAppendedGrade(
+    function: BaCraftFunction,
+    grade: BaCraftGrade,
+): BaCraftSlot {
+    val next =
+        when {
+            function == BaCraftFunction.Generate ->
+                if (grades.size >= BA_CRAFT_GENERATE_MAX_ENTRIES) grades else grades + grade
+
+            grades.isEmpty() -> listOf(grade)
+            grades.first() != grade -> List(grades.size) { grade }
+            grades.size >= BA_CRAFT_FUSION_MAX_ENTRIES -> grades
+            else -> grades + grade
+        }
+    return copy(grades = next).normalized(function)
+}
+
+internal fun BaCraftSlot.withoutLastGrade(function: BaCraftFunction): BaCraftSlot =
+    copy(grades = grades.dropLast(1)).normalized(function)
+
+/** Anchors the slot to [nowMs]. A slot with no resolvable duration cannot start. */
+internal fun BaCraftSlot.started(nowMs: Long = System.currentTimeMillis()): BaCraftSlot =
+    if (effectiveDurationMs() <= 0L) this else copy(startedAtMs = nowMs.coerceAtLeast(1L))
+
+/**
+ * Parses the hand-entered override, in minutes.
+ *
+ * Blank clears the override rather than meaning zero, so emptying the field falls back to the summed
+ * total instead of making the slot unstartable.
+ */
+internal fun baCraftCustomDurationMsFromMinutes(text: String): Long {
+    val minutes = text.trim().takeIf { it.isNotEmpty() }?.toLongOrNull() ?: return 0L
+    return (minutes.coerceAtLeast(0L) * 60L * 1000L).coerceAtMost(BA_CRAFT_MAX_DURATION_MS)
+}
+
+internal fun baCraftCustomDurationMinutesText(customDurationMs: Long): String =
+    if (customDurationMs > 0L) (customDurationMs / 60L / 1000L).toString() else ""
+
 internal fun BaCraftState.slots(function: BaCraftFunction): List<BaCraftSlot> =
     when (function) {
         BaCraftFunction.Generate -> generate

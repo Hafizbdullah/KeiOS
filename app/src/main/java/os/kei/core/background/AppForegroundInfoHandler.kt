@@ -31,12 +31,14 @@ import os.kei.ui.page.main.ba.BaArenaRefreshNotificationDispatcher
 import os.kei.ui.page.main.ba.BaCafeApNotificationDispatcher
 import os.kei.ui.page.main.ba.BaCafeApReminderPlan
 import os.kei.ui.page.main.ba.BaCafeVisitNotificationDispatcher
+import os.kei.ui.page.main.ba.BaCraftNotificationDispatcher
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import os.kei.ui.page.main.ba.BaSlotReminderPlan
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountReminderSnapshot
 import os.kei.ui.page.main.ba.support.BaApReminderKind
+import os.kei.ui.page.main.ba.support.BaCraftCompletion
 import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import kotlin.coroutines.coroutineContext
 
@@ -654,6 +656,22 @@ object AppForegroundInfoHandler {
                 BASettingsStore.saveAccountCafeVisitLastNotifiedSlotMs(accountId, 0L)
             }
         }
+
+        coroutineContext.ensureActive()
+        // No `else` branch, unlike the four gates above. Those clear a baseline so a newly enabled
+        // reminder does not fire for the slot it happens to land inside. A craft has no baseline to
+        // clear — clearing `craftNotified` here would re-announce every already-collected slot the
+        // moment the toggle came back on. Idempotence lives in the marker instead, and
+        // `evaluateCraft` already returns nothing while the flag is off.
+        if (snapshot.craftNotifyEnabled) {
+            handleBaCraftTick(
+                context = context,
+                accountId = accountId,
+                accountDisplayName = accountDisplayName,
+                snapshot = snapshot,
+                nowMs = nowMs,
+            )
+        }
     }
 
     private suspend fun handleBaCafeApThresholdTick(
@@ -945,6 +963,46 @@ object AppForegroundInfoHandler {
         }
     }
 
+    /**
+     * Posts one notification per elapsed craft slot, then records the ones that actually landed.
+     *
+     * A list rather than a single plan, because all six slots are independent and a sweep that ran
+     * while the app was dead can find several finished at once.
+     *
+     * The marker write is gated on the send having succeeded and batched into one store call. Both
+     * matter: an unrecorded completion leaves `nextCraftSchedule` returning "fire now", which the alarm
+     * floor turns into a 15-second retry loop, while six separate writes would be six whole-list
+     * re-encodes inside the receiver's watchdog budget.
+     */
+    private suspend fun handleBaCraftTick(
+        context: Context,
+        accountId: BaAccountId,
+        accountDisplayName: String,
+        snapshot: BaPageSnapshot,
+        nowMs: Long,
+    ) {
+        val completions = BaReminderCoordinator.evaluateCraft(snapshot = snapshot, nowMs = nowMs)
+        if (completions.isEmpty()) return
+        val announced = mutableListOf<BaCraftCompletion>()
+        completions.forEach { completion ->
+            coroutineContext.ensureActive()
+            val sent =
+                BaCraftNotificationDispatcher.send(
+                    context = context,
+                    completion = completion,
+                    accountDisplayName = accountDisplayName,
+                    accountId = accountId,
+                )
+            if (sent) announced += completion
+        }
+        if (announced.isEmpty()) return
+        withContext(AppDispatchers.mcpServer) {
+            BASettingsStore.saveAccountCraftNotifiedMarkers(
+                accountId = accountId,
+                completions = announced,
+            )
+        }
+    }
 }
 
 internal enum class AppShortcutGitHubRefreshResult {

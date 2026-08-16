@@ -181,6 +181,83 @@ class BaCraftModelsTest {
     }
 
     @Test
+    fun `appending grades to a generate slot accumulates up to three mixed items`() {
+        var slot = BaCraftSlot()
+        slot = slot.withAppendedGrade(BaCraftFunction.Generate, BaCraftGrade.High)
+        assertEquals(3L * HOUR, slot.computedDurationMs())
+        slot = slot.withAppendedGrade(BaCraftFunction.Generate, BaCraftGrade.Highest)
+        assertEquals(9L * HOUR, slot.computedDurationMs())
+        slot = slot.withAppendedGrade(BaCraftFunction.Generate, BaCraftGrade.Low)
+        assertEquals(9L * HOUR + 30L * MINUTE, slot.computedDurationMs())
+        // Fourth tap is a no-op: the game opens at most three nodes.
+        slot = slot.withAppendedGrade(BaCraftFunction.Generate, BaCraftGrade.Low)
+        assertEquals(3, slot.grades.size)
+        assertEquals(9L * HOUR + 30L * MINUTE, slot.computedDurationMs())
+    }
+
+    @Test
+    fun `appending the same grade to a fusion slot raises the count to five`() {
+        var slot = BaCraftSlot()
+        repeat(7) { slot = slot.withAppendedGrade(BaCraftFunction.Fusion, BaCraftGrade.Highest) }
+        assertEquals(5, slot.grades.size)
+        assertEquals(30L * HOUR, slot.computedDurationMs())
+    }
+
+    @Test
+    fun `appending a different grade to a fusion slot re-bases the recipe and keeps the count`() {
+        var slot = BaCraftSlot()
+        repeat(3) { slot = slot.withAppendedGrade(BaCraftFunction.Fusion, BaCraftGrade.High) }
+        assertEquals(9L * HOUR, slot.computedDurationMs())
+        slot = slot.withAppendedGrade(BaCraftFunction.Fusion, BaCraftGrade.Low)
+        assertEquals(List(3) { BaCraftGrade.Low }, slot.grades)
+        assertEquals(90L * MINUTE, slot.computedDurationMs())
+    }
+
+    @Test
+    fun `removing the last item walks the total back down`() {
+        var slot =
+            BaCraftSlot(grades = listOf(BaCraftGrade.High, BaCraftGrade.Highest))
+        slot = slot.withoutLastGrade(BaCraftFunction.Generate)
+        assertEquals(3L * HOUR, slot.computedDurationMs())
+        slot = slot.withoutLastGrade(BaCraftFunction.Generate)
+        assertTrue(slot.grades.isEmpty())
+        // Removing past empty stays empty rather than throwing.
+        assertTrue(slot.withoutLastGrade(BaCraftFunction.Generate).grades.isEmpty())
+    }
+
+    @Test
+    fun `starting anchors the slot and an empty slot cannot start`() {
+        val loaded =
+            BaCraftSlot(grades = listOf(BaCraftGrade.Low)).started(nowMs = START)
+        assertEquals(START, loaded.startedAtMs)
+        assertTrue(loaded.isActive())
+
+        val empty = BaCraftSlot().started(nowMs = START)
+        assertEquals(0L, empty.startedAtMs)
+        assertFalse(empty.isActive())
+    }
+
+    @Test
+    fun `starting with only a custom duration works`() {
+        val slot = BaCraftSlot(customDurationMs = 2L * HOUR).started(nowMs = START)
+        assertTrue(slot.isActive())
+        assertEquals(START + 2L * HOUR, slot.endAtMs())
+    }
+
+    @Test
+    fun `custom duration round trips through minutes text`() {
+        assertEquals(90L * MINUTE, baCraftCustomDurationMsFromMinutes("90"))
+        assertEquals("90", baCraftCustomDurationMinutesText(90L * MINUTE))
+        // Blank clears the override instead of meaning zero minutes.
+        assertEquals(0L, baCraftCustomDurationMsFromMinutes("   "))
+        assertEquals("", baCraftCustomDurationMinutesText(0L))
+        // Garbage and negatives cannot produce a bogus alarm.
+        assertEquals(0L, baCraftCustomDurationMsFromMinutes("abc"))
+        assertEquals(0L, baCraftCustomDurationMsFromMinutes("-30"))
+        assertEquals(BA_CRAFT_MAX_DURATION_MS, baCraftCustomDurationMsFromMinutes("999999"))
+    }
+
+    @Test
     fun `label is trimmed to twenty four characters`() {
         val slot = BaCraftSlot(label = "x".repeat(40)).normalized(BaCraftFunction.Generate)
         assertEquals(24, slot.label.length)

@@ -906,6 +906,38 @@ internal object BASettingsStore {
         notifyChanged(notifyHomeOverview = false)
     }
 
+    /**
+     * Marks the given craft completions as announced, in one write.
+     *
+     * Batched on purpose. Each [os.kei.ui.page.main.ba.support.BaAccountStore.updateAccountReminderRuntime]
+     * ends in a whole-account-list JSON re-encode, and one sweep can complete up to
+     * `2 * BA_CRAFT_SLOT_COUNT` slots for a single account — six re-encodes inside the receiver's 12s
+     * budget. Folding them keeps that at one without giving up per-notification precision: the caller
+     * still passes only the completions whose notification actually posted.
+     *
+     * [BaCraftCompletion.endAtMs] goes in unmodified. Dedup is an exact inequality against the marker,
+     * so any rounding here would make the same completion re-fire on every tick forever.
+     */
+    fun saveAccountCraftNotifiedMarkers(
+        accountId: BaAccountId,
+        completions: List<BaCraftCompletion>,
+    ) {
+        if (completions.isEmpty()) return
+        migratedAccountStore().updateAccountReminderRuntime(accountId) { runtime ->
+            runtime.copy(
+                craftNotified =
+                    completions.fold(runtime.craftNotified) { markers, completion ->
+                        markers.withMarkerAt(
+                            function = completion.function,
+                            index = completion.index,
+                            endAtMs = completion.endAtMs,
+                        )
+                    },
+            )
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
     fun loadCoffeeHeadpatMs(): Long = kv().decodeLong(KEY_COFFEE_HEADPAT_MS, 0L)
 
     fun saveCoffeeHeadpatMs(epochMs: Long) {
@@ -935,6 +967,31 @@ internal object BASettingsStore {
         kv().encode(KEY_COFFEE_INVITE2_USED_MS, normalized)
         migratedAccountStore().updateActiveAccountRuntime { runtime ->
             runtime.copy(coffeeInvite2UsedMs = normalized)
+        }
+        notifyChanged(notifyHomeOverview = false)
+    }
+
+    /**
+     * Persists one account's craft slots.
+     *
+     * No `kv().encode` legacy mirror, unlike the coffee cooldowns above: craft has never had a global
+     * key and [BaSettingsSnapshotLoader] has no line for it — it reaches a snapshot only through the
+     * account record, via [withBaAccount]. Writing a global mirror would put the active account's
+     * slots on every other account.
+     *
+     * Goes through `updateAccountRuntime`, not `updateAccountReminderRuntime`: these are game state and
+     * belong to `runtimeUpdatedAtMs`. Only the announced-markers write uses the reminder runtime.
+     */
+    fun saveCraft(
+        accountId: BaAccountId?,
+        craft: BaCraftState,
+    ) {
+        val normalized = craft.normalized()
+        val store = migratedAccountStore()
+        if (accountId != null) {
+            store.updateAccountRuntime(accountId) { runtime -> runtime.copy(craft = normalized) }
+        } else {
+            store.updateActiveAccountRuntime { runtime -> runtime.copy(craft = normalized) }
         }
         notifyChanged(notifyHomeOverview = false)
     }
