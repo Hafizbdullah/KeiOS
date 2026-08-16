@@ -252,7 +252,6 @@ fun AppFloatingVerticalSearchActionDock(
     compact: Boolean = false,
     compactIcon: ImageVector = searchIcon,
     compactContentDescription: String = searchContentDescription,
-    compactBadgeLabel: String? = null,
     compactBadgeColor: Color? = null,
     compactBadgeContentColor: Color? = null,
     compactTooltipText: String? = compactContentDescription,
@@ -281,6 +280,16 @@ fun AppFloatingVerticalSearchActionDock(
             extraActions.size +
             (if (showRefreshAction) 1 else 0) +
             1
+    // Every badge the collapsed button stands in for, summed. Supplying this from the call site is what
+    // let the GitHub dock show its *refresh* count collapsed while showing its *unread history* count
+    // expanded — the same corner reporting two unrelated things.
+    val collapsedBadgeLabel =
+        remember(extraActions, refreshBadgeLabel, showRefreshAction) {
+            appFloatingDockCollapsedBadgeLabel(
+                extraActions.map(AppFloatingDockAction::badgeLabel) +
+                    listOf(refreshBadgeLabel.takeIf { showRefreshAction }),
+            )
+        }
     val dockHeight = appFloatingVerticalDockHeight(size, visibleActionCount)
     val dockMode =
         when {
@@ -429,7 +438,7 @@ fun AppFloatingVerticalSearchActionDock(
             iconSize = iconSize,
             iconTint = accent,
             tooltipText = compactTooltipText,
-            badgeLabel = compactBadgeLabel,
+            badgeLabel = collapsedBadgeLabel,
             badgeColor = compactBadgeColor,
             badgeContentColor = compactBadgeContentColor,
         )
@@ -508,7 +517,6 @@ fun AppFloatingVerticalActionDock(
     compact: Boolean = false,
     compactIcon: ImageVector? = null,
     compactContentDescription: String? = null,
-    compactBadgeLabel: String? = null,
     compactBadgeColor: Color? = null,
     compactBadgeContentColor: Color? = null,
     compactTooltipText: String? = null,
@@ -519,6 +527,10 @@ fun AppFloatingVerticalActionDock(
     if (actions.isEmpty()) return
     val dockHeight = appFloatingVerticalDockHeight(size, actions.size)
     val firstAction = actions.first()
+    // Derived, never supplied. Collapsed, this one button stands in for every action, so its badge has
+    // to be the sum of theirs — see [appFloatingDockCollapsedBadgeLabel].
+    val collapsedBadgeLabel =
+        remember(actions) { appFloatingDockCollapsedBadgeLabel(actions.map(AppFloatingDockAction::badgeLabel)) }
     val compactMotion =
         rememberAppFloatingVerticalDockCompactMotion(
             compact = compact,
@@ -576,7 +588,7 @@ fun AppFloatingVerticalActionDock(
                 iconSize = iconSize,
                 iconTint = firstAction.iconTint,
                 tooltipText = compactTooltipText ?: firstAction.tooltipText ?: compactContentDescription ?: firstAction.contentDescription,
-                badgeLabel = compactBadgeLabel ?: firstAction.badgeLabel,
+                badgeLabel = collapsedBadgeLabel,
                 badgeColor = compactBadgeColor ?: firstAction.badgeColor,
                 badgeContentColor = compactBadgeContentColor ?: firstAction.badgeContentColor,
                 modifier =
@@ -790,10 +802,11 @@ private fun AppFloatingVerticalDockActionIcon(
             label = badgeLabel,
             color = badgeColor,
             contentColor = badgeContentColor,
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-5).dp, y = 6.dp),
+            // The dock's own surface, so the badge refracts the dock rather than the page behind it.
+            backdrop = LocalAppFloatingDockBackdrop.current,
+            // Solved against the capsule, not its bounding box: `TopEnd` plus a hand-tuned offset put
+            // the badge's corner outside the rim, where the dock's capsule clip shaved it.
+            modifier = Modifier.appRoundHostBadgePlacement(),
         )
     }
 }

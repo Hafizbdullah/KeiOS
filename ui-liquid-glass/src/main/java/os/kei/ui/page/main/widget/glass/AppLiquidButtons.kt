@@ -120,6 +120,11 @@ fun AppLiquidIconButton(
     badgeLabel: String? = null,
     badgeColor: Color? = null,
     badgeContentColor: Color? = null,
+    /**
+     * Opt-in Liquid material for the badge. Off by default: Apple's Materials guidance is to use the
+     * effect sparingly, and a badge on ordinary content wants the flat fill.
+     */
+    badgeBackdrop: Backdrop? = null,
     containerAlphaOverride: Float? = null,
 ) {
     val isDark = isAppInDarkTheme()
@@ -154,6 +159,7 @@ fun AppLiquidIconButton(
                 badgeLabel = badgeLabel,
                 badgeColor = badgeColor,
                 badgeContentColor = badgeContentColor,
+                badgeBackdrop = badgeBackdrop,
             )
         }
     }
@@ -223,6 +229,7 @@ private fun AppLiquidIconButtonIcon(
     badgeLabel: String?,
     badgeColor: Color?,
     badgeContentColor: Color?,
+    badgeBackdrop: Backdrop?,
 ) {
     AppLiquidBadgedIcon(
         icon = icon,
@@ -232,6 +239,7 @@ private fun AppLiquidIconButtonIcon(
         badgeLabel = badgeLabel,
         badgeColor = badgeColor,
         badgeContentColor = badgeContentColor,
+        badgeBackdrop = badgeBackdrop,
     )
 }
 

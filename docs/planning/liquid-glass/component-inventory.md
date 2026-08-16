@@ -196,6 +196,46 @@ that the grabber is a *continuous* control and tapping it is what cycles detents
 bounded anyway: `applyDrag` reports only what it used and the remainder reaches the content in the same
 event.
 
+## The dock badge
+
+Reported 2026-08-16: the number in a vertical dock's top-right corner means something different
+expanded than collapsed, it has no Liquid material, and it spills out of the dock.
+
+**The meaning.** Collapsed, one button stands in for every action, so its badge owes their total. The
+BA dock did that by hand (`compactBadgeLabel = totalCount`, a real sum of calendar + pool). The GitHub
+dock passed only its *refresh* count while its expanded history action showed the *unread history*
+count — same corner, same size, same colour, two unrelated numbers. The collapsed label is now
+**derived** by the dock from the actions it conceals (`appFloatingDockCollapsedBadgeLabel`), and the
+`compactBadgeLabel` parameter is gone, so the mistake is structurally impossible rather than merely
+fixed. Verified on the BA page: 33 and 15 expanded, **48** collapsed.
+
+Already-capped inputs stay capped ("99+" plus anything is still "at least 99"), and a non-numeric
+badge collapses to a dot rather than borrowing one action's label — that would be the same
+inconsistency again.
+
+**The overflow.** Placement was `align(TopEnd).offset(x = -5.dp, y = 6.dp)` — an offset inside the
+host's *bounding box*, which for a capsule is the one place a badge is guaranteed to escape. Measured
+at 3x against a 62dp dock, the badge's right edge tracked the capsule's curve exactly (210px at one
+row, 218px eight rows down, 222px further still) because the dock's capsule clip was shaving it: the
+badge lost its own rounded end and read as bleeding off the edge. `appFloatingDockBadgeOffsetPx` now
+solves against the inscribed circle, putting the badge's outer corner on the rim at 45° so nothing
+extends past it. After: 19–21px of clearance at every row.
+
+**The material.** The badge was a flat opaque squircle — the only pasted-on element in a glass dock.
+It now takes `drawBackdrop` with vibrancy, a small blur and lens, an ambient rim highlight and an inner
+shadow. Two constraints shaped it:
+
+- It samples the **dock's own exported backdrop**, not the page. Sampling the page from inside the
+  dock would be glass on glass; `exportedBackdrop` is the library's answer and `AppFloatingLiquidVerticalDockSurface`
+  now publishes one through `LocalAppFloatingDockBackdrop`.
+- The tint stays at 90% opacity. Apple's Materials guidance is that Liquid Glass exists to reveal what
+  is beneath it, but a badge's job is the opposite — legible at 10sp against anything. So the glass
+  supplies the optics and the colour stays a colour. The same guidance ("use Liquid Glass effects
+  sparingly") is why `badgeBackdrop` is opt-in per call site rather than switched on for every badge.
+
+Not `Shadow.Default` here either — its 24dp blur spreads 48dp around an 18dp badge. See the
+square-cornered shadow section above; `liquidGlassShadow` is the shared tight one.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it

@@ -67,7 +67,9 @@ internal fun BoxScope.BaPageFloatingDock(
     val openGuideCatalogClick = remember { { currentOnOpenGuideCatalog.value() } }
     val calendarBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.calendarCount)
     val poolBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.poolCount)
-    val compactBadgeLabel = baCalendarPoolDockBadgeLabel(unreadCounts.totalCount)
+    // The collapsed badge's *label* is now derived by the dock from the actions it hides, which
+    // reproduces this total without the call site being able to get it wrong. Kept only to phrase the
+    // tooltip, which still needs the exact figure.
     val calendarBadgeTooltip =
         calendarBadgeLabel?.let {
             stringResource(R.string.ba_calendar_unread_badge_tooltip, unreadCounts.calendarCount)
@@ -77,8 +79,10 @@ internal fun BoxScope.BaPageFloatingDock(
             stringResource(R.string.ba_pool_unread_badge_tooltip, unreadCounts.poolCount)
         }
     val compactBadgeTooltip =
-        compactBadgeLabel?.let {
+        if (unreadCounts.totalCount > 0) {
             stringResource(R.string.ba_calendar_pool_unread_badge_tooltip, unreadCounts.totalCount)
+        } else {
+            null
         }
     val actions =
         remember(
@@ -131,7 +135,6 @@ internal fun BoxScope.BaPageFloatingDock(
         compact = !runtime.bottomBarVisible,
         compactIcon = moreIcon,
         compactContentDescription = expandDescription,
-        compactBadgeLabel = compactBadgeLabel,
         compactTooltipText = compactBadgeTooltip,
         onCompactClick = runtime.onShowBottomBar,
         modifier =

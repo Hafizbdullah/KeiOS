@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -17,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.vibrancy
@@ -40,6 +43,12 @@ fun AppFloatingLiquidVerticalDockSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val activeBackdrop = activeGlassBackdrop(backdrop)
+    // Published so glass *inside* the dock — the action badges — samples the dock's own surface rather
+    // than the page. Sampling the page from in here would be glass on glass: the library documents a
+    // second `layerBackdrop` after `drawBackdrop` as a draw loop that SIGSEGVs the RenderThread, and
+    // `exportedBackdrop` exists to break exactly that. It is also what Apple's Materials guidance
+    // implies — the badge belongs to the dock's layer, not to the content layer beneath it.
+    val dockBackdrop = rememberLayerBackdrop()
     val isDark = isAppInDarkTheme()
     val material = floatingLiquidDockMaterial(isDark)
     val animationScope = rememberCoroutineScope()
@@ -112,6 +121,7 @@ fun AppFloatingLiquidVerticalDockSurface(
                             innerShadow = {
                                 InnerShadow(radius = 7.dp, alpha = material.innerShadowAlpha)
                             },
+                            exportedBackdrop = dockBackdrop,
                             onDrawSurface = {
                                 drawRect(fallbackSurface.copy(alpha = material.surfaceAlpha))
                             },
@@ -166,10 +176,24 @@ fun AppFloatingLiquidVerticalDockSurface(
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
-            content = content,
-        )
+        ) {
+            CompositionLocalProvider(
+                LocalAppFloatingDockBackdrop provides dockBackdrop.takeIf { activeBackdrop != null },
+            ) {
+                content()
+            }
+        }
     }
 }
+
+/**
+ * The dock's own surface, for glass that sits on top of it.
+ *
+ * Null when the dock drew its opaque fallback, because there is then nothing to sample and a badge
+ * asking for blur would render transparent rather than blurred — the silent failure mode
+ * `LiquidBackdropWindowBoundary` exists to document.
+ */
+val LocalAppFloatingDockBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 internal fun floatingLiquidDockMaterial(isDark: Boolean): FloatingLiquidDockMaterial =
     if (isDark) {

@@ -53,6 +53,9 @@ fun AppFloatingLiquidActionButton(
         badgeLabel = badgeLabel,
         badgeColor = badgeColor,
         badgeContentColor = badgeContentColor,
+        // The collapsed dock is glass chrome, so its badge gets the material too — otherwise the badge
+        // would be the only flat, pasted-on element in the dock.
+        badgeBackdrop = backdrop,
     )
 }
 

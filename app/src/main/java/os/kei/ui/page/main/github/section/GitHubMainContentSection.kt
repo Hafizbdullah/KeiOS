@@ -448,7 +448,8 @@ internal fun GitHubMainContent(
                     compact = !layout.bottomBarVisible,
                     compactIcon = moreIcon,
                     compactContentDescription = expandDockDescription,
-                    compactBadgeLabel = refreshBadgeLabel,
+                    // The collapsed label is derived from the actions the dock hides, so the number no
+                    // longer changes meaning when the dock collapses. Only the tint is chosen here.
                     compactBadgeColor = refreshBadgeColor,
                     compactBadgeContentColor = refreshBadgeContentColor,
                     compactTooltipText = refreshBadgeTooltip ?: expandDockDescription,
