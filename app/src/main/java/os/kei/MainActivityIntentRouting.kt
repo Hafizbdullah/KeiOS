@@ -88,6 +88,12 @@ internal object MainActivityIntentRouting {
                 } else {
                     null
                 }
+            MainActivity.SHORTCUT_ACTION_BA_DAILY_DONE ->
+                if (targetBottomPage == MainActivity.TARGET_BOTTOM_PAGE_BA) {
+                    MainActivity.SHORTCUT_ACTION_BA_DAILY_DONE
+                } else {
+                    null
+                }
             MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK ->
                 if (targetBottomPage == MainActivity.TARGET_BOTTOM_PAGE_BA) {
                     MainActivity.SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK

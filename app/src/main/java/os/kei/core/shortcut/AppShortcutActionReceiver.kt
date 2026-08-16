@@ -29,31 +29,37 @@ class AppShortcutActionReceiver : BroadcastReceiver() {
 internal data class AppShortcutActionRequest(
     val targetBottomPage: String,
     val mcpServerAction: String?,
-    val shortcutAction: String?
+    val shortcutAction: String?,
+    /** Set by a per-account shortcut; null means "whatever the action's default scope is". */
+    val baAccountId: String? = null
 ) {
     companion object {
         fun fromIntent(intent: Intent): AppShortcutActionRequest? {
             return fromRaw(
                 rawTargetBottomPage = intent.getStringExtra(MainActivity.EXTRA_TARGET_BOTTOM_PAGE),
                 rawMcpServerAction = intent.getStringExtra(MainActivity.EXTRA_MCP_SERVER_ACTION),
-                rawShortcutAction = intent.getStringExtra(MainActivity.EXTRA_SHORTCUT_ACTION)
+                rawShortcutAction = intent.getStringExtra(MainActivity.EXTRA_SHORTCUT_ACTION),
+                rawBaAccountId = intent.getStringExtra(MainActivity.EXTRA_BA_ACCOUNT_ID)
             )
         }
 
         fun fromRaw(
             rawTargetBottomPage: String?,
             rawMcpServerAction: String?,
-            rawShortcutAction: String?
+            rawShortcutAction: String?,
+            rawBaAccountId: String? = null
         ): AppShortcutActionRequest? {
             val route = MainActivityIntentRouting.sanitize(
                 rawTargetBottomPage = rawTargetBottomPage,
                 rawMcpServerAction = rawMcpServerAction,
-                rawShortcutAction = rawShortcutAction
+                rawShortcutAction = rawShortcutAction,
+                rawBaAccountId = rawBaAccountId
             ) ?: return null
             return AppShortcutActionRequest(
                 targetBottomPage = route.targetBottomPage,
                 mcpServerAction = route.mcpServerAction,
-                shortcutAction = route.shortcutAction
+                shortcutAction = route.shortcutAction,
+                baAccountId = route.baAccountId
             )
         }
     }

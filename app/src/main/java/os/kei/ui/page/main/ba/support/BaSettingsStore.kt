@@ -3,6 +3,9 @@
 package os.kei.ui.page.main.ba.support
 
 import com.tencent.mmkv.MMKV
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import os.kei.core.json.KeiJson
 import os.kei.core.prefs.KeiMmkv
 import os.kei.ui.page.main.ba.BaReminderCoordinator
 import java.util.UUID
@@ -860,6 +863,19 @@ internal object BASettingsStore {
             )
         }
         notifyChanged(notifyHomeOverview = notifyHomeOverview)
+    }
+
+    fun loadDailyTileState(): BaDailyTileState {
+        val raw = kv().decodeString(KEY_BA_DAILY_TILE_STATE, "").orEmpty()
+        if (raw.isBlank()) return BaDailyTileState().normalized()
+        return runCatching { KeiJson.lenient.decodeFromString<BaDailyTileState>(raw) }
+            .getOrElse { BaDailyTileState() }
+            .normalized()
+    }
+
+    fun saveDailyTileState(state: BaDailyTileState) {
+        kv().encode(KEY_BA_DAILY_TILE_STATE, KeiJson.lenient.encodeToString(state.normalized()))
+        notifyChanged(notifyHomeOverview = false)
     }
 
     /**

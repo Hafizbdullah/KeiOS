@@ -835,4 +835,27 @@
     <string name="ba_calendar_pool_cd_data_settings">Event and banner data settings</string>
     <string name="ba_ap_notification_title">AP ready</string>
     <string name="ba_account_notification_content">%1$s · %2$s</string>
+    <string name="ba_daily_done_tile_label_all">BA dailies</string>
+    <string name="ba_daily_done_tile_label_account_format">Dailies · %1$s</string>
+    <string name="ba_daily_done_tile_label_unbound">Dailies (unbound)</string>
+    <string name="ba_daily_done_tile_subtitle">Mark dailies done</string>
+    <string name="ba_daily_done_toast_applied_format">Marked %1$d account(s), started %2$d craft slot(s)</string>
+    <string name="ba_daily_done_toast_already_done">Dailies were already done</string>
+    <string name="ba_daily_done_toast_no_target">No enabled BA account</string>
+    <string name="ba_daily_done_toast_failed">Could not mark dailies</string>
+    <string name="ba_daily_done_section_title">Daily-done shortcuts</string>
+    <string name="ba_daily_done_section_summary">Zeroes both AP pools; starts headpat and both invite tickets when their cooldowns have elapsed; loads craft slots 1 and 2 with one Advanced node (3h) each when they are free. Anything already spent is left alone.</string>
+    <string name="ba_daily_done_mode_title">Applies to</string>
+    <string name="ba_daily_done_mode_all">All accounts</string>
+    <string name="ba_daily_done_mode_per_account">One per account</string>
+    <string name="ba_daily_done_add_tile">Add tile</string>
+    <string name="ba_daily_done_remove_tile">Remove tile</string>
+    <string name="ba_daily_done_tile_added">Tile added</string>
+    <string name="ba_daily_done_tile_already_added">That tile is already in Quick Settings</string>
+    <string name="ba_daily_done_tile_declined">Add cancelled</string>
+    <string name="ba_daily_done_tile_unavailable">The system is not accepting the request right now. After repeated refusals it stops prompting — add the tile from Quick Settings instead.</string>
+    <string name="ba_daily_done_tile_pool_full">At most %1$d per-account tiles. Remove one first.</string>
+    <string name="shortcut_label_ba_daily_done_short">Dailies</string>
+    <string name="shortcut_label_ba_daily_done_long">BA dailies done</string>
+    <string name="shortcut_label_ba_daily_done_account_format">Dailies · %1$s</string>
 </resources>

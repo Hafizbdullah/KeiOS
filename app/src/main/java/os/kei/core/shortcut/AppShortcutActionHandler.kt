@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import os.kei.MainActivity
 import os.kei.R
 import os.kei.core.background.AppForegroundInfoHandler
+import os.kei.core.concurrency.AppDispatchers
 import os.kei.core.background.AppShortcutGitHubRefreshResult
 import os.kei.core.log.AppLogger
 import os.kei.core.platform.LocalNetworkPermissionCompat
@@ -18,6 +19,8 @@ import os.kei.mcp.server.LocalMcpService
 import os.kei.mcp.server.McpServerManager
 import os.kei.mcp.server.McpServerRuntimeRegistry
 import os.kei.ui.page.main.ba.BaApIslandShortcutNotificationCoordinator
+import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BaAccountId
 
 internal object AppShortcutActionHandler {
     private const val TAG = "AppShortcutAction"
@@ -32,6 +35,10 @@ internal object AppShortcutActionHandler {
                 sendBaApIsland(context)
             }
 
+            request.shortcutAction == MainActivity.SHORTCUT_ACTION_BA_DAILY_DONE -> {
+                applyBaDailyDone(context, request.baAccountId)
+            }
+
             request.shortcutAction == MainActivity.SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED -> {
                 refreshGitHubTracked(context)
             }
@@ -42,6 +49,32 @@ internal object AppShortcutActionHandler {
         val sent = BaApIslandShortcutNotificationCoordinator.send(context)
         if (!sent) {
             context.toast(R.string.ba_toast_notification_permission_required)
+        }
+    }
+
+    /**
+     * Marks the dailies done from a launcher shortcut.
+     *
+     * A null [accountId] is the all-accounts shortcut, which is exactly the store's null filter. A
+     * non-null one that no longer resolves is reported rather than silently doing nothing — the shortcut
+     * outlives the account it was pinned for.
+     */
+    private suspend fun applyBaDailyDone(context: Context, accountId: String?) {
+        val targets = accountId?.takeIf { it.isNotBlank() }?.let { listOf(BaAccountId(it)) }
+        val outcomes = withContext(AppDispatchers.baFetch) {
+            BASettingsStore.applyDailyDone(accountIds = targets)
+        }
+        when {
+            outcomes.isEmpty() -> context.toast(R.string.ba_daily_done_toast_no_target)
+            outcomes.none { it.value.changedAnything } ->
+                context.toast(R.string.ba_daily_done_toast_already_done)
+
+            else ->
+                context.toast(
+                    R.string.ba_daily_done_toast_applied_format,
+                    outcomes.count { it.value.changedAnything },
+                    outcomes.values.sumOf { it.craftSlotsStarted },
+                )
         }
     }
 

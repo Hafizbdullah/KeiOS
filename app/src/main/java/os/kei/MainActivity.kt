@@ -39,6 +39,7 @@ import os.kei.core.platform.TransientExternalLaunchGuard
 import os.kei.core.prefs.AppThemeMode
 import os.kei.core.prefs.UiPrefs
 import os.kei.core.shortcut.AppShortcuts
+import os.kei.core.shortcut.BaDailyShortcutSync
 import os.kei.core.privilege.PrivilegedShell
 import os.kei.feature.keepalive.accessibility.AccessibilityGuardRuntime
 import os.kei.feature.keepalive.service.AccessibilityGuardForegroundService
@@ -77,6 +78,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_ROUTE_OS_SHELL_RUNNER = "OsShellRunner"
         const val MCP_SERVER_ACTION_TOGGLE = "toggle"
         const val SHORTCUT_ACTION_BA_AP_ISLAND = "ba_ap_island"
+        const val SHORTCUT_ACTION_BA_DAILY_DONE = "ba_daily_done"
         const val SHORTCUT_ACTION_BA_OPEN_BGM_PLAYBACK = "ba_open_bgm_playback"
         const val SHORTCUT_ACTION_GITHUB_REFRESH_TRACKED = "github_refresh_tracked"
     }
@@ -171,6 +173,8 @@ class MainActivity : ComponentActivity() {
             delay(DEFERRED_ACTIVITY_STARTUP_WORK_DELAY_MS)
             runCatching { McpNotificationHelper.restoreXiaomiNetworkIfNeeded(this@MainActivity) }
             runCatching { AppShortcuts.sync(this@MainActivity) }
+            // Collapses every BA write down to real account-identity changes; see the class doc.
+            runCatching { BaDailyShortcutSync.start(this@MainActivity, lifecycleScope) }
         }
 
         privilegedShell.attach { status ->

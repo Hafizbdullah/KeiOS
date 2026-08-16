@@ -835,4 +835,27 @@
     <string name="guide_simulate_empty_unique_weapon">暂无专武数据。</string>
     <string name="ba_calendar_pool_data_settings_title">数据与显示设置</string>
     <string name="ba_calendar_pool_cd_data_settings">活动与卡池数据设置</string>
+    <string name="ba_daily_done_tile_label_all">BA 日常完成</string>
+    <string name="ba_daily_done_tile_label_account_format">日常 · %1$s</string>
+    <string name="ba_daily_done_tile_label_unbound">日常（未绑定）</string>
+    <string name="ba_daily_done_tile_subtitle">一键视为日常完成</string>
+    <string name="ba_daily_done_toast_applied_format">已标记 %1$d 个账号，开启 %2$d 个制造槽</string>
+    <string name="ba_daily_done_toast_already_done">日常已经是完成状态</string>
+    <string name="ba_daily_done_toast_no_target">没有启用的 BA 账号</string>
+    <string name="ba_daily_done_toast_failed">标记日常失败</string>
+    <string name="ba_daily_done_section_title">日常完成快捷方式</string>
+    <string name="ba_daily_done_section_summary">两个 AP 清零；摸头与两张邀请券冷却完成的直接开始计时；制造槽 1、2 空闲则各开一解上级（3h）。对已消耗的项目不重复操作。</string>
+    <string name="ba_daily_done_mode_title">作用范围</string>
+    <string name="ba_daily_done_mode_all">所有账号</string>
+    <string name="ba_daily_done_mode_per_account">每个账号一个</string>
+    <string name="ba_daily_done_add_tile">添加磁贴</string>
+    <string name="ba_daily_done_remove_tile">移除磁贴</string>
+    <string name="ba_daily_done_tile_added">磁贴已添加</string>
+    <string name="ba_daily_done_tile_already_added">磁贴已经在快捷设置里</string>
+    <string name="ba_daily_done_tile_declined">已取消添加</string>
+    <string name="ba_daily_done_tile_unavailable">系统暂时不接受添加请求；多次拒绝后系统会不再弹窗，可到快捷设置里手动添加</string>
+    <string name="ba_daily_done_tile_pool_full">每账号磁贴最多 %1$d 个，请先移除一个</string>
+    <string name="shortcut_label_ba_daily_done_short">BA日常</string>
+    <string name="shortcut_label_ba_daily_done_long">BA 日常完成</string>
+    <string name="shortcut_label_ba_daily_done_account_format">日常 · %1$s</string>
 </resources>

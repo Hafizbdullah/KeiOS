@@ -278,6 +278,65 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            Daily-done quick settings tiles.
+
+            android:enabled="false" is the point: a declared tile does not join the QS panel by itself,
+            but it does appear in the QS editor's list of available tiles. Shipping them disabled keeps
+            them out of that list entirely until the teacher claims one from the BA settings sheet, which
+            enables the component and then calls StatusBarManager.requestAddTileService.
+
+            A tile is a manifest component and cannot be created at runtime, so "one tile per account" is
+            a fixed pool of three - see BA_DAILY_TILE_SLOTS.
+        -->
+        <service
+            android:name=".core.tile.BaDailyDoneAllTileService"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/ba_daily_done_tile_label_all"
+            android:icon="@drawable/ic_ba_ap_island_shift"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".core.tile.BaDailyDoneAccountTileService1"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/ba_daily_done_tile_label_unbound"
+            android:icon="@drawable/ic_ba_ap_island_shift"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".core.tile.BaDailyDoneAccountTileService2"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/ba_daily_done_tile_label_unbound"
+            android:icon="@drawable/ic_ba_ap_island_shift"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".core.tile.BaDailyDoneAccountTileService3"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/ba_daily_done_tile_label_unbound"
+            android:icon="@drawable/ic_ba_ap_island_shift"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
