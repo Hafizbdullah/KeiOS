@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -179,6 +180,21 @@ internal fun MainPagerLayout(
         }
 
     AppScaffold(
+        // Transparent so the `background(colorScheme.background)` below is this page's only opaque base,
+        // and so it is the *same* base the routes use.
+        //
+        // `AppScaffold` otherwise defaults to `colorScheme.surface`, which painted straight over that
+        // line and made it dead paint — and the two tokens differ: miuix uses `background` =
+        // White / `#242424` against `surface` = `#F7F7F7` / Black for light / dark. A custom background
+        // image was therefore composited over `surface` here but over `background` inside
+        // `AppManagedBackgroundHost`, so one opacity setting produced two different results depending on
+        // how deep the page was. Measured in dark theme with one image at 16%: a main page read
+        // rgb(30,36,40) where the same pixel on a secondary page read rgb(59,64,69) — a delta of 29
+        // against the 36 that `#242424` contributes.
+        //
+        // Safe only because the routes now paint their own opaque base; while they did not, making this
+        // transparent let the pager show through them.
+        containerColor = Color.Transparent,
         modifier =
             Modifier
                 .fillMaxSize()

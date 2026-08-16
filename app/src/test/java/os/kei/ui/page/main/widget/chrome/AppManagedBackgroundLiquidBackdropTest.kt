@@ -25,6 +25,7 @@ import os.kei.ui.page.main.widget.glass.LocalLiquidParentBackdropOverridesFallba
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
@@ -135,8 +136,82 @@ class AppManagedBackgroundLiquidBackdropTest {
             assertTrue(cardOverridesFallback)
         }
     }
+
+    /**
+     * The page behind a route must never show through it.
+     *
+     * This is "二级菜单的透明度在白色背景下生效". `Modifier.layerBackdrop` draws only `drawContent()` to
+     * the screen and records the `rememberLayerBackdrop { ... }` block into an offscreen layer
+     * *separately*, so the `drawRect(baseColor)` written inside that block reached the sampled layer and
+     * never the screen. While the base was `if (sceneBackdrop != null) layerBackdrop(...) else
+     * background(baseColor)`, every route that exported a backdrop had no opaque fill at all and was
+     * transparent down to the main pager: the page underneath and the custom image composited together
+     * into two apparent backgrounds, the near-white one being the pager's `colorScheme.surface`.
+     *
+     * Stated as a count because that is what the bug was — a fill that existed in only one branch.
+     */
+    @Test
+    fun theOpaqueBaseIsPaintedWhetherOrNotABackdropIsExported() {
+        var exporting = -1
+        var plain = -1
+
+        composeRule.setContent {
+            MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
+                val backdrop = rememberLayerBackdrop()
+                SideEffect {
+                    exporting = appManagedBackgroundBaseModifier(Color.White, backdrop).elementCount()
+                    plain = appManagedBackgroundBaseModifier(Color.White, null).elementCount()
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertEquals(1, plain, "the plain base should be exactly the opaque fill")
+            assertEquals(2, exporting, "the exporting base should be the opaque fill plus the recorder")
+        }
+    }
+
+    @Test
+    fun thePageBaseTokenIsOpaqueInBothThemes() {
+        // `colorScheme.background` is the token both the pager and the routes composite the custom image
+        // over. A translucent value would let the page behind bleed through however the chain is built.
+        val alphas = mutableListOf<Float>()
+
+        composeRule.setContent {
+            listOf(ColorSchemeMode.Light, ColorSchemeMode.Dark).forEach { mode ->
+                MiuixTheme(controller = ThemeController(mode)) {
+                    val base = MiuixTheme.colorScheme.background
+                    SideEffect { alphas += base.alpha }
+                }
+            }
+        }
+
+        composeRule.runOnIdle {
+            assertEquals(2, alphas.size)
+            alphas.forEach { alpha -> assertEquals(1f, alpha, "a page base must be opaque") }
+        }
+    }
 }
 
+private fun Modifier.elementCount(): Int = foldIn(0) { count, _ -> count + 1 }
+
+/**
+ * The page behind a route must never show through it.
+ *
+ * This is the "二级菜单的透明度在白色背景下生效" issue. `Modifier.layerBackdrop` draws only
+ * `drawContent()` to the screen and records the `rememberLayerBackdrop { ... }` block into an offscreen
+ * layer separately, so a `drawRect(baseColor)` written inside that block reaches the sampled layer and
+ * never the screen. Every route that exported a backdrop therefore had no opaque base and was
+ * transparent down to the main pager: the page underneath and the custom background image composited
+ * together, which is what "two backgrounds" describes — and in light theme the pager's near-white
+ * `colorScheme.surface` was the one showing through.
+ *
+ * Only the non-exporting branch ever painted a base, which is why About and WebDavSync already looked
+ * right and the issue read as half-fixed.
+ *
+ * Asserted by putting a colour behind the host that neither theme uses (`background` is White in light
+ * and `#242424` in dark) and proving it cannot be seen.
+ */
 @Composable
 private fun testManagedBackgroundHost(
     exportBackdropToContent: Boolean,

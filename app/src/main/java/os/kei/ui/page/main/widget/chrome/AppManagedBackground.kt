@@ -26,6 +26,7 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.core.prefs.NonHomeBackgroundAlignment
@@ -165,13 +166,7 @@ fun AppManagedBackgroundHost(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .then(
-                        if (sceneBackdrop != null) {
-                            Modifier.layerBackdrop(sceneBackdrop)
-                        } else {
-                            Modifier.background(baseColor)
-                        },
-                    ),
+                    .then(appManagedBackgroundBaseModifier(baseColor, sceneBackdrop)),
         ) {
             if (active) {
                 AppManagedBackgroundImage(
@@ -206,6 +201,35 @@ fun AppManagedBackgroundHost(
         }
     }
 }
+
+/**
+ * The page's opaque base, plus the backdrop recording when one is exported.
+ *
+ * **[baseColor] is painted unconditionally, and that is the fix for "二级菜单的透明度在白色背景下生效".**
+ *
+ * `Modifier.layerBackdrop` draws only `drawContent()` to the screen and records the
+ * `rememberLayerBackdrop { ... }` block into an offscreen layer *separately*
+ * (`LayerBackdropModifier.kt`: `drawContent(); recordLayer(...) { backdrop.onDraw(...) }`). So the
+ * `drawRect(baseColor)` inside that recording block reaches the sampled layer and **never the screen**.
+ * While this branch was `if (sceneBackdrop != null) layerBackdrop(...) else background(baseColor)`,
+ * every route that exported a backdrop had no opaque base at all and was transparent down to the main
+ * pager behind it — the page underneath and the custom image composited together into what looks like
+ * two stacked backgrounds, with the pager's near-white `colorScheme.surface` showing through in light
+ * theme. Measured before the fix: the Settings route showed the BA page's own rows and bottom tab bar.
+ *
+ * Only the `else` branch ever painted a base, which is why the routes that do not export one (About,
+ * WebDavSync) already looked right, and the issue read as half-fixed.
+ *
+ * The recording still needs its own `drawRect(baseColor)`: it runs at the `layerBackdrop` node, so it
+ * cannot see a background drawn by an outer modifier.
+ */
+internal fun appManagedBackgroundBaseModifier(
+    baseColor: Color,
+    sceneBackdrop: LayerBackdrop?,
+): Modifier =
+    Modifier
+        .background(baseColor)
+        .then(if (sceneBackdrop != null) Modifier.layerBackdrop(sceneBackdrop) else Modifier)
 
 @Composable
 fun AppManagedBackgroundOverlay(

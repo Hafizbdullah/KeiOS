@@ -236,6 +236,65 @@ shadow. Two constraints shaped it:
 Not `Shadow.Default` here either — its 24dp blur spreads 48dp around an 18dp badge. See the
 square-cornered shadow section above; `liquidGlassShadow` is the shared tight one.
 
+## The custom background on secondary pages
+
+Issue: "二级菜单的透明度在白色背景下生效" — a secondary page had *two* backgrounds, one pure white and
+one the semi-transparent custom image, so the opacity slider behaved differently depending on how deep
+the page was. Half-fixed between 1.12.0 and 1.13.0. **Two independent causes; the second one is the
+half that was left.**
+
+### 1. Routes that export a backdrop had no opaque base at all
+
+`Modifier.layerBackdrop` draws only `drawContent()` to the screen and records the
+`rememberLayerBackdrop { ... }` block into an offscreen layer *separately*:
+
+```kotlin
+override fun ContentDrawScope.draw() {          // LayerBackdropModifier.kt
+    drawContent()
+    recordLayer(backdrop.graphicsLayer) { backdrop.onDraw(this@draw) }
+}
+```
+
+`AppManagedBackgroundHost` wrote its `drawRect(baseColor)` **inside that recording block**, and chose
+between `layerBackdrop(...)` and `background(baseColor)` as alternatives. So every route with
+`exportBackdropToContent = true` — Settings, McpSkill, GitHubActionsNotificationHistory, OsShellRunner —
+painted nothing opaque on screen and was transparent down to the main pager behind it. The page
+underneath and the custom image composited together into what looks like two stacked backgrounds. Only
+the `else` branch ever painted a base, which is why About and WebDavSync already looked right.
+
+Fixed by painting the base unconditionally (`appManagedBackgroundBaseModifier`). The recording still
+needs its own `drawRect`, because it runs at the `layerBackdrop` node and cannot see an outer modifier's
+background.
+
+### 2. The two paths composited over different tokens
+
+miuix's tokens are not interchangeable:
+
+| | `background` | `surface` |
+|---|---|---|
+| light | **White** | `#F7F7F7` |
+| dark | `#242424` | **Black** |
+
+`MainPagerLayout` already declared `.background(colorScheme.background)`, but `AppScaffold` defaults to
+`colorScheme.surface` and painted straight over it — dead paint. So main pages composited the image over
+`surface` while routes used `background`. Measured in dark theme at 16% opacity: a main page read
+rgb(30,36,40) where the same pixel of the same image on a secondary page read rgb(59,64,69) — a delta of
+29 against the 36 that `#242424` contributes at (1 − 0.19). Fixed by making the pager scaffold
+transparent so its declared base is the only one, and the same one the routes use.
+
+**Order matters:** doing (2) first regresses hard — the pager then shows *through* the routes, because
+they had no base of their own. Confirmed on device before (1) was in place.
+
+After both, the same pixel of the same image is byte-identical on a main page and a secondary page:
+(59,64,69) dark, (244,250,255) light, across four sample points.
+
+### Still open
+
+The four BA routes — `BaStudentGuide`, `BaGuideCatalog`, `BaActivityCalendar`, `BaPool` — have no
+`MainScreenRouteBackgroundHost` at all, so the custom background never renders on them; each paints its
+own `colorScheme.background`. Deliberate or not, it means "non-Home pages show a custom background" is
+not true of those four.
+
 ## Gaps worth doing early
 
 - **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it
