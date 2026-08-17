@@ -203,6 +203,22 @@ internal object McpToolCatalogArguments {
             McpSchema.string("repoUrls", required = true),
             McpSchema.integer("limit")
         ),
+        "keios.ba.snapshot" to listOf(
+            McpSchema.string(
+                name = "accountId",
+                description = "Blue Archive account id. Empty targets the active account."
+            )
+        ),
+        "keios.ba.daily.done" to listOf(
+            McpSchema.string(
+                name = "accountId",
+                description = "Blue Archive account id. Empty targets every enabled account."
+            ),
+            McpSchema.boolean(
+                name = "apply",
+                description = "Leave false to preview. True writes game state and cannot be undone."
+            )
+        ),
         "keios.ba.calendar.cache" to cacheEntryArguments(),
         "keios.ba.pool.cache" to cacheEntryArguments(),
         "keios.ba.guide.catalog.cache" to listOf(

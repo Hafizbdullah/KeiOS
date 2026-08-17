@@ -19,7 +19,9 @@ class McpBaToolPluginsTest {
 
     private data object FakeBaToolDelegate : McpBaToolDelegate {
         override fun defaultGuideRefreshIntervalHours(): Int = 12
-        override fun buildBaSnapshotText(): String = ""
+        override fun buildBaSnapshotText(accountId: String): String = ""
+        override fun buildBaAccountsText(): String = ""
+        override fun buildBaDailyDoneText(accountId: String, apply: Boolean): String = ""
         override fun buildBaCalendarCacheText(requestedServerIndex: Int?, includeEntries: Boolean, limit: Int): String = ""
         override fun buildBaPoolCacheText(requestedServerIndex: Int?, includeEntries: Boolean, limit: Int): String = ""
         override fun buildGuideCatalogCacheText(tab: String, includeEntries: Boolean, limit: Int): String = ""

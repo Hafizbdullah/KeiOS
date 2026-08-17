@@ -5,7 +5,10 @@ import os.kei.feature.github.domain.GitHubCacheService
 import os.kei.mcp.server.McpToolEnvironment
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BA_CRAFT_SLOT_COUNT
+import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCraftFunction
+import os.kei.ui.page.main.ba.support.BaDailyDoneOutcome
+import os.kei.ui.page.main.ba.support.BaPageSnapshot
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
 import os.kei.ui.page.main.ba.support.baPoolTagLabel
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -20,6 +23,7 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.gameKeeServerId
+import os.kei.ui.page.main.ba.support.slotOf
 import os.kei.ui.page.main.ba.support.summary
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideStore
@@ -48,9 +52,107 @@ internal class AppMcpBaToolDelegate(
         return BASettingsStore.loadCalendarRefreshIntervalHours()
     }
 
-    override fun buildBaSnapshotText(): String {
+    /**
+     * Resolves a snapshot for [accountId], falling back to the active account when it is blank.
+     *
+     * An id that matches nothing also falls back rather than erroring: an assistant working from a stale
+     * account list should get a usable answer plus the `accountId` echo showing which account it is
+     * really describing, not a failed call.
+     */
+    private fun snapshotForAccount(accountId: String): Pair<BaPageSnapshot, BaAccountId?> {
+        val trimmed = accountId.trim()
+        if (trimmed.isEmpty()) return BASettingsStore.loadSnapshot() to null
+        val requested = BaAccountId(trimmed)
+        val snapshot =
+            BASettingsStore.loadSnapshotForAccount(requested)
+                ?: return BASettingsStore.loadSnapshot() to null
+        return snapshot to requested
+    }
+
+    override fun buildBaAccountsText(): String {
         val nowMs = System.currentTimeMillis()
-        val snapshot = BASettingsStore.loadSnapshot()
+        val accountState = BASettingsStore.loadAccountState()
+        val tileState = BASettingsStore.loadDailyTileState()
+        return buildString {
+            appendLine("accountCount=${accountState.accounts.size}")
+            appendLine("enabledCount=${accountState.accounts.count { it.profile.enabled }}")
+            appendLine("activeAccountId=${accountState.activeAccountId?.value.orEmpty()}")
+            appendLine(
+                "allAccountsFollowGlobalNotificationSettings=" +
+                    "${accountState.allAccountsFollowGlobalNotificationSettings}",
+            )
+            appendLine("dailyTileMode=${tileState.mode.name}")
+            accountState.accounts.forEachIndexed { index, account ->
+                val snapshot =
+                    BASettingsStore.loadSnapshotForAccount(account.profile.id) ?: return@forEachIndexed
+                appendLine(
+                    mcpBaAccountLine(
+                        profile = account.profile,
+                        snapshot = snapshot,
+                        active = accountState.activeAccountId == account.profile.id,
+                        tileSlot = tileState.slotOf(account.profile.id),
+                        index = index,
+                        nowMs = nowMs,
+                    ),
+                )
+            }
+        }.trim()
+    }
+
+    /**
+     * Previews or applies the dailies template.
+     *
+     * Both modes go through the store, which runs one shared implementation — a preview assembled here
+     * could promise an outcome the write would not produce. Disabled accounts are skipped either way,
+     * matching the tile.
+     */
+    override fun buildBaDailyDoneText(accountId: String, apply: Boolean): String {
+        val nowMs = System.currentTimeMillis()
+        val trimmed = accountId.trim()
+        // A blank id means "every enabled account", which the store expresses as a null filter. An id
+        // that matches nothing must not collapse into that, so it stays an explicit empty list.
+        val filter = if (trimmed.isEmpty()) null else listOf(BaAccountId(trimmed))
+        val targets = BASettingsStore.dailyDoneTargets(accountIds = filter)
+        val outcomes =
+            if (apply) {
+                BASettingsStore.applyDailyDone(accountIds = filter, nowMs = nowMs)
+            } else {
+                BASettingsStore.previewDailyDone(accountIds = filter, nowMs = nowMs)
+            }
+        return buildString {
+            appendLine("applied=$apply")
+            appendLine("requestedAccountId=$trimmed")
+            appendLine("targetCount=${targets.size}")
+            appendLine("changedCount=${outcomes.count { it.value.changedAnything }}")
+            appendLine("craftSlotsStarted=${outcomes.values.sumOf { it.craftSlotsStarted }}")
+            if (targets.isEmpty()) {
+                // Distinguish "nothing to do" from "the id was wrong", which the counts alone cannot.
+                appendLine(
+                    if (trimmed.isEmpty()) {
+                        "note=no enabled account"
+                    } else {
+                        "note=no enabled account matches the requested id"
+                    },
+                )
+            }
+            if (!apply) appendLine("note=preview only, pass apply=true to write")
+            targets.forEach { account ->
+                val outcome = outcomes[account.profile.id] ?: BaDailyDoneOutcome()
+                appendLine(
+                    mcpBaDailyDoneLine(
+                        accountName = account.profile.displayName,
+                        accountId = account.profile.id.value,
+                        outcome = outcome,
+                        applied = apply,
+                    ),
+                )
+            }
+        }.trim()
+    }
+
+    override fun buildBaSnapshotText(accountId: String): String {
+        val nowMs = System.currentTimeMillis()
+        val (snapshot, resolvedAccountId) = snapshotForAccount(accountId)
         val serverIndex = snapshot.serverIndex.coerceIn(0, 2)
         val displayedAp = displayAp(snapshot.apCurrent)
         val apFraction = fractionalApPart(snapshot.apCurrent)
@@ -85,6 +187,9 @@ internal class AppMcpBaToolDelegate(
         val craftSummary = snapshot.craft.summary(nowMs)
 
         return buildString {
+            // Echoed so a caller can tell an explicit target from the active-account fallback, which is
+            // also what a stale or wrong id lands on.
+            appendLine("accountId=${resolvedAccountId?.value.orEmpty()}")
             appendLine("serverIndex=$serverIndex")
             appendLine("gameKeeServerId=${gameKeeServerId(serverIndex)}")
             appendLine("calendarRefreshIntervalHours=${snapshot.calendarRefreshIntervalHours}")

@@ -9,7 +9,24 @@ internal object McpToolCatalogDefinitions {
         "keios.github.cache.clear",
         "keios.github.actions.recommended",
         "keios.ba.guide.bgm.favorites",
+        "keios.ba.daily.done",
         "keios.ba.cache.clear"
+    )
+
+    /**
+     * Write tools whose repeat application is a no-op, so `idempotent` stays true for them.
+     *
+     * The dailies template only restarts a cooldown that has already elapsed and only loads a craft slot
+     * that is idle or finished — the property that makes it safe on a quick-settings tile where a stray
+     * tap costs nothing. Advertising it lets a client retry a timed-out call without asking first.
+     */
+    private val idempotentWriteTools = setOf(
+        "keios.ba.daily.done"
+    )
+
+    /** Write tools that overwrite existing state rather than only adding to it. */
+    private val destructiveWriteTools = setOf(
+        "keios.ba.daily.done"
     )
 
     private val networkTools = setOf(
@@ -42,8 +59,10 @@ internal object McpToolCatalogDefinitions {
         }
         return McpToolDefinition(
             readOnly = name !in writeTools,
-            destructive = name.endsWith(".clear") || name == "keios.github.link.pending",
-            idempotent = name !in networkTools && name !in writeTools,
+            destructive = name.endsWith(".clear") ||
+                name == "keios.github.link.pending" ||
+                name in destructiveWriteTools,
+            idempotent = name !in networkTools && (name !in writeTools || name in idempotentWriteTools),
             openWorld = name in networkTools,
             executionProfile = profile,
             visibility = visibilityForName(name, entrypoint),

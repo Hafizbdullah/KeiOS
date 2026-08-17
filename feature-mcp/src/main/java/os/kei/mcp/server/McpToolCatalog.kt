@@ -69,6 +69,8 @@ object McpToolCatalog {
 
     val baToolNames = listOf(
         "keios.ba.snapshot",
+        "keios.ba.accounts",
+        "keios.ba.daily.done",
         "keios.ba.calendar.cache",
         "keios.ba.pool.cache",
         "keios.ba.guide.catalog.cache",

@@ -68,10 +68,16 @@ a task fires.
 4. StarList import: `keios.github.stars.lists` -> `keios.github.stars.preview` ->
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
 5. OS card backup: `keios.os.cards.snapshot` -> `keios.os.cards.export(target=all)`
-6. BA daily brief: `keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
-7. Codex development: `keios.dev.codex.config(mode=local)` ->
+6. BA daily brief: `keios.ba.accounts` -> `keios.ba.snapshot(accountId=...)` ->
+   `keios.ba.calendar.cache` -> `keios.ba.pool.cache`. Start with `keios.ba.accounts`: every account
+   owns its own AP, Cafe, cooldowns and Craft Chamber slots, and a bare `keios.ba.snapshot` only
+   describes the active one.
+7. BA dailies: `keios.ba.daily.done` (previews) -> `keios.ba.daily.done(apply=true)`. Writes game
+   state and cannot be undone, so confirm the preview with the user first. Safe to retry: only an
+   elapsed cooldown restarts and only a free Craft slot is loaded.
+8. Codex development: `keios.dev.codex.config(mode=local)` ->
    `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
-8. WebDAV sync diagnostics: `keios.webdav.status` ->
+9. WebDAV sync diagnostics: `keios.webdav.status` ->
    `keios.webdav.history(mode=summary, issuesOnly=true)` -> `keios.webdav.history(mode=detail, id=...)`
 
 ## Full Tool Index

@@ -5,7 +5,23 @@ import os.kei.mcp.server.McpToolEnvironment
 interface McpBaToolDelegate {
     fun defaultGuideRefreshIntervalHours(): Int
 
-    fun buildBaSnapshotText(): String
+    /**
+     * @param accountId blank for the active account. Every BA account owns its own AP, cafe, cooldowns
+     *   and craft slots, so a snapshot without this can only ever describe one of them.
+     */
+    fun buildBaSnapshotText(accountId: String): String
+
+    /** Every account at once — the only tool that can answer "which of my accounts needs attention". */
+    fun buildBaAccountsText(): String
+
+    /**
+     * The one-tap dailies template, the same one the quick-settings tile and the launcher shortcut run.
+     *
+     * @param accountId blank for every enabled account.
+     * @param apply `false` reports what would change and writes nothing. Mutating game state on a bare
+     *   tool call would be too easy to trigger by accident, and the template is not reversible.
+     */
+    fun buildBaDailyDoneText(accountId: String, apply: Boolean): String
 
     fun buildBaCalendarCacheText(
         requestedServerIndex: Int?,

@@ -942,6 +942,30 @@ internal object BASettingsStore {
     fun applyDailyDone(
         accountIds: List<BaAccountId>? = null,
         nowMs: Long = System.currentTimeMillis(),
+    ): Map<BaAccountId, BaDailyDoneOutcome> = runDailyDone(accountIds = accountIds, nowMs = nowMs, persist = true)
+
+    /**
+     * What [applyDailyDone] would do, without writing anything.
+     *
+     * Shares [runDailyDone] with the real thing rather than re-deriving, so a preview cannot promise an
+     * outcome the write would not produce. Used by the MCP tool, where a bare call has to be safe.
+     */
+    fun previewDailyDone(
+        accountIds: List<BaAccountId>? = null,
+        nowMs: Long = System.currentTimeMillis(),
+    ): Map<BaAccountId, BaDailyDoneOutcome> = runDailyDone(accountIds = accountIds, nowMs = nowMs, persist = false)
+
+    /** Enabled accounts the template would touch, in list order. Empty when nothing matches. */
+    fun dailyDoneTargets(accountIds: List<BaAccountId>? = null): List<BaAccountRecord> =
+        loadAccountState()
+            .accounts
+            .filter { it.profile.enabled }
+            .filter { accountIds == null || it.profile.id in accountIds }
+
+    private fun runDailyDone(
+        accountIds: List<BaAccountId>?,
+        nowMs: Long,
+        persist: Boolean,
     ): Map<BaAccountId, BaDailyDoneOutcome> {
         val accountState = loadAccountState()
         val targets =
@@ -953,11 +977,27 @@ internal object BASettingsStore {
         targets.forEach { account ->
             val snapshot = BaPageSnapshot().withBaAccount(accountState = accountState, account = account)
             val plan = planBaDailyDone(snapshot = snapshot, nowMs = nowMs)
-            saveAccountDailyDone(accountId = account.profile.id, plan = plan, notify = false)
+            if (persist) saveAccountDailyDone(accountId = account.profile.id, plan = plan, notify = false)
             outcomes[account.profile.id] = plan.outcome
         }
-        notifyChanged(notifyHomeOverview = true)
+        if (persist) notifyChanged(notifyHomeOverview = true)
         return outcomes
+    }
+
+    /**
+     * A full snapshot for one account, globals included.
+     *
+     * [loadSnapshot] answers only for the active account. Building the difference by hand is the trap
+     * this exists to close: `BaPageSnapshot().withBaAccount(...)` looks complete but leaves every global
+     * preference — the display toggles, the refresh interval, the craft card's expansion — at its
+     * compiled-in default, so a reader would report defaults as if they were the teacher's settings.
+     */
+    fun loadSnapshotForAccount(accountId: BaAccountId): BaPageSnapshot? {
+        val accountState = loadAccountState()
+        val account = accountState.accounts.firstOrNull { it.profile.id == accountId } ?: return null
+        return loadBaSettingsSnapshot(kv())
+            .withBaAccount(accountState = accountState, account = account)
+            .withLocalApAcknowledgements(account.profile.id)
     }
 
     fun saveAccountApLastNotifiedLevel(

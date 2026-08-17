@@ -15,8 +15,22 @@ internal class McpBaTools(
     private val delegate: McpBaToolDelegate,
 ) {
     fun register(server: Server) {
-        server.addMcpTextTool(environment, name = "keios.ba.snapshot") { _ ->
-            delegate.buildBaSnapshotText()
+        server.addMcpTextTool(environment, name = "keios.ba.snapshot") { request ->
+            delegate.buildBaSnapshotText(
+                accountId = argString(request.arguments?.get("accountId")).trim(),
+            )
+        }
+
+        server.addMcpTextTool(environment, name = "keios.ba.accounts") { _ ->
+            delegate.buildBaAccountsText()
+        }
+
+        server.addMcpTextTool(environment, name = "keios.ba.daily.done") { request ->
+            delegate.buildBaDailyDoneText(
+                accountId = argString(request.arguments?.get("accountId")).trim(),
+                // Defaults to a dry run: this writes real game state and cannot be undone.
+                apply = argBoolean(request.arguments?.get("apply"), false),
+            )
         }
 
         server.addMcpTextTool(environment, name = "keios.ba.calendar.cache") { request ->

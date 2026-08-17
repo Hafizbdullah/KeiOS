@@ -66,10 +66,14 @@
 4. StarList 导入：`keios.github.stars.lists` -> `keios.github.stars.preview` ->
    `keios.github.stars.apk.verify` -> `keios.github.stars.import(apply=true)`
 5. OS 卡片备份：`keios.os.cards.snapshot` -> `keios.os.cards.export(target=all)`
-6. BA 每日简报：`keios.ba.snapshot` -> `keios.ba.calendar.cache` -> `keios.ba.pool.cache`
-7. Codex 开发辅助：`keios.dev.codex.config(mode=local)` ->
+6. BA 每日简报：`keios.ba.accounts` -> `keios.ba.snapshot(accountId=...)` ->
+   `keios.ba.calendar.cache` -> `keios.ba.pool.cache`。先调 `keios.ba.accounts`：每个账号各自拥有
+   AP、咖啡厅、冷却与制造工坊槽位，不带参数的 `keios.ba.snapshot` 只能描述当前账号。
+7. BA 日常：`keios.ba.daily.done`（预览）-> `keios.ba.daily.done(apply=true)`。会写入游戏状态且
+   不可撤销，先把预览结果确认给用户。可以安全重试：只重启已冷却完毕的计时，只装填空闲的制造槽。
+8. Codex 开发辅助：`keios.dev.codex.config(mode=local)` ->
    `keios.dev.project.snapshot` -> `keios.dev.validation.plan(scope=quick)`
-8. WebDAV 同步诊断：`keios.webdav.status` ->
+9. WebDAV 同步诊断：`keios.webdav.status` ->
    `keios.webdav.history(mode=summary, issuesOnly=true)` -> `keios.webdav.history(mode=detail, id=...)`
 
 ## 完整工具索引
