@@ -56,7 +56,7 @@ import com.kyant.backdrop.backdrops.rememberCombinedBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.vibrancy
+import com.kyant.backdrop.effects.colorControls
 import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
@@ -631,7 +631,14 @@ private fun LiquidTrackSlider(
                             // through) and lens INTENSIFIES (stronger magnification).
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
-                                vibrancy()
+                                // Past the tutorial: it stops at a fixed `vibrancy()`. At rest these
+                                // values *are* `vibrancy()` (brightness 0, contrast 1, saturation 1.5),
+                                // so idle is unchanged; grabbing the thumb lifts both so the glass
+                                // catches light. See LiquidTrackSliderStyle.restingSaturation.
+                                colorControls(
+                                    brightness = lerp(0f, style.pressedBrightness, progress),
+                                    saturation = lerp(style.restingSaturation, style.pressedSaturation, progress),
+                                )
                                 // Keep the static thumb close to the Backdrop tutorial: clear lens first,
                                 // light frosting second. Pressing removes most frosting.
                                 blur(
@@ -921,6 +928,23 @@ private data class LiquidTrackSliderStyle(
     val thumbGlassSurfaceAlpha: Float = SliderThumbGlassSurfaceAlpha,
     val thumbPressedSurfaceAlpha: Float = SliderThumbPressedSurfaceAlpha,
     val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha,
+    /**
+     * How much the thumb's lens brightens and saturates what it refracts, once grabbed.
+     *
+     * This is the one place the thumb goes past the Backdrop tutorial's effect stack, which stops at a
+     * fixed `vibrancy()`. `vibrancy()` is documented as exactly `colorControls(saturation = 1.5f)`, so
+     * the resting values below reproduce it byte for byte and only the *active* end is new — the glass
+     * catches light as the finger lands on it rather than looking identical grabbed and idle.
+     *
+     * That is also how this resolves Apple's rule for content-layer controls, which says a slider
+     * "takes on a Liquid Glass appearance to emphasize its interactivity when a person activates it".
+     * The app keeps its glass at rest, which the Backdrop slider does too and which the rest of this
+     * app's language expects; the emphasis Apple asks for arrives as light instead of as a swap from
+     * standard material to glass. A small capsule turning opaque at rest would read as foreign here.
+     */
+    val restingSaturation: Float = SliderThumbVibrancySaturation,
+    val pressedSaturation: Float = SliderThumbPressedSaturation,
+    val pressedBrightness: Float = SliderThumbPressedBrightness,
 )
 
 // Glass thumb (Backdrop available): clear refractive capsule matching the Glass Slider tutorial.
@@ -935,6 +959,15 @@ private const val SliderThumbRestingHighlightAlphaDark = 0.7f
 
 // Fallback thumb (glass effects disabled): needs an opaque-ish fill to stay visible without a lens.
 private const val SliderThumbFallbackSurfaceAlpha = 0.42f
+
+/** What `vibrancy()` is, per the Backdrop docs: `colorControls(saturation = 1.5f)`. */
+internal const val SliderThumbVibrancySaturation = 1.5f
+
+// Deliberately gentle. The thumb is 20-ish dp of glass over arbitrary content, and the lens is already
+// gaining strength on the same gesture — an aggressive lift here reads as a colour bug rather than as
+// light, especially over a photo. Tuned on the API 37 AVD against both themes.
+internal const val SliderThumbPressedSaturation = 1.85f
+internal const val SliderThumbPressedBrightness = 0.06f
 
 private fun thumbGlassSurfaceAlphaFor(isLightTheme: Boolean): Float =
     if (isLightTheme) SliderThumbGlassSurfaceAlpha else SliderThumbGlassSurfaceAlphaDark

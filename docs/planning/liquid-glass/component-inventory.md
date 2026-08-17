@@ -634,7 +634,7 @@ toolbar's material, not the variant enum — see `LiquidActionBarMaterialTest`.
 |---|---|---|---|
 | 1 | ~~**`LiquidGlassBottomBarMaterial` → `LiquidActionBarMaterial`**~~ **— done, `2026-08-17`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs, so it is the "most important functional element" the guidance says to spend the effect on. Landed as consolidation, not new design: the private material and palette deleted, both bars now on `liquidActionBarMaterial` / `rememberLiquidActionBarPalette`, the inline highlight and shadow replaced by the toolbar's own `liquidActionBarBaseHighlight` / `liquidActionBarBaseShadow` helpers, the flat 10% selection film replaced by the accent-aware `liquidChromeSelectionIndicatorColor` the toolbar already used, and the press lens named. `blur` moved from `UiPerformanceBudget.backdropBlur` to `material.blur` — both 4.dp, so that half is a no-op that removes a second source. Verified on the AVD in both themes. | small — 84 lines out |
 | 2 | ~~**`LiquidGlassDropdownItems`**~~ **— done, `2026-08-17`** | Rows inside a container rewritten on 08-09. Apple decides the shape: the *rows* must **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on it, which the file's own comment already said. So it was a code-health job. **The "judge it on the 818 lines" instruction below was wrong — see the note.** What landed: one press progress instead of two springs on the same boolean; the darkening overlay folded from a `matchParentSize` sibling `Box` into a draw pass (one fewer node and measure per row); one `LiquidGlassDropdownCheck` instead of two implementations of the same icon, which also fixed a drift where the leading copy ran its enter springs backwards on hide; the colour ladder derived once for the row and the sizing pass instead of twice; the four nested shadow ternaries moved to `liquidGlassDropdownPressShadow`; a three-branch `when` whose last two branches both returned `23.dp` collapsed. | medium — done |
-| 3 | **`LiquidSliderVariants`** (946 lines) | The one place Apple carves out an exception, and the app reads it the other way. The guidance: a content-layer control "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**". The slider's own comment says "Lens stays visible **at rest** and gains strength while pressed or dragged." That is a defensible reading — Backdrop's own Glass Slider tutorial lenses at rest — so this is a **decision to take**, not a bug to fix. Worth deciding deliberately rather than by default. | medium, and needs a design call first |
+| 3 | ~~**`LiquidSliderVariants`**~~ **— decided and done, `2026-08-18`** | Apple's exception for content-layer controls says a slider "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**", while the slider lenses at rest. **Decision: keep glass at rest**, which Backdrop's own slider does and which the rest of this app's language expects — a 20dp capsule turning opaque at rest would read as foreign — and deliver Apple's emphasis *as light* instead of as a material swap. Which is also the "go past the tutorial" half: the thumb's fixed `vibrancy()` became a progress-driven `colorControls(brightness, saturation)`. Resting values reproduce `vibrancy()` exactly (the docs define it as `colorControls(saturation = 1.5f)`), so idle is unchanged and only the active end is new. Note the thumb was *already* past the tutorial elsewhere — `depthEffect = true`, a combined backdrop, `Highlight.Ambient`, `InnerShadow` and a velocity stretch in `layerBlock`. | small in the end |
 | 4 | **`AppGripAwareDock`** · **`AppLiquidSearchMaterial`** | Functional-layer, still on 07-13 materials, and neither has a shared-system equivalent yet. Lower because the grip dock is one screen and the search material is already consistent with the search field. | small each |
 
 Not ranked, deliberately: `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `GlassContentContrast`
@@ -656,7 +656,24 @@ app's dropdown vocabulary, not fat, and shrinking it means changing all 32.
 So the metric for a row-level component is duplication and per-row runtime — nodes, springs, draw passes
 — not the line count. A file can get longer and better in the same commit.
 
-**Dead code found while ranking:** `LiquidSliderInteractionLock` has no consumers outside its own file.
+~~**Dead code found while ranking:** `LiquidSliderInteractionLock` has no consumers outside its own file.~~
+**Retracted 08-18 — that was wrong.** There is no class by that name; the file declares
+`Modifier.liquidSliderInteractionLock`, which the slider calls, and grepping the *filename* found nothing
+because nothing refers to a file. Verified: one declaration, one use.
+
+### What the AVD cannot check on a slider
+
+Recorded so the next person does not spend the time again. The active state of a settings slider is
+**not reachable with synthetic input** on the API 37 AVD: `adb shell input swipe` and a hand-built
+`motionevent DOWN`/`MOVE` are both claimed by the settings pager, which is also horizontal, so the page
+slides and `pressProgress` never leaves zero. A bare `DOWN` with no movement does not ramp it either —
+the press progress follows a *claimed drag*, past touch slop.
+
+So the resting appearance is verifiable by screenshot and the active appearance is not. The numeric
+contract is pinned by `LiquidSliderThumbColorControlsTest` instead, which is the half a screenshot could
+never have guarded anyway — a drift of the resting saturation from 1.5 to 1.4 is invisible to the eye and
+would leave the thumb permanently duller than every surface that still calls `vibrancy()`. A real-finger
+pass on the active state is still owed.
 
 ## Still open from the campaign
 
