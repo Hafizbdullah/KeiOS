@@ -34,6 +34,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -349,6 +350,9 @@ private fun LiquidTrackSlider(
         contentAlignment = Alignment.CenterStart,
     ) {
         val trackWidth = constraints.maxWidth.coerceAtLeast(1)
+        val trackWidthPx = trackWidth.toFloat()
+        val localDensity = LocalDensity.current
+        val thumbWidthPx = with(localDensity) { style.thumbWidth.toPx() }
         val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
         val touchSlop = LocalViewConfiguration.current.touchSlop
         val transitionAnimationsEnabled = LocalTransitionAnimationsEnabled.current
@@ -524,9 +528,15 @@ private fun LiquidTrackSlider(
                     .appSquircleBackground(style.activeColor, 999.dp)
                     .height(style.trackHeight)
                     .layout { measurable, constraints ->
+                        // Ends under the thumb's centre, which now travels the inset span rather than the
+                        // whole width. Using `maxWidth * progress` here would leave the fill ahead of the
+                        // thumb below the midpoint and behind it above.
                         val width =
-                            (constraints.maxWidth * dampedDragAnimation.progress.fastCoerceIn(0f, 1f))
-                                .fastRoundToInt()
+                            liquidSliderCenterAt(
+                                trackWidth = constraints.maxWidth.toFloat(),
+                                thumbWidth = thumbWidthPx,
+                                progress = dampedDragAnimation.progress.fastCoerceIn(0f, 1f),
+                            ).fastRoundToInt()
                                 .coerceIn(0, constraints.maxWidth)
                         val placeable =
                             measurable.measure(
@@ -554,13 +564,15 @@ private fun LiquidTrackSlider(
                 Box(
                     Modifier
                         .graphicsLayer {
+                            // A dot marks a value, so it has to sit where the thumb's centre will land on
+                            // that value — the same inset mapping, or the thumb stops covering the dot it
+                            // snaps to. Its own half-width is then taken off to centre the dot itself.
                             translationX =
-                                (
-                                    -size.width / 2f + trackWidth * visualKeyPointProgress
-                                ).fastCoerceIn(
-                                    -size.width / 4f,
-                                    trackWidth - size.width * 3f / 4f,
-                                )
+                                liquidSliderCenterAt(
+                                    trackWidth = trackWidthPx,
+                                    thumbWidth = thumbWidthPx,
+                                    progress = visualKeyPointProgress,
+                                ) - size.width / 2f
                         }.appSquircleBackground(resolveKeyPointColor(keyPoint, style, isActive), 999.dp)
                         .size(keyPoint.size),
                 )
@@ -616,10 +628,20 @@ private fun LiquidTrackSlider(
                 .offset(y = safeVisualVerticalOffset)
                 .graphicsLayer { clip = false }
                 .graphicsLayer {
-                    translationX =
-                        (
-                            -size.width / 2f + trackWidth * visualProgress
-                        ).fastCoerceIn(-size.width / 4f, trackWidth - size.width * 3f / 4f)
+                    // The capsule never leaves its own row, so nothing can cut it.
+                    //
+                    // It used to be centred on the value — `-width/2 + trackWidth * progress` — which puts
+                    // a quarter of it past x = 0 at the minimum and past the right edge at the maximum,
+                    // and something up the tree clips there: the flat-left, round-right half-capsule the
+                    // 0% sliders were showing. Reserving padding on the row did not help, so the clip is
+                    // not the card; rather than keep hunting the exact ancestor, the geometry now simply
+                    // never asks to draw outside.
+                    //
+                    // Travel is the standard one every platform slider uses: the left edge runs 0 ..
+                    // trackWidth - width, so the centre runs width/2 .. trackWidth - width/2. The filled
+                    // track and the key points below use the same mapping, so the fill still ends exactly
+                    // under the centre of the thumb at every value.
+                    translationX = liquidSliderThumbTravel(trackWidthPx, size.width) * visualProgress
                 }.then(
                     if (thumbBackdrop != null) {
                         Modifier.drawBackdrop(
@@ -840,6 +862,29 @@ internal fun sliderVisualProgress(
 ): Float = if (isLtr) progress else 1f - progress
 
 internal val LiquidSliderMinimumInteractiveHeight = 48.dp
+
+/**
+ * How far the thumb's *left edge* may travel, so the capsule stays whole at both ends.
+ *
+ * Zero when a thumb is somehow wider than its track, which keeps it parked rather than inverted.
+ */
+internal fun liquidSliderThumbTravel(
+    trackWidth: Float,
+    thumbWidth: Float,
+): Float = (trackWidth - thumbWidth).coerceAtLeast(0f)
+
+/**
+ * Where the thumb's *centre* sits at [progress] — which is also where the filled track has to end and
+ * where a key-point dot has to sit, so all three read from here.
+ *
+ * Deliberately not `trackWidth * progress`: the centre travels the inset span, so at 0 it rests half a
+ * thumb in rather than hanging off the edge.
+ */
+internal fun liquidSliderCenterAt(
+    trackWidth: Float,
+    thumbWidth: Float,
+    progress: Float,
+): Float = thumbWidth / 2f + liquidSliderThumbTravel(trackWidth, thumbWidth) * progress
 
 private class LiquidSliderHapticState {
     private var edgeFeedbackTriggered = false
