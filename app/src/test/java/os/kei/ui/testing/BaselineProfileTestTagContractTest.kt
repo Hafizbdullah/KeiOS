@@ -14,16 +14,30 @@ import org.junit.Test
 class BaselineProfileTestTagContractTest {
     @Test
     fun everyTagTheGeneratorWaitsForIsDeclaredInTheApp() {
-        val declared = keiOsTestTagValues()
+        val declared = keiOsTestTagValues() + componentOwnedTagValues()
         val generatorTags = generatorTagConstants()
 
         assertTrue(generatorTags.isNotEmpty(), "Unable to parse tag constants out of the generator")
         generatorTags.forEach { (constant, value) ->
             assertTrue(
                 value in declared,
-                "$constant = \"$value\" matches no KeiOsTestTags entry; the journey would time out",
+                "$constant = \"$value\" matches no declared tag; the journey would time out",
             )
         }
+    }
+
+    @Test
+    fun theOverlayLayerStillPublishesTagsAsResourceIds() {
+        // The overlay layer is a sibling of the page content, so it inherits nothing from a page root.
+        // Without this line every tag inside a sheet, alert, action sheet or menu is invisible to
+        // UiAutomator — which is how LiquidSheetPanelTestTag came to exist for the baseline profile and
+        // never resolve. Removing it would put every presentation journey back to timing out.
+        val source = sourceFile(SCENE_BACKDROP_HOST)
+
+        assertTrue(
+            "testTagsAsResourceId = true" in source,
+            "$SCENE_BACKDROP_HOST must publish overlay tags or every sheet journey goes blind",
+        )
     }
 
     @Test
@@ -63,6 +77,27 @@ private fun keiOsTestTagValues(): List<String> =
         .findAll(sourceFile("app/src/main/java/os/kei/ui/testing/KeiOsTestTags.kt"))
         .map { match -> match.groupValues[2] }
         .toList()
+
+/**
+ * Tags a ui-liquid-glass component owns rather than a page.
+ *
+ * A journey waiting for "any sheet" or "any menu" cannot name a page's tag, and copying these into
+ * [KeiOsTestTags] would leave two spellings to drift apart — the exact failure this file exists to
+ * prevent.
+ */
+private fun componentOwnedTagValues(): List<String> =
+    COMPONENT_TAG_SOURCES.flatMap { relativePath ->
+        CONST_DECLARATION.findAll(sourceFile(relativePath)).map { match -> match.groupValues[2] }
+    }
+
+private val COMPONENT_TAG_SOURCES =
+    listOf(
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/LiquidSheet.kt",
+        "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/MiuixSnapshotAdapters.kt",
+    )
+
+private const val SCENE_BACKDROP_HOST =
+    "ui-liquid-glass/src/main/java/os/kei/ui/page/main/widget/sheet/SceneBackdropScope.kt"
 
 private fun generatorTagConstants(): List<Pair<String, String>> =
     CONST_DECLARATION

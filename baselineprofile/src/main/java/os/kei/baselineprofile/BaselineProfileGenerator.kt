@@ -113,6 +113,56 @@ class BaselineProfileGenerator {
     }
 
     /**
+     * The Craft Chamber's disclosure, and the first sheet any journey has ever reached.
+     *
+     * Two gaps in one journey, both on the BA page. Counted in the shipped profile before this landed:
+     * **zero** `BaCraft*` rules, for a feature with six timers, an edit sheet and its own models — it
+     * shipped after the last regeneration and nothing had walked it.
+     *
+     * The craft card folds. Its rows come and go through `appExpandIn`/`appExpandOut` inside a glass
+     * card in a lazy list, and [baPageInteractions] only ever composes whichever state was persisted —
+     * the transition itself was never run, so it was interpreted on the teacher's first tap. That is
+     * the same trap recorded on the calendar and pool journeys, and it costs dropped frames rather than
+     * a slower launch because the animation *is* the first composition.
+     *
+     * Then a sheet. `LiquidSheetPanelTestTag` was added for exactly this and never worked: the overlay
+     * layer is a sibling of the page content, so it inherited no `testTagsAsResourceId` and every tag
+     * inside a sheet was invisible to UiAutomator. `SceneBackdropHost` now sets it for the whole
+     * overlay layer, which is what makes this wait resolve. Verified by dumping the hierarchy with the
+     * craft sheet open — `liquid_sheet_panel` appears, and did not before. The 15 `LiquidSheet` rules
+     * already in the profile came in incidentally through other journeys; nothing had opened a sheet.
+     *
+     * The header is toggled to a known state first rather than assumed: the expansion is persisted, so
+     * whatever the previous run or the teacher left behind decides whether the rows exist. Ending
+     * expanded also puts the device back on the shipped default.
+     */
+    @Test
+    fun baCraftCardInteractions() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            launchHomeFromColdStart()
+
+            clickAndWaitForPage(
+                tabTag = MAIN_BOTTOM_TAB_BA,
+                pageTag = BA_PAGE_ROOT,
+                settledTag = MAIN_PAGER_SETTLED_BA,
+            )
+
+            // Both halves of the disclosure animate, and both are what a teacher actually triggers.
+            setCraftCardExpanded(expanded = true)
+            setCraftCardExpanded(expanded = false)
+            setCraftCardExpanded(expanded = true)
+
+            openAndDismissOverlay(
+                triggerTag = BA_CRAFT_SLOT_FIRST,
+                panelTag = LIQUID_SHEET_PANEL,
+            )
+        }
+    }
+
+    /**
      * The activity calendar and pool pages became nav routes, so their first composition now runs
      * inside the push transition instead of behind an activity launch. Nothing had ever profiled
      * them — the shipped profile carried 606 BaCalendarPool* rules and not one for either page
@@ -327,6 +377,66 @@ class BaselineProfileGenerator {
 }
 
 /**
+ * Drives the Craft Chamber card to [expanded], scrolling it into reach and retrying the tap.
+ *
+ * Written this way after the first version failed on the device with "did not collapse". Two things
+ * make a single blind tap unreliable here, and both are properties of the card rather than of the test:
+ * the expansion is *persisted*, so neither state can be assumed on entry — a fresh install is expanded
+ * and a device someone has used may not be; and the card is the last one in the list, so the header can
+ * sit under the floating dock, which is drawn above the list and eats the tap.
+ *
+ * Three attempts, then a loud failure. A real break still fails; a swallowed tap does not cost a run.
+ */
+private fun MacrobenchmarkScope.setCraftCardExpanded(expanded: Boolean) {
+    val rows = testTagSelector(BA_CRAFT_SLOT_FIRST)
+    repeat(3) {
+        if (device.hasObject(rows) == expanded) {
+            device.waitForIdle()
+            return
+        }
+        scrollCraftCardHeaderClearOfTheDock()
+        clickTestTag(BA_CRAFT_CARD_HEADER)
+        val settled =
+            if (expanded) {
+                device.wait(Until.hasObject(rows), 5_000)
+            } else {
+                device.wait(Until.gone(rows), 5_000)
+            }
+        if (settled) {
+            device.waitForIdle()
+            return
+        }
+    }
+    error("Craft card would not settle to expanded=$expanded in ${targetAppId()}")
+}
+
+/**
+ * Flings until the craft header is a real target: tall enough to hit and clear of the bottom band the
+ * floating dock and bottom bar occupy.
+ *
+ * The list stops at its end, so this converges rather than scrolling past — the card is the last one.
+ */
+private fun MacrobenchmarkScope.scrollCraftCardHeaderClearOfTheDock() {
+    val safeBottom = (device.displayHeight * 0.80f).toInt()
+    repeat(6) {
+        waitForTestTag(BA_CRAFT_CARD_HEADER, timeoutMs = 15_000)
+        val bounds = device.findObject(testTagSelector(BA_CRAFT_CARD_HEADER))?.visibleBounds ?: return
+        if (bounds.height() >= MIN_TAPPABLE_HEIGHT_PX && bounds.centerY() <= safeBottom) return
+        flingVisibleScrollable(times = 1)
+    }
+}
+
+private fun MacrobenchmarkScope.clickTestTag(tag: String) {
+    val node = device.findObject(testTagSelector(tag))
+        ?: error("Unable to find testTag=$tag in ${targetAppId()}")
+    node.click()
+    device.waitForIdle()
+}
+
+/** A clipped header reports single-digit pixels; anything that thin is not worth tapping. */
+private const val MIN_TAPPABLE_HEIGHT_PX = 40
+
+/**
  * Taps a control that pushes a nav route, exercises the route, then pops back.
  *
  * Both directions matter: the pop replays the covered entry's restore path, which is what a user
@@ -448,6 +558,16 @@ private const val GITHUB_IMPORT_MENU_BUTTON = "github_import_menu_button"
 private const val GITHUB_IMPORT_TRACKS = "github_import_tracks"
 private const val BA_DOCK_OPEN_CALENDAR = "ba_dock_open_calendar"
 private const val BA_DOCK_OPEN_POOL = "ba_dock_open_pool"
+private const val BA_CRAFT_CARD_HEADER = "ba_craft_card_header"
+
+/** The first Generate row, which opens the craft sheet — see [BaselineProfileGenerator.baCraftCardInteractions]. */
+private const val BA_CRAFT_SLOT_FIRST = "ba_craft_slot_first"
+
+/**
+ * Any sheet's panel, from `LiquidSheetPanelTestTag`. Declared in ui-liquid-glass rather than
+ * `KeiOsTestTags`, because the sheet component and not a page owns it.
+ */
+private const val LIQUID_SHEET_PANEL = "liquid_sheet_panel"
 private const val GITHUB_ACTIONS_HISTORY_BUTTON = "github_actions_history_button"
 private const val GITHUB_ACTIONS_HISTORY_PAGE_ROOT = "github_actions_history_page_root"
 

@@ -11,6 +11,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.emptyBackdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -76,7 +78,16 @@ fun SceneBackdropHost(
             ) {
                 content()
             }
-            overlayHost.Content()
+            // The overlay layer is a *sibling* of the page content, so it inherits nothing from the
+            // page root — including its `testTagsAsResourceId`. Without this, a test tag inside a
+            // sheet, alert, action sheet or menu never reaches the view hierarchy's resource id and
+            // is invisible to UiAutomator, which is what kept every presentation out of the baseline
+            // profile. Two surfaces had already worked around it one at a time
+            // (`LiquidGlassActionMenu`, `Modifier.shareImportSheetTags`); doing it here covers the
+            // whole layer once. It only names nodes for tooling — no behaviour, and TalkBack ignores it.
+            Box(modifier = Modifier.semantics { testTagsAsResourceId = true }) {
+                overlayHost.Content()
+            }
         }
     }
 }

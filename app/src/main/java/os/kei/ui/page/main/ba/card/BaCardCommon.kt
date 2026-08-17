@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -228,6 +229,8 @@ internal fun BaInlineActionPanel(
     backdrop: Backdrop?,
     buttonText: String,
     buttonIconRes: Int? = null,
+    /** Tags the row's button, not the panel: the panel itself has no semantics to hang a node on. */
+    buttonTestTag: String? = null,
     countdownText: String,
     timeText: String,
     accentColor: Color,
@@ -235,6 +238,7 @@ internal fun BaInlineActionPanel(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
+    val buttonModifier = buttonTestTag?.let { tag -> Modifier.testTag(tag) } ?: Modifier
     val countdownBlue = Color(0xFF60A5FA)
     BaLiquidPanel(
         backdrop = backdrop,
@@ -249,6 +253,7 @@ internal fun BaInlineActionPanel(
             if (buttonIconRes != null) {
                 AppLiquidIconButton(
                     backdrop = backdrop,
+                    modifier = buttonModifier,
                     painter = painterResource(id = buttonIconRes),
                     contentDescription = buttonText,
                     onClick = {
@@ -264,6 +269,7 @@ internal fun BaInlineActionPanel(
             } else {
                 AppLiquidTextButton(
                     backdrop = backdrop,
+                    modifier = buttonModifier,
                     text = buttonText,
                     textColor = accentColor,
                     containerColor = accentColor,

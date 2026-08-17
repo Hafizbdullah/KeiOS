@@ -4,7 +4,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ import os.kei.ui.page.main.ba.support.slotAt
 import os.kei.ui.page.main.ba.support.summary
 import os.kei.ui.page.main.widget.motion.appExpandIn
 import os.kei.ui.page.main.widget.motion.appExpandOut
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -70,6 +73,10 @@ internal fun BaCraftCard(
     ) {
         BaCardHeader(
             title = stringResource(R.string.ba_craft_title),
+            // The header is the disclosure control, and the only handle a baseline-profile journey has
+            // on the expand/collapse transition. It carries a clickable role below, so the tag does
+            // become its own node — a tag on a semantics-free container would not.
+            modifier = Modifier.testTag(KeiOsTestTags.BaCraftCardHeader),
             expandable = true,
             expanded = expanded,
             expandTint = accentAmber,
@@ -108,6 +115,11 @@ internal fun BaCraftCard(
                         val endAtMs = slot.endAtMs()
                         BaInlineActionPanel(
                             backdrop = backdrop,
+                            // Only the first Generate slot is tagged: it is the journey's way into the
+                            // craft sheet, and six tags would be five that nothing waits for.
+                            buttonTestTag =
+                                KeiOsTestTags.BaCraftSlotFirst
+                                    .takeIf { function == BaCraftFunction.Generate && index == 0 },
                             buttonText =
                                 stringResource(
                                     R.string.ba_craft_slot_button_format,
