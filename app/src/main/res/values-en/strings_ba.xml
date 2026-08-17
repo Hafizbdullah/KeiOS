@@ -858,4 +858,5 @@
     <string name="shortcut_label_ba_daily_done_short">Dailies</string>
     <string name="shortcut_label_ba_daily_done_long">BA dailies done</string>
     <string name="shortcut_label_ba_daily_done_account_format">Dailies · %1$s</string>
+    <string name="ba_daily_done_mode_per_account_summary">One tile per account, up to %1$d. Tiles are manifest components, so the pool cannot grow at runtime.</string>
 </resources>

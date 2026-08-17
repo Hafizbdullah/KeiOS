@@ -10,8 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import os.kei.R
 import os.kei.core.concurrency.AppDispatchers
-import os.kei.core.ext.showToast
 import os.kei.core.log.AppLogger
+import os.kei.ui.page.main.ba.BaDailyDoneNotificationDispatcher
 import os.kei.ui.page.main.ba.support.BASettingsStore
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaDailyDoneOutcome
@@ -62,8 +62,9 @@ internal abstract class BaDailyDoneTileServiceBase : TileService() {
             result
                 .onSuccess(::report)
                 .onFailure { throwable ->
+                    // Log only: a toast from here would be dropped for the same background reason as the
+                    // success path, and a failure notification for a template that changed nothing is noise.
                     AppLogger.e(TAG, "daily done failed slot=$slot", throwable)
-                    showToast(R.string.ba_daily_done_toast_failed)
                 }
             refreshTile()
         }
@@ -86,18 +87,25 @@ internal abstract class BaDailyDoneTileServiceBase : TileService() {
         return Targets.Only(listOf(bound))
     }
 
+    /**
+     * Reports through a notification, not a toast.
+     *
+     * Android 12 and up drop toasts from a background app, and a tile click is not foreground — verified
+     * on the API 37 AVD, where the template applied correctly but no toast ever appeared. The tile's own
+     * subtitle is not a fallback either: at the icon-only size the panel renders neither label nor
+     * subtitle.
+     *
+     * Nothing is posted when nothing changed, so a stray tap stays silent.
+     */
     private fun report(outcomes: Map<BaAccountId, BaDailyDoneOutcome>) {
-        if (outcomes.isEmpty()) {
-            showToast(R.string.ba_daily_done_toast_no_target)
-            return
-        }
+        if (outcomes.isEmpty()) return
         val changed = outcomes.count { it.value.changedAnything }
-        if (changed == 0) {
-            showToast(R.string.ba_daily_done_toast_already_done)
-            return
-        }
-        val craftSlots = outcomes.values.sumOf { it.craftSlotsStarted }
-        showToast(getString(R.string.ba_daily_done_toast_applied_format, changed, craftSlots))
+        if (changed == 0) return
+        BaDailyDoneNotificationDispatcher.send(
+            context = this,
+            changedAccounts = changed,
+            craftSlotsStarted = outcomes.values.sumOf { it.craftSlotsStarted },
+        )
     }
 
     private fun refreshTile() {

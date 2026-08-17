@@ -858,4 +858,5 @@
     <string name="shortcut_label_ba_daily_done_short">BA日常</string>
     <string name="shortcut_label_ba_daily_done_long">BA 日常完成</string>
     <string name="shortcut_label_ba_daily_done_account_format">日常 · %1$s</string>
+    <string name="ba_daily_done_mode_per_account_summary">每个账号一个独立磁贴，最多 %1$d 个（磁贴由系统清单声明，数量无法运行时增加）</string>
 </resources>

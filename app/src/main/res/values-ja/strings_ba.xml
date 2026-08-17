@@ -856,4 +856,5 @@
     <string name="shortcut_label_ba_daily_done_short">デイリー</string>
     <string name="shortcut_label_ba_daily_done_long">BA デイリー完了</string>
     <string name="shortcut_label_ba_daily_done_account_format">デイリー · %1$s</string>
+    <string name="ba_daily_done_mode_per_account_summary">アカウントごとに 1 つ、最大 %1$d 個です。タイルはマニフェスト宣言のため実行時に増やせません。</string>
 </resources>

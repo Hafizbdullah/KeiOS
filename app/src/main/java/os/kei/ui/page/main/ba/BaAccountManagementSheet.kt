@@ -165,6 +165,11 @@ internal fun BaAccountManagementSheet(
                 }
             }
 
+            BaDailyDoneShortcutSection(
+                backdrop = backdrop,
+                accounts = state.accounts,
+            )
+
             SheetSectionHeader(stringResource(R.string.ba_account_management_section_accounts))
             SheetSectionCard {
                 SheetControlRow(
