@@ -633,12 +633,28 @@ toolbar's material, not the variant enum — see `LiquidActionBarMaterialTest`.
 | # | Component | Why now | Cost |
 |---|---|---|---|
 | 1 | ~~**`LiquidGlassBottomBarMaterial` → `LiquidActionBarMaterial`**~~ **— done, `2026-08-17`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs, so it is the "most important functional element" the guidance says to spend the effect on. Landed as consolidation, not new design: the private material and palette deleted, both bars now on `liquidActionBarMaterial` / `rememberLiquidActionBarPalette`, the inline highlight and shadow replaced by the toolbar's own `liquidActionBarBaseHighlight` / `liquidActionBarBaseShadow` helpers, the flat 10% selection film replaced by the accent-aware `liquidChromeSelectionIndicatorColor` the toolbar already used, and the press lens named. `blur` moved from `UiPerformanceBudget.backdropBlur` to `material.blur` — both 4.dp, so that half is a no-op that removes a second source. Verified on the AVD in both themes. | small — 84 lines out |
-| 2 | **`LiquidGlassDropdownItems`** | Still the largest untouched file at **818 lines**, and still the rows inside a container that was rewritten on 08-09. But the framing changes: per Apple the *rows* should **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on top of it. So this is a code-health and highlight-treatment job (the pressed/selected pill is hand-painted with `drawAppSquircleBackground` and alpha-driven `graphicsLayer`), not a material job. Judge it on the 818 lines, not on missing glass. | medium — big file, low risk |
+| 2 | ~~**`LiquidGlassDropdownItems`**~~ **— done, `2026-08-17`** | Rows inside a container rewritten on 08-09. Apple decides the shape: the *rows* must **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on it, which the file's own comment already said. So it was a code-health job. **The "judge it on the 818 lines" instruction below was wrong — see the note.** What landed: one press progress instead of two springs on the same boolean; the darkening overlay folded from a `matchParentSize` sibling `Box` into a draw pass (one fewer node and measure per row); one `LiquidGlassDropdownCheck` instead of two implementations of the same icon, which also fixed a drift where the leading copy ran its enter springs backwards on hide; the colour ladder derived once for the row and the sizing pass instead of twice; the four nested shadow ternaries moved to `liquidGlassDropdownPressShadow`; a three-branch `when` whose last two branches both returned `23.dp` collapsed. | medium — done |
 | 3 | **`LiquidSliderVariants`** (946 lines) | The one place Apple carves out an exception, and the app reads it the other way. The guidance: a content-layer control "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**". The slider's own comment says "Lens stays visible **at rest** and gains strength while pressed or dragged." That is a defensible reading — Backdrop's own Glass Slider tutorial lenses at rest — so this is a **decision to take**, not a bug to fix. Worth deciding deliberately rather than by default. | medium, and needs a design call first |
 | 4 | **`AppGripAwareDock`** · **`AppLiquidSearchMaterial`** | Functional-layer, still on 07-13 materials, and neither has a shared-system equivalent yet. Lower because the grip dock is one screen and the search material is already consistent with the search field. | small each |
 
 Not ranked, deliberately: `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `GlassContentContrast`
 and the token files. They are foundations the campaign built *on* — old dates, current designs.
+
+### Do not rank a component by its line count
+
+Written after doing #2, because the entry above set "judge it on the 818 lines" and that was the wrong
+target. The file came out of the work at **881 lines — 63 more than it went in with**, while every actual
+defect in it got fixed. Each extraction traded roughly fifteen duplicated lines for twenty-five of
+function signature plus the note explaining the drift it closed. One round of that was over-abstraction
+and got reverted: seven named spring constants existed only to keep two copies of the check in step, and
+once there was one copy they were pure indirection.
+
+What is actually left of the length is the public API surface: six public composables with fourteen to
+seventeen parameters each is roughly 250 lines of parameter list, spread over 32 call sites. That is the
+app's dropdown vocabulary, not fat, and shrinking it means changing all 32.
+
+So the metric for a row-level component is duplication and per-row runtime — nodes, springs, draw passes
+— not the line count. A file can get longer and better in the same commit.
 
 **Dead code found while ranking:** `LiquidSliderInteractionLock` has no consumers outside its own file.
 

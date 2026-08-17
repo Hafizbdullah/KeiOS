@@ -51,6 +51,7 @@ import os.kei.ui.page.main.widget.core.AppTypographyTokens
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBackground
 import os.kei.ui.page.main.widget.shape.drawAppSquircleBorder
+import os.kei.ui.page.main.widget.shape.drawAppSquircleForeground
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
@@ -110,48 +111,32 @@ fun LiquidGlassDropdownItem(
 
     val isDark = isAppInDarkTheme()
     val material = LocalLiquidGlassDropdownMaterial.current
-    val itemAccent =
-        liquidGlassDropdownItemAccent(
+    val colors =
+        liquidGlassDropdownItemColors(
             isDark = isDark,
             accentColor = accentColor,
             variant = variant,
+            contentTint = contentTint,
+            highlighted = highlighted,
+            highlightContent = highlightContent,
+            enabled = enabled,
         )
-    val contentHighlighted = highlighted && highlightContent
-    val resolvedContentTint =
-        contentTint ?: itemAccent.takeIf { variant == GlassVariant.SheetDangerAction }
-    val targetTextColor =
-        (
-            resolvedContentTint ?: if (contentHighlighted) {
-                itemAccent
-            } else {
-                MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.98f else 0.96f)
-            }
-        ).let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
-    val targetIconColor =
-        (
-            resolvedContentTint ?: if (contentHighlighted) {
-                itemAccent
-            } else {
-                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.94f else 0.86f)
-            }
-        ).let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
     // Smooth color transitions when selection changes — prevents the abrupt "blink" that a plain
     // ternary produces. Spring keeps it feeling natural and tied to the user's selection gesture.
     val textColorState =
         animateColorAsState(
-            targetValue = targetTextColor,
+            targetValue = colors.text,
             animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
             label = "liquid_glass_dropdown_item_text_color",
         )
     val iconColorState =
         animateColorAsState(
-            targetValue = targetIconColor,
+            targetValue = colors.icon,
             animationSpec = spring(dampingRatio = 0.92f, stiffness = 500f),
             label = "liquid_glass_dropdown_item_icon_color",
         )
     val textColorProvider = remember(textColorState) { ColorProducer { textColorState.value } }
     val iconColorProvider = remember(iconColorState) { ColorProducer { iconColorState.value } }
-    val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
     val currentOnClick by rememberUpdatedState(onClick)
     val itemRole =
         when (itemType) {
@@ -199,78 +184,64 @@ fun LiquidGlassDropdownItem(
             animationSpec = spring(dampingRatio = 0.78f, stiffness = 700f),
             label = "liquid_glass_dropdown_item_scale",
         )
-    // Pressed overlay alpha: faster spring with mild damping keeps the highlight visually
-    // tied to the press gesture (no perceptible lag) while still smoothing out micro-jitter.
-    val pressedAlphaState =
+    // One press progress drives everything the press moves: the lift, the tonal surface, the border and
+    // the darkening overlay.
+    //
+    // There used to be two springs on the same boolean — a "pill alpha" (0.92/600) for the surface,
+    // border and shadow, and a separate "pressed alpha" (0.88/900) for a full-size overlay `Box` laid on
+    // top. One gesture, two timelines a few milliseconds apart, and an extra layout node per row in a
+    // list that renders one row per menu entry. Selection is not involved either way: it is carried by
+    // the accent content and the check, exactly as the platform menu language does it, which is why the
+    // old `showSelectionPill` was only ever `pressed`.
+    val pressProgressState =
         animateFloatAsState(
-            targetValue = appControlPressedOverlayAlpha(pressed && enabled, isDark),
-            animationSpec = spring(dampingRatio = 0.88f, stiffness = 900f),
-            label = "liquid_glass_dropdown_item_pressed_alpha",
-        )
-    // Selection follows the platform menu language: accent content and a check carry the
-    // persistent state, while the tonal surface is reserved for the current press.
-    val showSelectionPill = pressed
-    // Smooth pill alpha transition when selection changes — avoids the sudden flash that
-    // a plain boolean produces. Critical for selection feedback in dropdowns.
-    val pillAlphaState =
-        animateFloatAsState(
-            targetValue = if (showSelectionPill) 1f else 0f,
+            targetValue = if (pressed && enabled) 1f else 0f,
             animationSpec = spring(dampingRatio = 0.92f, stiffness = 600f),
-            label = "liquid_glass_dropdown_item_pill_alpha",
+            label = "liquid_glass_dropdown_item_press_progress",
         )
     val pillSurface =
         liquidGlassDropdownPressedSurfaceColor(
             isDark = isDark,
             material = material,
         )
-    val pressedOverlayColor = MiuixTheme.colorScheme.onBackground
+    val pressBorderColor =
+        liquidGlassDropdownSelectedBorderColor(
+            isDark = isDark,
+            material = material,
+            accentColor = colors.accent,
+        )
+    // The overlay used to get its alpha from `appControlPressedOverlayAlpha(pressed, isDark)`, which is a
+    // boolean gate in front of these two tokens. With one progress driving the fade, the peak is read
+    // directly and scaled — passing a hardcoded `true` to a gate would only obscure that.
+    val pressOverlayColor = MiuixTheme.colorScheme.onBackground
+    val pressOverlayPeakAlpha =
+        if (isDark) {
+            AppInteractiveTokens.pressedOverlayAlphaDark
+        } else {
+            AppInteractiveTokens.pressedOverlayAlphaLight
+        }
+    val pressShadow = liquidGlassDropdownPressShadow(material = material, isDark = isDark)
     Box(
         modifier =
             modifier
                 .padding(top = outerTopPadding, bottom = outerBottomPadding)
                 .graphicsLayer {
                     val scale = scaleState.value
-                    val pillAlpha = pillAlphaState.value
+                    val progress = pressProgressState.value
                     scaleX = scale
                     scaleY = scale
-                    shadowElevation = (if (material == LiquidGlassDropdownMaterial.ActionMenu) 6.dp else 10.dp).toPx() * pillAlpha
+                    shadowElevation = pressShadow.elevation.toPx() * progress
                     shape = rowShape
                     clip = false
-                    ambientShadowColor =
-                        Color.Black.copy(
-                            alpha =
-                                (
-                                    if (material == LiquidGlassDropdownMaterial.ActionMenu) {
-                                        if (isDark) 0.10f else 0.05f
-                                    } else {
-                                        if (isDark) 0.18f else 0.10f
-                                    }
-                                ) * pillAlpha,
-                        )
-                    spotShadowColor =
-                        Color.Black.copy(
-                            alpha =
-                                (
-                                    if (material == LiquidGlassDropdownMaterial.ActionMenu) {
-                                        if (isDark) 0.08f else 0.04f
-                                    } else {
-                                        if (isDark) 0.16f else 0.08f
-                                    }
-                                ) * pillAlpha,
-                        )
+                    ambientShadowColor = Color.Black.copy(alpha = pressShadow.ambientAlpha * progress)
+                    spotShadowColor = Color.Black.copy(alpha = pressShadow.spotAlpha * progress)
                 }.drawAppSquircleBackground(LiquidGlassDropdownItemRadius) {
-                    pillSurface.copy(alpha = pillSurface.alpha * pillAlphaState.value)
+                    pillSurface.copy(alpha = pillSurface.alpha * pressProgressState.value)
                 }.drawAppSquircleBorder(
                     width = 1.dp,
                     cornerRadius = LiquidGlassDropdownItemRadius,
                 ) {
-                    val borderColor =
-                        liquidGlassDropdownSelectedBorderColor(
-                            isDark = isDark,
-                            material = material,
-                            accentColor = itemAccent,
-                        )
-                    borderColor.copy(alpha = borderColor.alpha * pillAlphaState.value)
+                    pressBorderColor.copy(alpha = pressBorderColor.alpha * pressProgressState.value)
                 }.clickable(
                     interactionSource = interactionSource,
                     indication = null,
@@ -284,30 +255,84 @@ fun LiquidGlassDropdownItem(
             text = text,
             textColor = textColorProvider,
             iconColor = iconColorProvider,
-            checkColor = checkColor,
+            checkColor = colors.check,
             showCheck = showCheck,
             reserveCheckSlot = reserveCheckSlot,
             leadingIcon = leadingIcon,
             trailingIcon = trailingIcon,
             subtitle = subtitle,
             trailingContent = trailingContent,
-            modifier = Modifier.liquidGlassDropdownRowContent(),
+            // The darkening overlay is now a draw pass on the content rather than a sibling `Box` with
+            // `matchParentSize`, which is one fewer node and one fewer measure per row.
+            modifier =
+                Modifier
+                    .liquidGlassDropdownRowContent()
+                    .drawAppSquircleForeground(LiquidGlassDropdownItemRadius) {
+                        pressOverlayColor.copy(alpha = pressOverlayPeakAlpha * pressProgressState.value)
+                    },
             textMaxLines = textMaxLines,
             enabled = enabled,
             isDark = isDark,
         )
-        Box(
-            modifier =
-                Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        alpha = pressedAlphaState.value
-                    }.drawAppSquircleBackground(LiquidGlassDropdownItemRadius) {
-                        pressedOverlayColor
-                    },
-        )
     }
 }
+
+/**
+ * The row's content colors, derived once for both the real row and the sizing pass.
+ *
+ * The two used to compute this separately — the same accent lookup, the same
+ * highlighted/onBackground/onBackgroundVariant ladder, the same disabled alphas — and had already
+ * drifted apart in the content-tint branch, which only the real row honoured.
+ */
+@Composable
+private fun liquidGlassDropdownItemColors(
+    isDark: Boolean,
+    accentColor: Color,
+    variant: GlassVariant,
+    contentTint: Color?,
+    highlighted: Boolean,
+    highlightContent: Boolean,
+    enabled: Boolean,
+): LiquidGlassDropdownItemColors {
+    val itemAccent =
+        liquidGlassDropdownItemAccent(
+            isDark = isDark,
+            accentColor = accentColor,
+            variant = variant,
+        )
+    val contentHighlighted = highlighted && highlightContent
+    val resolvedContentTint =
+        contentTint ?: itemAccent.takeIf { variant == GlassVariant.SheetDangerAction }
+    val text =
+        (
+            resolvedContentTint ?: if (contentHighlighted) {
+                itemAccent
+            } else {
+                MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.98f else 0.96f)
+            }
+        ).let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
+    val icon =
+        (
+            resolvedContentTint ?: if (contentHighlighted) {
+                itemAccent
+            } else {
+                MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.94f else 0.86f)
+            }
+        ).let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
+    return LiquidGlassDropdownItemColors(
+        accent = itemAccent,
+        text = text,
+        icon = icon,
+        check = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f),
+    )
+}
+
+private class LiquidGlassDropdownItemColors(
+    val accent: Color,
+    val text: Color,
+    val icon: Color,
+    val check: Color,
+)
 
 @Composable
 private fun LiquidGlassDropdownMeasureItem(
@@ -330,26 +355,19 @@ private fun LiquidGlassDropdownMeasureItem(
     enabled: Boolean = true,
 ) {
     val isDark = isAppInDarkTheme()
-    val itemAccent =
-        liquidGlassDropdownItemAccent(
+    val colors =
+        liquidGlassDropdownItemColors(
             isDark = isDark,
             accentColor = accentColor,
             variant = variant,
+            // The sizing pass measures text, and a tint never changes a glyph's advance — so unlike the
+            // real row it has nothing to pass here. Sharing the derivation is still what keeps the two
+            // in step on everything that *does* affect measurement.
+            contentTint = null,
+            highlighted = highlighted,
+            highlightContent = highlightContent,
+            enabled = enabled,
         )
-    val contentHighlighted = highlighted && highlightContent
-    val textColor =
-        if (contentHighlighted) {
-            itemAccent
-        } else {
-            MiuixTheme.colorScheme.onBackground.copy(alpha = if (isDark) 0.98f else 0.96f)
-        }.let { color -> if (enabled) color else color.copy(alpha = 0.42f) }
-    val iconColor =
-        if (contentHighlighted) {
-            itemAccent
-        } else {
-            MiuixTheme.colorScheme.onBackgroundVariant.copy(alpha = if (isDark) 0.94f else 0.86f)
-        }.let { color -> if (enabled) color else color.copy(alpha = 0.38f) }
-    val checkColor = if (enabled) itemAccent else itemAccent.copy(alpha = 0.42f)
     val outerTopPadding = if (index == 0) 0.dp else 2.dp
     val outerBottomPadding = if (index == optionSize - 1) 0.dp else 2.dp
 
@@ -361,9 +379,9 @@ private fun LiquidGlassDropdownMeasureItem(
     ) {
         LiquidGlassDropdownRowContent(
             text = text,
-            textColor = ColorProducer { textColor },
-            iconColor = ColorProducer { iconColor },
-            checkColor = checkColor,
+            textColor = ColorProducer { colors.text },
+            iconColor = ColorProducer { colors.icon },
+            checkColor = colors.check,
             showCheck = showCheck,
             reserveCheckSlot = reserveCheckSlot,
             leadingIcon = leadingIcon,
@@ -438,12 +456,9 @@ private fun LiquidGlassDropdownRowContent(
     val actionMenuLeadingCheck =
         material == LiquidGlassDropdownMaterial.ActionMenu &&
             reserveCheckSlot
-    val rowHorizontalPadding =
-        when {
-            material != LiquidGlassDropdownMaterial.ActionMenu -> 12.dp
-            actionMenuLeadingCheck -> 23.dp
-            else -> 23.dp
-        }
+    // Was a three-branch `when` whose last two branches both returned 23.dp, so `actionMenuLeadingCheck`
+    // discriminated nothing.
+    val rowHorizontalPadding = if (material == LiquidGlassDropdownMaterial.ActionMenu) 23.dp else 12.dp
     val rowVerticalPadding = if (material == LiquidGlassDropdownMaterial.ActionMenu) 7.dp else 8.dp
     val rowSpacing = if (material == LiquidGlassDropdownMaterial.ActionMenu) 13.dp else 10.dp
     Row(
@@ -456,38 +471,11 @@ private fun LiquidGlassDropdownRowContent(
         horizontalArrangement = Arrangement.spacedBy(rowSpacing),
     ) {
         if (actionMenuLeadingCheck) {
-            // Leading check slot: always reserves space (Box matches the icon size).
-            // Fade + scale the icon based on showCheck so selection changes feel smooth.
-            val checkAlphaState =
-                animateFloatAsState(
-                    targetValue = if (showCheck) 1f else 0f,
-                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f),
-                    label = "liquid_glass_dropdown_leading_check_alpha",
-                )
-            val checkScaleState =
-                animateFloatAsState(
-                    targetValue = if (showCheck) 1f else 0.6f,
-                    animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
-                    label = "liquid_glass_dropdown_leading_check_scale",
-                )
-            Box(
-                modifier = Modifier.size(LiquidGlassDropdownCheckSize),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Basic.Check,
-                    contentDescription = null,
-                    tint = checkColor,
-                    modifier =
-                        Modifier
-                            .size(LiquidGlassDropdownCheckSize)
-                            .graphicsLayer {
-                                alpha = checkAlphaState.value
-                                scaleX = checkScaleState.value
-                                scaleY = checkScaleState.value
-                            },
-                )
-            }
+            LiquidGlassDropdownCheck(
+                showCheck = showCheck,
+                checkColor = checkColor,
+                reserveSpace = true,
+            )
         } else if (leadingIcon != null) {
             LiquidGlassDropdownIcon(
                 imageVector = leadingIcon,
@@ -539,31 +527,106 @@ private fun LiquidGlassDropdownRowContent(
         }
         trailingContent?.invoke(this)
         if (!actionMenuLeadingCheck) {
-            // Trailing check: AnimatedVisibility with fade + scale gives iOS-style feedback when
-            // selection changes. Layout shifts naturally as the icon slot appears/disappears.
-            AnimatedVisibility(
-                visible = showCheck,
-                enter =
-                    fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f)) +
-                        scaleIn(
-                            animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
-                            initialScale = 0.6f,
-                        ),
-                exit =
-                    fadeOut(animationSpec = spring(dampingRatio = 0.95f, stiffness = 900f)) +
-                        scaleOut(
-                            animationSpec = spring(dampingRatio = 0.95f, stiffness = 900f),
-                            targetScale = 0.6f,
-                        ),
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Basic.Check,
-                    contentDescription = null,
-                    tint = checkColor,
-                    modifier = Modifier.size(LiquidGlassDropdownCheckSize),
-                )
-            }
+            LiquidGlassDropdownCheck(
+                showCheck = showCheck,
+                checkColor = checkColor,
+                reserveSpace = false,
+            )
         }
+    }
+}
+
+/**
+ * The selection check, in both of the shapes a dropdown row needs.
+ *
+ * There were two implementations of this — a `Box` plus two `animateFloatAsState` springs for the action
+ * menu's leading slot, and an `AnimatedVisibility` with fade+scale for everyone else's trailing slot —
+ * for one icon at one size with the same enter springs. The only real difference is whether the slot
+ * holds its space, which is what [reserveSpace] now says out loud.
+ *
+ * Folding them also fixed a drift: the leading copy had no exit spec, so hiding it ran the *enter*
+ * springs backwards (0.85/700, 0.7/600) while the trailing copy left on a distinctly snappier 0.95/900.
+ * One check, one pair of specs, both directions.
+ */
+@Composable
+private fun LiquidGlassDropdownCheck(
+    showCheck: Boolean,
+    checkColor: Color,
+    reserveSpace: Boolean,
+) {
+    if (reserveSpace) {
+        // Reserving the slot means the icon may not change the layout, so it fades and scales in place.
+        val alphaState =
+            animateFloatAsState(
+                targetValue = if (showCheck) 1f else 0f,
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f),
+                label = "liquid_glass_dropdown_check_alpha",
+            )
+        val scaleState =
+            animateFloatAsState(
+                targetValue = if (showCheck) 1f else 0.6f,
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
+                label = "liquid_glass_dropdown_check_scale",
+            )
+        Box(
+            modifier = Modifier.size(LiquidGlassDropdownCheckSize),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = MiuixIcons.Basic.Check,
+                contentDescription = null,
+                tint = checkColor,
+                modifier =
+                    Modifier
+                        .size(LiquidGlassDropdownCheckSize)
+                        .graphicsLayer {
+                            alpha = alphaState.value
+                            scaleX = scaleState.value
+                            scaleY = scaleState.value
+                        },
+            )
+        }
+        return
+    }
+
+    // Not reserving means the row re-lays out around the icon, so the slot itself comes and goes.
+    AnimatedVisibility(
+        visible = showCheck,
+        enter =
+            fadeIn(
+                animationSpec = spring(dampingRatio = 0.85f, stiffness = 700f),
+            ) +
+                scaleIn(
+                    animationSpec =
+                        spring(
+                            dampingRatio = 0.7f,
+                            stiffness = 600f,
+                        ),
+                    initialScale = 0.6f,
+                ),
+        exit =
+            fadeOut(
+                animationSpec =
+                    spring(
+                        dampingRatio = 0.95f,
+                        stiffness = 900f,
+                    ),
+            ) +
+                scaleOut(
+                    animationSpec =
+                        spring(
+                            dampingRatio = 0.95f,
+                            stiffness = 900f,
+                        ),
+                    targetScale = 0.6f,
+                ),
+    ) {
+        Icon(
+            imageVector = MiuixIcons.Basic.Check,
+            contentDescription = null,
+            tint = checkColor,
+            modifier = Modifier.size(LiquidGlassDropdownCheckSize),
+        )
     }
 }
 

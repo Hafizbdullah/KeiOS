@@ -93,6 +93,48 @@ private val LiquidGlassDropdownMetricsActionMenu =
         contentPadding = 5.dp,
     )
 
+/**
+ * The lift a row takes under the finger. Lives beside the metrics because it is the same kind of thing:
+ * pure per-material values with no composition state.
+ *
+ * Was four nested `if (material == ActionMenu) … if (isDark) …` ternaries inline in the row's
+ * `graphicsLayer`, which is where a shadow triple is least readable and most easily half-edited. The
+ * action menu sits on a smaller, tighter panel, so it lifts less.
+ */
+internal data class LiquidGlassDropdownPressShadow(
+    val elevation: Dp,
+    val ambientAlpha: Float,
+    val spotAlpha: Float,
+)
+
+internal fun liquidGlassDropdownPressShadow(
+    material: LiquidGlassDropdownMaterial,
+    isDark: Boolean,
+): LiquidGlassDropdownPressShadow =
+    when (material) {
+        LiquidGlassDropdownMaterial.ActionMenu ->
+            if (isDark) {
+                LiquidGlassDropdownPressShadowActionMenuDark
+            } else {
+                LiquidGlassDropdownPressShadowActionMenuLight
+            }
+
+        LiquidGlassDropdownMaterial.Default ->
+            if (isDark) LiquidGlassDropdownPressShadowDefaultDark else LiquidGlassDropdownPressShadowDefaultLight
+    }
+
+private val LiquidGlassDropdownPressShadowActionMenuDark =
+    LiquidGlassDropdownPressShadow(elevation = 6.dp, ambientAlpha = 0.10f, spotAlpha = 0.08f)
+
+private val LiquidGlassDropdownPressShadowActionMenuLight =
+    LiquidGlassDropdownPressShadow(elevation = 6.dp, ambientAlpha = 0.05f, spotAlpha = 0.04f)
+
+private val LiquidGlassDropdownPressShadowDefaultDark =
+    LiquidGlassDropdownPressShadow(elevation = 10.dp, ambientAlpha = 0.18f, spotAlpha = 0.16f)
+
+private val LiquidGlassDropdownPressShadowDefaultLight =
+    LiquidGlassDropdownPressShadow(elevation = 10.dp, ambientAlpha = 0.10f, spotAlpha = 0.08f)
+
 @Composable
 fun LiquidGlassDropdownColumn(
     modifier: Modifier = Modifier,

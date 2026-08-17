@@ -180,6 +180,42 @@ fun Modifier.drawAppSquircleBorder(
         }
     }
 
+/**
+ * The same squircle fill as [drawAppSquircleBackground], drawn *over* the content instead of behind it.
+ *
+ * For press and disabled films, which have to tint the content they cover. The alternative is a sibling
+ * `Box` with `matchParentSize`, which costs a layout node and a measure pass per instance — worth
+ * avoiding on anything that renders once per list row.
+ */
+@Composable
+fun Modifier.drawAppSquircleForeground(
+    cornerRadius: Dp,
+    extension: Float = AppSquircleDefaults.Extension,
+    control: Float = AppSquircleDefaults.Control,
+    color: () -> Color,
+): Modifier {
+    val squircleEnabled = isAppSquircleEnabled()
+    return drawWithCache {
+        val cornerRadiusPx = cornerRadius.toPx()
+        val path = Path()
+        path.addAppSquircleRect(
+            width = size.width,
+            height = size.height,
+            cornerRadius = cornerRadiusPx,
+            extension = extension,
+            control = control,
+            squircleEnabled = squircleEnabled,
+        )
+        onDrawWithContent {
+            drawContent()
+            val drawColor = color()
+            if (drawColor.alpha > 0f) {
+                drawPath(path = path, color = drawColor)
+            }
+        }
+    }
+}
+
 @Composable
 fun Modifier.drawAppSquircleBackground(
     cornerRadius: Dp,
