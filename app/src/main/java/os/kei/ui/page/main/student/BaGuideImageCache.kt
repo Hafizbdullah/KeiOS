@@ -104,6 +104,17 @@ internal object BaGuideImageCache {
             .joinToString("") { byte -> "%02x".format(byte) }
     }
 
+    /**
+     * Evicts the decoded bitmaps and leaves the disk cache alone.
+     *
+     * Separate from [clearAll] because the two answer different problems: this one answers memory pressure,
+     * where the files on disk are what makes the eviction cheap to undo, and [clearAll] answers "the user
+     * asked to clear the cache".
+     */
+    fun evictMemory() {
+        synchronized(memory) { memory.evictAll() }
+    }
+
     fun clearAll(context: Context) {
         synchronized(memory) { memory.evictAll() }
         runCatching { cacheRoot(context).deleteRecursively() }

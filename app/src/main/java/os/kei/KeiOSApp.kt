@@ -8,6 +8,9 @@ import android.content.IntentFilter
 import android.os.StatFs
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import os.kei.memory.AppMemoryRelease
+import os.kei.memory.AppMemoryReleaseLevel
+import os.kei.memory.HyperOsFairMemoryReceiver
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
@@ -150,8 +153,51 @@ class KeiOSApp : Application() {
         }
         Android17AnomalyProfiler.install(this)
         registerPackageChangedReceiver()
+        registerMemoryPressureHandling()
         WebDavAutoSync.init(this)
         scheduleDeferredStartupWork()
+    }
+
+    /**
+     * Answers memory pressure, from Android and from HyperOS's fair-memory mechanism.
+     *
+     * The app had no answer at all before this: nothing overrode [onTrimMemory] or [onLowMemory], so every
+     * cache it held survived until the process died. Registered here rather than deferred with the other
+     * startup work because pressure can arrive before a two-second delay elapses, and the caches are already
+     * filling by then.
+     */
+    private fun registerMemoryPressureHandling() {
+        AppMemoryRelease.registerAppCaches()
+        HyperOsFairMemoryReceiver.register(context = this) {
+            // Nothing to flush yet, and that is a real answer rather than a stub: every page state this app
+            // would want back is written through to MMKV or a file store as it changes, so a KILL loses the
+            // Compose state of the current screen and nothing else. If that stops being true -- an editor
+            // buffer, an unsent draft -- this is where it gets saved, and it runs on a background thread
+            // inside a 3-second budget.
+            Unit
+        }
+    }
+
+    /**
+     * Android's own memory-pressure callback, routed to the shared release path.
+     *
+     * The two `RUNNING_*` levels that arrive while the app is visible are deliberately ignored by
+     * [AppMemoryRelease.levelForTrimMemory]; see its note for why emptying the caches under the user's eyes
+     * is the wrong answer to those.
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        val releaseLevel = AppMemoryRelease.levelForTrimMemory(level) ?: return
+        applicationScope.launch {
+            runCatching { AppMemoryRelease.release(this@KeiOSApp, releaseLevel) }
+        }
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        applicationScope.launch {
+            runCatching { AppMemoryRelease.release(this@KeiOSApp, AppMemoryReleaseLevel.Critical) }
+        }
     }
 
     private fun scheduleDeferredStartupWork() {
