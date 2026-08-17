@@ -9,8 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -25,9 +29,13 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.motion.appFloatingEnter
+import os.kei.ui.page.main.widget.motion.appFloatingExit
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogBundle
+import os.kei.ui.page.main.student.catalog.component.BaGuideBgmUndoBlock
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackCoordinator
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmPlaybackUiState
 import os.kei.ui.page.main.student.catalog.component.BaGuideBgmQueueMode
@@ -58,6 +66,14 @@ internal fun BaGuideFavoriteBgmMusicContent(
     onLastAudibleVolumeChange: (Float) -> Unit,
     onScrollBoundsChange: (canScrollBackward: Boolean, canScrollForward: Boolean) -> Unit,
     onRemoveBgmFavorite: (String) -> Unit,
+    /**
+     * The favourite this list just removed, if it is still offering it back.
+     *
+     * Only this list carries the offer. Removing on the student BGM tab empties a heart and leaves the row,
+     * so tapping again restores it; here the row leaves the only screen that lists it.
+     */
+    pendingUndoFavorite: GuideBgmFavoriteItem?,
+    onUndoRemoveBgmFavorite: () -> Unit,
     onRequestOfflineCache: (List<GuideBgmFavoriteItem>, Boolean, Boolean) -> Unit,
     onToggleFavoriteCache: (GuideBgmFavoriteItem, List<GuideBgmFavoriteItem>) -> Unit,
     onRequestVisibleImages: (List<String>) -> Unit,
@@ -284,6 +300,35 @@ internal fun BaGuideFavoriteBgmMusicContent(
             promoteSectionTitle = true,
             modifier = Modifier.fillMaxSize(),
         )
+
+        // Anchored to the bottom edge rather than inserted as a list item: the row it replaces has just
+        // been removed, so putting the offer in the list would move the content under the finger that
+        // removed it.
+        AnimatedVisibility(
+            visible = pendingUndoFavorite != null,
+            enter = appFloatingEnter(),
+            exit = appFloatingExit(),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = AppChromeTokens.pageHorizontalPadding,
+                        end = AppChromeTokens.pageHorizontalPadding,
+                        bottom = bottomPadding,
+                    ),
+        ) {
+            // Held across the exit animation, so the card does not blank out mid-fade when the offer
+            // expires or is taken.
+            val shown = remember { mutableStateOf(pendingUndoFavorite) }
+            if (pendingUndoFavorite != null) shown.value = pendingUndoFavorite
+            shown.value?.let { removed ->
+                BaGuideBgmUndoBlock(
+                    removedFavorite = removed,
+                    accent = accent,
+                    onUndo = onUndoRemoveBgmFavorite,
+                )
+            }
+        }
     }
 }
 

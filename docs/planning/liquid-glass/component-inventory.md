@@ -1035,15 +1035,39 @@ is a ten-minute check — see "How to reach a slider's active state on the AVD".
 | miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | A real finger — it is an edge-swipe race, and the mouse cannot do a bezel gesture |
 | Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | A real finger. The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
 
-### A decision, not a task
+### ~~A decision, not a task~~ — done `2026-08-18`, and the premise was wrong twice
 
-**BGM favourite removal still deletes without confirming.** It is a red menu row
+The item read: "**BGM favourite removal still deletes without confirming.** It is a red menu row
 (`BaGuideBgmFavoriteCards`), so Apple's pull-down-button rule that governed the GitHub track delete applies
-to it too. Unlike that one it has no pending state to hang a sheet on, so it needs the state hoisting first.
+to it too." Checked before implementing, and **both halves are false**:
 
-Worth weighing before doing it, which is why it is a decision: un-favouriting is nearly reversible, one of
-its two call paths already toasts, and Apple also says to use action sheets sparingly. Deliberately *not*
-done pending that call.
+1. **Neither removal path is a menu item.** Both are *heart toggles* on a track row — `onTrackFavoriteClick`
+   on the favourites list and `toggleEntryFavorite` on the student BGM tab. The pull-down rule is about
+   choosing a destructive action from a menu; a toggle is not that, which is exactly why it does not need a
+   confirmation.
+2. **An undo affordance was already written.** `BaGuideBgmUndoBlock` — its own localized "removed *student —
+   track*" message, an Undo action, a `GuideLiquidCard` — sitting in `BaGuideBgmFavoriteCards.kt` with
+   **zero callers**. Written and never wired.
+
+Which flips the answer. Apple treats undo as the *alternative* to confirming a reversible destructive
+action, not a complement to it, so the correct resolution was never an action sheet — it was to wire the
+card that already existed. Adding a sheet on top would have been the "use action sheets sparingly"
+violation the old note was worried about, for an action that is one tap to reverse.
+
+**A second real finding, from the same read: the toast was on the wrong path.** The student BGM tab —
+where the row *stays* and the heart just empties — showed the toast. The favourites list, where the row
+leaves the only screen that lists it, said nothing at all. Feedback was on the path that needed it least.
+
+**What landed.** `_pendingBgmFavoriteUndo` on the catalog view model, captured *before* the delete (after
+it there is nothing left to rebuild the item from), restored through `repository.toggleBgmFavorite` so the
+restore is the literal inverse of the removal rather than a second path that can drift, and expiring on its
+own after 8s. Offered by the favourites list only, rendered bottom-anchored rather than as a list item so
+the content does not move under the finger that just removed a row.
+
+**Not verified on the AVD:** that emulator has `Favorites 0` and populating it needs a BGM lookup over the
+network, so the flow could not be exercised. Pinned by `BaGuideBgmFavoriteUndoTest` instead, whose first
+assertion is the one that matters — *the undo card has a caller* — because a composable compiling was never
+evidence that anything rendered it.
 
 ### Deliberately not open
 

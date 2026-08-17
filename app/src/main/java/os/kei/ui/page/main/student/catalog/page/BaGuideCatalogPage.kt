@@ -97,6 +97,7 @@ fun BaGuideCatalogPage(
     val mediaImageState by catalogViewModel.mediaImageState.collectAsStateWithLifecycle()
     val pageChromeState by catalogViewModel.pageChromeState.collectAsStateWithLifecycle()
     val filterSortSnapshot by catalogViewModel.filterSortState.collectAsStateWithLifecycle()
+    val pendingBgmFavoriteUndo by catalogViewModel.pendingBgmFavoriteUndo.collectAsStateWithLifecycle()
     val tabs = BaGuideCatalogPageTab.entries
     val pageState =
         rememberBaGuideCatalogPageStateHolder(
@@ -272,6 +273,7 @@ fun BaGuideCatalogPage(
             studentBgmDisplayedDerivedState = routeState.studentBgmDisplayedDerivedState,
             favoriteBgmListDerivedState = routeState.favoriteBgmListDerivedState,
             favoriteBgms = routeState.favoriteBgms,
+            pendingBgmFavoriteUndo = pendingBgmFavoriteUndo,
             favoriteBgmOfflineCacheState = routeState.favoriteBgmOfflineCacheState,
             playbackCoordinator = playbackCoordinator,
             playbackUiState = playbackSessionState,

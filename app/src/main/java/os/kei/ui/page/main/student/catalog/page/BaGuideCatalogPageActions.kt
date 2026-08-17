@@ -25,6 +25,7 @@ internal class BaGuideCatalogPageActions(
     val onRequestStudentBgmDisplayedState: (BaGuideStudentBgmDisplayedInput) -> Unit,
     val onToggleBgmFavorite: (GuideBgmFavoriteItem) -> Unit,
     val onRemoveBgmFavorite: (String) -> Unit,
+    val onUndoRemoveBgmFavorite: () -> Unit,
     val onRemoveBgmFavoriteWithToast: (String) -> Unit,
     val onRequestGuideDetailTab: (String, GuideBottomTab) -> Unit,
     val onSetNativeBgmMediaNotificationEnabled: (Boolean) -> Unit,
@@ -63,7 +64,15 @@ internal fun rememberBaGuideCatalogPageActions(catalogViewModel: BaGuideCatalogV
             onRequestFavoriteBgmListState = catalogViewModel::requestFavoriteBgmListDerivedState,
             onRequestStudentBgmDisplayedState = catalogViewModel::requestStudentBgmDisplayedDerivedState,
             onToggleBgmFavorite = catalogViewModel::requestToggleBgmFavorite,
-            onRemoveBgmFavorite = catalogViewModel::requestRemoveBgmFavorite,
+            // The favourites list is the one place a removal makes the row leave the screen, so it is the
+            // one place that offers it back instead of only toasting.
+            onRemoveBgmFavorite = { audioUrl ->
+                catalogViewModel.requestRemoveBgmFavorite(
+                    audioUrl = audioUrl,
+                    offerUndo = true,
+                )
+            },
+            onUndoRemoveBgmFavorite = catalogViewModel::restorePendingBgmFavorite,
             onRemoveBgmFavoriteWithToast = { audioUrl ->
                 catalogViewModel.requestRemoveBgmFavorite(
                     audioUrl = audioUrl,

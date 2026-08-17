@@ -89,6 +89,20 @@ internal class BaGuideCatalogViewModel(
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyList(),
             )
+    /**
+     * The favourite most recently removed from the *favourites list*, offered back as an undo.
+     *
+     * Only that list needs it. Removing on the student BGM tab empties a heart and leaves the row in
+     * place, so tapping again restores it; removing here deletes the row from the only screen that shows
+     * it, and finding the track again means going back through the catalog to the right student. Apple
+     * treats an undo affordance as the alternative to confirming a destructive action rather than a
+     * complement to it, and this is reversible enough to take that branch.
+     */
+    private val _pendingBgmFavoriteUndo = MutableStateFlow<GuideBgmFavoriteItem?>(null)
+    val pendingBgmFavoriteUndo: StateFlow<GuideBgmFavoriteItem?> =
+        _pendingBgmFavoriteUndo.asStateFlow()
+    private var pendingBgmFavoriteUndoJob: Job? = null
+
     private val _nativeBgmMediaNotificationEnabled =
         MutableStateFlow(false)
     val nativeBgmMediaNotificationEnabled: StateFlow<Boolean> =
@@ -521,19 +535,62 @@ internal class BaGuideCatalogViewModel(
     fun requestRemoveBgmFavorite(
         audioUrl: String,
         showToast: Boolean = false,
+        offerUndo: Boolean = false,
     ) {
         val normalizedAudioUrl = audioUrl.trim()
         if (normalizedAudioUrl.isBlank()) return
+        // Captured before the removal, because afterwards the item is gone from the only list that holds
+        // it and there is nothing left to rebuild it from.
+        val removed =
+            if (offerUndo) {
+                favoriteBgms.value.firstOrNull { item -> item.audioUrl.trim() == normalizedAudioUrl }
+            } else {
+                null
+            }
         viewModelScope.launch {
             repository.removeBgmFavorite(normalizedAudioUrl)
             bgmCacheController.refreshBgmCacheStates(
                 allFavorites = favoriteBgms.value,
                 displayedFavorites = null,
             )
+            if (removed != null) offerBgmFavoriteUndo(removed)
             if (showToast) {
                 _events.emit(BaGuideCatalogEvent.BgmFavoriteRemoved)
             }
         }
+    }
+
+    /** Puts [item] back and clears the offer. A no-op if the offer already expired. */
+    fun restorePendingBgmFavorite() {
+        val item = _pendingBgmFavoriteUndo.value ?: return
+        clearPendingBgmFavoriteUndo()
+        viewModelScope.launch {
+            // `toggleFavorite` adds when absent, so this is the inverse of the removal rather than a
+            // second code path that could drift from it.
+            repository.toggleBgmFavorite(item)
+            bgmCacheController.refreshBgmCacheStates(
+                allFavorites = favoriteBgms.value,
+                displayedFavorites = null,
+            )
+        }
+    }
+
+    fun clearPendingBgmFavoriteUndo() {
+        pendingBgmFavoriteUndoJob?.cancel()
+        pendingBgmFavoriteUndoJob = null
+        _pendingBgmFavoriteUndo.value = null
+    }
+
+    private fun offerBgmFavoriteUndo(item: GuideBgmFavoriteItem) {
+        pendingBgmFavoriteUndoJob?.cancel()
+        _pendingBgmFavoriteUndo.value = item
+        pendingBgmFavoriteUndoJob =
+            viewModelScope.launch {
+                delay(BGM_FAVORITE_UNDO_WINDOW_MS)
+                if (_pendingBgmFavoriteUndo.value?.audioUrl == item.audioUrl) {
+                    _pendingBgmFavoriteUndo.value = null
+                }
+            }
     }
 
     fun requestGuideDetailTab(
@@ -763,3 +820,12 @@ private fun BaGuideCatalogFilterSortSnapshot.hasDifferentPersistentFilterSortPre
         npcSatelliteSortMode != next.npcSatelliteSortMode ||
         studentSelectedFiltersRaw != next.studentSelectedFiltersRaw ||
         npcSatelliteSelectedFiltersRaw != next.npcSatelliteSelectedFiltersRaw
+
+/**
+ * How long the favourites list keeps offering the last removal back.
+ *
+ * Long enough to notice the row vanish, read which track it was and reach for Undo, and short enough that
+ * the card is not still sitting there when attention has moved on. Matches the order of a system snackbar's
+ * long duration rather than being a fresh guess.
+ */
+private const val BGM_FAVORITE_UNDO_WINDOW_MS = 8_000L
