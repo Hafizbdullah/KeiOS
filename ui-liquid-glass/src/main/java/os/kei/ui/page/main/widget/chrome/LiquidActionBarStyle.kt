@@ -115,6 +115,14 @@ internal const val LiquidActionBarInteractionHighlightStrength = 1f
 
 internal const val LiquidActionBarInteractionHighlightRadiusScale = 1.2f
 
+/**
+ * The one material both action bars wear — the top toolbar and the floating bottom bar.
+ *
+ * The bottom bar used to carry its own near-twin of this (`LiquidBottomBarMaterial`, same four fields,
+ * different numbers: 0.40/0.18 surface against 0.30/0.22, and a light-mode highlight of a full 1.0
+ * against 0.66). Two definitions of one visual role, on the two surfaces a teacher sees at the same
+ * time, and the bottom bar's predated the rebuild. Folding it in here is the whole point: a bar is a bar.
+ */
 internal fun liquidActionBarMaterial(isLight: Boolean): LiquidActionBarMaterial =
     if (isLight) {
         LiquidActionBarMaterial(
@@ -133,6 +141,21 @@ internal fun liquidActionBarMaterial(isLight: Boolean): LiquidActionBarMaterial 
             highlightAlpha = 0.46f,
         )
     }
+
+/**
+ * The press lens, which only the bottom bar has: its selection indicator refracts under the finger
+ * while the toolbar's actions do not.
+ *
+ * Named here rather than left as literals at the call site, and kept out of [LiquidActionBarMaterial]
+ * because they are interaction-scoped rather than part of the resting material — putting them in the
+ * data class would hand the toolbar two fields it has no use for.
+ */
+internal val LiquidBarPressLensHeight = 10.dp
+
+internal val LiquidBarPressLensAmount = 14.dp
+
+/** Strength of the radial refraction at full press, paired with [LiquidBarPressLensAmount]. */
+internal const val LiquidBarPressRefractionStrength = 6f
 
 internal fun liquidChromeSelectionIndicatorColor(
     isLight: Boolean,

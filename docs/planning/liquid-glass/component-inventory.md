@@ -615,17 +615,24 @@ is the complete color-filter ⇒ blur ⇒ lens order the Backdrop docs prescribe
 
 Its real debt is narrower and worth stating precisely, because it is what makes it rank at all:
 `LiquidGlassBottomBarMaterial` is a **private 84-line material** — `surfaceAlpha` 0.40/0.18,
-`lensHeight`, `lensAmount`, `highlightAlpha` — that duplicates the job of `GlassStyle`, while
-**`GlassVariant.Bar` already exists** and is what `AppLiquidButtons`, `AppFloatingLiquidActionButton`
-and `AppInteractiveTokens` read. Two sources of truth for "what a bar's glass looks like", on adjacent
-surfaces. Plus hardcoded `10.dp`/`14.dp` interaction-lens numbers inline at the third call site that
-bypass even the private material.
+`lensHeight`, `lensAmount`, `highlightAlpha` — duplicating a job something else already does, plus
+hardcoded `10.dp`/`14.dp` interaction-lens numbers inline at the third call site that bypass even the
+private material.
+
+**Correction 2b, found while doing the work:** the thing it duplicates is *not* `GlassVariant.Bar`, as
+first written here. `GlassVariant.Bar` serves the controls that sit *inside* bars — `AppLiquidButtons`,
+`AppFloatingLiquidActionButton`, `AppInteractiveTokens` — and the rebuilt toolbar does not use it
+either. The toolbar carries **`LiquidActionBarMaterial`** in `LiquidActionBarStyle`, a data class with
+the *same four fields* as the bottom bar's private one and different numbers (0.30/0.22 surface against
+0.40/0.18; a light-mode highlight of 0.66 against a full 1.0). That is the real duplication: one visual
+role, two definitions, on the two surfaces a teacher sees simultaneously. So the fold target is the
+toolbar's material, not the variant enum — see `LiquidActionBarMaterialTest`.
 
 ### The ranking
 
 | # | Component | Why now | Cost |
 |---|---|---|---|
-| 1 | **`LiquidGlassBottomBarMaterial` → `GlassVariant.Bar`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs — so it is the "most important functional element" the guidance says to spend the effect on. Fixing it is consolidation onto a system that already exists, not new design: delete the private material, extend `GlassVariant.Bar` with what the bar genuinely needs, pull the inline `10.dp`/`14.dp` in with it. There is already a `LiquidGlassBottomBarMaterialTest` to re-point. | small — 84 lines out, one variant extended |
+| 1 | ~~**`LiquidGlassBottomBarMaterial` → `LiquidActionBarMaterial`**~~ **— done, `2026-08-17`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs, so it is the "most important functional element" the guidance says to spend the effect on. Landed as consolidation, not new design: the private material and palette deleted, both bars now on `liquidActionBarMaterial` / `rememberLiquidActionBarPalette`, the inline highlight and shadow replaced by the toolbar's own `liquidActionBarBaseHighlight` / `liquidActionBarBaseShadow` helpers, the flat 10% selection film replaced by the accent-aware `liquidChromeSelectionIndicatorColor` the toolbar already used, and the press lens named. `blur` moved from `UiPerformanceBudget.backdropBlur` to `material.blur` — both 4.dp, so that half is a no-op that removes a second source. Verified on the AVD in both themes. | small — 84 lines out |
 | 2 | **`LiquidGlassDropdownItems`** | Still the largest untouched file at **818 lines**, and still the rows inside a container that was rewritten on 08-09. But the framing changes: per Apple the *rows* should **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on top of it. So this is a code-health and highlight-treatment job (the pressed/selected pill is hand-painted with `drawAppSquircleBackground` and alpha-driven `graphicsLayer`), not a material job. Judge it on the 818 lines, not on missing glass. | medium — big file, low risk |
 | 3 | **`LiquidSliderVariants`** (946 lines) | The one place Apple carves out an exception, and the app reads it the other way. The guidance: a content-layer control "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**". The slider's own comment says "Lens stays visible **at rest** and gains strength while pressed or dragged." That is a defensible reading — Backdrop's own Glass Slider tutorial lenses at rest — so this is a **decision to take**, not a bug to fix. Worth deciding deliberately rather than by default. | medium, and needs a design call first |
 | 4 | **`AppGripAwareDock`** · **`AppLiquidSearchMaterial`** | Functional-layer, still on 07-13 materials, and neither has a shared-system equivalent yet. Lower because the grip dock is one screen and the search material is already consistent with the search field. | small each |

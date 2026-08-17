@@ -75,7 +75,6 @@ import kotlinx.coroutines.launch
 import os.kei.ui.animation.DampedDragAnimation
 import os.kei.ui.animation.InteractiveHighlight
 import os.kei.ui.page.main.widget.isAppInDarkTheme
-import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.page.main.widget.glass.claimFloatingChromeDrags
 import os.kei.ui.page.main.widget.glass.appGlassRuntimeEffectsEnabled
 import os.kei.ui.page.main.widget.glass.glassEffectRuntime
@@ -231,8 +230,9 @@ fun LiquidGlassBottomBar(
     val panelMaxOffsetPx = with(density) { 4.dp.toPx() }
 
     val palette =
-        rememberLiquidBottomBarPalette(
-            isLiquidEffectEnabled = effectiveLiquidEffectEnabled,
+        rememberLiquidActionBarPalette(
+            material = liquidActionBarMaterial(isInLightTheme),
+            isBlurEnabled = effectiveLiquidEffectEnabled,
             isInLightTheme = isInLightTheme,
             primary = accentColor,
             onSurface = MiuixTheme.colorScheme.onSurface,
@@ -553,10 +553,11 @@ fun LiquidGlassBottomBar(
             }
         }
     val interactionLensScale = glassEffectRuntime().interactionLensScale
-    val material = liquidBottomBarMaterial(isInLightTheme)
-    val effectBlurDp = UiPerformanceBudget.backdropBlur
+    val material = liquidActionBarMaterial(isInLightTheme)
     val useLightweightBackdrop = !effectiveLiquidEffectEnabled
-    val selectionIndicatorColor = liquidBottomBarSelectionIndicatorColor(isLight = isInLightTheme)
+    // Accent-aware, like the toolbar's. The old bottom-bar-only helper was a flat 10% black/white film
+    // that ignored the theme's primary entirely.
+    val selectionIndicatorColor = liquidChromeSelectionIndicatorColor(isInLightTheme, accentColor)
 
     val selectionProgressValue =
         if (selectedPositionProvider != null || externalSelectionPosition != null) {
@@ -678,7 +679,7 @@ fun LiquidGlassBottomBar(
                                     effects = {
                                         if (effectiveLiquidEffectEnabled) {
                                             vibrancy()
-                                            blur(effectBlurDp.toPx())
+                                            blur(material.blur.toPx())
                                             safeLiquidLens(
                                                 material.lensHeight.toPx(),
                                                 material.lensAmount.toPx(),
@@ -686,20 +687,12 @@ fun LiquidGlassBottomBar(
                                         }
                                     },
                                     highlight = {
-                                        Highlight.Default.copy(
-                                            alpha =
-                                                if (effectiveLiquidEffectEnabled) {
-                                                    material.highlightAlpha
-                                                } else {
-                                                    0f
-                                                },
+                                        liquidActionBarBaseHighlight(
+                                            material = material,
+                                            isBlurEnabled = effectiveLiquidEffectEnabled,
                                         )
                                     },
-                                    shadow = {
-                                        Shadow.Default.copy(
-                                            color = Color.Black.copy(if (isInLightTheme) 0.10f else 0.20f),
-                                        )
-                                    },
+                                    shadow = { liquidActionBarBaseShadow(isInLightTheme = isInLightTheme) },
                                     layerBlock = {
                                         val deformationProgress = combinedDeformationProgressProvider()
                                         scaleX = lerp(1f, 1.006f, deformationProgress)
@@ -748,7 +741,7 @@ fun LiquidGlassBottomBar(
                                         if (effectiveLiquidEffectEnabled) {
                                             val progress = combinedPressProgressProvider()
                                             vibrancy()
-                                            blur(effectBlurDp.toPx())
+                                            blur(material.blur.toPx())
                                             safeLiquidLens(
                                                 material.lensHeight.toPx() * progress,
                                                 material.lensAmount.toPx() * progress,
@@ -830,16 +823,16 @@ fun LiquidGlassBottomBar(
                                             }
                                         if (progress > 0f) {
                                             safeLiquidLens(
-                                                10f.dp.toPx() * progress * interactionLensScale,
-                                                14f.dp.toPx() * progress * interactionLensScale,
+                                                LiquidBarPressLensHeight.toPx() * progress * interactionLensScale,
+                                                LiquidBarPressLensAmount.toPx() * progress * interactionLensScale,
                                                 true,
                                             )
                                             // Radial refraction from center of indicator
                                             radialRefraction(
                                                 centerX = size.width / 2f,
                                                 centerY = size.height / 2f,
-                                                radius = 14f.dp.toPx() * progress * interactionLensScale,
-                                                strength = 6f * progress,
+                                                radius = LiquidBarPressLensAmount.toPx() * progress * interactionLensScale,
+                                                strength = LiquidBarPressRefractionStrength * progress,
                                             )
                                         }
                                     },
