@@ -44,11 +44,12 @@ import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.CardLayoutRhythm
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockAction
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
@@ -286,16 +287,21 @@ internal fun GitHubMainContent(
                             stringResource(R.string.github_pull_refresh_done),
                         ),
                 ) {
+                    // Inside PullToRefresh, so the RefreshHeader above keeps its own anchor — see
+                    // OsPageMainList.
+                    AppEdgeStackKeepAlive(
+                        state = edgeStackState,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
                     AppPageLazyColumn(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection)
-                                .appEdgeStackContainer(edgeStackState),
+                                .nestedScroll(layout.scrollBehavior.nestedScrollConnection),
                         state = layout.listState,
                         innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                         bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding),
-                        topExtra = AppEdgeStackListTopInset,
+                        topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
                         sectionSpacing = CardLayoutRhythm.denseSectionGap,
                     ) {
                         if (shareImport.showPendingCard && shareImport.pendingTrack != null) {
@@ -418,6 +424,7 @@ internal fun GitHubMainContent(
                                 ),
                         )
                     }
+                }
                 }
                 }
                 }

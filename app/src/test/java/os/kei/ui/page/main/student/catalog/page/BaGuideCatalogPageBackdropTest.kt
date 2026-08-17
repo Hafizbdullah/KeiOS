@@ -146,10 +146,17 @@ class BaGuideCatalogPageBackdropTest {
         STATUS_LEAF_SOURCES.map(::sourceFile).forEach { source ->
             assertSourceContains(
                 source = source,
-                "top = innerPadding.calculateTopPadding()",
+                "innerPadding.calculateTopPadding()",
                 "start = AppChromeTokens.pageHorizontalPadding",
                 "end = AppChromeTokens.pageHorizontalPadding",
                 "verticalArrangement = Arrangement.spacedBy(entryListGap)",
+            )
+            // All three leaves stack, so all three shift their list up inside `AppEdgeStackKeepAlive` and
+            // must add that headroom back to their own content inset. Passing the page inset straight
+            // through — which is what this used to assert — would now start the first card off screen.
+            assertTrue(
+                "top = appEdgeStackKeepAliveTopPadding(" in source,
+                "A stacking leaf must absorb the keep-alive headroom into its content inset",
             )
         }
     }

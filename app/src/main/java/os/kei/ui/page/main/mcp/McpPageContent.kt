@@ -40,9 +40,10 @@ import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -118,16 +119,20 @@ internal fun McpPageContent(
                     stringResource(R.string.mcp_pull_refresh_done),
                 ),
         ) {
+        // Inside PullToRefresh, so the RefreshHeader above keeps its own anchor — see OsPageMainList.
+        AppEdgeStackKeepAlive(
+            state = edgeStackState,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         AppPageLazyColumn(
             innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
             state = listState,
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .appEdgeStackContainer(edgeStackState),
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
             bottomExtra = appPageBottomPaddingWithFloatingOverlay(runtime.contentBottomPadding),
-            topExtra = AppEdgeStackListTopInset,
+            topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
             sectionSpacing = 12.dp,
         ) {
             item(key = "mcp-onboarding-guide", contentType = "mcp_onboarding_guide_section") {
@@ -240,6 +245,7 @@ internal fun McpPageContent(
                     subtitleColor = subtitleColor,
                 )
             }
+        }
         }
         }
         }

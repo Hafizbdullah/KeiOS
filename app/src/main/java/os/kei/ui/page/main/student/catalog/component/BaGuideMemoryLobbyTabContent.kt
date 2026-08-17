@@ -42,11 +42,12 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListSt
 import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -254,17 +255,24 @@ internal fun BaGuideMemoryLobbyTabContent(
         }
     }
     CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
+    // No PullToRefresh on this tab, so the keep-alive box takes the list's own weight and the list
+    // fills it. The headroom lands in `contentPadding.top` rather than a `topExtra`.
+    AppEdgeStackKeepAlive(
+        state = edgeStackState,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .weight(1f),
+    ) {
     LazyColumn(
         state = listState,
         modifier =
             Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .nestedScroll(nestedScrollConnection)
-                .appEdgeStackContainer(edgeStackState),
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
         contentPadding =
             PaddingValues(
-                top = listTopPadding,
+                top = appEdgeStackKeepAliveTopPadding(listTopPadding),
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
                 start = AppChromeTokens.pageHorizontalPadding,
                 end = AppChromeTokens.pageHorizontalPadding,
@@ -361,6 +369,7 @@ internal fun BaGuideMemoryLobbyTabContent(
                 }
             }
         }
+    }
     }
     }
     }

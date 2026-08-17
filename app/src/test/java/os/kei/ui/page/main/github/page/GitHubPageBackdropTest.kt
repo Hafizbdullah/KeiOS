@@ -74,10 +74,12 @@ class GitHubPageBackdropTest {
             "The overview hub stays pinned above the scrolling list instead of being a lazy item",
         )
         assertTrue(".nestedScroll(layout.scrollBehavior.nestedScrollConnection)" in source)
-        assertTrue(".appEdgeStackContainer(edgeStackState)" in source)
+        assertTrue("AppEdgeStackKeepAlive(" in source)
         assertTrue("state = layout.listState," in source)
         assertTrue("innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding())," in source)
-        assertTrue("topExtra = AppEdgeStackListTopInset," in source)
+        // The keep-alive box shifts the list up by its headroom, so the list's own top inset has to
+        // absorb it. The compiler cannot catch a host that adopts the shift and forgets the inset.
+        assertTrue("topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)," in source)
         assertTrue("bottomExtra = appPageBottomPaddingWithFloatingOverlay(layout.contentBottomPadding)" in source)
     }
 

@@ -52,9 +52,10 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedSta
 import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
@@ -349,17 +350,22 @@ internal fun BaGuideStudentBgmTabContent(
         rememberAppEdgeStackState(stackLine = innerPadding.calculateTopPadding())
     Box(modifier = Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
+        // Wraps only the list: the now-playing bar below is a Box sibling and must keep its own
+        // bottom alignment, so it stays outside the shifted, clipped region.
+        AppEdgeStackKeepAlive(
+            state = edgeStackState,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         LazyColumn(
             state = listState,
             userScrollEnabled = !sliderInteractionActive,
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection)
-                    .appEdgeStackContainer(edgeStackState),
+                    .nestedScroll(nestedScrollConnection),
             contentPadding =
                 PaddingValues(
-                    top = innerPadding.calculateTopPadding(),
+                    top = appEdgeStackKeepAliveTopPadding(innerPadding.calculateTopPadding()),
                     bottom =
                         listBottomChromePadding +
                             AppChromeTokens.pageSectionGap +
@@ -435,6 +441,7 @@ internal fun BaGuideStudentBgmTabContent(
                     )
                 }
             }
+        }
         }
         }
 

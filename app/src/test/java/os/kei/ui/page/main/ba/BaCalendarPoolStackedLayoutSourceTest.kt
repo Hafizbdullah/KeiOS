@@ -22,14 +22,11 @@ class BaCalendarPoolStackedLayoutSourceTest {
         assertTrue(keepAliveIndex > providerIndex, "The keep-alive box must consume the stack provider")
         assertTrue(listIndex > keepAliveIndex, "The data list must sit inside the keep-alive box")
 
-        // The keep-alive box anchors the geometry now, not the list. That is what keeps the stack line
-        // measured from the *visible* top edge — the list inside it is shifted up by the headroom, so
-        // anchoring on the list would move the line up with it.
-        assertTrue(
-            ".appEdgeStackContainer(" !in source,
-            "The list must not also anchor the stack; AppEdgeStackKeepAlive owns it",
-        )
-        // And the headroom has to be absorbed by the content inset, or the first card starts off screen.
+        // The keep-alive box anchors the geometry, not the list — that is what keeps the stack line
+        // measured from the *visible* top edge, since the list inside it is shifted up by the headroom.
+        // No assertion needed for the other direction: `appEdgeStackContainer` is private, so a host
+        // cannot anchor on its list at all. The inset half is checked for every host at once in
+        // `AppEdgeStackHostSourceTest`.
         assertTrue(
             "topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)" in source,
             "The list's top inset must include the keep-alive headroom",

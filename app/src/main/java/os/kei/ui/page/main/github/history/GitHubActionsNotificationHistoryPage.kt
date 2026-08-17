@@ -68,9 +68,10 @@ import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageChromeScrollState
 import os.kei.ui.page.main.widget.chrome.preferPeakFrameRateForTabbedPageSwitch
 import os.kei.ui.page.main.widget.chrome.rememberTabbedPageContentSwitchState
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentItemModifier
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
@@ -398,6 +399,11 @@ internal fun GitHubActionsNotificationHistoryPage(
                     stringResource(R.string.github_pull_refresh_done),
                 ),
         ) {
+            // Inside PullToRefresh, so the RefreshHeader above keeps its own anchor — see OsPageMainList.
+            AppEdgeStackKeepAlive(
+                state = edgeStackState,
+                modifier = Modifier.fillMaxSize(),
+            ) {
             AppPageLazyColumn(
                 innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
                 state = listState,
@@ -405,13 +411,14 @@ internal fun GitHubActionsNotificationHistoryPage(
                     Modifier
                         .fillMaxSize()
                         .preferPeakFrameRateForTabbedPageSwitch(historyContentSwitchState)
-                        .nestedScroll(pageNestedScrollConnection)
-                        .appEdgeStackContainer(edgeStackState),
+                        .nestedScroll(pageNestedScrollConnection),
                 bottomExtra =
                     appPageBottomPaddingWithFloatingOverlay(
                         AppChromeTokens.floatingBottomBarOuterHeight,
                     ),
-                topExtra = listTopPadding,
+                // This page's inset is derived at runtime from whether the pinned hub shows, so the
+                // headroom is added to whichever value that produced rather than to the shared default.
+                topExtra = appEdgeStackKeepAliveTopPadding(listTopPadding),
                 sectionSpacing = CardLayoutRhythm.denseSectionGap,
             ) {
                 when {
@@ -628,6 +635,7 @@ internal fun GitHubActionsNotificationHistoryPage(
                         }
                     }
                 }
+            }
             }
         }
         }

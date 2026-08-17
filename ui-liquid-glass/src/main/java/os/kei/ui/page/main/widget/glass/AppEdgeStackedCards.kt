@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
  *
  * Cards leaving through the top of the viewport pin at the page's content start line and recede:
  * they rise a little per depth level, scale down, and **darken** until they retire. A page opts in
- * with one provider plus [appEdgeStackContainer] on its lazy column; the card wrappers pick the
+ * with one provider plus [AppEdgeStackKeepAlive] around its lazy column; the card wrappers pick the
  * effect up through [rememberAppEdgeStackSlot]. Pages without the provider render byte-identically
  * to a page that has never heard of stacking — the slot resolves to [AppEdgeStackSlot.Inert], which
  * contributes no modifier, no layer and no measurement.
@@ -121,8 +121,14 @@ fun rememberAppEdgeStackState(stackLine: Dp): AppEdgeStackState {
  * [onPlaced] rather than `onGloballyPositioned`: it runs inside the placement pass, so the container
  * is attached before the cards below it are placed on the very first frame rather than one frame
  * later.
+ *
+ * Private since every host adopted [AppEdgeStackKeepAlive]. It used to be the host-facing half of a
+ * two-piece contract — tag the list, provide the state — and a host that shifted its list up while
+ * still tagging the *list* would silently measure the stack line from the hidden top edge instead of
+ * the visible one. With the only caller being the wrapper that owns both halves, that mistake is no
+ * longer expressible.
  */
-fun Modifier.appEdgeStackContainer(state: AppEdgeStackState): Modifier =
+private fun Modifier.appEdgeStackContainer(state: AppEdgeStackState): Modifier =
     onPlaced { coordinates ->
         if (state.containerCoordinates !== coordinates) {
             state.containerCoordinates = coordinates
@@ -509,11 +515,11 @@ fun computeAppEdgeStackTransform(
     // extent to a margin inside that is what makes `fade == 0` before disposal provable rather than
     // hopeful.
     //
-    // [keepAliveHeadroomPx] is what moves that bound. Without a host offering headroom it is zero, and
-    // the reachable depth is the card's own height — which is why the pile was about one card deep
-    // whatever [APP_EDGE_STACK_LEVELS] claimed, and why raising the level count alone did nothing. A
-    // host that wraps its list in `AppEdgeStackKeepAlive` publishes its headroom here and the pile can
-    // then actually reach its levels. Unconverted hosts pass zero and are unchanged.
+    // [keepAliveHeadroomPx] is what moves that bound. At zero the reachable depth is the card's own
+    // height — which is why the pile was about one card deep whatever [APP_EDGE_STACK_LEVELS] claimed,
+    // and why raising the level count alone did nothing. Every host now publishes headroom through
+    // `AppEdgeStackKeepAlive`, so zero is reached only before the wrapper's first composition and in
+    // the tests, where it is the control case the depth claim is measured against.
     val disposalOvershoot =
         (stackLinePx + itemHeightPx + keepAliveHeadroomPx.coerceAtLeast(0f)) *
             APP_EDGE_STACK_RETIRE_MARGIN

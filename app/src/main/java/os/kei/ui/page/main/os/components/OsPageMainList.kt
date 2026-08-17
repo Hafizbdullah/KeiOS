@@ -57,12 +57,13 @@ import os.kei.ui.page.main.widget.core.AppOverviewCard
 import os.kei.ui.page.main.widget.core.AppOverviewPill
 import os.kei.ui.page.main.widget.core.AppOverviewPillFlow
 import os.kei.ui.page.main.widget.core.AppOverviewPillItem
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.AppFloatingDockSide
 import os.kei.ui.page.main.widget.glass.AppFloatingRefreshStatus
 import os.kei.ui.page.main.widget.glass.AppFloatingVerticalSearchActionDock
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 import os.kei.ui.page.main.widget.glass.LiquidCircularProgressBar
 import os.kei.ui.page.main.widget.glass.appFloatingDockBottomTarget
@@ -380,12 +381,18 @@ internal fun OsPageMainList(
                     stringResource(R.string.os_pull_refresh_done),
                 ),
         ) {
+        // Inside PullToRefresh, not around it: the keep-alive box shifts the list up and takes over as
+        // the stack container, and doing that below the RefreshHeader leaves the header's own anchor and
+        // the pull threshold exactly where they were.
+        AppEdgeStackKeepAlive(
+            state = edgeStackState,
+            modifier = Modifier.fillMaxSize(),
+        ) {
         AppPageLazyColumn(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .appEdgeStackContainer(edgeStackState),
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
             state = listState,
             // Every card used to be followed by its own 8dp Spacer item, which doubled the
             // list's item count: half of what the lazy column composed, measured and recorded
@@ -393,7 +400,9 @@ internal fun OsPageMainList(
             // The trailing 8dp the last spacer contributed moves into the bottom padding.
             innerPadding =
                 PaddingValues(bottom = innerPadding.calculateBottomPadding() + OsSectionGap),
-            topExtra = AppEdgeStackListTopInset,
+            // The headroom is invisible viewport above the list, so the content inset has to absorb it
+            // or the first card starts that far off screen.
+            topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
             sectionSpacing = OsSectionGap,
         ) {
             addTopInfoCard(
@@ -592,6 +601,7 @@ internal fun OsPageMainList(
                 onOpenActivity = onOpenActivityShortcutCard,
                 onHeaderLongClick = onOpenActivityShortcutCardEditor,
             )
+        }
         }
         }
         }
