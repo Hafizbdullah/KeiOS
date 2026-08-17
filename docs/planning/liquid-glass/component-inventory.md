@@ -980,9 +980,30 @@ measured card. 530dp is roughly three extra tall cards or eight short rows kept 
 The single index. Every earlier "still open" bullet in this file is folded in here, so this section is the
 one to read; the sections above keep the reasoning.
 
-**The ranking is closed.** All four rows are done, and the campaign's original list of un-rebuilt Liquid
-components is empty — not because everything was rewritten, but because Corrections 1–3 established that
-most of what looked stale was either already right for the content layer or not a Liquid component at all.
+**The ranking is closed, and a full sweep says nothing is left to rewrite.** Not asserted from the tables —
+re-derived with the rule this file prescribes, counting glass rather than reading names:
+
+```bash
+for f in $(find ui-liquid-glass/src/main -name '*.kt' | sort); do
+  d=$(git log -1 --format=%ad --date=short -- "$f")
+  g=$(grep -c "drawBackdrop\|glassStyle(\|safeLiquidLens\|Highlight\." "$f")
+  case "$d" in 2026-08-*) ;; *) printf '%s glass=%-3s %s\n' "$d" "$g" "$(basename $f .kt)";; esac
+done | sort
+```
+
+**96 files, 56 touched in August. Of the 40 that were not, exactly three carry any glass at all:**
+
+| File | Glass hits | Verdict |
+|---|---|---|
+| `GlassStyle` | 1 | Foundation. The variant tokens the campaign built *on*; old date, current design |
+| `BackdropLensSafety` | 1 | Foundation. The clamped `safeLiquidLens` wrapper every rebuilt surface calls |
+| `LiquidProgressBars` | 4 | **Checked, and not debt.** 477 lines, 56 call sites, and its stack is already the canonical `vibrancy() ⇒ blur ⇒ safeLiquidLens` with `Highlight.Ambient`. It calls the *fixed* `vibrancy()` where the slider thumb needed a progress-driven `colorControls` — correct here, because a progress bar has no press state to ramp |
+
+The other **37 contain zero glass**: content-layer primitives (`StatusPill`, `LiquidInfoBlock`,
+`AppTextInputContent`, `AppCardHeaders`, `AppLiquidExpandableCards`, …), token files, and motion/metrics
+infrastructure. Apple asks for standard materials in the content layer, so those are finished, not stale.
+
+So the campaign's component list is genuinely empty. Everything below is behaviour or verification.
 
 ### Blocked on a mouse drag, not on a phone — corrected 2026-08-18
 
