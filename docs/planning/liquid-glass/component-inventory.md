@@ -830,17 +830,34 @@ channel offsets look gentle.
 lerping the blur to exactly `0f`. With nothing band-limiting the sample at the moment the lens amount peaks,
 the edge tears — which is the torn-blobs half. A fifth still reads as "the glass cleared up".
 
-**Unverified, and stated as such.** Fixes 2 and 3 have not been seen in motion. They are both strict
-reductions of what the lens does, so they cannot make the fringes worse, but whether the thumb still reads
-as *glass* afterwards is a taste question that wants one more mouse-drag recording. The harness for it is
-cheap and now written down: record, `ffmpeg -vf fps=12`, find the widest thumb run on the track row, mask to
-the capsule, histogram the hues.
+### Verified, third recording — the slider is done
 
-**Also still open, and now the leading suspect for any residual tearing:** the thumb's `layerBlock` stretches
-`scaleX` by press expansion × velocity (measured 35px → 57px, ×1.6) while the lens's refraction height and
-amount are pixel values computed for the *unstretched* size, so the displacement map is stretched with the
-layer. Compensating means dividing the requested amount by the live `scaleX`. Left alone until fixes 2 and 3
-are seen, so that three changes are not judged from one recording.
+Same harness, third 120fps mouse-drag recording, thumb-masked, across all 264 sampled frames:
+
+| | stretched thumb, mean chroma | max | hue buckets above 0.18 |
+|---|---|---|---|
+| recording 1 — aberration on, saturation 1.85 | 0.080 | 0.36 | azure, orange, cyan |
+| recording 2 — aberration on, saturation 1.5 | 0.071 | 0.42 | azure, cyan |
+| **recording 3 — aberration off, blur floor 0.2** | **0.002** | 0.23 | **none** |
+
+A factor of roughly **35** on the mean, and the hue histogram is *empty* on the peak-stretch frames — not a
+single pixel of the capsule reaches 0.18 saturation. At 7× the fringes are simply absent: neutral grey
+glass, no green band, no orange band.
+
+Both other claims confirmed in the same frames. **The blue edge arrives whole** — one continuous refraction
+instead of two or three disconnected blobs, so the blur floor was the right cause. And the brightness lift
+reads: there is a clear white specular on the capsule where the track edge enters, which is
+`SliderThumbPressedBrightness = 0.12` doing exactly the job the saturation ramp was supposed to.
+
+**Retracted: the stretch-versus-lens-scale item.** It was recorded here as "the leading suspect for any
+residual tearing" — the thumb's `layerBlock` stretching `scaleX` by press expansion × velocity (35px → 57px,
+×1.6) while the lens's height and amount are pixel values computed for the unstretched size. There is no
+residual tearing to explain: the missing frost was the whole cause. The hypothesis was never tested and
+turned out unnecessary, which is the better outcome than having "fixed" it blind. Left as-is.
+
+So the slider is closed on all three counts, and the sequence is worth keeping as a method: the first pass
+guessed from a bad mask and over-blamed my own change; the second measured properly and showed the fix had
+barely moved the artifact; the third, aimed at the cause the measurement pointed to, removed it.
 
 ## Was open from the campaign — both closed 2026-08-18
 
@@ -1013,8 +1030,8 @@ is a ten-minute check — see "How to reach a slider's active state on the AVD".
 
 | | What to check | What it needs |
 |---|---|---|
-| **Slider refraction banding** | Whether dividing the lens's refraction amount by the live `scaleX` fixes the torn blue blobs | A mouse-drag recording, before and after. **Not** a phone |
-| Slider pressed brightness | Whether 0.12 still reads as "catches light" now that it carries the emphasis alone | The same recording. A taste call, so it wants eyes on it |
+| ~~Slider refraction banding~~ | ~~the torn blue blobs~~ | **Closed `2026-08-18`.** Three recordings; the frost floor fixed it and the `scaleX` hypothesis was unnecessary |
+| ~~Slider pressed brightness~~ | ~~whether 0.12 reads as "catches light"~~ | **Closed `2026-08-18`.** A clear white specular where the track edge enters the capsule |
 | miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | A real finger — it is an edge-swipe race, and the mouse cannot do a bezel gesture |
 | Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | A real finger. The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
 
