@@ -19,7 +19,7 @@ guide), **three were changed**, and **two are deferred** with a reason.
 | Keystore key count limit | **N/A.** No `AndroidKeyStore` / `KeyGenerator` anywhere |
 | IME visibility after rotation | **N/A.** Every activity declares `keyboardHidden` in `configChanges`, so it is not recreated on IME changes |
 | Touchpad relative pointer capture | **N/A.** No `requestPointerCapture` |
-| Background audio hardening | **Analysed, not exercised** — see below |
+| Background audio hardening | **Tested under the hardening flag, passes** — see below |
 | Bluetooth autonomous re-pairing | **N/A.** No Bluetooth |
 | Parcel use-after-recycle | **Safe.** The only `Parcel.recycle()` in the tree is the ITGSA reply, which recycles in `finally` after the `transact` and never reads again |
 | Parcel size mismatch | **N/A.** No custom `writeToParcel` / `createFromParcel` in the app; `MiFocusProtocol` only *passes* framework Parcelables through a Bundle |
@@ -130,31 +130,48 @@ the guide asks for **Robolectric 4.17+** with `@LooperMode(PAUSED)` when targeti
 guide. Bumping Robolectric is a dependency change with 2919 tests behind it — worth doing deliberately, not as
 a footnote to this audit.
 
-### Background audio hardening
+### Background audio hardening — tested, passes
 
-Analysed, **not exercised**. The app has **no `AudioManager` usage at all** — no `setStreamVolume`,
-`adjustStreamVolume` or `requestAudioFocus` — so the volume-API half of the hardening cannot touch it. Playback
-is Media3 `MediaSessionService` with `foregroundServiceType="mediaPlayback"` and
-`setAudioAttributes(handleAudioFocus = true)`, so focus is requested by the library, and the per-track volume
-slider is player gain rather than a stream volume.
+**Exercised on the API 37 AVD with `adb shell cmd audio set-enable-hardening 1`**, which is the guide's own
+switch for forcing the strict mode on. Not reasoned about — driven.
 
-The residual risk is narrow and real: an FGS **started from the background** does not get the While-In-Use
-capability, so a focus request made then returns `AUDIOFOCUS_REQUEST_FAILED` and Media3 will decline to play —
-silently. Concretely: pause, background the app, press play in the notification.
+First, the shape of the app that makes this narrow. There is **no `AudioManager` usage anywhere** — no
+`setStreamVolume`, `adjustStreamVolume` or `requestAudioFocus` — so the volume-API half of the hardening has
+nothing to act on, and the BGM volume slider is Media3 player gain rather than a stream volume. Focus is
+requested by Media3 on the app's behalf; `dumpsys audio` shows it as
+`client: …media3.common.audio.AudioFocusManager… gain: GAIN loss: none notified: true sdk:37`.
 
-`adb shell cmd audio set-enable-hardening 1` is accepted on the API 37 AVD, but the flow could not be driven
-there: BGM playback needs favourites, and populating them needs a network lookup this emulator has none for.
+**Default configuration: the hardening cannot reach it.** "Native media notification" is **off by default**, so
+BGM does not join the system media session — `dumpsys media_session` reports `have 0 sessions`. Backgrounding
+the app moves the player from `state:started` to `state:paused`, and the control run with
+`set-enable-hardening 0` does **exactly the same thing**, which is what proves it is the app's own behaviour
+and not the platform muting anything. `mutedState:none` throughout.
 
-**Owed on the phone**, alongside the other physical-device items:
+**With the setting enabled — the path that can be affected — it still passes.** With hardening on:
 
-1. `adb shell cmd audio set-enable-hardening 1`.
-2. Play a BGM favourite, pause, background the app, then press **play from the notification**.
-3. Pass = it plays. Fail = nothing happens and logcat shows `AudioHardening focus request ... ignored`.
-4. `adb shell cmd audio set-enable-hardening 0` afterwards.
+| Step | Result |
+|---|---|
+| Play in the foreground | `state:started`, session `androidx.media3.session.id.ba_guide_bgm_media_session` active |
+| Home, app backgrounded | `state:started`, **`mutedState:none`** — playback continues, unmuted |
+| `cmd media_session dispatch pause` from the background | `state:paused` |
+| `cmd media_session dispatch play` from the background | **`state:started`, `mutedState:none`** |
+| `AudioHardening` reports across all of it | **none** |
 
-If it fails, the fix is to surface the denial rather than swallow it — Media3 reports it as
-`playWhenReady = false` with `PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS` — and to keep the session's FGS
-alive across short pauses so playback resumes from a foreground-started service.
+The last row of that table is the guide's worst case — a play command arriving while the app is invisible —
+and the reason it passes is visible in `dumpsys activity services`:
+
+```
+infoAllowStartForeground=[… uidState: TOP … allowWiu:12 … targetSdkVersion:37 …]
+isForeground=true foregroundId=1001 types=0x00000002
+```
+
+**`allowWiu:12`** — the foreground service holds the While-In-Use capability, because Media3 starts it while
+the app is `TOP` and keeps it alive across a pause. WIU is precisely what the hardening requires, so the focus
+request succeeds and playback is never muted. The failure mode the guide describes needs an FGS *started* from
+the background; this one never is.
+
+**No code change.** The AVD was left as found: hardening switched back off and the native-media-notification
+setting returned to its default of off.
 
 ## Phone verification — clean, `2026-08-18`
 
@@ -193,10 +210,8 @@ Release matters separately because R8 is where a runtime-registered receiver wou
 
 ### Still owed on a real phone
 
-Only one item, and it needs hardware rather than more emulator time:
+**Nothing.** The last open item — background audio hardening — was driven on the AVD once it turned out the
+emulator does have network, and it passes in both configurations. See the section above.
 
-- **Background audio hardening.** Steps and pass/fail are in the section above. The AVD accepts
-  `cmd audio set-enable-hardening 1` but cannot play BGM without the network lookup that populates favourites.
-
-Everything else on the phone side is verified. Large-screen behaviour is deliberately **not** in scope here —
+Everything on the phone side is verified. Large-screen behaviour is deliberately **not** in scope here —
 see the note on the Home predicate — and is deferred to a dedicated Pad AVD.
