@@ -155,3 +155,48 @@ there: BGM playback needs favourites, and populating them needs a network lookup
 If it fails, the fix is to surface the denial rather than swallow it — Media3 reports it as
 `playWhenReady = false` with `PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS` — and to keep the session's FGS
 alive across short pauses so playback resumes from a foreground-started service.
+
+## Phone verification — clean, `2026-08-18`
+
+Run on the API 37 AVD at its phone geometry (1280×2856, density 480 → 426×952dp), **debug and release**.
+
+### Debug
+
+| Check | Result |
+|---|---|
+| Cold start, all five tabs walked | No crash, no ANR, no app-side `E` line |
+| StrictMode probes | `Android17Probes: StrictMode probes installed`, and **no violation reported** |
+| Every signal the guide names | **None fired.** Swept for `discontinued from Android 18`, `BadParcelable`, `Parcel used while recycled`, `consumed … bytes, but`, `AudioHardening`, `Bad mode:`, `Priority/niceness`, `Too many keys`, `NPU access is blocked`, `certificate transparency`, `Attempt to load writable` |
+| Home hero after the predicate change | Unchanged — tall hero, all four pill groups clear of the dock, as the 952dp ≥ 700dp test predicts |
+
+**Restricted non-SDK interfaces**, which the guide asks to check explicitly: exactly two accesses, both
+`allowed` at `TargetSdkVersion=37`, and **neither is app code**:
+
+- `ServiceManager.getService` from `rikka.shizuku.SystemServiceHelper` — Shizuku's own library
+- `SystemProperties.addChangeCallback` from `androidx.compose.ui.platform.AndroidComposeView$Companion` — Compose itself
+
+The app's one remaining hidden-API site of its own is `Class.forName("android.content.pm.IPackageInstaller")`
+in the Shizuku install bridge, which did not run here because Shizuku is not active on this AVD. It is worth
+re-checking on a device where Shizuku is running.
+
+### Release
+
+Release matters separately because R8 is where a runtime-registered receiver would quietly disappear.
+
+- `assembleRelease` succeeds and installs.
+- The receiver **is registered under R8**, proven independently of logging — release sets
+  `DEFAULT_LOG_LEVEL_ID = "off"`, so `dumpsys activity broadcasts` was used instead and lists both
+  `itgsa.intent.action.TRIM` and `itgsa.intent.action.KILL`.
+- The release trim path works, measured rather than logged: `am send-trim-memory <pid> COMPLETE` on the
+  backgrounded release process took **TOTAL PSS 45,810 KB → 40,973 KB, freeing ~4.7 MB**. So the release
+  registry, the Coil eviction and the bitmap-cache eviction all survived minification.
+
+### Still owed on a real phone
+
+Only one item, and it needs hardware rather than more emulator time:
+
+- **Background audio hardening.** Steps and pass/fail are in the section above. The AVD accepts
+  `cmd audio set-enable-hardening 1` but cannot play BGM without the network lookup that populates favourites.
+
+Everything else on the phone side is verified. Large-screen behaviour is deliberately **not** in scope here —
+see the note on the Home predicate — and is deferred to a dedicated Pad AVD.
