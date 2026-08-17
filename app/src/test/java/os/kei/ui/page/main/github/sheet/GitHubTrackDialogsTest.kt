@@ -54,7 +54,6 @@ class GitHubTrackDialogsTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val item = trackedApp()
         val pendingItem = mutableStateOf<GitHubTrackedApp?>(item)
-        var observedSnapshot: GitHubTrackDialogExitSnapshot<GitHubTrackedApp>? = null
         var cancelCount = 0
         var confirmCount = 0
         val title = context.getString(R.string.github_delete_dialog_title)
@@ -71,30 +70,16 @@ class GitHubTrackDialogsTest {
         composeRule.setContent {
             MiuixTheme(controller = ThemeController(ColorSchemeMode.Light)) {
                 CompositionLocalProvider(LocalTransitionAnimationsEnabled provides true) {
-                    val exitSnapshot = rememberGitHubTrackDialogExitSnapshot(pendingItem.value)
-                    val renderedItem = exitSnapshot.resolve(pendingItem.value)
-                    SideEffect { observedSnapshot = exitSnapshot }
-                    LiquidGlassDialog(
-                        show = pendingItem.value != null,
-                        title = title,
-                        summary =
-                            renderedItem?.let {
-                                context.getString(
-                                    R.string.github_delete_dialog_summary,
-                                    it.appLabel,
-                                    it.owner,
-                                    it.repo,
-                                )
-                            },
-                        onDismissFinished = exitSnapshot::clear,
-                    ) {
-                        GitHubDeleteTrackDialogContent(
-                            deleteInProgress = false,
-                            actionsEnabled = pendingItem.value != null,
-                            onCancel = { cancelCount++ },
-                            onConfirmDelete = { confirmCount++ },
-                        )
-                    }
+                    // The production composable, not a rebuilt harness: it is an action sheet now, and
+                    // the exit-snapshot behaviour asserted below is a property of that composable rather
+                    // than of a dialog wrapper the app no longer uses here.
+                    GitHubDeleteTrackDialog(
+                        pendingDeleteItem = pendingItem.value,
+                        deleteInProgress = false,
+                        onDismissRequest = {},
+                        onCancel = { cancelCount++ },
+                        onConfirmDelete = { confirmCount++ },
+                    )
                 }
             }
         }
@@ -112,12 +97,13 @@ class GitHubTrackDialogsTest {
         composeRule.onNode(hasText(summary)).assertIsDisplayed()
         composeRule.onNode(hasText(deleteLabel)).assertIsNotEnabled()
         composeRule.onNode(hasText(cancelLabel)).assertIsNotEnabled()
-        assertEquals(item, assertNotNull(observedSnapshot).retainedValue)
+        // The snapshot now lives inside GitHubDeleteTrackDialog, so it is observed through what it
+        // keeps on screen rather than by reaching for the object.
 
         finishExitAnimation()
 
         composeRule.onAllNodes(hasText(title)).assertCountEquals(0)
-        assertNull(assertNotNull(observedSnapshot).retainedValue)
+        // Retention is observed through the screen above; the snapshot is internal to the sheet now.
         assertEquals(1, cancelCount)
         assertEquals(1, confirmCount)
     }
@@ -226,7 +212,18 @@ class GitHubTrackDialogsTest {
     fun productionDialogsUseSharedHostAndRetainExitSnapshots() {
         val source = trackDialogsSource(GITHUB_TRACK_DIALOGS_SOURCE)
 
-        assertEquals(2, source.occurrencesOf("AppWindowDialogHost("))
+        // The two confirmations deliberately use *different* presentations now.
+        //
+        // Delete is chosen from the item's More menu, and Apple's pull-down-buttons guidance asks for an
+        // action sheet there specifically — because it "appears in a different location from the menu",
+        // so a second tap where the first one landed cannot confirm it. Import is not menu-originated, so
+        // it stays an alert, which the Action sheets page explicitly allows for confirm-or-cancel.
+        assertEquals(1, source.occurrencesOf("AppWindowDialogHost("))
+        assertEquals(1, source.occurrencesOf("LiquidActionSheet("))
+        assertTrue("role = LiquidActionRole.Destructive" in source)
+        assertTrue("role = LiquidActionRole.Cancel" in source)
+        // The sheet must not be walk-away-able mid-delete.
+        assertTrue("dismissible = !deleteInProgress" in source)
         assertFalse("WindowDialog(" in source)
         assertEquals(
             2,
@@ -244,9 +241,6 @@ class GitHubTrackDialogsTest {
         assertTrue("R.string.github_import_dialog_summary_ready" in source)
         assertTrue("R.string.github_import_dialog_summary_invalid" in source)
         assertTrue("maxWidth = AppDialogDimensions.ContentRichMaxWidth" in source)
-        assertTrue("containerColor = MiuixTheme.colorScheme.error" in source)
-        assertTrue("variant = GlassVariant.SheetDangerAction" in source)
-        assertTrue("actionsEnabled = pendingDeleteItem != null" in source)
         assertTrue("actionsEnabled = preview != null" in source)
         assertTrue("onClick = if (canImport) onConfirmImport else onDismissRequest" in source)
     }

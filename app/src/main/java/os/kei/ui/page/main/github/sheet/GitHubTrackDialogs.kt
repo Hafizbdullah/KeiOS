@@ -26,6 +26,9 @@ import os.kei.ui.page.main.github.page.GitHubTrackImportPreview
 import os.kei.ui.page.main.widget.core.MiuixInfoItem
 import os.kei.ui.page.main.widget.dialog.AppDialogDimensions
 import os.kei.ui.page.main.widget.dialog.AppWindowDialogHost
+import os.kei.ui.page.main.widget.dialog.LiquidActionRole
+import os.kei.ui.page.main.widget.dialog.LiquidActionSheet
+import os.kei.ui.page.main.widget.dialog.LiquidPresentationAction
 import os.kei.ui.page.main.widget.glass.AppLiquidDialogActionButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -58,6 +61,23 @@ internal fun <T : Any> rememberGitHubTrackDialogExitSnapshot(currentValue: T?): 
     return snapshot
 }
 
+/**
+ * Confirms deleting a tracked item, as an action sheet rather than an alert.
+ *
+ * The delete is chosen from the item's More menu, and Apple's pull-down-buttons guidance is specific
+ * about that case: *"When people choose a destructive action, the system displays an action sheet (iOS)
+ * or popover (iPadOS) in which they can confirm their choice or cancel the action. Because an action
+ * sheet appears in a different location from the menu and requires deliberate dismissal, it can help
+ * people avoid losing data by mistake."*
+ *
+ * The different location is the point, and it is what an alert could not give: the menu opens near the
+ * item's trailing edge and the alert opened centred over roughly the same area, so a second tap landing
+ * where the first one did could confirm a delete the teacher never read. `LiquidActionSheet` rises from
+ * the bottom edge, and it already orders destructive-first, cancel-last the way Apple asks.
+ *
+ * Note this is *not* the general rule for destructive confirmations — the Action sheets page allows an
+ * alert to confirm or cancel one. It is the rule for destructive items reached through a menu.
+ */
 @Composable
 internal fun GitHubDeleteTrackDialog(
     pendingDeleteItem: GitHubTrackedApp?,
@@ -68,10 +88,11 @@ internal fun GitHubDeleteTrackDialog(
 ) {
     val exitSnapshot = rememberGitHubTrackDialogExitSnapshot(pendingDeleteItem)
     val renderedDeleteItem = exitSnapshot.resolve(pendingDeleteItem)
-    AppWindowDialogHost(
+    val actionsEnabled = pendingDeleteItem != null && !deleteInProgress
+    LiquidActionSheet(
         show = pendingDeleteItem != null,
         title = stringResource(R.string.github_delete_dialog_title),
-        summary =
+        message =
             renderedDeleteItem?.let {
                 stringResource(
                     R.string.github_delete_dialog_summary,
@@ -80,52 +101,31 @@ internal fun GitHubDeleteTrackDialog(
                     it.repo,
                 )
             },
+        // A delete in flight cannot be walked away from, so the scrim and back stop dismissing it.
+        dismissible = !deleteInProgress,
         onDismissRequest = onDismissRequest,
         onDismissFinished = exitSnapshot::clear,
-    ) {
-        GitHubDeleteTrackDialogContent(
-            deleteInProgress = deleteInProgress,
-            actionsEnabled = pendingDeleteItem != null,
-            onCancel = onCancel,
-            onConfirmDelete = onConfirmDelete,
-        )
-    }
-}
-
-@Composable
-internal fun GitHubDeleteTrackDialogContent(
-    deleteInProgress: Boolean,
-    actionsEnabled: Boolean = true,
-    onCancel: () -> Unit,
-    onConfirmDelete: () -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            AppLiquidDialogActionButton(
-                modifier = Modifier.weight(1f),
-                text = stringResource(R.string.common_cancel),
-                enabled = actionsEnabled && !deleteInProgress,
-                onClick = onCancel,
-            )
-            AppLiquidDialogActionButton(
-                modifier = Modifier.weight(1f),
-                text =
-                    if (deleteInProgress) {
-                        stringResource(R.string.github_delete_dialog_deleting)
-                    } else {
-                        stringResource(R.string.common_delete)
-                    },
-                containerColor = MiuixTheme.colorScheme.error,
-                variant = GlassVariant.SheetDangerAction,
-                enabled = actionsEnabled && !deleteInProgress,
-                onClick = onConfirmDelete,
-            )
-        }
-    }
+        actions =
+            listOf(
+                LiquidPresentationAction(
+                    label =
+                        if (deleteInProgress) {
+                            stringResource(R.string.github_delete_dialog_deleting)
+                        } else {
+                            stringResource(R.string.common_delete)
+                        },
+                    role = LiquidActionRole.Destructive,
+                    enabled = actionsEnabled,
+                    onClick = onConfirmDelete,
+                ),
+                LiquidPresentationAction(
+                    label = stringResource(R.string.common_cancel),
+                    role = LiquidActionRole.Cancel,
+                    enabled = actionsEnabled,
+                    onClick = onCancel,
+                ),
+            ),
+    )
 }
 
 @Composable

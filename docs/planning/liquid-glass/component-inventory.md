@@ -681,5 +681,48 @@ pass on the active state is still owed.
   it dies roughly one card-height after crossing the stack line. Fixing it needs keep-alive headroom on
   the lazy container (measure taller than the viewport extending upward, place at `-headroom`, clip the
   parent, add `headroom` to `contentPadding.top`), which changes list wiring on all eight host pages.
-- **A destructive menu item should confirm through an action sheet**, per the pull-down-buttons
-  guidance. Needs a confirmation host that outlives the menu, since the menu unmounts on dismiss.
+- ~~**A destructive menu item should confirm through an action sheet**, per the pull-down-buttons
+  guidance. Needs a confirmation host that outlives the menu, since the menu unmounts on dismiss.~~
+  **Done for the GitHub track delete, `2026-08-18`.** See below.
+
+## The destructive menu item (2026-08-18)
+
+The plan's one-line item was right, and I nearly retracted it on the wrong page. Recording both, because
+the two Apple pages say different things and only one of them governs this case.
+
+**Action sheets** says an alert is acceptable: *"Although an alert can also help people confirm or cancel
+an action that has destructive consequences, it doesn't provide additional choices related to the
+action."* Read alone, that makes the existing centred alert compliant and the item phantom work.
+
+**Pull-down buttons** is the page that governs, because the delete is chosen from a menu: *"Let people
+know when a pull-down button's menu item is destructive, and ask them to confirm their intent … the
+system displays an action sheet (iOS) or popover (iPadOS) … Because an action sheet appears in a
+different location from the menu and requires deliberate dismissal, it can help people avoid losing data
+by mistake."*
+
+The different location is the whole reason, and it is exactly what the old alert did not give: the More
+menu opens at the item's trailing edge and the alert opened centred over roughly the same area, so a
+second tap landing where the first one did could confirm a delete that was never read.
+
+**What changed.** `GitHubDeleteTrackDialog` renders `LiquidActionSheet` instead of `AppWindowDialogHost`.
+No new confirmation host was needed after all — the plan expected one, but the delete already hoisted its
+`pendingDeleteItem` to page state, so the confirmation already outlived the menu and this was a
+presentation swap. `LiquidActionSheet` already orders destructive-first and cancel-last, so Apple's
+"make destructive choices visually prominent … place these buttons at the top" came for free.
+`dismissible = !deleteInProgress` so a delete in flight cannot be walked away from.
+
+`GitHubDeleteTrackDialogContent` is deleted — it had no production caller left, only the test.
+
+**Verified on the API 37 AVD:** More menu → Delete tracking → the sheet rises from the bottom edge with
+a red Delete above a Cancel; Cancel dismisses and the tracked item survives.
+
+### Still open here
+
+- **The import confirmation stays an alert, deliberately.** It is not menu-originated, so the Action
+  sheets page's allowance applies. `GitHubTrackDialogsTest` now pins that the two use different
+  presentations, and why.
+- **BGM favourite removal still does not confirm.** It is also a menu item with a red row
+  (`BaGuideBgmFavoriteCards`), so the same pull-down rule applies, but it deletes immediately through
+  `requestRemoveBgmFavorite`. Unlike the track delete it has no pending state to hang a sheet on, so it
+  does need the hoisting the plan described. Worth weighing first: un-favouriting is nearly reversible,
+  one of its two call paths already toasts, and Apple also says to use action sheets sparingly.
