@@ -39,18 +39,46 @@ class HomePageCompactLandscapeLayoutTest {
         )
     }
 
+    /**
+     * The geometries a large screen actually produces, now that the app cannot hold itself portrait there.
+     *
+     * `targetSdk >= 36` makes Android ignore an orientation request on `sw >= 600dp`, and `targetSdk >= 37`
+     * removes the opt-out, so a tablet in landscape is reachable for the first time. Measured on the API 37
+     * AVD; the widths and heights below are the real dp values.
+     */
     @Test
-    fun portraitAndTallLandscapeKeepTheFullHeroBudget() {
+    fun aLargeScreenInLandscapeUsesTheCompactHero() {
+        // 2856x1280 at density 320. This is the case that regressed: 640dp is too tall for the old 480dp
+        // landscape cutoff and far too short for the tall hero, so the pills sat under the floating dock.
+        assertTrue(
+            homePageUsesCompactLandscapeLayout(
+                availableWidth = 1428.dp,
+                availableHeight = 640.dp,
+            ),
+        )
+        // Same panel in portrait: 1280x2856 at density 320. Tall enough, and dropping the old `width > height`
+        // term must not change it.
+        assertFalse(
+            homePageUsesCompactLandscapeLayout(
+                availableWidth = 640.dp,
+                availableHeight = 1428.dp,
+            ),
+        )
+    }
+
+    @Test
+    fun portraitKeepsTheFullHeroBudget() {
         assertFalse(
             homePageUsesCompactLandscapeLayout(
                 availableWidth = 411.dp,
                 availableHeight = 891.dp,
             ),
         )
+        // 1280x2856 at density 480 — the AVD in portrait, and the shape a phone actually ships in.
         assertFalse(
             homePageUsesCompactLandscapeLayout(
-                availableWidth = 952.dp,
-                availableHeight = 600.dp,
+                availableWidth = 426.dp,
+                availableHeight = 952.dp,
             ),
         )
         assertEquals(36.dp, homePageHeroTopPadding(compactHeightPresentation = false))

@@ -9,6 +9,7 @@ import android.os.StatFs
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import os.kei.memory.AppMemoryRelease
+import os.kei.platform.Android17StrictModeProbes
 import os.kei.memory.AppMemoryReleaseLevel
 import os.kei.memory.ItgsaFairMemoryReceiver
 import coil3.disk.DiskCache
@@ -154,6 +155,7 @@ class KeiOSApp : Application() {
         Android17AnomalyProfiler.install(this)
         registerPackageChangedReceiver()
         registerMemoryPressureHandling()
+        Android17StrictModeProbes.install(isDebugBuild = BuildConfig.DEBUG)
         WebDavAutoSync.init(this)
         scheduleDeferredStartupWork()
     }

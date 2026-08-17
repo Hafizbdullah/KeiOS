@@ -60,15 +60,47 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop as rememberActionBarBa
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop as rememberMiuixLayerBackdrop
 import os.kei.core.privilege.PrivilegeStatus
 
-internal val HomePageCompactLandscapeHeightMax: Dp = 480.dp
+/**
+ * Shortest viewport the tall hero is allowed on.
+ *
+ * Chosen from two measured geometries rather than by feel. On the API 37 AVD a **640dp**-tall viewport
+ * (2856×1280 at density 320, a large screen in landscape) overflows: the hero pushes the overview pills under
+ * the floating dock. The same AVD in portrait is **952dp** tall and has room to spare. So the boundary lies
+ * between them, and 700dp sits above the failing case with margin.
+ *
+ * Deliberately not tighter. Every phone this app can install on — `minSdk 35` — is 850–1000dp tall in portrait
+ * at its stock density, so no phone falls below this in portrait and gets the compact hero by accident. The
+ * 1280×720-class device that would have is two Android versions below the floor.
+ */
+internal val HomePageTallHeroMinHeight: Dp = 700.dp
 private val HOME_PAGE_HERO_TOP_EXTRA = 24.dp
 
+/**
+ * Whether the viewport is too short for the tall hero, regardless of orientation.
+ *
+ * This used to read `availableWidth > availableHeight && availableHeight <= 480.dp`, which encodes "a phone
+ * held sideways" rather than the constraint that actually matters. Both halves were wrong once the app started
+ * targeting SDK 37:
+ *
+ * - **The orientation term.** On a large screen (`sw >= 600dp`) Android 16 already ignores an activity's
+ *   orientation request for `targetSdk >= 36`, and Android 17 removes the
+ *   `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` opt-out entirely at `targetSdk >= 37`. This app declares
+ *   `sensorPortrait`, so before that it simply never saw a wide viewport on a tablet — the geometry was
+ *   unreachable, and a rule that keyed on it could not be caught being wrong.
+ * - **The 480dp cutoff.** A phone in landscape is roughly 426dp tall, so 480dp covered it. A *large screen* in
+ *   landscape is 600–800dp tall: too tall to trip the cutoff, and still far shorter than the ~950dp portrait
+ *   height the tall hero is drawn for. Measured on the API 37 AVD at 2856×1280 / density 320 — a 1428×640dp
+ *   viewport — the hero pushed the overview pill rows underneath the floating dock at rest. Scrollable, so
+ *   nothing was unreachable, but the first paint read as broken.
+ *
+ * So the question is only ever "is there room", and [HomePageTallHeroMinHeight] is the budget. Dropping the
+ * orientation term is safe in the other direction too: a tablet in *portrait* is ~1400dp tall and keeps the
+ * tall hero, which the old rule also did but for the wrong reason.
+ */
 internal fun homePageUsesCompactLandscapeLayout(
     availableWidth: Dp,
     availableHeight: Dp,
-): Boolean =
-    availableWidth > availableHeight &&
-        availableHeight <= HomePageCompactLandscapeHeightMax
+): Boolean = availableHeight < HomePageTallHeroMinHeight
 
 internal fun homePageLogoTopPadding(
     scaffoldTopPadding: Dp,
