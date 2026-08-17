@@ -22,25 +22,25 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [35])
-class HyperOsFairMemoryTest {
+class ItgsaFairMemoryTest {
     @Test
     fun `the reply parcel carries notifyType notifyId result extra in that order`() {
         val data = Parcel.obtain()
         try {
-            writeHyperOsFairMemoryReply(
+            writeItgsaFairMemoryReply(
                 data = data,
-                notifyType = HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL,
+                notifyType = ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL,
                 notifyId = 4321,
-                result = HyperOsFairMemory.RESULT_HANDLED,
-                extra = Bundle().apply { putString(HyperOsFairMemory.REPLY_KEY_MESSAGE, "freedKb=2048") },
+                result = ItgsaFairMemory.RESULT_HANDLED,
+                extra = Bundle().apply { putString(ItgsaFairMemory.REPLY_KEY_MESSAGE, "freedKb=2048") },
             )
             // There is no AIDL to compile against, so this ordering IS the contract with the system side.
             data.setDataPosition(0)
-            assertEquals(HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL, data.readInt())
+            assertEquals(ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL, data.readInt())
             assertEquals(4321, data.readInt())
-            assertEquals(HyperOsFairMemory.RESULT_HANDLED, data.readInt())
-            val extra = data.readBundle(HyperOsFairMemoryTest::class.java.classLoader)
-            assertEquals("freedKb=2048", extra?.getString(HyperOsFairMemory.REPLY_KEY_MESSAGE))
+            assertEquals(ItgsaFairMemory.RESULT_HANDLED, data.readInt())
+            val extra = data.readBundle(ItgsaFairMemoryTest::class.java.classLoader)
+            assertEquals("freedKb=2048", extra?.getString(ItgsaFairMemory.REPLY_KEY_MESSAGE))
         } finally {
             data.recycle()
         }
@@ -49,14 +49,14 @@ class HyperOsFairMemoryTest {
     @Test
     fun `a trim notification parses out of the two nested bundles`() {
         val parsed =
-            parseHyperOsFairMemoryNotification(
-                action = HyperOsFairMemory.ACTION_TRIM,
-                extras = notificationExtras(notifyType = HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL),
+            parseItgsaFairMemoryNotification(
+                action = ItgsaFairMemory.ACTION_TRIM,
+                extras = notificationExtras(notifyType = ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL),
             )
 
         assertTrue(parsed != null)
         assertEquals(false, parsed.kill)
-        assertEquals(HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL, parsed.notifyType)
+        assertEquals(ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL, parsed.notifyType)
         assertEquals(99, parsed.notifyId)
         assertEquals("Excessive PSS Usage", parsed.reason)
         assertEquals(600_000, parsed.pssKb)
@@ -67,9 +67,9 @@ class HyperOsFairMemoryTest {
     @Test
     fun `a kill notification is recognised by its action`() {
         val parsed =
-            parseHyperOsFairMemoryNotification(
-                action = HyperOsFairMemory.ACTION_KILL,
-                extras = notificationExtras(notifyType = HyperOsFairMemory.NOTIFY_TYPE_JAVA_HEAP),
+            parseItgsaFairMemoryNotification(
+                action = ItgsaFairMemory.ACTION_KILL,
+                extras = notificationExtras(notifyType = ItgsaFairMemory.NOTIFY_TYPE_JAVA_HEAP),
             )
 
         assertTrue(parsed != null)
@@ -80,15 +80,15 @@ class HyperOsFairMemoryTest {
     @Test
     fun `an unrelated broadcast is not a fair-memory notification`() {
         assertNull(
-            parseHyperOsFairMemoryNotification(
+            parseItgsaFairMemoryNotification(
                 action = "android.intent.action.BATTERY_LOW",
                 extras = notificationExtras(),
             ),
         )
         // No `common` bundle means no notifyId and no callback, so there is nothing to answer.
         assertNull(
-            parseHyperOsFairMemoryNotification(
-                action = HyperOsFairMemory.ACTION_TRIM,
+            parseItgsaFairMemoryNotification(
+                action = ItgsaFairMemory.ACTION_TRIM,
                 extras = Bundle(),
             ),
         )
@@ -101,8 +101,8 @@ class HyperOsFairMemoryTest {
      */
     @Test
     fun `the java heap size is read under either documented spelling`() {
-        val fromTable = Bundle().apply { putInt(HyperOsFairMemory.KEY_HEAP_SIZE, 111) }
-        val fromSample = Bundle().apply { putInt(HyperOsFairMemory.KEY_HEAP_ALLOC, 222) }
+        val fromTable = Bundle().apply { putInt(ItgsaFairMemory.KEY_HEAP_SIZE, 111) }
+        val fromSample = Bundle().apply { putInt(ItgsaFairMemory.KEY_HEAP_ALLOC, 222) }
 
         assertEquals(111, readHeapUsedKb(fromTable))
         assertEquals(222, readHeapUsedKb(fromSample))
@@ -115,15 +115,15 @@ class HyperOsFairMemoryTest {
         val extras =
             Bundle().apply {
                 putBundle(
-                    HyperOsFairMemory.KEY_COMMON,
+                    ItgsaFairMemory.KEY_COMMON,
                     Bundle().apply {
-                        putInt(HyperOsFairMemory.KEY_NOTIFY_TYPE, HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL)
-                        putInt(HyperOsFairMemory.KEY_NOTIFY_ID, 7)
+                        putInt(ItgsaFairMemory.KEY_NOTIFY_TYPE, ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL)
+                        putInt(ItgsaFairMemory.KEY_NOTIFY_ID, 7)
                     },
                 )
             }
 
-        val parsed = parseHyperOsFairMemoryNotification(HyperOsFairMemory.ACTION_TRIM, extras)
+        val parsed = parseItgsaFairMemoryNotification(ItgsaFairMemory.ACTION_TRIM, extras)
 
         assertTrue(parsed != null)
         assertNull(parsed.pssKb)
@@ -143,7 +143,7 @@ class HyperOsFairMemoryTest {
         fun notification(
             kill: Boolean,
             type: Int,
-        ) = HyperOsFairMemoryNotification(
+        ) = ItgsaFairMemoryNotification(
             kill = kill,
             notifyType = type,
             notifyId = 1,
@@ -156,24 +156,24 @@ class HyperOsFairMemoryTest {
 
         assertEquals(
             AppMemoryReleaseLevel.Critical,
-            releaseLevelFor(notification(kill = false, type = HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL)),
+            releaseLevelFor(notification(kill = false, type = ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL)),
         )
         assertEquals(
             AppMemoryReleaseLevel.Moderate,
-            releaseLevelFor(notification(kill = false, type = HyperOsFairMemory.NOTIFY_TYPE_JAVA_HEAP)),
+            releaseLevelFor(notification(kill = false, type = ItgsaFairMemory.NOTIFY_TYPE_JAVA_HEAP)),
         )
         assertEquals(
             AppMemoryReleaseLevel.Critical,
-            releaseLevelFor(notification(kill = true, type = HyperOsFairMemory.NOTIFY_TYPE_JAVA_HEAP)),
+            releaseLevelFor(notification(kill = true, type = ItgsaFairMemory.NOTIFY_TYPE_JAVA_HEAP)),
         )
     }
 
     @Test
     fun `usage fraction reads the pool that actually tripped`() {
         val heap =
-            HyperOsFairMemoryNotification(
+            ItgsaFairMemoryNotification(
                 kill = false,
-                notifyType = HyperOsFairMemory.NOTIFY_TYPE_JAVA_HEAP,
+                notifyType = ItgsaFairMemory.NOTIFY_TYPE_JAVA_HEAP,
                 notifyId = 1,
                 reason = "Excessive Java Heap Usage",
                 heapUsedKb = 180_000,
@@ -246,24 +246,24 @@ class HyperOsFairMemoryTest {
         )
     }
 
-    private fun notificationExtras(notifyType: Int = HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL): Bundle =
+    private fun notificationExtras(notifyType: Int = ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL): Bundle =
         Bundle().apply {
             putBundle(
-                HyperOsFairMemory.KEY_COMMON,
+                ItgsaFairMemory.KEY_COMMON,
                 Bundle().apply {
-                    putInt(HyperOsFairMemory.KEY_NOTIFY_TYPE, notifyType)
-                    putInt(HyperOsFairMemory.KEY_NOTIFY_ID, 99)
-                    putString(HyperOsFairMemory.KEY_REASON, "Excessive PSS Usage")
-                    putString(HyperOsFairMemory.KEY_ACTION, "trim")
+                    putInt(ItgsaFairMemory.KEY_NOTIFY_TYPE, notifyType)
+                    putInt(ItgsaFairMemory.KEY_NOTIFY_ID, 99)
+                    putString(ItgsaFairMemory.KEY_REASON, "Excessive PSS Usage")
+                    putString(ItgsaFairMemory.KEY_ACTION, "trim")
                 },
             )
             putBundle(
-                HyperOsFairMemory.KEY_EXTRA,
+                ItgsaFairMemory.KEY_EXTRA,
                 Bundle().apply {
-                    putInt(HyperOsFairMemory.KEY_PSS, 600_000)
-                    putInt(HyperOsFairMemory.KEY_PSS_LIMIT, 800_000)
-                    putInt(HyperOsFairMemory.KEY_HEAP_SIZE, 120_000)
-                    putInt(HyperOsFairMemory.KEY_HEAP_CAPACITY, 256_000)
+                    putInt(ItgsaFairMemory.KEY_PSS, 600_000)
+                    putInt(ItgsaFairMemory.KEY_PSS_LIMIT, 800_000)
+                    putInt(ItgsaFairMemory.KEY_HEAP_SIZE, 120_000)
+                    putInt(ItgsaFairMemory.KEY_HEAP_CAPACITY, 256_000)
                 },
             )
         }
@@ -280,3 +280,50 @@ private fun codeOnly(source: String): String =
         .lines()
         .filterNot { line -> line.trimStart().startsWith("//") }
         .joinToString("\n")
+
+/**
+ * The rate limit that replaced the vendor gate.
+ *
+ * Registration used to be gated behind Xiaomi's system properties, which was wrong — `itgsa` is the 金标联盟's
+ * namespace, not HyperOS's, so the gate declined to register on the other alliance members. Registration is now
+ * unconditional, which means the receiver is exported on every device and anything local can trigger it, so the
+ * defence is here instead.
+ */
+class ItgsaFairMemoryRateLimitTest {
+    @Test
+    fun `the first release of a session always runs`() {
+        assertTrue(shouldRunItgsaRelease(nowMs = 10_000, lastReleaseAtMs = 0L, minIntervalMs = 4_000))
+    }
+
+    @Test
+    fun `a second release inside the window is suppressed`() {
+        assertTrue(
+            shouldRunItgsaRelease(nowMs = 13_999, lastReleaseAtMs = 10_000, minIntervalMs = 4_000).not(),
+        )
+        assertTrue(shouldRunItgsaRelease(nowMs = 14_000, lastReleaseAtMs = 10_000, minIntervalMs = 4_000))
+    }
+
+    /**
+     * A clock that moved backwards must not wedge the limit shut.
+     *
+     * `System.currentTimeMillis()` is not monotonic — an NTP correction can put "now" before the last release,
+     * and treating that as "no time has passed" would suppress every release until the clock caught up, which
+     * on the physical-memory path means being killed instead.
+     */
+    @Test
+    fun `a backwards clock does not suppress the release`() {
+        assertTrue(shouldRunItgsaRelease(nowMs = 5_000, lastReleaseAtMs = 10_000, minIntervalMs = 4_000))
+    }
+
+    /** A KILL is never rate-limited; the receiver checks `notification.kill` before consulting the limit. */
+    @Test
+    fun `the kill path bypasses the limit`() {
+        val source = File(RECEIVER_SOURCE).readText()
+        assertTrue(
+            "notification.kill ||" in source,
+            "A KILL must skip the rate limit: it is the last chance to save state",
+        )
+    }
+}
+
+private const val RECEIVER_SOURCE = "src/main/java/os/kei/memory/ItgsaFairMemoryReceiver.kt"

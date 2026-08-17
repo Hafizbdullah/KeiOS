@@ -13,10 +13,10 @@ import android.os.Parcel
 import os.kei.core.log.AppLogger
 
 /**
- * Answers HyperOS's fair-memory TRIM and KILL broadcasts.
+ * Answers the ITGSA fair-running-memory TRIM and KILL broadcasts, on every OEM that sends them.
  *
- * See [HyperOsFairMemory] for the transcribed contract and the source it came from. This class is the part
- * that touches the framework; the decisions live in `HyperOsFairMemoryParsing.kt` where they can be tested.
+ * See [ItgsaFairMemory] for the transcribed contract and the source it came from. This class is the part
+ * that touches the framework; the decisions live in `ItgsaFairMemoryParsing.kt` where they can be tested.
  *
  * ## Shape of the response
  *
@@ -31,18 +31,43 @@ import os.kei.core.log.AppLogger
  * The receiver is registered with its own [HandlerThread], as the documentation's own sample does, because
  * `Debug.getPss()` alone can cost tens of milliseconds and the release runs several cache evictions. The
  * reply is sent from that same callback once the work returns rather than posted for later: the budget is
- * **3 seconds** ([HyperOsFairMemory.REPLY_TIMEOUT_MS]) and on the physical-memory path the system kills the
+ * **3 seconds** ([ItgsaFairMemory.REPLY_TIMEOUT_MS]) and on the physical-memory path the system kills the
  * process before it notifies the user, so a reply that misses the window is a reply that never happened.
  *
- * ## On other devices
+ * ## Registered on every device, on purpose
  *
- * Nothing broadcasts these actions off HyperOS, so [register] is inert there — but it still registers an
- * **exported** receiver, which any app on the device can then trigger. The worst that buys an attacker is
- * making this app drop caches it can rebuild, and [register] is gated on the device actually being HyperOS so
- * the surface does not exist elsewhere at all.
+ * This started out gated behind Xiaomi's `ro.mi.os.*` / `ro.miui.*` system properties, on the assumption that
+ * `itgsa` was a HyperOS namespace. **It is not.** ITGSA is the 金标联盟 — the Mobile Smart Terminal Ecosystem
+ * Committee — and fair running memory is a *joint* standard its members ship, so the same broadcast arrives on
+ * vivo, OPPO and Honor builds too. The gate meant this app declined to register on most of the alliance while
+ * looking like it had adapted.
+ *
+ * The fix is not a longer property list. An enumeration of member OEMs is a list that goes stale the moment
+ * the alliance admits another one, and being wrong there fails silently and identically. So registration is
+ * unconditional and **the broadcast is the gate** — nothing sends these actions on a device that does not
+ * implement the standard.
+ *
+ * What that costs is an **exported** receiver on every device, including ones where nothing will ever
+ * broadcast. Any local app can then trigger it, so the defence moved from the registration to the handler:
+ * see [MIN_RELEASE_INTERVAL_MS]. The worst a caller can buy is making this app drop caches it can rebuild
+ * from disk, at most once every few seconds.
  */
-object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
-    private const val TAG = "HyperOsFairMemory"
+object ItgsaFairMemoryReceiver : IBinder.DeathRecipient {
+    private const val TAG = "ItgsaFairMemory"
+
+    /**
+     * Floor on how often a broadcast may actually cause a release.
+     *
+     * Registration is unconditional and the receiver is exported, so anything on the device can send these
+     * actions. Releasing is cheap and safe but not free — it evicts the Coil memory cache and calls
+     * [Debug.getPss] twice — so a caller in a loop could turn it into a re-decode treadmill. A few seconds is
+     * far below any plausible cadence for a genuine memory warning and far above what an abuser needs to be
+     * made useless.
+     *
+     * Deliberately does *not* rate-limit the **reply**: a suppressed release still answers the system inside
+     * its 3-second window, because a missing reply is what gets the process killed.
+     */
+    private const val MIN_RELEASE_INTERVAL_MS = 4_000L
 
     /** `IBinder.FIRST_CALL_TRANSACTION`, as the documented reply transaction code. */
     private const val TRANSACTION_EXCEPTION_REPLY = IBinder.FIRST_CALL_TRANSACTION
@@ -51,6 +76,7 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
     private var handlerThread: HandlerThread? = null
     private var registered = false
     private var remote: IBinder? = null
+    private var lastReleaseAtMs: Long = 0L
 
     /**
      * Called on the receiver's background thread when a KILL arrives, before the caches are dropped.
@@ -66,18 +92,14 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
     ) {
         synchronized(lock) {
             if (registered) return
-            if (!isHyperOs()) {
-                AppLogger.i(TAG) { "not HyperOS, fair-memory receiver not registered" }
-                return
-            }
             this.onSaveState = onSaveState
             val thread = HandlerThread(TAG).also(HandlerThread::start)
             handlerThread = thread
             val handler = Handler(thread.looper)
             val filter =
                 IntentFilter().apply {
-                    addAction(HyperOsFairMemory.ACTION_TRIM)
-                    addAction(HyperOsFairMemory.ACTION_KILL)
+                    addAction(ItgsaFairMemory.ACTION_TRIM)
+                    addAction(ItgsaFairMemory.ACTION_KILL)
                 }
             val result =
                 runCatching {
@@ -90,11 +112,11 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
             result
                 .onSuccess {
                     registered = true
-                    AppLogger.i(TAG) { "fair-memory receiver registered" }
+                    AppLogger.i(TAG) { "ITGSA fair-memory receiver registered" }
                 }.onFailure { error ->
                     thread.quitSafely()
                     handlerThread = null
-                    AppLogger.w(TAG, "fair-memory receiver registration failed", error)
+                    AppLogger.w(TAG, "ITGSA fair-memory receiver registration failed", error)
                 }
         }
     }
@@ -112,19 +134,26 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
                 context: Context,
                 intent: Intent,
             ) {
-                val notification =
-                    parseHyperOsFairMemoryNotification(intent.action, intent.extras) ?: return
+                val notification = parseItgsaFairMemoryNotification(intent.action, intent.extras)
+                if (notification == null) {
+                    // Logged rather than dropped in silence so that reachability can be told apart from
+                    // correctness. A broadcast the parser rejects and a broadcast that never arrived look
+                    // identical otherwise, which would make the local-broadcast smoke check in
+                    // docs/planning/itgsa-fair-memory.md prove nothing.
+                    AppLogger.i(TAG) { "ignored ${intent.action}: not a fair-memory notification" }
+                    return
+                }
                 val callback =
                     intent.extras
-                        ?.getBundle(HyperOsFairMemory.KEY_COMMON)
-                        ?.getBinder(HyperOsFairMemory.KEY_CALLBACK)
+                        ?.getBundle(ItgsaFairMemory.KEY_COMMON)
+                        ?.getBinder(ItgsaFairMemory.KEY_CALLBACK)
                 handle(context, notification, callback)
             }
         }
 
     private fun handle(
         context: Context,
-        notification: HyperOsFairMemoryNotification,
+        notification: ItgsaFairMemoryNotification,
         callback: IBinder?,
     ) {
         val startedAtMs = System.currentTimeMillis()
@@ -146,16 +175,32 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
                 true
             }
 
+        // A KILL is never suppressed: the process is going away and this is the last chance to act on it.
+        val runRelease =
+            notification.kill ||
+                synchronized(lock) {
+                    shouldRunItgsaRelease(
+                        nowMs = startedAtMs,
+                        lastReleaseAtMs = lastReleaseAtMs,
+                        minIntervalMs = MIN_RELEASE_INTERVAL_MS,
+                    ).also { allowed -> if (allowed) lastReleaseAtMs = startedAtMs }
+                }
+
         val freedKb =
-            runCatching { AppMemoryRelease.release(context, releaseLevelFor(notification)) }
-                .onFailure { error -> AppLogger.w(TAG, "release failed", error) }
-                .getOrNull()
+            if (runRelease) {
+                runCatching { AppMemoryRelease.release(context, releaseLevelFor(notification)) }
+                    .onFailure { error -> AppLogger.w(TAG, "release failed", error) }
+                    .getOrNull()
+            } else {
+                AppLogger.i(TAG) { "release suppressed, last one was under ${MIN_RELEASE_INTERVAL_MS}ms ago" }
+                null
+            }
 
         val elapsedMs = System.currentTimeMillis() - startedAtMs
         // Reported even when inside the budget, because "we replied at 2.9s" is the warning that the next
         // cache added here will push it over.
-        if (elapsedMs >= HyperOsFairMemory.REPLY_TIMEOUT_MS) {
-            AppLogger.w(TAG, "handled in ${elapsedMs}ms, past the ${HyperOsFairMemory.REPLY_TIMEOUT_MS}ms budget")
+        if (elapsedMs >= ItgsaFairMemory.REPLY_TIMEOUT_MS) {
+            AppLogger.w(TAG, "handled in ${elapsedMs}ms, past the ${ItgsaFairMemory.REPLY_TIMEOUT_MS}ms budget")
         }
 
         if (callback == null) {
@@ -166,7 +211,7 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
             callback = callback,
             notifyType = notification.notifyType,
             notifyId = notification.notifyId,
-            result = if (saved) HyperOsFairMemory.RESULT_HANDLED else HyperOsFairMemory.RESULT_NOT_HANDLED,
+            result = if (saved) ItgsaFairMemory.RESULT_HANDLED else ItgsaFairMemory.RESULT_NOT_HANDLED,
             message = "freedKb=$freedKb elapsedMs=$elapsedMs",
         )
     }
@@ -175,7 +220,7 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
      * Writes the documented reply parcel: `notifyType`, `notifyId`, `result`, `extra`, in that order.
      *
      * A raw `transact` rather than a generated stub because the system side exposes no AIDL to compile
-     * against — so the *order* here is the contract, and `HyperOsFairMemoryReplyTest` pins it by reading the
+     * against — so the *order* here is the contract, and `ItgsaFairMemoryReplyTest` pins it by reading the
      * parcel back.
      */
     private fun reply(
@@ -200,12 +245,12 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
         val data = Parcel.obtain()
         val replyParcel = Parcel.obtain()
         try {
-            writeHyperOsFairMemoryReply(
+            writeItgsaFairMemoryReply(
                 data = data,
                 notifyType = notifyType,
                 notifyId = notifyId,
                 result = result,
-                extra = Bundle().apply { putString(HyperOsFairMemory.REPLY_KEY_MESSAGE, message) },
+                extra = Bundle().apply { putString(ItgsaFairMemory.REPLY_KEY_MESSAGE, message) },
             )
             callback.transact(TRANSACTION_EXCEPTION_REPLY, data, replyParcel, IBinder.FLAG_ONEWAY)
             AppLogger.i(TAG) { "replied type=$notifyType id=$notifyId result=$result" }
@@ -217,18 +262,6 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
         }
     }
 
-    private fun isHyperOs(): Boolean =
-        HYPER_OS_PROPERTIES.any { key ->
-            !readSystemProperty(key).isNullOrBlank()
-        }
-
-    private fun readSystemProperty(key: String): String? =
-        runCatching {
-            @Suppress("PrivateApi")
-            val systemProperties = Class.forName("android.os.SystemProperties")
-            val get = systemProperties.getMethod("get", String::class.java)
-            (get.invoke(null, key) as? String)?.trim()
-        }.getOrNull()
 }
 
 /**
@@ -236,7 +269,7 @@ object HyperOsFairMemoryReceiver : IBinder.DeathRecipient {
  *
  * There is no AIDL to compile against, so nothing but this ordering makes the reply parse on the system side.
  */
-internal fun writeHyperOsFairMemoryReply(
+internal fun writeItgsaFairMemoryReply(
     data: Parcel,
     notifyType: Int,
     notifyId: Int,
@@ -250,15 +283,19 @@ internal fun writeHyperOsFairMemoryReply(
 }
 
 /**
- * Properties that mean "this is HyperOS or MIUI".
+ * Whether a release should actually run, given when the last one did.
  *
- * Same set the app already uses in `BaGuideBgmMediaOemCompat`, deliberately: two different answers to "is
- * this a Xiaomi build" in one app would be a bug waiting to happen.
+ * Extracted so the rate limit is testable without a broadcast. Returns `true` for the first call of a session
+ * — `lastReleaseAtMs` of zero — and treats a clock that went backwards as "long enough ago", since the
+ * alternative is suppressing every release until the clock catches up.
  */
-private val HYPER_OS_PROPERTIES =
-    listOf(
-        "ro.mi.os.version.name",
-        "ro.mi.os.version.incremental",
-        "ro.miui.ui.version.name",
-        "ro.miui.ui.version.code",
-    )
+internal fun shouldRunItgsaRelease(
+    nowMs: Long,
+    lastReleaseAtMs: Long,
+    minIntervalMs: Long,
+): Boolean {
+    if (lastReleaseAtMs <= 0L) return true
+    val elapsedMs = nowMs - lastReleaseAtMs
+    if (elapsedMs < 0L) return true
+    return elapsedMs >= minIntervalMs
+}

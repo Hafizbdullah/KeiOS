@@ -46,17 +46,19 @@ fun interface AppReleasableCache {
  *
  * There was no answer before this: nothing in the tree overrode `onTrimMemory`, implemented
  * [ComponentCallbacks2], or handled `onLowMemory`, so every cache the app held survived until the process
- * died. Both callers now come through here — Android's own `onTrimMemory` and HyperOS's fair-memory TRIM
- * broadcast — so the release behaviour is defined once and the OEM path adds a trigger rather than a second
- * policy.
+ * died. Both callers now come through here — Android's own `onTrimMemory` and the ITGSA alliance's
+ * fair-memory TRIM broadcast — so the release behaviour is defined once and the OEM path adds a trigger rather
+ * than a second policy. That split is what makes the OEM work worth doing: the alliance mechanism gives an
+ * *earlier and better-informed* trigger (it arrives with the app's PSS and its limit) for a response the app
+ * needed on every device anyway.
  *
  * ## Never disk
  *
  * The two bitmap caches expose `clearAll(context)` / `clear(context)` which evict memory **and delete the
  * disk cache**. Calling those here would be wrong twice over: disk is not the resource under pressure, and
  * throwing it away converts a memory problem into a network one the moment the user scrolls back. Every
- * registration below evicts memory and leaves the files alone, and `releaseNeverTouchesDiskCaches` in
- * `AppMemoryReleaseTest` pins that.
+ * registration below evicts memory and leaves the files alone, and `release never touches disk caches` in
+ * `ItgsaFairMemoryTest` pins that.
  */
 object AppMemoryRelease {
     private const val TAG = "AppMemoryRelease"

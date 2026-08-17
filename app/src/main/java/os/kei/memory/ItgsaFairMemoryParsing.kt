@@ -12,28 +12,28 @@ import android.os.Bundle
  * that arrives with a missing `pssLimit` still means "release memory now", and refusing to handle it would
  * trade a working release for a pointless kill.
  */
-internal fun parseHyperOsFairMemoryNotification(
+internal fun parseItgsaFairMemoryNotification(
     action: String?,
     extras: Bundle?,
-): HyperOsFairMemoryNotification? {
+): ItgsaFairMemoryNotification? {
     val kill =
         when (action) {
-            HyperOsFairMemory.ACTION_KILL -> true
-            HyperOsFairMemory.ACTION_TRIM -> false
+            ItgsaFairMemory.ACTION_KILL -> true
+            ItgsaFairMemory.ACTION_TRIM -> false
             else -> return null
         }
-    val common = extras?.let { bundle -> bundleOrNull(bundle, HyperOsFairMemory.KEY_COMMON) } ?: return null
-    val extra = extras.let { bundle -> bundleOrNull(bundle, HyperOsFairMemory.KEY_EXTRA) }
+    val common = extras?.let { bundle -> bundleOrNull(bundle, ItgsaFairMemory.KEY_COMMON) } ?: return null
+    val extra = extras.let { bundle -> bundleOrNull(bundle, ItgsaFairMemory.KEY_EXTRA) }
 
-    return HyperOsFairMemoryNotification(
+    return ItgsaFairMemoryNotification(
         kill = kill,
-        notifyType = common.getInt(HyperOsFairMemory.KEY_NOTIFY_TYPE),
-        notifyId = common.getInt(HyperOsFairMemory.KEY_NOTIFY_ID),
-        reason = common.getString(HyperOsFairMemory.KEY_REASON).orEmpty(),
+        notifyType = common.getInt(ItgsaFairMemory.KEY_NOTIFY_TYPE),
+        notifyId = common.getInt(ItgsaFairMemory.KEY_NOTIFY_ID),
+        reason = common.getString(ItgsaFairMemory.KEY_REASON).orEmpty(),
         heapUsedKb = extra?.let(::readHeapUsedKb),
-        heapCapacityKb = extra?.let { bundle -> intOrNull(bundle, HyperOsFairMemory.KEY_HEAP_CAPACITY) },
-        pssKb = extra?.let { bundle -> intOrNull(bundle, HyperOsFairMemory.KEY_PSS) },
-        pssLimitKb = extra?.let { bundle -> intOrNull(bundle, HyperOsFairMemory.KEY_PSS_LIMIT) },
+        heapCapacityKb = extra?.let { bundle -> intOrNull(bundle, ItgsaFairMemory.KEY_HEAP_CAPACITY) },
+        pssKb = extra?.let { bundle -> intOrNull(bundle, ItgsaFairMemory.KEY_PSS) },
+        pssLimitKb = extra?.let { bundle -> intOrNull(bundle, ItgsaFairMemory.KEY_PSS_LIMIT) },
     )
 }
 
@@ -45,8 +45,8 @@ internal fun parseHyperOsFairMemoryNotification(
  * which one the shipped system actually puts in the bundle.
  */
 internal fun readHeapUsedKb(extra: Bundle): Int? =
-    intOrNull(extra, HyperOsFairMemory.KEY_HEAP_SIZE)
-        ?: intOrNull(extra, HyperOsFairMemory.KEY_HEAP_ALLOC)
+    intOrNull(extra, ItgsaFairMemory.KEY_HEAP_SIZE)
+        ?: intOrNull(extra, ItgsaFairMemory.KEY_HEAP_ALLOC)
 
 /** Distinguishes "absent" from "present and zero", which `getInt` cannot. */
 private fun intOrNull(
@@ -70,7 +70,7 @@ private fun bundleOrNull(
  * second warning to save the gentler response for. A Java-heap TRIM does get a second warning (the system
  * asks the user rather than killing), so that one takes the gentler level and keeps the on-screen images.
  */
-internal fun releaseLevelFor(notification: HyperOsFairMemoryNotification): AppMemoryReleaseLevel =
+internal fun releaseLevelFor(notification: ItgsaFairMemoryNotification): AppMemoryReleaseLevel =
     when {
         notification.kill -> AppMemoryReleaseLevel.Critical
         notification.physicalMemoryException -> AppMemoryReleaseLevel.Critical

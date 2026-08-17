@@ -1,12 +1,29 @@
-# HyperOS fair running memory (公平运行内存) adaptation
+# ITGSA fair running memory (公平运行内存) adaptation
 
-> Source: *公平运行内存适配：开发者文档*, `dev.mi.com/xiaomihyperos/documentation/detail?pId=2304`,
-> page updated **2026-04-28**. Read and transcribed **2026-08-18**.
-> Code: `app/src/main/java/os/kei/memory/`. Tests: `HyperOsFairMemoryTest`.
+> **Whose standard:** the **金标联盟 / ITGSA** (Mobile Smart Terminal Ecosystem Committee), an industry body
+> founded by the major Chinese handset makers. Fair running memory is a **joint** mechanism its members ship —
+> announced with **vivo, Xiaomi, OPPO and Honor** named together, adaptation deadline **2026-06-30**. Adapting
+> once, against any single member's documentation, covers all of them.
+> **Transcribed from:** Xiaomi's *公平运行内存适配：开发者文档*,
+> `dev.mi.com/xiaomihyperos/documentation/detail?pId=2304`, page updated **2026-04-28**; read **2026-08-18**.
+> That page was simply the one at hand, not the scope.
+> **Code:** `app/src/main/java/os/kei/memory/`. **Tests:** `ItgsaFairMemoryTest`.
+
+## The mistake worth reading first
+
+This landed once with registration **gated behind Xiaomi's `ro.mi.os.*` / `ro.miui.*` system properties**, on
+the assumption that the `itgsa` prefix was a HyperOS namespace. It is not — it is the alliance's. The gate
+meant the app declined to register on vivo, OPPO and Honor builds that send the very same broadcast, *while
+logging that it had adapted*. It was the worst shape a bug can take: silent, and indistinguishable from working.
+
+The fix is not a longer property list. An enumeration of member OEMs goes stale the moment the alliance admits
+another one, and fails the same silent way. **Registration is unconditional and the broadcast is the gate** —
+nothing sends these actions on a device that does not implement the standard. See "Registered everywhere" below
+for what that costs and how it is paid for.
 
 ## What the mechanism is
 
-Xiaomi watches two numbers per app and enforces a budget on both:
+The system watches two numbers per app and enforces a budget on both:
 
 - **App physical memory** — the summed **PSS** of the app's *high-priority* processes. A process counts as
   high-priority if `oom_score_adj <= 200`, or it is the UI process while the app is backgrounded, or it is
@@ -72,9 +89,15 @@ The app had **no memory-pressure handling at all**: nothing in the tree overrode
 adaptation is two layers, and the OEM one is the smaller:
 
 1. **`AppMemoryRelease`** — one release path, wired to Android's own `onTrimMemory` / `onLowMemory`. Portable,
-   and the part that helps on every device.
-2. **`HyperOsFairMemoryReceiver`** — the `itgsa` broadcasts, calling that same path. The OEM mechanism
+   and the part that helps on every device including AOSP.
+2. **`ItgsaFairMemoryReceiver`** — the `itgsa` broadcasts, calling that same path. The alliance mechanism
    contributes a *trigger*, not a second policy.
+
+Worth being clear about why layer 2 earns its keep given layer 1 exists: the alliance trigger arrives
+**earlier and better informed**. `onTrimMemory` says "the system is under pressure" with no numbers and, at the
+levels that fire while the app is visible, nothing safe to do. A fair-memory TRIM says "*your* PSS is 600MB
+against a 800MB limit" before anything has gone wrong, which is both an earlier warning and the only one that
+can be logged into something actionable.
 
 ### Two levels, not five
 
@@ -107,13 +130,28 @@ Coil's memory cache is configured at **25% of the heap**, which makes it the lar
 in the process by a wide margin. `Moderate` halves it — the on-screen images are the most recently used, so
 trimming to half keeps them and drops the scrollback — and `Critical` empties it.
 
-### Inert off HyperOS
+### Registered everywhere, and defended at the handler
 
-`register` is gated on the Xiaomi system properties, using the same list `BaGuideBgmMediaOemCompat` already
-uses (two different answers to "is this a Xiaomi build" in one app would be a bug waiting to happen).
-That matters beyond tidiness: the receiver has to be registered **exported** for the system to reach it, and
-gating means that surface does not exist on devices that will never send the broadcast. The worst it buys an
-attacker on a Xiaomi device is making the app drop caches it can rebuild.
+Registration is unconditional — see "The mistake worth reading first". The receiver must be **exported** for
+the system to reach it, so on every device, including ones where nothing will ever broadcast, any local app can
+trigger it.
+
+That surface is paid for at the handler rather than at the registration. `MIN_RELEASE_INTERVAL_MS` is a **4
+second** floor on how often a broadcast may actually cause a release: far below any plausible cadence for a
+genuine memory warning, far above what an abuser needs to be made useless. A release is cheap and safe but not
+free — it evicts the Coil memory cache and calls `Debug.getPss()` twice — so without the floor a caller in a
+loop could turn it into a re-decode treadmill.
+
+Two deliberate exceptions, both tested:
+
+- **A KILL is never suppressed.** It is the last chance to save state; a rate limit there would trade a real
+  save for an abuse that cannot do meaningful harm anyway.
+- **The reply is never rate-limited.** A suppressed release still answers the system inside its 3-second
+  window, because a missing reply is what gets the process killed.
+
+`shouldRunItgsaRelease` also treats a **backwards clock** as "long enough ago". `System.currentTimeMillis()` is
+not monotonic, and an NTP correction that puts "now" before the last release would otherwise wedge the limit
+shut until the clock caught up — which on the physical-memory path means being killed instead.
 
 ### The 3-second budget
 
@@ -124,9 +162,13 @@ the warning that the next cache added here will push it over.
 
 ## Verified, and not
 
-**Verified on the API 37 AVD** (AOSP, no Xiaomi properties):
+**Verified on the API 37 AVD** (AOSP):
 
-- The gate works: `not HyperOS, fair-memory receiver not registered`.
+- The receiver registers: `ITGSA fair-memory receiver registered`. Under the old vendor gate this same AVD
+  logged `not HyperOS, fair-memory receiver not registered` — which is exactly the silent decline that would
+  have happened on three quarters of the alliance.
+- It is reachable and rejects malformed input, on its own thread. `am broadcast` of the TRIM action logged
+  `ignored itgsa.intent.action.TRIM: not a fair-memory notification` from a non-main tid.
 - The portable path works end to end. `adb shell am send-trim-memory <pid> COMPLETE` on a backgrounded
   process produced:
   `released level=Critical caches=3 pssBeforeKb=157818 pssAfterKb=153977 freedKb=3841`
@@ -134,8 +176,10 @@ the warning that the next cache added here will push it over.
 
 **Not verified, and it cannot be here:**
 
-- The `itgsa` broadcasts. Only a HyperOS build sends them, and the AVD is AOSP. The parsing, the level policy
-  and the reply parcel are unit-tested; that the *system* accepts the reply is not.
+- The `itgsa` broadcasts. Only an alliance member's build sends them, and the AVD is AOSP. The parsing, the
+  level policy, the rate limit and the reply parcel are unit-tested; that the *system* accepts the reply is not.
+  Note that the receiver being exported means a **local** broadcast can be used to exercise the whole handler
+  path on any device — see the phone list below.
 - The visible-level ignore, live. `am send-trim-memory` refuses to raise a trim level once lowered
   (`Unable to set a higher trim level than current level`) and refuses background levels on a foreground
   process, so the running-level cases are covered by unit test rather than by the shell.
@@ -144,10 +188,27 @@ the warning that the next cache added here will push it over.
 
 Add to the physical-device pass:
 
-1. Install on a HyperOS device and confirm the log line is `fair-memory receiver registered` rather than the
-   "not HyperOS" branch — that alone proves the property gate is right on real hardware.
-2. If a TRIM or KILL ever arrives, the log carries `pss=…/…`, `heap=…/…` and `usage=…`. **Capture it**: it is
-   the only way to learn which of `heapSize` / `heapAlloc` the shipped system actually sends, and whether the
+1. **Confirm registration** on the alliance device: the log line should be
+   `ITGSA fair-memory receiver registered`. There is no vendor branch left to get wrong, so this is a smoke
+   check rather than the test it used to be.
+2. **Exercise the handler with a local broadcast**, which needs no memory pressure and works on any device:
+
+   ```bash
+   adb shell am broadcast -a itgsa.intent.action.TRIM --ei notifyType 1000 --ei notifyId 1
+   ```
+
+   `am` cannot build the nested `common` bundle, so the correct outcome is the parser **rejecting** it. Expect
+   exactly:
+
+   ```
+   I ItgsaFairMemory: ignored itgsa.intent.action.TRIM: not a fair-memory notification
+   ```
+
+   That line exists only so this check means something — a rejected broadcast and a broadcast that never
+   arrived are otherwise indistinguishable. Seeing it proves the receiver is registered, exported, reachable,
+   and running on its own thread (the tid in the log line is not the main thread's). Verified on the AVD.
+3. **If a real TRIM or KILL arrives, capture the log.** It carries `pss=…/…`, `heap=…/…` and `usage=…`, and it
+   is the only way to learn which of `heapSize` / `heapAlloc` the shipped system actually sends and whether the
    reply is accepted.
-3. Watch for the system's own notification appearing — that means the app exceeded a limit and the response
-   was too slow or too small.
+4. **Watch for the system's own notification.** If it appears, the app exceeded a limit and the response was
+   too slow or too small.

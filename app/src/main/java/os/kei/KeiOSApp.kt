@@ -10,7 +10,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import os.kei.memory.AppMemoryRelease
 import os.kei.memory.AppMemoryReleaseLevel
-import os.kei.memory.HyperOsFairMemoryReceiver
+import os.kei.memory.ItgsaFairMemoryReceiver
 import coil3.disk.DiskCache
 import coil3.gif.AnimatedImageDecoder
 import coil3.memory.MemoryCache
@@ -168,7 +168,7 @@ class KeiOSApp : Application() {
      */
     private fun registerMemoryPressureHandling() {
         AppMemoryRelease.registerAppCaches()
-        HyperOsFairMemoryReceiver.register(context = this) {
+        ItgsaFairMemoryReceiver.register(context = this) {
             // Nothing to flush yet, and that is a real answer rather than a stub: every page state this app
             // would want back is written through to MMKV or a file store as it changes, so a KILL loses the
             // Compose state of the current screen and nothing else. If that stops being true -- an editor

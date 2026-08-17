@@ -1,11 +1,24 @@
 package os.kei.memory
 
 /**
- * The wire contract of HyperOS's *公平运行内存* (fair running memory) mechanism.
+ * The wire contract of the *公平运行内存* (fair running memory) mechanism.
  *
- * Transcribed from the HyperOS developer documentation, *公平运行内存适配：开发者文档*
- * (`dev.mi.com/xiaomihyperos/documentation/detail?pId=2304`, updated 2026-04-28). Kept in one file with the
- * doc's own field names so a future reader can diff it against the page rather than infer it from usage.
+ * ## Whose standard this is
+ *
+ * The `itgsa` prefix is the giveaway and it is easy to misread: **ITGSA is the 金标联盟**, the Mobile Smart
+ * Terminal Ecosystem Committee — an industry body founded by the major Chinese handset makers — not any one
+ * vendor's namespace. Fair running memory is a **joint** mechanism its members ship, announced with vivo,
+ * Xiaomi, OPPO and Honor named together and an adaptation deadline of **2026-06-30**.
+ *
+ * So this is deliberately not `HyperOs*`, and [ItgsaFairMemoryReceiver] registers on every device rather than
+ * sniffing for one vendor. Adapting once, against any single member's documentation, is what the alliance
+ * intends — the broadcast is the same on all of them.
+ *
+ * Transcribed here from the member documentation that happened to be at hand, Xiaomi's
+ * *公平运行内存适配：开发者文档* (`dev.mi.com/xiaomihyperos/documentation/detail?pId=2304`, updated
+ * 2026-04-28), keeping that page's own field names so a future reader can diff this against it rather than
+ * infer the contract from usage. Where another member's page names extra keys, the parser ignores what it does
+ * not know rather than rejecting the notification.
  *
  * ## What the mechanism does
  *
@@ -21,7 +34,7 @@ package os.kei.memory
  * **`heapAlloc`**. They cannot both be right and there is no way to tell which ships, so
  * [readHeapUsedKb] tries both. See [KEY_HEAP_SIZE] and [KEY_HEAP_ALLOC].
  */
-object HyperOsFairMemory {
+object ItgsaFairMemory {
     /** Warning: free memory now. */
     const val ACTION_TRIM = "itgsa.intent.action.TRIM"
 
@@ -82,11 +95,11 @@ object HyperOsFairMemory {
 /**
  * One parsed TRIM or KILL notification.
  *
- * [heapUsedKb] resolves the `heapSize`/`heapAlloc` disagreement described on [HyperOsFairMemory]. All sizes
+ * [heapUsedKb] resolves the `heapSize`/`heapAlloc` disagreement described on [ItgsaFairMemory]. All sizes
  * are kilobytes, and `null` means the field was absent rather than zero — worth distinguishing, because a
  * PSS notification carries no heap numbers and vice versa.
  */
-data class HyperOsFairMemoryNotification(
+data class ItgsaFairMemoryNotification(
     val kill: Boolean,
     val notifyType: Int,
     val notifyId: Int,
@@ -97,10 +110,10 @@ data class HyperOsFairMemoryNotification(
     val pssLimitKb: Int?,
 ) {
     val physicalMemoryException: Boolean
-        get() = notifyType == HyperOsFairMemory.NOTIFY_TYPE_PHYSICAL
+        get() = notifyType == ItgsaFairMemory.NOTIFY_TYPE_PHYSICAL
 
     val javaHeapException: Boolean
-        get() = notifyType == HyperOsFairMemory.NOTIFY_TYPE_JAVA_HEAP
+        get() = notifyType == ItgsaFairMemory.NOTIFY_TYPE_JAVA_HEAP
 
     /**
      * How full the offending pool is, 0..1, or `null` when the notification carried no usable pair.
