@@ -98,7 +98,6 @@ fun AppLiquidInputField(
         } else if (usesSearchMaterial) {
             appLiquidSearchPlaceholderColor(
                 contentColor = MiuixTheme.colorScheme.onBackground,
-                variantColor = MiuixTheme.colorScheme.onBackgroundVariant,
                 isDark = isDark,
             )
         } else {

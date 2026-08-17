@@ -156,8 +156,12 @@ class AppGripAwareDockStateTest {
         assertEquals(AppFloatingDockSide.Start, state.layoutSide(LayoutDirection.Ltr))
 
         assertEquals(AppFloatingDockSide.End, state.layoutSide(LayoutDirection.Rtl))
-        state.resetToDefault()
-        assertEquals(AppFloatingDockSide.Start, state.layoutSide(LayoutDirection.Rtl))
+
+        // How production actually resets: `rememberAppGripAwareDockState` keys its `remember` on the
+        // setting, so turning grip awareness off builds a fresh state rather than clearing this one.
+        // There used to be a `resetToDefault()` here for that, with no caller outside this line.
+        val afterSettingFlip = AppGripAwareDockState(elapsedRealtimeMs = clock::now)
+        assertEquals(AppFloatingDockSide.Start, afterSettingFlip.layoutSide(LayoutDirection.Rtl))
     }
 
     @Test

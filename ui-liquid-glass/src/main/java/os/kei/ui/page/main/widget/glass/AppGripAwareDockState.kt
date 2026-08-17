@@ -33,12 +33,6 @@ class AppGripAwareDockState internal constructor(
 
     fun layoutSide(layoutDirection: LayoutDirection): AppFloatingDockSide = resolveLogicalDockSide(selectedPhysicalSide, layoutDirection)
 
-    internal fun resetToDefault() {
-        selectedPhysicalSide = AppPhysicalDockSide.Right
-        clearSensorTracking()
-        resetTouchMemory()
-    }
-
     internal fun onSensorSessionStopped() {
         clearSensorTracking()
         resetTouchMemory()

@@ -419,7 +419,6 @@ internal fun BaGuideBgmBottomSearchField(
     val placeholderColor =
         appLiquidSearchPlaceholderColor(
             contentColor = contentColor,
-            variantColor = MiuixTheme.colorScheme.onBackgroundVariant,
             isDark = isDark,
         )
     val interactionSource = remember { MutableInteractionSource() }

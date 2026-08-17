@@ -635,7 +635,70 @@ toolbar's material, not the variant enum — see `LiquidActionBarMaterialTest`.
 | 1 | ~~**`LiquidGlassBottomBarMaterial` → `LiquidActionBarMaterial`**~~ **— done, `2026-08-17`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs, so it is the "most important functional element" the guidance says to spend the effect on. Landed as consolidation, not new design: the private material and palette deleted, both bars now on `liquidActionBarMaterial` / `rememberLiquidActionBarPalette`, the inline highlight and shadow replaced by the toolbar's own `liquidActionBarBaseHighlight` / `liquidActionBarBaseShadow` helpers, the flat 10% selection film replaced by the accent-aware `liquidChromeSelectionIndicatorColor` the toolbar already used, and the press lens named. `blur` moved from `UiPerformanceBudget.backdropBlur` to `material.blur` — both 4.dp, so that half is a no-op that removes a second source. Verified on the AVD in both themes. | small — 84 lines out |
 | 2 | ~~**`LiquidGlassDropdownItems`**~~ **— done, `2026-08-17`** | Rows inside a container rewritten on 08-09. Apple decides the shape: the *rows* must **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on it, which the file's own comment already said. So it was a code-health job. **The "judge it on the 818 lines" instruction below was wrong — see the note.** What landed: one press progress instead of two springs on the same boolean; the darkening overlay folded from a `matchParentSize` sibling `Box` into a draw pass (one fewer node and measure per row); one `LiquidGlassDropdownCheck` instead of two implementations of the same icon, which also fixed a drift where the leading copy ran its enter springs backwards on hide; the colour ladder derived once for the row and the sizing pass instead of twice; the four nested shadow ternaries moved to `liquidGlassDropdownPressShadow`; a three-branch `when` whose last two branches both returned `23.dp` collapsed. | medium — done |
 | 3 | ~~**`LiquidSliderVariants`**~~ **— decided and done, `2026-08-18`** | Apple's exception for content-layer controls says a slider "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**", while the slider lenses at rest. **Decision: keep glass at rest**, which Backdrop's own slider does and which the rest of this app's language expects — a 20dp capsule turning opaque at rest would read as foreign — and deliver Apple's emphasis *as light* instead of as a material swap. Which is also the "go past the tutorial" half: the thumb's fixed `vibrancy()` became a progress-driven `colorControls(brightness, saturation)`. Resting values reproduce `vibrancy()` exactly (the docs define it as `colorControls(saturation = 1.5f)`), so idle is unchanged and only the active end is new. Note the thumb was *already* past the tutorial elsewhere — `depthEffect = true`, a combined backdrop, `Highlight.Ambient`, `InnerShadow` and a velocity stretch in `layerBlock`. | small in the end |
-| 4 | **`AppGripAwareDock`** · **`AppLiquidSearchMaterial`** | Functional-layer, still on 07-13 materials, and neither has a shared-system equivalent yet. Lower because the grip dock is one screen and the search material is already consistent with the search field. | small each |
+| 4 | ~~**`AppGripAwareDock`** · **`AppLiquidSearchMaterial`**~~ **— done, `2026-08-18`, and the row's own premise was half wrong** | The row said "still on 07-13 materials". True of the search material, **false of the grip dock, which has no material at all** — see Correction 3. What the search material actually had was a *second copy of its own border*, found by reading `glassStyle` beside it and confirmed with a screenshot measurement. | small each, and one was a no-op |
+
+### Correction 3 — the grip dock is not a Liquid component
+
+Counted, not assumed: `AppGripAwareDock.kt` and `AppGripAwareDockState.kt` contain **zero** `drawBackdrop`,
+zero `glassStyle`, zero `Highlight` and **zero `Color(` literals between them**. They are a gravity-sensor
+reading, a touch-side heuristic and an EMA — an *input* component that decides which side
+`AppFloatingVerticalSearchActionDock` sits on. The dock that has the glass is that one, and it was rebuilt
+in the campaign.
+
+So the row ranked a file by its name. Same error as Corrections 1 and 2, and the third time the campaign
+has made it: **`Liquid`/`Dock`/`Material` in an identifier is not evidence about what the file draws.**
+
+A hypothesis worth recording because it was wrong and would have cost a rewrite: the sensor listener looked
+like it ran off the main thread, which would have made `confirmedSensorSide` and the touch counters a data
+race between `onSensorChanged` and the `pointerInput` observer. It is not. `SystemSensorManager.java:323` —
+`Looper looper = (handler != null) ? handler.getLooper() : mMainLooper` — so `registerListener(l, s, delay)`
+with no `Handler` delivers **on the main looper**. The state is already single-threaded and the marshalling
+fix was phantom work. Checked before writing any of it.
+
+What was actually there: `resetToDefault()` had no caller outside one line of its own test, while production
+resets by rebuilding the state (`remember(enabled)`). Deleted, and the test re-pointed at the reset
+production actually performs. Also considered and rejected: the EMA's smoothing is expressed in *samples*
+(`retain = 0.86`) rather than in time, so its ~470ms constant tracks the delivery rate. Left alone — the
+per-listener rate is held at the requested `SENSOR_DELAY_UI`, and the 620ms confirm delay dominates either
+way.
+
+### The search material carried a second copy of its border
+
+`AppLiquidSearchMaterialColors` had an `edge` colour, stroked as a 1.1dp squircle ring. `glassStyle(variant
+= GlassVariant.SearchField)` **already defines that ring** — same 1.1dp `borderWidth`, and in light mode the
+byte-identical `Color(0xFF86C3FF).copy(alpha = 0.32f)`. Both surfaces that use the film
+(`AppLiquidInputField` when the variant is `SearchField`, and `AppLiquidSearchSurface`) also stroke
+`glass.borderColor` at `glass.borderWidth` themselves.
+
+So the ring was stroked **twice on the same path**, and the second stroke composites rather than replaces:
+`0.32 + 0.32 × 0.68 ≈ 0.54`. Every search capsule in the app rendered its border at roughly **two-thirds
+over strength** in light mode.
+
+Measured on `topbar_search_shell_light.png` rather than argued. Over the `(243,244,246)` page, the ring
+pixel read `(194,224,253)` before and `(212,233,252)` after. Compositing the accent `(134,195,255)` once at
+0.32 predicts 208; twice at 0.5376 predicts 184. The before/after straddles the two predictions, which is
+what makes it a double-draw and not a matter of taste.
+
+`edge` is deleted, not reconciled — the variant style is where a border for that variant belongs.
+
+**What deliberately survived, and why it is not the same mistake.** `innerRim` is white in both themes where
+the border is accent-tinted in light, and sits a tenth of a dp further in; `sideRim` is an edge vignette
+across a third of the width, not a rim. Neither duplicates the `Highlight` the surface already passes to
+`drawBackdrop` — read out of the library rather than guessed, because the docs do not cover it:
+`HighlightModifier` strokes the outline at `width × 2`, clips to it, blurs by `blurRadius`, and shades it
+with `DefaultHighlightShaderString`, whose `dot(gradSdRoundedRect(...), float2(cos(angle), sin(angle)))`
+makes brightness follow a 45° light around the perimeter. A shader rim cannot express a flat ring of a
+chosen hue and a flat ring cannot express a shader rim, so these are three treatments, not three copies.
+
+**Also fixed while in there.** Two of the film's four brushes were rebuilt inside `onDrawBehind` — a fresh
+`Brush.radialGradient` and `Brush.verticalGradient`, plus their shaders, on **every frame** of a surface that
+is on screen permanently, while the other two were already hoisted in the same `drawWithCache`. Both are now
+cached at full strength and scaled with the paint alpha, which is exact in the alpha because the far stop of
+each is `Color.Transparent`. Not bit-exact in output: the gradient interpolates in 8 bits before the alpha
+multiply, so the dither lands differently — measured at **one 8-bit step, on under one pixel's worth of the
+glow interior**, with nothing else in the image moving. And `appLiquidSearchPlaceholderColor` lost the
+`variantColor` parameter it had been discarding behind an `@Suppress("UNUSED_PARAMETER")` at all three call
+sites.
 
 Not ranked, deliberately: `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `GlassContentContrast`
 and the token files. They are foundations the campaign built *on* — old dates, current designs.
@@ -677,8 +740,8 @@ pass on the active state is still owed.
 
 ## Still open from the campaign
 
-- **The card pile is about one card deep.** *Mechanism landed 2026-08-18; 1 of 8 hosts converted.*
-  See "The card pile" below.
+- ~~**The card pile is about one card deep.**~~ **Done, `2026-08-18` — all 8 hosts, three plates verified on
+  the AVD.** See "The card pile" below.
 - ~~**A destructive menu item should confirm through an action sheet**, per the pull-down-buttons
   guidance. Needs a confirmation host that outlives the menu, since the menu unmounts on dismiss.~~
   **Done for the GitHub track delete, `2026-08-18`.** See below.
@@ -726,6 +789,20 @@ a red Delete above a Cancel; Cancel dismisses and the tracked item survives.
   one of its two call paths already toasts, and Apple also says to use action sheets sparingly.
 
 
+## What is left after the ranking
+
+The four ranked rows are done. Three things remain, none of them a component rewrite:
+
+- **A real-finger pass on the slider's active state**, which synthetic input cannot reach on the AVD — see
+  "What the AVD cannot check on a slider".
+- **BGM favourite removal still does not confirm**, and the trade-off is written up under "Still open here".
+- **miuix `navSwipeDismiss` is still disabled** pending a real-finger test.
+
+The next component-level question is not on this list, because the campaign has now answered "what is stale?"
+three times and got a wrong answer twice by reading names. If a fifth item is ever ranked, rank it from a
+count of `drawBackdrop` / `glassStyle` / draw passes in the file, and from a measured screenshot — the two
+things that actually found #4.
+
 ## The card pile (2026-08-18)
 
 The plan described this as a lazy-disposal problem needing keep-alive headroom, and that was half of it.
@@ -756,30 +833,52 @@ changes nothing, because the clamp still retires the plate on schedule. Raising
   **Defaults to zero, so the seven unconverted hosts behave exactly as before** and each gains depth only
   when it adopts the wrapper. That is what makes this safe to roll out one page at a time.
 
-**Converted: `BaCalendarPoolStackedLayout`** — one host, two routes (activity calendar and pool). Picked
-because it is the only stacking host with a plain `AppPageLazyColumn`: the other seven wrap theirs in
-`PullToRefresh`, where shifting the list up interacts with the refresh indicator's placement and wants its
-own look.
+**All eight hosts converted, `2026-08-18`.** `BaCalendarPoolStackedLayout` went first (one host, two
+routes) because it was the only one with a plain `AppPageLazyColumn`; the other seven followed in one pass.
 
-**What the AVD could and could not show.** A plate mid-pile renders correctly on the converted routes —
-dimmed, blurred, inset, pinned under the server panel. A *deep* pile cannot be shown there and it is not a
-bug: those cards are roughly 400dp tall against a 504dp pile extent, so two plates can never coexist on
-that page whatever the bound allows. The pages that would show three plates are the card-dense ones with
-short rows — the OS page above all. So the depth claim is pinned by arithmetic in
-`AppEdgeStackedCardsTest` instead: without headroom a short row saturates and retires at the disposal
-bound well before its level budget; with headroom it saturates exactly at the budget and a half-depth
-plate is still fully present.
+### The `PullToRefresh` question had a one-word answer: *inside*
 
-### Remaining
+The open question was where the wrapper goes on the seven hosts whose list sits in `PullToRefresh`, since
+shifting the list up could drag the refresh indicator with it. Read out of the miuix source rather than
+guessed — `PullToRefresh` is
 
-Seven hosts, all mechanical now that the primitive exists, all needing the same three edits (wrap the
-list, drop `appEdgeStackContainer` from it, run the top inset through the helper): `OsPageMainList`,
-`McpPageContent`, `GitHubMainContentSection`, `GitHubActionsNotificationHistoryPage`,
-`BaGuideCatalogV2ListContent`, `BaGuideStudentBgmTabContent`, `BaGuideMemoryLobbyTabContent`.
+```kotlin
+Box(modifier = boxModifier) { Column { RefreshHeader(...); content() } }
+```
 
-The open question for all seven is `PullToRefresh`: the shifted list's top is no longer the visible top, so
-the refresh indicator's anchor and the pull threshold need checking on each. Worth doing one of them and
-looking hard before doing the rest.
+so the header is a **sibling above** the content, and its height *is* the pull. Put `AppEdgeStackKeepAlive`
+**inside** `PullToRefresh`, wrapping only the list, and the header keeps its own anchor, the pull threshold
+is untouched, and the clip means the off-screen part of the list never reaches the `layerBackdrop` those
+hosts export to their top bar. Around `PullToRefresh` it would have moved the indicator. One line of
+placement, no new machinery.
 
-Cost to weigh: every card inside the headroom is a real composed, measured card. 530dp of headroom is
-roughly three extra tall cards or eight short rows kept alive per stacking page.
+**And the premise was wrong anyway: only four of the seven use `PullToRefresh`.** `BaGuideCatalogV2ListContent`,
+`BaGuideMemoryLobbyTabContent` and `BaGuideStudentBgmTabContent` are plain `LazyColumn`s with a
+`contentPadding`, so their headroom lands in `contentPadding.top` rather than in an `AppPageLazyColumn`
+`topExtra`. Two shapes, not one.
+
+### `appEdgeStackContainer` is private now
+
+With every host on the wrapper it has exactly one caller, so the host-facing half of the old two-piece
+contract is gone. That is what removes the failure mode by construction: a host can no longer tag its
+*list* as the container while the list is shifted, which would have measured the stack line from the hidden
+top edge. `AppEdgeStackHostSourceTest` covers the half the compiler still cannot — that each host runs its
+top inset through `appEdgeStackKeepAliveTopPadding` — and pins the *set* of hosts, keyed on
+`rememberAppEdgeStackState(` rather than on the provider, because `GuideLiquidCard` and `BaLiquidSurfaces`
+provide the local as `null` to suppress nesting and are the opposite of hosts.
+
+### Three plates, finally, on the AVD
+
+The 08-18 note said a deep pile could not be photographed on the calendar routes — ~400dp cards against a
+504dp extent — and named the card-dense short-row pages as the ones that could. That is exactly what
+happened. On the **OS page** the pile renders as the front pinned card plus **two receded plates**, each
+narrower, higher and dimmer than the one in front, with the front card's own content visibly blurred. The
+**MCP page** shows the same three, and the **guide catalog** shows three over its student rows. Pull-to-refresh
+on the OS page still arms at the same travel and its indicator still appears immediately under the overview
+card.
+
+The arithmetic pin in `AppEdgeStackedCardsTest` stays — a screenshot only ever covers the scroll offset it
+was taken at.
+
+Cost, unchanged and now paid on every stacking page: every card inside the headroom is a real composed,
+measured card. 530dp is roughly three extra tall cards or eight short rows kept alive per page.
