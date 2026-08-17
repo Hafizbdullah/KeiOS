@@ -31,14 +31,13 @@ class LiquidSliderThumbColorControlsTest {
      * The invariant a screenshot of a resting slider can never guard, and the one a real drag caught.
      *
      * `colorControls` is the **colour filter** in Backdrop's `color filter ⇒ blur ⇒ lens` order, so it
-     * saturates the backdrop before this lens — which runs `chromaticAberration = true` — splits it into
-     * channels. Any pressed saturation above resting therefore multiplies the chroma of the aberration
-     * fringes, and it does so at exactly the moment `blur` lerps to zero and the lens amount grows, so
-     * there is nothing left to soften them.
+     * saturates the backdrop before the lens works on it. Raising chroma there feeds whatever the lens
+     * does next, at exactly the moment the lens amount is largest — the one thing a colour control on this
+     * surface must not do.
      *
-     * Measured off a 120fps recording of a real mouse drag, over a 46px band of the thumb: max HLS
-     * saturation went 0.31 at rest to **1.00** mid-drag, with a violet fringe above and an orange one
-     * below — complementary, which is channel separation rather than light.
+     * Measured from two 120fps recordings of real mouse drags, masked to the capsule's own pixels
+     * (excluding the blue track and the recording's pointer sprite): the rest-to-press amplification of
+     * mean chroma is **×2.86 with a pressed saturation of 1.85, and ×1.66 with it equal to resting**.
      */
     @Test
     fun grabbingTheThumbAddsLightWithoutAddingChroma() {
@@ -52,6 +51,35 @@ class LiquidSliderThumbColorControlsTest {
         assertTrue(
             "Brightness is the whole of the press emphasis now, so it must be positive and non-trivial",
             SliderThumbPressedBrightness >= 0.08f,
+        )
+    }
+
+    /**
+     * The two lens decisions the recordings forced, which are easy to "restore to the tutorial" by mistake.
+     *
+     * Both are about the same thing: this thumb's entire backdrop is a 4dp blue track on near-black, so the
+     * lens only ever has a hard high-contrast edge to work with. Channel splitting on that edge reads as a
+     * smear, and removing the last of the frost lets the edge tear into disconnected blobs.
+     */
+    @Test
+    fun theThumbLensKeepsAberrationOffAndSomeFrostOn() {
+        val source = sourceFile(LIQUID_SLIDER_SOURCE).readText()
+
+        assertTrue(
+            "The thumb lens must keep chromatic aberration off — see the note at the call site",
+            "chromaticAberration = false," in source,
+        )
+        assertFalse(
+            "chromaticAberration = true would bring the green-above/orange-below fringes back",
+            "chromaticAberration = true," in source,
+        )
+        assertTrue(
+            "The press must keep a residual frost rather than lerping the blur to 0f",
+            SliderThumbPressedBlurFloorFraction > 0f,
+        )
+        assertTrue(
+            "A residual frost above about a quarter stops reading as 'the glass clears up'",
+            SliderThumbPressedBlurFloorFraction <= 0.25f,
         )
     }
 

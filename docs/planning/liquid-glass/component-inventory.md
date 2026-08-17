@@ -783,34 +783,64 @@ Found from a screen recording of a mouse drag, after this file had recorded the 
 unverifiable. The value that governs it had therefore never been looked at — and the comment next to it
 said it was "tuned on the API 37 AVD against both themes", which was only ever true at rest.
 
-Measured over a 46px band of the thumb, rest against mid-drag:
+**First measurement, and it was wrong — corrected below.** The first pass took a fixed rectangle around the
+thumb and reported "max saturation 1.00, fully saturated pixels across red, orange, yellow, cyan and blue".
+That rectangle included the **blue track** (saturation ~0.95 by itself) and the recording's **pink pointer
+sprite**. Both numbers went into a commit message and this file before the mask was checked. The artifact is
+real — it is plainly visible at 7× — but those figures described the patch, not the thumb.
 
-| | mean HLS saturation | max | pixels above 0.5 |
-|---|---|---|---|
-| at rest | 0.029 | 0.31 | none |
-| mid-drag | 0.080 | **1.00** | 0.7% |
+Re-measured with the patch masked to the capsule's own pixels, cursor excluded, comparing rest to press
+*within* each recording so the slider and its backdrop are held constant:
 
-Fully saturated pixels across red, orange, yellow, cyan and blue, with a violet band above the thumb's
-centre and an orange band below. Complementary fringes are channel separation, not light. The blue fill
-refracting in from the left was also torn into three disconnected blobs.
+| | mean chroma at rest | pressed | amplification | max | above 0.5 |
+|---|---|---|---|---|---|
+| before, pressed saturation 1.85 | 0.028 | 0.080 | **×2.86** | 0.36 | none |
+| after, pressed saturation = resting | 0.043 | 0.071 | **×1.66** | 0.42 | none |
+
+So: mean chroma nearly **tripled** on press and now rises by two thirds — a real reduction — and there were
+never any fully saturated pixels on the capsule. A violet band above the centre and an orange one below,
+plus the blue fill arriving inside the capsule as two or three disconnected blobs rather than one edge.
 
 **Mechanism: the Backdrop effect order.** `color filter ⇒ blur ⇒ lens`. `colorControls` *is* the colour
 filter, so it saturates the backdrop **before** the lens splits it, and this lens runs
 `chromaticAberration = true`. On press three amplifiers peak together: chroma ×1.85, `blur` lerped to
 **zero** so nothing softens the split, and the lens amount ×1.65.
 
-**Fix:** `SliderThumbPressedSaturation` is now equal to the resting 1.5 — the press emphasis moved entirely
-to `SliderThumbPressedBrightness`, doubled to 0.12. A luminance offset moves all three channels together,
-so it cannot widen the gap the aberration opens between them. The saturation half of the 08-18 slider
-change is retracted; the brightness half stands. Rest is unchanged, confirmed by measurement (mean sat
-0.019, max 0.251, no pixel above 0.5).
+### Attribution, after the second recording
 
-**Still open, diagnosed but not fixed:** the refraction banding. The thumb's `layerBlock` stretches
-`scaleX` by press expansion × velocity (measured 35px → 51px, ×1.46) while the lens's refraction height
-and amount are pixel values computed for the *unstretched* size, so the displacement map is stretched with
-the layer. That is the likeliest cause of the three torn blue blobs. Compensating means dividing the
-requested amount by the live `scaleX`, which is speculative optics and wants a mouse-drag recording to
-confirm before and after — do not change it blind.
+The second recording is the one that made the attribution honest, and it moved it away from my own change.
+
+**Fix 1, kept: `SliderThumbPressedSaturation` equals the resting 1.5.** The press emphasis moved entirely to
+`SliderThumbPressedBrightness`, doubled to 0.12. Justified by the ×2.86 → ×1.66 measurement and by the
+effect order — a luminance offset moves all three channels together, so it cannot feed the lens the way a
+chroma multiplier does. Rest unchanged.
+
+**But it did not remove the artifact.** At 7× the after-frames still show the green band above the centre,
+the orange band below, and the torn blue blobs, essentially unchanged in character. So the first write-up
+over-weighted my own change: **the saturation ramp was an amplifier, not the cause.** What dominates is the
+lens itself, which on press grows ×1.65 in amount while the frost is removed entirely.
+
+**Fix 2, and this is the one aimed at the cause: `chromaticAberration = false` on the thumb.** Against the
+Backdrop tutorial, deliberately. Dispersion is real in Liquid Glass and Apple's is subtle, but subtlety is
+not available here: the *entire* backdrop this capsule ever refracts is a 4dp blue track on near-black, so
+the lens only ever has a hard high-contrast edge to split. There is no content on this control for which
+channel offsets look gentle.
+
+**Fix 3: the press keeps a fifth of its frost** (`SliderThumbPressedBlurFloorFraction = 0.2f`) instead of
+lerping the blur to exactly `0f`. With nothing band-limiting the sample at the moment the lens amount peaks,
+the edge tears — which is the torn-blobs half. A fifth still reads as "the glass cleared up".
+
+**Unverified, and stated as such.** Fixes 2 and 3 have not been seen in motion. They are both strict
+reductions of what the lens does, so they cannot make the fringes worse, but whether the thumb still reads
+as *glass* afterwards is a taste question that wants one more mouse-drag recording. The harness for it is
+cheap and now written down: record, `ffmpeg -vf fps=12`, find the widest thumb run on the track row, mask to
+the capsule, histogram the hues.
+
+**Also still open, and now the leading suspect for any residual tearing:** the thumb's `layerBlock` stretches
+`scaleX` by press expansion × velocity (measured 35px → 57px, ×1.6) while the lens's refraction height and
+amount are pixel values computed for the *unstretched* size, so the displacement map is stretched with the
+layer. Compensating means dividing the requested amount by the live `scaleX`. Left alone until fixes 2 and 3
+are seen, so that three changes are not judged from one recording.
 
 ## Was open from the campaign — both closed 2026-08-18
 

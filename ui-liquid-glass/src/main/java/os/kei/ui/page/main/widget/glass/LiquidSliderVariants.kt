@@ -662,12 +662,19 @@ private fun LiquidTrackSlider(
                                     saturation = lerp(style.restingSaturation, style.pressedSaturation, progress),
                                 )
                                 // Keep the static thumb close to the Backdrop tutorial: clear lens first,
-                                // light frosting second. Pressing removes most frosting.
+                                // light frosting second. Pressing removes most frosting — but not all of
+                                // it. Lerping to exactly 0f left nothing to hold the refraction together
+                                // at the moment the lens amount is at its largest, and a recording of a
+                                // real drag showed the track's blue edge tearing into separate blobs
+                                // inside the capsule. A fifth of the resting frost is invisible as frost
+                                // and enough to keep that edge continuous.
                                 blur(
                                     lerp(
                                         style.thumbRestingBlur.toPx() *
                                             glassRuntime.blurScaleFor(GlassVariant.Compact),
-                                        0f,
+                                        style.thumbRestingBlur.toPx() *
+                                            glassRuntime.blurScaleFor(GlassVariant.Compact) *
+                                            SliderThumbPressedBlurFloorFraction,
                                         progress,
                                     ),
                                 )
@@ -689,7 +696,16 @@ private fun LiquidTrackSlider(
                                             glassRuntime.interactionLensScale,
                                         progress,
                                     ),
-                                    chromaticAberration = true,
+                                    // Off, against the Backdrop tutorial and deliberately. Dispersion is
+                                    // real in Liquid Glass, but Apple's is subtle, and subtlety here is
+                                    // not available: this capsule is ~20dp over a hard blue-on-near-black
+                                    // track edge, which is the worst case for channel offsets. Two
+                                    // recordings of a real drag both show it as a green band above the
+                                    // centre and an orange one below — complementary fringes, which read
+                                    // as a smear rather than as glass. The track edge is the whole
+                                    // backdrop this thumb ever refracts, so there is no case where the
+                                    // aberration has gentle content to work with.
+                                    chromaticAberration = false,
                                     depthEffect = true,
                                 )
                             },
@@ -1017,23 +1033,35 @@ internal const val SliderThumbVibrancySaturation = 1.5f
  *
  * This was 1.85f, and the note here said an aggressive lift "reads as a colour bug rather than as light…
  * Tuned on the API 37 AVD against both themes". Both halves were wrong in the same way — the tuning only
- * ever saw the *resting* thumb, because synthetic input cannot reach the active state, so the value that
- * governs the active end was never looked at. A screen recording of a real mouse drag showed it.
+ * ever saw the *resting* thumb, because `adb` input cannot reach the active state, so the value that
+ * governs the active end was never looked at. Two screen recordings of a real mouse drag showed it.
  *
  * The mechanism is the Backdrop effect order, **color filter ⇒ blur ⇒ lens**. `colorControls` is the
- * colour filter, so it saturates the backdrop *before* the lens splits it, and this lens runs with
- * `chromaticAberration = true`. On press three things peak together: chroma ×1.85, `blur` lerps to
- * **zero** so nothing softens the split, and the lens amount grows ×[pressedLensAmountScale]. Measured
- * off the recording, over a 46px band of the thumb: max HLS saturation **0.31 at rest → 1.00 mid-drag**,
- * mean 0.029 → 0.080, with fully saturated pixels spread across red, orange, yellow, cyan and blue. A
- * violet band above and an orange band below — complementary fringes, which is channel separation, not
- * light.
+ * colour filter, so it saturates the backdrop *before* the lens splits it. Raising chroma there therefore
+ * feeds whatever the lens does next, which is the one thing a colour control on this surface must not do.
  *
- * So the emphasis Apple asks for arrives through [SliderThumbPressedBrightness] alone. Brightness raises
- * luminance without multiplying chroma, so it cannot feed the aberration. The knob stays a knob rather
- * than being deleted because the ramp machinery is right and only the channel was wrong.
+ * Measured over the thumb's own pixels — masked to the capsule, excluding the track and the recording's
+ * pointer sprite — the rest-to-press amplification of mean chroma went **×2.86 before this change to
+ * ×1.66 after**. So the retraction is worth keeping and it is *not* the whole story: see the note on
+ * `chromaticAberration` at the call site for what actually dominates the visible artifact.
+ *
+ * The emphasis Apple asks for arrives through [SliderThumbPressedBrightness] alone. Brightness raises
+ * luminance without multiplying chroma, so it cannot feed the lens the same way. The knob stays a knob
+ * rather than being deleted because the ramp machinery is right and only the channel was wrong.
  */
 internal const val SliderThumbPressedSaturation = SliderThumbVibrancySaturation
+
+/**
+ * Residual frost the pressed thumb keeps, as a fraction of [LiquidTrackSliderStyle.thumbRestingBlur].
+ *
+ * The press used to clear the frosting to exactly zero, which is the Backdrop tutorial's look and is fine
+ * over a photograph. This thumb refracts a 4dp blue track on near-black instead, and with no blur left at
+ * the moment the lens amount is at its largest the sampled edge tears — visible in both recordings as the
+ * track's blue arriving inside the capsule in two or three disconnected blobs rather than as one edge.
+ *
+ * A fifth reads as "cleared" to the eye while still band-limiting what the lens samples.
+ */
+internal const val SliderThumbPressedBlurFloorFraction = 0.2f
 
 /**
  * The whole of the thumb's "catches light" now, so it carries what the saturation ramp used to share.
