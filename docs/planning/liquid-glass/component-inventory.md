@@ -5,8 +5,13 @@
 > Purpose: track which Liquid components have been rebuilt and which have not, so the remaining work
 > can be planned rather than rediscovered.
 >
-> **Start at "What is still open" at the end of this file.** It is the single index of remaining work;
-> everything before it is the reasoning, kept so the same ground is not re-covered.
+> **The campaign is complete. Nothing is left to rewrite** — see the glass sweep under "What is still open"
+> at the end of this file, which re-derives that rather than asserting it.
+>
+> **What is owed is three items of physical-device acceptance**, listed as a checklist with pass criteria
+> under "Physical-device acceptance — the whole of what is owed". Everything before that section is the
+> reasoning, kept so the same ground is not re-covered — including four corrections where a premise in this
+> file turned out to be wrong when checked, which is the most reusable thing in it.
 
 **96 files** in `ui-liquid-glass` (94 at the first scan, 97 at the second), plus **13** more Liquid surfaces
 defined in `:app`. Grouped by what they are as components rather than by file: roughly **48 component kinds**
@@ -1022,18 +1027,72 @@ infrastructure. Apple asks for standard materials in the content layer, so those
 
 So the campaign's component list is genuinely empty. Everything below is behaviour or verification.
 
-### Blocked on a mouse drag, not on a phone — corrected 2026-08-18
+### Physical-device acceptance — the whole of what is owed
 
-This list said three items needed a physical device. **The slider did not**, and treating it as unreachable
-is what let the rainbow ship. It needs a *mouse* drag on the emulator window plus a screen recording, which
-is a ten-minute check — see "How to reach a slider's active state on the AVD".
+**Three items, all handed to the phone (`5eea1f50`), all deliberately unverified in code.** Everything else
+in this campaign is either done and verified or explicitly not open. Written as a checklist because the
+person running it is not the person who wrote the change.
 
-| | What to check | What it needs |
-|---|---|---|
-| ~~Slider refraction banding~~ | ~~the torn blue blobs~~ | **Closed `2026-08-18`.** Three recordings; the frost floor fixed it and the `scaleX` hypothesis was unnecessary |
-| ~~Slider pressed brightness~~ | ~~whether 0.12 reads as "catches light"~~ | **Closed `2026-08-18`.** A clear white specular where the track edge enters the capsule |
-| miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | A real finger — it is an edge-swipe race, and the mouse cannot do a bezel gesture |
-| Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | A real finger. The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
+Two of these were emulator-verified as far as the emulator goes; what the phone adds is a real finger and a
+real frame pipeline. The third could not be reached on the emulator at all.
+
+#### 1. The BGM favourite undo card
+
+*Landed `283347db4`. Not seen on any screen — the AVD has `Favorites 0` and populating it needs a BGM lookup
+over the network.*
+
+**Do:** BA → guide catalog → **Music** tab (the favourites list, not the student BGM tab) → tap the filled
+heart on any track.
+
+**Pass:** the row leaves the list, and a card rises from the bottom edge reading *removed «student» — «track»*
+with an **Undo**. Tapping Undo puts the track back in the list. Leaving it alone for **8 seconds** dismisses
+the card and the removal stands.
+
+**Watch for:** the card overlapping the now-playing bar or the bottom tab chrome — it is anchored to the
+bottom edge with `bottomPadding`, and that padding was never checked against a *populated* list. Also that
+the list content does **not** shift under your finger when the row goes.
+
+**Then check the other path is unchanged:** the **Students** BGM tab's heart should still only toast and keep
+its row — it must *not* also show an undo card, since nothing disappeared there.
+
+#### 2. miuix `navSwipeDismiss`
+
+*Still disabled. Issue #21 was caused by it; upstream has since claimed a fix.*
+
+**Do:** re-enable the flag, then swipe in from the left bezel on a pushed route, repeatedly and at varied
+speeds — see the memory note that `input swipe` durations are load-bearing; the same applies to a finger.
+
+**Pass:** the route dismisses cleanly every time, with no frame where two routes are both visible and no
+case where the gesture leaves the back stack inconsistent.
+
+**Why only a finger:** it is an edge-swipe race. A mouse on the emulator cannot produce a bezel gesture, so
+this one never had an emulator path.
+
+#### 3. The card pile under a real fling
+
+*The pile now reaches three plates on all eight hosts (`488a01864`). Depth is pinned by arithmetic in
+`AppEdgeStackedCardsTest`; smoothness is not pinned by anything.*
+
+**Do:** fling the **OS page** and the **MCP page** hard, in both directions, repeatedly. Those are the
+card-dense short-row hosts where the pile actually reaches its levels.
+
+**Pass:** the pinned plates hold their positions during the fling without trailing the list by a frame, and
+scrolling does not feel heavier than before the change.
+
+**Watch for:** the cost this traded. Up to **530dp** of extra cards are kept composed and measured per
+stacking page — roughly three tall cards or eight short rows. If a fling feels worse, that headroom is the
+first thing to suspect, and `AppEdgeStackKeepAliveHeadroom` is the single number to turn down.
+
+**Why only a finger:** the AVD's frame pipeline is not the phone's, and this is a feel question, not a
+correctness one.
+
+#### Closed here, for the record
+
+| | Outcome |
+|---|---|
+| ~~Slider refraction banding~~ | **Closed `2026-08-18`.** Three mouse-drag recordings; the frost floor fixed it and the `scaleX` hypothesis turned out unnecessary |
+| ~~Slider pressed brightness~~ | **Closed `2026-08-18`.** A clear white specular where the track edge enters the capsule |
+| ~~"The slider needs a physical device"~~ | **Wrong, and it cost a defect.** It needs a *mouse* drag on the emulator window — see "How to reach a slider's active state on the AVD" |
 
 ### ~~A decision, not a task~~ — done `2026-08-18`, and the premise was wrong twice
 
@@ -1067,7 +1126,7 @@ the content does not move under the finger that just removed a row.
 **Not verified on the AVD:** that emulator has `Favorites 0` and populating it needs a BGM lookup over the
 network, so the flow could not be exercised. Pinned by `BaGuideBgmFavoriteUndoTest` instead, whose first
 assertion is the one that matters — *the undo card has a caller* — because a composable compiling was never
-evidence that anything rendered it.
+evidence that anything rendered it. **Acceptance is item 1 of the physical-device checklist above.**
 
 ### Deliberately not open
 
