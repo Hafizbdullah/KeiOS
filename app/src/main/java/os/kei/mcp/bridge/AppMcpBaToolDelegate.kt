@@ -4,6 +4,8 @@ import os.kei.feature.ba.mcp.McpBaToolDelegate
 import os.kei.feature.github.domain.GitHubCacheService
 import os.kei.mcp.server.McpToolEnvironment
 import os.kei.ui.page.main.ba.support.BASettingsStore
+import os.kei.ui.page.main.ba.support.BA_CRAFT_SLOT_COUNT
+import os.kei.ui.page.main.ba.support.BaCraftFunction
 import os.kei.ui.page.main.ba.support.baCalendarKindLabel
 import os.kei.ui.page.main.ba.support.baPoolTagLabel
 import os.kei.ui.page.main.ba.support.cafeDailyCapacity
@@ -18,6 +20,7 @@ import os.kei.ui.page.main.ba.support.decodeBaPoolEntries
 import os.kei.ui.page.main.ba.support.displayAp
 import os.kei.ui.page.main.ba.support.fractionalApPart
 import os.kei.ui.page.main.ba.support.gameKeeServerId
+import os.kei.ui.page.main.ba.support.summary
 import os.kei.ui.page.main.student.BaGuideBgmFavoriteRepository
 import os.kei.ui.page.main.student.BaStudentGuideStore
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogStore
@@ -78,6 +81,8 @@ internal class AppMcpBaToolDelegate(
         val cafeCap = cafeStorageCap(cafeLevel)
         val cafeStored = snapshot.cafeStoredAp.coerceIn(0.0, cafeCap)
         val cafePercent = if (cafeCap <= 0.0) 0.0 else (cafeStored / cafeCap * 100.0).coerceIn(0.0, 100.0)
+        // The same derivation the collapsed Craft Chamber header uses, so the two can never disagree.
+        val craftSummary = snapshot.craft.summary(nowMs)
 
         return buildString {
             appendLine("serverIndex=$serverIndex")
@@ -107,9 +112,19 @@ internal class AppMcpBaToolDelegate(
             appendLine("coffeeInvite1ReadyAtMs=$invite1ReadyAtMs")
             appendLine("coffeeInvite2LastMs=${snapshot.coffeeInvite2UsedMs}")
             appendLine("coffeeInvite2ReadyAtMs=$invite2ReadyAtMs")
+            appendLine("craftNotifyEnabled=${snapshot.craftNotifyEnabled}")
+            appendLine("craftRunningCount=${craftSummary.runningCount}")
+            appendLine("craftReadyCount=${craftSummary.readyCount}")
+            appendLine("craftNextCompletionAtMs=${craftSummary.nextCompletionAtMs ?: 0L}")
+            BaCraftFunction.entries.forEach { function ->
+                repeat(BA_CRAFT_SLOT_COUNT) { index ->
+                    appendLine(mcpBaCraftSlotLine(snapshot.craft, function, index, nowMs))
+                }
+            }
             appendLine("showEndedPools=${snapshot.showEndedPools}")
             appendLine("showEndedActivities=${snapshot.showEndedActivities}")
             appendLine("showCalendarPoolImages=${snapshot.showCalendarPoolImages}")
+            appendLine("craftCardExpanded=${snapshot.craftCardExpanded}")
             appendLine("idNickname=${snapshot.idNickname}")
             appendLine("idFriendCode=${snapshot.idFriendCode}")
         }.trim()

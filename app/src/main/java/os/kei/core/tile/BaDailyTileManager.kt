@@ -20,11 +20,52 @@ import os.kei.ui.page.main.ba.support.withSlot
 internal enum class BaDailyTileAddResult {
     Added,
     AlreadyAdded,
+
+    /** The teacher said no, or walked away from the dialog. Either way the tile is not on the panel. */
     Declined,
 
     /** The system refused outright — wrong user, no status bar, or the request quota is spent. */
     Unavailable,
 }
+
+/**
+ * Whether the tile is on the panel once the request has settled.
+ *
+ * The only reason to leave a component enabled, and to leave a pool slot claimed. Claiming has to
+ * happen *before* the request, so every other outcome has to undo it.
+ */
+internal val BaDailyTileAddResult.keepsTile: Boolean
+    get() = this == BaDailyTileAddResult.Added || this == BaDailyTileAddResult.AlreadyAdded
+
+/**
+ * First error code, from `StatusBarManager`: *"Values greater or equal to this value indicate an error
+ * in the request."*
+ *
+ * The platform keeps the threshold itself private, so the boundary is restated here rather than
+ * enumerating the six error constants. Splitting on it — instead of listing codes — is what makes a
+ * result code the platform adds later land in the right bucket on its own.
+ */
+private const val TILE_ADD_FIRST_ERROR_CODE = 1000
+
+/**
+ * Maps a `requestAddTileService` result code onto something the teacher can be told.
+ *
+ * The distinction that matters is decline vs. unavailable, because they say different things: one is
+ * "you chose not to", the other is "this device will not". Anything below
+ * [TILE_ADD_FIRST_ERROR_CODE] is a *result* — the flow ran and the tile simply is not on the panel —
+ * so it reads as a decline. That deliberately catches `TILE_ADD_REQUEST_RESULT_DIALOG_DISMISSED`
+ * (`3`), which is `@hide` and so cannot be named here, but still reaches the callback when the dialog
+ * is swiped away. Reporting that as unavailable would tell the teacher their device does not support
+ * a tile they had just been offered.
+ */
+internal fun baDailyTileAddResultOf(code: Int): BaDailyTileAddResult =
+    when {
+        code == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> BaDailyTileAddResult.Added
+        code == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> BaDailyTileAddResult.AlreadyAdded
+        code >= TILE_ADD_FIRST_ERROR_CODE -> BaDailyTileAddResult.Unavailable
+        // TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED, the hidden dismissed code, and any future result.
+        else -> BaDailyTileAddResult.Declined
+    }
 
 /**
  * Claims, releases and keeps the daily-done tiles in step with the account list.
@@ -96,19 +137,30 @@ internal object BaDailyTileManager {
      *
      * Must be called while the app is in the foreground — an add request from the background returns
      * `TILE_ADD_REQUEST_ERROR_APP_NOT_IN_FOREGROUND`.
+     *
+     * The enable is rolled back when the request does not end with the tile on the panel. Leaving it
+     * enabled would put the component in the quick-settings editor the teacher had just declined it
+     * from, and would make the settings row read "Remove tile" for a tile that is not there — the row
+     * derives from the component state, which is the only thing that survives a process death.
      */
     fun requestAllAccountsTile(
         context: Context,
         onResult: (BaDailyTileAddResult) -> Unit,
     ) {
         val component = allComponent(context)
+        val wasEnabled = isComponentEnabled(context, component)
         setComponentEnabled(context, component, enabled = true)
         request(
             context = context,
             component = component,
             label = context.getString(R.string.ba_daily_done_tile_label_all),
-            onResult = onResult,
-        )
+        ) { result ->
+            if (!result.keepsTile && !wasEnabled) {
+                setComponentEnabled(context, component, enabled = false)
+                AppLogger.i(TAG) { "rolled back the all-accounts tile after $result" }
+            }
+            onResult(result)
+        }
     }
 
     /**
@@ -116,6 +168,9 @@ internal object BaDailyTileManager {
      *
      * Reuses the slot the account already holds when there is one, so a teacher who removes and re-adds
      * the tile does not burn a second component's request quota.
+     *
+     * A slot claimed for this request is released again if the tile does not end up on the panel. The
+     * pool is only [BA_DAILY_TILE_SLOTS] deep, so a declined request must not consume one of them.
      */
     fun requestAccountTile(
         context: Context,
@@ -124,9 +179,11 @@ internal object BaDailyTileManager {
         onResult: (BaDailyTileAddResult) -> Unit,
     ): Boolean {
         val state = BASettingsStore.loadDailyTileState()
-        val slot = state.slotOf(accountId) ?: state.firstFreeSlot() ?: return false
+        val heldSlotBefore = state.slotOf(accountId)
+        val slot = heldSlotBefore ?: state.firstFreeSlot() ?: return false
         BASettingsStore.saveDailyTileState(state.withSlot(slot, accountId))
         val component = accountComponent(context, slot)
+        val wasEnabled = isComponentEnabled(context, component)
         setComponentEnabled(context, component, enabled = true)
         request(
             context = context,
@@ -136,8 +193,20 @@ internal object BaDailyTileManager {
                     R.string.ba_daily_done_tile_label_account_format,
                     accountDisplayName,
                 ),
-            onResult = onResult,
-        )
+        ) { result ->
+            if (!result.keepsTile) {
+                if (heldSlotBefore == null) {
+                    // Re-read rather than reusing the captured state: this runs on the main executor
+                    // after the dialog closes, and a WebDAV merge could have rewritten the bindings.
+                    BASettingsStore.saveDailyTileState(
+                        BASettingsStore.loadDailyTileState().withSlot(slot, null),
+                    )
+                }
+                if (!wasEnabled) setComponentEnabled(context, component, enabled = false)
+                AppLogger.i(TAG) { "rolled back tile slot=$slot after $result" }
+            }
+            onResult(result)
+        }
         return true
     }
 
@@ -195,24 +264,19 @@ internal object BaDailyTileManager {
                 label,
                 Icon.createWithResource(context, R.drawable.ic_ba_ap_island_shift),
                 context.mainExecutor,
-            ) { code -> onResult(code.toAddResult()) }
+            ) { code ->
+                val result = baDailyTileAddResultOf(code)
+                if (result == BaDailyTileAddResult.Unavailable) {
+                    // The 1000-series: mismatched package, a request already in flight, a disabled
+                    // component, the wrong user, the app in the background, or no status bar service.
+                    // None of these are actionable in the UI, so the code only survives in the log.
+                    AppLogger.w(TAG) { "tile add request refused with code $code" }
+                }
+                onResult(result)
+            }
         }.onFailure { throwable ->
             AppLogger.e(TAG, "requestAddTileService threw for $component", throwable)
             onResult(BaDailyTileAddResult.Unavailable)
         }
     }
-
-    private fun Int.toAddResult(): BaDailyTileAddResult =
-        when (this) {
-            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED -> BaDailyTileAddResult.Added
-            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED -> BaDailyTileAddResult.AlreadyAdded
-            StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_NOT_ADDED -> BaDailyTileAddResult.Declined
-            else -> {
-                // The whole 1000-series is a refusal the teacher cannot act on: mismatched package, a
-                // request already in flight, a disabled component, the wrong user, the app in the
-                // background, or no status bar service.
-                AppLogger.w(TAG) { "tile add request refused with code $this" }
-                BaDailyTileAddResult.Unavailable
-            }
-        }
 }
