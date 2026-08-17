@@ -34,6 +34,10 @@ internal data class BaGuideBgmPlaybackUiState(
     val queue: List<GuideBgmFavoriteItem> = emptyList(),
     val selectedAudioUrl: String = "",
     val queueModeName: String = BaGuideBgmQueueMode.Continuous.name,
+    // Not `BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT`, even though that is now `true`. This field means "which
+    // backend is live", not "what does the setting say", and a fresh coordinator has neither backend running.
+    // `updateNativeMediaNotificationEnabled` early-returns when the value already matches, so seeding it with
+    // the setting's default would skip the migration into whichever backend the setting actually names.
     val nativeMediaNotificationEnabled: Boolean = false,
     val selectedFavorite: GuideBgmFavoriteItem? = null,
     val selectedQueueFavorite: GuideBgmFavoriteItem? = null,

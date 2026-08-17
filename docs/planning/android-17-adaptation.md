@@ -141,11 +141,14 @@ nothing to act on, and the BGM volume slider is Media3 player gain rather than a
 requested by Media3 on the app's behalf; `dumpsys audio` shows it as
 `client: …media3.common.audio.AudioFocusManager… gain: GAIN loss: none notified: true sdk:37`.
 
-**Default configuration: the hardening cannot reach it.** "Native media notification" is **off by default**, so
-BGM does not join the system media session — `dumpsys media_session` reports `have 0 sessions`. Backgrounding
-the app moves the player from `state:started` to `state:paused`, and the control run with
-`set-enable-hardening 0` does **exactly the same thing**, which is what proves it is the app's own behaviour
-and not the platform muting anything. `mutedState:none` throughout.
+**At the time of the test, the default configuration could not be reached by the hardening.** "Native media
+notification" was **off by default**, so BGM did not join the system media session — `dumpsys media_session`
+reported `have 0 sessions`. Backgrounding the app moved the player from `state:started` to `state:paused`, and
+the control run with `set-enable-hardening 0` did **exactly the same thing**, which is what proves it was the
+app's own behaviour and not the platform muting anything. `mutedState:none` throughout.
+
+That default has since been flipped **on** — see *The default is now on* below. The hardened path in the next
+table is therefore the one users get out of the box, which is the whole reason it had to be driven first.
 
 **With the setting enabled — the path that can be affected — it still passes.** With hardening on:
 
@@ -170,8 +173,42 @@ the app is `TOP` and keeps it alive across a pause. WIU is precisely what the ha
 request succeeds and playback is never muted. The failure mode the guide describes needs an FGS *started* from
 the background; this one never is.
 
-**No code change.** The AVD was left as found: hardening switched back off and the native-media-notification
-setting returned to its default of off.
+**No code change was needed to pass.** The AVD was left as found: hardening switched back off and the
+native-media-notification setting returned to what was then its default.
+
+### The default is now on — `2026-08-18`
+
+`BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT = true`, in
+`app/src/main/java/os/kei/ui/page/main/ba/support/BaNativeBgmMediaNotificationPrefs.kt`.
+
+The two backends differ in more than a notification. `Lightweight` has no `MediaSession`, so the system has
+nothing to route media keys or the shade's transport controls to, and the page's own lifecycle pauses playback
+when it stops — which is why the default-off run above looked identical with hardening on and off. `NativeMedia`
+runs the Media3 foreground service and keeps playing while the app is backgrounded, which is what someone
+playing background music is asking for. It stayed off only because the hardened path was untested, and the run
+above is what removed that reason.
+
+One constant, referenced from all three places that need it — the prefs fallback, the route state's default,
+and the view model's pre-load value — so the pre-load UI cannot disagree with what the store will return.
+`BaGuideBgmPlaybackUiState.nativeMediaNotificationEnabled` deliberately stays `false`: it means "which backend
+is live", not "what does the setting say", and seeding it with the default would make
+`updateNativeMediaNotificationEnabled` early-return and skip the migration into the backend the setting names.
+
+**Verified on a fresh install, Pad AVD, no toggling.** The MMKV key is absent from `files/mmkv/ba_page_settings`
+— nothing has been written, so the fallback is what is in play — and playing one track from the catalog's Music
+tab gives:
+
+```
+Media button session is os.kei.debug/androidx.media3.session.id.ba_guide_bgm_media_session/2
+Sessions Stack - have 1 sessions:      <- was "have 0 sessions" under the old default
+  active=true  state=PlaybackState {state=PLAYING(3), position=11895, …}
+```
+
+Pressing Home leaves it at `state=PLAYING(3)` with the position still advancing (11895 → 32814), on an FGS with
+`isForeground=true types=0x00000002`, `allowWiu:12`, `uidState: TOP`, `targetSdkVersion:37`.
+
+MMKV consults the default only when the key is absent, so anyone who deliberately turned the switch off keeps
+it off across the update. `BaNativeBgmMediaNotificationPrefsTest` pins that.
 
 ## Phone verification — clean, `2026-08-18`
 
@@ -215,3 +252,33 @@ emulator does have network, and it passes in both configurations. See the sectio
 
 Everything on the phone side is verified. Large-screen behaviour is deliberately **not** in scope here —
 see the note on the Home predicate — and is deferred to a dedicated Pad AVD.
+
+## The Pad AVD — created `2026-08-18`
+
+`KeiOS_Pad_API37_Validation`, on the same system image the phone AVD uses
+(`system-images;android-37.1;google_apis_ps16k;arm64-v8a`), device profile `pixel_tablet`.
+
+```bash
+"$HOME/Library/Android/sdk/emulator/emulator" -avd KeiOS_Pad_API37_Validation
+```
+
+`avdmanager` creates that profile with defaults that are wrong for this app, so six values were raised to match
+the phone AVD: `hw.gpu.enabled=yes` / `hw.gpu.mode=host` (the profile ships `no`/`auto`, and every Liquid Glass
+surface is a `RenderEffect` — software rendering would measure nothing real), `hw.ramSize` 2G → 6G,
+`vm.heapSize` 192M → 512M, `hw.cpu.ncore` 4 → 6, `disk.cachePartition.size` 66MB → 512MB. Orientation was set
+to `landscape`, which is the real Pixel Tablet's natural one.
+
+What it reports, and this is the point of it:
+
+```
+config: … sw800dp-w1280dp-h800dp-xlarge-notlong-… land-… xhdpi-… 2560x1600-v37
+```
+
+**`sw800dp`.** Comfortably past the 600dp line, so the two things the guide says stop working on large screens
+are live here for the first time: `android:screenOrientation` is ignored, and
+`PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` — the opt-out — no longer exists at `targetSdk 37`. `h800dp`
+also sits **above** `HomePageTallHeroMinHeight` (700dp), so Home takes the tall-hero branch on a panel only
+800dp tall in landscape. That threshold was derived from phone geometry and is the first thing to re-check.
+
+The app installs and runs: all five tabs render, no crash. It is plainly the phone layout stretched to 1280dp —
+the status pill rows span the full width — which is the work itself, not a defect to file.

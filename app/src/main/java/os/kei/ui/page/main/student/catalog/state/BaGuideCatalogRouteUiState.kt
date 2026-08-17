@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.student.catalog.state
 
 import androidx.compose.runtime.Stable
+import os.kei.ui.page.main.ba.support.BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogTab
 
@@ -18,7 +19,7 @@ internal data class BaGuideCatalogRouteState(
     val bgmCacheSnapshot: BaGuideFavoriteBgmCacheSnapshot = BaGuideFavoriteBgmCacheSnapshot(),
     val favoriteBgmOfflineCacheState: BaGuideFavoriteBgmOfflineCacheUiState =
         BaGuideFavoriteBgmOfflineCacheUiState(),
-    val nativeBgmMediaNotificationEnabled: Boolean = false,
+    val nativeBgmMediaNotificationEnabled: Boolean = BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT,
     val mediaAdaptiveRotationEnabled: Boolean = true,
     val transferSettings: BaGuideCatalogTransferSettingsUiState =
         BaGuideCatalogTransferSettingsUiState(),

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import os.kei.ui.page.main.ba.support.BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
 import os.kei.ui.page.main.student.GuideBottomTab
 import os.kei.ui.page.main.student.GuideMediaImageLoader
@@ -104,7 +105,7 @@ internal class BaGuideCatalogViewModel(
     private var pendingBgmFavoriteUndoJob: Job? = null
 
     private val _nativeBgmMediaNotificationEnabled =
-        MutableStateFlow(false)
+        MutableStateFlow(BA_NATIVE_BGM_MEDIA_NOTIFICATION_DEFAULT)
     val nativeBgmMediaNotificationEnabled: StateFlow<Boolean> =
         _nativeBgmMediaNotificationEnabled.asStateFlow()
     private val _transferSettings =
