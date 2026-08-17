@@ -13,15 +13,27 @@ class BaCalendarPoolStackedLayoutSourceTest {
             source.indexOf(
                 "CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState)",
             )
-        val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = providerIndex.coerceAtLeast(0))
-        val stackContainerIndex =
-            source.indexOf(".appEdgeStackContainer(edgeStackState)", startIndex = listIndex.coerceAtLeast(0))
+        val keepAliveIndex =
+            source.indexOf("AppEdgeStackKeepAlive(", startIndex = providerIndex.coerceAtLeast(0))
+        val listIndex = source.indexOf("AppPageLazyColumn(", startIndex = keepAliveIndex.coerceAtLeast(0))
 
         assertTrue(serverPanelIndex >= 0, "The shared layout must render the server panel")
         assertTrue(providerIndex > serverPanelIndex, "The server panel must stay outside the stack provider")
-        assertTrue(listIndex > providerIndex, "The data list must consume the stack provider")
-        assertTrue(stackContainerIndex > listIndex, "The data list must anchor the edge-stack geometry")
-        assertTrue("topExtra = AppEdgeStackListTopInset" in source)
+        assertTrue(keepAliveIndex > providerIndex, "The keep-alive box must consume the stack provider")
+        assertTrue(listIndex > keepAliveIndex, "The data list must sit inside the keep-alive box")
+
+        // The keep-alive box anchors the geometry now, not the list. That is what keeps the stack line
+        // measured from the *visible* top edge — the list inside it is shifted up by the headroom, so
+        // anchoring on the list would move the line up with it.
+        assertTrue(
+            ".appEdgeStackContainer(" !in source,
+            "The list must not also anchor the stack; AppEdgeStackKeepAlive owns it",
+        )
+        // And the headroom has to be absorbed by the content inset, or the first card starts off screen.
+        assertTrue(
+            "topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset)" in source,
+            "The list's top inset must include the keep-alive headroom",
+        )
     }
 
     @Test

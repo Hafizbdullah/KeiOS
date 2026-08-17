@@ -677,10 +677,8 @@ pass on the active state is still owed.
 
 ## Still open from the campaign
 
-- **The card pile is about one card deep.** A pinned card is still disposed on its *layout* position, so
-  it dies roughly one card-height after crossing the stack line. Fixing it needs keep-alive headroom on
-  the lazy container (measure taller than the viewport extending upward, place at `-headroom`, clip the
-  parent, add `headroom` to `contentPadding.top`), which changes list wiring on all eight host pages.
+- **The card pile is about one card deep.** *Mechanism landed 2026-08-18; 1 of 8 hosts converted.*
+  See "The card pile" below.
 - ~~**A destructive menu item should confirm through an action sheet**, per the pull-down-buttons
   guidance. Needs a confirmation host that outlives the menu, since the menu unmounts on dismiss.~~
   **Done for the GitHub track delete, `2026-08-18`.** See below.
@@ -726,3 +724,62 @@ a red Delete above a Cancel; Cancel dismisses and the tracked item survives.
   `requestRemoveBgmFavorite`. Unlike the track delete it has no pending state to hang a sheet on, so it
   does need the hoisting the plan described. Worth weighing first: un-favouriting is nearly reversible,
   one of its two call paths already toasts, and Apple also says to use action sheets sparingly.
+
+
+## The card pile (2026-08-18)
+
+The plan described this as a lazy-disposal problem needing keep-alive headroom, and that was half of it.
+**The other half was in the transform, and it is the half that actually capped the depth.**
+
+`computeAppEdgeStackTransform` clamped the pile's extent to the disposal point:
+
+```kotlin
+val disposalOvershoot = (stackLinePx + itemHeightPx) * APP_EDGE_STACK_RETIRE_MARGIN
+val extent = minOf(APP_EDGE_STACK_LEVELS * stepPx, disposalOvershoot)
+```
+
+with a comment saying exactly why — *"a pinned card is still disposed on its LAYOUT position … so the pile
+can never outlast the card's own height"*. So the depth was bounded twice: once by the container disposing
+the item, and once by the engine deliberately retiring it before that happened. Adding headroom alone
+changes nothing, because the clamp still retires the plate on schedule. Raising
+`APP_EDGE_STACK_LEVELS` alone would also have changed nothing, for the same reason.
+
+**What landed.**
+
+- `AppEdgeStackKeepAlive` — a wrapper that measures its child `headroom` taller, places it at `-headroom`,
+  clips back to the visible bounds, and takes over as the stack container so the stack line stays measured
+  from the *visible* top edge.
+- `appEdgeStackKeepAliveTopPadding` — the content inset a list inside it needs, so the shift cannot be
+  adopted without absorbing it.
+- `AppEdgeStackState.keepAliveHeadroomPx`, published by the wrapper and read by the probe.
+- `computeAppEdgeStackTransform(keepAliveHeadroomPx = …)`, which adds the headroom to the disposal bound.
+  **Defaults to zero, so the seven unconverted hosts behave exactly as before** and each gains depth only
+  when it adopts the wrapper. That is what makes this safe to roll out one page at a time.
+
+**Converted: `BaCalendarPoolStackedLayout`** — one host, two routes (activity calendar and pool). Picked
+because it is the only stacking host with a plain `AppPageLazyColumn`: the other seven wrap theirs in
+`PullToRefresh`, where shifting the list up interacts with the refresh indicator's placement and wants its
+own look.
+
+**What the AVD could and could not show.** A plate mid-pile renders correctly on the converted routes —
+dimmed, blurred, inset, pinned under the server panel. A *deep* pile cannot be shown there and it is not a
+bug: those cards are roughly 400dp tall against a 504dp pile extent, so two plates can never coexist on
+that page whatever the bound allows. The pages that would show three plates are the card-dense ones with
+short rows — the OS page above all. So the depth claim is pinned by arithmetic in
+`AppEdgeStackedCardsTest` instead: without headroom a short row saturates and retires at the disposal
+bound well before its level budget; with headroom it saturates exactly at the budget and a half-depth
+plate is still fully present.
+
+### Remaining
+
+Seven hosts, all mechanical now that the primitive exists, all needing the same three edits (wrap the
+list, drop `appEdgeStackContainer` from it, run the top inset through the helper): `OsPageMainList`,
+`McpPageContent`, `GitHubMainContentSection`, `GitHubActionsNotificationHistoryPage`,
+`BaGuideCatalogV2ListContent`, `BaGuideStudentBgmTabContent`, `BaGuideMemoryLobbyTabContent`.
+
+The open question for all seven is `PullToRefresh`: the shifted list's top is no longer the visible top, so
+the refresh indicator's anchor and the pull threshold need checking on each. Worth doing one of them and
+looking hard before doing the rest.
+
+Cost to weigh: every card inside the headroom is a real composed, measured card. 530dp of headroom is
+roughly three extra tall cards or eight short rows kept alive per stacking page.

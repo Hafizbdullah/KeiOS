@@ -2,6 +2,8 @@
 
 package os.kei.ui.page.main.widget.glass
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
@@ -90,6 +92,15 @@ class AppEdgeStackState internal constructor() {
      * captured on an earlier pass.
      */
     internal var containerCoordinates by mutableStateOf<LayoutCoordinates?>(null)
+
+    /**
+     * Invisible viewport the host keeps above the visible top, in pixels. Zero unless the host wraps
+     * its list in [AppEdgeStackKeepAlive].
+     *
+     * The pile's reachable depth is bounded by this — see `computeAppEdgeStackTransform`. It lives on
+     * the state rather than being passed down so an unconverted host needs no change at all.
+     */
+    internal var keepAliveHeadroomPx by mutableFloatStateOf(0f)
 }
 
 val LocalAppEdgeStackCards = compositionLocalOf<AppEdgeStackState?> { null }
@@ -115,6 +126,80 @@ fun Modifier.appEdgeStackContainer(state: AppEdgeStackState): Modifier =
     onPlaced { coordinates ->
         if (state.containerCoordinates !== coordinates) {
             state.containerCoordinates = coordinates
+        }
+    }
+
+/**
+ * Hosts a stacking lazy list with [headroom] of extra viewport above the visible top.
+ *
+ * The pile used to be about one card deep no matter what the depth constant said, because a pinned
+ * card's layout position keeps travelling upward with the list and the lazy container disposes it
+ * shortly after it leaves the viewport. Giving the list a taller viewport that extends *upward*, and
+ * clipping it back to the visible bounds, keeps those items composed while they are pinned.
+ *
+ * Three things have to line up, which is why this is a composable rather than a modifier:
+ *
+ * 1. The list measures [headroom] taller and is placed at `-headroom`, so its viewport reaches above
+ *    the visible area. Callers must add [headroom] to the list's own top content padding, or the first
+ *    card starts that far off screen — [appEdgeStackKeepAliveTopPadding] exists to make that hard to
+ *    forget.
+ * 2. The outer box clips, or the off-screen part of the list draws over whatever sits above it.
+ * 3. The outer box — not the list — is the stack container, so the stack line stays measured from the
+ *    *visible* top edge. Tagging the shifted list instead would move the line up with it and every
+ *    host would have to add the same headroom to its stack line too.
+ */
+@Composable
+fun AppEdgeStackKeepAlive(
+    state: AppEdgeStackState,
+    modifier: Modifier = Modifier,
+    headroom: Dp = AppEdgeStackKeepAliveHeadroom,
+    content: @Composable () -> Unit,
+) {
+    val headroomPx = with(LocalDensity.current) { headroom.toPx() }
+    if (state.keepAliveHeadroomPx != headroomPx) {
+        state.keepAliveHeadroomPx = headroomPx
+    }
+    Box(
+        modifier =
+            modifier
+                .clipToBounds()
+                .appEdgeStackContainer(state),
+    ) {
+        Box(modifier = Modifier.appEdgeStackHeadroom(headroom)) {
+            content()
+        }
+    }
+}
+
+/** The top content padding a list inside [AppEdgeStackKeepAlive] needs, given its own inset. */
+fun appEdgeStackKeepAliveTopPadding(
+    listTopInset: Dp = AppEdgeStackListTopInset,
+    headroom: Dp = AppEdgeStackKeepAliveHeadroom,
+): Dp = listTopInset + headroom
+
+/**
+ * Measures the child [headroom] taller than the incoming bounds and places it that far up.
+ *
+ * The node keeps reporting the original height, so nothing above or below it moves; only the child's
+ * viewport grows, upward. Height is taken from `maxHeight`, so this needs a bounded parent — inside an
+ * unbounded column it would have nothing to extend from, which is why the wrapper above owns it rather
+ * than exposing it for arbitrary use.
+ */
+private fun Modifier.appEdgeStackHeadroom(headroom: Dp): Modifier =
+    layout { measurable, constraints ->
+        val extra = headroom.roundToPx().coerceAtLeast(0)
+        val visibleHeight = constraints.maxHeight
+        if (!constraints.hasBoundedHeight || extra == 0) {
+            val placeable = measurable.measure(constraints)
+            return@layout layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
+        val tall = visibleHeight + extra
+        val placeable =
+            measurable.measure(
+                constraints.copy(minHeight = tall, maxHeight = tall),
+            )
+        layout(placeable.width, visibleHeight) {
+            placeable.place(0, -extra)
         }
     }
 
@@ -246,6 +331,7 @@ private fun Modifier.appEdgeStackProbe(
                         stackLinePx = state.stackLinePx,
                         riseTotalPx = riseTotalPx,
                         stepPx = placeable.height.toFloat().coerceIn(stepFloorPx, stepCeilingPx),
+                        keepAliveHeadroomPx = state.keepAliveHeadroomPx,
                     ),
                 )
             }
@@ -414,13 +500,23 @@ fun computeAppEdgeStackTransform(
     riseTotalPx: Float,
     stepPx: Float,
     minScale: Float = APP_EDGE_STACK_MIN_SCALE,
+    keepAliveHeadroomPx: Float = 0f,
 ): AppEdgeStackTransform {
     val overshoot = stackLinePx - itemTopInContainer
     if (overshoot <= 0f || itemHeightPx <= 0f) return AppEdgeStackTransform.Identity
     // A pinned card is still disposed on its LAYOUT position, not the position it is drawn at, so the
-    // pile can never outlast the card's own height. Clamping the extent to a margin inside that is
-    // what makes `fade == 0` before disposal provable rather than hopeful.
-    val disposalOvershoot = (stackLinePx + itemHeightPx) * APP_EDGE_STACK_RETIRE_MARGIN
+    // pile cannot outlast however far above the viewport the container keeps items alive. Clamping the
+    // extent to a margin inside that is what makes `fade == 0` before disposal provable rather than
+    // hopeful.
+    //
+    // [keepAliveHeadroomPx] is what moves that bound. Without a host offering headroom it is zero, and
+    // the reachable depth is the card's own height — which is why the pile was about one card deep
+    // whatever [APP_EDGE_STACK_LEVELS] claimed, and why raising the level count alone did nothing. A
+    // host that wraps its list in `AppEdgeStackKeepAlive` publishes its headroom here and the pile can
+    // then actually reach its levels. Unconverted hosts pass zero and are unchanged.
+    val disposalOvershoot =
+        (stackLinePx + itemHeightPx + keepAliveHeadroomPx.coerceAtLeast(0f)) *
+            APP_EDGE_STACK_RETIRE_MARGIN
     val extent =
         minOf(APP_EDGE_STACK_LEVELS * stepPx.coerceAtLeast(1f), disposalOvershoot)
             .coerceAtLeast(1f)
@@ -471,6 +567,23 @@ private val AppEdgeStackStepCeiling = 168.dp
  * lists pass to [rememberAppEdgeStackState].
  */
 val AppEdgeStackListTopInset = 26.dp
+
+/**
+ * Invisible viewport the lazy list gets *above* its visible top, so a pinned card is not disposed.
+ *
+ * This is what capped the pile at roughly one card. A card in the pile is held near the top edge by a
+ * transform inside its glass layer, but its *layout* position keeps travelling with the list — so once
+ * that position clears the lazy viewport by the container's own retention margin, the item is disposed
+ * and the pinned plate simply vanishes, however many levels [APP_EDGE_STACK_LEVELS] claims.
+ *
+ * Sized as the pile's depth in card-heights plus the rise: three levels of [AppEdgeStackStepCeiling]
+ * covers the tallest card a page uses, and the extra rise keeps the deepest plate's own offset inside
+ * the kept region rather than exactly on its boundary. Bigger would keep more items composed for no
+ * visible gain, which is the cost this trades against — every card in the headroom is a real composed,
+ * measured card.
+ */
+val AppEdgeStackKeepAliveHeadroom: Dp =
+    AppEdgeStackStepCeiling * APP_EDGE_STACK_LEVELS.toInt() + AppEdgeStackTuckRise
 
 const val APP_EDGE_STACK_MIN_SCALE = 0.86f
 

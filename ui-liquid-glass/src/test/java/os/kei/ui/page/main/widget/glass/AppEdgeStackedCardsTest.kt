@@ -184,6 +184,101 @@ class AppEdgeStackedCardsTest {
     }
 
     @Test
+    fun `without keep-alive headroom a short row cannot reach its levels`() {
+        // The pile's arithmetic bug, stated. The bound is `(stackLine + height) * margin`, so it bites
+        // whenever a card's level budget outruns its own height plus the stack line — which is every
+        // short row on a page whose stack line is tight, and the reason the pile was about one card deep
+        // no matter what APP_EDGE_STACK_LEVELS said.
+        val shortStep = 64f
+        val levelBudget = APP_EDGE_STACK_LEVELS * shortStep
+        val tinyStackLine = 8f
+        val rowHeight = 48f
+        val disposalBound = (tinyStackLine + rowHeight) * APP_EDGE_STACK_RETIRE_MARGIN
+
+        assertTrue(
+            disposalBound < levelBudget,
+            "fixture must exercise the bound: $disposalBound vs $levelBudget",
+        )
+
+        // Saturated at the bound rather than at the level budget: the row has already fully receded and
+        // retired by the time it has travelled half of the pile it was supposed to have.
+        val atBound =
+            computeAppEdgeStackTransform(
+                itemTopInContainer = tinyStackLine - disposalBound,
+                itemHeightPx = rowHeight,
+                stackLinePx = tinyStackLine,
+                riseTotalPx = riseTotal,
+                stepPx = shortStep,
+            )
+
+        assertEquals(1f, atBound.dim)
+        assertEquals(0f, atBound.fade)
+    }
+
+    @Test
+    fun `keep-alive headroom lets the pile reach its full level budget`() {
+        val shortStep = 64f
+        val levelBudget = APP_EDGE_STACK_LEVELS * shortStep
+        val tinyStackLine = 8f
+        val rowHeight = 48f
+        // What AppEdgeStackKeepAlive publishes: comfortably more than the level budget.
+        val headroom = 530f
+
+        fun at(overshoot: Float) =
+            computeAppEdgeStackTransform(
+                itemTopInContainer = tinyStackLine - overshoot,
+                itemHeightPx = rowHeight,
+                stackLinePx = tinyStackLine,
+                riseTotalPx = riseTotal,
+                stepPx = shortStep,
+                keepAliveHeadroomPx = headroom,
+            )
+
+        // Now the level budget is the binding constraint, so depth saturates exactly there.
+        assertEquals(1f, at(levelBudget).dim)
+        // And a row only part way in is genuinely part way, rather than already retired.
+        val half = at(levelBudget / 2f)
+        assertTrue(half.dim > 0f && half.dim < 1f, "half depth should be mid-pile, was ${half.dim}")
+        assertEquals(1f, half.fade, "a mid-pile plate must still be fully present")
+    }
+
+    @Test
+    fun `retirement still completes before disposal once headroom is granted`() {
+        // The whole reason the bound exists. Moving it must not let a card outlive the kept region, or a
+        // plate pops out of existence when the lazy layout finally drops it.
+        val headroom = 530f
+        val disposal = stackLine + height + headroom
+
+        assertEquals(0f, transformAtHeadroom(disposal, headroom).fade)
+        assertEquals(
+            0f,
+            transformAtHeadroom(disposal * APP_EDGE_STACK_RETIRE_MARGIN, headroom).fade,
+        )
+    }
+
+    @Test
+    fun `a negative headroom cannot shrink the bound`() {
+        val withNothing = transformAtHeadroom(overshoot = 120f, headroom = 0f)
+        val withNonsense = transformAtHeadroom(overshoot = 120f, headroom = -5_000f)
+
+        assertEquals(withNothing.dim, withNonsense.dim)
+        assertEquals(withNothing.fade, withNonsense.fade)
+    }
+
+    private fun transformAtHeadroom(
+        overshoot: Float,
+        headroom: Float,
+    ): AppEdgeStackTransform =
+        computeAppEdgeStackTransform(
+            itemTopInContainer = stackLine - overshoot,
+            itemHeightPx = height,
+            stackLinePx = stackLine,
+            riseTotalPx = riseTotal,
+            stepPx = step,
+            keepAliveHeadroomPx = headroom,
+        )
+
+    @Test
     fun `tall and short cards recede at comparable rates`() {
         // The clamped step is what bounds this. Unclamped height gave a sevenfold spread; measured at
         // the same overshoot, the two extremes of the step band must stay within a small factor.

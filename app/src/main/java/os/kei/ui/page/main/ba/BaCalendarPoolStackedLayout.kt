@@ -19,9 +19,10 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
+import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
 import os.kei.ui.page.main.widget.glass.LocalAppEdgeStackCards
-import os.kei.ui.page.main.widget.glass.appEdgeStackContainer
 import os.kei.ui.page.main.widget.glass.rememberAppEdgeStackState
 
 @Composable
@@ -70,20 +71,31 @@ internal fun BaCalendarPoolStackedLayout(
         }
 
         CompositionLocalProvider(LocalAppEdgeStackCards provides edgeStackState) {
-            AppPageLazyColumn(
-                innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
-                state = listState,
+            // The keep-alive box owns the stack container now, and the list is shifted up inside it, so
+            // `appEdgeStackContainer` must not also sit on the list — that is what keeps the stack line
+            // measured from the visible top edge rather than from the hidden one.
+            AppEdgeStackKeepAlive(
+                state = edgeStackState,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .weight(1f)
-                        .nestedScroll(nestedScrollConnection)
-                        .appEdgeStackContainer(edgeStackState),
-                bottomExtra = 40.dp,
-                topExtra = AppEdgeStackListTopInset,
-                sectionSpacing = 14.dp,
-                content = content,
-            )
+                        .weight(1f),
+            ) {
+                AppPageLazyColumn(
+                    innerPadding = PaddingValues(bottom = innerPadding.calculateBottomPadding()),
+                    state = listState,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(nestedScrollConnection),
+                    bottomExtra = 40.dp,
+                    // The headroom is invisible viewport above the list, so the content inset has to
+                    // absorb it or the first card would start that far off screen.
+                    topExtra = appEdgeStackKeepAliveTopPadding(AppEdgeStackListTopInset),
+                    sectionSpacing = 14.dp,
+                    content = content,
+                )
+            }
         }
     }
 }
