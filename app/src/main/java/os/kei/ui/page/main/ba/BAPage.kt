@@ -297,6 +297,7 @@ fun BAPage(
                 onOpenCafeApTools = officeViewModel::showCafeApToolsSheet,
                 onOpenCafeCooldownEditSheet = officeViewModel::showCafeCooldownEditSheet,
                 onOpenCraftSlotEditSheet = officeViewModel::showCraftSlotEditSheet,
+                onCraftCardExpandedChange = officeViewModel::updateCraftCardExpanded,
                 onAccountSelected = { accountId ->
                     officeViewModel.selectActiveAccount(
                         accountId = accountId,

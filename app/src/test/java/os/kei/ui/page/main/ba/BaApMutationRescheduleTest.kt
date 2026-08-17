@@ -204,6 +204,7 @@ class BaApMutationRescheduleTest {
                 onOpenCafeApTools = {},
                 onOpenCafeCooldownEditSheet = {},
                 onOpenCraftSlotEditSheet = {},
+                onCraftCardExpandedChange = {},
                 onAccountSelected = {},
                 onEditAccount = {},
                 onRefreshCalendar = {},

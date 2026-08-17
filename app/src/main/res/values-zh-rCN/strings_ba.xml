@@ -287,6 +287,11 @@
     <string name="ba_craft_slot_idle">空闲</string>
     <string name="ba_craft_slot_done">已完成</string>
     <string name="ba_craft_slot_idle_countdown">—</string>
+    <string name="ba_craft_summary_idle">全部空闲</string>
+    <string name="ba_craft_summary_running_format">进行中 %1$d · 最近 %2$s</string>
+    <string name="ba_craft_summary_running_only_format">进行中 %1$d</string>
+    <string name="ba_craft_summary_ready_format">可领取 %1$d</string>
+    <string name="ba_craft_summary_ready_running_format">可领取 %1$d · 进行中 %2$d</string>
     <string name="ba_craft_function_generate">制造</string>
     <string name="ba_craft_function_fusion">物质合成</string>
     <string name="ba_craft_notification_title">制造完成</string>

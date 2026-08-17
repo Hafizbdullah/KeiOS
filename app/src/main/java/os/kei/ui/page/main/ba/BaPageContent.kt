@@ -51,6 +51,7 @@ internal data class BaPageContentState(
     val baPoolError: String?,
     val baPoolLastSyncMs: Long,
     val showEndedPools: Boolean,
+    val craftCardExpanded: Boolean,
 )
 
 @Stable
@@ -75,6 +76,7 @@ internal data class BaPageContentActions(
     val onEditInviteTicket2Cooldown: () -> Unit,
     val onConfigureCraftSlot: (BaCraftFunction, Int) -> Unit,
     val onClearCraftSlot: (BaCraftFunction, Int) -> Unit,
+    val onCraftCardExpandedChange: (Boolean) -> Unit,
     val onRefreshCalendar: () -> Unit,
     val onOpenCalendarLink: (String) -> Unit,
     val onRefreshPool: () -> Unit,
@@ -181,6 +183,8 @@ internal fun BaPageContent(
                 backdrop = backdrop,
                 clockState = state.clockState,
                 craft = state.officeState.craft,
+                expanded = state.craftCardExpanded,
+                onExpandedChange = actions.onCraftCardExpandedChange,
                 onConfigureSlot = actions.onConfigureCraftSlot,
                 onClearSlot = actions.onClearCraftSlot,
             )

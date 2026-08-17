@@ -272,6 +272,11 @@
     <string name="ba_craft_slot_idle">空き</string>
     <string name="ba_craft_slot_done">完了</string>
     <string name="ba_craft_slot_idle_countdown">—</string>
+    <string name="ba_craft_summary_idle">すべて空き</string>
+    <string name="ba_craft_summary_running_format">製造中 %1$d · 最短 %2$s</string>
+    <string name="ba_craft_summary_running_only_format">製造中 %1$d</string>
+    <string name="ba_craft_summary_ready_format">受取可 %1$d</string>
+    <string name="ba_craft_summary_ready_running_format">受取可 %1$d · 製造中 %2$d</string>
     <string name="ba_craft_function_generate">ジェネレート</string>
     <string name="ba_craft_function_fusion">テイラーメイド</string>
     <string name="ba_craft_notification_title">製造が完了しました</string>

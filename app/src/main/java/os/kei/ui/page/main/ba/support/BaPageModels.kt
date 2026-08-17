@@ -42,6 +42,14 @@ internal data class BaPageSnapshot(
     val coffeeInvite2UsedMs: Long = 0L,
     val showEndedPools: Boolean = false,
     val showEndedActivities: Boolean = false,
+    /**
+     * Whether the Craft Chamber card shows its six slot rows.
+     *
+     * A layout preference of one card on one page, so it is global rather than per-account — unlike
+     * [craft] itself, which every account owns separately. [withBaAccount] leaves it alone for that
+     * reason.
+     */
+    val craftCardExpanded: Boolean = true,
     val showCalendarPoolImages: Boolean = true,
     val mediaAdaptiveRotationEnabled: Boolean = true,
     val mediaSaveCustomEnabled: Boolean = false,

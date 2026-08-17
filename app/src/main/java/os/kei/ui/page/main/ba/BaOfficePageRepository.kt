@@ -72,6 +72,10 @@ internal open class BaOfficePageRepository(
         BaOfficeRepository.clearListScrollStateAsync()
     }
 
+    open suspend fun saveCraftCardExpanded(expanded: Boolean) {
+        BaOfficeRepository.saveCraftCardExpandedAsync(expanded)
+    }
+
     suspend fun restoreServerSelection(currentServerIndex: Int): BaOfficeServerRestorePersistenceResult? =
         withContext(AppDispatchers.baFetch) {
             val savedServerIndex = BaOfficeRepository.loadServerIndex()

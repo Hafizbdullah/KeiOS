@@ -1,6 +1,8 @@
 package os.kei.ui.page.main.ba.card
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,32 +13,95 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kyant.backdrop.Backdrop
+import os.kei.R
 import os.kei.ui.page.main.ba.BaLiquidPanel
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppLiquidTextButton
 import os.kei.ui.page.main.widget.glass.GlassVariant
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.composables.icons.lucide.R as LucideR
 
+/**
+ * @param expandable when true the whole header becomes the disclosure control: a chevron after
+ *   [trailing], the row itself clickable, and the collapsed/expanded state exposed to accessibility
+ *   services. Mirrors `AppCardHeader`'s affordance so the two header families read the same, without
+ *   dragging in its typography and paddings, which are not the BA card's.
+ */
 @Composable
 internal fun BaCardHeader(
     title: String,
     modifier: Modifier = Modifier,
     titleIconRes: Int? = null,
+    expandable: Boolean = false,
+    expanded: Boolean = false,
+    expandTint: Color = MiuixTheme.colorScheme.primary,
+    onClick: (() -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val expandStateDescription =
+        if (expanded) {
+            stringResource(R.string.common_collapse)
+        } else {
+            stringResource(R.string.common_expand)
+        }
+    val expandActionDescription =
+        if (expanded) {
+            stringResource(R.string.common_collapse_details_hint)
+        } else {
+            stringResource(R.string.common_expand_details_hint)
+        }
+    val clickModifier =
+        if (onClick != null) {
+            val interactionSource = remember { MutableInteractionSource() }
+            Modifier
+                .clickable(
+                    interactionSource = interactionSource,
+                    // The card behind the header already carries the glass material; a ripple on top
+                    // of it reads as a second surface.
+                    indication = null,
+                    role = Role.Button,
+                    onClick = onClick,
+                ).then(
+                    if (expandable) {
+                        Modifier.semantics {
+                            stateDescription = expandStateDescription
+                            onClick(label = expandActionDescription) {
+                                onClick()
+                                true
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
+                )
+        } else {
+            Modifier
+        }
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .then(clickModifier),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -60,12 +125,28 @@ internal fun BaCardHeader(
                 )
             }
         }
-        trailing?.let {
+        if (trailing != null || expandable) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                content = it,
-            )
+            ) {
+                trailing?.invoke(this)
+                if (expandable) {
+                    Icon(
+                        imageVector =
+                            ImageVector.vectorResource(
+                                if (expanded) {
+                                    LucideR.drawable.lucide_ic_chevron_up
+                                } else {
+                                    LucideR.drawable.lucide_ic_chevron_down
+                                },
+                            ),
+                        contentDescription = expandStateDescription,
+                        tint = expandTint,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
         }
     }
 }

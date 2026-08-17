@@ -236,6 +236,42 @@ class BaAccountSnapshotMapperTest {
     }
 
     @Test
+    fun `switching account swaps craft state but not the craft card's expansion`() {
+        // The two live side by side in BaPageSnapshot and must not be confused: `craft` is game state
+        // each account owns, `craftCardExpanded` is one card's layout on one page.
+        val accountId = BaAccountId("account-craft")
+        val account =
+            BaAccountRecord(
+                profile =
+                    BaAccountProfile(
+                        id = accountId,
+                        serverIndex = 1,
+                        displayName = "Craft",
+                        nickname = "Craft",
+                        friendCode = "CRAFT001",
+                    ),
+                runtime =
+                    BaAccountRuntime(
+                        craft = BaCraftState(generate = listOf(BaCraftSlot(startedAtMs = 9_000L))),
+                    ),
+            )
+        val state =
+            BaAccountStoreSnapshot(
+                accounts = listOf(account),
+                activeAccountId = accountId,
+                allAccountsFollowGlobalNotificationSettings = true,
+                globalReminderSettings = BaGlobalReminderSettings(),
+            )
+
+        val snapshot = BaPageSnapshot(craftCardExpanded = false).withActiveBaAccount(state)
+
+        assertFalse(snapshot.craftCardExpanded)
+        // The mapper normalizes, which pads to BA_CRAFT_SLOT_COUNT — index by slot, not by size.
+        assertEquals(BA_CRAFT_SLOT_COUNT, snapshot.craft.generate.size)
+        assertEquals(9_000L, snapshot.craft.slotAt(BaCraftFunction.Generate, 0).startedAtMs)
+    }
+
+    @Test
     fun `friend code sanitizer keeps uppercase letters for default server policy`() {
         assertEquals("ABCDARIS", normalizeBaAccountFriendCodeInput("a1-b2 c3_d4 arisu"))
         assertEquals("ABCDARIS", sanitizeBaAccountFriendCode("a1-b2 c3_d4 arisu"))

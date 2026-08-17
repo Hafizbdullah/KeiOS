@@ -272,6 +272,11 @@
     <string name="ba_craft_slot_idle">Idle</string>
     <string name="ba_craft_slot_done">Complete</string>
     <string name="ba_craft_slot_idle_countdown">—</string>
+    <string name="ba_craft_summary_idle">All idle</string>
+    <string name="ba_craft_summary_running_format">%1$d running · next %2$s</string>
+    <string name="ba_craft_summary_running_only_format">%1$d running</string>
+    <string name="ba_craft_summary_ready_format">%1$d ready</string>
+    <string name="ba_craft_summary_ready_running_format">%1$d ready · %2$d running</string>
     <string name="ba_craft_function_generate">Crafting</string>
     <string name="ba_craft_function_fusion">Material fusion</string>
     <string name="ba_craft_notification_title">Crafting complete</string>

@@ -80,6 +80,19 @@ internal object BASettingsStore {
         notifyChanged()
     }
 
+    fun loadCraftCardExpanded(): Boolean = kv().decodeBool(KEY_CRAFT_CARD_EXPANDED, true)
+
+    /**
+     * Deliberately silent: no [notifyChanged].
+     *
+     * The signal is what re-labels the daily-done tiles and shortcuts and what wakes the home
+     * overview, and folding a card open changes none of that. The page keeps its own copy in
+     * `BaOfficeRuntimeUiState`, so the write only has to survive process death.
+     */
+    fun saveCraftCardExpanded(expanded: Boolean) {
+        kv().encode(KEY_CRAFT_CARD_EXPANDED, expanded)
+    }
+
     fun loadShowCalendarPoolImages(): Boolean = kv().decodeBool(KEY_SHOW_CALENDAR_POOL_IMAGES, true)
 
     fun saveShowCalendarPoolImages(enabled: Boolean) {

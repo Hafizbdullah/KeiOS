@@ -88,6 +88,7 @@ internal fun loadBaSettingsSnapshot(store: MMKV): BaPageSnapshot {
         coffeeInvite2UsedMs = store.decodeLong(KEY_COFFEE_INVITE2_USED_MS, 0L),
         showEndedPools = store.decodeBool(KEY_POOL_SHOW_ENDED, false),
         showEndedActivities = store.decodeBool(KEY_ACTIVITY_SHOW_ENDED, false),
+        craftCardExpanded = store.decodeBool(KEY_CRAFT_CARD_EXPANDED, true),
         showCalendarPoolImages = store.decodeBool(KEY_SHOW_CALENDAR_POOL_IMAGES, true),
         mediaAdaptiveRotationEnabled = store.decodeBool(KEY_MEDIA_ADAPTIVE_ROTATION_ENABLED, true),
         mediaSaveCustomEnabled = store.decodeBool(KEY_MEDIA_SAVE_CUSTOM_ENABLED, false),

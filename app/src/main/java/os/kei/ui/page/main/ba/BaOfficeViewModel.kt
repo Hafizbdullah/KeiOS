@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import os.kei.core.background.AppBackgroundScheduler
+import os.kei.core.log.AppLogger
 import os.kei.ui.page.main.ba.support.BA_AP_MAX
 import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaAccountProfileInput
@@ -310,6 +311,26 @@ internal class BaOfficeViewModel private constructor(
                 state
             } else {
                 state.copy(notificationLeadDropdownAnchorBounds = bounds)
+            }
+        }
+    }
+
+    /**
+     * Folds the Craft Chamber card open or shut, and remembers it.
+     *
+     * The flip lands in state first and persists after: the disclosure has to animate on the same
+     * frame as the tap, and the write is a single MMKV boolean whose only job is surviving process
+     * death. A failed write costs the teacher one re-tap next launch, so it is not worth an event.
+     */
+    fun updateCraftCardExpanded(expanded: Boolean) {
+        if (_runtimeUiState.value.craftCardExpanded == expanded) return
+        _runtimeUiState.update { state -> state.copy(craftCardExpanded = expanded) }
+        viewModelScope.launch {
+            try {
+                repository.saveCraftCardExpanded(expanded)
+            } catch (error: Throwable) {
+                error.rethrowIfCancellation()
+                AppLogger.e(TAG, "craft card expansion save failed", error)
             }
         }
     }
@@ -673,6 +694,8 @@ internal class BaOfficeViewModel private constructor(
     }
 
     companion object {
+        private const val TAG = "BaOfficeViewModel"
+
         internal fun createForTest(
             application: Application,
             repository: BaOfficePageRepository,

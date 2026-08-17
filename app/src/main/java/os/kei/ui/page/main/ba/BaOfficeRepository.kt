@@ -77,6 +77,12 @@ internal object BaOfficeRepository {
             BASettingsStore.moveAccount(accountId = accountId, offset = offset)
         }
 
+    suspend fun saveCraftCardExpandedAsync(expanded: Boolean) {
+        withContext(AppDispatchers.baFetch) {
+            BASettingsStore.saveCraftCardExpanded(expanded)
+        }
+    }
+
     fun loadServerIndex(): Int = BASettingsStore.loadServerIndex()
 
     suspend fun loadServerIndexAsync(): Int =

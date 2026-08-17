@@ -63,6 +63,7 @@ internal fun buildBaPageContentState(
         baPoolError = routeState.poolUiState.error,
         baPoolLastSyncMs = routeState.poolUiState.lastSyncMs,
         showEndedPools = routeState.showEndedPools,
+        craftCardExpanded = routeState.craftCardExpanded,
     )
 }
 
@@ -79,6 +80,7 @@ internal fun buildBaPageContentActions(
     onOpenCafeApTools: () -> Unit,
     onOpenCafeCooldownEditSheet: (BaCafeCooldownEditTarget) -> Unit,
     onOpenCraftSlotEditSheet: (BaCraftSlotEditTarget) -> Unit,
+    onCraftCardExpandedChange: (Boolean) -> Unit,
     onAccountSelected: (BaAccountId) -> Unit,
     onEditAccount: (BaAccountId) -> Unit,
     onRefreshCalendar: () -> Unit,
@@ -99,6 +101,7 @@ internal fun buildBaPageContentActions(
         onOpenCafeApTools = onOpenCafeApTools,
         onOpenCafeCooldownEditSheet = onOpenCafeCooldownEditSheet,
         onOpenCraftSlotEditSheet = onOpenCraftSlotEditSheet,
+        onCraftCardExpandedChange = onCraftCardExpandedChange,
         onAccountSelected = onAccountSelected,
         onEditAccount = onEditAccount,
         onRefreshCalendar = onRefreshCalendar,

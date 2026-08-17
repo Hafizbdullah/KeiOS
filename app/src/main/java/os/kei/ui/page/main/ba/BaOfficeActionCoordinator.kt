@@ -31,6 +31,7 @@ internal class BaOfficeActionCoordinator(
     private val onOpenCafeApTools: () -> Unit,
     private val onOpenCafeCooldownEditSheet: (BaCafeCooldownEditTarget) -> Unit,
     private val onOpenCraftSlotEditSheet: (BaCraftSlotEditTarget) -> Unit,
+    private val onCraftCardExpandedChange: (Boolean) -> Unit,
     private val onAccountSelected: (BaAccountId) -> Unit,
     private val onEditAccount: (BaAccountId) -> Unit,
     private val onRefreshCalendar: () -> Unit,
@@ -74,6 +75,7 @@ internal class BaOfficeActionCoordinator(
             onClearCraftSlot = { function, index ->
                 persistCraftAndReschedule(office.clearCraftSlot(function, index))
             },
+            onCraftCardExpandedChange = onCraftCardExpandedChange,
             onRefreshCalendar = onRefreshCalendar,
             onOpenCalendarLink = onOpenCalendarLink,
             onRefreshPool = onRefreshPool,

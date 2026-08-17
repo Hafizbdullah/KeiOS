@@ -267,6 +267,40 @@ internal fun BaCraftState.nextCompletionAtMs(nowMs: Long = System.currentTimeMil
         .filter { it > nowMs }
         .minOrNull()
 
+/**
+ * What the Craft Chamber card says about all six slots in one line, for when it is collapsed.
+ *
+ * Collapsing has to stay non-lossy or it is just a hide button: [readyCount] is the actionable half
+ * (a finished craft is sitting there uncollected) and [nextCompletionAtMs] answers the only question
+ * the rows were being read for.
+ */
+internal data class BaCraftSummary(
+    val runningCount: Int = 0,
+    val readyCount: Int = 0,
+    val nextCompletionAtMs: Long? = null,
+) {
+    val isIdle: Boolean get() = runningCount == 0 && readyCount == 0
+}
+
+internal fun BaCraftState.summary(nowMs: Long = System.currentTimeMillis()): BaCraftSummary {
+    var running = 0
+    var ready = 0
+    BaCraftFunction.entries.forEach { function ->
+        slots(function).forEach { slot ->
+            when {
+                !slot.isActive() -> Unit
+                slot.isComplete(nowMs) -> ready++
+                else -> running++
+            }
+        }
+    }
+    return BaCraftSummary(
+        runningCount = running,
+        readyCount = ready,
+        nextCompletionAtMs = nextCompletionAtMs(nowMs),
+    )
+}
+
 /** A slot that has elapsed, addressed so a caller can key a notification and a read marker to it. */
 internal data class BaCraftCompletion(
     val function: BaCraftFunction,
