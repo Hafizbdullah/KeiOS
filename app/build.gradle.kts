@@ -379,6 +379,9 @@ android {
 
         release {
             optimization.enable = true
+            // Additive: AGP's own optimized defaults still arrive through optimization.enable, verified
+            // by diffing R8's configuration.txt across this change.
+            proguardFile("proguard-rules.pro")
             if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
             }
