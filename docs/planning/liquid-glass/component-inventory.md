@@ -1,20 +1,29 @@
 # Liquid component inventory
 
-> Scanned: 2026-08-09 at `fb6aa0b02`; **rescanned 2026-08-17 at `f343f30e6`**.
+> Scanned: 2026-08-09 at `fb6aa0b02`; rescanned 2026-08-17 at `f343f30e6`; **tables reconciled
+> 2026-08-18 at `fe6b2e709`, when the ranking closed**.
 > Purpose: track which Liquid components have been rebuilt and which have not, so the remaining work
 > can be planned rather than rediscovered.
+>
+> **Start at "What is still open" at the end of this file.** It is the single index of remaining work;
+> everything before it is the reasoning, kept so the same ground is not re-covered.
 
-**97 files** in `ui-liquid-glass` (94 at the first scan), plus **13** more Liquid surfaces defined in
-`:app`. Grouped by what they are as components rather than by file: roughly **48 component kinds** plus
-~20 token, material and infrastructure units.
+**96 files** in `ui-liquid-glass` (94 at the first scan, 97 at the second), plus **13** more Liquid surfaces
+defined in `:app`. Grouped by what they are as components rather than by file: roughly **48 component kinds**
+plus ~20 token, material and infrastructure units.
+
+The count went *down* between the second scan and the third, which is the shape the last two waves had:
+`LiquidGlassBottomBarMaterial` was deleted into the toolbar's material, and no new file was needed for
+anything in the third wave. Two of the four ranked rows shipped as deletions.
 
 The rebuild campaign is a three-day window, **2026-08-07 → 08-09**. It touched **39 of 94** module
 files, but 6 of those were a single narrow pass, so **33 were genuinely rebuilt** and **~55 remained
 untouched**.
 
-Since then, **08-16 → 08-17** added a second wave of 14 file-touches across four commits — the dock
-badge, the scroll edge, the sheet's content scroll and the theme/press fixes. Those are folded into the
-tables below, so the counts above describe the campaign and the tables describe today.
+Since then there have been two more waves — **08-16 → 08-17** (the dock badge, the scroll edge, the
+sheet's content scroll, the theme/press fixes) and **08-18** (the ranking, the destructive menu item and
+the card pile). Both are folded into the tables below, so the counts above describe the campaign and the
+tables describe today.
 
 To refresh the dates in this table:
 
@@ -58,25 +67,41 @@ than by the rebuild plan, and because three of them move entries out of the "not
 | Press bloom / theme | `LiquidGlassBottomBar` (+5) | `294ad3ab8` | press bloom keys off the app's theme, not the device's |
 | Overlay tag publication | `SceneBackdropScope` (+12/-1) | `746a8e4b8` | overlay layer publishes `testTagsAsResourceId`, so sheets are reachable by baseline-profile journeys |
 
+## Third wave (2026-08-18) — the ranking
+
+Eight commits. The first four are the ranked rows in order; the rest are the two campaign items that were
+still open. Every row here moves an entry out of a table above.
+
+| Component | Files | Commit | What was done |
+|---|---|---|---|
+| Bar material (rank 1) | `LiquidActionBarStyle` · `LiquidGlassBottomBar` · **`LiquidGlassBottomBarMaterial` deleted** | `84165d433` | one material for both action bars; the private 84-line copy and its palette gone |
+| Dropdown rows (rank 2) | `LiquidGlassDropdownItems` (818 → 881) · `AppSquircle` (+36) | `27d17f8e7` | one press progress, one check implementation, one colour ladder, overlay folded into a draw pass |
+| Slider (rank 3) | `LiquidSliderVariants` (+37, then +69/-12) | `f2b491b92`, `1a3a0479d` | thumb `vibrancy()` → progress-driven `colorControls`; capsule geometry made whole at every value |
+| Search material (rank 4) | `AppLiquidSearchMaterial` · `AppLiquidSearchField` · `BaGuideBgmBottomChrome` | `fe6b2e709` | the duplicated border deleted; two per-frame brushes hoisted |
+| Grip dock (rank 4) | `AppGripAwareDockState` (−5) | `fe6b2e709` | dead `resetToDefault()` removed — and the row's premise corrected, see Correction 3 |
+| Destructive menu item | `GitHubTrackDialogs` · **`GitHubDeleteTrackDialogContent` deleted** | `41f3f34f9` | menu-originated delete confirms through `LiquidActionSheet`, per Pull-down buttons |
+| Card pile | `AppEdgeStackedCards` (+119, then +20/-8) · 8 host pages | `c6dde59f6`, `488a01864` | keep-alive headroom; the pile reaches its three levels on every host; `appEdgeStackContainer` now private |
+
 ## Touched narrowly, not rebuilt
 
 `53eb6510b` (08-07) only dropped identity `graphicsLayer` nodes — 5-20 line diffs, and its own message
 records it as "a simplification, not a perf win". Treat these as untouched when planning.
 
-`AppSwitch` · `LiquidSliderVariants` · `AppInteractiveTokens` · `AppLiquidButtons` (+8 more on 08-16) ·
-`AppFloatingLiquidActionButton` (+3 on 08-16) · `LiquidGlassBottomBar` (+5 on 08-16)
+`AppSwitch` · `AppInteractiveTokens` · `AppLiquidButtons` (+8 more on 08-16) ·
+`AppFloatingLiquidActionButton` (+3 on 08-16)
 
-`AppFloatingSearchDock` has **left** this list — the dock-badge commit reworked it for real.
+Two entries have **left** this list: `AppFloatingSearchDock`, reworked for real by the dock-badge commit,
+and `LiquidSliderVariants`, rewritten as rank 3 on 08-18. `LiquidGlassBottomBar` also left, in the other
+direction — rank 1 rebuilt its material rather than touching it narrowly again.
 
 ## Not touched
 
 | Last touched | Components |
 |---|---|
-| 2026-07-30 | **Dropdown items** `LiquidGlassDropdownItems` — the rows inside the rewritten dropdown |
-| 2026-07-29 | **Expandable / accordion cards** `AppLiquidExpandableCards` |
-| 2026-07-17 | **Status pills** `StatusPill`, `StatusIconPill` · **Info block** `LiquidInfoBlock` · **Text input** `AppTextInputContent` · **Search field** `AppLiquidSearchField` · **Standalone buttons** `AppStandaloneLiquidButtons` · **Dropdown selector controls** `AppDropdownControls` · **Card headers** `AppCardHeaders` · **Icon actions** `AppIconActions` · **Supporting blocks** `AppStatusPrimitives` · `LiquidBackdropWindowBoundary` |
-| 2026-07-16 | **Progress bars** `LiquidProgressBars` · **Checkbox** `AppLiquidCheckbox` · **Dialog action buttons** `AppLiquidDialogActions` · **Bottom bar material** `LiquidGlassBottomBarMaterial` · **Overview cards** `AppOverviewCards` · **Shell panel** `ShellLiquidPanelSurface` · `GlassEffectRuntime` · `AppThemeAppearance` |
-| 2026-07-13 | **Grip-aware dock** `AppGripAwareDock`, `AppGripAwareDockState` · **Search material** `AppLiquidSearchMaterial` · `AppToastBridge` · `InteractiveHighlight` · foundations `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `LiquidFiniteValues`, `GlassContentContrast` — *`AppLiquidBadges` and `AppFloatingLiquidActionButton` moved out on 08-16* |
+| 2026-07-29 | **Expandable / accordion cards** `AppLiquidExpandableCards` — *content layer, carries no glass; untouched because it is right, see Correction 1* |
+| 2026-07-17 | **Status pills** `StatusPill`, `StatusIconPill` · **Info block** `LiquidInfoBlock` · **Text input** `AppTextInputContent` · **Standalone buttons** `AppStandaloneLiquidButtons` · **Dropdown selector controls** `AppDropdownControls` · **Card headers** `AppCardHeaders` · **Icon actions** `AppIconActions` · **Supporting blocks** `AppStatusPrimitives` · `LiquidBackdropWindowBoundary` — *`AppLiquidSearchField` moved out on 08-18* |
+| 2026-07-16 | **Progress bars** `LiquidProgressBars` · **Checkbox** `AppLiquidCheckbox` · **Dialog action buttons** `AppLiquidDialogActions` · **Overview cards** `AppOverviewCards` · **Shell panel** `ShellLiquidPanelSurface` · `GlassEffectRuntime` · `AppThemeAppearance` — *`LiquidGlassBottomBarMaterial` deleted on 08-18* |
+| 2026-07-13 | **Grip-aware dock** `AppGripAwareDock` — *not a Liquid component at all, see Correction 3* · `AppToastBridge` · `InteractiveHighlight` · foundations `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `LiquidFiniteValues`, `GlassContentContrast` — *`AppLiquidBadges` and `AppFloatingLiquidActionButton` moved out on 08-16; `AppLiquidSearchMaterial` and `AppGripAwareDockState` on 08-18* |
 | ≤ 2026-07-01 | `SheetSurfaceColors` · `AppSquircle` · `ChromePixelSnapping` · `AppFloatingSearchDockMotion`, `AppFloatingDockMetrics` · module-extraction era (06-01): `AppMotionTokens`, `AppExpandTransitions`, `UiPerformanceBudget`, `LiquidSliderInteractionLock`, `CardLayoutRhythm`, `AppTypographyTokens`, `AppControlRows`, `AppCardBodyLayouts`, `AppWindowMetrics`, `AppSearchBehavior`, `AppStatusColors` |
 | `:app` surfaces | BGM mini-player, track list and hero visuals · `GuideProfileUi` · GitHub tracked-item info and health cards · `AppOverviewPillBatch` · `HomeOverviewGlassBatch` · `DebugLiquidCatalogSamples` |
 
@@ -572,7 +597,12 @@ painting, rather than transparent for every non-Home page; that also makes
 confusion while being written — the wallpaper's base (`background`) and the unbacked page's base
 (`surface`) are *different pairings*, and the first version compared the wrong two.
 
-## What to rewrite next (re-derived 2026-08-17)
+## What to rewrite next — re-derived 2026-08-17, **closed 2026-08-18**
+
+> All four rows are done. Kept in full because three of the four taught something that outlived the row —
+> the rule that decides the list, and Corrections 1 to 3, which were wrong answers caught before they cost a
+> rewrite.
+
 
 The 08-09 list named `LiquidGlassDropdownItems` and `LiquidGlassBottomBarMaterial`. Re-derived against
 Apple's *Materials* HIG page and the Backdrop docs, that ordering **survives but for different reasons
@@ -738,7 +768,9 @@ never have guarded anyway — a drift of the resting saturation from 1.5 to 1.4 
 would leave the thumb permanently duller than every surface that still calls `vibrancy()`. A real-finger
 pass on the active state is still owed.
 
-## Still open from the campaign
+## Was open from the campaign — both closed 2026-08-18
+
+> Historical. The live index is "What is still open" at the end of this file.
 
 - ~~**The card pile is about one card deep.**~~ **Done, `2026-08-18` — all 8 hosts, three plates verified on
   the AVD.** See "The card pile" below.
@@ -788,20 +820,6 @@ a red Delete above a Cancel; Cancel dismisses and the tracked item survives.
   does need the hoisting the plan described. Worth weighing first: un-favouriting is nearly reversible,
   one of its two call paths already toasts, and Apple also says to use action sheets sparingly.
 
-
-## What is left after the ranking
-
-The four ranked rows are done. Three things remain, none of them a component rewrite:
-
-- **A real-finger pass on the slider's active state**, which synthetic input cannot reach on the AVD — see
-  "What the AVD cannot check on a slider".
-- **BGM favourite removal still does not confirm**, and the trade-off is written up under "Still open here".
-- **miuix `navSwipeDismiss` is still disabled** pending a real-finger test.
-
-The next component-level question is not on this list, because the campaign has now answered "what is stale?"
-three times and got a wrong answer twice by reading names. If a fifth item is ever ranked, rank it from a
-count of `drawBackdrop` / `glassStyle` / draw passes in the file, and from a measured screenshot — the two
-things that actually found #4.
 
 ## The card pile (2026-08-18)
 
@@ -882,3 +900,48 @@ was taken at.
 
 Cost, unchanged and now paid on every stacking page: every card inside the headroom is a real composed,
 measured card. 530dp is roughly three extra tall cards or eight short rows kept alive per page.
+
+## What is still open (2026-08-18)
+
+The single index. Every earlier "still open" bullet in this file is folded in here, so this section is the
+one to read; the sections above keep the reasoning.
+
+**The ranking is closed.** All four rows are done, and the campaign's original list of un-rebuilt Liquid
+components is empty — not because everything was rewritten, but because Corrections 1–3 established that
+most of what looked stale was either already right for the content layer or not a Liquid component at all.
+
+### Blocked on a physical device
+
+Three items, and all three are blocked on the same thing: synthetic input on the AVD cannot produce them.
+None is a code task until someone holds the phone.
+
+| | What to check | Why the AVD cannot |
+|---|---|---|
+| Slider active state | The thumb's `colorControls(brightness, saturation)` at the pressed end, and the capsule geometry at both travel extremes | `input swipe` and a hand-built `motionevent` are both claimed by the settings pager, so `pressProgress` never leaves zero — see "What the AVD cannot check on a slider" |
+| miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | It is an edge-swipe race that only a real finger reproduces |
+| Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
+
+### A decision, not a task
+
+**BGM favourite removal still deletes without confirming.** It is a red menu row
+(`BaGuideBgmFavoriteCards`), so Apple's pull-down-button rule that governed the GitHub track delete applies
+to it too. Unlike that one it has no pending state to hang a sheet on, so it needs the state hoisting first.
+
+Worth weighing before doing it, which is why it is a decision: un-favouriting is nearly reversible, one of
+its two call paths already toasts, and Apple also says to use action sheets sparingly. Deliberately *not*
+done pending that call.
+
+### Deliberately not open
+
+- **The import confirmation stays an alert.** Not menu-originated, so the Action sheets page's allowance
+  applies. `GitHubTrackDialogsTest` pins that the two confirmations use different presentations, and why.
+- **Baseline profile regeneration** waits until just before a release. Do not run the collect task after a
+  filtered test run.
+- **~20 of the untouched files are untouched because they are correct** — flat fills in the content layer,
+  which is what Apple asks for. See Correction 1.
+
+### If a fifth item is ever ranked
+
+Rank it from a count of `drawBackdrop` / `glassStyle` / draw passes in the file and from a measured
+screenshot. That is what found #4's real bug. Do not rank from a file's name, and do not rank from its line
+count — this file now records three separate times that both were wrong.
