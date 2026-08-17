@@ -1,16 +1,20 @@
 # Liquid component inventory
 
-> Scanned: 2026-08-09, at `fb6aa0b02`.
+> Scanned: 2026-08-09 at `fb6aa0b02`; **rescanned 2026-08-17 at `f343f30e6`**.
 > Purpose: track which Liquid components have been rebuilt and which have not, so the remaining work
 > can be planned rather than rediscovered.
 
-**94 files** in `ui-liquid-glass`, plus **13** more Liquid surfaces defined in `:app`. Grouped by what
-they are as components rather than by file: roughly **48 component kinds** plus ~20 token, material and
-infrastructure units.
+**97 files** in `ui-liquid-glass` (94 at the first scan), plus **13** more Liquid surfaces defined in
+`:app`. Grouped by what they are as components rather than by file: roughly **48 component kinds** plus
+~20 token, material and infrastructure units.
 
 The rebuild campaign is a three-day window, **2026-08-07 → 08-09**. It touched **39 of 94** module
-files, but 6 of those were a single narrow pass, so **33 were genuinely rebuilt** and **~55 remain
+files, but 6 of those were a single narrow pass, so **33 were genuinely rebuilt** and **~55 remained
 untouched**.
+
+Since then, **08-16 → 08-17** added a second wave of 14 file-touches across four commits — the dock
+badge, the scroll edge, the sheet's content scroll and the theme/press fixes. Those are folded into the
+tables below, so the counts above describe the campaign and the tables describe today.
 
 To refresh the dates in this table:
 
@@ -41,12 +45,28 @@ for f in $(find ui-liquid-glass/src/main -name '*.kt' | sort); do printf '%s  %s
 | Core liquid surface | `LiquidSurfaces` | gained the card-pile plumbing |
 | Unsaved-changes confirm | `UnsavedSheetDismiss` | moved onto the action sheet |
 
+## Second wave (2026-08-16 → 08-17)
+
+Four commits after the campaign. Listed separately because they were driven by specific defects rather
+than by the rebuild plan, and because three of them move entries out of the "not touched" table below.
+
+| Component | Files | Churn | What was done |
+|---|---|---|---|
+| Dock badge | **`AppFloatingDockBadge`** (new, 136 lines) · `AppLiquidBadges` (+121/-6) · `AppFloatingLiquidDockSurface` (+26/-2) · `AppFloatingSearchDock` (+21/-8) | `cfb23e352` | badge means one thing across expand/collapse, stays inside the dock, gains glass |
+| Scroll edge | **`AppScrollEdgeEffect`** (new, 134 lines) | `6f6e75912` | replaced the catalog's black curtain with a real Apple scroll edge |
+| Sheet content scroll | **`LiquidSheetContentScroll`** (new, 67 lines) · `LiquidSheet` (+201/-52) · `GlassChromeGestures` (+58) · `SheetContentColumn` (+12/-16) | `1111f5201` | the sheet stopped eating its own content's touch slop |
+| Press bloom / theme | `LiquidGlassBottomBar` (+5) | `294ad3ab8` | press bloom keys off the app's theme, not the device's |
+| Overlay tag publication | `SceneBackdropScope` (+12/-1) | `746a8e4b8` | overlay layer publishes `testTagsAsResourceId`, so sheets are reachable by baseline-profile journeys |
+
 ## Touched narrowly, not rebuilt
 
 `53eb6510b` (08-07) only dropped identity `graphicsLayer` nodes — 5-20 line diffs, and its own message
 records it as "a simplification, not a perf win". Treat these as untouched when planning.
 
-`AppLiquidButtons` · `AppSwitch` · `LiquidSliderVariants` · `AppFloatingSearchDock` · `AppInteractiveTokens`
+`AppSwitch` · `LiquidSliderVariants` · `AppInteractiveTokens` · `AppLiquidButtons` (+8 more on 08-16) ·
+`AppFloatingLiquidActionButton` (+3 on 08-16) · `LiquidGlassBottomBar` (+5 on 08-16)
+
+`AppFloatingSearchDock` has **left** this list — the dock-badge commit reworked it for real.
 
 ## Not touched
 
@@ -56,7 +76,7 @@ records it as "a simplification, not a perf win". Treat these as untouched when 
 | 2026-07-29 | **Expandable / accordion cards** `AppLiquidExpandableCards` |
 | 2026-07-17 | **Status pills** `StatusPill`, `StatusIconPill` · **Info block** `LiquidInfoBlock` · **Text input** `AppTextInputContent` · **Search field** `AppLiquidSearchField` · **Standalone buttons** `AppStandaloneLiquidButtons` · **Dropdown selector controls** `AppDropdownControls` · **Card headers** `AppCardHeaders` · **Icon actions** `AppIconActions` · **Supporting blocks** `AppStatusPrimitives` · `LiquidBackdropWindowBoundary` |
 | 2026-07-16 | **Progress bars** `LiquidProgressBars` · **Checkbox** `AppLiquidCheckbox` · **Dialog action buttons** `AppLiquidDialogActions` · **Bottom bar material** `LiquidGlassBottomBarMaterial` · **Overview cards** `AppOverviewCards` · **Shell panel** `ShellLiquidPanelSurface` · `GlassEffectRuntime` · `AppThemeAppearance` |
-| 2026-07-13 | **Badges** `AppLiquidBadges` · **Grip-aware dock** `AppGripAwareDock`, `AppGripAwareDockState` · **Floating action button** `AppFloatingLiquidActionButton` · **Search material** `AppLiquidSearchMaterial` · `AppToastBridge` · `InteractiveHighlight` · foundations `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `LiquidFiniteValues`, `GlassContentContrast` |
+| 2026-07-13 | **Grip-aware dock** `AppGripAwareDock`, `AppGripAwareDockState` · **Search material** `AppLiquidSearchMaterial` · `AppToastBridge` · `InteractiveHighlight` · foundations `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `LiquidFiniteValues`, `GlassContentContrast` — *`AppLiquidBadges` and `AppFloatingLiquidActionButton` moved out on 08-16* |
 | ≤ 2026-07-01 | `SheetSurfaceColors` · `AppSquircle` · `ChromePixelSnapping` · `AppFloatingSearchDockMotion`, `AppFloatingDockMetrics` · module-extraction era (06-01): `AppMotionTokens`, `AppExpandTransitions`, `UiPerformanceBudget`, `LiquidSliderInteractionLock`, `CardLayoutRhythm`, `AppTypographyTokens`, `AppControlRows`, `AppCardBodyLayouts`, `AppWindowMetrics`, `AppSearchBehavior`, `AppStatusColors` |
 | `:app` surfaces | BGM mini-player, track list and hero visuals · `GuideProfileUi` · GitHub tracked-item info and health cards · `AppOverviewPillBatch` · `HomeOverviewGlassBatch` · `DebugLiquidCatalogSamples` |
 
@@ -552,12 +572,68 @@ painting, rather than transparent for every non-Home page; that also makes
 confusion while being written — the wallpaper's base (`background`) and the unbacked page's base
 (`surface`) are *different pairings*, and the first version compared the wrong two.
 
-## Gaps worth doing early
+## What to rewrite next (re-derived 2026-08-17)
 
-- **`LiquidGlassDropdownItems`** — the dropdown container was rewritten on 08-09 but the rows inside it
-  still date from 07-30. Cheapest high-value follow-up.
-- **`LiquidGlassBottomBarMaterial`** — the bottom bar got a press fix but its material predates every
-  material lesson from the campaign, sitting directly beside the freshly rebuilt toolbar.
+The 08-09 list named `LiquidGlassDropdownItems` and `LiquidGlassBottomBarMaterial`. Re-derived against
+Apple's *Materials* HIG page and the Backdrop docs, that ordering **survives but for different reasons
+than were recorded**, and two things it implied turn out to be false. Both corrections are below,
+because acting on either would have wasted a rewrite.
+
+### The rule that decides the list
+
+Apple, *Materials*: Liquid Glass "forms a distinct functional layer for controls and navigation
+elements … that floats above the content layer". And, explicitly:
+
+> **Don't use Liquid Glass in the content layer.** … including it in the content layer can result in
+> unnecessary complexity and a confusing visual hierarchy. Instead, use standard materials for elements
+> in the content layer, such as app backgrounds.
+>
+> **Use Liquid Glass effects sparingly.** … overusing this material in multiple custom controls can
+> provide a subpar user experience by distracting from that content. Limit these effects to the most
+> important functional elements in your app.
+
+So "untouched" is not the same as "owed a rewrite". A content-layer component that carries no glass is
+*finished*, not stale.
+
+### Correction 1 — most of the "not touched" table is not debt
+
+Checked, not assumed: `StatusPill`, `LiquidInfoBlock` and `AppLiquidExpandableCards` contain **zero**
+`drawBackdrop` and zero `glassStyle` calls. They are flat fills and `AppSurfaceCard`, which is exactly
+what Apple asks for in the content layer. The same holds for the card headers, text input, dialog
+actions, progress bars and status primitives sitting beside them. Roughly **20 of the ~44 untouched
+files are untouched because they are already right**, and rewriting them as glass would move the app
+*away* from the guidance while adding a per-frame cost.
+
+Only the ~7 functional-layer entries below are candidates at all.
+
+### Correction 2 — the bottom bar is not missing its lens
+
+`grep 'lens('` on `LiquidGlassBottomBar` returns nothing, which reads as a missing refraction on the
+app's most-visible glass. It is not: the bar calls **`safeLiquidLens(...)`**, the project's clamped
+wrapper, at three sites, alongside `vibrancy()` and a `layerBlock` for its transforms. Its effect stack
+is the complete color-filter ⇒ blur ⇒ lens order the Backdrop docs prescribe.
+
+Its real debt is narrower and worth stating precisely, because it is what makes it rank at all:
+`LiquidGlassBottomBarMaterial` is a **private 84-line material** — `surfaceAlpha` 0.40/0.18,
+`lensHeight`, `lensAmount`, `highlightAlpha` — that duplicates the job of `GlassStyle`, while
+**`GlassVariant.Bar` already exists** and is what `AppLiquidButtons`, `AppFloatingLiquidActionButton`
+and `AppInteractiveTokens` read. Two sources of truth for "what a bar's glass looks like", on adjacent
+surfaces. Plus hardcoded `10.dp`/`14.dp` interaction-lens numbers inline at the third call site that
+bypass even the private material.
+
+### The ranking
+
+| # | Component | Why now | Cost |
+|---|---|---|---|
+| 1 | **`LiquidGlassBottomBarMaterial` → `GlassVariant.Bar`** | The bar is the one surface on *every* screen, and Apple names navigation as where Liquid Glass belongs — so it is the "most important functional element" the guidance says to spend the effect on. Fixing it is consolidation onto a system that already exists, not new design: delete the private material, extend `GlassVariant.Bar` with what the bar genuinely needs, pull the inline `10.dp`/`14.dp` in with it. There is already a `LiquidGlassBottomBarMaterialTest` to re-point. | small — 84 lines out, one variant extended |
+| 2 | **`LiquidGlassDropdownItems`** | Still the largest untouched file at **818 lines**, and still the rows inside a container that was rewritten on 08-09. But the framing changes: per Apple the *rows* should **not** become glass — the menu container is the functional-layer surface and the rows are vibrant content on top of it. So this is a code-health and highlight-treatment job (the pressed/selected pill is hand-painted with `drawAppSquircleBackground` and alpha-driven `graphicsLayer`), not a material job. Judge it on the 818 lines, not on missing glass. | medium — big file, low risk |
+| 3 | **`LiquidSliderVariants`** (946 lines) | The one place Apple carves out an exception, and the app reads it the other way. The guidance: a content-layer control "takes on a Liquid Glass appearance to emphasize its interactivity **when a person activates it**". The slider's own comment says "Lens stays visible **at rest** and gains strength while pressed or dragged." That is a defensible reading — Backdrop's own Glass Slider tutorial lenses at rest — so this is a **decision to take**, not a bug to fix. Worth deciding deliberately rather than by default. | medium, and needs a design call first |
+| 4 | **`AppGripAwareDock`** · **`AppLiquidSearchMaterial`** | Functional-layer, still on 07-13 materials, and neither has a shared-system equivalent yet. Lower because the grip dock is one screen and the search material is already consistent with the search field. | small each |
+
+Not ranked, deliberately: `GlassStyle`, `LiquidGlassShaders`, `BackdropLensSafety`, `GlassContentContrast`
+and the token files. They are foundations the campaign built *on* — old dates, current designs.
+
+**Dead code found while ranking:** `LiquidSliderInteractionLock` has no consumers outside its own file.
 
 ## Still open from the campaign
 
