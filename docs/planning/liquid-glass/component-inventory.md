@@ -754,19 +754,63 @@ So the metric for a row-level component is duplication and per-row runtime — n
 `Modifier.liquidSliderInteractionLock`, which the slider calls, and grepping the *filename* found nothing
 because nothing refers to a file. Verified: one declaration, one use.
 
-### What the AVD cannot check on a slider
+### How to reach a slider's active state on the AVD — corrected 2026-08-18
 
-Recorded so the next person does not spend the time again. The active state of a settings slider is
-**not reachable with synthetic input** on the API 37 AVD: `adb shell input swipe` and a hand-built
-`motionevent DOWN`/`MOVE` are both claimed by the settings pager, which is also horizontal, so the page
-slides and `pressProgress` never leaves zero. A bare `DOWN` with no movement does not ramp it either —
-the press progress follows a *claimed drag*, past touch slop.
+This section used to say the active state was unreachable and a real finger was owed. **Half wrong, and
+the wrong half cost a defect** — see "The pressed thumb was a rainbow" below. It is unreachable from
+`adb`; it is reachable with the host's mouse on the emulator window, which is not a physical device at all.
 
-So the resting appearance is verifiable by screenshot and the active appearance is not. The numeric
-contract is pinned by `LiquidSliderThumbColorControlsTest` instead, which is the half a screenshot could
-never have guarded anyway — a drift of the resting saturation from 1.5 to 1.4 is invisible to the eye and
-would leave the thumb permanently duller than every surface that still calls `vibrancy()`. A real-finger
-pass on the active state is still owed.
+Four routes, tried:
+
+| Route | Result |
+|---|---|
+| `adb shell input swipe` | Delivered, but the settings pager claims the horizontal drag, so the page slides and `pressProgress` stays 0 |
+| Hand-built `motionevent DOWN`/`MOVE` | Same. A bare `DOWN` never ramps it either — press progress follows a *claimed* drag, past touch slop |
+| `adb shell sendevent` on `/dev/input/event1` (below the injection layer) | **`Permission denied`.** The shell user cannot write the touch node on this AVD image, so the events are never emitted — not ignored, never written |
+| **A mouse drag on the emulator window** | **Works.** A real pointer, fine-grained moves, and the slider claims it |
+
+So the way to inspect any drag-driven state here is: drag with the mouse, screen-record the emulator
+window, and measure the frames. A 120fps `.mov` of an 11-second drag was what caught the rainbow, and
+`ffmpeg -vf crop` plus a per-frame hue histogram is enough to turn it into numbers.
+
+The numeric contract still belongs in `LiquidSliderThumbColorControlsTest`, because that is the half no
+screenshot guards: a drift of the resting saturation from 1.5 to 1.4 is invisible to the eye and would
+leave the thumb permanently duller than every surface that still calls `vibrancy()`.
+
+### The pressed thumb was a rainbow
+
+Found from a screen recording of a mouse drag, after this file had recorded the active state as
+unverifiable. The value that governs it had therefore never been looked at — and the comment next to it
+said it was "tuned on the API 37 AVD against both themes", which was only ever true at rest.
+
+Measured over a 46px band of the thumb, rest against mid-drag:
+
+| | mean HLS saturation | max | pixels above 0.5 |
+|---|---|---|---|
+| at rest | 0.029 | 0.31 | none |
+| mid-drag | 0.080 | **1.00** | 0.7% |
+
+Fully saturated pixels across red, orange, yellow, cyan and blue, with a violet band above the thumb's
+centre and an orange band below. Complementary fringes are channel separation, not light. The blue fill
+refracting in from the left was also torn into three disconnected blobs.
+
+**Mechanism: the Backdrop effect order.** `color filter ⇒ blur ⇒ lens`. `colorControls` *is* the colour
+filter, so it saturates the backdrop **before** the lens splits it, and this lens runs
+`chromaticAberration = true`. On press three amplifiers peak together: chroma ×1.85, `blur` lerped to
+**zero** so nothing softens the split, and the lens amount ×1.65.
+
+**Fix:** `SliderThumbPressedSaturation` is now equal to the resting 1.5 — the press emphasis moved entirely
+to `SliderThumbPressedBrightness`, doubled to 0.12. A luminance offset moves all three channels together,
+so it cannot widen the gap the aberration opens between them. The saturation half of the 08-18 slider
+change is retracted; the brightness half stands. Rest is unchanged, confirmed by measurement (mean sat
+0.019, max 0.251, no pixel above 0.5).
+
+**Still open, diagnosed but not fixed:** the refraction banding. The thumb's `layerBlock` stretches
+`scaleX` by press expansion × velocity (measured 35px → 51px, ×1.46) while the lens's refraction height
+and amount are pixel values computed for the *unstretched* size, so the displacement map is stretched with
+the layer. That is the likeliest cause of the three torn blue blobs. Compensating means dividing the
+requested amount by the live `scaleX`, which is speculative optics and wants a mouse-drag recording to
+confirm before and after — do not change it blind.
 
 ## Was open from the campaign — both closed 2026-08-18
 
@@ -910,16 +954,18 @@ one to read; the sections above keep the reasoning.
 components is empty — not because everything was rewritten, but because Corrections 1–3 established that
 most of what looked stale was either already right for the content layer or not a Liquid component at all.
 
-### Blocked on a physical device
+### Blocked on a mouse drag, not on a phone — corrected 2026-08-18
 
-Three items, and all three are blocked on the same thing: synthetic input on the AVD cannot produce them.
-None is a code task until someone holds the phone.
+This list said three items needed a physical device. **The slider did not**, and treating it as unreachable
+is what let the rainbow ship. It needs a *mouse* drag on the emulator window plus a screen recording, which
+is a ten-minute check — see "How to reach a slider's active state on the AVD".
 
-| | What to check | Why the AVD cannot |
+| | What to check | What it needs |
 |---|---|---|
-| Slider active state | The thumb's `colorControls(brightness, saturation)` at the pressed end, and the capsule geometry at both travel extremes | `input swipe` and a hand-built `motionevent` are both claimed by the settings pager, so `pressProgress` never leaves zero — see "What the AVD cannot check on a slider" |
-| miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | It is an edge-swipe race that only a real finger reproduces |
-| Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
+| **Slider refraction banding** | Whether dividing the lens's refraction amount by the live `scaleX` fixes the torn blue blobs | A mouse-drag recording, before and after. **Not** a phone |
+| Slider pressed brightness | Whether 0.12 still reads as "catches light" now that it carries the emphasis alone | The same recording. A taste call, so it wants eyes on it |
+| miuix `navSwipeDismiss` | Whether the upstream fix actually resolves issue #21, so the flag can be re-enabled | A real finger — it is an edge-swipe race, and the mouse cannot do a bezel gesture |
+| Card pile under a real fling | The pile's smoothness now that up to 530dp of extra cards stay composed per page | A real finger. The AVD's frame pipeline is not the phone's; the arithmetic is pinned in tests but the *feel* is not |
 
 ### A decision, not a task
 

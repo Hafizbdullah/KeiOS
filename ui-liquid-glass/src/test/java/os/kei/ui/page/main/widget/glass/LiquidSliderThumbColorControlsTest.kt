@@ -14,9 +14,10 @@ import org.junit.Test
  * `colorControls(saturation = 1.5f)` — and nothing about a screenshot would reveal a drift from 1.5 to,
  * say, 1.4; the thumb would simply be slightly duller than every other glass surface in the app forever.
  *
- * The active half was not reachable on the API 37 AVD at all: every synthetic horizontal drag on a
- * settings slider is claimed by the settings pager, so `pressProgress` never leaves zero. A real finger
- * is still owed here.
+ * The active half is not reachable by **synthetic** input on the API 37 AVD: every `adb shell input`
+ * horizontal drag on a settings slider is claimed by the settings pager, so `pressProgress` never leaves
+ * zero. It *is* reachable by a real mouse drag on the emulator window, and that is how the pressed
+ * saturation was caught — see `grabbingTheThumbAddsLightWithoutAddingChroma`.
  */
 class LiquidSliderThumbColorControlsTest {
     @Test
@@ -26,29 +27,41 @@ class LiquidSliderThumbColorControlsTest {
         assertEquals(1.5f, SliderThumbVibrancySaturation, 0f)
     }
 
+    /**
+     * The invariant a screenshot of a resting slider can never guard, and the one a real drag caught.
+     *
+     * `colorControls` is the **colour filter** in Backdrop's `color filter ⇒ blur ⇒ lens` order, so it
+     * saturates the backdrop before this lens — which runs `chromaticAberration = true` — splits it into
+     * channels. Any pressed saturation above resting therefore multiplies the chroma of the aberration
+     * fringes, and it does so at exactly the moment `blur` lerps to zero and the lens amount grows, so
+     * there is nothing left to soften them.
+     *
+     * Measured off a 120fps recording of a real mouse drag, over a 46px band of the thumb: max HLS
+     * saturation went 0.31 at rest to **1.00** mid-drag, with a violet fringe above and an orange one
+     * below — complementary, which is channel separation rather than light.
+     */
     @Test
-    fun grabbingTheThumbAddsLightRatherThanRemovingIt() {
-        assertTrue(
-            "Pressed saturation must exceed resting, or the press reads as no change",
-            SliderThumbPressedSaturation > SliderThumbVibrancySaturation,
+    fun grabbingTheThumbAddsLightWithoutAddingChroma() {
+        assertEquals(
+            "Pressed saturation must equal resting: this lens has chromatic aberration on, and the " +
+                "colour filter runs before it, so a chroma lift becomes a rainbow fringe",
+            SliderThumbVibrancySaturation,
+            SliderThumbPressedSaturation,
+            0f,
         )
         assertTrue(
-            "Pressed brightness must be positive; a negative lift would darken on touch",
-            SliderThumbPressedBrightness > 0f,
+            "Brightness is the whole of the press emphasis now, so it must be positive and non-trivial",
+            SliderThumbPressedBrightness >= 0.08f,
         )
     }
 
     @Test
     fun theLiftStaysGentleEnoughToReadAsLight() {
-        // A 20dp capsule of glass over arbitrary content, including photos. Past roughly these bounds the
-        // effect stops looking like light on glass and starts looking like a colour bug.
-        assertTrue(
-            "Pressed saturation $SliderThumbPressedSaturation is beyond a plausible lift",
-            SliderThumbPressedSaturation <= 2.2f,
-        )
+        // A 20dp capsule of glass over arbitrary content, including photos. Past roughly this bound a
+        // luminance lift stops looking like light on glass and starts washing the refraction out.
         assertTrue(
             "Pressed brightness $SliderThumbPressedBrightness is beyond a plausible lift",
-            SliderThumbPressedBrightness <= 0.15f,
+            SliderThumbPressedBrightness <= 0.18f,
         )
     }
 

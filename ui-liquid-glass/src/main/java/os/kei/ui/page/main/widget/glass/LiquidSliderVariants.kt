@@ -974,18 +974,22 @@ private data class LiquidTrackSliderStyle(
     val thumbPressedSurfaceAlpha: Float = SliderThumbPressedSurfaceAlpha,
     val thumbRestingHighlightAlpha: Float = SliderThumbRestingHighlightAlpha,
     /**
-     * How much the thumb's lens brightens and saturates what it refracts, once grabbed.
+     * How much the thumb's lens brightens what it refracts, once grabbed.
      *
      * This is the one place the thumb goes past the Backdrop tutorial's effect stack, which stops at a
      * fixed `vibrancy()`. `vibrancy()` is documented as exactly `colorControls(saturation = 1.5f)`, so
-     * the resting values below reproduce it byte for byte and only the *active* end is new — the glass
-     * catches light as the finger lands on it rather than looking identical grabbed and idle.
+     * the resting values reproduce it byte for byte and only the *active* end is new — the glass catches
+     * light as the finger lands on it rather than looking identical grabbed and idle.
      *
      * That is also how this resolves Apple's rule for content-layer controls, which says a slider
      * "takes on a Liquid Glass appearance to emphasize its interactivity when a person activates it".
      * The app keeps its glass at rest, which the Backdrop slider does too and which the rest of this
      * app's language expects; the emphasis Apple asks for arrives as light instead of as a swap from
      * standard material to glass. A small capsule turning opaque at rest would read as foreign here.
+     *
+     * **Light means brightness, not saturation.** [pressedSaturation] deliberately equals
+     * [restingSaturation] — see its own note for the measurement that forced that, and for why a chroma
+     * lift on this particular surface cannot help.
      */
     val restingSaturation: Float = SliderThumbVibrancySaturation,
     val pressedSaturation: Float = SliderThumbPressedSaturation,
@@ -1008,11 +1012,36 @@ private const val SliderThumbFallbackSurfaceAlpha = 0.42f
 /** What `vibrancy()` is, per the Backdrop docs: `colorControls(saturation = 1.5f)`. */
 internal const val SliderThumbVibrancySaturation = 1.5f
 
-// Deliberately gentle. The thumb is 20-ish dp of glass over arbitrary content, and the lens is already
-// gaining strength on the same gesture — an aggressive lift here reads as a colour bug rather than as
-// light, especially over a photo. Tuned on the API 37 AVD against both themes.
-internal const val SliderThumbPressedSaturation = 1.85f
-internal const val SliderThumbPressedBrightness = 0.06f
+/**
+ * Equal to [SliderThumbVibrancySaturation] on purpose: **the thumb's chroma must not rise on press.**
+ *
+ * This was 1.85f, and the note here said an aggressive lift "reads as a colour bug rather than as light…
+ * Tuned on the API 37 AVD against both themes". Both halves were wrong in the same way — the tuning only
+ * ever saw the *resting* thumb, because synthetic input cannot reach the active state, so the value that
+ * governs the active end was never looked at. A screen recording of a real mouse drag showed it.
+ *
+ * The mechanism is the Backdrop effect order, **color filter ⇒ blur ⇒ lens**. `colorControls` is the
+ * colour filter, so it saturates the backdrop *before* the lens splits it, and this lens runs with
+ * `chromaticAberration = true`. On press three things peak together: chroma ×1.85, `blur` lerps to
+ * **zero** so nothing softens the split, and the lens amount grows ×[pressedLensAmountScale]. Measured
+ * off the recording, over a 46px band of the thumb: max HLS saturation **0.31 at rest → 1.00 mid-drag**,
+ * mean 0.029 → 0.080, with fully saturated pixels spread across red, orange, yellow, cyan and blue. A
+ * violet band above and an orange band below — complementary fringes, which is channel separation, not
+ * light.
+ *
+ * So the emphasis Apple asks for arrives through [SliderThumbPressedBrightness] alone. Brightness raises
+ * luminance without multiplying chroma, so it cannot feed the aberration. The knob stays a knob rather
+ * than being deleted because the ramp machinery is right and only the channel was wrong.
+ */
+internal const val SliderThumbPressedSaturation = SliderThumbVibrancySaturation
+
+/**
+ * The whole of the thumb's "catches light" now, so it carries what the saturation ramp used to share.
+ *
+ * Doubled from 0.06f. Safe to push where saturation was not: a luminance offset moves all three channels
+ * together, so it cannot widen the gap the chromatic aberration opens between them.
+ */
+internal const val SliderThumbPressedBrightness = 0.12f
 
 private fun thumbGlassSurfaceAlphaFor(isLightTheme: Boolean): Float =
     if (isLightTheme) SliderThumbGlassSurfaceAlpha else SliderThumbGlassSurfaceAlphaDark
