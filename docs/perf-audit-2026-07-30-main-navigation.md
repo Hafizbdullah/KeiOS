@@ -583,6 +583,20 @@ Saved local evidence lives under
 under
 `artifacts/performance-2026-08-01-v1.11.8-baseline/final-acceptance/`.
 
+On 2026-08-18 those trees were pruned to reclaim disk. Every benchmark had been
+captured over five iterations; `iter000` of each was kept and the four repeats
+deleted, which took `artifacts/` from 5.4 GB to 1.8 GB. Nothing derived was
+touched — all `_analysis.md` chains of evidence, benchmark metric `.txt` files,
+screenshots, and XML results survive intact, so every number quoted in this
+document is still backed by the file it was read from. What no longer exists is
+the ability to re-open the other four iterations of a run. Eight `_analysis.md`
+files happened to have been written against `iter002` rather than `iter000`; each
+now carries a note naming the surviving sibling trace of the same benchmark in
+the same experiment directory, so the phenomenon stays inspectable even though
+that exact iteration does not. Any fresh comparison needs a fresh capture
+regardless: these traces measure v1.11.8 and v1.12.0 builds, and the entire
+large-screen adaptation has landed since.
+
 ## Remaining acceptance work
 
 1. The targeted backdrop and Liquid Glass unit tests pass. The full app suite
