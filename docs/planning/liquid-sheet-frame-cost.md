@@ -145,7 +145,9 @@ glass-controls toggle (which leaves the sheet's blur fully on and still recovers
 scaling (1.8x area, +7% cost). Recorded because it is a plausible-looking dead end that someone
 reading `LiquidSheetSurface.kt` will arrive at again.
 
-## Candidate fixes, none measured
+## Candidate fixes
+
+Candidates 2 and 4 are now built and measured — see the section below. 1 and 3 are still open.
 
 In rough order of expected payoff per unit of risk. All of these need an A/B before being believed —
 `backdrop-reduced-resolution.md` is the cautionary tale of a direction whose measured upper bound
@@ -171,6 +173,68 @@ turned out to be exactly zero.
 
 Not a candidate: reducing backdrop capture resolution. Already measured at an upper bound of zero in
 `backdrop-reduced-resolution.md`.
+
+## Implemented and measured: the modal freeze, and laziness
+
+Two of the four candidates above were built and A/B'd on the same AVD, same release variant, same
+journeys. Numbers pooled over two runs per condition (four for the last one, to establish spread).
+
+**Sheet scroll**, window 1280x2000, eight 90ms flings:
+
+| build | p50 | mean | >50ms | >100ms | RT mean |
+|---|---|---|---|---|---|
+| baseline | 132.92 | 132.43 | 100% | 100% | 38.74 |
+| **+ modal freeze** | **17.47** | 38.24 | 27% | 6% | 9.82 |
+| **+ modal freeze + lazy** | **17.27** | 36.44 | 26% | 0% | 9.15 |
+| glass controls off (ceiling) | 16.83 | 18.18 | 0% | 0% | 2.48 |
+| plain page scroll (reference) | 17.47 | 17.36 | 0% | 0% | 3.35 |
+
+**Sheet at rest**, native 1280x2856:
+
+| build | frames in 3s | p50 | RT mean |
+|---|---|---|---|
+| baseline | 131 | 134.14 | 38.92 |
+| + modal freeze | **0** | — | — |
+| + modal freeze + lazy | **0** | — | — |
+
+### The modal freeze is the whole win
+
+`LiquidOverlayHostState.hasPresentation` now gates the dynamic background's playback, and with it the
+colour-stage interpolation — that second one is load-bearing, because `colorStage` is read inside the
+draw lambda and would have kept invalidating at spring rate on its own, leaving the gate looking
+useless.
+
+At rest the result is not "faster", it is **`Total frames rendered: 0`**. An open sheet now redraws
+nothing at all, which is the same property `hwui-frame-budget.md` singles out as BA's best-in-app
+behaviour. Scrolling drops from 133ms to 17.5ms at the median — identical to a plain page scroll.
+
+Verified that the freeze releases: Home renders 245 frames in three seconds, 0 with a sheet open, and
+**245 again after dismissing it**. Not a one-way latch.
+
+The residual is honest and visible in the table: 26% of frames during an *active drag* still exceed
+50ms, against 0% for the glass-off ceiling. The freeze removes invalidations the app did not need; it
+does nothing about the cost of the ones it does need. While a finger is actually moving, the glass
+stack is legitimately redrawing, and that still costs ~30ms of RenderThread.
+
+### Laziness is real but marginal, for a structural reason
+
+`SheetContentLazyColumn` is added and Home's "Bottom pages" sheet migrated to it. The effect is small
+but consistent — the two conditions do not overlap across runs:
+
+| condition | RT mean per run |
+|---|---|
+| modal freeze only | 9.57, 10.07 |
+| + lazy | 9.33, 8.97, 8.90, 8.82 |
+
+About 0.8ms, ~8% of RT mean. That is the *ceiling for this sheet*, not a disappointing result from a
+good lever, and the dose-response above says why: nine of the sheet's glass switches live inside a
+single `SheetSectionCard`, which is one lazy item and is always at least partly on screen, so it can
+never be culled. What laziness can drop here is the Debug card — one switch — which at ~3.7ms per
+control is exactly the ~0.8ms observed.
+
+To collect the rest, the table card's rows would have to become individually cullable, which means
+breaking one card into many and is a visual change, not a refactor. The cheaper direction is candidate
+1: cut the per-control constant.
 
 ## Reproducing
 
