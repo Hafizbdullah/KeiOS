@@ -390,6 +390,22 @@ class BaselineProfileGenerator {
      * in `configChanges`, so this reflows rather than recreating the Activity — the reflow is exactly the code
      * path worth compiling anyway, since a fold does it every time it opens.
      *
+     * ## Why the sizes are in dp and why the *short* side matters
+     *
+     * The first version of this passed physical pixels straight to `wm size`, which made it silently
+     * density-dependent: `2560x1600` is 1280x800dp on the Pad AVD at density 320 and 853x533dp on the phone
+     * AVD at 480. It failed on the phone AVD with `Unable to find testTag=main_sidebar_toggle`, and the
+     * reason is a two-step trap worth stating.
+     *
+     * `MainActivity` still declares `screenOrientation="sensorPortrait"`, and from targetSdk 36 that request
+     * is ignored *only* on a display whose **smallest** width is >= 600dp. At 853x533dp the short side is
+     * 533dp, so the request was honoured, the window was flipped to portrait at 533dp wide, the placement
+     * fell back to `Bottom`, and the toggle under test never composed. The failure looked like a missing test
+     * tag; it was a forced rotation.
+     *
+     * So both tablet-shaped steps below keep their *short* side past 600dp as well as their long side past
+     * 660dp. Getting only the long side right reproduces exactly the bug above.
+     *
      * ## Why the geometry is restored in a `finally`
      *
      * `wm size` outlives the process. Leaving a 1280dp override behind would silently invalidate every later
@@ -403,8 +419,9 @@ class BaselineProfileGenerator {
             includeInStartupProfile = false,
         ) {
             try {
-                // 1280x800dp at density 320 — the Pixel Tablet in landscape, and past both thresholds.
-                forceWindowSize(widthPx = 2560, heightPx = 1600)
+                // Tablet-shaped: long side past the 660dp sidebar floor, short side past the 600dp line that
+                // decides whether the manifest's portrait request is ignored. Both, or the window rotates.
+                forceWindowSizeDp(widthDp = 1000, heightDp = 800)
                 launchHomeFromColdStart()
 
                 // Tab bar shape: the same tab test tags, now in the top row.
@@ -426,11 +443,26 @@ class BaselineProfileGenerator {
                 clickTestTag(MAIN_SIDEBAR_TOGGLE)
 
                 // A fold opening and closing: the width crosses both thresholds while the app is running.
-                forceWindowSize(widthPx = 1550, heightPx = 1600) // 775dp — fold inner, portrait-ish
+                // 775dp is past 660dp so the sidebar is still offered; its 800dp short side keeps the window
+                // from rotating. 500dp is under both, which is the compact shape and the point of the step —
+                // and there the portrait request applies again, which is correct rather than incidental.
+                forceWindowSizeDp(widthDp = 775, heightDp = 800) // fold inner
                 device.waitForIdle()
-                forceWindowSize(widthPx = 1000, heightPx = 1600) // 500dp — compact, back to the bottom bar
+                forceWindowSizeDp(widthDp = 500, heightDp = 800) // compact, back to the bottom bar
                 device.waitForIdle()
-                waitForHome()
+
+                // Returning to Home here is a *navigation*, not a wait. The sidebar left the app on BA and
+                // resizing does not move it, so the previous `waitForHome()` could only ever time out — it
+                // was unreachable behind the rotation bug above, and surfaced the moment that was fixed.
+                //
+                // Going through the tab is also the assertion worth making: at 500dp the bottom bar is the
+                // only way to move between sections, so a tap that lands proves the compact shape came back
+                // rather than merely that the window resized.
+                clickAndWaitForPage(
+                    tabTag = MAIN_BOTTOM_TAB_HOME,
+                    pageTag = HOME_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_HOME,
+                )
             } finally {
                 resetWindowSize()
             }
@@ -439,10 +471,25 @@ class BaselineProfileGenerator {
 }
 
 /**
- * Overrides the window size for the rest of the journey.
+ * Overrides the window size for the rest of the journey, in **dp**.
  *
- * Physical pixels, because that is what `wm size` takes; the dp the app sees is this divided by the device's
- * density. The callers above are written for density 320, which is the Pad AVD's.
+ * Every threshold this journey exercises is expressed in dp, so the sizes have to be too. Passing pixels
+ * instead is what made the first version pass on one AVD and fail on another purely because their densities
+ * differ — see the journey's KDoc.
+ */
+private fun MacrobenchmarkScope.forceWindowSizeDp(
+    widthDp: Int,
+    heightDp: Int,
+) {
+    val densityDpi = deviceDensityDpi()
+    forceWindowSize(
+        widthPx = widthDp * densityDpi / 160,
+        heightPx = heightDp * densityDpi / 160,
+    )
+}
+
+/**
+ * Overrides the window size for the rest of the journey, in physical pixels — what `wm size` actually takes.
  */
 private fun MacrobenchmarkScope.forceWindowSize(
     widthPx: Int,
@@ -450,6 +497,21 @@ private fun MacrobenchmarkScope.forceWindowSize(
 ) {
     device.executeShellCommand("wm size ${widthPx}x$heightPx")
     device.waitForIdle()
+}
+
+/**
+ * The device's effective density, so dp can be converted to the pixels `wm size` wants.
+ *
+ * Prefers an override when one is set: `wm density` reports both, and a device someone has changed the density
+ * on would otherwise be measured against a figure it is not using. Fails loudly rather than guessing a default
+ * — a silently wrong density is precisely the failure this helper exists to remove.
+ */
+private fun MacrobenchmarkScope.deviceDensityDpi(): Int {
+    val output = device.executeShellCommand("wm density")
+    val override = Regex("Override density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
+    val physical = Regex("Physical density: (\\d+)").find(output)?.groupValues?.get(1)?.toIntOrNull()
+    return override ?: physical
+        ?: error("Could not read the device density from `wm density`, got: $output")
 }
 
 /** Returns the window to the device's own size. Must run even when the journey fails. */
