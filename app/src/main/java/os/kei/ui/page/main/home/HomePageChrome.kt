@@ -47,7 +47,7 @@ import os.kei.ui.page.main.os.appLucideCloseIcon
 import os.kei.ui.page.main.widget.glass.AppLiquidIconButton
 import os.kei.ui.page.main.widget.glass.AppSwitch
 import os.kei.ui.page.main.widget.glass.GlassVariant
-import os.kei.ui.page.main.widget.sheet.SheetContentColumn
+import os.kei.ui.page.main.widget.sheet.SheetContentLazyColumn
 import os.kei.ui.page.main.widget.sheet.SheetControlRow
 import os.kei.ui.page.main.widget.sheet.SheetDescriptionText
 import os.kei.ui.page.main.widget.sheet.SheetSectionCard
@@ -129,70 +129,77 @@ internal fun HomePageControlSheet(
             )
         },
     ) {
-        SheetContentColumn(
-            scrollable = true,
+        // Lazy rather than eager, so a section that is entirely off screen is not composed and its
+        // glass controls are not rasterized. Note the ceiling this has *here*: the page-display table
+        // is one card, so it is one item, and it is always at least partly visible — see the KDoc on
+        // [SheetContentLazyColumn] for the measurement that says clipping is not culling.
+        SheetContentLazyColumn(
             verticalSpacing = 10.dp,
         ) {
-            SheetSectionTitle(tableTitle)
-            SheetSectionCard(verticalSpacing = 8.dp) {
-                HomePageVisibilityTableHeader()
-                HomePageVisibilityTableRow(
-                    page = BottomPage.Home,
-                    cardLabel = null,
-                    bottomVisible = true,
-                    cardVisible = false,
-                    bottomFixed = true,
-                    cardAvailable = false,
-                    onBottomVisibleChange = {},
-                    onCardVisibleChange = {},
-                )
-                BottomPage.entries
-                    .filter { it != BottomPage.Home }
-                    .forEach { page ->
-                        val overviewCard = page.toHomeOverviewCardOrNull()
-                        val bottomVisible = visibleBottomPages.contains(page)
-                        HomePageVisibilityTableRow(
-                            page = page,
-                            cardLabel =
-                                when (overviewCard) {
-                                    HomeOverviewCard.MCP -> homeCardMcp
-                                    HomeOverviewCard.GITHUB -> homeCardGitHub
-                                    HomeOverviewCard.WEBDAV -> homeCardWebDav
-                                    HomeOverviewCard.BA -> homeCardBa
-                                    null -> null
+            item { SheetSectionTitle(tableTitle) }
+            item {
+                SheetSectionCard(verticalSpacing = 8.dp) {
+                    HomePageVisibilityTableHeader()
+                    HomePageVisibilityTableRow(
+                        page = BottomPage.Home,
+                        cardLabel = null,
+                        bottomVisible = true,
+                        cardVisible = false,
+                        bottomFixed = true,
+                        cardAvailable = false,
+                        onBottomVisibleChange = {},
+                        onCardVisibleChange = {},
+                    )
+                    BottomPage.entries
+                        .filter { it != BottomPage.Home }
+                        .forEach { page ->
+                            val overviewCard = page.toHomeOverviewCardOrNull()
+                            val bottomVisible = visibleBottomPages.contains(page)
+                            HomePageVisibilityTableRow(
+                                page = page,
+                                cardLabel =
+                                    when (overviewCard) {
+                                        HomeOverviewCard.MCP -> homeCardMcp
+                                        HomeOverviewCard.GITHUB -> homeCardGitHub
+                                        HomeOverviewCard.WEBDAV -> homeCardWebDav
+                                        HomeOverviewCard.BA -> homeCardBa
+                                        null -> null
+                                    },
+                                bottomVisible = bottomVisible,
+                                cardVisible = overviewCard?.let(visibleOverviewCards::contains) == true,
+                                bottomFixed = false,
+                                cardAvailable = overviewCard != null && bottomVisible,
+                                onBottomVisibleChange = { checked ->
+                                    onBottomPageVisibilityChange(page, checked)
                                 },
-                            bottomVisible = bottomVisible,
-                            cardVisible = overviewCard?.let(visibleOverviewCards::contains) == true,
-                            bottomFixed = false,
-                            cardAvailable = overviewCard != null && bottomVisible,
-                            onBottomVisibleChange = { checked ->
-                                onBottomPageVisibilityChange(page, checked)
-                            },
-                            onCardVisibleChange = { checked ->
-                                if (overviewCard != null) {
-                                    onOverviewCardVisibilityChange(overviewCard, checked)
-                                }
-                            },
+                                onCardVisibleChange = { checked ->
+                                    if (overviewCard != null) {
+                                        onOverviewCardVisibilityChange(overviewCard, checked)
+                                    }
+                                },
+                            )
+                        }
+                    HomePageStandaloneCardVisibilityRow(
+                        label = homeCardWebDav,
+                        cardVisible = visibleOverviewCards.contains(HomeOverviewCard.WEBDAV),
+                        onCardVisibleChange = { checked ->
+                            onOverviewCardVisibilityChange(HomeOverviewCard.WEBDAV, checked)
+                        },
+                    )
+                    SheetDescriptionText(text = tableDesc)
+                }
+            }
+            item { SheetSectionTitle(debugSectionTitle) }
+            item {
+                SheetSectionCard(verticalSpacing = 10.dp) {
+                    SheetControlRow(label = cacheFreshnessToggleLabel) {
+                        AppSwitch(
+                            checked = showCacheFreshnessInCards,
+                            onCheckedChange = onCacheFreshnessVisibilityChange,
                         )
                     }
-                HomePageStandaloneCardVisibilityRow(
-                    label = homeCardWebDav,
-                    cardVisible = visibleOverviewCards.contains(HomeOverviewCard.WEBDAV),
-                    onCardVisibleChange = { checked ->
-                        onOverviewCardVisibilityChange(HomeOverviewCard.WEBDAV, checked)
-                    },
-                )
-                SheetDescriptionText(text = tableDesc)
-            }
-            SheetSectionTitle(debugSectionTitle)
-            SheetSectionCard(verticalSpacing = 10.dp) {
-                SheetControlRow(label = cacheFreshnessToggleLabel) {
-                    AppSwitch(
-                        checked = showCacheFreshnessInCards,
-                        onCheckedChange = onCacheFreshnessVisibilityChange,
-                    )
+                    SheetDescriptionText(text = cacheFreshnessToggleDesc)
                 }
-                SheetDescriptionText(text = cacheFreshnessToggleDesc)
             }
         }
     }

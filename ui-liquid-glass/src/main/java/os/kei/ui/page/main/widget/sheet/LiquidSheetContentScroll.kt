@@ -1,6 +1,7 @@
 package os.kei.ui.page.main.widget.sheet
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -31,11 +32,25 @@ import androidx.compose.runtime.staticCompositionLocalOf
  */
 @Stable
 class LiquidSheetContentScroll internal constructor() {
-    private var scrollState by mutableStateOf<ScrollState?>(null)
+    /**
+     * The two facts the sheet needs about whatever is scrolling inside it.
+     *
+     * An interface rather than a concrete `ScrollState` because a sheet's content can be either an
+     * eager [SheetContentColumn] or a lazy [SheetContentLazyColumn], and the drag arbitration must
+     * not care which. Both answers have to be readable *outside* composition — the nested-scroll
+     * callbacks consult them while dispatching a pointer event — so implementations must read
+     * snapshot state directly in the getter rather than caching into a field.
+     */
+    internal interface Source {
+        val canScrollUp: Boolean
+        val overflows: Boolean
+    }
+
+    private var source by mutableStateOf<Source?>(null)
 
     /** True once the content has been scrolled away from its top, so it owns an upward drag. */
     val canScrollUp: Boolean
-        get() = (scrollState?.value ?: 0) > 0
+        get() = source?.canScrollUp == true
 
     /**
      * True when the content is taller than its viewport.
@@ -46,15 +61,47 @@ class LiquidSheetContentScroll internal constructor() {
      * hundred pixels of empty glass below the content.
      */
     val overflows: Boolean
-        get() = (scrollState?.maxValue ?: 0) > 0
+        get() = source?.overflows == true
 
-    internal fun attach(state: ScrollState) {
-        scrollState = state
+    internal fun attach(source: Source) {
+        this.source = source
     }
 
-    internal fun detach(state: ScrollState) {
-        if (scrollState === state) scrollState = null
+    internal fun detach(source: Source) {
+        if (this.source === source) this.source = null
     }
+}
+
+/** [LiquidSheetContentScroll.Source] over the eager column's [ScrollState]. */
+internal class ScrollStateSheetContentSource(
+    private val state: ScrollState,
+) : LiquidSheetContentScroll.Source {
+    override val canScrollUp: Boolean
+        get() = state.value > 0
+
+    override val overflows: Boolean
+        get() = state.maxValue > 0
+}
+
+/**
+ * [LiquidSheetContentScroll.Source] over a lazy list's [LazyListState].
+ *
+ * A lazy list has no `value`/`maxValue` — it does not know its own total extent, which is the whole
+ * point of it. The equivalents are the scroll-availability flags:
+ *
+ * - `canScrollBackward` is exactly "not resting at the first item's start", which is what
+ *   [canScrollUp] means.
+ * - overflow is "can move at all in either direction". Checking only `canScrollForward` would report
+ *   `false` once the list is scrolled to its end and hand the sheet a drag it should not have taken.
+ */
+internal class LazyListSheetContentSource(
+    private val state: LazyListState,
+) : LiquidSheetContentScroll.Source {
+    override val canScrollUp: Boolean
+        get() = state.canScrollBackward
+
+    override val overflows: Boolean
+        get() = state.canScrollForward || state.canScrollBackward
 }
 
 @Composable

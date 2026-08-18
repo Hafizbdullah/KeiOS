@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
@@ -54,9 +55,13 @@ fun SheetContentColumn(
     // Keyed on the link and the scroll state, both of which are `remember`ed — never on a lambda, so
     // an unrelated recomposition of the host cannot detach a live scroll position.
     val contentScroll = LocalLiquidSheetContentScroll.current
-    DisposableEffect(contentScroll, scrollState, scrollable) {
-        if (scrollable) contentScroll?.attach(scrollState)
-        onDispose { contentScroll?.detach(scrollState) }
+    // `remember`ed so the key below is stable: a source allocated per composition would make this
+    // effect re-run on every recomposition of the host, which is the exact failure the KDoc on
+    // [LiquidSheetContentScroll] describes.
+    val scrollSource = remember(scrollState) { ScrollStateSheetContentSource(scrollState) }
+    DisposableEffect(contentScroll, scrollSource, scrollable) {
+        if (scrollable) contentScroll?.attach(scrollSource)
+        onDispose { contentScroll?.detach(scrollSource) }
     }
     DisposableEffect(scrollable, overflowReporter, managedScrollableContentReporter) {
         onDispose {
