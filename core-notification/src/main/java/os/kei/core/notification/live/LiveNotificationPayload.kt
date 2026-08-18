@@ -66,6 +66,19 @@ data class LiveNotificationPayload(
             return serverName.trim() == BA_CALENDAR_POOL_SERVER_NAME
         }
 
+        /**
+         * The one-shot "dailies template applied" result.
+         *
+         * Unlike every other name here this describes an action that has already finished rather than a
+         * session that is running, which is why its presentation is a terminal one with no progress:
+         * `BA_DAILY_DONE_SERVER_NAME` existed before this discriminator did, so the notification fell
+         * through to the generic MCP server shaping and announced itself in the island with the
+         * server-online string.
+         */
+        fun isBaDailyDoneServerName(serverName: String): Boolean {
+            return serverName.trim() == BA_DAILY_DONE_SERVER_NAME
+        }
+
         fun isGitHubShareImportServerName(serverName: String): Boolean {
             return serverName.trim() == GITHUB_SHARE_IMPORT_SERVER_NAME
         }

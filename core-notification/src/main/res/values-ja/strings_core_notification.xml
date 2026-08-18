@@ -16,6 +16,9 @@
     <string name="ba_cafe_visit_notification_island_text">カフェ</string>
     <string name="ba_cafe_visit_notification_title">カフェ訪問</string>
     <string name="ba_notification_ap_island_text">AP</string>
+    <string name="ba_daily_done_notification_island_text">完了</string>
+    <string name="ba_daily_done_notification_special_title">デイリー</string>
+    <string name="ba_daily_done_notification_title">デイリー完了</string>
 
     <string name="github_page_install_confirm_action_install">インストール</string>
     <string name="github_share_import_notify_action_confirm_track">追跡</string>

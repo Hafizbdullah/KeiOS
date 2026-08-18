@@ -99,12 +99,16 @@ internal abstract class BaDailyDoneTileServiceBase : TileService() {
      */
     private fun report(outcomes: Map<BaAccountId, BaDailyDoneOutcome>) {
         if (outcomes.isEmpty()) return
-        val changed = outcomes.count { it.value.changedAnything }
-        if (changed == 0) return
+        val changedEntries = outcomes.filter { it.value.changedAnything }
+        if (changedEntries.isEmpty()) return
         BaDailyDoneNotificationDispatcher.send(
             context = this,
-            changedAccounts = changed,
+            changedAccounts = changedEntries.size,
             craftSlotsStarted = outcomes.values.sumOf { it.craftSlotsStarted },
+            // Derived from the outcome rather than from `slot`, because the all-accounts tile can also
+            // end up having changed exactly one account — only one was enabled, or only one had anything
+            // left to do — and that run has just as single a destination as a per-account tile's.
+            targetAccountId = changedEntries.keys.singleOrNull(),
         )
     }
 

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Super Island icon for the BA daily-done result.
+
+    App-authored rather than a game logo, deliberately: the sibling island icons (AP, arena coin, tea
+    party) are real Blue Archive assets because they stand for real in-game resources, and "the dailies
+    template was applied" is a KeiOS action with no in-game emblem to borrow. Drawing a checklist is
+    honest about that; reusing a resource icon would imply the notification is about that resource.
+
+    Ticks carry the project's completion green (#22C55E, see readme/MI_FOCUS_NOTIFICATION_TEMPLATES.md
+    "项目默认语义色"), so the icon agrees with the island's accent colour instead of fighting it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.86"
+        android:scaleY="0.86">
+        <path
+            android:pathData="M2.6,6 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FF22C55E"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M2.6,12 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FF22C55E"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M2.6,18 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FF22C55E"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M11,6 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M11,12 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M11,18 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

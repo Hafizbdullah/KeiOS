@@ -106,6 +106,14 @@ class MiIslandNotificationBuilder(
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_BG_COLOR_DARK = "#334155"
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR = "#475569"
         private const val GITHUB_SHARE_IMPORT_ACTION_NEUTRAL_TITLE_COLOR_DARK = "#CBD5E1"
+        /**
+         * Completion green, the same value [WEBDAV_SUCCESS_COLOR] carries and the one
+         * `readme/MI_FOCUS_NOTIFICATION_TEMPLATES.md` names for "完成 / 正向结果". Spelled out per feature
+         * rather than shared, because a later decision to re-tone one feature should not silently retone
+         * the other.
+         */
+        private const val BA_DAILY_DONE_ACCENT_COLOR = "#22C55E"
+        private val ISLAND_ICON_RES_ID_BA_DAILY_DONE = R.drawable.ic_ba_daily_done_island
         private val ISLAND_ICON_RES_ID_AP = R.drawable.ic_ba_ap_island_notification
         private val ISLAND_ICON_RES_ID_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
         private val ISLAND_ICON_RES_ID_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
@@ -128,21 +136,26 @@ class MiIslandNotificationBuilder(
             LiveNotificationPayload.isGitHubShareImportServerName(state.serverName)
         val isWebDavSync =
             LiveNotificationPayload.isWebDavSyncServerName(state.serverName)
+        val isBlueArchiveDailyDone =
+            LiveNotificationPayload.isBaDailyDoneServerName(state.serverName)
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
                     isBlueArchiveArenaRefresh ||
-                    isBlueArchiveCalendarPool
+                    isBlueArchiveCalendarPool ||
+                    isBlueArchiveDailyDone
         val islandIconResId = when {
             isBlueArchiveAp -> ISLAND_ICON_RES_ID_AP
             isBlueArchiveCafeVisit -> ISLAND_ICON_RES_ID_BA_CAFE_VISIT
             isBlueArchiveArenaRefresh -> ISLAND_ICON_RES_ID_BA_ARENA_REFRESH
             isBlueArchiveCalendarPool -> ISLAND_ICON_RES_ID_BA_CALENDAR_POOL
+            isBlueArchiveDailyDone -> ISLAND_ICON_RES_ID_BA_DAILY_DONE
             isGitHubShareImport -> ISLAND_ICON_RES_ID_GITHUB_SHARE_IMPORT
             else -> NotificationAppIconResolver.smallIconResId()
         }
         val shortCriticalText = resolveShortCriticalText(
             state = state,
+            isBlueArchiveDailyDone = isBlueArchiveDailyDone,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
@@ -152,6 +165,7 @@ class MiIslandNotificationBuilder(
         )
         val presentation = resolvePresentation(
             state = state,
+            isBlueArchiveDailyDone = isBlueArchiveDailyDone,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
@@ -251,13 +265,17 @@ class MiIslandNotificationBuilder(
             LiveNotificationPayload.isGitHubShareImportServerName(state.serverName)
         val isWebDavSync =
             LiveNotificationPayload.isWebDavSyncServerName(state.serverName)
+        val isBlueArchiveDailyDone =
+            LiveNotificationPayload.isBaDailyDoneServerName(state.serverName)
         val isBlueArchiveNotification =
             isBlueArchiveAp ||
                     isBlueArchiveCafeVisit ||
                     isBlueArchiveArenaRefresh ||
-                    isBlueArchiveCalendarPool
+                    isBlueArchiveCalendarPool ||
+                    isBlueArchiveDailyDone
         val presentation = resolvePresentation(
             state = state,
+            isBlueArchiveDailyDone = isBlueArchiveDailyDone,
             isBlueArchiveAp = isBlueArchiveAp,
             isBlueArchiveCafeVisit = isBlueArchiveCafeVisit,
             isBlueArchiveArenaRefresh = isBlueArchiveArenaRefresh,
@@ -518,6 +536,7 @@ class MiIslandNotificationBuilder(
 
     private fun resolvePresentation(
         state: LiveNotificationPayload,
+        isBlueArchiveDailyDone: Boolean,
         isBlueArchiveAp: Boolean,
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
@@ -526,6 +545,30 @@ class MiIslandNotificationBuilder(
         isWebDavSync: Boolean,
         miIslandProgressColorOverride: String? = null
     ): IslandPresentation {
+        // Terminal by construction, and the only entry here that is. A daily-done notification is posted
+        // *after* the template has already been applied, so there is no session to report on: no progress
+        // bar (the doc's "这些阶段不写模拟进度"), not ongoing, and no promoted-ongoing request — that one
+        // requires FLAG_ONGOING_EVENT, and asking for it on a finished event is what makes HyperOS retire
+        // the island and leave a plain notification behind.
+        //
+        // `focusUpdatable` with a stable order id from the dispatcher means a second run rewrites the first
+        // island rather than stacking a second one, which matches the single fixed notification id.
+        if (isBlueArchiveDailyDone) {
+            return IslandPresentation(
+                allowFloat = true,
+                showTextButtons = true,
+                bigTemplateKind = IslandBigTemplateKind.TEXT,
+                smallTemplateKind = IslandSmallTemplateKind.ICON,
+                compactTitle = context.getString(R.string.ba_daily_done_notification_island_text),
+                notificationOngoing = false,
+                requestPromotedOngoing = false,
+                focusUpdatable = true,
+                focusShowNotification = true,
+                expandedProgressKind = IslandExpandedProgressKind.NONE,
+                notificationAccentColor = BA_DAILY_DONE_ACCENT_COLOR,
+                primaryActionColor = BA_DAILY_DONE_ACCENT_COLOR
+            )
+        }
         if (isBlueArchiveAp && state.running) {
             return IslandPresentation(
                 allowFloat = true,
@@ -756,6 +799,7 @@ class MiIslandNotificationBuilder(
 
     private fun resolveShortCriticalText(
         state: LiveNotificationPayload,
+        isBlueArchiveDailyDone: Boolean,
         isBlueArchiveAp: Boolean,
         isBlueArchiveCafeVisit: Boolean,
         isBlueArchiveArenaRefresh: Boolean,
@@ -764,6 +808,12 @@ class MiIslandNotificationBuilder(
         isWebDavSync: Boolean
     ): String? {
         return when {
+            // Ahead of the `!state.running` arm on purpose. This notification is dispatched with
+            // `running = true` so the shared pipeline treats it as a real event rather than a stopped
+            // service, which previously dropped it into the trailing `else` and put MCP's
+            // server-online string in the island.
+            isBlueArchiveDailyDone ->
+                context.getString(R.string.ba_daily_done_notification_island_text)
             isWebDavSync -> state.shortText.ifBlank { state.onlineText(context) }
             !state.running -> state.statusText(context)
             isBlueArchiveAp -> context.getString(R.string.ba_notification_ap_island_text)

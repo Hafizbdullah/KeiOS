@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Live Updates variant. An inset alias of the island drawable, matching the convention every other
+    BA icon family here follows (see ic_ba_tea_party_live_update, ic_ba_ap_live_update): the two
+    surfaces want the same artwork, and aliasing keeps them from drifting apart when one is edited.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_ba_daily_done_island"
+    android:insetLeft="0dp"
+    android:insetTop="0dp"
+    android:insetRight="0dp"
+    android:insetBottom="0dp" />

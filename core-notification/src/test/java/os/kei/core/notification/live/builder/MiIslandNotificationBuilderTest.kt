@@ -854,6 +854,77 @@ class MiIslandNotificationBuilderTest {
         assertTrue(focusParam.contains("mcp_action_stop"))
     }
 
+    @Test
+    fun `ba daily done island shows a terminal short word instead of the mcp server summary`() {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+        val openPendingIntent = buildOpenPendingIntent(
+            context = context,
+            requestCode = 741,
+            action = "os.kei.test.OPEN_BA_DAILY_DONE"
+        )
+        val detail = "已标记 2 个账号，开启 2 个制造槽"
+        val payload = NotificationPayload(
+            state = LiveNotificationPayload(
+                serverName = LiveNotificationPayload.BA_DAILY_DONE_SERVER_NAME,
+                // Dispatched as a live event that is already finished: running, never ongoing. This pair
+                // is what used to drop it into the generic MCP shaping.
+                running = true,
+                port = 0,
+                path = detail,
+                clients = 0,
+                ongoing = false,
+                onlyAlertOnce = false,
+                openPendingIntent = openPendingIntent,
+                stopPendingIntent = openPendingIntent,
+                overrideTitle = "日常完成",
+                overrideContent = detail,
+                overrideShortText = "完成",
+                miFocusTitle = "日常完成",
+                miFocusSpecialTitle = "日常",
+                miFocusContent = detail,
+                miFocusOrderId = "ba-daily-done",
+            ),
+            settings = UserSettings(miIslandOuterGlow = true),
+            environment = EnvironmentContext(
+                channelId = "test_mi_island_channel",
+                isHyperOS = true
+            )
+        )
+
+        val notification = MiIslandNotificationBuilder(context).build(payload)
+        val focusParam = notification.extras.getString("miui.focus.param").orEmpty()
+        val focusJson = JSONObject(focusParam).getJSONObject("param_v2")
+        val bigIsland = focusJson.getJSONObject("param_island").getJSONObject("bigIslandArea")
+        val baseInfo = focusJson.getJSONObject("baseInfo")
+
+        // Terminal short word, and `type = 3` is what the template doc recommends for one.
+        val bigText = bigIsland.getJSONObject("imageTextInfoRight")
+        assertEquals(3, bigText.getInt("type"))
+        assertEquals(
+            context.getString(R.string.ba_daily_done_notification_island_text),
+            bigText.getJSONObject("textInfo").getString("title"),
+        )
+
+        // The regression this test exists for: a finished daily-done run announced itself with the MCP
+        // server-status wording, because no discriminator claimed it.
+        assertFalse(focusParam.contains(context.getString(R.string.mcp_status_running)))
+        assertFalse(focusParam.contains(context.getString(R.string.mcp_clients_label)))
+
+        assertEquals("日常完成", baseInfo.getString("title"))
+        assertEquals("日常", baseInfo.getString("specialTitle"))
+        assertEquals(detail, baseInfo.getString("content"))
+
+        // Nothing is in flight, so no progress of any kind is drawn and the notification stays
+        // dismissible rather than asking to be a promoted ongoing.
+        assertFalse(focusParam.contains("progressInfo"))
+        assertFalse(focusParam.contains("progressTextInfo"))
+        assertEquals(0, notification.flags and Notification.FLAG_ONGOING_EVENT)
+
+        // Completion green, agreeing with the icon's ticks.
+        assertEquals("#22C55E".toColorInt(), notification.color)
+        assertTrue(focusParam.contains("\"highlightColor\":\"#22C55E\""))
+    }
+
     private fun buildOpenPendingIntent(
         context: Application,
         requestCode: Int,

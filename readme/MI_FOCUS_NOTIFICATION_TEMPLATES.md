@@ -483,6 +483,10 @@ check(route?.primaryHelpers?.contains("MiFocusExpandedComponent.officialPictureC
 - WebDAV 同步：运行态使用单进度，终态状态使用 `specialTitle`，结果数量放入正文。
 - BA AP：当前 AP 使用进度摘要和单进度条；“打开/已读”使用双文字按钮。
 - BA 日程和卡池：摘要态使用系统倒计时；服务器名称使用 `specialTitle`，展开态不重复绘制伪阶段进度。
+- BA 日常完成：终态短词摘要（`ImageTextRight`，`type = 3`）+ 小岛图标；`specialTitle` 放“日常”，正文放非零结果，
+  强调色用完成绿 `#22C55E`。不写任何进度：这条通知在模板已经套用之后才发出，没有进行中的会话可报告。
+  `ongoing = false` 且不请求 promoted ongoing——终态请求 promoted ongoing 会让 SystemUI 收掉进度岛只留普通通知。
+  `orderId` 固定为 `ba-daily-done`，与它唯一的通知 id 一致，所以第二次运行改写同一张卡而不是叠一张新的。
 - MCP 服务：大岛模板 7 的定宽数字展示客户端数，小岛模板 3 展示图标 + 短数字，运行状态使用 `specialTitle`。
 
 通用 Live payload 提供三层 Focus 专用文案：

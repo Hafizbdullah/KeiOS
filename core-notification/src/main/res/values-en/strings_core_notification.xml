@@ -16,6 +16,9 @@
     <string name="ba_cafe_visit_notification_island_text">Cafe</string>
     <string name="ba_cafe_visit_notification_title">Cafe Visit</string>
     <string name="ba_notification_ap_island_text">AP</string>
+    <string name="ba_daily_done_notification_island_text">Done</string>
+    <string name="ba_daily_done_notification_special_title">Dailies</string>
+    <string name="ba_daily_done_notification_title">Dailies done</string>
 
     <string name="github_page_install_confirm_action_install">Install</string>
     <string name="github_share_import_notify_action_confirm_track">Track</string>
