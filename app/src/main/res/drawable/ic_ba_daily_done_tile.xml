@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Quick Settings tile icon for the BA daily-done tiles.
+
+    Monochrome on purpose. A QS tile icon is tinted by the system to match the tile's active/inactive
+    state, so anything with its own colours renders wrong in one of the two states — which is half of
+    why `ic_ba_ap_island_shift` was unsuitable here. The other half is that it is a `layer-list` with
+    `gravity="end|center_vertical"` wrapping the AP bitmap: built for composing into an island strip,
+    so as a tile icon it drew the stamina symbol pushed off to one side.
+
+    Same checklist mark as `ic_ba_daily_done_island` so the tile and the notification it produces are
+    recognisably one feature, minus the colour the island can afford and the tile cannot.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?android:attr/colorControlNormal">
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.86"
+        android:scaleY="0.86">
+        <path
+            android:pathData="M2.6,6 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M2.6,12 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M2.6,18 l1.8,1.8 l3.6,-4.0"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M11,6 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M11,12 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M11,18 h10.4"
+            android:strokeColor="#FFFFFFFF"
+            android:strokeWidth="2"
+            android:strokeLineCap="round" />
+    </group>
+</vector>

@@ -838,11 +838,22 @@
     <string name="ba_account_notification_content">%1$s · %2$s</string>
     <string name="guide_gallery_memorial_lobby_pip_loop_enable">ループ再生</string>
     <string name="guide_gallery_memorial_lobby_pip_loop_disable">ループ解除</string>
-    <string name="ba_daily_done_tile_label_all">BA デイリー</string>
+    <string name="ba_daily_done_tile_label_all">BA デイリー完了（全体）</string>
     <string name="ba_daily_done_tile_label_account_format">デイリー · %1$s</string>
     <string name="ba_daily_done_tile_label_unbound">デイリー（未割当）</string>
+    <string name="ba_daily_done_tile_label_slot_1">BA デイリー 1</string>
+    <string name="ba_daily_done_tile_label_slot_2">BA デイリー 2</string>
+    <string name="ba_daily_done_tile_label_slot_3">BA デイリー 3</string>
     <string name="ba_daily_done_tile_subtitle">デイリー完了にする</string>
     <string name="ba_daily_done_toast_applied_format">%1$d 件のアカウントを記録し、製造スロット %2$d 個を開始しました</string>
+    <string name="ba_daily_done_notification_content_accounts_only">%1$d 件のアカウントを記録しました</string>
+    <!-- Mirrors core-notification's copies of the same names. android.nonTransitiveRClass=true,
+         so app code cannot read the library's R, and these must exist here to be referenced.
+         Resource merging makes the app's value win for BOTH modules, so editing one of these
+         without the other silently retunes the island too. -->
+    <string name="ba_daily_done_notification_island_text">完了</string>
+    <string name="ba_daily_done_notification_special_title">デイリー</string>
+    <string name="ba_daily_done_notification_title">デイリー完了</string>
     <string name="ba_daily_done_toast_already_done">デイリーはすでに完了しています</string>
     <string name="ba_daily_done_toast_no_target">有効な BA アカウントがありません</string>
     <string name="ba_daily_done_toast_failed">デイリーの記録に失敗しました</string>

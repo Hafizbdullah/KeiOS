@@ -840,11 +840,22 @@
     <string name="ba_calendar_pool_cd_data_settings">Event and banner data settings</string>
     <string name="ba_ap_notification_title">AP ready</string>
     <string name="ba_account_notification_content">%1$s · %2$s</string>
-    <string name="ba_daily_done_tile_label_all">BA dailies</string>
+    <string name="ba_daily_done_tile_label_all">BA dailies (all)</string>
     <string name="ba_daily_done_tile_label_account_format">Dailies · %1$s</string>
     <string name="ba_daily_done_tile_label_unbound">Dailies (unbound)</string>
+    <string name="ba_daily_done_tile_label_slot_1">BA dailies 1</string>
+    <string name="ba_daily_done_tile_label_slot_2">BA dailies 2</string>
+    <string name="ba_daily_done_tile_label_slot_3">BA dailies 3</string>
     <string name="ba_daily_done_tile_subtitle">Mark dailies done</string>
     <string name="ba_daily_done_toast_applied_format">Marked %1$d account(s), started %2$d craft slot(s)</string>
+    <string name="ba_daily_done_notification_content_accounts_only">Marked %1$d account(s)</string>
+    <!-- Mirrors core-notification's copies of the same names. android.nonTransitiveRClass=true,
+         so app code cannot read the library's R, and these must exist here to be referenced.
+         Resource merging makes the app's value win for BOTH modules, so editing one of these
+         without the other silently retunes the island too. -->
+    <string name="ba_daily_done_notification_island_text">Done</string>
+    <string name="ba_daily_done_notification_special_title">Dailies</string>
+    <string name="ba_daily_done_notification_title">Dailies done</string>
     <string name="ba_daily_done_toast_already_done">Dailies were already done</string>
     <string name="ba_daily_done_toast_no_target">No enabled BA account</string>
     <string name="ba_daily_done_toast_failed">Could not mark dailies</string>

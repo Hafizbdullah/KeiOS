@@ -840,11 +840,22 @@
     <string name="guide_simulate_empty_ability_release">暂无能力解放数据。</string>
     <string name="guide_simulate_empty_bond">暂无羁绊等级奖励数据。</string>
     <string name="guide_simulate_empty_unique_weapon">暂无专武数据。</string>
-    <string name="ba_daily_done_tile_label_all">BA 日常完成</string>
+    <string name="ba_daily_done_tile_label_all">BA 日常完成（全部）</string>
     <string name="ba_daily_done_tile_label_account_format">日常 · %1$s</string>
     <string name="ba_daily_done_tile_label_unbound">日常（未绑定）</string>
+    <string name="ba_daily_done_tile_label_slot_1">BA 日常 1</string>
+    <string name="ba_daily_done_tile_label_slot_2">BA 日常 2</string>
+    <string name="ba_daily_done_tile_label_slot_3">BA 日常 3</string>
     <string name="ba_daily_done_tile_subtitle">一键视为日常完成</string>
     <string name="ba_daily_done_toast_applied_format">已标记 %1$d 个账号，开启 %2$d 个制造槽</string>
+    <string name="ba_daily_done_notification_content_accounts_only">已标记 %1$d 个账号</string>
+    <!-- Mirrors core-notification's copies of the same names. android.nonTransitiveRClass=true,
+         so app code cannot read the library's R, and these must exist here to be referenced.
+         Resource merging makes the app's value win for BOTH modules, so editing one of these
+         without the other silently retunes the island too. -->
+    <string name="ba_daily_done_notification_island_text">完成</string>
+    <string name="ba_daily_done_notification_special_title">日常</string>
+    <string name="ba_daily_done_notification_title">日常完成</string>
     <string name="ba_daily_done_toast_already_done">日常已经是完成状态</string>
     <string name="ba_daily_done_toast_no_target">没有启用的 BA 账号</string>
     <string name="ba_daily_done_toast_failed">标记日常失败</string>

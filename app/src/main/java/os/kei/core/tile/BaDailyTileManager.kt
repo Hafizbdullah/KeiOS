@@ -262,7 +262,9 @@ internal object BaDailyTileManager {
             statusBarManager.requestAddTileService(
                 component,
                 label,
-                Icon.createWithResource(context, R.drawable.ic_ba_ap_island_shift),
+                // The same icon the tile itself declares: this dialog is the system previewing the tile,
+                // so showing anything else would preview a tile that does not exist.
+                Icon.createWithResource(context, R.drawable.ic_ba_daily_done_tile),
                 context.mainExecutor,
             ) { code ->
                 val result = baDailyTileAddResultOf(code)
