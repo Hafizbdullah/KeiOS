@@ -2,13 +2,14 @@
 <!--
     Super Island / Live Updates icon for the BA daily-done result.
 
-    Byte-identical artwork to app/src/main/res/drawable/ic_ba_daily_done_tile.xml.
-    Duplicated rather than aliased because the two live in different modules and
-    android.nonTransitiveRClass=true means neither can reach the other's R. Edit both together.
+    Same geometry as app/src/main/res/drawable/ic_ba_daily_done_mono.xml, and the *only* difference is
+    the stroke colour: white here, black there. Neither is arbitrary. Notification and island surfaces
+    draw on dark plates and their siblings here (AP, tea party, arena coin) are light artwork; the mono
+    copy is black because launcher shortcut chrome is light and is not tinted for us. The QS tile is
+    tinted either way, so it does not care which it gets.
 
-    White rather than a semantic colour: the card already carries its completion meaning in the
-    green accent, which frees the icon to carry identity — the same division the sibling BA
-    cards use (AP, tea party, arena coin all show what the card is about, not how it went).
+    Duplicated rather than aliased because the two live in different modules and
+    android.nonTransitiveRClass=true means neither can reach the other's R. Edit the geometry in both.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"

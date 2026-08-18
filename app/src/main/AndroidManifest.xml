@@ -310,7 +310,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/ba_daily_done_tile_label_all"
-            android:icon="@drawable/ic_ba_daily_done_tile"
+            android:icon="@drawable/ic_ba_daily_done_mono"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -322,7 +322,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/ba_daily_done_tile_label_slot_1"
-            android:icon="@drawable/ic_ba_daily_done_tile"
+            android:icon="@drawable/ic_ba_daily_done_mono"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -334,7 +334,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/ba_daily_done_tile_label_slot_2"
-            android:icon="@drawable/ic_ba_daily_done_tile"
+            android:icon="@drawable/ic_ba_daily_done_mono"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -346,7 +346,7 @@
             android:enabled="false"
             android:exported="true"
             android:label="@string/ba_daily_done_tile_label_slot_3"
-            android:icon="@drawable/ic_ba_daily_done_tile"
+            android:icon="@drawable/ic_ba_daily_done_mono"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />

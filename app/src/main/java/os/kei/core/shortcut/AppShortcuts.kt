@@ -93,7 +93,9 @@ internal object AppShortcuts {
         ShortcutInfoCompat.Builder(context, SHORTCUT_ID_BA_DAILY_DONE_ALL)
             .setShortLabel(context.getString(R.string.shortcut_label_ba_daily_done_short))
             .setLongLabel(context.getString(R.string.shortcut_label_ba_daily_done_long))
-            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_ba_ap_island_shift))
+            // The shared monochrome daily-done mark. Black, like ic_mcp_lobehub and
+            // ic_github_invertocat: launcher shortcut chrome is light and is not tinted for us.
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_ba_daily_done_mono))
             .setIntent(dailyDoneIntent(context, accountId = null))
             .setRank(rank)
             .build()
@@ -115,7 +117,7 @@ internal object AppShortcuts {
             // Short labels are truncated hard by launchers, so the account name carries the long one.
             .setShortLabel(context.getString(R.string.shortcut_label_ba_daily_done_short))
             .setLongLabel(label)
-            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_ba_ap_island_shift))
+            .setIcon(IconCompat.createWithResource(context, R.drawable.ic_ba_daily_done_mono))
             .setIntent(dailyDoneIntent(context, accountId = account.profile.id.value))
             .setRank(rank)
             .build()

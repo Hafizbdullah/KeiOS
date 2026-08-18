@@ -264,7 +264,7 @@ internal object BaDailyTileManager {
                 label,
                 // The same icon the tile itself declares: this dialog is the system previewing the tile,
                 // so showing anything else would preview a tile that does not exist.
-                Icon.createWithResource(context, R.drawable.ic_ba_daily_done_tile),
+                Icon.createWithResource(context, R.drawable.ic_ba_daily_done_mono),
                 context.mainExecutor,
             ) { code ->
                 val result = baDailyTileAddResultOf(code)
