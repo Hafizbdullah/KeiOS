@@ -186,3 +186,44 @@ hardware. Worth running before asking for a physical device.
 
 `navSwipeDismiss` stays **off**. Nothing here justifies enabling it; what changed is that the search space is
 narrower by one candidate and the remaining one is now specific enough to test.
+
+### The cross-axis hypothesis is disproved too — probed `2026-08-18`
+
+Ran the experiment the section above predicted, on the Pad AVD with a temporary
+`dismissDirection = NavSwipeDirection.LeftToRight` on `keiosNavTransition()`, on the **Settings route with the
+route confirmed open** (the earlier attempt in this session mis-tapped and measured Home, which proved nothing):
+
+| swipe | y | duration | travel | result |
+| --- | --- | --- | --- | --- |
+| perfectly axis-aligned | 800 → 800, identical | 1000ms | 1100px rightward | **no dismiss**, `uiautomator` still reports `text="Settings"` |
+
+Zero cross-axis displacement by construction, and small interpolation steps by duration. So
+`isContentDirection()` locking `ChildOwned` on a synthesis artefact is **not** the explanation either. The probe
+was reverted; nothing shipped.
+
+### A better-grounded hypothesis: the covered pager's own horizontal draggable
+
+`NavDisplay` attaches the recogniser to the **display container**, not to the top entry's host, and says why in
+its own comment: the host's hit-rect follows its `graphicsLayer` translation, so during a push most of the screen
+belongs to the layer below. The consequence is that the recogniser sits *above* both layers and its engagement
+phase deliberately waits for descendants to have the Main pass — "so same-axis interactive content gets first
+refusal".
+
+In this app the layer below every route is `MainLoadedPager`, which carries a
+`Modifier.draggable(orientation = Orientation.Horizontal)` spanning the whole window. Compose hit-testing builds a
+path for **every** node whose bounds contain the pointer, across siblings, so that draggable plausibly still sees
+the sequence while a route covers it. If it consumes, the arbiter sees `consumed = true` on two samples and
+`lockChildOwnership()` is terminal.
+
+This fits every observation at once, which the earlier hypotheses did not: it is indifferent to cross-axis drift,
+to duration, to travel distance, and to whether the drag starts on page content or on the inert top-bar band —
+because the pager spans the window underneath all of them. It also explains why the gesture is *dead* rather than
+*stolen*: the thing claiming it is not the route's content but a pager that is not even visible.
+
+Testable without hardware: set `userScrollEnabled = false` on the pager (or gate its `draggable` on
+`routeAtTop`) and re-run the same axis-aligned swipe. If it engages, the cause is confirmed and the fix is to stop
+the covered pager from claiming pointers — which is desirable on its own, since a covered pager should not be
+consuming anything.
+
+`navSwipeDismiss` stays **off**. Three candidates examined, three closed; this fourth one is the first that
+explains all of the evidence, and it points at the app's own code rather than at miuix.
