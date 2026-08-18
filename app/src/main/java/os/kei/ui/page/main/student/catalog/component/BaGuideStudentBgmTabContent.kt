@@ -51,7 +51,8 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedInput
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.student.catalog.state.visibleStudentBgmEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
@@ -375,8 +376,8 @@ internal fun BaGuideStudentBgmTabContent(
                             } else {
                                 0.dp
                             },
-                    start = appPageEdgePadding(),
-                    end = appPageEdgePadding(),
+                    start = appPageEdgePaddingStart(),
+                    end = appPageEdgePaddingEnd(),
                 ),
             verticalArrangement = Arrangement.spacedBy(entryListGap),
         ) {
@@ -454,8 +455,8 @@ internal fun BaGuideStudentBgmTabContent(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
-                        start = appPageEdgePadding(),
-                        end = appPageEdgePadding(),
+                        start = appPageEdgePaddingStart(),
+                        end = appPageEdgePaddingEnd(),
                         bottom = nowPlayingBottomPadding,
                     ),
         ) {

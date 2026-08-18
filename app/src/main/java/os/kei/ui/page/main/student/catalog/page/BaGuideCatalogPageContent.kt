@@ -62,7 +62,8 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmDisplayedDerivedState
 import os.kei.ui.page.main.student.catalog.state.BaGuideStudentBgmListDerivedState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.rememberAppFloatingKeyboardLiftState
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
@@ -416,8 +417,8 @@ private fun BaGuideCatalogInitialLoadingContent(accent: Color) {
                 .padding(
                     top = CATALOG_MUSIC_CONTENT_TOP_PADDING + AppChromeTokens.topBarToHeaderGap,
                     bottom = CATALOG_MUSIC_CONTENT_BOTTOM_PADDING,
-                    start = appPageEdgePadding(),
-                    end = appPageEdgePadding(),
+                    start = appPageEdgePaddingStart(),
+                    end = appPageEdgePaddingEnd(),
                 ),
         contentAlignment = Alignment.TopCenter,
     ) {

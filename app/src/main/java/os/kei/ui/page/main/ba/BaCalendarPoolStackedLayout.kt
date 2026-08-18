@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.appEdgeStackKeepAliveTopPadding
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
@@ -52,8 +53,8 @@ internal fun BaCalendarPoolStackedLayout(
                 Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = appPageEdgePadding(),
-                        end = appPageEdgePadding(),
+                        start = appPageEdgePaddingStart(),
+                        end = appPageEdgePaddingEnd(),
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     ),
         ) {

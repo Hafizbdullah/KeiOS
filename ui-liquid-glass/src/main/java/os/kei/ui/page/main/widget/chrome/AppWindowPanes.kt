@@ -82,7 +82,12 @@ val LocalAppPaneWidth = compositionLocalOf<Dp?> { null }
 
 /** The width the current content is actually laid out in: the enclosing pane, or the window. */
 @Composable
-fun appContentWidth(): Dp = LocalAppPaneWidth.current ?: LocalConfiguration.current.screenWidthDp.dp
+fun appContentWidth(): Dp =
+    LocalAppPaneWidth.current
+        ?: appNavigationContentWidthFor(
+            availableWidth = LocalConfiguration.current.screenWidthDp.dp,
+            placement = LocalAppNavigationPlacement.current,
+        )
 
 /** Pane mode for the current window. */
 @Composable

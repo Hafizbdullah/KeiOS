@@ -30,7 +30,8 @@ import kotlinx.coroutines.flow.map
 import os.kei.R
 import os.kei.core.ui.snapshot.rememberAppSnapshotFlowManager
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.motion.appFloatingEnter
 import os.kei.ui.page.main.widget.motion.appFloatingExit
 import os.kei.ui.page.main.student.GuideBgmFavoriteItem
@@ -313,8 +314,8 @@ internal fun BaGuideFavoriteBgmMusicContent(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
-                        start = appPageEdgePadding(),
-                        end = appPageEdgePadding(),
+                        start = appPageEdgePaddingStart(),
+                        end = appPageEdgePaddingEnd(),
                         bottom = bottomPadding,
                     ),
         ) {

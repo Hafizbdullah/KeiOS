@@ -80,4 +80,4 @@ val AppFloatingDockEdgeSpacing: Dp = 14.dp
  */
 @Composable
 fun appFloatingDockSidePadding(isDockSide: Boolean): Dp =
-    if (isDockSide) AppFloatingDockEdgeSpacing + appPageSideGutter() else 0.dp
+    if (isDockSide) AppFloatingDockEdgeSpacing + appPageSideGutterEnd() else 0.dp

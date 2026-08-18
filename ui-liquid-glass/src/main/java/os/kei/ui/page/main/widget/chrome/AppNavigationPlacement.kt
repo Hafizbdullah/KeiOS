@@ -201,3 +201,37 @@ fun appTopRowFitsTitle(
     availableWidth: Dp,
     barWidth: Dp,
 ): Boolean = availableWidth - barWidth >= (AppChromeTokens.topBarTitleActionReserve + AppChromeTokens.topBarTitleMinWidth) * 2f
+
+/**
+ * Leading inset for page content: the content gutter, plus the sidebar rail when one is up.
+ *
+ * This is what makes the background extension effect possible. The rail used to be given its strip by insetting
+ * the *pager*, which insets a page's background along with its content and stopped Home's artwork dead at the
+ * rail's outer edge. Now nothing is inset: the pager fills the window, its background runs the full width, and
+ * the rail floats over content that is pushed clear of it by this padding — the same arrangement the top tab bar
+ * already uses, and the one the guidance describes for the whole functional layer.
+ *
+ * Asymmetric by exactly [AppSidebarWidth], because only the leading edge has a rail on it.
+ */
+@Composable
+fun appPageSideGutterStart(): Dp =
+    appPageSideGutter() +
+        if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Sidebar) AppSidebarWidth else 0.dp
+
+/** Trailing inset for page content. Just the gutter — nothing floats against the trailing edge. */
+@Composable
+fun appPageSideGutterEnd(): Dp = appPageSideGutter()
+
+/** [appPageEdgePadding] for the leading edge, which the sidebar rail shares. */
+@Composable
+fun appPageEdgePaddingStart(): Dp = AppChromeTokens.pageHorizontalPadding + appPageSideGutterStart()
+
+/** [appPageEdgePadding] for the trailing edge. */
+@Composable
+fun appPageEdgePaddingEnd(): Dp = AppChromeTokens.pageHorizontalPadding + appPageSideGutterEnd()
+
+/** [appTopBarEdgePadding] for the leading edge, which the sidebar rail shares. */
+@Composable
+fun appTopBarEdgePaddingStart(): Dp =
+    appTopBarEdgePadding() +
+        if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Sidebar) AppSidebarWidth else 0.dp

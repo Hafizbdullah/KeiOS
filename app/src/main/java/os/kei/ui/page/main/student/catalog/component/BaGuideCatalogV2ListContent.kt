@@ -39,7 +39,8 @@ import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabConten
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.student.catalog.state.visibleCatalogEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.core.AppStatusPillSize
 import os.kei.ui.page.main.widget.core.AppSurfaceCard
@@ -183,8 +184,8 @@ internal fun BaGuideCatalogV2ListContent(
                 Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = appPageEdgePadding(),
-                        end = appPageEdgePadding(),
+                        start = appPageEdgePaddingStart(),
+                        end = appPageEdgePaddingEnd(),
                         top = innerPadding.calculateTopPadding(),
                     ),
         ) {
@@ -220,8 +221,8 @@ internal fun BaGuideCatalogV2ListContent(
             PaddingValues(
                 top = appEdgeStackKeepAliveTopPadding(listTopPadding),
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                start = appPageEdgePadding(),
-                end = appPageEdgePadding(),
+                start = appPageEdgePaddingStart(),
+                end = appPageEdgePaddingEnd(),
             ),
         verticalArrangement = Arrangement.spacedBy(entryListGap),
     ) {

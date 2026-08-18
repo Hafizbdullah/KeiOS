@@ -440,10 +440,19 @@ Suite **2937 tests, 0 failures**; debug and release both assemble.
 
 ### Still owed
 
-- **The background extension effect is not delivered.** Insetting the pager insets its background with its
-  content, so a page that paints its own artwork stops it at the rail's outer edge — uniform on OS, which paints
-  nothing, a visible seam on Home, which does. Closing it means separating the background layer from the content
-  layer in the pager host. An earlier KDoc claimed this worked; that claim is corrected in place.
+- ~~The background extension effect~~ **done, and it was my own debt.** The rail used to get its strip by
+  insetting the *pager*, which insets a page's background along with its content: OS looked fine because it paints
+  nothing, Home showed a seam where its gradient stopped at the rail's outer edge. Nothing is inset now. The pager
+  fills the window, so a page's artwork runs the full width and shows through the rail's glass, and content is
+  pushed clear by an **asymmetric** gutter instead — `appPageSideGutterStart()` adds the rail's width, the trailing
+  side does not, because only the leading edge has a rail on it. That is the same arrangement the top tab bar
+  already used, and the one the guidance describes for the whole functional layer.
+
+  The cost was the sweep I predicted: 31 paired edge paddings across 12 files went from one symmetric helper to
+  two, plus seven sites that had stored the symmetric value in a local and had to be split by hand (Home, the BA
+  page, both bottom chromes, the floating docks, the top bar's leading chrome). `appContentWidth()` now excludes
+  the rail, so the gutter centres the column in the area beside it rather than in the window. The source assertion
+  moved with it and now pins that the two sides use *different* helpers, which is the part worth holding.
 - **The split view** — a section on the left and the route it opened on the right — is untouched. It needs
   `NavDisplay` restructured so a route occupies a pane instead of the window, which is the highest-risk change in
   this repo and belongs in its own round.

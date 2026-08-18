@@ -39,7 +39,8 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
@@ -245,8 +246,8 @@ internal fun GitHubMainContent(
                         Modifier
                             .fillMaxWidth()
                             .padding(
-                                start = appPageEdgePadding(),
-                                end = appPageEdgePadding(),
+                                start = appPageEdgePaddingStart(),
+                                end = appPageEdgePaddingEnd(),
                                 top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                             ),
                 ) {

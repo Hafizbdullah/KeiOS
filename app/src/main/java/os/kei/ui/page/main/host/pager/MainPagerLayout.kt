@@ -66,7 +66,6 @@ import os.kei.ui.page.main.widget.chrome.appNavigationPlacementFor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Alignment
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
-import os.kei.ui.page.main.widget.chrome.AppSidebarWidth
 import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
 import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
 import androidx.compose.foundation.layout.padding
@@ -400,17 +399,10 @@ internal fun MainPagerLayout(
             val pagerModifier =
                 Modifier
                     .fillMaxSize()
-                    // The rail is not a column in a Row: the pager is simply inset by its width, so the page
-                    // background still spans the window and runs on underneath it. That is the background
-                    // extension effect the Liquid Glass guidance asks for, at the cost of one padding value.
-                    .padding(
-                        start =
-                            if (navigationPlacement == AppNavigationPlacement.Sidebar) {
-                                AppSidebarWidth
-                            } else {
-                                0.dp
-                            },
-                    )
+                    // Nothing is inset for the rail. The pager fills the window so a page's background runs
+                    // the full width and the rail floats over it — the background extension effect the
+                    // guidance asks for. Content is pushed clear of the rail by appPageSideGutterStart()
+                    // instead, which is the same arrangement the top tab bar already uses.
                     .testTag(
                         coordinator.tabs
                             .getOrElse(coordinator.pagerState.settledPage) { BottomPage.Home }

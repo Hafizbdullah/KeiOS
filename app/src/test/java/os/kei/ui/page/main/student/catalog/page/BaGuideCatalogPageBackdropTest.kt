@@ -147,12 +147,12 @@ class BaGuideCatalogPageBackdropTest {
             assertSourceContains(
                 source = source,
                 "innerPadding.calculateTopPadding()",
-                // The page edge goes through the helper, not the raw token. The token is still correct
-                // *inside* a card, where there is no page edge to centre a content column against; at a page
-                // edge it has to carry the large-screen gutter, which is what appPageEdgePadding adds. It is
-                // identical to the token on every phone, so this pins a contract rather than a look.
-                "start = appPageEdgePadding()",
-                "end = appPageEdgePadding()",
+                // The page edge goes through the helpers, not the raw token, and the two sides are
+                // deliberately *different* helpers: only the leading edge can have the sidebar rail on it.
+                // The token is still correct inside a card, where there is no page edge to centre against.
+                // Both are identical to the token on every phone, so this pins a contract rather than a look.
+                "start = appPageEdgePaddingStart()",
+                "end = appPageEdgePaddingEnd()",
                 "verticalArrangement = Arrangement.spacedBy(entryListGap)",
             )
             // All three leaves stack, so all three shift their list up inside `AppEdgeStackKeepAlive` and

@@ -51,7 +51,8 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
-import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingStart
+import os.kei.ui.page.main.widget.chrome.appPageEdgePaddingEnd
 import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
@@ -322,8 +323,8 @@ internal fun OsPageMainList(
                     // and has to add the large-screen gutter itself. Without it the status hub stayed
                     // full-bleed while every row under it narrowed, which read as two different pages.
                     .padding(
-                        start = appPageEdgePadding(),
-                        end = appPageEdgePadding(),
+                        start = appPageEdgePaddingStart(),
+                        end = appPageEdgePaddingEnd(),
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     ),
             // Refresh has the pull gesture and the section's own controls; adding an
