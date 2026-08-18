@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import os.kei.ui.page.main.widget.glass.LocalLiquidOverlayHost
 import os.kei.ui.page.main.widget.isAppInDarkTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.ceil
@@ -48,11 +49,28 @@ fun BgEffectBackground(
     val surface = MiuixTheme.colorScheme.surface
     val painter = remember { BgEffectPainter() }
 
+    // A modal presentation covers this background with a blurred, dimmed plate, so the drift behind
+    // it cannot be seen — but it can still be *paid for*, because the animation loop invalidates the
+    // whole draw tree and every glass surface above re-rasterizes its effect layer on each
+    // invalidation. Suspending playback for the duration is the difference between ~7fps and the
+    // panel rate on an idle sheet; see [LiquidOverlayHostState.hasPresentation].
+    //
+    // Only playback stops. `animTime` accrues from real elapsed time and `startAnimation` re-anchors
+    // to the value it paused at, so the drift resumes from where it left off rather than jumping.
+    val modalPresentationCovers = LocalLiquidOverlayHost.current?.hasPresentation == true
+    val playing = dynamicBackground && !modalPresentationCovers
+
     val preset = remember(isDark) { BgEffectConfig.get(isDark) }
 
     val colorStage = remember { Animatable(0f) }
-    LaunchedEffect(dynamicBackground, preset) {
-        if (!dynamicBackground) return@LaunchedEffect
+    // Keyed on `playing`, not `dynamicBackground`, and this is load-bearing rather than tidiness:
+    // `colorStage` is read inside the draw lambda, so a running colour interpolation invalidates draw
+    // at spring rate on its own. Pausing the drift loop while leaving this one running would leave the
+    // expensive path fully alive for seconds at a time and make the gate above look like it did
+    // nothing. Resuming is safe — `targetStage` is recomputed with `floor(colorStage.value) + 1f`,
+    // which already tolerates being cancelled mid-spring at a fractional stage.
+    LaunchedEffect(playing, preset) {
+        if (!playing) return@LaunchedEffect
         val animatesColors = preset.colors1 !== preset.colors2 || preset.colors2 !== preset.colors3
         if (!animatesColors) return@LaunchedEffect
 
@@ -117,7 +135,7 @@ fun BgEffectBackground(
                         surface = surface,
                         effectBackground = effectBackground,
                         isFullSize = isFullSize,
-                        playing = dynamicBackground,
+                        playing = playing,
                         colorStage = { colorStage.value },
                         alpha = alpha,
                     ),

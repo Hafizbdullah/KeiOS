@@ -50,6 +50,28 @@ class LiquidOverlayHostState internal constructor() {
     }
 
     /**
+     * True while at least one modal presentation — sheet, alert or action sheet — is registered.
+     *
+     * Exists so the page underneath can stop doing work that only exists to be looked at. KeiOS's
+     * dynamic background invalidates the draw tree at its 60fps cap, and *every* one of those
+     * invalidations re-rasterizes each glass surface above it, because each `drawBackdrop` re-records
+     * its own offscreen effect layer per draw. With a modal up, all of that lands underneath a
+     * blurred, dimmed plate where none of it can be seen.
+     *
+     * Measured before this gate existed: a sheet open over Home, untouched, sat at 124-141ms per
+     * frame against 16ms for the same page with no sheet — about 7fps for a static screen. See
+     * `docs/planning/liquid-sheet-frame-cost.md`.
+     *
+     * Notifications are deliberately excluded. A toast is transient chrome that does not cover the
+     * page, so freezing the background behind one would be a visible stall bought for nothing.
+     *
+     * Reads the backing [SnapshotStateList], so a composable that consults this recomposes when a
+     * presentation opens or closes.
+     */
+    val hasPresentation: Boolean
+        get() = entries.any { it.layer == LiquidOverlayLayer.Presentation }
+
+    /**
      * Composes every registered entry: presentations in registration order, then notifications.
      *
      * Registration order alone is not enough. A presentation registers when it opens, so a sheet
