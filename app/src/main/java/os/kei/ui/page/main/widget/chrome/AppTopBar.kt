@@ -78,7 +78,7 @@ fun AppTopBarSection(
                     Modifier
                         .align(Alignment.TopStart)
                         .padding(
-                            start = AppChromeTokens.topBarHorizontalPadding,
+                            start = appTopBarEdgePadding(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
             ) {
@@ -99,7 +99,7 @@ fun AppTopBarSection(
                         .then(if (titleIsLeading) Modifier else Modifier.fillMaxWidth())
                         .align(if (titleIsLeading) Alignment.TopStart else Alignment.TopCenter)
                         .padding(
-                            start = if (titleIsLeading) resolvedTitleStartReserve else 0.dp,
+                            start = if (titleIsLeading) appTopBarEdgePadding() else 0.dp,
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
             )
@@ -108,7 +108,7 @@ fun AppTopBarSection(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(
-                            end = AppChromeTokens.topBarHorizontalPadding + appTopBarActionGutter(),
+                            end = appTopBarEdgePadding() + appTopBarActionGutter(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
                 content = actions,

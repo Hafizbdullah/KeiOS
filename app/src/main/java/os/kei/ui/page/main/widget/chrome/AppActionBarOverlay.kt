@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.Dp
 fun BoxScope.AppTopEndActionBarOverlay(
     modifier: Modifier = Modifier,
     topSpacing: Dp = AppChromeTokens.topBarChromeTopPadding,
-    endSpacing: Dp = AppChromeTokens.topBarHorizontalPadding,
+    endSpacing: Dp? = null,
     content: @Composable () -> Unit
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -26,12 +26,14 @@ fun BoxScope.AppTopEndActionBarOverlay(
     // away from the page they act on — on the Pad AVD in landscape that is 280dp of empty panel between a
     // list and its own toolbar. Zero on phones.
     val sideGutter = appTopBarActionGutter()
+    // Null means "the row's own margin", which grows on a large window. A caller that passes a value keeps it.
+    val resolvedEndSpacing = endSpacing ?: appTopBarEdgePadding()
     Box(
         modifier = modifier
             .align(Alignment.TopEnd)
             .padding(
                 top = safeDrawingPadding.calculateTopPadding() + topSpacing,
-                end = safeDrawingPadding.calculateEndPadding(layoutDirection) + endSpacing + sideGutter
+                end = safeDrawingPadding.calculateEndPadding(layoutDirection) + resolvedEndSpacing + sideGutter
             )
     ) {
         content()

@@ -135,3 +135,25 @@ fun appTopBarCentreIsNavigation(): Boolean =
 @Composable
 fun appTopBarActionGutter(): Dp =
     if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Top) 0.dp else appPageSideGutter()
+
+/**
+ * Edge margin for the top row's own chrome — the title card and the trailing toolbar.
+ *
+ * `AppChromeTokens.topBarHorizontalPadding` is 14dp, and that is a *phone* margin: on a 426dp window a floating
+ * pill 14dp from the edge reads as inset, because the edge is close to everything else too. On a 1280dp panel
+ * the same 14dp reads as the pill clinging to the bezel, with the whole width behind it unused.
+ *
+ * So it steps up once the window does. 28dp is twice the phone margin rather than a new number — margins are
+ * meant to grow with the canvas, and the content layer already does exactly this through [appPageSideGutter].
+ * This is the same idea applied to the one row that cannot use the content column, because it spans the window.
+ */
+val AppTopBarRegularEdgePadding: Dp = AppChromeTokens.topBarHorizontalPadding * 2f
+
+/** Edge margin for the top row's chrome at the current placement. */
+@Composable
+fun appTopBarEdgePadding(): Dp =
+    if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Bottom) {
+        AppChromeTokens.topBarHorizontalPadding
+    } else {
+        AppTopBarRegularEdgePadding
+    }
