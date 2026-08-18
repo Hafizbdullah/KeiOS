@@ -262,6 +262,17 @@ visibility, because they were shrinking to a single button alongside a bar that 
 
 ### Baseline profile — the two shapes are covered, from one device
 
+> **Correction, `2026-08-18`.** When this section was written the journey had been added but never run to a
+> pass, and the heading claimed a coverage that did not exist. The committed profile still came from an older
+> generation: `MainPagerSidebar` and `AppNavigationPlacement` appeared in it **zero** times. Two defects in the
+> journey were failing it every time — it passed `wm size` raw pixels, which is 1280x800dp only at the Pad
+> AVD's density 320 and 853x533dp at the phone AVD's 480, and at that short side the manifest's
+> `sensorPortrait` request is still honoured, so the window rotated to portrait and the sidebar toggle never
+> composed; and its closing `waitForHome()` asserted Home while the journey sits on BA, which could only ever
+> time out. Both are fixed, sizes are now expressed in dp against the device's real density, and a regenerated
+> profile carries 36 `MainPagerSidebar` and 50 `AppNavigationPlacement` rules. The claim below is true as of
+> that regeneration; it was not before it.
+
 `tabletAndFoldNavigationShapes` in `BaselineProfileGenerator`. The shapes only exist above 600dp and 660dp, so a
 profile generated on a phone never compiles them, and one generated on a tablet has the opposite hole because the
 floating bottom bar never renders there. Rather than requiring two runs and a merge — a process step that gets
