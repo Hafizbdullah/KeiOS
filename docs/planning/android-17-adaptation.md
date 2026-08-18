@@ -346,3 +346,105 @@ contact with real Pad geometry.
   column, and for the catalog that is probably the right end state. It is a different and much larger piece of
   work — miuix-nav has no list-detail scaffold — and it is a design decision, not a defect. The centred column
   is correct on its own and is what a single pane should do at this width.
+
+## Pad round 2 — the tab bar becomes a sidebar
+
+Round 1 capped the content column, which was right but was still a phone layout with better margins. This round
+replaces the *navigation* rather than repositioning it, following Apple's `sidebarAdaptable` tab view: one control
+in two shapes, not two designs.
+
+Sourced from the current Liquid Glass-era HIG (Tab bars, Sidebars, Materials — all revised 2025-12/2026-06), not
+the pre-26 shape.
+
+### Three placements, two thresholds that answer different questions
+
+| Window | Navigation |
+|---|---|
+| `< 600dp` — phone, fold outer | floating **bottom** bar, exactly as before |
+| `>= 600dp` | **top** tab bar, sharing the row with the title and the actions |
+| `>= 660dp` **and** the user asked | **sidebar** |
+
+**600dp, not round 1's 760dp.** 760dp is derived from two content columns and answers "is there room for two
+panes". 600dp answers "is this a tablet-shaped window", and it is not a private boundary: it is what `sw600dp`
+resource buckets key on and what the platform itself uses from targetSdk 36 to stop honouring an orientation
+request. Navigation should change shape where the system already considers the app to be on a big screen.
+
+**660dp is derived, not declared.** The HIG says a sidebar needs "a large amount of vertical and horizontal
+space" and that a tab bar is better when space is limited. So a sidebar is allowed only while what it leaves
+behind is still a viable content column: `AppSidebarWidth` 280 + `AppPaneMinWidth` 380. Below that the preference
+is **kept but not applied**, so widening the window brings the sidebar back — which is what makes rotation a shape
+change rather than a lost setting, and is the "responds automatically to rotation and window resizing" the
+adaptable style promises.
+
+### The top row is shared, and that is the whole point
+
+`[ title | tab bar centred | actions ]`, in the row the title and actions already occupied. The bar therefore
+costs **no vertical space**, so there is no top reservation to add — and the 112dp the floating bottom bar needed
+is removed rather than paid twice.
+
+Two consequences had to be handled. The scaffold's `bottomBar` slot is measured against the window's bottom edge,
+so a top-aligned bar cannot live there; at regular width the same bar is composed inside the content instead.
+And round 1's content gutter was pulling the actions 280dp inward into the centred bar — correct while the row
+belongs to the page, wrong once it belongs to the app, so it is dropped at `Top` and kept everywhere else.
+
+Pages learn the placement from `LocalAppNavigationPlacement` rather than deriving it, because all five are
+composed at once and a bar drawn by each page's chrome would exist five times and slide with the swipe.
+
+### The sidebar
+
+**Regular Liquid Glass, not clear.** The Materials guidance names this case: "use the regular variant when
+background content might create legibility issues, or when components have a significant amount of text, such as
+alerts, **sidebars**, or popovers". Only the *selected* row takes a glass fill of its own — five glass plates
+inside a glass rail would be the overuse the same guidance warns against, and would flatten the distinction the
+material exists to draw.
+
+**The toggle exists in both shapes**, as the adaptable style requires: at the leading edge of the top row in
+tab-bar shape, and inside the rail in sidebar shape. A sidebar is never a state the user cannot leave.
+
+**Only the closing half of the edge gesture is ported.** The HIG says iPadOS users expect the built-in edge
+swipe, but on Android the leading edge belongs to the **system back gesture**, so claiming a leading-edge drag to
+*open* a sidebar would fight predictive back on the same pixels. This repo has been bitten there before — issue
+#21 was `navSwipeDismiss` claiming horizontal drags parent-first and taking them from sliders, switches and text
+fields. So the gesture lives on the rail: drag it inward past half its width and it converts back.
+
+**The preference is persisted** in `UiPrefs.sidebarNavigationPreferred`, not held in composition state. It is a
+choice, and the adaptable style already keeps it through a window too narrow to honour it; losing it on a cold
+start would make the sidebar something the user re-asks for every launch.
+
+### Found on the device, not by reasoning
+
+Three defects, all invisible in source review:
+
+1. **The bar did not render at all.** Composed as the first child of the content box, it was covered by the page.
+   Navigation is a functional layer *above* the content layer, so it has to be the last child.
+2. **The rail and a redundant tab bar coexisted.** The overlay condition was `!= Bottom` instead of `== Top`, and
+   the page's own title card was hidden underneath a bar that no longer had a job.
+3. **The centred bar overlapped the trailing toolbar at 650dp.** At 1280dp a 388dp bar and the actions have room
+   to spare. The bar's safe width is the window minus *twice* the toolbar's reserve — symmetric, because a
+   centred element is only clear of one side if it is equally clear of the other — and where that still is not
+   enough, the title yields, since at `Top` the tab bar already names the section.
+
+### Verified
+
+| Geometry | Result |
+|---|---|
+| Pad 1280×800dp landscape | both shapes; title, bar, actions clear of each other |
+| Pad 800×1280dp portrait | sidebar honoured (800 ≥ 660) |
+| 650dp | falls back to the top bar; no toggle offered, because nothing there could fit one; title yields |
+| 500dp | falls back to the floating bottom bar |
+| force-stop and relaunch | returns in the sidebar shape |
+| drag the rail inward | converts back to the tab bar |
+| **Phone AVD, 427×952dp** | **unchanged** — bottom bar, centred title, 14dp margins, no gutter, no toggle |
+
+Suite **2937 tests, 0 failures**; debug and release both assemble.
+
+### Still owed
+
+- **The background extension effect is not delivered.** Insetting the pager insets its background with its
+  content, so a page that paints its own artwork stops it at the rail's outer edge — uniform on OS, which paints
+  nothing, a visible seam on Home, which does. Closing it means separating the background layer from the content
+  layer in the pager host. An earlier KDoc claimed this worked; that claim is corrected in place.
+- **The split view** — a section on the left and the route it opened on the right — is untouched. It needs
+  `NavDisplay` restructured so a route occupies a pane instead of the window, which is the highest-risk change in
+  this repo and belongs in its own round.
+- **The BA guide catalog's inner tab layouts** still build paddings of their own (round 1's note).
