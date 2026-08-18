@@ -134,3 +134,55 @@ apart. Two candidates worth checking before enabling:
    needs instrumentation inside miuix.
 
 Until one of those resolves, enabling would ship a gesture that is either dead or untested.
+
+## Candidate 2 is disproved — read from source, `2026-08-18`
+
+Against `v0.9.4-rc01` (which is exactly the `4a6b750b` snapshot this app resolves), `externalGestureOwnership`
+**cannot** be what blocks the probe.
+
+`NavDisplay.kt` defines the token as a `PredictiveBackOwnership` created by a plain `remember` inside the private
+rendering core, and passes `externalGestureOwnership = { predictiveBackOwnership.generation }` into
+`navSwipeDismissImpl`. `generation` starts at `0` — even, idle. The only `acquire()` call site is inside
+`PredictiveBackHandlerWithSessions`'s `onProgress`, so the value goes odd **only while a system predictive-back
+gesture is actually emitting progress events**, and `release()` returns it to even.
+
+Two consequences:
+
+- the instance is private and `remember`ed per `NavDisplay`, so **no application code can reach it**. KeiOS's
+  `BackNavigationRuntimeController` is a separate mechanism and cannot pin the token odd. The "lease acquired but
+  never released" theory has nothing to acquire;
+- a synthesised mid-screen drag does not start predictive back, so `initialExternalOwnership` is `0` and the gate
+  in `externalGestureOwnsSequence()` does not fire.
+
+So the ownership gate is not the explanation, and it should not be instrumented. One of the two candidates is
+closed; **candidate 1 — a real finger — is now the only one left standing**, plus whatever the next paragraph is.
+
+### A mechanistic replacement lead, from the arbiter itself
+
+`NavSwipeArbitrator.onPositionChange` checks `isContentDirection()` **first, on every sample**, and the
+`lockChildOwnership()` it returns is **terminal** for the whole pointer sequence:
+
+```kotlin
+private fun isContentDirection(): Boolean = towardTravelPx < -touchSlop ||
+    (abs(crossTravelPx) > touchSlop && abs(crossTravelPx) > abs(towardTravelPx))
+```
+
+`crossTravelPx` is accumulated signed displacement from the DOWN. So **one** sample in which the cross axis has
+drifted more than touch slop and out-travelled the dismiss axis permanently hands the gesture to content — there
+is no recovery, and nothing later in the sequence can claim. Claiming needs the opposite:
+`towardTravelPx > touchSlop && towardTravelPx >= abs(crossTravelPx)`.
+
+That is a plausible mechanism for "dead under `adb shell input swipe`, fine under a finger": the injected path is
+interpolated in a fixed number of steps, and at short durations the first `MOVE` can arrive as one large jump. If
+the synthesised start carries any cross component at all before the toward axis has cleared slop, the first
+sample locks `ChildOwned` and every subsequent sample returns `YieldToChild`.
+
+**Still a hypothesis, not a finding** — but a testable one that names a line, rather than a shrug. It predicts
+that a *perfectly axis-aligned* synthesised swipe (identical y at both ends, long duration so the steps are
+small) should engage where the recorded probes did not. That is the cheapest next experiment and it needs no
+hardware. Worth running before asking for a physical device.
+
+### Status
+
+`navSwipeDismiss` stays **off**. Nothing here justifies enabling it; what changed is that the search space is
+narrower by one candidate and the remaining one is now specific enough to test.
