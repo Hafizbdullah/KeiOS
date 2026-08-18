@@ -81,4 +81,28 @@ class AppNavigationPlacementTest {
         assertEquals(1280.dp, appNavigationContentWidthFor(1280.dp, AppNavigationPlacement.Top))
         assertEquals(426.dp, appNavigationContentWidthFor(426.dp, AppNavigationPlacement.Bottom))
     }
+
+    /**
+     * The collision found on the Pad at 650dp: a centred bar and a trailing toolbar in the same row.
+     *
+     * 178dp is the toolbar's reserve, doubled because a centred element is only clear of one side if it is
+     * equally clear of the other. At 1280dp the clamp is inactive (924 > the 460dp cap); at 650dp it bites.
+     */
+    @Test
+    fun `the centred tab bar stays clear of the trailing toolbar`() {
+        assertEquals(924.dp, appTopBarNavigationMaxWidth(1280.dp))
+        assertEquals(294.dp, appTopBarNavigationMaxWidth(650.dp))
+        // At the narrowest regular window the reserve still leaves 244dp, so the 240dp floor is a backstop
+        // rather than something the placement rule can actually reach -- Top placement never goes below 600dp.
+        assertEquals(244.dp, appTopBarNavigationMaxWidth(600.dp))
+        assertEquals(240.dp, appTopBarNavigationMaxWidth(400.dp))
+    }
+
+    @Test
+    fun `the title yields when the row cannot hold all three`() {
+        // Pad landscape: a 388dp bar leaves 892dp, far past the 528dp the title and toolbar need.
+        assertTrue(appTopRowFitsTitle(availableWidth = 1280.dp, barWidth = 388.dp))
+        // 650dp with a 294dp bar leaves 356dp -- not enough, so the title goes rather than overlapping.
+        assertFalse(appTopRowFitsTitle(availableWidth = 650.dp, barWidth = 294.dp))
+    }
 }

@@ -28,6 +28,7 @@ import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
+import os.kei.ui.page.main.widget.chrome.appTopBarNavigationMaxWidth
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
@@ -122,7 +123,13 @@ internal fun MainPagerBottomBar(
                             else -> 320.dp
                         }
                     val preferredWidth = (76.dp * tabs.size + 8.dp).coerceAtLeast(minBarWidth)
-                    val maxBarWidth = if (maxWidth < 600.dp) availableWidth else 460.dp
+                    val maxBarWidth =
+                        when {
+                            maxWidth < 600.dp -> availableWidth
+                            // Centred between a title and a toolbar, so it has to stay clear of both.
+                            atTop -> minOf(460.dp, appTopBarNavigationMaxWidth(maxWidth))
+                            else -> 460.dp
+                        }
                     val bottomBarWidth = preferredWidth.coerceAtMost(maxBarWidth)
                     // Top placement measures from the status bar, bottom from the navigation bar. Same bar,
                     // same width maths; only which edge it is held against changes.

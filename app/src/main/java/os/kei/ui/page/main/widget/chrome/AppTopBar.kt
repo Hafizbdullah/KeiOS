@@ -88,6 +88,16 @@ fun AppTopBarSection(
             // edge — which is where iPadOS puts it, next to the navigation icon, with the tab bar centred
             // between it and the actions. On a phone nothing is centred here but the title, and it stays.
             val titleIsLeading = appTopBarCentreIsNavigation()
+            // The title yields when the row cannot hold all three. The tab bar already names the section, so
+            // the title is the redundant one; three overlapping items would say nothing.
+            val titleWidth = appContentWidth()
+            val showTitle =
+                !titleIsLeading ||
+                    appTopRowFitsTitle(
+                        availableWidth = titleWidth,
+                        barWidth = appTopBarNavigationMaxWidth(titleWidth).coerceAtMost(460.dp),
+                    )
+            if (showTitle) {
             AppTopBarTitleCard(
                 title = topBarTitle,
                 backdrop = titleBackdrop,
@@ -103,6 +113,7 @@ fun AppTopBarSection(
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
             )
+            }
             Row(
                 modifier =
                     Modifier

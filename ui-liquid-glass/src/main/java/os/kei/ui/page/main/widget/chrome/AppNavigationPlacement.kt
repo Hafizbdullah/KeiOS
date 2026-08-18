@@ -175,3 +175,29 @@ fun appTopBarTitleLeadingInset(): Dp =
     } else {
         0.dp
     }
+
+/**
+ * Widest the centred tab bar may be in the top row without running into the trailing actions.
+ *
+ * The row holds three things and only the middle one is centred, so the bar's safe width is the window minus
+ * *twice* the space the actions need — symmetric, because a centred element is only clear of the trailing side
+ * if it is equally clear of the leading one.
+ *
+ * Found on the Pad AVD at 650dp, not by reasoning: at 1280dp a 388dp bar and a trailing toolbar have room to
+ * spare, and at 650dp they overlapped, with the last tab sitting underneath the actions. The bar is allowed to
+ * shrink rather than collide; five tabs in 294dp is tight and legible, five tabs under a toolbar is neither.
+ */
+fun appTopBarNavigationMaxWidth(availableWidth: Dp): Dp =
+    (availableWidth - AppChromeTokens.topBarTitleActionReserve * 2f).coerceAtLeast(240.dp)
+
+/**
+ * Whether the top row can afford the page title alongside the centred tab bar.
+ *
+ * When it cannot, the title is what goes. At [AppNavigationPlacement.Top] the tab bar already shows which
+ * section is selected, so the title is the one item in the row that is saying something twice — and the
+ * alternative, letting three items overlap, communicates nothing at all.
+ */
+fun appTopRowFitsTitle(
+    availableWidth: Dp,
+    barWidth: Dp,
+): Boolean = availableWidth - barWidth >= (AppChromeTokens.topBarTitleActionReserve + AppChromeTokens.topBarTitleMinWidth) * 2f
