@@ -38,11 +38,11 @@ fun appPageSideGutterFor(
 ): Dp = ((availableWidth - maxContentWidth) / 2f).coerceAtLeast(0.dp)
 
 /**
- * The gutter for the current window.
+ * The gutter for the space the caller is actually laid out in.
  *
- * Reads `LocalConfiguration.screenWidthDp` — the app window's width, not the display's — so a multi-window or
- * split-screen host narrows the gutter along with the window instead of centring content against a screen the
- * app does not have.
+ * [appContentWidth] resolves to the enclosing pane when there is one and the app window otherwise — never the
+ * display. Both fallbacks matter: a split-screen host narrows the window, and a dual-pane layout narrows the
+ * pane inside it. Centring a pane's content against the full window would push it clean out of its own pane.
  *
  * Everything that anchors to a page edge should add this: the content padding of the lists, and equally the
  * chrome that floats over them. An overlay pinned to the true window edge while the content sits 280dp inside
@@ -51,7 +51,7 @@ fun appPageSideGutterFor(
 @Composable
 fun appPageSideGutter(maxContentWidth: Dp = AppPageContentMaxWidth): Dp =
     appPageSideGutterFor(
-        availableWidth = LocalConfiguration.current.screenWidthDp.dp,
+        availableWidth = appContentWidth(),
         maxContentWidth = maxContentWidth,
     )
 
