@@ -157,3 +157,21 @@ fun appTopBarEdgePadding(): Dp =
     } else {
         AppTopBarRegularEdgePadding
     }
+
+/** Side of the square sidebar-toggle button. */
+val AppSidebarToggleSize: Dp = 44.dp
+
+/**
+ * Leading space the top row must keep clear for app-level navigation before the title starts.
+ *
+ * Only [AppNavigationPlacement.Top] needs it: that is the one shape where the sidebar toggle lives in the top
+ * row, ahead of the title, which is where iPadOS puts it. In the sidebar shape the toggle is inside the rail,
+ * and in the bottom shape there is no toggle and the title is centred anyway.
+ */
+@Composable
+fun appTopBarTitleLeadingInset(): Dp =
+    if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Top) {
+        AppSidebarToggleSize + 8.dp
+    } else {
+        0.dp
+    }

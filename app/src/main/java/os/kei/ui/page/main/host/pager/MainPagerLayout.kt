@@ -64,6 +64,12 @@ import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
 import os.kei.ui.page.main.widget.chrome.LocalAppNavigationPlacement
 import os.kei.ui.page.main.widget.chrome.appNavigationPlacementFor
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.Alignment
+import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppSidebarWidth
+import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
+import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
+import androidx.compose.foundation.layout.padding
 
 @Composable
 internal fun MainPagerLayout(
@@ -383,6 +389,17 @@ internal fun MainPagerLayout(
             val pagerModifier =
                 Modifier
                     .fillMaxSize()
+                    // The rail is not a column in a Row: the pager is simply inset by its width, so the page
+                    // background still spans the window and runs on underneath it. That is the background
+                    // extension effect the Liquid Glass guidance asks for, at the cost of one padding value.
+                    .padding(
+                        start =
+                            if (navigationPlacement == AppNavigationPlacement.Sidebar) {
+                                AppSidebarWidth
+                            } else {
+                                0.dp
+                            },
+                    )
                     .testTag(
                         coordinator.tabs
                             .getOrElse(coordinator.pagerState.settledPage) { BottomPage.Home }
@@ -655,7 +672,39 @@ internal fun MainPagerLayout(
             // Last child, so it draws above the pager. Navigation lives in the Liquid Glass functional layer
             // *over* the content layer, and content peeks through beneath it — drawn first it would simply be
             // covered by the page.
-            if (navigationPlacement != AppNavigationPlacement.Bottom) {
+            if (navigationPlacement == AppNavigationPlacement.Sidebar) {
+                MainPagerSidebar(
+                    tabs = coordinator.tabs,
+                    selectedIndex = coordinator.selectedPageIndex,
+                    backdrop = bottomBarBackdrop,
+                    topInset = insets.homeTopInset,
+                    bottomInset = insets.homeBottomInset,
+                    onSelected = coordinator.onPageSelected,
+                    onConvertToTabBar = { sidebarPreferred = false },
+                )
+            }
+            if (navigationPlacement == AppNavigationPlacement.Top && appSidebarAvailableAt(windowWidth)) {
+                // The adaptable style keeps the button in both shapes. In this one it sits at the leading edge
+                // of the top row, ahead of the title, which is the slot iPadOS uses for it.
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(
+                                start = appTopBarEdgePadding(),
+                                top = insets.homeTopInset + AppChromeTokens.topBarChromeTopPadding,
+                            ),
+                ) {
+                    MainPagerSidebarToggle(
+                        backdrop = bottomBarBackdrop,
+                        expanded = false,
+                        onClick = { sidebarPreferred = true },
+                    )
+                }
+            }
+            // Top only. In the sidebar shape the rail *is* the tab bar, and drawing both left the page's own
+            // title card hidden underneath a bar that no longer had a job.
+            if (navigationPlacement == AppNavigationPlacement.Top) {
                 MainPagerTopNavigationBar(
                     coordinator = coordinator,
                     placement = navigationPlacement,
