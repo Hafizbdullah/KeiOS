@@ -70,6 +70,7 @@ import os.kei.ui.page.main.widget.chrome.AppSidebarWidth
 import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
 import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
 import androidx.compose.foundation.layout.padding
+import os.kei.core.prefs.UiPrefs
 
 @Composable
 internal fun MainPagerLayout(
@@ -116,7 +117,17 @@ internal fun MainPagerLayout(
     // iPadOS `sidebarAdaptable`: the same tab bar, held against a different edge once the window is
     // tablet-shaped. The preference is the user's and survives a window too narrow to honour it.
     val windowWidth = LocalConfiguration.current.screenWidthDp.dp
-    var sidebarPreferred by rememberSaveable { mutableStateOf(false) }
+    // Read from prefs, not composition state: this is a choice the user made, and the adaptable style keeps it
+    // through a window too narrow to honour it. Losing it on a process restart would make the sidebar something
+    // the user has to re-ask for every cold start.
+    var sidebarPreferred by remember { mutableStateOf(UiPrefs.isSidebarNavigationPreferred()) }
+    val onSidebarPreferredChange: (Boolean) -> Unit =
+        remember {
+            { preferred: Boolean ->
+                sidebarPreferred = preferred
+                UiPrefs.setSidebarNavigationPreferred(preferred)
+            }
+        }
     val navigationPlacement =
         remember(windowWidth, sidebarPreferred) {
             appNavigationPlacementFor(availableWidth = windowWidth, sidebarPreferred = sidebarPreferred)
@@ -680,7 +691,7 @@ internal fun MainPagerLayout(
                     topInset = insets.homeTopInset,
                     bottomInset = insets.homeBottomInset,
                     onSelected = coordinator.onPageSelected,
-                    onConvertToTabBar = { sidebarPreferred = false },
+                    onConvertToTabBar = { onSidebarPreferredChange(false) },
                 )
             }
             if (navigationPlacement == AppNavigationPlacement.Top && appSidebarAvailableAt(windowWidth)) {
@@ -698,7 +709,7 @@ internal fun MainPagerLayout(
                     MainPagerSidebarToggle(
                         backdrop = bottomBarBackdrop,
                         expanded = false,
-                        onClick = { sidebarPreferred = true },
+                        onClick = { onSidebarPreferredChange(true) },
                     )
                 }
             }

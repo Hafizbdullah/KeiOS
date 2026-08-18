@@ -12,6 +12,15 @@ data class UiPrefsSnapshot(
     val predictiveBackAnimationsEnabled: Boolean,
     val searchAutoFocusEnabled: Boolean,
     val gripAwareFloatingDockEnabled: Boolean,
+    /**
+     * Whether a regular-width window opens as a sidebar rather than a tab bar.
+     *
+     * Persisted rather than kept in composition state because it is a *choice*, not a transient view state: the
+     * adaptable style narrows a window past the sidebar's floor and shows a tab bar without discarding the
+     * preference, and the same has to hold across a process restart. Default false follows the HIG's
+     * "Consider using a tab bar first".
+     */
+    val sidebarNavigationPreferred: Boolean,
     val homeIconHdrEnabled: Boolean,
     val homeDynamicFullEffectEnabled: Boolean,
     val preloadingEnabled: Boolean,
@@ -112,6 +121,7 @@ object UiPrefs {
     private const val KEY_PREDICTIVE_BACK_ANIMATIONS = "predictive_back_animations"
     private const val KEY_SEARCH_AUTO_FOCUS = "search_auto_focus"
     private const val KEY_GRIP_AWARE_FLOATING_DOCK = "grip_aware_floating_dock"
+    private const val KEY_SIDEBAR_NAVIGATION = "sidebar_navigation_preferred"
     private const val KEY_HOME_ICON_HDR = "home_icon_hdr"
     private const val KEY_HOME_DYNAMIC_FULL_EFFECT = "home_dynamic_full_effect"
     private const val KEY_PRELOADING_ENABLED = "preloading_enabled"
@@ -221,6 +231,13 @@ object UiPrefs {
     }
 
     fun isGripAwareFloatingDockEnabled(defaultValue: Boolean = false): Boolean = kv().decodeBool(KEY_GRIP_AWARE_FLOATING_DOCK, defaultValue)
+
+    fun isSidebarNavigationPreferred(defaultValue: Boolean = false): Boolean =
+        kv().decodeBool(KEY_SIDEBAR_NAVIGATION, defaultValue)
+
+    fun setSidebarNavigationPreferred(value: Boolean) {
+        kv().encode(KEY_SIDEBAR_NAVIGATION, value)
+    }
 
     fun setGripAwareFloatingDockEnabled(value: Boolean) {
         kv().encode(KEY_GRIP_AWARE_FLOATING_DOCK, value)
@@ -566,6 +583,7 @@ object UiPrefs {
             predictiveBackAnimationsEnabled = true,
             searchAutoFocusEnabled = true,
             gripAwareFloatingDockEnabled = false,
+            sidebarNavigationPreferred = false,
             homeIconHdrEnabled = false,
             homeDynamicFullEffectEnabled = true,
             preloadingEnabled = true,
@@ -603,6 +621,7 @@ object UiPrefs {
             predictiveBackAnimationsEnabled = store.decodeBool(KEY_PREDICTIVE_BACK_ANIMATIONS, true),
             searchAutoFocusEnabled = store.decodeBool(KEY_SEARCH_AUTO_FOCUS, true),
             gripAwareFloatingDockEnabled = store.decodeBool(KEY_GRIP_AWARE_FLOATING_DOCK, false),
+            sidebarNavigationPreferred = store.decodeBool(KEY_SIDEBAR_NAVIGATION, false),
             homeIconHdrEnabled = store.decodeBool(KEY_HOME_ICON_HDR, false),
             homeDynamicFullEffectEnabled = store.decodeBool(KEY_HOME_DYNAMIC_FULL_EFFECT, true),
             preloadingEnabled = store.decodeBool(KEY_PRELOADING_ENABLED, true),

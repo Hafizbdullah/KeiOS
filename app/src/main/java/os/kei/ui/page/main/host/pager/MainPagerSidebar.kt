@@ -16,6 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,12 +59,33 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * or popovers". A rail of five labels is a significant amount of text, so it takes the blurred variant that the
  * app's `AppLiquidFloatingSurface` already provides — not the thin translucency the floating docks use.
  *
- * ## Why it floats instead of taking a column
+ * ## Why it floats instead of taking a column, and where that falls short
  *
- * The pager is inset by [AppSidebarWidth] rather than placed in a `Row` beside the rail, so the page background
- * still spans the whole window and runs on underneath. That is the background extension effect the guidance asks
- * for — "extend visually rich content beneath the sidebar… to reinforce the separation" — and it costs one
- * padding value instead of restructuring the host.
+ * The pager is inset by [AppSidebarWidth] rather than placed in a `Row` beside the rail, which costs one padding
+ * value instead of restructuring the host.
+ *
+ * **It does not yet deliver the background extension effect**, and an earlier version of this comment claimed it
+ * did. The guidance asks to "extend visually rich content beneath the sidebar… to reinforce the separation", but
+ * insetting the pager insets its background along with its content, so a page that paints its own artwork —
+ * Home's hero, or any page under a managed background image — stops that artwork at the rail's outer edge and
+ * leaves the strip beside it showing the scaffold's plain `surface`. Measured on the Pad AVD: uniform on OS,
+ * which paints nothing, and a visible seam on Home, which does.
+ *
+ * Closing it means separating the background layer from the content layer so only the latter is inset, which is
+ * a change to the pager host rather than to this file.
+ *
+ * ## Why only half of the edge gesture is here
+ *
+ * The guidance says "in iPadOS, people expect to use the built-in edge swipe gesture" to hide and show a
+ * sidebar. Half of that does not port. On Android the leading edge belongs to the **system back gesture**, so an
+ * app claiming a leading-edge drag to *open* a sidebar would be fighting predictive back on the same pixels —
+ * worse than not offering it. This app has been here before: issue #21 was miuix-nav's `navSwipeDismiss`
+ * claiming horizontal drags parent-first and taking them away from sliders, switches and text fields.
+ *
+ * So the gesture is only the *closing* half, and it lives on the rail rather than on a screen edge: drag the
+ * sidebar toward the leading edge and it converts back to a tab bar. There is nothing to conflict with — the
+ * rail scrolls in neither direction, and `draggable` only engages past touch slop, so the rows keep their taps.
+ * Opening stays the button's job, which the adaptable style requires to exist anyway.
  */
 @Composable
 internal fun BoxScope.MainPagerSidebar(
@@ -69,6 +98,14 @@ internal fun BoxScope.MainPagerSidebar(
     onConvertToTabBar: () -> Unit,
 ) {
     val margin = appTopBarEdgePadding()
+    val density = LocalDensity.current
+    // Half the rail: a deliberate shove, not a brush past it.
+    val dismissThresholdPx = with(density) { (AppSidebarWidth / 2f).toPx() }
+    var dragTotalPx by remember { mutableFloatStateOf(0f) }
+    val dragState =
+        rememberDraggableState { delta ->
+            dragTotalPx += delta
+        }
     AppLiquidFloatingSurface(
         modifier =
             Modifier
@@ -79,6 +116,14 @@ internal fun BoxScope.MainPagerSidebar(
                     start = margin,
                     top = topInset + AppChromeTokens.topBarChromeTopPadding,
                     bottom = bottomInset + 12.dp,
+                ).draggable(
+                    state = dragState,
+                    orientation = Orientation.Horizontal,
+                    onDragStarted = { dragTotalPx = 0f },
+                    onDragStopped = {
+                        if (dragTotalPx <= -dismissThresholdPx) onConvertToTabBar()
+                        dragTotalPx = 0f
+                    },
                 ),
         shape = RoundedCornerShape(28.dp),
         backdrop = backdrop,
