@@ -57,6 +57,7 @@ import os.kei.ui.page.main.widget.isAppInDarkTheme
 import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.page.main.widget.motion.resolvedMotionDuration
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import os.kei.ui.page.main.widget.chrome.appPageSideGutter
 
 @Composable
 internal fun BaGuideBgmFloatingBottomChrome(
@@ -206,6 +207,9 @@ internal fun BaGuideBgmFloatingBottomChrome(
         modifier =
             modifier
                 .fillMaxWidth()
+                // Every width below is derived from this box's own maxWidth, so capping the box caps the tab
+                // strip, the mini player and the search field together. Zero on phones.
+                .padding(horizontal = appPageSideGutter())
                 .baGuideBgmAnimatedHeight { containerHeightState.value },
     ) {
         val tabGroupExpandedWidth =

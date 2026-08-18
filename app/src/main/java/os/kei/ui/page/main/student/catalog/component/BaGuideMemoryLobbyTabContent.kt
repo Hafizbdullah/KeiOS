@@ -41,6 +41,7 @@ import os.kei.ui.page.main.student.catalog.state.BaGuideMemoryLobbyListDerivedSt
 import os.kei.ui.page.main.student.catalog.state.rememberBaGuideCatalogTabListState
 import os.kei.ui.page.main.student.catalog.state.visibleMemoryLobbyEntriesWithFavoriteVisibility
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
 import os.kei.ui.page.main.widget.glass.AppEdgeStackListTopInset
@@ -232,8 +233,8 @@ internal fun BaGuideMemoryLobbyTabContent(
                 Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = AppChromeTokens.pageHorizontalPadding,
-                        end = AppChromeTokens.pageHorizontalPadding,
+                        start = appPageEdgePadding(),
+                        end = appPageEdgePadding(),
                         top = innerPadding.calculateTopPadding(),
                     ),
         ) {
@@ -274,8 +275,8 @@ internal fun BaGuideMemoryLobbyTabContent(
             PaddingValues(
                 top = appEdgeStackKeepAliveTopPadding(listTopPadding),
                 bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                start = AppChromeTokens.pageHorizontalPadding,
-                end = AppChromeTokens.pageHorizontalPadding,
+                start = appPageEdgePadding(),
+                end = appPageEdgePadding(),
             ),
         verticalArrangement = Arrangement.spacedBy(entryListGap),
     ) {

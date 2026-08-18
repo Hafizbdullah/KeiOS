@@ -147,8 +147,12 @@ class BaGuideCatalogPageBackdropTest {
             assertSourceContains(
                 source = source,
                 "innerPadding.calculateTopPadding()",
-                "start = AppChromeTokens.pageHorizontalPadding",
-                "end = AppChromeTokens.pageHorizontalPadding",
+                // The page edge goes through the helper, not the raw token. The token is still correct
+                // *inside* a card, where there is no page edge to centre a content column against; at a page
+                // edge it has to carry the large-screen gutter, which is what appPageEdgePadding adds. It is
+                // identical to the token on every phone, so this pins a contract rather than a look.
+                "start = appPageEdgePadding()",
+                "end = appPageEdgePadding()",
                 "verticalArrangement = Arrangement.spacedBy(entryListGap)",
             )
             // All three leaves stack, so all three shift their list up inside `AppEdgeStackKeepAlive` and

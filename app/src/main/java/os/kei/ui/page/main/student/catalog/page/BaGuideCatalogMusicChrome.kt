@@ -32,6 +32,7 @@ import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogFilterActionP
 import os.kei.ui.page.main.student.catalog.component.BaGuideCatalogMoreActionPopup
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogSortMode
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppTopBarTitleCard
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
@@ -195,8 +196,8 @@ internal fun BaGuideCatalogMusicPlaceholder(
                 .padding(
                     top = topPadding,
                     bottom = bottomPadding,
-                    start = AppChromeTokens.pageHorizontalPadding,
-                    end = AppChromeTokens.pageHorizontalPadding,
+                    start = appPageEdgePadding(),
+                    end = appPageEdgePadding(),
                 ),
         contentAlignment = Alignment.Center,
     ) {

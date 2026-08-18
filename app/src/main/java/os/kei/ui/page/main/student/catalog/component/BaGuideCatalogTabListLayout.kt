@@ -16,6 +16,7 @@ import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import os.kei.ui.page.main.student.catalog.BaGuideCatalogEntry
 import os.kei.ui.page.main.student.catalog.state.BaGuideCatalogTabContentUiState
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.glass.LiquidInfoBlock
 
 @Composable
@@ -55,8 +56,8 @@ internal fun BaGuideCatalogTabListLayout(
                 PaddingValues(
                     top = innerPadding.calculateTopPadding(),
                     bottom = innerPadding.calculateBottomPadding() + AppChromeTokens.pageSectionGap,
-                    start = AppChromeTokens.pageHorizontalPadding,
-                    end = AppChromeTokens.pageHorizontalPadding,
+                    start = appPageEdgePadding(),
+                    end = appPageEdgePadding(),
                 ),
             verticalArrangement = Arrangement.spacedBy(entryListGap),
         ) {

@@ -447,4 +447,11 @@ Suite **2937 tests, 0 failures**; debug and release both assemble.
 - **The split view** — a section on the left and the route it opened on the right — is untouched. It needs
   `NavDisplay` restructured so a route occupies a pane instead of the window, which is the highest-risk change in
   this repo and belongs in its own round.
-- **The BA guide catalog's inner tab layouts** still build paddings of their own (round 1's note).
+- ~~The BA guide catalog's inner tab layouts~~ **done.** Round 1's note said these hosts went through
+  `AppPageLazyColumn` and would inherit the cap; they did not. The keep-alive wrapper was converted, the column
+  underneath it is a raw `LazyColumn` with its own `contentPadding`, so the gutter never reached the route — the
+  whole catalog was still 1280dp wide on the Pad. Ten page-edge paddings across seven files now go through
+  `appPageEdgePadding()`, and the BGM bottom chrome is capped at its `BoxWithConstraints`, which caps the tab
+  strip, the mini player and the search field together because all three derive from its `maxWidth`. A source
+  assertion that pinned the raw token was updated to pin the helper instead, which is the more useful contract:
+  the token stays right *inside* a card, where there is no page edge to centre against.
