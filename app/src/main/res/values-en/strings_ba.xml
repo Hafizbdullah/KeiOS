@@ -220,6 +220,8 @@
     <string name="ba_debug_action_pool_upcoming_notification">Banner opens soon</string>
     <string name="ba_debug_action_pool_ending_notification">Banner ends soon</string>
     <string name="ba_debug_action_calendar_pool_change_notification">Fetched change alert</string>
+    <string name="ba_debug_action_daily_done_notification">Dailies done</string>
+    <string name="ba_debug_action_daily_done_no_craft_notification">Dailies done (no craft)</string>
     <string name="ba_debug_sample_calendar_title">Test event</string>
     <string name="ba_debug_sample_pool_title">Test banner</string>
     <string name="ba_debug_sample_change_detail">Test event / Test banner</string>
@@ -229,6 +231,7 @@
     <string name="ba_toast_cafe_ap_notification_sent">Cafe AP notification sent.</string>
     <string name="ba_toast_cafe_visit_notification_sent">Cafe student visit notification sent.</string>
     <string name="ba_toast_arena_refresh_notification_sent">Tactical Challenge reset notification sent.</string>
+    <string name="ba_toast_daily_done_notification_sent">Dailies done notification sent.</string>
     <string name="ba_toast_calendar_pool_notification_sent">Event and banner alert sent.</string>
     <string name="ba_toast_calendar_pool_real_data_missing">No real event or banner data for this server. Refresh first.</string>
     <string name="ba_notification_ap_island_text">AP</string>

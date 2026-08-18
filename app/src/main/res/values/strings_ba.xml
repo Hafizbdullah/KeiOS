@@ -235,6 +235,8 @@
     <string name="ba_debug_action_pool_upcoming_notification">卡池即将开启</string>
     <string name="ba_debug_action_pool_ending_notification">卡池即将结束</string>
     <string name="ba_debug_action_calendar_pool_change_notification">抓取变动提醒</string>
+    <string name="ba_debug_action_daily_done_notification">日常完成</string>
+    <string name="ba_debug_action_daily_done_no_craft_notification">日常完成（无制造）</string>
     <string name="ba_debug_sample_calendar_title">测试活动</string>
     <string name="ba_debug_sample_pool_title">测试卡池</string>
     <string name="ba_debug_sample_change_detail">测试活动 / 测试卡池</string>
@@ -244,6 +246,7 @@
     <string name="ba_toast_cafe_ap_notification_sent">已发送咖啡厅 AP 通知</string>
     <string name="ba_toast_cafe_visit_notification_sent">已发送咖啡厅学生访问通知</string>
     <string name="ba_toast_arena_refresh_notification_sent">已发送竞技场刷新通知</string>
+    <string name="ba_toast_daily_done_notification_sent">已发送日常完成通知</string>
     <string name="ba_toast_calendar_pool_notification_sent">已发送活动与卡池提醒</string>
     <string name="ba_toast_calendar_pool_real_data_missing">当前服务器暂无可用于测试的真实活动或卡池数据，请先刷新</string>
     <string name="ba_notification_ap_island_text">AP</string>

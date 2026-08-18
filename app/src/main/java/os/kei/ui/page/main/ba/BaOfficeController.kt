@@ -770,6 +770,43 @@ internal class BaOfficeController(
         return true
     }
 
+    /**
+     * Posts a daily-done card without running the template.
+     *
+     * The real path only fires from a quick-settings tile or a launcher shortcut, and only when a run
+     * actually changed something — so checking the Super Island's wording used to mean owning a bound
+     * tile, having dailies left to do, and mutating real account state to see one card.
+     *
+     * [craftSlotsStarted] is a parameter rather than a constant because the two values take different
+     * text paths: a run that started craft slots reports them, and one that did not omits the clause
+     * entirely rather than printing a zero. Both are worth being able to look at.
+     */
+    fun sendDailyDoneTestNotification(
+        context: Context,
+        showToast: Boolean = true,
+        changedAccounts: Int = 1,
+        craftSlotsStarted: Int = 2,
+        accountId: BaAccountId? = null,
+    ): Boolean {
+        val sent =
+            BaDailyDoneNotificationDispatcher.send(
+                context = context,
+                changedAccounts = changedAccounts,
+                craftSlotsStarted = craftSlotsStarted,
+                targetAccountId = accountId,
+            )
+        if (!sent) {
+            if (showToast) {
+                context.showToast(R.string.ba_toast_notification_permission_required)
+            }
+            return false
+        }
+        if (showToast) {
+            context.showToast(R.string.ba_toast_daily_done_notification_sent)
+        }
+        return true
+    }
+
     fun applyApLastNotifiedLevel(level: Int): BaRuntimePersistenceUpdate? {
         val normalized = level.coerceIn(-1, BA_AP_MAX)
         if (apLastNotifiedLevel == normalized) return null

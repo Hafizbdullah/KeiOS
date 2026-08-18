@@ -439,6 +439,21 @@ private fun BaDebugControlsHost(
                 accountId = accountNotificationContext.accountId,
             )
         },
+        onSendDailyDoneTestNotification = {
+            office.sendDailyDoneTestNotification(
+                context = context,
+                showToast = true,
+                accountId = accountNotificationContext.accountId,
+            )
+        },
+        onSendDailyDoneNoCraftTestNotification = {
+            office.sendDailyDoneTestNotification(
+                context = context,
+                showToast = true,
+                craftSlotsStarted = 0,
+                accountId = accountNotificationContext.accountId,
+            )
+        },
         onSendCalendarUpcomingTestNotification = {
             val uiNowMs = uiNowMsProvider()
             val entries =

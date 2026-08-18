@@ -220,6 +220,8 @@
     <string name="ba_debug_action_pool_upcoming_notification">募集開始前</string>
     <string name="ba_debug_action_pool_ending_notification">募集終了前</string>
     <string name="ba_debug_action_calendar_pool_change_notification">取得データ変更通知</string>
+    <string name="ba_debug_action_daily_done_notification">デイリー完了</string>
+    <string name="ba_debug_action_daily_done_no_craft_notification">デイリー完了（製造なし）</string>
     <string name="ba_debug_sample_calendar_title">テストイベント</string>
     <string name="ba_debug_sample_pool_title">テスト募集</string>
     <string name="ba_debug_sample_change_detail">テストイベント / テスト募集</string>
@@ -229,6 +231,7 @@
     <string name="ba_toast_cafe_ap_notification_sent">カフェ AP 通知を送信しました。</string>
     <string name="ba_toast_cafe_visit_notification_sent">カフェ生徒訪問通知を送信しました。</string>
     <string name="ba_toast_arena_refresh_notification_sent">戦術対抗戦リセット通知を送信しました。</string>
+    <string name="ba_toast_daily_done_notification_sent">デイリー完了通知を送信しました</string>
     <string name="ba_toast_calendar_pool_notification_sent">イベントと募集通知を送信しました。</string>
     <string name="ba_toast_calendar_pool_real_data_missing">このサーバーにはテスト可能な実イベントまたは募集データがありません。先に更新してください。</string>
     <string name="ba_notification_ap_island_text">AP</string>

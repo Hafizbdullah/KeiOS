@@ -394,6 +394,38 @@ class ModernNotificationSpecResolverTest {
         assertEquals(null, spec.trackerIconResId)
     }
 
+    @Test
+    fun `ba daily done live update is a dismissible status, not a promoted ongoing progress bar`() {
+        val spec =
+            ModernNotificationSpecResolver.resolve(
+                state =
+                    createState(
+                        serverName = LiveNotificationPayload.BA_DAILY_DONE_SERVER_NAME,
+                        // The dispatcher's real pair: a live event that has already finished.
+                        running = true,
+                        port = 0,
+                        clients = 0,
+                        ongoing = false,
+                    ),
+            )
+
+        // Before daily-done joined the one-shot BA events, `ongoing` was `running || state.ongoing` and
+        // `requestPromotedOngoing` tracked it, so a finished run arrived as an un-dismissible
+        // ONGOING_EVENT|PROMOTED_ONGOING ProgressStyle notification with a bar at 100%.
+        assertEquals(false, spec.ongoing)
+        assertEquals(false, spec.requestPromotedOngoing)
+        assertEquals(false, spec.showProgressStyle)
+        assertEquals(NotificationCompat.CATEGORY_STATUS, spec.category)
+
+        // Semantic icon rather than the app identity icon.
+        assertEquals(R.drawable.ic_ba_daily_done_island, spec.iconResId)
+        assertEquals(R.drawable.ic_ba_daily_done_live_update, spec.expandedIconResId)
+
+        // A terminal short word comes from the dispatcher's overrideShortText; ONLINE_TEXT would pull the
+        // server-status wording in instead.
+        assertEquals(ModernShortCriticalMode.SHORT_TEXT, spec.shortCriticalMode)
+    }
+
     private fun createState(
         serverName: String,
         running: Boolean,

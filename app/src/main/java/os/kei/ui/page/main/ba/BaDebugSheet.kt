@@ -24,6 +24,8 @@ internal fun BaDebugControlsContent(
     onSendCafeApTestNotification: () -> Unit,
     onSendCafeVisitTestNotification: () -> Unit,
     onSendArenaRefreshTestNotification: () -> Unit,
+    onSendDailyDoneTestNotification: () -> Unit,
+    onSendDailyDoneNoCraftTestNotification: () -> Unit,
     onSendCalendarUpcomingTestNotification: () -> Unit,
     onSendCalendarEndingTestNotification: () -> Unit,
     onSendPoolUpcomingTestNotification: () -> Unit,
@@ -45,6 +47,14 @@ internal fun BaDebugControlsContent(
                     stringResource(R.string.ba_debug_action_arena_refresh_notification) to onSendArenaRefreshTestNotification,
                     stringResource(R.string.ba_debug_action_cafe_visit_notification) to onSendCafeVisitTestNotification,
                     stringResource(R.string.ba_debug_action_cafe_plus_3h_ap) to onTestCafePlus3Hours,
+                    // Two entries, because the body text branches on whether any craft slot started:
+                    // one reports the count, the other omits the clause instead of printing a zero.
+                    // The real trigger is a quick-settings tile, so without these the only way to see
+                    // either card is to own a bound tile and mutate real account state.
+                    stringResource(R.string.ba_debug_action_daily_done_notification) to
+                        onSendDailyDoneTestNotification,
+                    stringResource(R.string.ba_debug_action_daily_done_no_craft_notification) to
+                        onSendDailyDoneNoCraftTestNotification,
                 )
         )
         SheetSectionHeader(stringResource(R.string.ba_debug_section_calendar_pool))

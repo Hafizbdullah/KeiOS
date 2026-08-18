@@ -12,6 +12,7 @@ enum class ModernNotificationKind {
     BA_CAFE_VISIT,
     BA_ARENA_REFRESH,
     BA_CALENDAR_POOL,
+    BA_DAILY_DONE,
     GITHUB_SHARE_IMPORT,
     WEBDAV_SYNC
 }
@@ -46,11 +47,13 @@ object ModernNotificationSpecResolver {
     private val ICON_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_island
     private val ICON_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_island
     private val ICON_BA_CALENDAR_POOL = R.drawable.ic_ba_calendar_live_update
+    private val ICON_BA_DAILY_DONE = R.drawable.ic_ba_daily_done_island
     private val ICON_GITHUB_SHARE_IMPORT = R.drawable.ic_github_invertocat_island_blue
     private val CONTENT_ICON_AP = R.drawable.ic_ba_ap_live_update
     private val CONTENT_ICON_BA_CAFE_VISIT = R.drawable.ic_ba_tea_party_live_update
     private val CONTENT_ICON_BA_ARENA_REFRESH = R.drawable.ic_ba_arena_coin_live_update
     private val CONTENT_ICON_BA_CALENDAR_POOL = R.drawable.ic_ba_calendar_live_update
+    private val CONTENT_ICON_BA_DAILY_DONE = R.drawable.ic_ba_daily_done_live_update
     private val CONTENT_ICON_GITHUB_SHARE_IMPORT = R.drawable.ic_github_invertocat_island_blue
 
     @Suppress("UNUSED_PARAMETER")
@@ -63,9 +66,15 @@ object ModernNotificationSpecResolver {
         val isRunning = state.running
         val isCalendarPoolTerminal =
             kind == ModernNotificationKind.BA_CALENDAR_POOL && state.deadlineAtMs == null
+        // Daily-done belongs here for the same reason cafe visit and arena refresh do: it reports an
+        // event that has already happened. Without it the trailing branches below made a finished run an
+        // ongoing PROMOTED_ONGOING ProgressStyle notification with a progress bar — verified on the AVD,
+        // where it also arrived un-dismissible because ONGOING_EVENT was set. `requestPromotedOngoing`
+        // tracks `ongoing` here, so getting `ongoing` right is what stops the promoted request too.
         val isOneShotBaEvent =
             kind == ModernNotificationKind.BA_CAFE_VISIT ||
-                kind == ModernNotificationKind.BA_ARENA_REFRESH
+                kind == ModernNotificationKind.BA_ARENA_REFRESH ||
+                kind == ModernNotificationKind.BA_DAILY_DONE
         val ongoing = if (isCalendarPoolTerminal || isOneShotBaEvent) {
             state.ongoing
         } else {
@@ -122,6 +131,7 @@ object ModernNotificationSpecResolver {
             LiveNotificationPayload.isBaCafeVisitServerName(serverName) -> ModernNotificationKind.BA_CAFE_VISIT
             LiveNotificationPayload.isBaArenaRefreshServerName(serverName) -> ModernNotificationKind.BA_ARENA_REFRESH
             LiveNotificationPayload.isBaCalendarPoolServerName(serverName) -> ModernNotificationKind.BA_CALENDAR_POOL
+            LiveNotificationPayload.isBaDailyDoneServerName(serverName) -> ModernNotificationKind.BA_DAILY_DONE
             LiveNotificationPayload.isGitHubShareImportServerName(serverName) -> ModernNotificationKind.GITHUB_SHARE_IMPORT
             LiveNotificationPayload.isWebDavSyncServerName(serverName) -> ModernNotificationKind.WEBDAV_SYNC
             else -> ModernNotificationKind.DEFAULT
@@ -140,6 +150,7 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH,
             ModernNotificationKind.BA_CALENDAR_POOL,
+            ModernNotificationKind.BA_DAILY_DONE,
             ModernNotificationKind.GITHUB_SHARE_IMPORT,
             ModernNotificationKind.WEBDAV_SYNC ->
                 resolveSemanticCompactIcon(kind, defaultAppIconResId)
@@ -156,6 +167,7 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT -> ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> ICON_BA_CALENDAR_POOL
+            ModernNotificationKind.BA_DAILY_DONE -> ICON_BA_DAILY_DONE
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> ICON_GITHUB_SHARE_IMPORT
             ModernNotificationKind.WEBDAV_SYNC -> defaultAppIconResId
             ModernNotificationKind.DEFAULT -> defaultAppIconResId
@@ -178,6 +190,7 @@ object ModernNotificationSpecResolver {
             ModernNotificationKind.BA_CAFE_VISIT -> CONTENT_ICON_BA_CAFE_VISIT
             ModernNotificationKind.BA_ARENA_REFRESH -> CONTENT_ICON_BA_ARENA_REFRESH
             ModernNotificationKind.BA_CALENDAR_POOL -> CONTENT_ICON_BA_CALENDAR_POOL
+            ModernNotificationKind.BA_DAILY_DONE -> CONTENT_ICON_BA_DAILY_DONE
             ModernNotificationKind.GITHUB_SHARE_IMPORT -> CONTENT_ICON_GITHUB_SHARE_IMPORT
             ModernNotificationKind.WEBDAV_SYNC -> null
         }
@@ -187,6 +200,10 @@ object ModernNotificationSpecResolver {
         return when (kind) {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH -> ModernShortCriticalMode.ONLINE_TEXT
+
+            // The dispatcher supplies a terminal short word in `overrideShortText`; ONLINE_TEXT would
+            // reach for the server-status wording instead, which is the same mistake the island had.
+            ModernNotificationKind.BA_DAILY_DONE -> ModernShortCriticalMode.SHORT_TEXT
 
             ModernNotificationKind.DEFAULT,
             ModernNotificationKind.BA_AP,
@@ -205,6 +222,11 @@ object ModernNotificationSpecResolver {
         return when (kind) {
             ModernNotificationKind.BA_CAFE_VISIT,
             ModernNotificationKind.BA_ARENA_REFRESH -> 100
+
+            // Full, not zero. `showProgressStyle` is false for this kind so nothing draws a bar, but the
+            // value still reaches the tracker; reporting a finished run as 0% would render it as work
+            // that never started if a surface ever chooses to show it.
+            ModernNotificationKind.BA_DAILY_DONE -> 100
 
             ModernNotificationKind.BA_CALENDAR_POOL -> {
                 state.overrideProgressPercent?.coerceIn(0, 100) ?: 100

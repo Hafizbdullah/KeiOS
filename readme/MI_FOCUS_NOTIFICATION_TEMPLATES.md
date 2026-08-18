@@ -487,6 +487,10 @@ check(route?.primaryHelpers?.contains("MiFocusExpandedComponent.officialPictureC
   强调色用完成绿 `#22C55E`。不写任何进度：这条通知在模板已经套用之后才发出，没有进行中的会话可报告。
   `ongoing = false` 且不请求 promoted ongoing——终态请求 promoted ongoing 会让 SystemUI 收掉进度岛只留普通通知。
   `orderId` 固定为 `ba-daily-done`，与它唯一的通知 id 一致，所以第二次运行改写同一张卡而不是叠一张新的。
+  **Android Live Updates 一侧要同时改**：`ModernNotificationSpecResolver` 里它必须算进 `isOneShotBaEvent`，
+  否则 `ongoing = running || state.ongoing` 会成立、`requestPromotedOngoing` 跟着成立，终态被发成不可划掉的
+  `ONGOING_EVENT|PROMOTED_ONGOING` + `ProgressStyle`（AVD 上实测如此）。只改超级岛一侧不够——非 HyperOS 设备走的是
+  这条路径，两条路径各有一套 per-feature 判别。
 - MCP 服务：大岛模板 7 的定宽数字展示客户端数，小岛模板 3 展示图标 + 短数字，运行状态使用 `specialTitle`。
 
 通用 Live payload 提供三层 Focus 专用文案：
