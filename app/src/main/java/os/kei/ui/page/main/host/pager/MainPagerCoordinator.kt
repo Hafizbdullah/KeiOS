@@ -20,6 +20,7 @@ import os.kei.feature.home.model.HomeOverviewCard
 import os.kei.feature.home.model.HomeWebDavOverview
 import os.kei.mcp.server.McpServerManager
 import os.kei.ui.page.main.model.BottomPage
+import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
 import os.kei.ui.page.main.widget.glass.UiPerformanceBudget
 import os.kei.ui.perf.ReportPagerPerformanceState
 
@@ -67,16 +68,26 @@ internal data class MainPagerCoordinatorState(
 )
 
 @Composable
-internal fun rememberMainPagerInsets(): MainPagerInsets {
+internal fun rememberMainPagerInsets(placement: AppNavigationPlacement): MainPagerInsets {
     val density = LocalDensity.current
     val navigationBarBottom = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
     val systemInsets = WindowInsets.safeDrawing.union(WindowInsets.navigationBars).asPaddingValues()
-    return remember(navigationBarBottom, systemInsets) {
+    return remember(navigationBarBottom, systemInsets, placement) {
         MainPagerInsets(
             navigationBarBottom = navigationBarBottom,
             homeTopInset = systemInsets.calculateTopPadding(),
             homeBottomInset = systemInsets.calculateBottomPadding(),
-            bottomOverlayPadding = 112.dp + navigationBarBottom,
+            // 112dp is the room the floating bottom bar needs to hover in. Once the bar has moved to the top
+            // row nothing floats down there, and leaving the reservation behind would strand every page above
+            // a band of empty panel — the same "phone layout, more of it" failure the whole round is about.
+            //
+            // No matching top reservation is needed, and that is the point of the iPadOS arrangement: the bar
+            // shares the row the title and the actions already occupy, so it costs no vertical space at all.
+            bottomOverlayPadding =
+                when (placement) {
+                    AppNavigationPlacement.Bottom -> 112.dp + navigationBarBottom
+                    AppNavigationPlacement.Top, AppNavigationPlacement.Sidebar -> 24.dp + navigationBarBottom
+                },
         )
     }
 }

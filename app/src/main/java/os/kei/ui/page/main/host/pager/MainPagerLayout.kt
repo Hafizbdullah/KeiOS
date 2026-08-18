@@ -56,6 +56,14 @@ import os.kei.ui.page.main.widget.motion.LocalTransitionAnimationsEnabled
 import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import os.kei.core.privilege.PrivilegeStatus
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
+import os.kei.ui.page.main.widget.chrome.LocalAppNavigationPlacement
+import os.kei.ui.page.main.widget.chrome.appNavigationPlacementFor
+import androidx.compose.ui.platform.LocalConfiguration
 
 @Composable
 internal fun MainPagerLayout(
@@ -99,7 +107,15 @@ internal fun MainPagerLayout(
     val backNavigationRuntime = LocalBackNavigationRuntimeState.current
     val density = LocalDensity.current
     val layoutDirection = LocalLayoutDirection.current
-    val insets = rememberMainPagerInsets()
+    // iPadOS `sidebarAdaptable`: the same tab bar, held against a different edge once the window is
+    // tablet-shaped. The preference is the user's and survives a window too narrow to honour it.
+    val windowWidth = LocalConfiguration.current.screenWidthDp.dp
+    var sidebarPreferred by rememberSaveable { mutableStateOf(false) }
+    val navigationPlacement =
+        remember(windowWidth, sidebarPreferred) {
+            appNavigationPlacementFor(availableWidth = windowWidth, sidebarPreferred = sidebarPreferred)
+        }
+    val insets = rememberMainPagerInsets(navigationPlacement)
     val floatingDockState = rememberAppGripAwareDockState(gripAwareFloatingDockEnabled)
     val floatingDockSide = floatingDockState.layoutSide(layoutDirection)
     val onOpenSettings =
@@ -250,6 +266,10 @@ internal fun MainPagerLayout(
                 )
                 .nestedScroll(coordinator.nestedScrollConnection),
         bottomBar = {
+            // Bottom placement only. At Top the same bar is composed inside the content instead, because this
+            // slot is measured at the bottom edge of the scaffold and a TopCenter alignment inside it would
+            // align against a strip a few dp tall, not against the window.
+            if (navigationPlacement == AppNavigationPlacement.Bottom) {
             val safeSelectedPageIndex =
                 coordinator.pagerState.targetPage.coerceIn(
                     0,
@@ -268,7 +288,9 @@ internal fun MainPagerLayout(
                 }
             MainPagerBottomBar(
                 visible = coordinator.showBottomBar,
+                placement = navigationPlacement,
                 navigationBarBottom = insets.navigationBarBottom,
+                topInset = insets.homeTopInset,
                 tabs = coordinator.tabs,
                 selectedPageIndex = safeSelectedPageIndex,
                 selectedPagePosition = null,
@@ -277,8 +299,13 @@ internal fun MainPagerLayout(
                 onPageSelected = coordinator.onPageSelected,
                 onExpand = coordinator.onShowBottomBar,
             )
+            }
         },
     ) { _ ->
+      // Published here rather than derived per page: the bar is one overlay owned by the pager, but all five
+      // pages are composed at once, so each page's own chrome has to be told to leave the centre of the top
+      // row alone. See LocalAppNavigationPlacement.
+      CompositionLocalProvider(LocalAppNavigationPlacement provides navigationPlacement) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (coordinator.pagerRuntime.shouldRenderNonHomeBackground) {
                 val backgroundStyle =
@@ -625,7 +652,20 @@ internal fun MainPagerLayout(
                     error("Unsupported main pager state: ${pagerState::class.java.name}")
                 }
             }
+            // Last child, so it draws above the pager. Navigation lives in the Liquid Glass functional layer
+            // *over* the content layer, and content peeks through beneath it — drawn first it would simply be
+            // covered by the page.
+            if (navigationPlacement != AppNavigationPlacement.Bottom) {
+                MainPagerTopNavigationBar(
+                    coordinator = coordinator,
+                    placement = navigationPlacement,
+                    insets = insets,
+                    backGestureState = mainPagerBackGestureState,
+                    backdrop = bottomBarBackdrop,
+                )
+            }
         }
+      }
     }
 }
 

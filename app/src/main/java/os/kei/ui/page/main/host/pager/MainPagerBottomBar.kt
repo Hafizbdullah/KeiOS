@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +27,7 @@ import os.kei.ui.page.main.model.BottomPage
 import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBarItem
@@ -37,7 +40,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun MainPagerBottomBar(
     visible: Boolean,
+    placement: AppNavigationPlacement,
     navigationBarBottom: Dp,
+    topInset: Dp,
     tabs: List<BottomPage>,
     selectedPageIndex: Int,
     selectedPagePosition: Float?,
@@ -49,7 +54,11 @@ internal fun MainPagerBottomBar(
     AnimatedCompactBottomBar(
         expanded = visible,
         expandedContent = { motionModifier, interactionEnabled ->
-            Box(modifier = motionModifier.align(Alignment.BottomCenter)) {
+            val atTop = placement == AppNavigationPlacement.Top
+            Box(
+                modifier =
+                    motionModifier.align(if (atTop) Alignment.TopCenter else Alignment.BottomCenter),
+            ) {
                 val bottomBarTabs: @Composable RowScope.() -> Unit = {
                     tabs.forEachIndexed { index, page ->
                         val selected = selectedPageIndex == index
@@ -115,16 +124,19 @@ internal fun MainPagerBottomBar(
                     val preferredWidth = (76.dp * tabs.size + 8.dp).coerceAtLeast(minBarWidth)
                     val maxBarWidth = if (maxWidth < 600.dp) availableWidth else 460.dp
                     val bottomBarWidth = preferredWidth.coerceAtMost(maxBarWidth)
+                    // Top placement measures from the status bar, bottom from the navigation bar. Same bar,
+                    // same width maths; only which edge it is held against changes.
                     val bottomBarModifier =
                         Modifier
                             .width(bottomBarWidth)
                             .widthIn(max = availableWidth)
                             .padding(
+                                top = if (atTop) topInset + 6.dp else 0.dp,
                                 bottom =
-                                    if (navigationBarBottom != 0.dp) {
-                                        8.dp + navigationBarBottom
-                                    } else {
-                                        36.dp
+                                    when {
+                                        atTop -> 0.dp
+                                        navigationBarBottom != 0.dp -> 8.dp + navigationBarBottom
+                                        else -> 36.dp
                                     },
                             )
 
@@ -144,17 +156,21 @@ internal fun MainPagerBottomBar(
             }
         },
         compactContent = { motionModifier, interactionEnabled ->
+            // Collapses toward whichever edge the bar itself lives on, so the tuck stays a short move rather
+            // than a flight across the window.
+            val atTop = placement == AppNavigationPlacement.Top
             Box(
                 modifier =
                     motionModifier
-                        .align(Alignment.BottomStart)
+                        .align(if (atTop) Alignment.TopStart else Alignment.BottomStart)
                         .padding(
                             start = AppChromeTokens.pageHorizontalPadding,
+                            top = if (atTop) topInset + 6.dp else 0.dp,
                             bottom =
-                                if (navigationBarBottom != 0.dp) {
-                                    8.dp + navigationBarBottom
-                                } else {
-                                    36.dp
+                                when {
+                                    atTop -> 0.dp
+                                    navigationBarBottom != 0.dp -> 8.dp + navigationBarBottom
+                                    else -> 36.dp
                                 },
                         ),
             ) {
@@ -200,3 +216,47 @@ private fun BottomPage.bottomTabTestTag(): String =
         BottomPage.GitHub -> KeiOsTestTags.MainBottomTabGitHub
         BottomPage.Ba -> KeiOsTestTags.MainBottomTabBa
     }
+
+/**
+ * The same bar, composed inside the content instead of in the scaffold's bottom slot.
+ *
+ * Extracted so the two placements share one call site's worth of arguments rather than being written twice.
+ * The scaffold's `bottomBar` slot is measured against the bottom edge of the window, so a top-aligned bar
+ * cannot live there; at regular width it is an overlay over the content, which is also what the Liquid Glass
+ * guidance describes — navigation floats above the content layer and content peeks through beneath it.
+ */
+@Composable
+internal fun BoxScope.MainPagerTopNavigationBar(
+    coordinator: MainPagerCoordinatorState,
+    placement: AppNavigationPlacement,
+    insets: MainPagerInsets,
+    backGestureState: MainPagerHomeBackGestureState,
+    backdrop: Backdrop,
+) {
+    val safeSelectedPageIndex =
+        coordinator.pagerState.targetPage.coerceIn(0, (coordinator.tabs.size - 1).coerceAtLeast(0))
+    val lastPagePosition = (coordinator.tabs.size - 1).coerceAtLeast(0).toFloat()
+    val selectedPagePositionProvider =
+        remember(coordinator.pagerState, backGestureState, lastPagePosition) {
+            {
+                if (backGestureState.inProgress) {
+                    backGestureState.selectedPagePosition()
+                } else {
+                    coordinator.pagerState.pagePosition
+                }.coerceIn(0f, lastPagePosition)
+            }
+        }
+    MainPagerBottomBar(
+        visible = coordinator.showBottomBar,
+        placement = placement,
+        navigationBarBottom = insets.navigationBarBottom,
+        topInset = insets.homeTopInset,
+        tabs = coordinator.tabs,
+        selectedPageIndex = safeSelectedPageIndex,
+        selectedPagePosition = null,
+        selectedPagePositionProvider = selectedPagePositionProvider,
+        backdrop = backdrop,
+        onPageSelected = coordinator.onPageSelected,
+        onExpand = coordinator.onShowBottomBar,
+    )
+}

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.ui.page.main.widget.glass.AppLiquidSearchField
 import os.kei.ui.page.main.widget.glass.GlassVariant
@@ -83,6 +84,10 @@ fun AppTopBarSection(
             ) {
                 navigationIcon?.invoke()
             }
+            // At regular width the centre of this row is the tab bar's, so the title moves to the leading
+            // edge — which is where iPadOS puts it, next to the navigation icon, with the tab bar centred
+            // between it and the actions. On a phone nothing is centred here but the title, and it stays.
+            val titleIsLeading = appTopBarCentreIsNavigation()
             AppTopBarTitleCard(
                 title = topBarTitle,
                 backdrop = titleBackdrop,
@@ -91,16 +96,19 @@ fun AppTopBarSection(
                 onClick = onTitleClick,
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = AppChromeTokens.topBarChromeTopPadding),
+                        .then(if (titleIsLeading) Modifier else Modifier.fillMaxWidth())
+                        .align(if (titleIsLeading) Alignment.TopStart else Alignment.TopCenter)
+                        .padding(
+                            start = if (titleIsLeading) resolvedTitleStartReserve else 0.dp,
+                            top = AppChromeTokens.topBarChromeTopPadding,
+                        ),
             )
             Row(
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(
-                            end = AppChromeTokens.topBarHorizontalPadding + appPageSideGutter(),
+                            end = AppChromeTokens.topBarHorizontalPadding + appTopBarActionGutter(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
                 content = actions,

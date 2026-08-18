@@ -97,3 +97,41 @@ fun appNavigationPlacement(sidebarPreferred: Boolean): AppNavigationPlacement =
         availableWidth = LocalConfiguration.current.screenWidthDp.dp,
         sidebarPreferred = sidebarPreferred,
     )
+
+/**
+ * The placement in force for the content being composed.
+ *
+ * Published by the pager rather than derived per page, for two reasons. The obvious one is that the user's
+ * sidebar preference lives up there. The load-bearing one is that the tab bar is a *single* overlay owned by
+ * the pager — all five pages are composed at once behind the scenes, so a bar drawn by each page's own chrome
+ * would exist five times and slide with the swipe.
+ *
+ * What a page does with this is stay out of the way: at [AppNavigationPlacement.Top] the centre of the top row
+ * belongs to the tab bar, so the page title moves to the leading edge, which is where iPadOS puts it.
+ *
+ * Defaults to [AppNavigationPlacement.Bottom], so a pushed route — which has no tab bar over it — keeps the
+ * centred title it has always had without needing to opt out.
+ */
+val LocalAppNavigationPlacement =
+    androidx.compose.runtime.compositionLocalOf { AppNavigationPlacement.Bottom }
+
+/** True while the top row's centre is spoken for by the tab bar. */
+@Composable
+fun appTopBarCentreIsNavigation(): Boolean =
+    LocalAppNavigationPlacement.current == AppNavigationPlacement.Top
+
+/**
+ * Trailing inset for the actions in the top row.
+ *
+ * Zero once the tab bar is up there. The content gutter exists to keep a page's trailing controls attached to
+ * its content column, which is right while the top row belongs to the page — but at [AppNavigationPlacement.Top]
+ * the row belongs to the *app*: title at the leading edge, tab bar centred, actions at the trailing edge, all
+ * spanning the window. Keeping the gutter there pulls the actions inward until they collide with the centred
+ * tab bar, which is exactly what it did on the Pad at 1280dp.
+ *
+ * Everywhere else this is just [appPageSideGutter], so a pushed route — which has no tab bar over it — keeps
+ * its actions on its own content column.
+ */
+@Composable
+fun appTopBarActionGutter(): Dp =
+    if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Top) 0.dp else appPageSideGutter()
