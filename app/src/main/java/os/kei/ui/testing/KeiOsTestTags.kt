@@ -8,6 +8,19 @@ object KeiOsTestTags {
     const val MainBottomTabMcp = "main_bottom_tab_mcp"
     const val MainBottomTabGitHub = "main_bottom_tab_github"
     const val MainBottomTabBa = "main_bottom_tab_ba"
+
+    /**
+     * The button that converts the tab bar into a sidebar, and back.
+     *
+     * Tagged so the baseline profile can reach the sidebar at all: it is the only entry point, and the rail's
+     * composables would otherwise never be compiled into the profile even on a tablet-shaped window.
+     */
+    const val MainSidebarToggle = "main_sidebar_toggle"
+    const val MainSidebarRowHome = "main_sidebar_row_home"
+    const val MainSidebarRowOs = "main_sidebar_row_os"
+    const val MainSidebarRowMcp = "main_sidebar_row_mcp"
+    const val MainSidebarRowGitHub = "main_sidebar_row_github"
+    const val MainSidebarRowBa = "main_sidebar_row_ba"
     const val MainPagerSettledHome = "main_pager_settled_home"
     const val MainPagerSettledOs = "main_pager_settled_os"
     const val MainPagerSettledMcp = "main_pager_settled_mcp"

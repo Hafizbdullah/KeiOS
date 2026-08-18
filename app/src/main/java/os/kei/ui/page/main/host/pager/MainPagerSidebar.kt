@@ -43,6 +43,7 @@ import os.kei.ui.page.main.widget.chrome.AppSidebarToggleSize
 import os.kei.ui.page.main.widget.chrome.AppSidebarWidth
 import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
 import os.kei.ui.page.main.widget.glass.AppLiquidFloatingSurface
+import os.kei.ui.testing.KeiOsTestTags
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -254,7 +255,7 @@ internal fun MainPagerSidebarToggle(
 ) {
     val description = if (expanded) "Show tab bar" else "Show sidebar"
     AppLiquidFloatingSurface(
-        modifier = modifier.size(AppSidebarToggleSize),
+        modifier = modifier.size(AppSidebarToggleSize).testTag(KeiOsTestTags.MainSidebarToggle),
         shape = RoundedCornerShape(14.dp),
         backdrop = backdrop,
         onClick = onClick,
@@ -269,4 +270,11 @@ internal fun MainPagerSidebarToggle(
     )
 }
 
-private fun BottomPage.sidebarRowTestTag(): String = "main_sidebar_row_${name.lowercase()}"
+private fun BottomPage.sidebarRowTestTag(): String =
+    when (this) {
+        BottomPage.Home -> KeiOsTestTags.MainSidebarRowHome
+        BottomPage.Os -> KeiOsTestTags.MainSidebarRowOs
+        BottomPage.Mcp -> KeiOsTestTags.MainSidebarRowMcp
+        BottomPage.GitHub -> KeiOsTestTags.MainSidebarRowGitHub
+        BottomPage.Ba -> KeiOsTestTags.MainSidebarRowBa
+    }

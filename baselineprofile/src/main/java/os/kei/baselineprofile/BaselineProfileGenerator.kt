@@ -374,6 +374,88 @@ class BaselineProfileGenerator {
             )
         }
     }
+
+    /**
+     * The tablet and fold navigation shapes: the top tab bar, and the sidebar it converts into.
+     *
+     * ## Why this forces the geometry instead of requiring a tablet
+     *
+     * Every other journey here runs in whatever window the device happens to have. These two shapes only exist
+     * at `>= 600dp` and `>= 660dp`, so on a phone they would never be compiled into the profile — and a profile
+     * generated on a *tablet* has the opposite hole, because the floating bottom bar never renders there.
+     * Neither device alone produces a complete profile, and merging two runs is a process step that gets
+     * forgotten.
+     *
+     * So the journey resizes the window itself. `MainActivity` declares `screenSize|screenLayout|smallestScreenSize`
+     * in `configChanges`, so this reflows rather than recreating the Activity — the reflow is exactly the code
+     * path worth compiling anyway, since a fold does it every time it opens.
+     *
+     * ## Why the geometry is restored in a `finally`
+     *
+     * `wm size` outlives the process. Leaving a 1280dp override behind would silently invalidate every later
+     * journey in the same run and every macrobenchmark on that device afterwards, and the symptom — a phone
+     * profile missing its bottom bar — looks like a code problem rather than a leaked shell command.
+     */
+    @Test
+    fun tabletAndFoldNavigationShapes() {
+        rule.collect(
+            packageName = targetAppId(),
+            includeInStartupProfile = false,
+        ) {
+            try {
+                // 1280x800dp at density 320 — the Pixel Tablet in landscape, and past both thresholds.
+                forceWindowSize(widthPx = 2560, heightPx = 1600)
+                launchHomeFromColdStart()
+
+                // Tab bar shape: the same tab test tags, now in the top row.
+                clickAndWaitForPage(
+                    tabTag = MAIN_BOTTOM_TAB_OS,
+                    pageTag = OS_PAGE_ROOT,
+                    settledTag = MAIN_PAGER_SETTLED_OS,
+                )
+                flingVisibleScrollable(times = 2)
+
+                // Convert to the sidebar, drive it, and convert back — both directions of the morph.
+                clickTestTag(MAIN_SIDEBAR_TOGGLE)
+                waitForTestTag(MAIN_SIDEBAR_ROW_HOME)
+                clickTestTag(MAIN_SIDEBAR_ROW_MCP)
+                waitForTestTag(MCP_PAGE_ROOT)
+                flingVisibleScrollable(times = 2)
+                clickTestTag(MAIN_SIDEBAR_ROW_BA)
+                waitForTestTag(BA_PAGE_ROOT)
+                clickTestTag(MAIN_SIDEBAR_TOGGLE)
+
+                // A fold opening and closing: the width crosses both thresholds while the app is running.
+                forceWindowSize(widthPx = 1550, heightPx = 1600) // 775dp — fold inner, portrait-ish
+                device.waitForIdle()
+                forceWindowSize(widthPx = 1000, heightPx = 1600) // 500dp — compact, back to the bottom bar
+                device.waitForIdle()
+                waitForHome()
+            } finally {
+                resetWindowSize()
+            }
+        }
+    }
+}
+
+/**
+ * Overrides the window size for the rest of the journey.
+ *
+ * Physical pixels, because that is what `wm size` takes; the dp the app sees is this divided by the device's
+ * density. The callers above are written for density 320, which is the Pad AVD's.
+ */
+private fun MacrobenchmarkScope.forceWindowSize(
+    widthPx: Int,
+    heightPx: Int,
+) {
+    device.executeShellCommand("wm size ${widthPx}x$heightPx")
+    device.waitForIdle()
+}
+
+/** Returns the window to the device's own size. Must run even when the journey fails. */
+private fun MacrobenchmarkScope.resetWindowSize() {
+    device.executeShellCommand("wm size reset")
+    device.waitForIdle()
 }
 
 /**
@@ -528,6 +610,10 @@ private fun MacrobenchmarkScope.waitForHome() {
 }
 
 private const val MAIN_BOTTOM_TAB_HOME = "main_bottom_tab_home"
+private const val MAIN_SIDEBAR_TOGGLE = "main_sidebar_toggle"
+private const val MAIN_SIDEBAR_ROW_HOME = "main_sidebar_row_home"
+private const val MAIN_SIDEBAR_ROW_MCP = "main_sidebar_row_mcp"
+private const val MAIN_SIDEBAR_ROW_BA = "main_sidebar_row_ba"
 private const val MAIN_BOTTOM_TAB_OS = "main_bottom_tab_os"
 private const val MAIN_BOTTOM_TAB_MCP = "main_bottom_tab_mcp"
 private const val MAIN_BOTTOM_TAB_GITHUB = "main_bottom_tab_github"
