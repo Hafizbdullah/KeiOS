@@ -70,6 +70,7 @@ import os.kei.ui.page.main.widget.chrome.appSidebarAvailableAt
 import os.kei.ui.page.main.widget.chrome.appTopBarEdgePadding
 import androidx.compose.foundation.layout.padding
 import os.kei.core.prefs.UiPrefs
+import os.kei.ui.page.main.widget.chrome.appNavigationVisible
 
 @Composable
 internal fun MainPagerLayout(
@@ -481,7 +482,11 @@ internal fun MainPagerLayout(
                                 pageIndex = pageIndex,
                                 contentTopPadding = contentTopPadding,
                                 contentBottomPadding = contentBottomPadding,
-                                bottomBarVisible = coordinator.showBottomBar,
+                                bottomBarVisible =
+                                    appNavigationVisible(
+                                        placement = navigationPlacement,
+                                        scrolledAway = !coordinator.showBottomBar,
+                                    ),
                                 floatingDockSide = floatingDockSide,
                                 onShowBottomBar = coordinator.onShowBottomBar,
                                 onScrollBoundsChange = { canScrollBackward, canScrollForward ->

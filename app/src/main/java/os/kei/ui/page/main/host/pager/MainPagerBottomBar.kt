@@ -28,6 +28,7 @@ import os.kei.ui.page.main.model.bottomPageIconScale
 import os.kei.ui.page.main.widget.chrome.AnimatedCompactBottomBar
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppNavigationPlacement
+import os.kei.ui.page.main.widget.chrome.appNavigationVisible
 import os.kei.ui.page.main.widget.chrome.appTopBarNavigationMaxWidth
 import os.kei.ui.page.main.widget.chrome.CompactBottomBarDock
 import os.kei.ui.page.main.widget.chrome.LiquidGlassBottomBar
@@ -254,7 +255,8 @@ internal fun BoxScope.MainPagerTopNavigationBar(
             }
         }
     MainPagerBottomBar(
-        visible = coordinator.showBottomBar,
+        // Never collapses at this placement. See appNavigationCollapsesOnScroll.
+        visible = appNavigationVisible(placement = placement, scrolledAway = !coordinator.showBottomBar),
         placement = placement,
         navigationBarBottom = insets.navigationBarBottom,
         topInset = insets.homeTopInset,

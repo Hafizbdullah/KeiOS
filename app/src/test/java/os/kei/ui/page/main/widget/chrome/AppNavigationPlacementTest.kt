@@ -105,4 +105,25 @@ class AppNavigationPlacementTest {
         // 650dp with a 294dp bar leaves 356dp -- not enough, so the title goes rather than overlapping.
         assertFalse(appTopRowFitsTitle(availableWidth = 650.dp, barWidth = 294.dp))
     }
+
+    /**
+     * Only the bottom bar earns the scroll-away, because only it sits on top of the content.
+     *
+     * The top bar shares the title row and costs no vertical space, and the sidebar is beside the content
+     * rather than over it, so in both cases hiding buys nothing and loses what the HIG asks for.
+     */
+    @Test
+    fun `only the bottom placement collapses on scroll`() {
+        assertTrue(appNavigationCollapsesOnScroll(AppNavigationPlacement.Bottom))
+        assertFalse(appNavigationCollapsesOnScroll(AppNavigationPlacement.Top))
+        assertFalse(appNavigationCollapsesOnScroll(AppNavigationPlacement.Sidebar))
+    }
+
+    @Test
+    fun `scrolling away hides only the bottom bar`() {
+        assertFalse(appNavigationVisible(AppNavigationPlacement.Bottom, scrolledAway = true))
+        assertTrue(appNavigationVisible(AppNavigationPlacement.Bottom, scrolledAway = false))
+        assertTrue(appNavigationVisible(AppNavigationPlacement.Top, scrolledAway = true))
+        assertTrue(appNavigationVisible(AppNavigationPlacement.Sidebar, scrolledAway = true))
+    }
 }

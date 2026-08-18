@@ -235,3 +235,27 @@ fun appPageEdgePaddingEnd(): Dp = AppChromeTokens.pageHorizontalPadding + appPag
 fun appTopBarEdgePaddingStart(): Dp =
     appTopBarEdgePadding() +
         if (LocalAppNavigationPlacement.current == AppNavigationPlacement.Sidebar) AppSidebarWidth else 0.dp
+
+/**
+ * Whether the navigation may collapse itself out of the way while the page scrolls.
+ *
+ * Only at [AppNavigationPlacement.Bottom]. That collapse exists to reclaim vertical space: a floating bar at the
+ * bottom of a phone sits *on top of* the content, so getting out of the way while reading is a real trade. The
+ * top tab bar makes no such trade — it shares the row the title and the actions already occupy and costs no
+ * vertical space at all — so hiding it buys nothing and loses what the HIG asks for: "make sure the tab bar is
+ * visible when people navigate to different sections of your app. If you hide the tab bar, people can forget
+ * which area of the app they're in."
+ *
+ * The sidebar is the same argument in the other axis: it is beside the content, not over it.
+ *
+ * This governs the page floating docks too, which read the same visibility to decide whether to shrink to a
+ * single button. On a tablet they were collapsing along with a bar that had no reason to collapse.
+ */
+fun appNavigationCollapsesOnScroll(placement: AppNavigationPlacement): Boolean =
+    placement == AppNavigationPlacement.Bottom
+
+/** Resolved navigation visibility: the scroll state where it applies, always visible where it does not. */
+fun appNavigationVisible(
+    placement: AppNavigationPlacement,
+    scrolledAway: Boolean,
+): Boolean = !appNavigationCollapsesOnScroll(placement) || !scrolledAway

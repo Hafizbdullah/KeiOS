@@ -245,6 +245,21 @@ Release matters separately because R8 is where a runtime-registered receiver wou
   backgrounded release process took **TOTAL PSS 45,810 KB → 40,973 KB, freeing ~4.7 MB**. So the release
   registry, the Coil eviction and the bitmap-cache eviction all survived minification.
 
+### The navigation does not collapse at regular width
+
+Reported from the AVD: scrolling a page made the top tab bar tuck itself into a corner dock, and took the page's
+floating dock with it.
+
+That collapse is a *bottom bar* affordance. A floating bar at the bottom of a phone sits on top of the content, so
+getting out of the way while reading is a real trade. The top bar makes no such trade — it shares the row the
+title and the actions already occupy and costs no vertical space — so hiding it buys nothing and loses exactly
+what the HIG asks for: "make sure the tab bar is visible when people navigate to different sections of your app.
+If you hide the tab bar, people can forget which area of the app they're in." The sidebar is the same argument in
+the other axis: beside the content, not over it.
+
+`appNavigationCollapsesOnScroll` is true only for `Bottom`, and the page floating docks read the same resolved
+visibility, because they were shrinking to a single button alongside a bar that had no reason to shrink.
+
 ### Still owed on a real phone
 
 **Nothing.** The last open item — background audio hardening — was driven on the AVD once it turned out the
