@@ -100,7 +100,7 @@ fun AppTopBarSection(
                     Modifier
                         .align(Alignment.TopEnd)
                         .padding(
-                            end = AppChromeTokens.topBarHorizontalPadding,
+                            end = AppChromeTokens.topBarHorizontalPadding + appPageSideGutter(),
                             top = AppChromeTokens.topBarChromeTopPadding,
                         ),
                 content = actions,

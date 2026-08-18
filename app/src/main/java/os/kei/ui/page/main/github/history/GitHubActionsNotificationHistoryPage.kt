@@ -61,6 +61,7 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppLiquidNavigationButton
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.chrome.AppPageScaffold
 import os.kei.ui.page.main.widget.chrome.TabbedPageBottomChrome
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
@@ -369,8 +370,8 @@ internal fun GitHubActionsNotificationHistoryPage(
                     Modifier
                         .fillMaxWidth()
                         .padding(
-                            start = AppChromeTokens.pageHorizontalPadding,
-                            end = AppChromeTokens.pageHorizontalPadding,
+                            start = appPageEdgePadding(),
+                            end = appPageEdgePadding(),
                             top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                         ),
             )

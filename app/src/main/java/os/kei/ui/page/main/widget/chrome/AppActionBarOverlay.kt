@@ -22,12 +22,16 @@ fun BoxScope.AppTopEndActionBarOverlay(
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val safeDrawingPadding = WindowInsets.safeDrawing.asPaddingValues()
+    // Follows the content column in. Pinned to the true window edge, these actions would sit a gutter's width
+    // away from the page they act on — on the Pad AVD in landscape that is 280dp of empty panel between a
+    // list and its own toolbar. Zero on phones.
+    val sideGutter = appPageSideGutter()
     Box(
         modifier = modifier
             .align(Alignment.TopEnd)
             .padding(
                 top = safeDrawingPadding.calculateTopPadding() + topSpacing,
-                end = safeDrawingPadding.calculateEndPadding(layoutDirection) + endSpacing
+                end = safeDrawingPadding.calculateEndPadding(layoutDirection) + endSpacing + sideGutter
             )
     ) {
         content()

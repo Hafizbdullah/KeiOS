@@ -51,6 +51,8 @@ import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.os.osLucideEnterIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
+import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.core.AppCompactIconAction
 import os.kei.ui.page.main.widget.core.AppOverviewCard
@@ -271,8 +273,8 @@ internal fun OsPageMainList(
         } else {
             Alignment.BottomEnd
         }
-    val dockStartPadding = if (floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val dockEndPadding = if (floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val dockStartPadding = appFloatingDockSidePadding(floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockSidePadding(floatingDockSide == AppFloatingDockSide.End)
     val refreshStatus =
         when (systemOverviewState) {
             SystemOverviewState.Refreshing -> AppFloatingRefreshStatus.Refreshing
@@ -316,9 +318,12 @@ internal fun OsPageMainList(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    // This card sits *above* the lazy list, so it never receives the list's content padding
+                    // and has to add the large-screen gutter itself. Without it the status hub stayed
+                    // full-bleed while every row under it narrowed, which read as two different pages.
                     .padding(
-                        start = AppChromeTokens.pageHorizontalPadding,
-                        end = AppChromeTokens.pageHorizontalPadding,
+                        start = appPageEdgePadding(),
+                        end = appPageEdgePadding(),
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     ),
             // Refresh has the pull gesture and the section's own controls; adding an

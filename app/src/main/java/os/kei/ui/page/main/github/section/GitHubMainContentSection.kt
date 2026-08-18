@@ -39,7 +39,9 @@ import os.kei.ui.page.main.os.appLucideRefreshIcon
 import os.kei.ui.page.main.os.appLucideSearchIcon
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.chrome.AppScaffold
+import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
@@ -96,8 +98,8 @@ internal fun GitHubMainContent(
         } else {
             androidx.compose.ui.Alignment.BottomEnd
         }
-    val dockStartPadding = if (layout.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val dockEndPadding = if (layout.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val dockStartPadding = appFloatingDockSidePadding(layout.floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockSidePadding(layout.floatingDockSide == AppFloatingDockSide.End)
     val refreshStatus =
         when (overview.refreshState) {
             OverviewRefreshState.Refreshing -> AppFloatingRefreshStatus.Refreshing
@@ -243,8 +245,8 @@ internal fun GitHubMainContent(
                         Modifier
                             .fillMaxWidth()
                             .padding(
-                                start = AppChromeTokens.pageHorizontalPadding,
-                                end = AppChromeTokens.pageHorizontalPadding,
+                                start = appPageEdgePadding(),
+                                end = appPageEdgePadding(),
                                 top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                             ),
                 ) {

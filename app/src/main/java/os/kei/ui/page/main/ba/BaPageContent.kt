@@ -27,6 +27,7 @@ import os.kei.ui.page.main.ba.support.BaAccountId
 import os.kei.ui.page.main.ba.support.BaCalendarEntry
 import os.kei.ui.page.main.ba.support.BaPoolEntry
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 
 @Immutable
 internal data class BaPageContentState(
@@ -103,7 +104,9 @@ internal fun BaPageContent(
 ) {
     val pageGap = AppChromeTokens.pageSectionGap
     val topBarToHeaderGap = AppChromeTokens.topBarToHeaderGap
-    val pageHorizontalPadding = AppChromeTokens.pageHorizontalPadding
+    // This page builds its own LazyColumn rather than going through AppPageLazyColumn, so it takes the
+    // large-screen edge padding directly. Identical to `AppChromeTokens.pageHorizontalPadding` on a phone.
+    val pageHorizontalPadding = appPageEdgePadding()
 
     LazyColumn(
         modifier =

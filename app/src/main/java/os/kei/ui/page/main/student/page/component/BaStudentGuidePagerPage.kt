@@ -43,6 +43,7 @@ import os.kei.ui.page.main.student.page.state.buildBaStudentGuidePagerHeaderStat
 import os.kei.ui.page.main.student.page.state.resolveBaStudentGuideTabRenderState
 import os.kei.ui.page.main.student.tabcontent.renderBaStudentGuideTabContent
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
+import os.kei.ui.page.main.widget.chrome.appPageSideGutter
 import os.kei.ui.page.main.widget.chrome.rememberAppPageBackdrop
 import os.kei.ui.page.main.widget.chrome.tabbedPageContentNestedScrollConnection
 import os.kei.ui.page.main.widget.core.AppAronaLoadingPanel
@@ -205,8 +206,8 @@ internal fun BaStudentGuidePagerPage(
                     PaddingValues(
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                         bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                        start = 16.dp,
-                        end = 16.dp,
+                        start = 16.dp + appPageSideGutter(),
+                        end = 16.dp + appPageSideGutter(),
                     ),
             ) {
                 item(
@@ -321,8 +322,8 @@ private fun BaStudentGuidePagerLoadingOverlay(
                 .padding(
                     top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     bottom = innerPadding.calculateBottomPadding(),
-                    start = 20.dp,
-                    end = 20.dp,
+                    start = 20.dp + appPageSideGutter(),
+                    end = 20.dp + appPageSideGutter(),
                 ),
         contentAlignment = Alignment.Center,
     ) {

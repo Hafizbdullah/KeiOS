@@ -73,16 +73,22 @@ internal fun appPageBackdropBaseColor(): Color {
     }
 }
 
+/**
+ * [sideGutter] is the large-screen centring inset from [appPageSideGutter]; it is `0.dp` on every phone, so
+ * the default keeps this function's old behaviour exactly. Call sites that can see a composition should pass
+ * the real one — [AppPageLazyColumn] does.
+ */
 fun appPageContentPadding(
     innerPadding: PaddingValues,
     bottomExtra: Dp = AppChromeTokens.pageBottomInsetExtra,
     topExtra: Dp = 0.dp,
+    sideGutter: Dp = 0.dp,
 ): PaddingValues =
     PaddingValues(
         top = innerPadding.calculateTopPadding() + topExtra,
         bottom = innerPadding.calculateBottomPadding() + bottomExtra,
-        start = AppChromeTokens.pageHorizontalPadding,
-        end = AppChromeTokens.pageHorizontalPadding,
+        start = AppChromeTokens.pageHorizontalPadding + sideGutter,
+        end = AppChromeTokens.pageHorizontalPadding + sideGutter,
     )
 
 fun appPageBottomPaddingWithFloatingOverlay(contentBottomPadding: Dp): Dp =
@@ -224,6 +230,10 @@ fun AppPageLazyColumn(
                 innerPadding = innerPadding,
                 bottomExtra = bottomExtra,
                 topExtra = topExtra,
+                // Padding rather than a width constraint on the list itself, so the scroll surface, the
+                // overscroll stretch and the edge-stacked card pile still span the whole panel. Only the
+                // content is centred; the gesture area is not narrowed.
+                sideGutter = appPageSideGutter(),
             ),
         verticalArrangement = Arrangement.spacedBy(sectionSpacing),
         content = content,

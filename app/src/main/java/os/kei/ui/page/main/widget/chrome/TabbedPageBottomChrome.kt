@@ -171,7 +171,10 @@ internal fun <C : TabbedPageCategory> TabbedPageBottomChrome(
     }
     val size = AppChromeTokens.floatingBottomBarOuterHeight
     val gap = TabbedPageBottomChromeSearchGap
-    val outerPadding = AppChromeTokens.pageHorizontalPadding
+    // The category bar and the search dock size themselves from the width they are given, so folding the
+    // large-screen gutter into the outer padding narrows the whole bottom chrome onto the content column
+    // instead of stretching a five-tab strip across 1280dp. Zero on phones.
+    val outerPadding = AppChromeTokens.pageHorizontalPadding + appPageSideGutter()
     val effectiveSearchExpanded = searchEnabled && searchExpanded
     val categoryDockExpanded =
         tabbedPageCategoryDockExpanded(

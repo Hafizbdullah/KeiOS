@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.Backdrop
 import os.kei.R
 import os.kei.ui.page.main.host.pager.MainPageRuntime
+import os.kei.ui.page.main.widget.chrome.appFloatingDockSidePadding
 import os.kei.ui.page.main.os.appLucideCalendarIcon
 import os.kei.ui.page.main.os.appLucideLibraryIcon
 import os.kei.ui.page.main.os.appLucideMailIcon
@@ -42,8 +43,8 @@ internal fun BoxScope.BaPageFloatingDock(
         } else {
             Alignment.BottomEnd
         }
-    val dockStartPadding = if (runtime.floatingDockSide == AppFloatingDockSide.Start) 14.dp else 0.dp
-    val dockEndPadding = if (runtime.floatingDockSide == AppFloatingDockSide.End) 14.dp else 0.dp
+    val dockStartPadding = appFloatingDockSidePadding(runtime.floatingDockSide == AppFloatingDockSide.Start)
+    val dockEndPadding = appFloatingDockSidePadding(runtime.floatingDockSide == AppFloatingDockSide.End)
     val floatingDockBottomState =
         rememberAppFloatingDockBottomState(
             contentBottomPadding = runtime.contentBottomPadding,

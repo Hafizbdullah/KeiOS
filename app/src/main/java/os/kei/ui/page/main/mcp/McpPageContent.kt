@@ -38,6 +38,7 @@ import os.kei.ui.page.main.mcp.state.McpPageOverviewState
 import os.kei.ui.page.main.mcp.state.McpToolBuckets
 import os.kei.ui.page.main.widget.chrome.AppChromeTokens
 import os.kei.ui.page.main.widget.chrome.AppPageLazyColumn
+import os.kei.ui.page.main.widget.chrome.appPageEdgePadding
 import os.kei.ui.page.main.widget.chrome.appPageBottomPaddingWithFloatingOverlay
 import os.kei.ui.page.main.widget.chrome.rememberAppPullToRefreshState
 import os.kei.ui.page.main.widget.glass.AppEdgeStackKeepAlive
@@ -80,8 +81,8 @@ internal fun McpPageContent(
                 Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = AppChromeTokens.pageHorizontalPadding,
-                        end = AppChromeTokens.pageHorizontalPadding,
+                        start = appPageEdgePadding(),
+                        end = appPageEdgePadding(),
                         top = innerPadding.calculateTopPadding() + AppChromeTokens.topBarToHeaderGap,
                     ),
         ) {

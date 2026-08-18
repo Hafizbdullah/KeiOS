@@ -51,6 +51,7 @@ import os.kei.ui.page.main.widget.chrome.AppScaffold
 import os.kei.ui.page.main.widget.chrome.AppTopBarSection
 import os.kei.ui.page.main.widget.chrome.AppTopEndActionBarOverlay
 import os.kei.ui.page.main.widget.chrome.BindLazyListScrollBoundsEffect
+import os.kei.ui.page.main.widget.chrome.appPageSideGutter
 import os.kei.ui.page.main.widget.chrome.LiquidToolbar
 import os.kei.ui.page.main.widget.chrome.LiquidToolbarAction
 import top.yukonga.miuix.kmp.blur.layerBackdrop
@@ -295,11 +296,16 @@ fun HomePage(
             )
 
             val horizontalSafeInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()
+            // Home builds its own padding rather than going through `appPageContentPadding`, so it has to add
+            // the large-screen gutter itself. The hero gets it too: the pill rows under the wordmark are the
+            // same full-width rows as everywhere else, and leaving them uncapped while the overview cards
+            // below them narrow would split the page down the middle. Zero on phones.
+            val sideGutter = appPageSideGutter()
             val listContentPadding =
                 PaddingValues(
-                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
+                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection) + sideGutter,
                     top = innerPadding.calculateTopPadding() + runtime.contentTopPadding,
-                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
+                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection) + sideGutter,
                     bottom = innerPadding.calculateBottomPadding() + runtime.contentBottomPadding + 16.dp,
                 )
             val logoPadding =
@@ -310,8 +316,8 @@ fun HomePage(
                             contentTopPadding = runtime.contentTopPadding,
                             compactHeightPresentation = compactLandscapeLayout,
                         ),
-                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection),
-                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection),
+                    start = horizontalSafeInsets.calculateStartPadding(layoutDirection) + sideGutter,
+                    end = horizontalSafeInsets.calculateEndPadding(layoutDirection) + sideGutter,
                 )
 
             Box(

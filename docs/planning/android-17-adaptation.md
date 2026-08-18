@@ -282,3 +282,67 @@ also sits **above** `HomePageTallHeroMinHeight` (700dp), so Home takes the tall-
 
 The app installs and runs: all five tabs render, no crash. It is plainly the phone layout stretched to 1280dp —
 the status pill rows span the full width — which is the work itself, not a defect to file.
+
+## Pad round 1 — the content column
+
+### What was actually wrong
+
+Not layout *breakage*. Everything rendered, nothing overlapped, nothing was unreachable. The failure was that
+every row is drawn "label at the leading edge, controls at the trailing edge", and at 1280dp the two halves end
+up ~1100dp apart with nothing between them. A row stops reading as a row when the eye has to cross the whole
+panel to connect a switch to the thing it switches.
+
+So: cap the content column and centre it, rather than redesign the pages. The cap is **720dp**
+(`AppPageContentMaxWidth`), picked so that it sits below the Pad's portrait width (800dp) as well as its
+landscape width (1280dp) — a row is then laid out **identically in both orientations**, and rotating the tablet
+re-flows nothing. That property is worth more here than any particular number, because rotation is newly
+reachable and should be unremarkable.
+
+`appPageSideGutterFor(availableWidth)` is `0.dp` below the cap, so **no phone moves by a pixel** — every phone
+this app installs on is 360–440dp wide. `AppPageContentWidthTest` pins that, both orientations of the Pad, the
+boundary at exactly 720dp, and the split-screen case.
+
+### Where it had to be applied, and why not in one place
+
+The gutter is not just list padding. Anything anchored to a window edge has to come in with the content, or the
+page splits: a toolbar pinned to the true edge sits a gutter's width — 280dp in landscape — from the list it
+acts on. So it went into, in order of how much each covers:
+
+| Site | Covers |
+|---|---|
+| `AppPageLazyColumn` → `appPageContentPadding(sideGutter=)` | 21 list call sites, free |
+| `appPageEdgePadding()` | the status hub each main page pins *above* its list — a sibling of the list, so it never saw the list's content padding and stayed full-bleed while every row under it narrowed |
+| `AppTopEndActionBarOverlay`, `AppTopBar` actions | the top-right toolbars |
+| `appFloatingDockSidePadding()` | the four floating docks, which had four hand-written copies of the same expression and the same `14.dp`; now one |
+| `TabbedPageBottomChrome` outer padding | the BA catalog's category bar and search dock |
+| `HomePage` | builds its own padding, hero included — capping the overview cards but not the hero pills would split the page down the middle |
+
+### Manifest
+
+`screenOrientation="sensorPortrait"` **stays**, and is now commented as the phone-only declaration it has
+become. Android ignores it at `sw >= 600dp` from targetSdk 36, and 37 removes the opt-out — so on the Pad it
+already does nothing. Changing it to `fullUser` would not affect the tablet at all; it would only unlock a
+*phone* landscape geometry that nothing is drawn for.
+
+`android:resizableActivity` was tried and **fails the build** at compileSdk 37 — `attribute
+android:resizableActivity not found`. The attribute is gone; there is nothing to opt into.
+
+### Verified
+
+Reinstalled and swept on `KeiOS_Pad_API37_Validation`, **both orientations**: Home, OS, MCP, GitHub, BA. Rows,
+status hubs, top-end toolbars, floating docks and the bottom dock all sit on the same column. Suite **2924
+tests, 0 failures**; debug and release both assemble.
+
+Home needed no change: `h800dp` in landscape is above `HomePageTallHeroMinHeight` (700dp), so the tall hero is
+correct there and the pill rows clear the floating dock. The threshold flagged for re-derivation survives
+contact with real Pad geometry.
+
+### Not done, and deliberately
+
+- **The BA guide catalog's inner tab layouts** (`BaGuideCatalogV2ListContent`, `BaGuideStudentBgmTabContent`,
+  `BaGuideMemoryLobbyTabContent`, the music chrome) build several paddings of their own. Their lists go through
+  `AppPageLazyColumn` and so are already capped, but their non-list elements have not been swept.
+- **Two-pane / list-detail.** A 1280dp panel could show a list and a detail side by side instead of one centred
+  column, and for the catalog that is probably the right end state. It is a different and much larger piece of
+  work — miuix-nav has no list-detail scaffold — and it is a design decision, not a defect. The centred column
+  is correct on its own and is what a single pane should do at this width.
