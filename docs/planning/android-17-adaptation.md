@@ -260,6 +260,38 @@ the other axis: beside the content, not over it.
 `appNavigationCollapsesOnScroll` is true only for `Bottom`, and the page floating docks read the same resolved
 visibility, because they were shrinking to a single button alongside a bar that had no reason to shrink.
 
+### Baseline profile — the two shapes are covered, from one device
+
+`tabletAndFoldNavigationShapes` in `BaselineProfileGenerator`. The shapes only exist above 600dp and 660dp, so a
+profile generated on a phone never compiles them, and one generated on a tablet has the opposite hole because the
+floating bottom bar never renders there. Rather than requiring two runs and a merge — a process step that gets
+forgotten — the journey resizes the window itself with `wm size`: 1280dp for both tablet shapes, then 775dp and
+500dp, which is a fold opening and closing across both thresholds while the app runs. `MainActivity` declares
+`screenSize|screenLayout|smallestScreenSize` in `configChanges`, so that reflows rather than recreating the
+Activity, and the reflow is the path worth compiling anyway.
+
+The override is undone in a `finally`, because `wm size` outlives the process: a leaked 1280dp would invalidate
+every later journey in the same run and every macrobenchmark on that device afterwards, and the symptom — a phone
+profile missing its bottom bar — would read as a code problem rather than a leaked shell command.
+
+The sidebar needed test tags to be reachable at all; the toggle had none and the rows built theirs from an ad-hoc
+string. Both now come from `KeiOsTestTags`.
+
+### Phone acceptance after the whole Pad round — clean, `2026-08-18`
+
+Pad AVD shut down, `KeiOS_API37_Validation` booted (427×952dp), current build installed. Every change in this
+round is meant to be a no-op below 600dp; that was reasoned at each step and is now measured end to end:
+
+| Check | Result |
+|---|---|
+| Home | floating **bottom** bar, no top bar, no sidebar toggle, hero and pills full width, no gutter |
+| OS, title and chrome | title **centred**, actions at the phone's 14dp margin |
+| OS, scrolled hard | bottom bar **still collapses** into the corner dock, and the page's floating dock still shrinks to `…` — the placement-gated `appNavigationVisible` did not disturb the phone |
+| BA | cards full width, title centred, bottom bar in place |
+| BA guide catalog route | rows, header pills, mini player, tab strip and search FAB all unchanged — the ten `appPageEdgePaddingStart/End()` swaps are no-ops where the gutter is `0.dp` |
+
+Suite **2939 tests, 0 failures**; debug and release both assemble.
+
 ### Still owed on a real phone
 
 **Nothing.** The last open item — background audio hardening — was driven on the AVD once it turned out the
