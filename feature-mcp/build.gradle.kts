@@ -43,7 +43,7 @@ dependencies {
     implementation(libs.ktor.server.cio)
     implementation(libs.kotlinx.serialization.json)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.test.core)

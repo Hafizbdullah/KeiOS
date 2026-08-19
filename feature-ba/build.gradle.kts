@@ -23,6 +23,6 @@ android {
 dependencies {
     implementation(project(":feature-mcp"))
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
 }
