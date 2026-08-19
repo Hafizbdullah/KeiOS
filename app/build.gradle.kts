@@ -207,20 +207,7 @@ val preReleaseVersionCode =
     benchmarkVersion.toVersionCode(
         commitCount = gitVersionSnapshot.relativeCommitCount.coerceIn(0, 998),
     )
-// Machine-local overrides should live in ~/.gradle/gradle.properties (preferred) or local.properties.
-// JDK resolution itself is intentionally not hardcoded here: the project already tracks a cross-platform
-// Gradle daemon JVM (JetBrains Java 21) for macOS/Windows/Linux. Use org.gradle.java.home only as a
-// developer-local fallback when Android Studio or Gradle cannot auto-resolve a suitable JDK.
-// Useful local-only keys include:
-// - miuix.version
-// - keios.release.storeFile
-// - keios.release.storePassword
-// - keios.release.keyAlias
-// - keios.release.keyPassword
-// - keios.github.liveBenchmark
-// - keios.github.api.token
-// - keios.github.liveTargets
-// - keios.github.forceGuest
+
 val miuixVersion =
     providers.gradleProperty("miuix.version").orNull
         ?: readLocalPropertyOrNull("miuix.version")
@@ -260,7 +247,10 @@ val metricsPerformanceVersion = libs.versions.metrics.performance.get()
 val profileInstallerVersion = libs.versions.profileinstaller.get()
 val lifecycleViewModelComposeVersion = libs.versions.lifecycle.get()
 val projectCompileSdk = libs.versions.compile.sdk.get().toInt()
-val projectMinSdk = libs.versions.min.sdk.get().toInt()
+
+// تم تعديل minSdk إلى 33 لتوافقه مع أندرويد 13
+val projectMinSdk = 33 
+
 val projectTargetSdk = libs.versions.target.sdk.get().toInt()
 val projectGradleVersion = gradle.gradleVersion
 val projectJavaVersion = JavaVersion.toVersion(libs.versions.java.get())
@@ -379,8 +369,6 @@ android {
 
         release {
             optimization.enable = true
-            // Additive: AGP's own optimized defaults still arrive through optimization.enable, verified
-            // by diffing R8's configuration.txt across this change.
             proguardFile("proguard-rules.pro")
             if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
@@ -429,6 +417,8 @@ android {
     }
 
     compileOptions {
+        // تفعيل Desugaring لضمان عمل Java 21 APIs على أندرويد 13
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = projectJavaVersion
         targetCompatibility = projectJavaVersion
     }
@@ -455,8 +445,6 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
-            // Keep unit tests on the desktop OkHttp platform. Live GitHub tests read secrets from
-            // JVM properties, env vars, or ~/.gradle/gradle.properties; see README.md.
             it.systemProperty("okhttp.platform", "jdk9")
         }
     }
@@ -478,9 +466,6 @@ androidComponents {
                 )
             },
         )
-        // Generated startup profiles include D8/R8 synthetic lambda rules that R8 reports as
-        // missing before minification. Keep ART baseline profiles enabled and skip dex layout
-        // optimization so release-like builds stay quiet and deterministic.
         variant.experimentalProperties.put(r8DexStartupOptimizationProperty, false)
     }
     onVariants(selector().withBuildType("benchmark")) { variant ->
@@ -551,6 +536,9 @@ configurations.configureEach {
 }
 
 dependencies {
+    // إضافة مكتبة desugar_jdk_libs لدعم معالجة Java 21 في Android 13
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     baselineProfile(project(":baselineprofile"))
 
     implementation(project(":core-concurrency"))
@@ -611,7 +599,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.documentfile)
 
-    // Keep kotlin-test aligned with the Kotlin plugin version while keeping Android Studio's model explicit.
     testImplementation(libs.kotlin.test)
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.compose.ui.test.junit4)
