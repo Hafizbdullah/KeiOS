@@ -17,6 +17,6 @@ android {
 }
 
 dependencies {
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
 }

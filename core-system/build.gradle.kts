@@ -30,7 +30,7 @@ dependencies {
     implementation(libs.hidden.api.bypass)
     implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
     testImplementation(libs.kotlinx.coroutines.test)
 }

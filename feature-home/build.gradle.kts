@@ -29,6 +29,6 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.mmkv)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
 }

@@ -28,7 +28,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.encoding)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
     testImplementation(libs.ktor.client.mock)
 

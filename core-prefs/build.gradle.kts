@@ -23,6 +23,6 @@ dependencies {
     api(libs.mmkv)
     implementation(libs.kotlinx.coroutines.core)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
 }
