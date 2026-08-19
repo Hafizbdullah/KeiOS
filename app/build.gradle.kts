@@ -248,7 +248,6 @@ val profileInstallerVersion = libs.versions.profileinstaller.get()
 val lifecycleViewModelComposeVersion = libs.versions.lifecycle.get()
 val projectCompileSdk = libs.versions.compile.sdk.get().toInt()
 
-// تم تعديل minSdk إلى 33 لتوافقه مع أندرويد 13
 val projectMinSdk = 33 
 
 val projectTargetSdk = libs.versions.target.sdk.get().toInt()
@@ -417,7 +416,6 @@ android {
     }
 
     compileOptions {
-        // تفعيل Desugaring لضمان عمل Java 21 APIs على أندرويد 13
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = projectJavaVersion
         targetCompatibility = projectJavaVersion
@@ -536,7 +534,6 @@ configurations.configureEach {
 }
 
 dependencies {
-    // إضافة مكتبة desugar_jdk_libs لدعم معالجة Java 21 في Android 13
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     baselineProfile(project(":baselineprofile"))
@@ -599,7 +596,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.documentfile)
 
-    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinTest)
     testImplementation(libs.junit4)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.test.ext.junit)
