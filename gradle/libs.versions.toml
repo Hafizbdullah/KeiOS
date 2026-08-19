@@ -5,7 +5,7 @@ baseline-profile-plugin = "1.5.0-alpha07"
 roborazzi = "1.70.0"
 
 compile-sdk = "37"
-min-sdk = "35"
+min-sdk = "33"
 target-sdk = "37"
 java = "21"
 
@@ -121,7 +121,6 @@ zoomimage-compose-coil3 = { module = "io.github.panpf.zoomimage:zoomimage-compos
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 dav4jvm = { module = "com.github.bitfireAT:dav4jvm", version.ref = "dav4jvm" }
 
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
